@@ -1,0 +1,1602 @@
+{
+  "script": "verify-api-inventory-live",
+  "startedAt": "2026-08-24T00:19:51.663Z",
+  "finishedAt": "2026-08-24T00:20:46.837Z",
+  "meta": {
+    "base": "https://airesume.projectdemo.guru",
+    "allowMutationsRequested": false,
+    "mutationPolicy": "READ_ONLY_MANIFEST"
+  },
+  "counts": {
+    "200": 1,
+    "404": 21,
+    "429": 13,
+    "500": 8,
+    "503": 20,
+    "PASS": 4,
+    "FAIL": 0,
+    "BLOCKED": 62,
+    "SKIPPED": 114,
+    "INFO": 1
+  },
+  "verdict": "INCOMPLETE",
+  "results": [
+    {
+      "check": "release API inventory parsed",
+      "status": "PASS",
+      "at": "2026-08-24T00:19:51.666Z",
+      "endpoints": 270
+    },
+    {
+      "check": "production origin reachable",
+      "status": 200,
+      "at": "2026-08-24T00:19:51.958Z"
+    },
+    {
+      "check": "SUPER_ADMIN session established",
+      "status": "PASS",
+      "at": "2026-08-24T00:19:52.341Z",
+      "uid": "GvZ9znHdLvUUEHyoaY9LZtG7t1G2"
+    },
+    {
+      "check": "ADMIN session established",
+      "status": "PASS",
+      "at": "2026-08-24T00:19:52.661Z",
+      "uid": "u3t8SS7V1Ae6hqAQoaMF9Vl26Io2"
+    },
+    {
+      "check": "POST /api/account/delete",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:52.661Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/ads non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:19:53.256Z",
+      "code": "ADS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable ADS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/ads",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:53.256Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/admin/ads/:adId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:53.256Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/ai-settings non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:19:53.847Z",
+      "code": 8,
+      "reason": "The endpoint returned machine-readable 8.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/ai-settings",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:53.848Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/ai/fetch-models",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:53.848Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/ai/quota-limits",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:53.848Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/ai/quota-stats non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:19:54.428Z",
+      "code": null,
+      "reason": "The endpoint returned machine-readable UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/ai/reset-quota",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:54.428Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/ai/test-provider",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:54.428Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/audit-logs non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:19:55.018Z",
+      "code": 8,
+      "reason": "The endpoint returned machine-readable 8.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/admin/audit-logs/:id",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:55.018Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/audit-logs/stats non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:19:55.812Z",
+      "code": "STATS_ERROR",
+      "reason": "The endpoint returned machine-readable STATS_ERROR.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/admin/blog/categories non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:19:56.423Z",
+      "code": "BLOG_CATEGORIES_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable BLOG_CATEGORIES_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/blog/categories",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:56.423Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/admin/blog/categories/:categoryId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:56.423Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/admin/blog/categories/:categoryId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:56.423Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/blog/posts non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:19:57.011Z",
+      "code": "BLOG_POSTS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable BLOG_POSTS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "DELETE /api/admin/blog/posts/:postId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:57.011Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/admin/blog/posts/:postId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:57.011Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/admin/blog/publish-due",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:19:57.011Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/companies non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:19:58.224Z",
+      "code": "COMPANIES_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable COMPANIES_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "PATCH /api/admin/companies/:companyId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:58.224Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/coupons non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:19:59.457Z",
+      "code": "INTERNAL_ERROR",
+      "reason": "The endpoint returned machine-readable INTERNAL_ERROR.",
+      "configurationState": null
+    },
+    {
+      "check": "DELETE /api/admin/coupons/:code",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:59.458Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PUT /api/admin/coupons/:code",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:19:59.458Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/admin/delete-user",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:00.047Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/employer-applications non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:01.345Z",
+      "code": "EMPLOYER_APPLICATIONS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable EMPLOYER_APPLICATIONS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "PATCH /api/admin/employer-applications/:uid",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:01.345Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/admin/firebase-service-account",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:01.945Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/gdpr-settings",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:01.945Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/global-rating",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:01.945Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/health-summary non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:02.527Z",
+      "code": "HEALTH_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable HEALTH_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/admin/jobs non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:03.112Z",
+      "code": "JOBS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable JOBS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "DELETE /api/admin/jobs/:jobId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:03.113Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/admin/jobs/:jobId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:03.113Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/landing-content non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:03.697Z",
+      "code": "LANDING_CONTENT_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable LANDING_CONTENT_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/landing-content",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:03.697Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/pages non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:20:04.289Z",
+      "code": "INTERNAL_ERROR",
+      "reason": "The endpoint returned machine-readable INTERNAL_ERROR.",
+      "configurationState": null
+    },
+    {
+      "check": "DELETE /api/admin/pages/:slug",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:04.289Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PUT /api/admin/pages/:slug",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:04.289Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/payment-orders non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:04.910Z",
+      "code": "PAYMENT_LEDGER_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable PAYMENT_LEDGER_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/admin/payment-settings non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:05.490Z",
+      "code": 8,
+      "reason": "The endpoint returned machine-readable 8.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/payment-settings",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:05.490Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/payment/test-provider",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:05.490Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/payments/refund",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:05.490Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/reset-circuit-breaker",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:05.490Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/reviews non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:06.089Z",
+      "code": "REVIEWS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable REVIEWS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/reviews",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:06.090Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/admin/reviews/:reviewId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:06.090Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/admin/save-smtp",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:06.090Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/save-template-customization",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:06.090Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/settings/:category",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:06.682Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/admin/system-health-settings",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:06.682Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/test-connection",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:06.682Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/admin/test-imap",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:06.683Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/trusted-by non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:20:07.269Z",
+      "code": "INTERNAL_ERROR",
+      "reason": "The endpoint returned machine-readable INTERNAL_ERROR.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/trusted-by",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:07.269Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/admin/trusted-by/:logoId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:07.269Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/admin/trusted-by/:logoId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:07.270Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/twilio-settings non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:07.887Z",
+      "code": null,
+      "reason": "The endpoint returned machine-readable UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/admin/twilio-settings",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:07.887Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/admin/users non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:08.808Z",
+      "code": "USER_DIRECTORY_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable USER_DIRECTORY_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/admin/users/:uid",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:08.808Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/admin/users/:uid",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:08.808Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/admin/users/:uid/audit",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:08.808Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/admin/website-meta",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:08.808Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/auth/custom-password-reset",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:08.808Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/auth/github non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:09.073Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2209)."
+    },
+    {
+      "check": "GET /api/auth/github/callback non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:09.337Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2208)."
+    },
+    {
+      "check": "GET /api/auth/github/test-credentials non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:09.595Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2208)."
+    },
+    {
+      "check": "GET /api/auth/linkedin non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:09.861Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2208)."
+    },
+    {
+      "check": "GET /api/auth/linkedin/callback non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:10.118Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2208)."
+    },
+    {
+      "check": "GET /api/auth/linkedin/test-credentials non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:10.368Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2207)."
+    },
+    {
+      "check": "POST /api/auth/oauth/exchange",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.368Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/auth/purge-orphaned-auth",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.368Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/auth/send-verification-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.368Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/auth/set-user-password",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.368Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/auth/verify-email-token",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.368Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/check",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.368Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/check-grammar",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.369Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/contact",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:10.369Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/email/admin/circuit-breaker-status non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:10.632Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2207)."
+    },
+    {
+      "check": "GET /api/email/admin/custom-templates non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:10.897Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2207)."
+    },
+    {
+      "check": "GET /api/email/admin/deliverability non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:11.168Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2206)."
+    },
+    {
+      "check": "POST /api/email/admin/reset-circuit-breaker",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.168Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/email/admin/save-smtp",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.168Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/email/admin/save-template-customization",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.168Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/email/admin/settings non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:11.430Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2206)."
+    },
+    {
+      "check": "POST /api/email/admin/test-connection",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.430Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/email/admin/test-imap",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.430Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/email/logs non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:11.695Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2206)."
+    },
+    {
+      "check": "POST /api/email/resend",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.695Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/email/send-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.696Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/email/send-invoice-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.696Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/email/templates non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:11.959Z",
+      "code": null,
+      "reason": "The server supplied rate-limit evidence (Retry-After 2206)."
+    },
+    {
+      "check": "POST /api/email/templates",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.959Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/employer/companies",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.959Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/employer/companies/:companyId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:11.959Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/employer/companies/:companyId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:11.960Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/employer/jobs",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.960Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/employer/jobs/:jobId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:11.960Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/employer/jobs/:jobId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:11.960Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/ai/generate-content",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:11.960Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/audit non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:12.539Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/configuration non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:13.127Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "PATCH /api/enterprise/configuration",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:13.127Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/context non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:13.712Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/context",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:13.712Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/data-plane/status non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:14.293Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/data/export non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:14.882Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/lifecycle/suspend",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:14.882Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/m2m/context",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:14.882Z",
+      "reason": "Service-key endpoint requires a provisioned disposable M2M credential; run Enterprise M2M certification separately."
+    },
+    {
+      "check": "GET /api/enterprise/memberships non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:15.469Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/memberships",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:15.469Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/enterprise/memberships/:principalId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:15.469Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/enterprise/memberships/:principalId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:15.469Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/memberships/:principalId/invitation-resend",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:15.470Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/observability/metrics non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:16.048Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/platform/tenants non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:16.624Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/platform/tenants/:tenantId/reactivate",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:16.624Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/platform/tenants/:tenantId/suspend",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:16.624Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/queue/jobs non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:17.207Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/queue/jobs",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:17.208Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/enterprise/queue/replay",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:17.208Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/queue/status non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:18.044Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/resources non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:18.633Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/resources",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:18.633Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/enterprise/resources/:resourceId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:18.634Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/resources/:resourceId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:18.634Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/enterprise/resources/:resourceId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:18.634Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/roles-matrix non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:19.209Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/service-accounts non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:19.785Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/service-accounts",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:19.785Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/enterprise/service-accounts/:serviceAccountId/revoke",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:19.785Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/service-accounts/:serviceAccountId/rotate",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:19.785Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/storage/token",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:20.379Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/enterprise/storage/verify",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:20.379Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/support-grants non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:20.927Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/support-grants",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:20.927Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/enterprise/support-grants/:grantId/revoke",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:20.927Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/support/context non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:21.503Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/teams non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:22.078Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/teams",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "PATCH /api/enterprise/teams/:teamId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/teams/:teamId/archive",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/teams/:teamId/members",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/teams/:teamId/members",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "DELETE /api/enterprise/teams/:teamId/members/:principalId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/teams/:teamId/restore",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/enterprise/tenant",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:22.078Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/tenants non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:22.665Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/tenants",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:22.665Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/enterprise/tenants/:tenantId/reactivate",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:22.665Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/test-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:22.665Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/enterprise/usage/ai non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:24.540Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/usage/ai/events non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:25.106Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "GET /api/enterprise/workspaces non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:25.670Z",
+      "code": "ENTERPRISE_DISABLED",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_DISABLED (DISABLED).",
+      "configurationState": "DISABLED"
+    },
+    {
+      "check": "POST /api/enterprise/workspaces",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "PATCH /api/enterprise/workspaces/:workspaceId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/workspaces/:workspaceId/archive",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/enterprise/workspaces/:workspaceId/members",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/workspaces/:workspaceId/members",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "DELETE /api/enterprise/workspaces/:workspaceId/members/:principalId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/enterprise/workspaces/:workspaceId/restore",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/export",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/export-docx",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.670Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/export-render-data non-2xx is explained",
+      "status": 404,
+      "at": "2026-08-24T00:20:25.934Z",
+      "code": "RENDER_TOKEN_NOT_FOUND",
+      "reason": "The endpoint returned machine-readable RENDER_TOKEN_NOT_FOUND.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/generate-ai-cover-letter",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-content",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-education-description",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-interview",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-resume",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-skills",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-summary",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/generate-work-description",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:25.934Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/invoice",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:26.456Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/invoice/generate",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:26.456Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "PATCH /api/job-applications/:applicationId/status",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:26.456Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/jobs/:jobId/applications",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:26.456Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/jobs/naukri",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:26.456Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/linkedin-scraper non-2xx is explained",
+      "status": 429,
+      "at": "2026-08-24T00:20:27.019Z",
+      "code": "RATE_LIMITED",
+      "reason": "The server supplied rate-limit evidence (Retry-After 2215)."
+    },
+    {
+      "check": "POST /api/messages/conversations",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/messages/conversations/:conversationId/participant-profile",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/messages/send",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/email-otp",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/job-application",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/job-posted",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/job-status-update",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.574Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/password-changed",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/password-reset",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/portfolio-published",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/security-alert",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/send-verification-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/subscription-cancelled",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/notify/user-signup",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/parse-resume",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/pay",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/payment-orders/:orderId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/payment/razorpay-order",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/paypal/create-order",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/paypal/verify",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/paytm/initiate-transaction",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/paytm/verify-transaction",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/phonepe/initiate",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/phonepe/status",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:27.575Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/platform/announcements non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:28.161Z",
+      "code": "ANNOUNCEMENTS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable ANNOUNCEMENTS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/platform/announcements",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:28.161Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "DELETE /api/platform/announcements/:id",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:28.161Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/platform/announcements/:id",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:28.161Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/platform/enterprise-queue non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:33.155Z",
+      "code": "ENTERPRISE_QUEUE_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable ENTERPRISE_QUEUE_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "PUT /api/platform/feature-flags/:flagKey",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:33.741Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "GET /api/platform/maintenance non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:35.778Z",
+      "code": "MAINTENANCE_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable MAINTENANCE_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/platform/maintenance",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:35.778Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/platform/operational-status/:serviceId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:36.954Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/platform/operational-status/:serviceId/test",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:36.954Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/platform/operational-status/refresh",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:37.538Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/platform/operators non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:38.413Z",
+      "code": "OPERATORS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable OPERATORS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/platform/operators",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:38.413Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/platform/payment-settings non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:39.589Z",
+      "code": 8,
+      "reason": "The endpoint returned machine-readable 8.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/platform/payments-health non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:20:40.173Z",
+      "code": "PAYMENTS_HEALTH_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable PAYMENTS_HEALTH_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/platform/queues non-2xx is explained",
+      "status": 503,
+      "at": "2026-08-24T00:20:40.787Z",
+      "code": "QUEUE_QUERY_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable QUEUE_QUERY_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "POST /api/platform/queues/retry",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:40.788Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "GET /api/platform/security-events non-2xx is explained",
+      "status": 500,
+      "at": "2026-08-24T00:20:43.106Z",
+      "code": "SECURITY_EVENTS_UNAVAILABLE",
+      "reason": "The endpoint returned machine-readable SECURITY_EVENTS_UNAVAILABLE.",
+      "configurationState": null
+    },
+    {
+      "check": "GET /api/platform/tenants/:tenantId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:43.106Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "PATCH /api/platform/tenants/:tenantId",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:43.106Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/platform/tenants/:tenantId/decommission",
+      "status": "BLOCKED",
+      "at": "2026-08-24T00:20:43.106Z",
+      "reason": "Parameterised route requires a disposable resource id; run verify-crud-live.mjs for a real lifecycle."
+    },
+    {
+      "check": "POST /api/public-export",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:43.363Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/razorpay/create-order",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:43.363Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/razorpay/verify-payment",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:43.364Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/resend",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:43.624Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/send-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:44.196Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/send-invoice-email",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:44.196Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/send-sms",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:44.196Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/stripe-webhook",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:44.938Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/subscription/preferences",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:44.939Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "POST /api/templates",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:20:45.511Z",
+      "reason": "Mutation intentionally delegated to verify-crud-live.mjs; no write was attempted."
+    },
+    {
+      "check": "endpoint probes completed",
+      "status": "INFO",
+      "at": "2026-08-24T00:20:46.836Z",
+      "probed": 94,
+      "protected": 0,
+      "skippedParameterised": 176,
+      "successfulOrExplained": 94
+    },
+    {
+      "check": "every non-2xx response has an evidenced documented reason",
+      "status": "PASS",
+      "at": "2026-08-24T00:20:46.836Z",
+      "probed": 94
+    }
+  ]
+}

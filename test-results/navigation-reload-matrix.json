@@ -1,0 +1,142 @@
+[
+  {
+    "route": "/adm/dashboard",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/adm/settings?tab=aiSettings",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/adm/settings?tab=subscriptionsSettings",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/adm/users",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/adm/user/ss?id=admin-user",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/adm/tenants",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/adm/operations",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/enterprise",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/app/create-resume",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/app/interview",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/app/portfolio",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/p/sample-cv",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/jobs",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  },
+  {
+    "route": "/employer",
+    "spa": "PASS",
+    "directUrl": "PASS",
+    "reload": "PASS",
+    "back": "PASS",
+    "forward": "PASS",
+    "viewports": "7/7 PASS",
+    "cssOwnership": "PASS"
+  }
+]

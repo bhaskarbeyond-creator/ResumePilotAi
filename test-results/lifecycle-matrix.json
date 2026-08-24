@@ -1,0 +1,105 @@
+[
+  {
+    "entity": "USER IDENTITY",
+    "states": [
+      "REGISTERED",
+      "EMAIL_VERIFIED",
+      "MFA_ENROLLED",
+      "MFA_VERIFIED",
+      "ACTIVE",
+      "SUSPENDED",
+      "DELETED"
+    ],
+    "transitionsTested": [
+      "REGISTER -> VERIFY_EMAIL",
+      "ENABLE_MFA -> CHALLENGE_TOTP",
+      "PROMOTE_ADMIN -> DEMOTE_USER",
+      "SUSPEND -> BLOCK_LOGIN",
+      "REACTIVATE -> ALLOW_LOGIN",
+      "CASCADE_DELETE -> PURGE_FIRESTORE"
+    ],
+    "status": "PASS"
+  },
+  {
+    "entity": "TENANT WORKSPACE",
+    "states": [
+      "PROVISIONED",
+      "ACTIVE",
+      "SUSPENDED",
+      "DECOMMISSIONED"
+    ],
+    "transitionsTested": [
+      "PROVISION -> RESOLVE_CONTEXT",
+      "RENAME -> REFRESH_CONSOLE",
+      "SUSPEND -> DENY_ACCESS (403)",
+      "REACTIVATE -> RESTORE_ACCESS",
+      "DECOMMISSION -> ARCHIVE_DATA"
+    ],
+    "status": "PASS"
+  },
+  {
+    "entity": "PAYMENT TRANSACTIONS",
+    "states": [
+      "CREATED",
+      "AUTHORIZED",
+      "PAID",
+      "REFUNDED",
+      "FAILED"
+    ],
+    "transitionsTested": [
+      "CREATE_ORDER -> VERIFY_WEBHOOK_SIGNATURE",
+      "ORDER_PAID -> GENERATE_GST_INVOICE",
+      "EXECUTE_REFUND -> UPDATE_LEDGER",
+      "DUPLICATE_WEBHOOK -> IDEMPOTENT_IGNORE"
+    ],
+    "status": "PASS"
+  },
+  {
+    "entity": "AI INFERENCE CASCADE",
+    "states": [
+      "IDLE",
+      "PROCESSING",
+      "PRIMARY_SUCCESS",
+      "PRIMARY_FAIL_FALLBACK",
+      "ALL_FAILED_ROLE_RECOVERY"
+    ],
+    "transitionsTested": [
+      "REQUEST_NVIDIA -> 200_OK",
+      "NVIDIA_503 -> FAILOVER_GEMINI",
+      "GEMINI_400 -> FAILOVER_OPENAI",
+      "ALL_DOWN -> TOLERANT_ROLE_FALLBACK"
+    ],
+    "status": "PASS"
+  },
+  {
+    "entity": "DURABLE OUTBOX & DLQ",
+    "states": [
+      "QUEUED",
+      "PROCESSING",
+      "LEASE_RECOVERED",
+      "COMPLETED",
+      "DEAD_LETTER"
+    ],
+    "transitionsTested": [
+      "ENQUEUE_HMAC -> VERIFY_SIGNATURE",
+      "WORKER_CRASH -> LEASE_EXPIRE_RECOVERY",
+      "MAX_RETRIES -> MOVE_TO_DLQ"
+    ],
+    "status": "PASS"
+  },
+  {
+    "entity": "DISASTER RECOVERY BACKUP",
+    "states": [
+      "EXPORTING",
+      "VERIFIED_SHA256",
+      "DRY_RUN",
+      "RESTORED"
+    ],
+    "transitionsTested": [
+      "EXPORT_SNAPSHOT -> CALCULATE_CHECKSUM",
+      "DRY_RUN_VALIDATE -> REJECT_CORRUPT_PAYLOAD",
+      "RESTORE_BYTES -> RECONCILE_RECORDS"
+    ],
+    "status": "PASS"
+  }
+]

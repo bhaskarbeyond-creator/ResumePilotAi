@@ -1,0 +1,66 @@
+[
+  {
+    "config": "NVIDIA AI Provider",
+    "enabled": "PASS (200 Inference)",
+    "disabled": "PASS (Bypassed in cascade)",
+    "notConfigured": "PASS (503 Explanatory)",
+    "invalidConfig": "PASS (Rejected without crash)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "Gemini AI Provider",
+    "enabled": "PASS (200 Inference)",
+    "disabled": "PASS (Bypassed)",
+    "notConfigured": "PASS (503 Explanatory)",
+    "invalidConfig": "PASS (400 Invalid key handled)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "Razorpay Gateway",
+    "enabled": "PASS (UPI/Card Modal)",
+    "disabled": "PASS (Option hidden)",
+    "notConfigured": "PASS (Notice rendered)",
+    "invalidConfig": "PASS (400 Order failure)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "Stripe Gateway",
+    "enabled": "PASS (Elements loaded)",
+    "disabled": "PASS (Option hidden)",
+    "notConfigured": "PASS (Notice rendered)",
+    "invalidConfig": "PASS (400 Session error)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "SMTP Email Dispatcher",
+    "enabled": "PASS (Nodemailer dispatch)",
+    "disabled": "PASS (Fallback local)",
+    "notConfigured": "PASS (503 NOT_CONFIGURED)",
+    "invalidConfig": "PASS (Error logged safely)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "Twilio SMS Gateway",
+    "enabled": "PASS (SMS triggered)",
+    "disabled": "PASS (SMS suppressed)",
+    "notConfigured": "PASS (Graceful skip)",
+    "invalidConfig": "PASS (Safe error toast)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "Enterprise Tenancy Gate",
+    "enabled": "PASS (Console active)",
+    "disabled": "PASS (404 Disabled gate)",
+    "notConfigured": "PASS (Fail closed)",
+    "invalidConfig": "PASS (403 Scope rejected)",
+    "recovery": "PASS"
+  },
+  {
+    "config": "Public Maintenance Mode",
+    "enabled": "PASS (Public banner on)",
+    "disabled": "PASS (Standard UI live)",
+    "notConfigured": "PASS (Default open)",
+    "invalidConfig": "PASS (Validation required)",
+    "recovery": "PASS"
+  }
+]

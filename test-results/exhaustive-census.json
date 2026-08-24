@@ -1,0 +1,394 @@
+{
+  "timestamp": "2026-08-24T06:46:18.178Z",
+  "counts": {
+    "frontendFiles": 491,
+    "backendFiles": 125,
+    "buttons": 1303,
+    "forms": 71,
+    "modals": 0,
+    "fileUploads": 4,
+    "backendRoutes": 266,
+    "services": 13,
+    "middleware": 10,
+    "dbOperations": 3,
+    "featureFlags": 1,
+    "externalIntegrations": 18
+  },
+  "externalIntegrations": [
+    {
+      "name": "Stripe Payments",
+      "type": "Payment Gateway",
+      "clients": [
+        "Checkout.jsx",
+        "Plans.jsx"
+      ],
+      "server": "backend/index.js (stripe webhook)"
+    },
+    {
+      "name": "PayPal Smart Buttons",
+      "type": "Payment Gateway",
+      "clients": [
+        "Checkout.jsx",
+        "Plans.jsx"
+      ],
+      "server": "backend/index.js"
+    },
+    {
+      "name": "Razorpay Checkout",
+      "type": "Payment Gateway",
+      "clients": [
+        "Checkout.jsx",
+        "Plans.jsx"
+      ],
+      "server": "backend/index.js"
+    },
+    {
+      "name": "Paytm Stage/Live",
+      "type": "Payment Gateway",
+      "clients": [
+        "Checkout.jsx",
+        "Plans.jsx"
+      ],
+      "server": "backend/index.js"
+    },
+    {
+      "name": "NVIDIA NIM AI (Llama 3.2 11B & Nemotron)",
+      "type": "AI LLM Inference",
+      "server": "backend/services/aiRuntime.js"
+    },
+    {
+      "name": "Google Gemini AI (1.5 Flash / Pro)",
+      "type": "AI LLM Failover",
+      "server": "backend/services/aiRuntime.js"
+    },
+    {
+      "name": "OpenAI GPT-4o / Mini",
+      "type": "AI LLM Failover",
+      "server": "backend/services/aiRuntime.js"
+    },
+    {
+      "name": "Groq Cloud Inference",
+      "type": "AI LLM Ultra-Low Latency",
+      "server": "backend/services/aiRuntime.js"
+    },
+    {
+      "name": "OpenRouter Aggregator",
+      "type": "AI LLM Multi-Model",
+      "server": "backend/services/aiRuntime.js"
+    },
+    {
+      "name": "DeepSeek AI",
+      "type": "AI LLM Inference",
+      "server": "backend/services/aiRuntime.js"
+    },
+    {
+      "name": "Firebase Authentication & Firestore",
+      "type": "Identity & Data Plane",
+      "server": "backend/services/firebaseAdmin.js"
+    },
+    {
+      "name": "Google OAuth 2.0",
+      "type": "Social Auth Provider",
+      "server": "backend/index.js"
+    },
+    {
+      "name": "GitHub OAuth App",
+      "type": "Social Auth Provider",
+      "server": "backend/index.js"
+    },
+    {
+      "name": "LinkedIn OAuth 2.0",
+      "type": "Social Auth Provider",
+      "server": "backend/index.js"
+    },
+    {
+      "name": "Twilio SMS / WhatsApp",
+      "type": "Notification Gateway",
+      "server": "backend/index.js"
+    },
+    {
+      "name": "SMTP / Nodemailer Mailer",
+      "type": "Transactional Email",
+      "server": "backend/index.js"
+    },
+    {
+      "name": "Cloudflare Proxy & Web Insights",
+      "type": "CDN & Edge Shield",
+      "server": ".htaccess / CSP"
+    },
+    {
+      "name": "Supademo Interactive Showcase",
+      "type": "Product Tour Embed",
+      "server": "public/.htaccess CSP"
+    }
+  ],
+  "firestoreFunctions": [
+    "waitForAuth",
+    "isUserAuthenticated",
+    "safeDbOperation"
+  ],
+  "sampleRoutes": [
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/pay",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     try {\r         const suppliedKey "
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "GET",
+      "path": "/api/payment-orders/:orderId",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     if (!db || !/^[A-"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/stripe-webhook",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const sig = req.headers['stripe-s"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/paypal/create-order",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     let orderRef;\r     try {\r        "
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/paypal/verify",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     try {\r         const providerOrde"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/razorpay/create-order",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     // Ownership and amount are serve"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/razorpay/verify-payment",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     try {\r         const { razorpay_o"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/paytm/initiate-transaction",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     let orderRef;\r     try {\r        "
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/paytm/verify-transaction",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     try {\r         const orderId = St"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/phonepe/initiate",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     let orderRef;\r     try {\r        "
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/phonepe/status",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     try {\r         const orderId = St"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/subscription/preferences",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     if (!db) return res.status(503).j"
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/check",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     // Reject legacy client-supplied "
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/jobs/:jobId/applications",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "PATCH",
+      "path": "/api/job-applications/:applicationId/status",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/employer/companies",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "PATCH",
+      "path": "/api/employer/companies/:companyId",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "DELETE",
+      "path": "/api/employer/companies/:companyId",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "POST",
+      "path": "/api/employer/jobs",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    },
+    {
+      "file": "backend\\index.js",
+      "method": "PATCH",
+      "path": "/api/employer/jobs/:jobId",
+      "auth": false,
+      "mfa": false,
+      "handler": "async (req, res) => {\r     const requestDb = req."
+    }
+  ],
+  "sampleButtons": [
+    {
+      "file": "src\\App.jsx",
+      "handler": "() => setCount((count) => count + 1)",
+      "label": "count is {count}"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-cover-filling\\ActionCoverFilling.jsx",
+      "handler": "() => this.props.handleComponentDelete(component.name)",
+      "label": "Icon/Dynamic"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-cover-filling\\ActionCoverFilling.jsx",
+      "handler": "() => this.props.handleComponentDelete(component.name)",
+      "label": "Icon/Dynamic"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-cover-filling\\ActionCoverFilling.jsx",
+      "handler": "() => this.addItemToList('', component.name)",
+      "label": "Add item"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-cover-filling\\ActionCoverFilling.jsx",
+      "handler": "(event) => this.handleAddFieldsClick(event)",
+      "label": "Add Component"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-cover-filling\\ActionCoverFilling.jsx",
+      "handler": "() => this.setState({ addFieldsShowed: false",
+      "label": "Icon/Dynamic"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\ActionFilling.jsx",
+      "handler": "this.toggleAIModal",
+      "label": "AI Generate"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\ActionFilling.jsx",
+      "handler": "() => {\r\n                                // Clear localStorage items\r\n                                localStorage.removeItem('currentResumeId');\r\n                                localStorage.removeItem('currentResumeItem');\r\n                                // Navigate to introduction step using resetNavigation\r\n                                this.props.resetNavigation && this.props.resetNavigation();",
+      "label": "Return"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "returnToDetails",
+      "label": "Get Started"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "() => removeSkill(skill)",
+      "label": "Icon/Dynamic"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "() => removeEducation(education)",
+      "label": "Icon/Dynamic"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "() => handleStep(1)",
+      "label": "Back"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "handleNextStep",
+      "label": "Generate"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "() => {\r\n                                        setGenerationError(null);\r\n                                        setGenerationProgress(25);\r\n                                        setGeneratedData(null);\r\n                                        generationInProgressRef.current = false;",
+      "label": "Try Again"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "returnToDetails",
+      "label": "50 && !generationError}\r\n               "
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "applyGeneratedData",
+      "label": "Apply to Resume"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-filling\\AIGenerationModal.jsx",
+      "handler": "cancelGeneration",
+      "label": "Icon/Dynamic"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-selection\\ActionSelection.jsx",
+      "handler": "() => this.changePage(currentPage - 1)",
+      "label": "{this.props.t('ActionSelection.paginatio"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-selection\\ActionSelection.jsx",
+      "handler": "() => this.changePage(pageNumber)",
+      "label": "{pageNumber}"
+    },
+    {
+      "file": "src\\components\\Actions\\action-step-selection\\ActionSelection.jsx",
+      "handler": "() => this.changePage(currentPage + 1)",
+      "label": "{this.props.t('ActionSelection.paginatio"
+    }
+  ]
+}

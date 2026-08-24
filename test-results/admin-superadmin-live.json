@@ -1,0 +1,222 @@
+{
+  "script": "verify-admin-superadmin-live",
+  "startedAt": "2026-08-24T00:18:41.033Z",
+  "finishedAt": "2026-08-24T00:18:49.257Z",
+  "meta": {
+    "base": "https://airesume.projectdemo.guru",
+    "destructive": false
+  },
+  "counts": {
+    "200": 7,
+    "400": 1,
+    "500": 1,
+    "503": 3,
+    "PASS": 16,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "SKIPPED": 1,
+    "INFO": 1
+  },
+  "verdict": "INCOMPLETE",
+  "results": [
+    {
+      "check": "production is reachable",
+      "status": 200,
+      "at": "2026-08-24T00:18:41.361Z"
+    },
+    {
+      "check": "SUPER_ADMIN signed in",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:41.761Z",
+      "uid": "GvZ9znHdLvUUEHyoaY9LZtG7t1G2"
+    },
+    {
+      "check": "ADMIN signed in",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:42.087Z",
+      "uid": "u3t8SS7V1Ae6hqAQoaMF9Vl26Io2"
+    },
+    {
+      "check": "read users is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:42.568Z",
+      "route": "/api/platform/search?q=test"
+    },
+    {
+      "check": "read users",
+      "status": 200,
+      "at": "2026-08-24T00:18:42.568Z",
+      "route": "/api/platform/search?q=test"
+    },
+    {
+      "check": "read operators is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:43.481Z",
+      "route": "/api/platform/operators"
+    },
+    {
+      "check": "read operators",
+      "status": 503,
+      "at": "2026-08-24T00:18:43.481Z",
+      "route": "/api/platform/operators",
+      "code": "OPERATORS_UNAVAILABLE"
+    },
+    {
+      "check": "read audit log is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:43.961Z",
+      "route": "/api/admin/audit-logs?limit=5"
+    },
+    {
+      "check": "read audit log",
+      "status": 500,
+      "at": "2026-08-24T00:18:43.961Z",
+      "route": "/api/admin/audit-logs?limit=5",
+      "code": 8
+    },
+    {
+      "check": "read queues / DLQ is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:44.431Z",
+      "route": "/api/platform/queues"
+    },
+    {
+      "check": "read queues / DLQ",
+      "status": 503,
+      "at": "2026-08-24T00:18:44.431Z",
+      "route": "/api/platform/queues",
+      "code": "QUEUE_QUERY_UNAVAILABLE"
+    },
+    {
+      "check": "read settings is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:44.913Z",
+      "route": "/api/admin/settings"
+    },
+    {
+      "check": "read settings",
+      "status": 200,
+      "at": "2026-08-24T00:18:44.913Z",
+      "route": "/api/admin/settings"
+    },
+    {
+      "check": "read platform health is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:45.399Z",
+      "route": "/api/platform/operational-status"
+    },
+    {
+      "check": "read platform health",
+      "status": 200,
+      "at": "2026-08-24T00:18:45.399Z",
+      "route": "/api/platform/operational-status"
+    },
+    {
+      "check": "read API matrix is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:45.847Z",
+      "route": "/api/platform/operational-status/api-matrix"
+    },
+    {
+      "check": "read API matrix",
+      "status": 200,
+      "at": "2026-08-24T00:18:45.847Z",
+      "route": "/api/platform/operational-status/api-matrix"
+    },
+    {
+      "check": "read configuration census is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:47.153Z",
+      "route": "/api/platform/configuration"
+    },
+    {
+      "check": "read configuration census",
+      "status": 200,
+      "at": "2026-08-24T00:18:47.153Z",
+      "route": "/api/platform/configuration"
+    },
+    {
+      "check": "read payment configuration status is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:47.619Z",
+      "route": "/api/platform/payment-settings"
+    },
+    {
+      "check": "read payment configuration status",
+      "status": 503,
+      "at": "2026-08-24T00:18:47.619Z",
+      "route": "/api/platform/payment-settings",
+      "code": 8
+    },
+    {
+      "check": "read version identity is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:47.744Z",
+      "route": "/api/platform/version"
+    },
+    {
+      "check": "read version identity",
+      "status": 200,
+      "at": "2026-08-24T00:18:47.744Z",
+      "route": "/api/platform/version"
+    },
+    {
+      "check": "platform health uses the documented state vocabulary",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:48.211Z",
+      "services": 32
+    },
+    {
+      "check": "every non-operational service explains itself",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:48.211Z"
+    },
+    {
+      "check": "platform health payload is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:48.212Z"
+    },
+    {
+      "check": "platform health summary",
+      "status": "INFO",
+      "at": "2026-08-24T00:18:48.212Z",
+      "overall": "DEGRADED",
+      "indicator": "amber",
+      "counts": {
+        "OPERATIONAL": 8,
+        "DEGRADED": 1,
+        "UNAVAILABLE": 0,
+        "DISABLED": 8,
+        "NOT_CONFIGURED": 9,
+        "NOT_SUPPORTED": 1,
+        "UNKNOWN": 5
+      }
+    },
+    {
+      "check": "RBAC enforced server-side: assign operator role",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:48.808Z",
+      "attempts": [
+        {
+          "role": "anonymous",
+          "status": 401
+        },
+        {
+          "role": "admin",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "check": "SUPER_ADMIN cannot be granted via the operators API",
+      "status": 400,
+      "at": "2026-08-24T00:18:49.256Z"
+    },
+    {
+      "check": "tenant lifecycle CRUD",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:18:49.257Z",
+      "reason": "set ALLOW_DESTRUCTIVE=1 to run create/suspend/decommission"
+    }
+  ]
+}

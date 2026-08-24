@@ -1,0 +1,3074 @@
+{
+  "routes": [
+    {
+      "file": "src/main.jsx",
+      "path": "/",
+      "component": "Welcome"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/login",
+      "component": "Welcome"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/coverletter",
+      "component": "CoverLetter"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/coverletter/*",
+      "component": "CoverLetter"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/cover-letter",
+      "component": "CoverLetter"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/cover-letter/*",
+      "component": "CoverLetter"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/dashboard/*",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/enterprise/*",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/contact",
+      "component": "Contact"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/build-resume/*",
+      "component": "MaybeApplicationShell"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/create-resume/*",
+      "component": "MaybeApplicationShell"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/create-resume",
+      "component": "MaybeApplicationShell"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/resume/:step",
+      "component": "Welcome"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/billing/plans",
+      "component": "Billing"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/p/:custompage",
+      "component": "CustomePage"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/shared/:resumeId",
+      "component": "PublicResume"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/pricing",
+      "component": "Billing"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/portfolio/builder",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/portfolio/:slug",
+      "component": "PublicPortfolio"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/portfolios",
+      "component": "PortfolioGallery"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/admin/*",
+      "component": "AdminAliasRedirect"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/platform/*",
+      "component": "PlatformAliasRedirect"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/adm/*",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/front",
+      "component": "Front"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/features",
+      "component": "Features"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/jobs",
+      "component": "JobsLanding"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/jobs/portal",
+      "component": "MainJobListings"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/jobs/portal/:jobId",
+      "component": "MainJobListings"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/jobs/browse",
+      "component": "MainJobListings"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/jobs/categories",
+      "component": "JobsLanding"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/jobs/category/:catName",
+      "component": "MainJobListings"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/blog",
+      "component": "BlogList"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/blog/:slug",
+      "component": "BlogPost"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/blog-editor",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/blog-editor/:postId",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/dashboard2/*",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/dashboard2",
+      "component": "RequireAuthenticated"
+    },
+    {
+      "file": "src/main.jsx",
+      "path": "/*",
+      "component": "NotFound"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/",
+      "component": "Navigate"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/dashboard",
+      "component": "Dashboard"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/audit-logs",
+      "component": "AdminAuditLogs"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/queues",
+      "component": "PlatformQueues"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/tenants",
+      "component": "PlatformTenants"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/security",
+      "component": "PlatformSecurity"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/operations",
+      "component": "PlatformOperations"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/attention",
+      "component": "PlatformAttention"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/health",
+      "component": "PlatformHealth"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/operators",
+      "component": "PlatformOperators"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/settings",
+      "component": "Settings"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/user/ss",
+      "component": "UserEdit"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/users",
+      "component": "UsersManager"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/messages",
+      "component": "Messages"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/reviews",
+      "component": "Reviews"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/trustedby",
+      "component": "TrustedBy"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/employer-applications",
+      "component": "EmployerApplications"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/jobs-manager",
+      "component": "JobsManager"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/company-management",
+      "component": "CompanyManagement"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/blog-management",
+      "component": "BlogManagement"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/landing-pages",
+      "component": "LandingPages"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/phrases",
+      "component": "Phrases"
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "path": "/adm/*",
+      "component": "Navigate"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/settings",
+      "component": "DashboardSettings"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/messages",
+      "component": "DashboardMessages"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/favorites",
+      "component": "DashboardFavourites"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/interview",
+      "component": "DashboardInterviews"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/cover-letters",
+      "component": "CoverLetter"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/portfolios",
+      "component": "DashboardPortfolios"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/applied-jobs",
+      "component": "AppliedJobs"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/job-tracker",
+      "component": "JobTracker"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/my-employments",
+      "component": "EmployerDashboard"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/my-companies",
+      "component": "CompaniesManagement"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/job-matching",
+      "component": "DashboardJobMatching"
+    },
+    {
+      "file": "src/components/Dashboard/DashboardMain/DashboardMain.jsx",
+      "path": "/dashboard/plans",
+      "component": "Billing"
+    }
+  ],
+  "apis": [
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "tenantService"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/pay"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/payment-orders/:orderId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/stripe-webhook"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/paypal/create-order"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/paypal/verify"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/razorpay/create-order"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/razorpay/verify-payment"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/paytm/initiate-transaction"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/paytm/verify-transaction"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/phonepe/initiate"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/phonepe/status"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/subscription/preferences"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/check"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/jobs/:jobId/applications"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/job-applications/:applicationId/status"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/employer/companies"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/employer/companies/:companyId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/employer/companies/:companyId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/employer/jobs"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/employer/jobs/:jobId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/employer/jobs/:jobId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/messages/conversations"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/participant-profile"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/messages/send"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/contact"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/export-render-data"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/export"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/public-export"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/payment-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/ai-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/blog/categories"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/blog/categories/:categoryId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/blog/categories/:categoryId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/blog/posts/:postId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/blog/posts/:postId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/blog/publish-due"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/health-summary"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/system-health-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/settings/:category"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/gdpr-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/ai-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/ai/test-provider"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/ai/fetch-models"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/ai/quota-stats"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/ai/quota-limits"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/ai/reset-quota"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/payment-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/coupons"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PUT",
+      "path": "/api/admin/coupons/:code"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/coupons/:code"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/payment/test-provider"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/twilio-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/twilio-settings"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/send-sms"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/llms.txt"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/payment/razorpay-order"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/invoice/generate"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/invoice"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/export-docx"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/rtl-font-config"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/generate-ai-cover-letter"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/jobs/naukri"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/service-availability"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/healthz"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/healthz"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/readyz"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "tenantService"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/readyz"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "tenantService"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "tenantService"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "tenantService"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/linkedin-scraper"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/user-signup"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/firebase-service-account"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/firebase-service-account"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/auth/custom-password-reset"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/password-reset"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/auth/send-verification-email"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/send-verification-email"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/auth/verify-email-token"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/payments/refund"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/employer-applications"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/companies"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/jobs"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/reviews"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/ads"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/payment-orders"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/landing-content"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/blog/categories"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/blog/posts"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/employer-applications/:uid"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/ads"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/ads/:adId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/public/custom-pages.json"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/public/custom-pages"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/custom-pages.json"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/custom-pages.json"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/pages"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PUT",
+      "path": "/api/admin/pages/:slug"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/pages/:slug"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/website-meta"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/landing-content"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/public/trusted-by.json"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/public/trusted-by"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/trusted-by.json"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/trusted-by.json"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/trusted-by"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/trusted-by"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/trusted-by/:logoId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/trusted-by/:logoId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/reviews"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/reviews/:reviewId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/global-rating"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/companies/:companyId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/jobs/:jobId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "DELETE",
+      "path": "/api/admin/jobs/:jobId"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/users"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/users/:uid"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/admin/users/:uid/audit"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "PATCH",
+      "path": "/api/admin/users/:uid"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/account/delete"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/admin/delete-user"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/auth/purge-orphaned-auth"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/auth/set-user-password"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/password-changed"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/email-otp"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/security-alert"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/portfolio-published"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/job-application"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/job-status-update"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/job-posted"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/notify/subscription-cancelled"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/auth/linkedin"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/auth/github"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/auth/linkedin/callback"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/auth/github/callback"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "POST",
+      "path": "/api/auth/oauth/exchange"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/auth/linkedin/test-credentials"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "/api/auth/github/test-credentials"
+    },
+    {
+      "file": "backend/index.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\adminAudit.js",
+      "method": "GET",
+      "path": "/audit-logs"
+    },
+    {
+      "file": "backend\\routes\\adminAudit.js",
+      "method": "GET",
+      "path": "/audit-logs/stats"
+    },
+    {
+      "file": "backend\\routes\\adminAudit.js",
+      "method": "GET",
+      "path": "/audit-logs/:id"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-resume"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-summary"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-interview"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-work-description"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-education-description"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-skills"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/check-grammar"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/generate-content"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "POST",
+      "path": "/parse-resume"
+    },
+    {
+      "file": "backend\\routes\\ai.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "/admin/circuit-breaker-status"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/admin/reset-circuit-breaker"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/admin/save-template-customization"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "/admin/custom-templates"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/admin/test-connection"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "/admin/settings"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "/admin/deliverability"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/admin/save-smtp"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/admin/test-imap"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/send-email"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/send-invoice-email"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "/logs"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/resend"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "/templates"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "POST",
+      "path": "/templates"
+    },
+    {
+      "file": "backend\\routes\\email.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/status"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "tenantService"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/support-grants"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/support-grants/:grantId/revoke"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/support-grants"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/support/context"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/tenants"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/roles-matrix"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/context"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/context"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/workspaces"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/workspaces"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "PATCH",
+      "path": "/workspaces/:workspaceId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/workspaces/:workspaceId/archive"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/workspaces/:workspaceId/restore"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/workspaces/:workspaceId/members"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/workspaces/:workspaceId/members"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "DELETE",
+      "path": "/workspaces/:workspaceId/members/:principalId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/memberships"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/memberships"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "PATCH",
+      "path": "/memberships/:principalId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/memberships/:principalId/invitation-resend"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "DELETE",
+      "path": "/memberships/:principalId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/service-accounts"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/service-accounts"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/service-accounts/:serviceAccountId/revoke"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/service-accounts/:serviceAccountId/rotate"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/tenants/:tenantId/reactivate"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "PATCH",
+      "path": "/tenant"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/data/export"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/platform/tenants"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/platform/tenants/:tenantId/suspend"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/platform/tenants/:tenantId/reactivate"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/lifecycle/suspend"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/audit"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/teams"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/teams"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "PATCH",
+      "path": "/teams/:teamId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/teams/:teamId/archive"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/teams/:teamId/restore"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/teams/:teamId/members"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/teams/:teamId/members"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "DELETE",
+      "path": "/teams/:teamId/members/:principalId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/configuration"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "PATCH",
+      "path": "/configuration"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/ai/generate-content"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/usage/ai"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/usage/ai/events"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/resources"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/resources"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/resources/:resourceId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "PATCH",
+      "path": "/resources/:resourceId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "DELETE",
+      "path": "/resources/:resourceId"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/observability/metrics"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/data-plane/status"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/queue/status"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "GET",
+      "path": "/queue/jobs"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/queue/jobs"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/queue/replay"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/storage/token"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/storage/verify"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/test-email"
+    },
+    {
+      "file": "backend\\routes\\enterprise.js",
+      "method": "POST",
+      "path": "/tenants"
+    },
+    {
+      "file": "backend\\routes\\enterpriseM2m.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\enterpriseM2m.js",
+      "method": "GET",
+      "path": "/context"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/version"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/health"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/operational-status"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/operational-status/api-matrix"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/operational-status/:serviceId"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/operational-status/:serviceId/test"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/operational-status/refresh"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/overview"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/queues"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/queues/retry"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/maintenance"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/maintenance"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/command-center"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/security-events"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/encryption"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/observability"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/backup-status"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/payments-health"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/search"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/announcements"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/announcements"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "PATCH",
+      "path": "/announcements/:id"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "DELETE",
+      "path": "/announcements/:id"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/attention"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/health-indicator"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/enterprise-queue"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/operators"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/operators"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/tenants/:tenantId"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "PATCH",
+      "path": "/tenants/:tenantId"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "POST",
+      "path": "/tenants/:tenantId/decommission"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/feature-flags"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "PUT",
+      "path": "/feature-flags/:flagKey"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "firebaseAdmin"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/configuration"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "db"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "/payment-settings"
+    },
+    {
+      "file": "backend\\routes\\platform.js",
+      "method": "GET",
+      "path": "db"
+    }
+  ],
+  "clientCalls": [
+    {
+      "file": "src\\components\\admin\\Admin.jsx",
+      "api": "/api/healthz"
+    },
+    {
+      "file": "src\\components\\admin\\audit\\AdminAuditLogs.jsx",
+      "api": "/api/admin/audit-logs/stats"
+    },
+    {
+      "file": "src\\components\\admin\\blogManagement\\BlogManagement.jsx",
+      "api": "/api/admin/blog/publish-due"
+    },
+    {
+      "file": "src\\components\\admin\\queues\\PlatformQueues.jsx",
+      "api": "/api/platform/queues"
+    },
+    {
+      "file": "src\\components\\admin\\queues\\PlatformQueues.jsx",
+      "api": "/api/platform/queues/retry"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\EmailSmtpSettings.jsx",
+      "api": "/api/email/admin/save-smtp"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\EmailSmtpSettings.jsx",
+      "api": "/api/email/admin/save-smtp"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\EmailSmtpSettings.jsx",
+      "api": "/api/email/admin/reset-circuit-breaker"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\FeatureFlagsSettings.jsx",
+      "api": "/api/platform/feature-flags"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\FirebaseSettings.jsx",
+      "api": "/api/admin/firebase-service-account"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\FirebaseSettings.jsx",
+      "api": "/api/admin/firebase-service-account"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\PlatformConfigSettings.jsx",
+      "api": "/api/platform/configuration"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\SystemHealthSettings.jsx",
+      "api": "/api/admin/health-summary"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\SystemHealthSettings.jsx",
+      "api": "/api/admin/system-health-settings"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\TwilioSmsSettings.jsx",
+      "api": "/api/admin/twilio-settings"
+    },
+    {
+      "file": "src\\components\\admin\\settings\\TwilioSmsSettings.jsx",
+      "api": "/api/admin/twilio-settings"
+    },
+    {
+      "file": "src\\components\\admin\\tenants\\PlatformTenants.jsx",
+      "api": "/api/enterprise/platform/tenants"
+    },
+    {
+      "file": "src\\components\\admin\\tenants\\PlatformTenants.jsx",
+      "api": "/api/enterprise/tenants"
+    },
+    {
+      "file": "src\\components\\auth\\login\\Login.jsx",
+      "api": "/api/notify/user-signup"
+    },
+    {
+      "file": "src\\components\\auth\\login\\Login.jsx",
+      "api": "/api/auth/linkedin"
+    },
+    {
+      "file": "src\\components\\auth\\login\\Login.jsx",
+      "api": "/api/auth/github"
+    },
+    {
+      "file": "src\\components\\auth\\recoverPassword\\RecoverPassword.jsx",
+      "api": "/api/auth/custom-password-reset"
+    },
+    {
+      "file": "src\\components\\auth\\register\\Register.jsx",
+      "api": "/api/notify/user-signup"
+    },
+    {
+      "file": "src\\components\\auth\\register\\Register.jsx",
+      "api": "/api/auth/linkedin"
+    },
+    {
+      "file": "src\\components\\auth\\register\\Register.jsx",
+      "api": "/api/auth/github"
+    },
+    {
+      "file": "src\\components\\auth\\register\\Register.jsx",
+      "api": "/api/notify/user-signup"
+    },
+    {
+      "file": "src\\components\\auth\\register\\Register.jsx",
+      "api": "/api/auth/send-verification-email"
+    },
+    {
+      "file": "src\\components\\auth\\resetPassword\\ResetPasswordModal.jsx",
+      "api": "/api/auth/set-user-password"
+    },
+    {
+      "file": "src\\components\\Boards\\board-step-filling\\BoardFilling.jsx",
+      "api": "/api/export"
+    },
+    {
+      "file": "src\\components\\BuildResume\\steps\\FinalizeStep.jsx",
+      "api": "/api/placeholder/200/280"
+    },
+    {
+      "file": "src\\components\\BuildResume\\steps\\FinalizeStep.jsx",
+      "api": "/api/placeholder/200/280"
+    },
+    {
+      "file": "src\\components\\BuildResume\\steps\\FinalizeStep.jsx",
+      "api": "/api/placeholder/200/280"
+    },
+    {
+      "file": "src\\components\\BuildResume\\steps\\FinalizeStep.jsx",
+      "api": "/api/placeholder/200/280"
+    },
+    {
+      "file": "src\\components\\Dashboard\\DashboardHomepage\\DashboardHomepage.jsx",
+      "api": "/api/export"
+    },
+    {
+      "file": "src\\components\\Dashboard\\DashboardMain\\DashboardMain.jsx",
+      "api": "/api/auth/send-verification-email"
+    },
+    {
+      "file": "src\\components\\Dashboard\\DashboardSettings\\DashboardSettings.jsx",
+      "api": "/api/auth/send-verification-email"
+    },
+    {
+      "file": "src\\components\\PortfolioBuilder\\PortfolioBuilder.jsx",
+      "api": "/api/notify/portfolio-published"
+    },
+    {
+      "file": "src\\components\\PortfolioBuilder\\WebCvStudio.jsx",
+      "api": "/api/notify/portfolio-published"
+    },
+    {
+      "file": "src\\components\\PublicResume\\PublicResume.jsx",
+      "api": "/api/public-export"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseAiTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseAiTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseAiTab.jsx",
+      "api": "/api/enterprise/status"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseAuditTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseEmailTab.jsx",
+      "api": "/api/enterprise/test-email"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/teams"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/usage/ai"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/audit"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/observability/metrics"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/data-plane/status"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseOverviewTab.jsx",
+      "api": "/api/enterprise/queue/status"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterprisePlatformTab.jsx",
+      "api": "/api/enterprise/platform/tenants"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterprisePlatformTab.jsx",
+      "api": "/api/enterprise/tenants"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseResumesTab.jsx",
+      "api": "/api/enterprise/resources"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseResumesTab.jsx",
+      "api": "/api/enterprise/resources"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseRolesTab.jsx",
+      "api": "/api/enterprise/roles-matrix"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseRolesTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseRolesTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseRolesTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSecurityTab.jsx",
+      "api": "/api/enterprise/queue/status"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSecurityTab.jsx",
+      "api": "/api/enterprise/queue/replay"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSecurityTab.jsx",
+      "api": "/api/enterprise/service-accounts"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSecurityTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSecurityTab.jsx",
+      "api": "/api/enterprise/data-plane/status"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSecurityTab.jsx",
+      "api": "/api/enterprise/service-accounts"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSettingsTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSettingsTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSettingsTab.jsx",
+      "api": "/api/enterprise/tenant"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSettingsTab.jsx",
+      "api": "/api/enterprise/data/export"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSettingsTab.jsx",
+      "api": "/api/enterprise/lifecycle/suspend"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSupportTab.jsx",
+      "api": "/api/enterprise/support-grants"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSupportTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseSupportTab.jsx",
+      "api": "/api/enterprise/support-grants"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseTeamsTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseTeamsTab.jsx",
+      "api": "/api/enterprise/teams"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseTeamsTab.jsx",
+      "api": "/api/enterprise/teams"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseTeamsTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseTeamsTab.jsx",
+      "api": "/api/enterprise/teams"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseUsageTab.jsx",
+      "api": "/api/enterprise/observability/metrics"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseUsageTab.jsx",
+      "api": "/api/enterprise/usage/ai/events"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseUsageTab.jsx",
+      "api": "/api/enterprise/configuration"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseUsersTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseUsersTab.jsx",
+      "api": "/api/enterprise/roles-matrix"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseUsersTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseWorkspacesTab.jsx",
+      "api": "/api/enterprise/memberships"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseWorkspacesTab.jsx",
+      "api": "/api/enterprise/workspaces"
+    },
+    {
+      "file": "src\\enterprise\\components\\EnterpriseWorkspacesTab.jsx",
+      "api": "/api/enterprise/workspaces"
+    },
+    {
+      "file": "src\\enterprise\\EnterpriseContext.jsx",
+      "api": "/api/enterprise/status"
+    },
+    {
+      "file": "src\\enterprise\\EnterpriseContext.jsx",
+      "api": "/api/enterprise/tenants"
+    },
+    {
+      "file": "src\\enterprise\\EnterpriseContext.jsx",
+      "api": "/api/enterprise/context"
+    },
+    {
+      "file": "src\\enterprise\\EnterpriseContext.jsx",
+      "api": "/api/enterprise/workspaces"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/contact"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/website-meta"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/check"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/delete-user"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/coupons"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/subscription/preferences"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/subscription/preferences"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/employer/companies"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/employer/jobs"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/website-meta"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/payment-settings"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/platform/payment-settings"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/payment/test-provider"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/account/delete"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/send-sms"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/landing-content"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/landing-content"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/ads"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/blog/categories"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/blog/categories"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/ads"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/public/custom-pages"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/pages"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/reviews"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/trusted-by"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/trusted-by"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/public/trusted-by"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/global-rating"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/reviews"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/messages/conversations"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/messages/send"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/payment-orders"
+    },
+    {
+      "file": "src\\firestore\\dbOperations.js",
+      "api": "/api/admin/payments/refund"
+    },
+    {
+      "file": "src\\hooks\\useOAuthSignIn.js",
+      "api": "/api/notify/user-signup"
+    },
+    {
+      "file": "src\\hooks\\useOAuthSignIn.js",
+      "api": "/api/auth/linkedin"
+    },
+    {
+      "file": "src\\hooks\\useOAuthSignIn.js",
+      "api": "/api/auth/github"
+    },
+    {
+      "file": "src\\hooks\\useServiceAvailability.js",
+      "api": "/api/service-availability"
+    },
+    {
+      "file": "src\\main.jsx",
+      "api": "/api/auth/verify-email-token"
+    },
+    {
+      "file": "src\\main.jsx",
+      "api": "/api/auth/oauth/exchange"
+    },
+    {
+      "file": "src\\main.jsx",
+      "api": "/api/notify/user-signup"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai-settings"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai-settings"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai/test-provider"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai/fetch-models"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai/quota-stats"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai/quota-limits"
+    },
+    {
+      "file": "src\\services\\adminAiSettings.js",
+      "api": "/api/admin/ai/reset-quota"
+    },
+    {
+      "file": "src\\services\\aiService.js",
+      "api": "/api/generate-content"
+    },
+    {
+      "file": "src\\services\\aiService.js",
+      "api": "/api/parse-resume"
+    },
+    {
+      "file": "src\\services\\aiService.js",
+      "api": "/api/parse-resume"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/command-center"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/health"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/overview"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/queues"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/queues/retry"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/maintenance"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/maintenance"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/encryption"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/observability"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/backup-status"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/payments-health"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/announcements"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/announcements"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/attention"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/operational-status"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/operational-status/refresh"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/operational-status/api-matrix"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/health-indicator"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/enterprise-queue"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/operators"
+    },
+    {
+      "file": "src\\services\\platformApi.js",
+      "api": "/api/platform/operators"
+    },
+    {
+      "file": "src\\utils\\oauthResolver.js",
+      "api": "/api/service-availability"
+    }
+  ]
+}

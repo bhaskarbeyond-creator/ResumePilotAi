@@ -1,0 +1,88 @@
+{
+  "script": "verify-production-identity",
+  "startedAt": "2026-08-24T11:16:43.807Z",
+  "finishedAt": "2026-08-24T11:16:46.726Z",
+  "meta": {
+    "base": "https://airesume.projectdemo.guru",
+    "expectedSha": "acddbac28ea20b6fbde214e9bf5e4f6dac0c5909"
+  },
+  "counts": {
+    "200": 4,
+    "401": 1,
+    "PASS": 5,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "SKIPPED": 0,
+    "INFO": 2
+  },
+  "verdict": "PASS",
+  "results": [
+    {
+      "check": "backend is reachable over HTTPS",
+      "status": 200,
+      "at": "2026-08-24T11:16:44.316Z",
+      "durationMs": 508
+    },
+    {
+      "check": "production health confirms Firebase Admin is configured",
+      "status": "PASS",
+      "at": "2026-08-24T11:16:44.316Z"
+    },
+    {
+      "check": "backend COMMIT_SHA matches the tested SHA",
+      "status": "PASS",
+      "at": "2026-08-24T11:16:44.444Z",
+      "backendSha": "acddbac28ea2",
+      "source": "/api/platform/version"
+    },
+    {
+      "check": "API health endpoint is successful",
+      "status": 200,
+      "at": "2026-08-24T11:16:44.580Z"
+    },
+    {
+      "check": "health endpoint commit identities agree",
+      "status": "PASS",
+      "at": "2026-08-24T11:16:44.580Z",
+      "commitSha": "acddbac28ea2"
+    },
+    {
+      "check": "frontend is served",
+      "status": 200,
+      "at": "2026-08-24T11:16:44.725Z"
+    },
+    {
+      "check": "frontend build SHA matches the tested SHA",
+      "status": "PASS",
+      "at": "2026-08-24T11:16:44.725Z",
+      "frontendSha": "acddbac28ea2"
+    },
+    {
+      "check": "Cloudflare cache status observed",
+      "status": "INFO",
+      "at": "2026-08-24T11:16:44.726Z",
+      "cacheStatus": "DYNAMIC"
+    },
+    {
+      "check": "public service-availability endpoint answers",
+      "status": 200,
+      "at": "2026-08-24T11:16:46.592Z"
+    },
+    {
+      "check": "public availability payload is secret-free",
+      "status": "PASS",
+      "at": "2026-08-24T11:16:46.592Z"
+    },
+    {
+      "check": "API matrix requires authentication",
+      "status": 401,
+      "at": "2026-08-24T11:16:46.726Z"
+    },
+    {
+      "check": "API surface size matches the census",
+      "status": "INFO",
+      "at": "2026-08-24T11:16:46.726Z",
+      "reason": "endpoint is correctly protected; run verify-api-inventory-live.mjs with credentials to compare counts"
+    }
+  ]
+}

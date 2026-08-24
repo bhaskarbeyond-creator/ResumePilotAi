@@ -1,0 +1,88 @@
+{
+  "script": "verify-crud-live",
+  "startedAt": "2026-08-24T00:18:49.312Z",
+  "finishedAt": "2026-08-24T00:18:53.632Z",
+  "meta": {
+    "base": "https://airesume.projectdemo.guru",
+    "destructive": false
+  },
+  "counts": {
+    "200": 2,
+    "401": 1,
+    "403": 4,
+    "PASS": 2,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "SKIPPED": 2,
+    "INFO": 0
+  },
+  "verdict": "INCOMPLETE",
+  "results": [
+    {
+      "check": "SUPER_ADMIN authenticated",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:49.730Z",
+      "uid": "GvZ9znHdLvUUEHyoaY9LZtG7t1G2"
+    },
+    {
+      "check": "ADMIN authenticated",
+      "status": "PASS",
+      "at": "2026-08-24T00:18:50.048Z",
+      "uid": "u3t8SS7V1Ae6hqAQoaMF9Vl26Io2"
+    },
+    {
+      "check": "anonymous cannot read platform health",
+      "status": 401,
+      "at": "2026-08-24T00:18:50.562Z",
+      "code": "AUTH_REQUIRED"
+    },
+    {
+      "check": "ADMIN can read platform health",
+      "status": 200,
+      "at": "2026-08-24T00:18:51.310Z",
+      "code": null
+    },
+    {
+      "check": "ADMIN cannot mutate Super Admin maintenance control",
+      "status": 403,
+      "at": "2026-08-24T00:18:51.778Z",
+      "code": "FORBIDDEN"
+    },
+    {
+      "check": "ADMIN cannot read Super Admin feature-flag control surface",
+      "status": 403,
+      "at": "2026-08-24T00:18:52.243Z",
+      "code": "FORBIDDEN"
+    },
+    {
+      "check": "ADMIN cannot read the Super Admin configuration census",
+      "status": 403,
+      "at": "2026-08-24T00:18:52.710Z",
+      "code": "FORBIDDEN"
+    },
+    {
+      "check": "ADMIN cannot read payment credential status",
+      "status": 403,
+      "at": "2026-08-24T00:18:53.162Z",
+      "code": "FORBIDDEN"
+    },
+    {
+      "check": "SUPER_ADMIN can read feature-flag control surface",
+      "status": 200,
+      "at": "2026-08-24T00:18:53.632Z",
+      "code": null
+    },
+    {
+      "check": "tenant CREATE/RENAME/SUSPEND/REACTIVATE/DECOMMISSION",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:18:53.632Z",
+      "reason": "Set ALLOW_DESTRUCTIVE=1; no production mutation was attempted."
+    },
+    {
+      "check": "user suspend/activate/role/delete",
+      "status": "SKIPPED",
+      "at": "2026-08-24T00:18:53.632Z",
+      "reason": "Set ALLOW_DESTRUCTIVE=1; no production mutation was attempted."
+    }
+  ]
+}
