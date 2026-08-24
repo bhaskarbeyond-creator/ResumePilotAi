@@ -10,7 +10,7 @@ global.fetch = fetch;
 const crypto = require('crypto');
 
 const { chromium } = require('playwright');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
 const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
@@ -3756,7 +3756,7 @@ if (require.main === module) {
                 console.error('[HTTP Server Error]', err);
             }
         });
-        httpServer.listen(port, () => {
+        httpServer.listen(port, '0.0.0.0', () => {
             console.log('HTTP Server running on port ' + port);
         });
     }
@@ -4436,12 +4436,23 @@ function validateCustomPageContent(value) {
     return content;
 }
 
-app.get('/public/custom-pages.json', async (_req, res) => {
-    if (!db) return res.status(503).json({ success: false, pages: [] });
-    const snapshot = await db.collection('pages').get();
-    const pages = snapshot.docs.filter(document => !document.data()?.status || document.data()?.status === 'published').map(document => ({ id: document.id, title: document.data()?.title || document.id }));
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json({ success: true, pages });
+app.get('/public/custom-pages.json', async (req, res) => {
+    const requestDb = req.app.get('db') || db;
+    if (!requestDb) return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', pages: [] });
+    try {
+        const snapshot = await requestDb.collection('pages').get();
+        const pages = snapshot.docs.filter(document => !document.data()?.status || document.data()?.status === 'published').map(document => ({ id: document.id, title: document.data()?.title || document.id }));
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, pages });
+    } catch (err) {
+        const isQuota = /RESOURCE_EXHAUSTED|Quota exceeded/i.test(err.message);
+        return res.status(isQuota ? 429 : 503).json({
+            success: false,
+            code: isQuota ? 'RATE_LIMITED' : 'DATABASE_UNAVAILABLE',
+            error: { code: isQuota ? 'RATE_LIMITED' : 'DATABASE_UNAVAILABLE', message: err.message },
+            pages: []
+        });
+    }
 });
 
 app.get('/api/admin/pages', async (req, res) => {
@@ -4550,12 +4561,23 @@ app.post('/api/admin/landing-content', async (req, res) => {
     } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save landing content.' }); }
 });
 
-app.get('/public/trusted-by.json', async (_req, res) => {
-    if (!db) return res.status(503).json({ success: false, items: [] });
-    const snapshot = await db.collection('trustedBy').get();
-    const items = snapshot.docs.map(document => ({ id: document.id, ...document.data() })).filter(item => item.published !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json({ success: true, items });
+app.get('/public/trusted-by.json', async (req, res) => {
+    const requestDb = req.app.get('db') || db;
+    if (!requestDb) return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', items: [] });
+    try {
+        const snapshot = await requestDb.collection('trustedBy').get();
+        const items = snapshot.docs.map(document => ({ id: document.id, ...document.data() })).filter(item => item.published !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, items });
+    } catch (err) {
+        const isQuota = /RESOURCE_EXHAUSTED|Quota exceeded/i.test(err.message);
+        return res.status(isQuota ? 429 : 503).json({
+            success: false,
+            code: isQuota ? 'RATE_LIMITED' : 'DATABASE_UNAVAILABLE',
+            error: { code: isQuota ? 'RATE_LIMITED' : 'DATABASE_UNAVAILABLE', message: err.message },
+            items: []
+        });
+    }
 });
 
 app.get('/api/admin/trusted-by', async (_req, res) => {
@@ -5678,9 +5700,11 @@ app.use('/api', (req, res) => {
 app.use((error, req, res, _next) => {
     console.error('[Unhandled request error]', res.locals.requestId, error.message);
     if (res.headersSent) return;
-    const status = Number(error.status || error.statusCode || 500);
+    const isQuota = /RESOURCE_EXHAUSTED|Quota exceeded/i.test(error.message) || error.code === 8;
+    const status = isQuota ? 429 : Number(error.status || error.statusCode || 500);
+    const code = isQuota ? 'RATE_LIMITED' : (error.code && typeof error.code === 'string' ? error.code : (status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_ERROR'));
     return res.status(status >= 400 && status < 600 ? status : 500).json({
-        error: { code: status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL_ERROR', message: status === 413 ? 'Request payload is too large' : 'Request failed', requestId: res.locals.requestId }
+        error: { code, message: status === 413 ? 'Request payload is too large' : (isQuota ? 'Resource quota exceeded. Please retry later.' : 'Request failed'), requestId: res.locals.requestId }
     });
 });
 

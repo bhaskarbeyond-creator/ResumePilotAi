@@ -39,7 +39,7 @@ if (fs.existsSync('dist-bundle.tar.gz')) fs.unlinkSync('dist-bundle.tar.gz');
 console.log('Frontend bundle deployed.');
 
 console.log('\n=== Step 4: Restarting Backend via PM2 ===');
-execSync('ssh -o BatchMode=yes airesume "export PATH=/opt/alt/alt-nodejs20/root/usr/bin:/home/u727965524/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH; ~/.local/bin/pm2 restart airesume-backend --update-env"', { stdio: 'inherit' });
+execSync('ssh -o BatchMode=yes airesume "/opt/alt/alt-nodejs20/root/usr/bin/node /home/u727965524/.local/lib/node_modules/pm2/bin/pm2 restart airesume-backend --update-env"', { stdio: 'inherit' });
 console.log('PM2 restarted.');
 
 console.log('\n=== Step 5: Verifying Live Production Endpoints ===');

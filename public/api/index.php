@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 // Strip /api prefix to get the path, then re-add it for the backend
 $path = preg_replace('/^(\/[^\/]+)?\/api/', '/api', $requestUri);
-$targetUrl = 'http://localhost:8080' . $path;
+$targetUrl = 'http://127.0.0.1:8080' . $path;
 
 // Collect request headers and inject X-Forwarded-Host / X-Forwarded-Proto for backend domain resolution
 $headers = [];

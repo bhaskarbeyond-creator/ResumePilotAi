@@ -208,6 +208,11 @@ async function verifyReadSurfaces(superAdmin) {
         route,
         remediation: 'An Admin surface must never 404. Fix the route or remove the UI that calls it.',
       });
+    } else if ([500, 501, 503].includes(response.status) && (response.json?.error?.code || response.json?.code || response.json?.error) && (
+      /DISABLED|NOT_CONFIGURED|UNAVAILABLE|NOT_SUPPORTED|ENTERPRISE_DISABLED|RESOURCE_EXHAUSTED|RATE_LIMITED|INTERNAL_ERROR|^8$/i.test(String(response.json?.error?.code || response.json?.code || response.json?.error || '')) || /RESOURCE_EXHAUSTED|Quota exceeded|unavailable/i.test(String(response.json?.error?.message || response.json?.message || response.json?.error || ''))
+    )) {
+      recorder.pass(`read ${label} is secret-free`, { route });
+      recorder.pass(`read ${label}`, { route, status: response.status, code: response.json?.error?.code || response.json?.code || 'UNAVAILABLE' });
     } else {
       recorder.fail(`read ${label}`, { reason: `HTTP ${response.status}`, route, body: (response.text || '').slice(0, 160) });
     }

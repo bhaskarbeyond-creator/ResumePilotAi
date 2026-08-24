@@ -17,6 +17,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import dns from 'node:dns';
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (_) {}
 
 export const DEFAULT_BASE_URL = 'https://airesume.projectdemo.guru';
 

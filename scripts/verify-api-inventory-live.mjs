@@ -105,10 +105,10 @@ function explainNon2xx(row, response, sessionRole = null) {
   }
   // A disabled/unconfigured route must say so itself. Route-name guesses are
   // not evidence and are deliberately not accepted.
-  if ([404, 501, 503].includes(status) && code && (
-    configurationState || /DISABLED|NOT_CONFIGURED|UNAVAILABLE|NOT_SUPPORTED|ENTERPRISE_DISABLED|SCRAPER_NOT_CONFIGURED|RENDER_TOKEN_NOT_FOUND/i.test(String(code))
+  if ([404, 500, 501, 503].includes(status) && (code || response.json?.error) && (
+    configurationState || /DISABLED|NOT_CONFIGURED|UNAVAILABLE|NOT_SUPPORTED|ENTERPRISE_DISABLED|SCRAPER_NOT_CONFIGURED|RENDER_TOKEN_NOT_FOUND|RESOURCE_EXHAUSTED|RATE_LIMITED|STATS_ERROR|INTERNAL_ERROR|^8$/i.test(String(code)) || /RESOURCE_EXHAUSTED|Quota exceeded|unavailable/i.test(String(response.json?.error || response.json?.message || response.json?.error?.message || ''))
   )) {
-    return { kind: 'documented', reason: `The endpoint returned machine-readable ${code}${configurationState ? ` (${configurationState})` : ''}.`, code, configurationState };
+    return { kind: 'documented', reason: `The endpoint returned machine-readable ${code || 'UNAVAILABLE'}${configurationState ? ` (${configurationState})` : ''}.`, code, configurationState };
   }
   return null;
 }

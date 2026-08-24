@@ -308,6 +308,8 @@ async function main() {
 
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('pageerror', err => console.error('PAGE ERROR:', err));
 
     // Pre-seed a Firebase compat auth session and intercept token refresh so
     // the app believes a verified user is signed in without any real backend.
@@ -383,6 +385,11 @@ async function main() {
           providerUserInfo: [],
         }],
       }),
+    }));
+    await page.route('**/*firestore.googleapis.com/**', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '{}',
     }));
     const backend = createFixtureBackend();
     await page.route('**/api/**', backend);
@@ -574,6 +581,11 @@ async function main() {
             providerUserInfo: [],
           }],
         }),
+      }));
+      await vpPage.route('**/*firestore.googleapis.com/**', route => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '{}',
       }));
       const vpBackend = createFixtureBackend();
       await vpPage.route('**/api/**', vpBackend);

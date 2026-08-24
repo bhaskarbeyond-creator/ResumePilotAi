@@ -140,7 +140,10 @@ async function main() {
   }
 
   // ---- 6. Current production state -----------------------------------------
-  const health = await probe(`${BASE}/healthz`);
+  let health = await probe(`${BASE}/api/healthz`);
+  if (!health.ok || !health.json) {
+    health = await probe(`${BASE}/healthz`);
+  }
   if (!health.ok) {
     recorder.blocked('production health captured before rollback', {
       reason: health.error,

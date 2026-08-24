@@ -13,22 +13,17 @@
   RewriteEngine On
   RewriteBase /
 
-  # Proxy /api requests to Node.js backend on port 8080
+  # Route /api/* requests through the PHP reverse proxy to Node.js backend
   RewriteCond %{REQUEST_URI} ^/api/ [NC]
-  RewriteRule ^api/(.*)$ http://localhost:8080/api/$1 [P,L]
+  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
-  # Serve built assets from dist/ directly
-  RewriteCond %{REQUEST_URI} ^/assets/ [NC]
-  RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
+  # Route healthz, readyz, llms.txt, and public backend endpoints to api/index.php
+  RewriteRule ^(healthz|readyz|llms\.txt|public/.*\.json)$ api/index.php [QSA,L]
 
-  # Serve static files from dist/ (favicon, manifest, etc.)
-  RewriteCond %{DOCUMENT_ROOT}/dist/%{REQUEST_FILENAME} -f
-  RewriteRule ^(.*)$ dist/$1 [L]
-
-  # SPA Routing — all other routes serve dist/index.html
+  # SPA Routing — all other routes serve index.html
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ dist/index.html [L]
+  RewriteRule ^ index.html [L]
 
 </IfModule>
 

@@ -65,7 +65,13 @@ async function main() {
   if (!BASE.startsWith('https://')) {
     recorder.fail('production base URL uses HTTPS', { reason: 'Production identity verification must target an HTTPS origin.' });
   }
-  const health = await probe(`${BASE}/healthz`);
+  let health = await probe(`${BASE}/api/healthz`);
+  if (!health.ok || !health.json) {
+    health = await probe(`${BASE}/healthz`);
+  }
+  if (!health.ok || !health.json) {
+    health = await probe(`${BASE}/api/health`);
+  }
   if (!health.ok) {
     recorder.blocked('backend is reachable over HTTPS', {
       reason: health.error,

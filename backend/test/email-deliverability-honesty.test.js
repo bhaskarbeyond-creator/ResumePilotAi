@@ -28,7 +28,7 @@ async function withSenderDomain(sender, run) {
   if (sender) {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify({ smtp: { user: sender } }));
   } else if (had) {
-    fs.unlinkSync(CONFIG_FILE);
+    try { fs.unlinkSync(CONFIG_FILE); } catch (_) {}
   }
 
   try {
@@ -41,8 +41,11 @@ async function withSenderDomain(sender, run) {
     app.use('/api/email', router);
     return await run(app);
   } finally {
-    if (previous !== null) fs.writeFileSync(CONFIG_FILE, previous);
-    else if (fs.existsSync(CONFIG_FILE)) fs.unlinkSync(CONFIG_FILE);
+    if (previous !== null) {
+      try { fs.writeFileSync(CONFIG_FILE, previous); } catch (_) {}
+    } else if (fs.existsSync(CONFIG_FILE)) {
+      try { fs.unlinkSync(CONFIG_FILE); } catch (_) {}
+    }
     delete require.cache[require.resolve('../routes/email.js')];
   }
 }
