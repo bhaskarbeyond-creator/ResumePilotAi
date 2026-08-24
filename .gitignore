@@ -20,6 +20,7 @@ dist
 dist-ssr
 /build
 *.local
+backend/COMMIT_SHA
 
 # Next.js
 /.next/
