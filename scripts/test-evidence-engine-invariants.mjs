@@ -16,7 +16,7 @@ try {
   console.log('[Mutation A] Testing rejection of component-only declaration without real action...');
   const res = validateAndDeriveEvidence({
     targetComponent: 'EnterpriseConsole',
-    targetSelector: 'component: EnterpriseConsole',
+    targetSelector: 'EnterpriseConsole',
     testFile: 'tests/test-enterprise-browser.mjs',
     testAction: 'const fake = renderComponentOnly();',
     assertion: 'expect(fake).toBeDefined();'
@@ -33,7 +33,7 @@ try {
   console.log('[Mutation B] Testing rejection of label-only declaration...');
   const res = validateAndDeriveEvidence({
     targetComponent: 'EnterpriseWorkspacesTab',
-    targetSelector: 'button: NonExistentLabel',
+    targetSelector: 'NonExistentLabel',
     testFile: 'tests/test-enterprise-browser.mjs',
     testAction: 'await page.click("button:has-text(\\"NonExistentLabel\\")");',
     assertion: 'check("non-existent", true);'
@@ -45,23 +45,37 @@ try {
   console.error('✘ FAIL [Mutation B]:', err.message);
 }
 
-// Mutation C: Generic input declaration
+// Mutation C: Generic input declaration (Real Engine Pipeline Invocation)
 try {
-  console.log('[Mutation C] Testing rejection of generic input declaration...');
-  const isGeneric = (selector) => selector === 'input' || selector === 'input: input' || selector.trim() === '';
-  assert.equal(isGeneric('input: input'), true, 'Generic input selector must be flagged');
-  console.log('✔ PASS [Mutation C]: Generic input declaration caught and flagged.\n');
+  console.log('[Mutation C] Testing engine rejection of generic input selector...');
+  const res = validateAndDeriveEvidence({
+    targetComponent: 'EnterpriseWorkspacesTab',
+    targetSelector: 'input: input',
+    testFile: 'tests/test-enterprise-browser.mjs',
+    testAction: "await page.fill('#ws-name', 'APAC Operations');",
+    assertion: "await page.waitForSelector('text=APAC Operations', { timeout: 10_000 });"
+  });
+  assert.equal(res.valid, false, 'Generic input selector must be rejected by the engine');
+  assert.equal(res.reason.includes('Generic'), true, 'Rejection reason must explicitly state generic selector');
+  console.log('✔ PASS [Mutation C]: Generic input declaration rejected by evidence engine pipeline.\n');
   passed++;
 } catch (err) {
   console.error('✘ FAIL [Mutation C]:', err.message);
 }
 
-// Mutation D: Generic dropdown declaration
+// Mutation D: Generic dropdown declaration (Real Engine Pipeline Invocation)
 try {
-  console.log('[Mutation D] Testing rejection of generic dropdown declaration...');
-  const isGeneric = (selector) => selector === 'dropdown' || selector === 'select: dropdown' || selector.trim() === '';
-  assert.equal(isGeneric('select: dropdown'), true, 'Generic dropdown selector must be flagged');
-  console.log('✔ PASS [Mutation D]: Generic dropdown declaration caught and flagged.\n');
+  console.log('[Mutation D] Testing engine rejection of generic dropdown selector...');
+  const res = validateAndDeriveEvidence({
+    targetComponent: 'EnterpriseWorkspacesTab',
+    targetSelector: 'select: dropdown',
+    testFile: 'tests/test-enterprise-browser.mjs',
+    testAction: "await page.selectOption('select[aria-label=\"Select tenant member to add\"]', 'browser-member');",
+    assertion: "check('workspace member add is reflected in the drawer', (await page.locator('.enterprise-modal >> text=browser-member').count()) > 0);"
+  });
+  assert.equal(res.valid, false, 'Generic dropdown selector must be rejected by the engine');
+  assert.equal(res.reason.includes('Generic'), true, 'Rejection reason must explicitly state generic selector');
+  console.log('✔ PASS [Mutation D]: Generic dropdown declaration rejected by evidence engine pipeline.\n');
   passed++;
 } catch (err) {
   console.error('✘ FAIL [Mutation D]:', err.message);
@@ -74,7 +88,7 @@ try {
   try {
     validateAndDeriveEvidence({
       targetComponent: 'EnterpriseWorkspacesTab',
-      targetSelector: 'button: New Workspace',
+      targetSelector: 'New Workspace',
       testFile: 'scripts/build-honest-evidence-ledger.mjs',
       testAction: 'await page.click("New Workspace")',
       assertion: 'check(true)'
@@ -94,7 +108,7 @@ try {
   console.log('[Mutation F] Testing rejection of nonexistent action in valid test file...');
   const res = validateAndDeriveEvidence({
     targetComponent: 'EnterpriseWorkspacesTab',
-    targetSelector: 'button: New Workspace',
+    targetSelector: 'New Workspace',
     testFile: 'tests/test-enterprise-browser.mjs',
     testAction: 'await page.click("#totally-fabricated-action-button-id");',
     assertion: 'check("workspace creation lands in the workspace list", count > 0);'
@@ -111,7 +125,7 @@ try {
   console.log('[Mutation G] Testing rejection when testAction string has whitespace/content mismatch...');
   const res = validateAndDeriveEvidence({
     targetComponent: 'EnterpriseWorkspacesTab',
-    targetSelector: 'button: New Workspace',
+    targetSelector: 'New Workspace',
     testFile: 'tests/test-enterprise-browser.mjs',
     testAction: 'page.click("wrong selector");',
     assertion: 'check("workspace creation lands in the workspace list", count > 0);'
@@ -128,7 +142,7 @@ try {
   console.log('[Mutation H] Testing rejection when assertion is fabricated...');
   const res = validateAndDeriveEvidence({
     targetComponent: 'EnterpriseWorkspacesTab',
-    targetSelector: 'button: New Workspace',
+    targetSelector: 'New Workspace',
     testFile: 'tests/test-enterprise-browser.mjs',
     testAction: "await page.click('button:has-text(\"New Workspace\")');",
     assertion: 'assert.equal(fabricatedAssertionState, "100% SUCCESS");'
@@ -143,7 +157,6 @@ try {
 // Mutation I: False persistence declaration
 try {
   console.log('[Mutation I] Testing that dimensions are derived, not accepted blindly (persistence)...');
-  // job-tracker.test.mjs does not have DB write + read
   const res = validateAndDeriveEvidence({
     targetComponent: 'AiSettings',
     targetSelector: 'testAdminAiProvider',
@@ -153,7 +166,6 @@ try {
     assertion: "assert.equal(calls[2].url, '/api/admin/ai/test-provider');"
   });
   assert.equal(res.valid, true);
-  // In admin-ai-settings.test.mjs, /test-provider does not write to DB/storage, so persistence is NOT_TESTED
   assert.equal(res.dimensions.reload, 'NOT_TESTED');
   assert.equal(res.dimensions.viewport, 'NOT_TESTED');
   console.log('✔ PASS [Mutation I]: Execution-derived dimensions correctly left unexercised dimensions as NOT_TESTED.\n');
@@ -167,7 +179,7 @@ try {
   console.log('[Mutation J] Testing that reload is NOT_TESTED when reload is not called in test file...');
   const res = validateAndDeriveEvidence({
     targetComponent: 'EnterpriseWorkspacesTab',
-    targetSelector: 'button: New Workspace',
+    targetSelector: 'New Workspace',
     testFile: 'tests/test-enterprise-browser.mjs',
     testCase: 'Workspaces module: create a workspace (real fixture state change)',
     testAction: "await page.click('button:has-text(\"New Workspace\")');",
