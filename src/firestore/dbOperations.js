@@ -37,6 +37,8 @@ export const safeDbOperation = async (operation, requireAuth = true) => {
             error?.code === 'resource-exhausted' ||
             error?.code === 'failed-precondition' ||
             error?.code === 'unauthenticated' ||
+            error?.code === 'unavailable' ||
+            String(error?.message || '').includes('client is offline') ||
             String(error?.message || '').includes('insufficient permissions') ||
             String(error?.message || '').includes('Quota exceeded') ||
             String(error?.message || '').includes('quota') ||
@@ -856,20 +858,31 @@ export async function getFullName(userId) {
 
 // Get user data including employer status
 export async function getUserData(userId) {
-    const db = fire.firestore();
-    const userRef = db.collection('users').doc(userId);
-    const snapshot = await userRef.get();
-    if (snapshot.exists) {
-        return snapshot.data();
-    } else {
+    try {
+        const uid = typeof userId === 'object' && userId !== null ? (userId.uid || userId.id) : userId;
+        if (!uid || typeof uid !== 'string') return null;
+        const db = fire.firestore();
+        const userRef = db.collection('users').doc(uid);
+        const snapshot = await userRef.get();
+        if (snapshot.exists) {
+            return snapshot.data();
+        }
+        return null;
+    } catch (err) {
+        console.warn('Could not get user data from Firestore:', err?.message);
         return null;
     }
 }
 
 // Check if user is an employer
 export async function checkIsEmployer(userId) {
-    const userData = await getUserData(userId);
-    return userData && userData.isEmployer === true;
+    try {
+        const userData = await getUserData(userId);
+        return Boolean(userData && userData.isEmployer === true);
+    } catch (err) {
+        console.warn('Could not check employer status:', err?.message);
+        return false;
+    }
 }
 
 // Submit employer application
@@ -4243,37 +4256,46 @@ export async function deleteReview(id, expectedRevision = 0) {
 // in firstore add category collection with name  to /categories
 
 export async function addCategoryToData(categoryName) {
-    const db = fire.firestore();
-    const categoryRef = await db.collection('categories').doc(categoryName);
-    const category = await categoryRef.get();
-    if (!category.exists) {
-        categoryRef.set({
-            name: categoryName,
-            phrases: [],
-        });
-    } else {
-        // add to categories dierctly
-        db.collection('categories').doc(categoryName).set(
-            {
+    try {
+        const db = fire.firestore();
+        const categoryRef = await db.collection('categories').doc(categoryName);
+        const category = await categoryRef.get();
+        if (!category.exists) {
+            await categoryRef.set({
                 name: categoryName,
                 phrases: [],
-            },
-            { merge: true }
-        );
+            });
+        } else {
+            // add to categories directly
+            await db.collection('categories').doc(categoryName).set(
+                {
+                    name: categoryName,
+                    phrases: [],
+                },
+                { merge: true }
+            );
+        }
+        return true;
+    } catch (err) {
+        console.warn('Could not add category to Firestore:', err?.message);
+        return false;
     }
-    // if it is added succefully return true otherwise false
-    return true;
 }
 // get all categories
 
 export async function getAllCategories() {
-    const db = fire.firestore();
-    const categoriesRef = await db.collection('categories').get();
-    var categories = [];
-    categoriesRef.forEach((category) => {
-        categories.push(category.data());
-    });
-    return categories;
+    try {
+        const db = fire.firestore();
+        const categoriesRef = await db.collection('categories').get();
+        var categories = [];
+        categoriesRef.forEach((category) => {
+            categories.push(category.data());
+        });
+        return categories;
+    } catch (err) {
+        console.warn('Could not fetch categories from Firestore:', err?.message);
+        return [];
+    }
 }
 
 // ================== REALTIME DATABASE MESSAGING FUNCTIONS ==================
@@ -4485,13 +4507,17 @@ export async function getMessagesPaginated(conversationId, limit = 10, startAfte
 // if exist remove it and return true
 
 export async function removeCategoryByName(categoryName) {
-    const db = fire.firestore();
-    const categoryRef = await db.collection('categories').doc(categoryName);
-    const category = await categoryRef.get();
-    if (category.exists) {
-        categoryRef.delete();
-        return true;
-    } else {
+    try {
+        const db = fire.firestore();
+        const categoryRef = await db.collection('categories').doc(categoryName);
+        const category = await categoryRef.get();
+        if (category.exists) {
+            await categoryRef.delete();
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.warn('Could not remove category from Firestore:', err?.message);
         return false;
     }
 }
@@ -4501,23 +4527,27 @@ export async function removeCategoryByName(categoryName) {
 // if exist add phrase to it and return true
 
 export async function addPhraseToCategory(categoryName, phrase) {
-    const db = fire.firestore();
-    const categoryRef = await db.collection('categories').doc(categoryName);
-    const category = await categoryRef.get();
-    if (category.exists) {
-        var phrases = category.data().phrases;
-        if (phrases === undefined) {
-            phrases = [];
+    try {
+        const db = fire.firestore();
+        const categoryRef = await db.collection('categories').doc(categoryName);
+        const category = await categoryRef.get();
+        if (category.exists) {
+            var phrases = category.data().phrases;
+            if (!Array.isArray(phrases)) {
+                phrases = [];
+            }
+            phrases.push(phrase);
+            await categoryRef.set(
+                {
+                    phrases: phrases,
+                },
+                { merge: true }
+            );
+            return true;
         }
-        phrases.push(phrase);
-        categoryRef.set(
-            {
-                phrases: phrases,
-            },
-            { merge: true }
-        );
-        return true;
-    } else {
+        return false;
+    } catch (err) {
+        console.warn('Could not add phrase to category in Firestore:', err?.message);
         return false;
     }
 }
@@ -4525,41 +4555,51 @@ export async function addPhraseToCategory(categoryName, phrase) {
 // get all phrases of a category
 
 export async function getPhrasesOfCategory(categoryName) {
-    const db = fire.firestore();
-    const categoryRef = await db.collection('categories').doc(categoryName);
-    const category = await categoryRef.get();
-    if (category.exists) {
-        var phrases = category.data().phrases;
-        if (phrases === undefined) {
-            phrases = [];
+    try {
+        const db = fire.firestore();
+        const categoryRef = await db.collection('categories').doc(categoryName);
+        const category = await categoryRef.get();
+        if (category.exists) {
+            var phrases = category.data().phrases;
+            if (!Array.isArray(phrases)) {
+                phrases = [];
+            }
+            return phrases;
         }
-        return phrases;
+        return [];
+    } catch (err) {
+        console.warn('Could not get phrases of category from Firestore:', err?.message);
+        return [];
     }
 }
 
 // remove a phrase from a category
 
 export async function removePhraseFromCategory(categoryName, phrase) {
-    const db = fire.firestore();
-    const categoryRef = await db.collection('categories').doc(categoryName);
-    const category = await categoryRef.get();
-    if (category.exists) {
-        var phrases = category.data().phrases;
-        if (phrases === undefined) {
-            phrases = [];
+    try {
+        const db = fire.firestore();
+        const categoryRef = await db.collection('categories').doc(categoryName);
+        const category = await categoryRef.get();
+        if (category.exists) {
+            var phrases = category.data().phrases;
+            if (!Array.isArray(phrases)) {
+                phrases = [];
+            }
+            var index = phrases.indexOf(phrase);
+            if (index > -1) {
+                phrases.splice(index, 1);
+            }
+            await categoryRef.set(
+                {
+                    phrases: phrases,
+                },
+                { merge: true }
+            );
+            return true;
         }
-        var index = phrases.indexOf(phrase);
-        if (index > -1) {
-            phrases.splice(index, 1);
-        }
-        categoryRef.set(
-            {
-                phrases: phrases,
-            },
-            { merge: true }
-        );
-        return true;
-    } else {
+        return false;
+    } catch (err) {
+        console.warn('Could not remove phrase from category in Firestore:', err?.message);
         return false;
     }
 }
