@@ -32,6 +32,8 @@ export default function User360Drawer({
   const [busyAction, setBusyAction] = useState('');
   const [resetLinkData, setResetLinkData] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedUid, setCopiedUid] = useState(false);
+
 
 
   // Edit sub-states
@@ -396,44 +398,61 @@ export default function User360Drawer({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
-        <div className="p-5 bg-slate-900 text-white flex items-start justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center font-black text-xl text-white shadow-md">
+        <div className="p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white flex items-start justify-between shrink-0 border-b border-indigo-900/30">
+          <div className="flex items-center gap-4">
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center font-black text-2xl text-white shadow-lg ring-2 ring-indigo-400/30 shrink-0">
               {u?.displayName ? u.displayName.charAt(0).toUpperCase() : <FiUser />}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 id="user-360-title" className="text-lg font-black tracking-tight text-white">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 id="user-360-title" className="text-xl font-black tracking-tight text-white">
                   {u?.displayName || 'User Profile'}
                 </h2>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                   u?.suspended ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                 }`}>
-                  {u?.suspended ? 'Suspended' : 'Active'}
+                  {u?.suspended ? '● Suspended' : '● Active'}
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   {u?.role || 'USER'}
                 </span>
+                {u?.subscriptionPlan && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {u.subscriptionPlan} Tier
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-2">
-                <span>{u?.email || 'No email'}</span>
-                <span>•</span>
-                <span className="text-[11px] opacity-75">{uid}</span>
-              </p>
+              <div className="text-xs text-slate-300 font-mono mt-1.5 flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">{u?.email || 'No email associated'}</span>
+                <span className="text-slate-500">•</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(uid);
+                    setCopiedUid(true);
+                    setTimeout(() => setCopiedUid(false), 2000);
+                  }}
+                  className="px-2 py-0.5 bg-slate-800/80 hover:bg-slate-700 rounded-md border border-slate-700 text-[11px] text-slate-300 flex items-center gap-1.5 transition font-mono"
+                  title="Click to copy UID"
+                >
+                  <span>{uid}</span>
+                  {copiedUid ? <FiCheck className="text-emerald-400" /> : <FiCopy className="text-slate-400" />}
+                </button>
+              </div>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close drawer"
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
           >
             <FiX className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center border-b border-slate-200 bg-slate-50 px-4 shrink-0 overflow-x-auto text-xs">
+        {/* Tab Navigation - Hidden Scrollbar */}
+        <div className="flex items-center border-b border-slate-200 bg-slate-50/90 px-4 shrink-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-xs">
           {[
             { id: 'identity', label: 'Identity & Security', icon: <FiShield /> },
             { id: 'tenancy', label: `Tenants (${userData?.tenancy?.totalTenants || 0})`, icon: <FiBriefcase /> },
@@ -446,16 +465,18 @@ export default function User360Drawer({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-3 font-bold border-b-2 whitespace-nowrap transition ${
+              className={`flex items-center gap-2 px-4 py-3.5 font-bold border-b-2 whitespace-nowrap transition text-xs ${
                 activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-600 bg-white'
-                  : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'border-indigo-600 text-indigo-600 bg-white shadow-2xs'
+                  : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'
               }`}
             >
-              {tab.icon} {tab.label}
+              <span className={activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'}>{tab.icon}</span>
+              {tab.label}
             </button>
           ))}
         </div>
+
 
         {/* Alert Notifications */}
         {error && (
@@ -491,13 +512,15 @@ export default function User360Drawer({
               {/* TAB 1: IDENTITY & SECURITY */}
               {activeTab === 'identity' && (
                 <div className="space-y-4 text-xs">
+                  {/* Status & Attributes Grid */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <p className="text-[10px] font-extrabold uppercase text-slate-400">Account UID</p>
-                      <p className="font-mono text-xs text-slate-900 font-bold mt-1 select-all">{u?.id}</p>
+                    <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Account UID</p>
+                      <p className="font-mono text-xs text-slate-900 font-bold mt-1 select-all truncate" title={u?.id}>{u?.id}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <p className="text-[10px] font-extrabold uppercase text-slate-400">Email Verification</p>
+
+                    <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Email Verification</p>
                       <div className="mt-1 flex items-center justify-between gap-1">
                         {userData.security?.emailVerified ? (
                           <span className="text-emerald-600 font-bold flex items-center gap-1"><FiCheck /> Verified</span>
@@ -508,52 +531,58 @@ export default function User360Drawer({
                           type="button"
                           onClick={() => handleToggleEmailVerify(!userData.security?.emailVerified)}
                           disabled={busyAction === 'verify-email'}
-                          className="px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold transition"
+                          className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-[10px] font-extrabold transition shadow-2xs"
                         >
                           {userData.security?.emailVerified ? 'Unverify' : 'Force Verify ✓'}
                         </button>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <p className="text-[10px] font-extrabold uppercase text-slate-400">Two-Factor Auth (MFA)</p>
+
+                    <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Two-Factor Auth (MFA)</p>
                       <div className="mt-1 flex items-center justify-between gap-1">
                         {userData.security?.mfaEnabled ? (
                           <span className="text-emerald-600 font-bold flex items-center gap-1"><FiLock /> Active</span>
                         ) : (
-                          <span className="text-slate-400">Not Enrolled</span>
+                          <span className="text-slate-400 font-medium">Not Enrolled</span>
                         )}
                         {userData.security?.mfaEnabled && (
                           <button
                             type="button"
                             onClick={handleResetMfa}
                             disabled={busyAction === 'reset-mfa'}
-                            className="px-2 py-0.5 rounded bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-bold transition"
+                            className="px-2.5 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-extrabold transition shadow-2xs"
                           >
                             Reset 2FA
                           </button>
                         )}
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <p className="text-[10px] font-extrabold uppercase text-slate-400">Preferred Currency</p>
+
+                    <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Preferred Currency</p>
                       <p className="mt-1 font-bold text-slate-900">{userData.billing?.preferredCurrency || 'INR'} (₹)</p>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  {/* Timeline & Activity Card */}
+                  <div className="p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl space-y-3 shadow-2xs">
                     <h3 className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                      <FiClock className="text-indigo-600" /> Account Timeline &amp; Activity
+                      <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">
+                        <FiClock />
+                      </div>
+                      Account Timeline &amp; Activity
                     </h3>
-                    <dl className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                      <div><dt className="text-slate-400">Registered Date:</dt><dd className="font-semibold text-slate-800">{u?.createdAt ? new Date(u.createdAt).toLocaleString() : 'Unknown'}</dd></div>
-                      <div><dt className="text-slate-400">Last Sign In:</dt><dd className="font-semibold text-slate-800">{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}</dd></div>
-                      <div><dt className="text-slate-400">Resumes Created:</dt><dd className="font-semibold text-slate-800">{userData.content?.resumeCount || 0}</dd></div>
-                      <div><dt className="text-slate-400">Token Refresh Epoch:</dt><dd className="font-semibold text-slate-800">{u?.updatedAt ? new Date(u.updatedAt).toLocaleString() : 'Initial'}</dd></div>
+                    <dl className="grid grid-cols-2 gap-3 text-[11px] pt-1">
+                      <div><dt className="text-slate-400 font-medium">Registered Date:</dt><dd className="font-semibold text-slate-800 mt-0.5">{u?.createdAt ? new Date(u.createdAt).toLocaleString() : 'Unknown'}</dd></div>
+                      <div><dt className="text-slate-400 font-medium">Last Sign In:</dt><dd className="font-semibold text-slate-800 mt-0.5">{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}</dd></div>
+                      <div><dt className="text-slate-400 font-medium">Resumes Created:</dt><dd className="font-semibold text-slate-800 mt-0.5">{userData.content?.resumeCount || 0}</dd></div>
+                      <div><dt className="text-slate-400 font-medium">Token Refresh Epoch:</dt><dd className="font-semibold text-slate-800 mt-0.5">{u?.updatedAt ? new Date(u.updatedAt).toLocaleString() : 'Initial'}</dd></div>
                     </dl>
                   </div>
 
                   {/* Suspension Lifecycle Action */}
-                  <div className={`p-4 rounded-xl border ${u?.suspended ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} flex items-center justify-between`}>
+                  <div className={`p-4 rounded-2xl border ${u?.suspended ? 'bg-red-50/80 border-red-200' : 'bg-slate-50/80 border-slate-200/80'} flex items-center justify-between shadow-2xs`}>
                     <div>
                       <h4 className="font-bold text-slate-900 text-xs">Account Status &amp; Access</h4>
                       <p className="text-[11px] text-slate-500 mt-0.5">
@@ -564,7 +593,7 @@ export default function User360Drawer({
                       type="button"
                       onClick={handleSuspensionToggle}
                       disabled={busyAction === 'suspend'}
-                      className={`px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition ${
+                      className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition shadow-xs ${
                         u?.suspended
                           ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                           : 'bg-red-600 text-white hover:bg-red-700'
@@ -575,10 +604,13 @@ export default function User360Drawer({
                   </div>
 
                   {/* Administrative Password Reset Action */}
-                  <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 flex items-center justify-between">
+                  <div className="p-4 rounded-2xl border bg-slate-50/80 border-slate-200/80 flex items-center justify-between shadow-2xs">
                     <div>
                       <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                        <FiKey className="text-amber-600" /> Administrative Password Reset
+                        <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
+                          <FiKey />
+                        </div>
+                        Administrative Password Reset
                       </h4>
                       <p className="text-[11px] text-slate-500 mt-0.5">
                         Generate and dispatch a secure password reset link directly for {u?.email || 'this user'}.
@@ -588,7 +620,7 @@ export default function User360Drawer({
                       type="button"
                       onClick={handleSendPasswordReset}
                       disabled={busyAction === 'reset-password' || !u?.email}
-                      className="px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 transition disabled:opacity-50"
+                      className="px-3.5 py-2 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
                     >
                       <FiKey /> {busyAction === 'reset-password' ? 'Generating…' : 'Send Reset Link'}
                     </button>
@@ -596,12 +628,15 @@ export default function User360Drawer({
 
                   {/* Session Security & Data Export Actions */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 space-y-2 flex flex-col justify-between">
+                    <div className="p-4 rounded-2xl border bg-slate-50/80 border-slate-200/80 space-y-3 flex flex-col justify-between shadow-2xs">
                       <div>
                         <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                          <FiShieldOff className="text-red-600" /> Session Security
+                          <div className="w-6 h-6 rounded-lg bg-red-100 text-red-700 flex items-center justify-center text-xs">
+                            <FiShieldOff />
+                          </div>
+                          Session Security
                         </h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
+                        <p className="text-[11px] text-slate-500 mt-1">
                           Revoke refresh tokens to force sign-out on all active devices.
                         </p>
                       </div>
@@ -609,18 +644,21 @@ export default function User360Drawer({
                         type="button"
                         onClick={handleRevokeSessions}
                         disabled={busyAction === 'revoke-sessions'}
-                        className="w-full px-3 py-1.5 rounded-lg font-bold text-xs bg-red-100 hover:bg-red-200 text-red-800 flex items-center justify-center gap-1.5 transition"
+                        className="w-full px-3.5 py-2 rounded-xl font-bold text-xs bg-red-50 hover:bg-red-100 border border-red-200 text-red-800 flex items-center justify-center gap-1.5 transition shadow-2xs"
                       >
                         <FiShieldOff /> {busyAction === 'revoke-sessions' ? 'Revoking…' : 'Revoke All Sessions'}
                       </button>
                     </div>
 
-                    <div className="p-4 rounded-xl border bg-slate-50 border-slate-200 space-y-2 flex flex-col justify-between">
+                    <div className="p-4 rounded-2xl border bg-slate-50/80 border-slate-200/80 space-y-3 flex flex-col justify-between shadow-2xs">
                       <div>
                         <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                          <FiDownload className="text-indigo-600" /> Compliance Export (GDPR)
+                          <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs">
+                            <FiDownload />
+                          </div>
+                          Compliance Export (GDPR)
                         </h4>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
+                        <p className="text-[11px] text-slate-500 mt-1">
                           Export complete user profile, resumes, and orders JSON bundle.
                         </p>
                       </div>
@@ -628,7 +666,7 @@ export default function User360Drawer({
                         type="button"
                         onClick={handleExportUserData}
                         disabled={busyAction === 'export'}
-                        className="w-full px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center gap-1.5 transition"
+                        className="w-full px-3.5 py-2 rounded-xl font-bold text-xs bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 flex items-center justify-center gap-1.5 transition shadow-2xs"
                       >
                         <FiDownload /> {busyAction === 'export' ? 'Exporting…' : 'Download JSON Bundle'}
                       </button>
@@ -636,6 +674,7 @@ export default function User360Drawer({
                   </div>
                 </div>
               )}
+
 
 
 
