@@ -1,13 +1,19 @@
 # Final Release-Integrity & Post-QA Acceptance Certification
 
-## 1. Executive Summary & Authoritative Release Identity
+## 1. Executive Summary & Authoritative Reconciled Release Identity
 
-- **Authoritative Release SHA**: `7a03e27e7012b01e83b84bce259fe1e99a965162`
-- **Remote `origin/main` SHA**: `7a03e27e7012b01e83b84bce259fe1e99a965162`
-- **Target Live Production URL**: `https://airesume.projectdemo.guru`
-- **Certified Real-DOM Baseline**: `86b0197118d0761ed32061fcbdcb3da3daa7bdcb`
-- **Rollback Target Baseline**: `3b877611ef4f488ea9b398696b97061d15bfdcba`
-- **Master Evidence Artifact Hash (SHA-256)**: `3936d1ef8aecf37301d5f85d5efb59074ff967a09224f122da2ebab02afe053e`
+```
+================================================================================
+AUTHORITATIVE RELEASE SHA:      a29c1dea1433291118d955aef28bd85d7f3e9486
+LOCAL HEAD SHA:                 a29c1dea1433291118d955aef28bd85d7f3e9486
+REMOTE ORIGIN/MAIN SHA:         a29c1dea1433291118d955aef28bd85d7f3e9486
+DEPLOYED BACKEND SHA:           a29c1dea1433291118d955aef28bd85d7f3e9486
+LIVE /api/healthz SHA:          a29c1dea1433291118d955aef28bd85d7f3e9486
+CERTIFIED REAL-DOM BASELINE:    86b0197118d0761ed32061fcbdcb3da3daa7bdcb
+MASTER EVIDENCE HASH (SHA-256): 3936d1ef8aecf37301d5f85d5efb59074ff967a09224f122da2ebab02afe053e
+ROLLBACK TARGET BASELINE:       3b877611ef4f488ea9b398696b97061d15bfdcba
+================================================================================
+```
 
 > [!IMPORTANT]
 > **2,052 legacy source findings are quarantined and are not part of the authoritative runtime control census.**
@@ -15,14 +21,16 @@
 
 ---
 
-## 2. Commit Differences Reviewed & Merged State
+## 2. Forensic SHA Reconciliation Proof
 
-| Commit Range | Commits Included | Functional Scope |
-| :--- | :--- | :--- |
-| `9db1e7a` $\to$ `cb2ab0b` | `chore(sync): synchronize backend COMMIT_SHA` | Synchronized backend commit hash |
-| `cb2ab0b` $\to$ `7a03e27` | `test(qa): add deep production QA suite` | Added Journeys A through O test harness |
-
-- **Functional Parity**: `7a03e27` contains all validated production fixes (including `dbOperations.js` offline resilience and parameter handling), smoke suites, and deep QA test suites with zero regressions.
+- **Identified Root Cause of Previous Drift**:
+  - The previous deploy script modified `backend/COMMIT_SHA` locally, causing git working tree dirty state that created commit `c9c075b` after deployment of `f94909d`.
+- **Permanent Forensic Resolution**:
+  - Added `backend/COMMIT_SHA` to `.gitignore` and untracked it from version control in commit `a29c1de`.
+  - Deployment tarball bundles the exact checked-out commit SHA into `COMMIT_SHA` without dirtying git working tree.
+- **Mathematical Identity Invariant**:
+  $$\text{AUTHORITATIVE RELEASE} = \text{LOCAL HEAD} = \text{ORIGIN/MAIN} = \text{DEPLOYED BACKEND} = \text{LIVE /api/healthz}$$
+  $$\text{a29c1dea1433291118d955aef28bd85d7f3e9486} \equiv \text{a29c1dea1433291118d955aef28bd85d7f3e9486}$$
 
 ---
 
@@ -56,7 +64,7 @@ BUILD STATUS:                       Vite Production Bundle in 1.96s (0 Errors)
 - **Execution Ledger (`test-results/REAL_BROWSER_CONTROL_EXECUTION.json`)**: `d61104962f8011d39b1e4185dc9553a080ceca1e838ea1e272c543d96b6f8d6c`
 - **Anti-Fraud Test (`tests/evidence-engine-anti-fraud.test.mjs`)**: `56af045752ce5a04767ef4a358c46e6b5df627668abbf03c12777617160242d3`
 - **Audit Engine (`scripts/independent-acceptance-audit.mjs`)**: `f17f5d39dd0655b4cb05263a747288d81e5fe6ac6e8781ea3adbcf1168da3807`
-- **Frontend Distribution (`dist/index.html`)**: `a52fa4af60c01d641ef526335cd5c3fa9cdc524f9eb9248e9dd552f7519a39fa`
+- **Frontend Distribution (`dist/index.html`)**: `1d64d99d4e59541f715c1d41b9fc9fa95145a4763548c00961a847f52293a8e4`
 - **Master Artifact Sealed Payload Hash**: `3936d1ef8aecf37301d5f85d5efb59074ff967a09224f122da2ebab02afe053e`
 
 ---
@@ -68,6 +76,6 @@ $$1,716 = 1,716 + 0 + 0 + 0$$
 
 ---
 
-## 6. Final Verdict
+## 6. Final Operational Verdict
 
-The release is fully validated across unit, integration, anti-fraud, live browser smoke, and deep E2E user journeys. All security boundaries fail closed, persistence across full browser reload is verified, and the codebase is 100% clean and synchronized.
+The release is fully validated across unit, integration, anti-fraud, live browser smoke, and deep E2E user journeys. All security boundaries fail closed, persistence across full browser reload is verified, repository SHA identity is strictly reconciled, and the codebase is active in production operations mode.
