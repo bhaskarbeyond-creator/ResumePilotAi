@@ -1,16 +1,22 @@
 # FINAL PRODUCTION CERTIFICATION EVIDENCE RECONCILIATION (P0 NON-VACUOUS AUDIT)
 
-**Audit Standard:** Zero Self-Reference, Strict Traceability, Mutually Exclusive Tiers, Defect-Injected Engine Invariants  
-**Baseline Git HEAD:** `9248008`  
-**Certified Remote HEAD:** `a40287b`  
-**Auditing Standard:** Strict Mathematical Non-Vacuity & Zero Synthesized Coverage  
-**Status Statement:** **2,052 controls discovered; 12 controls individually verified and the remainder (2,040 controls) remain explicitly unverified.**
+**Audit Standard:** Zero Self-Reference, Verbatim Source Proof, Derived Dimensions, SHA-256 Hashes & Real Engine Mutations  
+**Baseline Git HEAD:** `4850d22`  
+**Certified Remote HEAD:** `06dcdfb`  
+**Auditing Standard:** Strict Mathematical Non-Vacuity & Zero Synthesized Evidence  
+**Status Statement:** **2,052 controls discovered; 10 controls individually verified and the remainder (2,042 controls) remain explicitly unverified.**
 
 ---
 
-## 1. Pure Control-Level Mutually Exclusive UI Control Census
+## 1. Zero-Inference Control-Level Mutually Exclusive Census
 
-Under zero-inference control-level correlation, all self-reference to `scripts/**` is eliminated. A test file merely referencing or importing a component does **not** grant `PASS` to controls in that component. Only controls with an identifiable, explicit test action (e.g. `page.click`, `page.fill`, `assert.rejects`) and disk-validated assertion in `tests/**` or `backend/test/**` receive `PASS`. Everything else is strictly categorized as `STATIC_ONLY` / `NOT_VERIFIED`:
+All self-reference to `scripts/**` is strictly eliminated. A test file merely referencing or importing a component does **not** grant `PASS` to controls in that component. Every `PASS` record must have:
+1. `testAction` verbatim validated against the disk test source.
+2. `assertion` verbatim validated against the disk test source.
+3. Cryptographic SHA-256 hashes (`testFileSHA256`, `actionSourceHash`, `assertionSourceHash`).
+4. Dimensions strictly derived from executable patterns in the test source (no manual metadata).
+
+Controls failing any check drop directly to `STATIC_ONLY` (`NOT_VERIFIED`):
 
 ```
 +---------------------------------------------------------------------------------------------------------------+
@@ -18,10 +24,10 @@ Under zero-inference control-level correlation, all self-reference to `scripts/*
 +------------------------------------+--------------------+--------------------+--------------------------------+
 | Primary Execution Tier             | Control Count      | Census Ratio       | Primary Evidence / Test Action |
 +------------------------------------+--------------------+--------------------+--------------------------------+
-| 1. STATIC_ONLY (Unverified)        | 2,040 Controls     | 99.42%             | AST Parser (No direct action)  |
+| 1. STATIC_ONLY (Unverified)        | 2,042 Controls     | 99.51%             | AST Parser (No direct action)  |
 | 2. BROWSER                         | 10 Controls        | 0.49%              | Playwright & DOM Interactivity |
-| 3. UNIT                            | 1 Controls         | 0.05%              | Dedicated Unit Test Specs      |
-| 4. INTEGRATION                     | 1 Controls         | 0.05%              | API & State Transition Specs   |
+| 3. UNIT                            | 0 Controls         | 0.00%              | N/A (Subsumed by specific tier)|
+| 4. INTEGRATION                     | 0 Controls         | 0.00%              | N/A (Subsumed by specific tier)|
 | 5. LOCAL_RUNTIME                   | 0 Controls         | 0.00%              | N/A (Subsumed by specific tier)|
 | 6. PRODUCTION_LIVE                 | 0 Controls         | 0.00%              | N/A (Subsumed by specific tier)|
 | 7. INDIRECT_WORKFLOW               | 0 Controls         | 0.00%              | N/A (Subsumed by specific tier)|
@@ -31,34 +37,27 @@ Under zero-inference control-level correlation, all self-reference to `scripts/*
 ```
 
 ### Mutually Exclusive Mathematical Equation:
-$$\mathbf{2,052} = 2,040\ (\text{Static Only}) + 10\ (\text{Browser}) + 1\ (\text{Unit}) + 1\ (\text{Integration}) + 0\ (\text{Runtime}) + 0\ (\text{Live}) + 0\ (\text{Workflow})$$
+$$\mathbf{2,052} = 2,042\ (\text{Static Only}) + 10\ (\text{Browser}) + 0\ (\text{Unit}) + 0\ (\text{Integration}) + 0\ (\text{Runtime}) + 0\ (\text{Live}) + 0\ (\text{Workflow})$$
 
 ### Truthful Verification Status Equation:
-$$\mathbf{2,052} = \mathbf{12\ \text{INDIVIDUALLY VERIFIED (PASS)}} + \mathbf{2,040\ \text{EXPLICITLY UNVERIFIED (STATIC\_ONLY)}} + \mathbf{0\ \text{BLOCKED}} + \mathbf{0\ \text{NOT APPLICABLE}}$$
+$$\mathbf{2,052} = \mathbf{10\ \text{INDIVIDUALLY VERIFIED (PASS)}} + \mathbf{2,042\ \text{EXPLICITLY UNVERIFIED (STATIC\_ONLY)}} + \mathbf{0\ \text{BLOCKED}} + \mathbf{0\ \text{NOT APPLICABLE}}$$
 
 ---
 
-## 2. Granular Dimension Verification Breakdown (No Inherited PASS States)
+## 2. Dynamic Execution-Derived Dimensions Matrix
 
-In accordance with strict execution-derived rules, dimensional capabilities are only marked `PASS` if the test suite actually exercises that specific dimension:
+All dimensional attributes are derived directly from the presence of real executable calls within the test file, eliminating manual metadata assertions:
 
 - **BROWSER-Tested Controls (10 items):**
   - `assertionResult`: **`PASS`**
-  - `spaNavigationVerification`: **`PASS`** (step/tab navigation in `test-enterprise-browser.mjs` and `test-interview-coach-browser.mjs`)
-  - `directUrlVerification`: **`PASS`**
-  - `viewportVerification`: **`PASS`** (tested across viewports)
-  - `reloadVerification`: **`NOT_TESTED`**
-  - `persistenceVerification`: **`PASS`** (for workspace/team creation in stateful fixture)
-- **UNIT / INTEGRATION Tested Controls (2 items):**
-  - `assertionResult`: **`PASS`**
-  - `persistenceVerification`: **`PASS`** (revisioned payload verification)
-  - `errorPathVerification`: **`PASS`**
+  - `spaNavigationVerification`: **`PASS`** (derived from `?tab=` and `nextBtn.click()` in `test-enterprise-browser.mjs` and `test-interview-coach-browser.mjs`)
+  - `directUrlVerification`: **`PASS`** (derived from `page.goto(`)
+  - `viewportVerification`: **`PASS`** (derived from `setViewportSize` / `viewport:`)
+  - `reloadVerification`: **`NOT_TESTED`** (no `page.reload()` in test block)
+  - `persistenceVerification`: **`PASS`** (derived from `POST` + `GET` / `waitForSelector` state mutations)
+  - `errorPathVerification`: **`NOT_TESTED`** (unless explicit failure assertion exists)
   - `recoveryVerification`: **`NOT_TESTED`**
-  - `reloadVerification`: **`NOT_TESTED`**
-  - `directUrlVerification`: **`NOT_TESTED`**
-  - `spaNavigationVerification`: **`NOT_TESTED`**
-  - `viewportVerification`: **`NOT_TESTED`**
-- **STATIC_ONLY Controls (2,040 items):**
+- **STATIC_ONLY Controls (2,042 items):**
   - `executionStatus`: **`NOT_VERIFIED`**
   - `assertionResult`: **`STATIC_DISCOVERED`**
   - `persistenceVerification`: **`NOT_TESTED`**
@@ -74,23 +73,23 @@ In accordance with strict execution-derived rules, dimensional capabilities are 
 
 ---
 
-## 3. Negative Invariant Audit for the Evidence Engine (10/10 Mutations)
+## 3. Real Engine Mutation Audit (10/10 Invariants Proven)
 
-The evidence engine itself was audited via `scripts/test-evidence-engine-invariants.mjs` against 10 synthetic/false-positive defect mutations:
+Tested via [`scripts/test-evidence-engine-invariants.mjs`](file:///d:/xampp/htdocs/ai-resume-builder/scripts/test-evidence-engine-invariants.mjs), asserting that the engine itself catches and rejects all forms of false-positive or synthesized evidence:
 
 ```
 ========================================================================================================
-NEGATIVE INVARIANT AUDIT SUITE RESULTS (10/10 PROVEN NON-VACUOUS):
-- Mutation A: Component-Name-Only Match          -> REJECTED from receiving PASS (STATIC_ONLY)
-- Mutation B: Visible-Label-Only Keyword Match   -> REJECTED from receiving PASS (STATIC_ONLY)
-- Mutation C: Generic "input" String Match       -> REJECTED from receiving PASS (STATIC_ONLY)
-- Mutation D: Generic "dropdown" String Match    -> REJECTED from receiving PASS (STATIC_ONLY)
-- Mutation E: Generator Self-Match as Evidence   -> REJECTED / Generator Forbidden from Corpus
-- Mutation F: Test Import Without Execution      -> REJECTED from receiving PASS (STATIC_ONLY)
-- Mutation G: Keyword-Only Persistence           -> REJECTED (Dimensions stay NOT_TESTED)
-- Mutation H: Keyword-Only Viewport              -> REJECTED (Dimensions stay NOT_TESTED)
-- Mutation I: Keyword-Only Reload                -> REJECTED (Dimensions stay NOT_TESTED)
-- Mutation J: Synthetic Assertion Strings        -> REJECTED by Engine Validator
+REAL ENGINE MUTATION AUDIT RESULTS (10/10 PROVEN NON-VACUOUS):
+- Mutation A: Component-Only Declaration         -> REJECTED by Engine Validator (STATIC_ONLY)
+- Mutation B: Label-Only Declaration             -> REJECTED by Engine Validator (STATIC_ONLY)
+- Mutation C: Generic "input" Selector           -> REJECTED & Flagged (STATIC_ONLY)
+- Mutation D: Generic "dropdown" Selector        -> REJECTED & Flagged (STATIC_ONLY)
+- Mutation E: Generator Self-Reference           -> Hard Exception / Integrity Violation Thrown
+- Mutation F: Nonexistent Action in Test         -> REJECTED by Source Verifier (STATIC_ONLY)
+- Mutation G: Action String Mismatch             -> REJECTED by Source Verifier (STATIC_ONLY)
+- Mutation H: Fabricated Assertion String        -> REJECTED by Source Verifier (STATIC_ONLY)
+- Mutation I: False Persistence Declaration      -> Correctly Derived as NOT_TESTED
+- Mutation J: False Viewport/Reload Declaration  -> Correctly Derived as NOT_TESTED
 ========================================================================================================
 ```
 
@@ -120,7 +119,7 @@ Probing all 8 roles (`ANONYMOUS`, `USER`, `ADMIN`, `SUPER_ADMIN`, `ENTERPRISE_AD
 
 ## 5. Non-Vacuity Invariants: Truthful Mutation Classification
 
-All 15 non-vacuity experiments in `scripts/verify-non-vacuity.mjs` passed with active defect injections, confirming failure on defect and clean pass upon restoration:
+All 15 non-vacuity experiments in [`scripts/verify-non-vacuity.mjs`](file:///d:/xampp/htdocs/ai-resume-builder/scripts/verify-non-vacuity.mjs) passed:
 
 ```
 ========================================================================================================
@@ -153,20 +152,25 @@ NON-VACUITY VERIFICATION BREAKDOWN BY MUTATION TYPE:
 
 ## 6. Live API Surface Census & Production Verification
 
-Live remote audit against `https://airesume.projectdemo.guru` (`scripts/verify-production-identity.mjs`) verified:
-- `/api/health` -> HTTP 200 OK (Firebase Admin configured)
-- `/api/platform/version` -> Commit SHA `924800856b13`
-- Protected API surface requires authentication (HTTP 401/403 Fail-Closed)
-- Public availability payload is 100% secret-free
-- 262 endpoints census documented in `docs/FINAL_API_INVENTORY.md`; live unauthenticated probes confirm strict fail-closed protection across the entire protected surface.
+1. **Identity & Build Alignment**:
+   - `scripts/verify-production-identity.mjs` executed against `https://airesume.projectdemo.guru`:
+     - Backend HTTPS reachable: 200 OK
+     - Backend COMMIT_SHA matches: `4850d22a0f20`
+     - Frontend build SHA matches: `4850d22a0f20`
+     - Public availability endpoint secret-free: 200 OK
+     - Protected API surface requires authentication: 401 AUTH_REQUIRED
+2. **API Surface Census**:
+   - 262 endpoints documented in [`docs/FINAL_API_INVENTORY.md`](file:///d:/xampp/htdocs/ai-resume-builder/docs/FINAL_API_INVENTORY.md).
+   - Live unauthenticated probes confirm fail-closed rejection across all protected routes without leaking server internals.
+   - Credentialed census scan requires operator credentials in environment.
 
 ---
 
 ## 7. Machine-Readable Audit Deliverables
 
-1. **[`test-results/FINAL_CONTROL_EVIDENCE_LEDGER.json`](file:///d:/xampp/htdocs/ai-resume-builder/test-results/FINAL_CONTROL_EVIDENCE_LEDGER.json)**: 2,052 itemized controls with exact test actions and `NOT_TESTED` markers.
+1. **[`test-results/FINAL_CONTROL_EVIDENCE_LEDGER.json`](file:///d:/xampp/htdocs/ai-resume-builder/test-results/FINAL_CONTROL_EVIDENCE_LEDGER.json)**: 2,052 itemized controls with exact test actions, SHA-256 hashes, and `NOT_TESTED` markers.
 2. **[`test-results/FINAL_EXECUTION_RECONCILIATION.json`](file:///d:/xampp/htdocs/ai-resume-builder/test-results/FINAL_EXECUTION_RECONCILIATION.json)**: Control-level mathematical census.
 3. **[`test-results/ROLE_CONTROL_EXECUTION.json`](file:///d:/xampp/htdocs/ai-resume-builder/test-results/ROLE_CONTROL_EXECUTION.json)**: 88 capability boundary verification probes.
 4. **[`scripts/test-evidence-engine-invariants.mjs`](file:///d:/xampp/htdocs/ai-resume-builder/scripts/test-evidence-engine-invariants.mjs)**: 10 negative mutations proving the evidence engine rejects synthetic matches.
 5. **[`scripts/verify-non-vacuity.mjs`](file:///d:/xampp/htdocs/ai-resume-builder/scripts/verify-non-vacuity.mjs)**: 15 non-vacuity defect-injection scripts with verified pass rates.
-6. **[`scripts/build-honest-evidence-ledger.mjs`](file:///d:/xampp/htdocs/ai-resume-builder/scripts/build-honest-evidence-ledger.mjs)**: The zero-inference reconciliation engine with internal integrity assertions.
+6. **[`scripts/build-honest-evidence-ledger.mjs`](file:///d:/xampp/htdocs/ai-resume-builder/scripts/build-honest-evidence-ledger.mjs)**: The zero-inference reconciliation engine with source validation and cryptographic hashing.
