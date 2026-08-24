@@ -439,7 +439,7 @@ const HomepageReviews = () => {
                     </div>
 
                     {/* Add animation keyframes for the progress indicator */}
-                    <style jsx="true">{`
+                    <style>{`
                         @keyframes progressAnimation {
                             0% {
                                 transform: scaleX(0);

@@ -85,7 +85,7 @@ const HomepageCompatibility = () => {
             </div>
 
             {/* Add marquee animation */}
-            <style jsx="true">{`
+            <style>{`
                 @keyframes marquee {
                     0% {
                         transform: translateX(0);

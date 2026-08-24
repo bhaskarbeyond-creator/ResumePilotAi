@@ -99,7 +99,7 @@ test('installable CI templates run the authoritative RC gate and CodeQL with lea
 
 test('operational contracts expose worker, PDF isolation, TTL, and recovery requirements truthfully', async () => {
   const [backend, indexes, runbook] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('firestore.indexes.json', 'utf8'), fs.readFile('docs/OPERATIONS_RUNBOOK.md', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('firestore.indexes.json', 'utf8'), fs.readFile('docs/archive/OPERATIONS_RUNBOOK.md', 'utf8'),
   ]);
   assert.match(backend, /NOTIFICATION_OUTBOX_EXTERNAL_WORKER/);
   assert.match(backend, /REQUIRES_ISOLATED_WORKER/);

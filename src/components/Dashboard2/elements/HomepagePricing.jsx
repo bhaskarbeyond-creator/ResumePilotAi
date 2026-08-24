@@ -338,7 +338,7 @@ const HomepagePricing = ({ nextStep, t }) => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes gradient-x {
                     0%,
                     100% {

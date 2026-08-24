@@ -1788,12 +1788,8 @@ export async function getFeaturedJobs(limit = 6) {
             return [];
         }
     } catch (error) {
-        console.error('🚨 Error getting featured jobs:', error);
-        console.error('🚨 Error code:', error.code);
-        console.error('🚨 Error message:', error.message);
-        
         // If there's a composite index error, try without orderBy
-        if (error.code === 'failed-precondition' || error.message.includes('index')) {
+        if (error.code === 'failed-precondition' || String(error.message || '').includes('index')) {
             try {
                 const fallbackSnapshot = await db.collection('jobs')
                     .where('status', '==', 'active')
@@ -2968,10 +2964,17 @@ export async function addAds(link, name, destinationLink) {
 }
 // Get pages
 export async function getPages() {
-    const response = await fetch('/public/custom-pages.json', { cache: 'no-store' });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) throw new Error('Public pages are unavailable.');
-    return result.pages || [];
+    try {
+        const response = await fetch('/api/public/custom-pages', { cache: 'no-store' });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.success) return result.pages || [];
+    } catch (_) { /* fallback to alternative endpoint */ }
+    try {
+        const response = await fetch('/public/custom-pages.json', { cache: 'no-store' });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.success) return result.pages || [];
+    } catch (_) {}
+    return [];
 }
 
 // Get  page by name
@@ -4096,12 +4099,22 @@ export async function addTrustedBy(data) {
 }
 
 export async function getTrustedBy({ includeUnpublished = false } = {}) {
-    const request = includeUnpublished
-        ? fetchAdminWithReauth('/api/admin/trusted-by')
-        : fetch('/public/trusted-by.json', { cache: 'no-store' }).then(async response => ({ response, data: await response.json().catch(() => ({})) }));
-    const { response, data } = await request;
-    if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Trusted logos are unavailable.');
-    return (data.items || []).map(item => ({ ...item, revision: Number(item.revision || 0) }));
+    if (includeUnpublished) {
+        const { response, data } = await fetchAdminWithReauth('/api/admin/trusted-by');
+        if (!response.ok || !data.success) throw new Error(data.error?.message || data.error || 'Trusted logos are unavailable.');
+        return (data.items || []).map(item => ({ ...item, revision: Number(item.revision || 0) }));
+    }
+    try {
+        const response = await fetch('/api/public/trusted-by', { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) return (data.items || []).map(item => ({ ...item, revision: Number(item.revision || 0) }));
+    } catch (_) { /* fallback to alternative endpoint */ }
+    try {
+        const response = await fetch('/public/trusted-by.json', { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) return (data.items || []).map(item => ({ ...item, revision: Number(item.revision || 0) }));
+    } catch (_) {}
+    return [];
 }
 
 export async function removeTrustedBy(id, expectedRevision = 0) {
@@ -5054,8 +5067,26 @@ export async function getPublicPortfolios(limit = 10, theme = null) {
 
         return portfolios;
     } catch (error) {
-        console.error('Error getting public portfolios:', error);
-        throw error;
+        if (error.code === 'failed-precondition' || String(error.message || '').includes('index')) {
+            try {
+                let fallbackQuery = db.collection('portfolios').where('isPublished', '==', true).limit(limit * 2);
+                if (theme) fallbackQuery = fallbackQuery.where('theme', '==', theme);
+                const snapshot = await fallbackQuery.get();
+                const portfolios = [];
+                snapshot.forEach((doc) => {
+                    portfolios.push({ id: doc.id, ...doc.data() });
+                });
+                portfolios.sort((a, b) => {
+                    const tA = a.publishedAt?.toMillis?.() || (a.publishedAt ? new Date(a.publishedAt).getTime() : 0);
+                    const tB = b.publishedAt?.toMillis?.() || (b.publishedAt ? new Date(b.publishedAt).getTime() : 0);
+                    return tB - tA;
+                });
+                return portfolios.slice(0, limit);
+            } catch (fallbackError) {
+                return [];
+            }
+        }
+        return [];
     }
 }
 

@@ -282,7 +282,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
             </div>
 
             {/* Custom Animations */}
-            <style jsx="true">{`
+            <style>{`
                 @keyframes float {
                     0%,
                     100% {

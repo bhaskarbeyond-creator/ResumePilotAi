@@ -269,7 +269,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
     return (
         <>
-            <style jsx="true" global="true">{`
+            <style>{`
                 .dashboardContentWrapper,
                 .dashboardGrid {
                     margin-left: 280px !important;

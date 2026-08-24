@@ -337,7 +337,7 @@ const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, goToStep
             </AnimatePresence>
 
             {/* Custom Animations */}
-            <style jsx="true">{`
+            <style>{`
                 @keyframes float {
                     0%,
                     100% {

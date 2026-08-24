@@ -206,7 +206,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     return (
         <>
             {/* Custom styles for global content adjustment (same as ProfileDisplay) */}
-            <style jsx global>{`
+            <style>{`
                 .dashboardContentWrapper,
                 .dashboardGrid {
                     padding-left: 280px !important; /* Standard expanded width */

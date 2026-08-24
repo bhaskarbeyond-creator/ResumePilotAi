@@ -223,7 +223,7 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
             </div>
 
             {/* Custom scrollbar styles */}
-            <style jsx>{`
+            <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;
                 }

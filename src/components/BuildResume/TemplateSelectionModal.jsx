@@ -1040,7 +1040,7 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
             {renderTemplatePreview()}
 
             {/* Custom scrollbar styles */}
-            <style jsx>{`
+            <style>{`
                 .custom-scrollbar {
                     scrollbar-width: thin;
                     scrollbar-color: rgba(59, 130, 246, 0.8) rgba(241, 245, 249, 0.4);

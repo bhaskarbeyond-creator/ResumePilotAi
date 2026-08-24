@@ -254,7 +254,11 @@ const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health', '/service-availability', '/platform/version',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
-    '/auth/github', '/auth/github/callback', '/auth/oauth/exchange'
+    '/auth/github', '/auth/github/callback', '/auth/oauth/exchange',
+    '/public/custom-pages', '/public/custom-pages.json',
+    '/public/trusted-by', '/public/trusted-by.json',
+    '/custom-pages', '/custom-pages.json',
+    '/trusted-by', '/trusted-by.json'
 ]);
 // Enterprise API authentication accepts exactly one credential kind per request:
 // a Firebase bearer token (tenant member or support elevation) or an x-api-key
@@ -4436,7 +4440,7 @@ function validateCustomPageContent(value) {
     return content;
 }
 
-app.get('/public/custom-pages.json', async (req, res) => {
+app.get(['/public/custom-pages.json', '/api/public/custom-pages', '/api/custom-pages.json', '/custom-pages.json'], async (req, res) => {
     const requestDb = req.app.get('db') || db;
     if (!requestDb) return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', pages: [] });
     try {
@@ -4561,7 +4565,7 @@ app.post('/api/admin/landing-content', async (req, res) => {
     } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save landing content.' }); }
 });
 
-app.get('/public/trusted-by.json', async (req, res) => {
+app.get(['/public/trusted-by.json', '/api/public/trusted-by', '/api/trusted-by.json', '/trusted-by.json'], async (req, res) => {
     const requestDb = req.app.get('db') || db;
     if (!requestDb) return res.status(503).json({ success: false, code: 'SERVICE_UNAVAILABLE', items: [] });
     try {
