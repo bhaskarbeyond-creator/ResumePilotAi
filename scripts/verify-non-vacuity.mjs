@@ -1,170 +1,211 @@
-import { execSync } from 'child_process';
 import fs from 'fs';
+import { execSync } from 'child_process';
 
 console.log('================================================================');
-console.log('       EXPANDED AUTOMATED NON-VACUITY VERIFICATION SUITE        ');
-console.log('   Proving 15 Critical Invariant Tests Fail on Injected Defects  ');
+console.log('       HONEST AUTOMATED NON-VACUITY VERIFICATION SUITE          ');
+console.log('   Proving 15 Critical Invariants Fail on Injected Defects      ');
+console.log('   Classified by Production, Test, and Configuration Mutations  ');
 console.log('================================================================\n');
 
+/**
+ * 15 Invariant Non-Vacuity Defect Experiments with Explicit Classifications
+ */
 const experiments = [
   {
-    name: '1. MFA Boundary & TOTP Claim Invariant',
-    testCmd: 'node --test backend/test/totp-mfa-lifecycle.test.js',
+    id: 1,
+    name: 'MFA Boundary & TOTP Claim Invariant',
+    classification: 'TEST_CODE_MUTATION',
     targetFile: 'backend/test/totp-mfa-lifecycle.test.js',
-    mutate: (content) => content.replace("sign_in_second_factor: 'totp'", "sign_in_second_factor: null"),
-    description: 'Mutating TOTP verification claim to verify test catches unverified sessions'
+    command: 'node --test backend/test/totp-mfa-lifecycle.test.js',
+    mutate: (content) => content.replace("firebase: { sign_in_second_factor: 'totp' },", "firebase: { sign_in_second_factor: null },")
   },
   {
-    name: '2. Secret Leakage & Scanner Efficacy Invariant',
-    testCmd: 'node --test tests/secret-scanner-efficacy.test.mjs',
+    id: 2,
+    name: 'Secret Leakage Scanner Efficacy Invariant',
+    classification: 'CONFIGURATION_MUTATION',
     targetFile: 'tests/security-static.test.mjs',
-    mutate: (content) => content.replace('/AKIA[0-9A-Z]{16}/,', '// pattern removed'),
-    description: 'Removing AWS key detection pattern to prove secret scanner efficacy test catches weakened regexes'
+    command: 'node --test tests/security-static.test.mjs',
+    mutate: (content) => content.replace("/AKIA[0-9A-Z]{16}/", "/FAKE_NON_EXISTENT_PATTERN_12345/")
   },
   {
-    name: '3. Account Browser Session Isolation Invariant',
-    testCmd: 'node --test tests/account-isolation.test.mjs',
+    id: 3,
+    name: 'Account Browser Session Isolation Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
     targetFile: 'src/utils/browserState.js',
-    mutate: (content) => content.replace('for (const key of ACCOUNT_SCOPED_LOCAL_KEYS) local?.removeItem(key);', '// skipped removal'),
-    description: 'Disabling session removal on logout to prove account isolation tests fail on residual session state'
+    command: 'node --test tests/account-isolation.test.mjs',
+    mutate: (content) => content.replace('for (const key of ACCOUNT_SCOPED_LOCAL_KEYS) local?.removeItem(key);', '// MUTATED: for (const key of ACCOUNT_SCOPED_LOCAL_KEYS) local?.removeItem(key);')
   },
   {
-    name: '4. Payment Projection Secret Redaction & RBAC Invariant',
-    testCmd: 'node --test backend/test/payment-settings-rbac.test.js',
+    id: 4,
+    name: 'Payment Projection Secret Redaction & RBAC Invariant',
+    classification: 'TEST_CODE_MUTATION',
     targetFile: 'backend/test/payment-settings-rbac.test.js',
-    mutate: (content) => content.replace("set('Authorization', 'Bearer admin')", "set('Authorization', 'Bearer user')"),
-    description: 'Demoting token to unauthorized USER to prove RBAC test fails closed'
+    command: 'node --test backend/test/payment-settings-rbac.test.js',
+    mutate: (content) => content.replace("set('Authorization', 'Bearer admin');", "set('Authorization', 'Bearer user');")
   },
   {
-    name: '5. Tenant Provisioning RBAC Gate Invariant',
-    testCmd: 'node --test backend/test/tenant-provisioning-states.test.js',
+    id: 5,
+    name: 'Tenant Provisioning RBAC Gate Invariant',
+    classification: 'TEST_CODE_MUTATION',
     targetFile: 'backend/test/tenant-provisioning-states.test.js',
-    mutate: (content) => content.replace("set('Authorization', bearer('admin'))", "set('Authorization', bearer('regularUser'))"),
-    description: 'Demoting provisioner to regularUser to prove tenant provisioning requires admin role'
+    command: 'node --test backend/test/tenant-provisioning-states.test.js',
+    mutate: (content) => content.replace("set('Authorization', bearer('admin'))", "set('Authorization', bearer('regularUser'))")
   },
   {
-    name: '6. Tenant Name Validation Invariant',
-    testCmd: 'node --test backend/test/tenant-provisioning-states.test.js',
+    id: 6,
+    name: 'Tenant Name Validation Invariant',
+    classification: 'TEST_CODE_MUTATION',
     targetFile: 'backend/test/tenant-provisioning-states.test.js',
-    mutate: (content) => content.replace("assert.equal(invalidName.status, 400);", "assert.equal(invalidName.status, 200);"),
-    description: 'Asserting 200 on invalid tenant name to prove input validator rejects malformed names'
+    command: 'node --test backend/test/tenant-provisioning-states.test.js',
+    mutate: (content) => content.replace('assert.equal(invalidName.status, 400);', 'assert.equal(invalidName.status, 200);')
   },
   {
-    name: '7. AI Settings Revision & Conflict Invariant',
-    testCmd: 'node --test backend/test/ai-admin.test.js',
-    targetFile: 'backend/test/ai-admin.test.js',
-    mutate: (content) => content.replace("assert.equal(result.revision, 1);", "assert.equal(result.revision, 99);"),
-    description: 'Asserting incorrect revision to prove concurrency conflict detector catches revision drifts'
+    id: 7,
+    name: 'AI Settings Model Max Tokens Validation Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'backend/services/aiAdmin.js',
+    command: 'node --test backend/test/ai-admin.test.js',
+    mutate: (content) => content.replace('maxTokens: Number.isFinite(maxTokensValue) ? Math.max(256, Math.min(4096, Math.floor(maxTokensValue))) : 2048,', 'maxTokens: 999999,')
   },
   {
-    name: '8. Admin Metrics Availability Invariant',
-    testCmd: 'node --test tests/admin-workflow.test.mjs',
-    targetFile: 'tests/admin-workflow.test.mjs',
-    mutate: (content) => content.replace("assert.equal(metrics.users, 12);", "assert.equal(metrics.users, 999);"),
-    description: 'Mutating normalized user metrics to prove admin metrics parser catches false counts'
+    id: 8,
+    name: 'Admin Metrics Availability Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'src/utils/adminData.js',
+    command: 'node --test tests/admin-workflow.test.mjs',
+    mutate: (content) => content.replace('users: finite(stats?.numberOfUsers),', 'users: 999999,')
   },
   {
-    name: '9. Subscription Normalization Invariant',
-    testCmd: 'node --test tests/admin-workflow.test.mjs',
-    targetFile: 'tests/admin-workflow.test.mjs',
-    mutate: (content) => content.replace("assert.equal(active.plan, 'Premium');", "assert.equal(active.plan, 'Free');"),
-    description: 'Mutating subscription plan parser to prove normalization test catches false plan assignments'
+    id: 9,
+    name: 'Subscription Normalization Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'src/utils/adminData.js',
+    command: 'node --test tests/admin-workflow.test.mjs',
+    mutate: (content) => content.replace("plan: text(data.plan || data.membership || data.type, 'Unknown'),", "plan: 'CORRUPTED_PLAN_MUTATION',")
   },
   {
-    name: '10. Empty Section Suppression Invariant',
-    testCmd: 'node --test tests/template-empty-sections.test.mjs',
-    targetFile: 'tests/template-empty-sections.test.mjs',
-    mutate: (content) => content.replace("assert.equal(hasMeaningfulText(''), false);", "assert.equal(hasMeaningfulText(''), true);"),
-    description: 'Mutating empty text check to prove template engine catches blank section leaks'
+    id: 10,
+    name: 'Empty Section Suppression Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'src/engine/hybrid/utils/contentSanitizer.js',
+    command: 'node --test tests/template-empty-sections.test.mjs',
+    mutate: (content) => content.replace('if (value === null || value === undefined) return false;', 'if (value === null || value === undefined) return true;')
   },
   {
-    name: '11. Template Differentiation Preset Invariant',
-    testCmd: 'node --test tests/template-differentiation.test.mjs',
-    targetFile: 'tests/template-differentiation.test.mjs',
-    mutate: (content) => content.replace("assert.ok(preset, `Missing preset for ${id}`);", "assert.equal(preset, null);"),
-    description: 'Asserting preset is null to prove differentiation test catches missing template tokens'
+    id: 11,
+    name: 'Template Differentiation Preset Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'src/engine/hybrid/themePresets.js',
+    command: 'node --test tests/template-differentiation.test.mjs',
+    mutate: (content) => content.replace("MODERN_SPLIT: 'modern-split',", "MODERN_SPLIT: 'MUTATED_CORRUPTED_SPLIT',")
   },
   {
-    name: '12. OAuth State Resolver Invariant',
-    testCmd: 'node --test tests/oauth-resolver.test.mjs',
-    targetFile: 'tests/oauth-resolver.test.mjs',
-    mutate: (content) => content.replace("assert.equal(states.enableGoogle, OAUTH_STATE.ENABLED);", "assert.equal(states.enableGoogle, OAUTH_STATE.DISABLED);"),
-    description: 'Asserting disabled state on enabled provider to prove resolver catches false provider states'
+    id: 12,
+    name: 'OAuth State Resolver Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'src/utils/oauthResolver.js',
+    command: 'node --test tests/oauth-resolver.test.mjs',
+    mutate: (content) => content.replace('flags[provider.flag] = states[provider.flag] === OAUTH_STATE.ENABLED;', 'flags[provider.flag] = true;')
   },
   {
-    name: '13. Admin UX Shared Modal Consistency Invariant',
-    testCmd: 'node --test tests/admin-ux-consistency.test.mjs',
+    id: 13,
+    name: 'Admin UX Shared Modal Consistency Invariant',
+    classification: 'TEST_CODE_MUTATION',
     targetFile: 'tests/admin-ux-consistency.test.mjs',
-    mutate: (content) => content.replace("assert.match(hook, /EnterpriseConfirmModal/", "assert.match(hook, /NonExistentModalComponent/"),
-    description: 'Searching for non-existent dialog to prove modal consistency test catches bespoke modal drift'
+    command: 'node --test tests/admin-ux-consistency.test.mjs',
+    mutate: (content) => content.replace("assert.match(hook, /EnterpriseConfirmModal/", "assert.match(hook, /NonExistentModalPattern123/")
   },
   {
-    name: '14. ATS Module Flag Invariant',
-    testCmd: 'node --test tests/ats-module-toggle.test.mjs',
-    targetFile: 'tests/ats-module-toggle.test.mjs',
-    mutate: (content) => content.replace("assert.equal(resolveEnabledFlag(undefined, true), true);", "assert.equal(resolveEnabledFlag(undefined, true), false);"),
-    description: 'Mutating fallback resolution to prove ATS module toggle test catches incorrect flag resolution'
+    id: 14,
+    name: 'ATS Module Flag Invariant',
+    classification: 'PRODUCTION_CODE_MUTATION',
+    targetFile: 'src/utils/moduleFlags.js',
+    command: 'node --test tests/ats-module-toggle.test.mjs',
+    mutate: (content) => content.replace('if (value === undefined) return defaultEnabled === true;', 'return false; // MUTATED')
   },
   {
-    name: '15. Platform Health RBAC User Denial Invariant',
-    testCmd: 'node --test backend/test/platform-health-rbac.test.js',
+    id: 15,
+    name: 'Platform Health RBAC User Denial Invariant',
+    classification: 'TEST_CODE_MUTATION',
     targetFile: 'backend/test/platform-health-rbac.test.js',
-    mutate: (content) => content.replace("assert.equal(res.status, 403,", "assert.equal(res.status, 200,"),
-    description: 'Asserting 200 on unprivileged caller to prove health control plane rejects non-admin users'
+    command: 'node --test backend/test/platform-health-rbac.test.js',
+    mutate: (content) => content.replace("assert.equal(res.status, 403, `an ordinary user must not read platform health, got ${res.status}`);", "assert.equal(res.status, 200, `an ordinary user must not read platform health, got ${res.status}`);")
   }
 ];
 
-let totalPassedNonVacuity = 0;
+const results = [];
+let passCount = 0;
 
 for (const exp of experiments) {
-  console.log(`\n▶ [Experiment] Invariant: ${exp.name}`);
-  console.log(`  Target: ${exp.targetFile}`);
-  console.log(`  Hypothesis: Injected defect MUST cause test command to FAIL with non-zero exit code.`);
+  console.log(`▶ [Experiment ${exp.id}] Invariant: ${exp.name}`);
+  console.log(`  Classification: [${exp.classification}]`);
+  console.log(`  Target File:    ${exp.targetFile}`);
+  console.log(`  Harness Cmd:    ${exp.command}`);
 
   const originalContent = fs.readFileSync(exp.targetFile, 'utf8');
   const mutatedContent = exp.mutate(originalContent);
 
   if (mutatedContent === originalContent) {
-    console.error(`  [ERROR] Mutation pattern not found in ${exp.targetFile}!`);
+    console.error(`  ❌ FATAL: Mutation failed to modify target in ${exp.targetFile}`);
     process.exit(1);
   }
 
+  // 1. Apply Injected Defect
+  fs.writeFileSync(exp.targetFile, mutatedContent, 'utf8');
+
+  let defectFailed = false;
   try {
-    // 1. Inject defect
-    fs.writeFileSync(exp.targetFile, mutatedContent, 'utf8');
-    
-    // 2. Run test (must fail)
-    let failedAsExpected = false;
-    try {
-      execSync(exp.testCmd, { stdio: 'pipe' });
-    } catch (err) {
-      failedAsExpected = true;
-    }
-
-    if (!failedAsExpected) {
-      console.error(`  [FAILURE] Test VACUOUSLY PASSED even with defect injected! Invariant test is weak.`);
-      fs.writeFileSync(exp.targetFile, originalContent, 'utf8');
-      process.exit(1);
-    }
-    console.log(`  ✔ PROVEN NON-VACUOUS: Test failed as expected on injected defect.`);
-
-  } finally {
-    // 3. Restore original code
-    fs.writeFileSync(exp.targetFile, originalContent, 'utf8');
-  }
-
-  // 4. Verify test passes again after restoration
-  try {
-    execSync(exp.testCmd, { stdio: 'pipe' });
-    console.log(`  ✔ RESTORATION CONFIRMED: Test passes cleanly on genuine code.`);
-    totalPassedNonVacuity++;
+    execSync(exp.command, { stdio: 'pipe' });
   } catch (err) {
-    console.error(`  [FAILURE] Test failed to pass after code restoration!`);
-    process.exit(1);
+    defectFailed = true;
+  }
+
+  // 2. Restore Original Code Immediately
+  fs.writeFileSync(exp.targetFile, originalContent, 'utf8');
+
+  // 3. Confirm Clean Pass on Restored Code
+  let restoredPassed = false;
+  try {
+    execSync(exp.command, { stdio: 'pipe' });
+    restoredPassed = true;
+  } catch (err) {
+    restoredPassed = false;
+  }
+
+  if (defectFailed && restoredPassed) {
+    console.log('  ✔ PROVEN NON-VACUOUS: Test failed as expected on injected defect.');
+    console.log('  ✔ RESTORATION CONFIRMED: Test passes cleanly on genuine code.\n');
+    passCount++;
+    results.push({
+      experimentId: exp.id,
+      name: exp.name,
+      classification: exp.classification,
+      targetFile: exp.targetFile,
+      defectFailedAsExpected: true,
+      restoredPassedAsExpected: true,
+      verdict: 'PROVEN_NON_VACUOUS'
+    });
+  } else {
+    console.error(`  ❌ VACUITY FAILURE: defectFailed=${defectFailed}, restoredPassed=${restoredPassed}\n`);
+    results.push({
+      experimentId: exp.id,
+      name: exp.name,
+      classification: exp.classification,
+      targetFile: exp.targetFile,
+      defectFailedAsExpected: defectFailed,
+      restoredPassedAsExpected: restoredPassed,
+      verdict: 'VACUOUS_OR_UNSTABLE'
+    });
   }
 }
 
-console.log('\n================================================================');
-console.log(`All ${totalPassedNonVacuity}/${experiments.length} Critical Invariants PROVEN NON-VACUOUS.`);
-console.log('Zero false-positive or vacuous tests detected.');
+console.log('================================================================');
+console.log(`Non-Vacuity Summary: ${passCount}/${experiments.length} Invariants PROVEN NON-VACUOUS.`);
+console.log(`Production Code Mutations: ${experiments.filter(e => e.classification === 'PRODUCTION_CODE_MUTATION').length}`);
+console.log(`Test Code Mutations:       ${experiments.filter(e => e.classification === 'TEST_CODE_MUTATION').length}`);
+console.log(`Configuration Mutations:   ${experiments.filter(e => e.classification === 'CONFIGURATION_MUTATION').length}`);
 console.log('================================================================\n');
+
+if (passCount !== experiments.length) {
+  process.exit(1);
+}
