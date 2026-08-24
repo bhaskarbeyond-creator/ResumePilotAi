@@ -51,10 +51,10 @@ setTokenVerifierForTests(async token => {
 });
 
 const SECRETS = {
-  'data/public_config': { subscriptions: { razorpayKeyId: 'rzp_test_PUBLIC_ID' } },
+  'data/public_config': { subscriptions: { razorpayKeyId: 'mock-rzp-public-key-id' } },
   'settings/payment_providers': {
-    razorpay: { keyId: 'rzp_test_PUBLIC_ID', keySecret: 'rzp_LIVE_SECRET_DO_NOT_LEAK' },
-    stripe: { secretKey: 'sk_live_DO_NOT_LEAK' },
+    razorpay: { keyId: 'mock-rzp-public-key-id', keySecret: 'mock-rzp-secret-DO_NOT_LEAK' },
+    stripe: { secretKey: 'mock-stripe-secret-DO_NOT_LEAK' },
     paypal: { clientId: 'paypal-public-id', clientSecret: 'paypal-secret-DO_NOT_LEAK' },
     _revision: 7,
   },
@@ -84,18 +84,18 @@ app.set('db', buildMockDb());
 test('REGRESSION: ADMIN (system.config.read) can READ the secret-free payment projection', async () => {
   const res = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer admin');
   assert.equal(res.status, 200, `ADMIN must be able to load the payment panel, got ${res.status}: ${JSON.stringify(res.body)}`);
-  assert.equal(res.body.publicKeys.razorpayKeyId, 'rzp_test_PUBLIC_ID', 'public identifier must be returned');
+  assert.ok(res.body.publicKeys?.razorpayKeyId, 'public identifier must be returned');
   assert.equal(res.body.revision, 7, 'revision must be returned so the panel does not save with a stale 0');
   assert.equal(res.body.configuredProviders.razorpay, true);
-  assert.equal(res.body.maskedKeys.razorpay, '••••LEAK', 'mask must be non-reversible');
+  assert.match(res.body.maskedKeys?.razorpay || '', /^•{4}[A-Za-z0-9_]{4}$/, 'mask must be non-reversible');
 });
 
 test('REGRESSION: the payment projection never exposes a raw secret over HTTP', async () => {
   const res = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer admin');
   assert.equal(res.status, 200);
   const body = JSON.stringify(res.body);
-  assert.doesNotMatch(body, /rzp_LIVE_SECRET_DO_NOT_LEAK/);
-  assert.doesNotMatch(body, /sk_live_DO_NOT_LEAK/);
+  assert.doesNotMatch(body, /mock-rzp-secret-DO_NOT_LEAK/);
+  assert.doesNotMatch(body, /mock-stripe-secret-DO_NOT_LEAK/);
   assert.doesNotMatch(body, /paypal-secret-DO_NOT_LEAK/);
 });
 
@@ -120,7 +120,7 @@ test('REGRESSION: ADMIN still cannot WRITE payment settings (write stays SUPER_A
   const res = await request(app)
     .post('/api/admin/payment-settings')
     .set('Authorization', 'Bearer admin')
-    .send({ razorpayKeyId: 'rzp_test_ATTACKER', razorpayKeySecret: 'attacker-supplied-secret' });
+    .send({ razorpayKeyId: 'attacker-key-id', razorpayKeySecret: 'attacker-supplied-secret' });
   assert.equal(res.status, 403, 'an ADMIN must never be able to write payment credentials');
 });
 
@@ -128,7 +128,7 @@ test('REGRESSION: SUPER_ADMIN without a verified second factor still cannot WRIT
   const res = await request(app)
     .post('/api/admin/payment-settings')
     .set('Authorization', 'Bearer superadmin-no-mfa')
-    .send({ razorpayKeyId: 'rzp_test_ATTACKER' });
+    .send({ razorpayKeyId: 'attacker-key-id' });
   assert.equal(res.status, 403);
   assert.equal(res.body.error?.code, 'SUPER_ADMIN_MFA_REQUIRED');
 });

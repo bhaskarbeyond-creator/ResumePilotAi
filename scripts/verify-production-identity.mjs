@@ -26,15 +26,22 @@ import {
   DEFAULT_BASE_URL,
   Recorder,
   probe,
-  readEnv,
   reportMissingEnv,
+  readEnv,
 } from './lib/live-certification.mjs';
+import { execSync } from 'node:child_process';
 
 const SCRIPT = 'verify-production-identity';
 
+let defaultSha;
+try {
+  defaultSha = execSync('git rev-parse HEAD').toString().trim();
+} catch (_) {}
+
 const { ok, values, missing } = readEnv({
   EXPECTED_SHA: {
-    required: true,
+    required: !defaultSha,
+    default: defaultSha,
     description: 'Full git SHA that was tested and deployed, e.g. export EXPECTED_SHA=$(git rev-parse HEAD)',
   },
   PROD_BASE_URL: { default: DEFAULT_BASE_URL, description: 'Production origin' },
