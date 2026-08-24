@@ -794,9 +794,18 @@ export async function cancelUserSubscription(_userId, reason) {
 }
 
 // Function to quickly toggle user membership plan
-export async function updateUserSubscription(userId, membership, expectedMembership = undefined) {
+export async function updateUserSubscription(userId, membership, durationMonthsOrExpected = undefined, expected = {}) {
     try {
-        await updateUserByAdminApi(userId, { membership, ...(expectedMembership === undefined ? {} : { expectedMembership }) });
+        let changes = { membership };
+        if (typeof durationMonthsOrExpected === 'number') {
+            changes.durationMonths = durationMonthsOrExpected;
+            if (expected.expectedMembership) changes.expectedMembership = expected.expectedMembership;
+        } else if (durationMonthsOrExpected && typeof durationMonthsOrExpected === 'object') {
+            if (durationMonthsOrExpected.expectedMembership) changes.expectedMembership = durationMonthsOrExpected.expectedMembership;
+        } else if (typeof durationMonthsOrExpected === 'string') {
+            changes.expectedMembership = durationMonthsOrExpected;
+        }
+        await updateUserByAdminApi(userId, changes);
         return { success: true, message: `Subscription plan updated to ${membership}.` };
     } catch (error) {
         return { success: false, error: error.message };

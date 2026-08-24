@@ -1,0 +1,428 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "auditTitle": "Super Admin Tenant & User Control-Plane Forensic Gap Matrix",
+  "repository": "ResumePilotAi",
+  "productionUrl": "https://airesume.projectdemo.guru",
+  "auditDate": "2026-08-25T03:30:00Z",
+  "baselineSha": "2e211e0480ced45f0795e052df3a713875e00ffe",
+  "overallHealthScore": 31,
+  "summary": {
+    "totalGaps": 25,
+    "p0Critical": 5,
+    "p1Major": 7,
+    "p2Significant": 8,
+    "p3Minor": 5
+  },
+  "domainScores": {
+    "tenantManagement": 48,
+    "userManagement": 28,
+    "rbacAuthorization": 42,
+    "tenantIsolation": 65,
+    "aiAdministration": 22,
+    "billingCurrency": 18,
+    "auditability": 52,
+    "uiUx": 25,
+    "apiIntegration": 45,
+    "dataModel": 35,
+    "operationalReadiness": 20
+  },
+  "gaps": [
+    {
+      "id": "GAP-P0-001",
+      "severity": "P0",
+      "domain": "Tenant-User Relationship",
+      "title": "Complete Disconnection Between Users and Enterprise Tenants",
+      "description": "UsersManager.jsx has zero references to tenant or tenantId. The platform user directory does not display, filter, or record enterprise tenant associations. Users in enterprise tenants are completely invisible from platform user administration.",
+      "impact": "Super Admin cannot identify which organization a user belongs to, cannot assign users to tenants, and cannot manage tenant memberships from the primary user control plane.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx",
+        "backend/index.js",
+        "src/firestore/dbOperations.js"
+      ],
+      "currentBaseline": "Users collection is flat with no tenantId/tenantIds. UsersManager queries /api/admin/users without tenant context.",
+      "targetState": "Users table displays tenant membership column, tenant filter dropdown, and User 360 shows all tenant associations with tenant-scoped roles.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "HIGH"
+    },
+    {
+      "id": "GAP-P0-002",
+      "severity": "P0",
+      "domain": "User Management / Scalability",
+      "title": "Lack of Pagination in User Directory (100 User Hard Ceiling)",
+      "description": "Backend listUsers defaults to 100 entries and returns a nextPageToken, but UsersManager.jsx does not store or consume pagination tokens. All users are loaded in a single unpaginated batch.",
+      "impact": "On platforms with >100 users, users beyond the first 100 are completely invisible and unmanageable in the Super Admin interface.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx",
+        "src/firestore/dbOperations.js",
+        "backend/index.js"
+      ],
+      "currentBaseline": "getAllUsers() requests /api/admin/users without page tokens; UsersManager renders single array in memory.",
+      "targetState": "Full cursor-based server-side pagination with page controls (Previous/Next/Page size: 25, 50, 100), cursor preservation, and total count indicator.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "CRITICAL"
+    },
+    {
+      "id": "GAP-P0-003",
+      "severity": "P0",
+      "domain": "AI Administration",
+      "title": "Zero Per-User and Per-Tenant AI Quota/Entitlement Allocation UI",
+      "description": "AiSettings.jsx displays hardcoded global limits (Basic: 10, Premium: 100, Admin: 10000) with only a global or UID-based counter reset button. There is no UI to configure, allocate, override, or tier AI limits per user or per tenant.",
+      "impact": "Super Admin cannot grant additional AI tokens/credits, cannot throttle abusers, and cannot create custom enterprise AI quota plans.",
+      "impactedFiles": [
+        "src/components/admin/settings/AiSettings.jsx",
+        "backend/services/aiAdmin.js",
+        "backend/enterprise/tenantQuota.js",
+        "backend/enterprise/tenantAi.js"
+      ],
+      "currentBaseline": "Limits are static in code or daily rate limits; reset button resets daily counter to 0.",
+      "targetState": "Centralized AI entitlement management interface supporting per-tenant and per-user custom quota limits, token allocations, reset schedules, and quota override controls with audit logging.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "HIGH"
+    },
+    {
+      "id": "GAP-P0-004",
+      "severity": "P0",
+      "domain": "Billing & Currency",
+      "title": "Systemic Currency Fracture and Hardcoded Defaults",
+      "description": "Currency handling is fragmented across backend and frontend. backend/index.js hardcodes Stripe plans in 'usd' and Razorpay in 'INR'. subscriptionsSettings.jsx hardcodes INR in 5+ places. Invoice generators use disparate symbol lookups.",
+      "impact": "Incorrect currency symbol display, tax computation anomalies (GST applied erroneously to international USD transactions), and inability to configure a global platform currency.",
+      "impactedFiles": [
+        "src/components/admin/settings/subscriptionsSettings.jsx",
+        "backend/index.js",
+        "backend/security/payments.js",
+        "backend/routes/email.js"
+      ],
+      "currentBaseline": "Currency defaults to 'INR' hardcoded in state, 'usd' in Stripe catalog, manual conversions in invoice renderer.",
+      "targetState": "Unified Platform Currency Configuration module in Super Admin settings, dynamic currency mapping across Stripe/Razorpay/PayPal/PhonePe/Paytm, and currency-aware tax engines.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "HIGH"
+    },
+    {
+      "id": "GAP-P0-005",
+      "severity": "P0",
+      "domain": "User Management / Onboarding",
+      "title": "Absence of Administrative User Creation & Invitation Engine",
+      "description": "Super Admin has no UI to create new users or send invitations. The only existing flow is 'Make Admin by Email', which only alters role claims for accounts that already self-registered via public signup.",
+      "impact": "Cannot administratively provision enterprise operators, staff accounts, or direct customer accounts without requiring public registration.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx",
+        "backend/index.js"
+      ],
+      "currentBaseline": "No user creation endpoint or modal in Super Admin Users Manager.",
+      "targetState": "Secure 'Create / Invite User' modal with initial role selection, tenant assignment, initial subscription grant, and temporary password or magic invite link.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "GAP-P1-001",
+      "severity": "P1",
+      "domain": "User Management / UX",
+      "title": "Lack of User 360 Comprehensive Inspection Panel",
+      "description": "UserEdit.jsx is a rudimentary form for editing email, membership, role, and suspension. It provides no visibility into user login history, active sessions, tenant memberships, AI consumption, order history, resumes created, or security posture.",
+      "impact": "Super Admin must navigate across 4+ disconnected screens to triage a single user account.",
+      "impactedFiles": [
+        "src/components/admin/userEdit/UserEdit.jsx",
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Bare modal/form with 4 dropdowns/inputs and an audit log sub-panel.",
+      "targetState": "Full User 360 Drawer/Page with tabbed telemetry: Profile & Auth, Tenant Memberships, AI Quota & Consumption, Subscriptions & Invoices, Resumes/Cover Letters, Security & Audit Timeline.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "GAP-P1-002",
+      "severity": "P1",
+      "domain": "API & Backend Projection",
+      "title": "Backend adminUserProjection Lacks Tenant & AI Metadata",
+      "description": "The server-side adminUserProjection function in backend/index.js (line 4832) returns 15 identity fields but completely omits tenant memberships, active tenant roles, AI quota balances, and lifetime spend.",
+      "impact": "Client-side admin UI cannot render tenant or AI metrics without individual follow-up N+1 API calls.",
+      "impactedFiles": [
+        "backend/index.js"
+      ],
+      "currentBaseline": "Projection returns: id, email, displayName, role, isA, emailVerified, suspended, mfaEnabled, membership, membershipEnds, createdAt, lastLoginAt, updatedAt.",
+      "targetState": "Projection includes: tenantCount, primaryTenant, tenants: [{id, name, role}], aiUsageToday, aiQuotaLimit, currency, lifetimeSpend.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "GAP-P1-003",
+      "severity": "P1",
+      "domain": "Billing & Subscriptions",
+      "title": "No Operational Subscription & Lifecycle Management Console",
+      "description": "subscriptionsSettings.jsx is a 296KB configuration view for payment gateway keys, webhook secrets, and plan definitions. It contains no operational dashboard to list active subscriptions, manage renewals, handle cancellations, or process manual invoice overrides.",
+      "impact": "Super Admin cannot view live subscription lifecycles, monitor churn, or manage subscriber billing issues.",
+      "impactedFiles": [
+        "src/components/admin/settings/subscriptionsSettings.jsx",
+        "backend/index.js"
+      ],
+      "currentBaseline": "Gateway settings and invoice PDF styling only; ordersManagement exists separately but lacks subscription lifecycle controls.",
+      "targetState": "Dedicated Subscriptions Control Plane with status filters (Active, Past Due, Canceled, Trialing), manual billing grant controls, and renewal management.",
+      "remediationComplexity": "HIGH",
+      "riskLevel": "HIGH"
+    },
+    {
+      "id": "GAP-P1-004",
+      "severity": "P1",
+      "domain": "RBAC & Authorization",
+      "title": "RBAC Role Hierarchy Incomplete (Missing 4 Enterprise/Domain Roles)",
+      "description": "backend/security/auth.js defines only SUPER_ADMIN, ADMIN, SUPPORT, and USER. The target operating model requires ENTERPRISE_ADMIN, ENTERPRISE_MEMBER, EMPLOYER, and AUDITOR.",
+      "impact": "Enterprise tenant isolation policies cannot rely on first-class platform JWT role claims for delegated administration and compliance auditing.",
+      "impactedFiles": [
+        "backend/security/auth.js",
+        "src/components/admin/Admin.jsx",
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "4 static roles in PERMISSIONS object.",
+      "targetState": "8 standardized role definitions with clear permission maps and tenant-scoped authorization middleware.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "GAP-P1-005",
+      "severity": "P1",
+      "domain": "User Management / UX",
+      "title": "No Bulk Operations on Users Directory",
+      "description": "UsersManager does not support multi-selection. There are no bulk actions for suspending multiple users, mass role migrations, bulk deletion, or filtered export.",
+      "impact": "Administrative operations on large cohorts requires tedious, error-prone manual execution one user at a time.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Actions executed individually per row via dropdown menu.",
+      "targetState": "Checkboxes with 'Select All' on page / across query, and floating bulk action bar (Bulk Suspend, Bulk Plan Update, Bulk Export, Bulk Invite).",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P1-006",
+      "severity": "P1",
+      "domain": "Architecture & Maintainability",
+      "title": "UsersManager Legacy Class Component Technical Debt",
+      "description": "UsersManager.jsx is a 1,161-line React class component using deprecated lifecycle methods and manual state binding, contrasting with modern functional components and hooks used across the rest of the application.",
+      "impact": "High defect risk during state updates, inability to use custom hooks (useAdminSession, useTheme), and difficult unit testing.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Legacy React.Component with monolithic render() and manual bind(this).",
+      "targetState": "Refactored modular functional component leveraging custom React hooks and sub-components (UserTable, UserFilters, UserStats, UserBulkActions).",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P1-007",
+      "severity": "P1",
+      "domain": "Tenant 360",
+      "title": "Incomplete Tenant 360 Capabilities in PlatformTenants",
+      "description": "PlatformTenants.jsx allows provisioning, rename, suspend/reactivate, and decommission. However, it lacks tenant owner assignment, plan/subscription tier binding, billing status, currency selection, and tenant-level AI policy management.",
+      "impact": "Super Admin cannot fully manage an enterprise tenant's commercial or operational relationship from the tenant registry.",
+      "impactedFiles": [
+        "src/components/admin/tenants/PlatformTenants.jsx",
+        "backend/routes/enterprise.js"
+      ],
+      "currentBaseline": "Tenant detail drawer shows overview, user count, usage count, and M2M stats as read-only summaries.",
+      "targetState": "Editable Tenant 360 with Plan/Billing tab, Currency configuration, Member management, and Tenant AI Quota allocation.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "GAP-P2-001",
+      "severity": "P2",
+      "domain": "Performance",
+      "title": "N+1 Firestore Document Fetch in User Listing API",
+      "description": "GET /api/admin/users calls listUsers(limit) and then performs an individual Promise.all over all returned user records to fetch requestDb.collection('users').doc(uid).get(). For a limit of 100, this initiates 101 separate Firestore read operations.",
+      "impact": "Elevated API latency (1.2s - 2.8s under load) and higher Firestore read consumption.",
+      "impactedFiles": [
+        "backend/index.js"
+      ],
+      "currentBaseline": "100 individual doc().get() calls per directory listing request.",
+      "targetState": "Batch lookup using db.getAll(...refs) or projection caching for user directory listings.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P2-002",
+      "severity": "P2",
+      "domain": "UI/UX & Accessibility",
+      "title": "Auto-Dismissing Action and Error Messages Concealing Failures",
+      "description": "Status and error notifications in UsersManager and UserEdit auto-dismiss after 3000ms - 4000ms using setTimeout. Administrators reviewing failed operations miss critical error remediation messages.",
+      "impact": "Silent operational failure perception; poor accessibility for screen readers and slower readers.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx",
+        "src/components/admin/userEdit/UserEdit.jsx"
+      ],
+      "currentBaseline": "setTimeout(() => this.setState({ successMessage: '', errorMessage: '' }), 4000).",
+      "targetState": "Persistent alert banners with manual dismiss ('X') buttons and ARIA live regions.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P2-003",
+      "severity": "P2",
+      "domain": "UI/UX",
+      "title": "Column Sorting Missing in Users and Tenants Tables",
+      "description": "Table headers in UsersManager and PlatformTenants are static <th> elements without click-to-sort capabilities for Created Date, Last Login, Name, Email, or Plan.",
+      "impact": "Administrators cannot sort to find newest users, inactive users, or highest-tier subscribers.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx",
+        "src/components/admin/tenants/PlatformTenants.jsx"
+      ],
+      "currentBaseline": "Static HTML table headers with default server ordering.",
+      "targetState": "Interactive sortable column headers with visual ascending/descending caret indicators and URL state preservation.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P2-004",
+      "severity": "P2",
+      "domain": "Audit & Compliance",
+      "title": "Missing Before/After Diff State in Audit Logs",
+      "description": "security_audit_logs and admin_audit_logs record the action name, actorUid, and changedFields array, but do not capture the previous value vs next value for modified fields (e.g. role change from USER to ADMIN).",
+      "impact": "Inability to perform exact forensic reconstruction during security audits (e.g., what was the previous role or membership before change).",
+      "impactedFiles": [
+        "backend/index.js",
+        "backend/security/adminAudit.js"
+      ],
+      "currentBaseline": "Audit logs record changedFields: ['role', 'membership'] without payload snapshots.",
+      "targetState": "Structured audit event schema capturing { before: { role: 'USER' }, after: { role: 'ADMIN' }, reason, ipAddress, userAgent }.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "MEDIUM"
+    },
+    {
+      "id": "GAP-P2-005",
+      "severity": "P2",
+      "domain": "AI Administration / Visualization",
+      "title": "Absence of Historical AI Consumption Trends & Dashboard",
+      "description": "AiSettings.jsx only displays current-day quota counts. There are no visual charts or graphs showing 7-day, 30-day, or 90-day AI consumption trends, token burn rates, or provider cost breakdowns.",
+      "impact": "Super Admin has no capacity planning visibility or cost forecasting for AI provider billing.",
+      "impactedFiles": [
+        "src/components/admin/settings/AiSettings.jsx",
+        "backend/routes/platform.js"
+      ],
+      "currentBaseline": "Raw count table of today's usage records.",
+      "targetState": "Interactive time-series charts (Daily Requests, Token Burn, Top 10 Consumers, Provider Latency) powered by Firestore daily rollups.",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P2-006",
+      "severity": "P2",
+      "domain": "Data Model",
+      "title": "Missing Currency and AI Quota Overrides in User Schema",
+      "description": "The user document schema in Firestore (users/{uid}) lacks fields for preferredCurrency, customAiQuotaLimit, and tenantMemberships.",
+      "impact": "User preferences cannot be persisted without schema harmonization.",
+      "impactedFiles": [
+        "backend/index.js",
+        "src/firestore/dbOperations.js"
+      ],
+      "currentBaseline": "User document stores only core identity and basic membership fields.",
+      "targetState": "Standardized user profile schema supporting preferredCurrency, aiQuotaOverride, and activeTenantIds.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P2-007",
+      "severity": "P2",
+      "domain": "Accessibility",
+      "title": "Action Menus and Modals Lack Keyboard Focus Trapping & ARIA Menu Roles",
+      "description": "Dropdown action menus in UsersManager lack role='menu' / role='menuitem' and do not respond to keyboard arrow keys. Focus is not trapped inside confirmation modals.",
+      "impact": "Substandard keyboard-only and screen reader accessibility for administrative operators.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx",
+        "src/components/admin/tenants/PlatformTenants.jsx"
+      ],
+      "currentBaseline": "Standard <div> dropdown toggled by mouse clicks; modal lacks focus trap.",
+      "targetState": "Accessible dropdowns with ARIA menu markup, keyboard navigation (ArrowUp, ArrowDown, Escape, Enter), and focus trapping inside active modals.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P2-008",
+      "severity": "P2",
+      "domain": "Responsive Design",
+      "title": "Users Directory Table Layout Degrades on Tablet/Mobile Viewports",
+      "description": "The users table relies on horizontal overflow scrolling on viewports <1024px, causing action dropdowns to clip outside the visible scroll container.",
+      "impact": "Impaired administrative triage capability on mobile/tablet devices.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Unmodified <table> inside overflow-x-auto container.",
+      "targetState": "Responsive hybrid layout that renders compact card stacks on mobile (<768px) and structured data table on desktop.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P3-001",
+      "severity": "P3",
+      "domain": "UI/UX Polish",
+      "title": "Duplicate Merge Feature Visually Disabled with Permanent Disabled State",
+      "description": "UsersManager renders a 'Duplicate Accounts Detected' alert and 'Merge Accounts' button that is permanently styled as disabled / unavailable.",
+      "impact": "Confusing UI element that advertises a capability but prevents interaction.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Disabled button with 'Merge unavailable' label.",
+      "targetState": "Clean deduplication wizard or removal of redundant UI elements in favor of automated duplicate detection.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P3-002",
+      "severity": "P3",
+      "domain": "UI/UX Polish",
+      "title": "Generic User Avatar Across All User Records",
+      "description": "All rows in the user table display an identical static FaUser icon regardless of whether the user has a photoURL from Google OAuth or custom profile.",
+      "impact": "Reduced visual scannability and dated appearance.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Hardcoded <FaUser className='text-slate-400' /> in every table row.",
+      "targetState": "User initials avatar with dynamic color hash or Google photoURL thumbnail.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P3-003",
+      "severity": "P3",
+      "domain": "UI/UX Polish",
+      "title": "Prominent 'Grant Admin by Email' Card Pushing Table Below Fold",
+      "description": "A full-width 'Grant Admin Privileges' form is permanently situated directly above the users table, consuming 180px of vertical height for an infrequently used operation.",
+      "impact": "Suboptimal information hierarchy requiring administrators to scroll down on every page load to see the actual user directory.",
+      "impactedFiles": [
+        "src/components/admin/usersManager/UsersManager.jsx"
+      ],
+      "currentBaseline": "Static inline form card between stats header and table.",
+      "targetState": "Moved into an action modal ('+ Add Admin' or '+ Invite User' button in header), reclaiming full-screen height for data tables.",
+      "remediationComplexity": "LOW",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P3-004",
+      "severity": "P3",
+      "domain": "Code Organization",
+      "title": "Monolithic SubscriptionsSettings Component (296KB / 3,600+ Lines)",
+      "description": "src/components/admin/settings/subscriptionsSettings.jsx is an enormous 296KB single file containing gateway setup, tax rules, invoice HTML generators, order tables, and pricing calculators in one class component.",
+      "impact": "Difficult to maintain, high bundle size impact, and slow developer compilation.",
+      "impactedFiles": [
+        "src/components/admin/settings/subscriptionsSettings.jsx"
+      ],
+      "currentBaseline": "Single 3,600+ line component.",
+      "targetState": "Decomposed into modular sub-panels: PaymentGateways, TaxRules, InvoiceTemplateEditor, and PlanCatalogManager.",
+      "remediationComplexity": "HIGH",
+      "riskLevel": "LOW"
+    },
+    {
+      "id": "GAP-P3-005",
+      "severity": "P3",
+      "domain": "Code Organization",
+      "title": "Monolithic Backend index.js (378KB / 5,722 Lines)",
+      "description": "backend/index.js contains thousands of lines of direct route handlers and helper functions alongside server bootstrap logic.",
+      "impact": "Risk of merge conflicts and difficult endpoint discovery.",
+      "impactedFiles": [
+        "backend/index.js"
+      ],
+      "currentBaseline": "Monolithic express app with inline routes.",
+      "targetState": "Modular express routers (routes/adminUsers.js, routes/adminAi.js, routes/adminBilling.js) loaded via express app.use().",
+      "remediationComplexity": "MEDIUM",
+      "riskLevel": "LOW"
+    }
+  ]
+}

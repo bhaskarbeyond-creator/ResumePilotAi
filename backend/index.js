@@ -26,6 +26,8 @@ const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
 const { createAdminAuditMiddleware } = require('./security/adminAudit');
 const { adminAuditRouter } = require('./routes/adminAudit');
 const { platformRouter } = require('./routes/platform');
+const { adminUsersRouter, adminUserProjection } = require('./routes/adminUsers');
+const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -4826,243 +4828,10 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
     }
 });
 
-// Authoritative user directory. Firebase Auth is the identity source; the
-// Firestore profile contributes product membership and activity fields. The
-// browser must not infer roles from a stale Firestore-only list.
-function adminUserProjection(identity, profile = {}, id = identity?.uid) {
-    const claims = identity?.customClaims || {};
-    const role = String(claims.role || profile.role || (profile.isA ? 'ADMIN' : 'USER')).toUpperCase();
-    const safeDate = value => {
-        try { const date = value?.toDate?.() || (value ? new Date(value) : null); return date && Number.isFinite(date.getTime()) ? date.toISOString() : null; }
-        catch (_) { return null; }
-    };
-    const membershipEnds = safeDate(profile.membershipEnds);
-    return {
-        id,
-        userId: id,
-        email: identity?.email || profile.email || null,
-        displayName: identity?.displayName || profile.displayName || `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || null,
-        role: ['SUPER_ADMIN', 'ADMIN', 'SUPPORT', 'USER'].includes(role) ? role : 'USER',
-        isA: ['SUPER_ADMIN', 'ADMIN'].includes(role),
-        emailVerified: identity?.emailVerified === true,
-        suspended: identity?.disabled === true || profile.suspended === true,
-        mfaEnabled: Array.isArray(identity?.multiFactor?.enrolledFactors) && identity.multiFactor.enrolledFactors.length > 0,
-        membership: profile.membership || 'Basic',
-        membershipEnds,
-        createdAt: safeDate(profile.createdAt || identity?.metadata?.creationTime),
-        lastLoginAt: safeDate(profile.lastLoginAt || identity?.metadata?.lastSignInTime),
-        updatedAt: safeDate(profile.updatedAt || identity?.tokensValidAfterTime),
-    };
-}
-
-app.get('/api/admin/users', async (req, res) => {
-    const requestDb = req.app.get('db');
-    const identityAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!requestDb || !identityAdmin?.auth) return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
-    const limit = Math.min(Math.max(Number(req.query?.limit) || 100, 1), 200);
-    const query = String(req.query?.q || req.query?.search || '').trim().toLowerCase();
-    const status = String(req.query?.status || 'all').toLowerCase();
-    const roleFilter = String(req.query?.role || 'all').toUpperCase();
-    try {
-        const listed = await identityAdmin.auth().listUsers(limit, req.query?.pageToken ? String(req.query.pageToken) : undefined);
-        const users = await Promise.all((listed.users || []).map(async identity => {
-            const profile = (await requestDb.collection('users').doc(identity.uid).get()).data() || {};
-            return adminUserProjection(identity, profile);
-        }));
-        const filtered = users.filter(user => {
-            const matchesQuery = !query || [user.id, user.email, user.displayName].some(value => String(value || '').toLowerCase().includes(query));
-            const matchesStatus = status === 'all' || (status === 'suspended' && user.suspended) || (status === 'active' && !user.suspended);
-            const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
-            return matchesQuery && matchesStatus && matchesRole;
-        });
-        return res.json({ success: true, users: filtered, nextPageToken: listed.pageToken || null, pageSize: limit, source: 'firebase-auth-plus-firestore-profile', generatedAt: new Date().toISOString() });
-    } catch (error) {
-        console.error('[Admin user directory]', error.message);
-        return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'Unable to read the authoritative user directory.', requestId: res.locals.requestId });
-    }
-});
-
-app.get('/api/admin/users/:uid', async (req, res) => {
-    const uid = String(req.params.uid || '');
-    const requestDb = req.app.get('db');
-    const identityAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
-    if (!requestDb || !identityAdmin?.auth) return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User directory unavailable.', requestId: res.locals.requestId });
-    try {
-        const [identity, profileSnapshot] = await Promise.all([identityAdmin.auth().getUser(uid), requestDb.collection('users').doc(uid).get()]);
-        const profile = profileSnapshot.exists ? (profileSnapshot.data() || {}) : {};
-        return res.json({ success: true, user: adminUserProjection(identity, profile) });
-    } catch (error) {
-        return res.status(error.code === 'auth/user-not-found' ? 404 : 503).json({ success: false, code: error.code === 'auth/user-not-found' ? 'USER_NOT_FOUND' : 'USER_DIRECTORY_UNAVAILABLE', error: error.code === 'auth/user-not-found' ? 'User not found.' : 'Unable to load user.', requestId: res.locals.requestId });
-    }
-});
-
-// Audited server-authoritative user administration. Firestore rules never permit these
-// identity/entitlement fields to be changed directly by a browser.
-app.get('/api/admin/users/:uid/audit', async (req, res) => {
-    const uid = String(req.params.uid || '');
-    const requestDb = req.app.get('db');
-    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
-    if (!requestDb) return res.status(503).json({ success: false, code: 'AUDIT_UNAVAILABLE', error: 'User audit history is unavailable.', requestId: res.locals.requestId });
-    try {
-        const results = await Promise.allSettled([
-            requestDb.collection('security_audit_logs').where('targetUid', '==', uid).limit(100).get(),
-            requestDb.collection('admin_audit_logs').where('resourceId', '==', uid).limit(100).get(),
-        ]);
-        const events = [];
-        for (const result of results) if (result.status === 'fulfilled') result.value.docs.forEach(doc => {
-            const data = require('./security/adminAudit').sanitizeAuditValue('record', doc.data() || {}) || {};
-            events.push({ id: doc.id, ...data, createdAt: adminIso(doc.data()?.createdAt) || doc.data()?.occurredAt || null });
-        });
-        events.sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
-        return res.json({ success: true, userId: uid, events: events.slice(0, 100), source: results.some(result => result.status === 'fulfilled') ? 'AVAILABLE' : 'UNAVAILABLE' });
-    } catch (error) {
-        return res.status(503).json({ success: false, code: 'AUDIT_UNAVAILABLE', error: 'User audit history is unavailable.', requestId: res.locals.requestId });
-    }
-});
-
-app.patch('/api/admin/users/:uid', async (req, res) => {
-    const uid = String(req.params.uid || '');
-    const requestDb = req.app.get('db');
-    const identityAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
-        return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Valid user UID is required.', requestId: res.locals.requestId });
-    }
-    if (!requestDb || !identityAdmin?.auth || !identityAdmin?.firestore?.FieldValue) {
-        return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'User administration is unavailable.', requestId: res.locals.requestId });
-    }
-
-    const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const callerPermissions = permissionsFor(req.user);
-    const allowed = permission => callerPermissions.has('*') || callerPermissions.has(permission);
-
-    try {
-        const [target, userSnapshot] = await Promise.all([
-            identityAdmin.auth().getUser(uid),
-            requestDb.collection('users').doc(uid).get(),
-        ]);
-        const userData = userSnapshot.exists ? (userSnapshot.data() || {}) : {};
-        const currentRole = String(target.customClaims?.role || userData.role || 'USER').toUpperCase();
-        const currentMembership = String(userData.membership || 'Basic');
-        if (currentRole === 'SUPER_ADMIN' && !isSuperAdmin(req.user)) {
-            return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN accounts can only be changed by another SUPER_ADMIN.' });
-        }
-
-        if (Object.hasOwn(body, 'expectedSuspended') && typeof body.expectedSuspended !== 'boolean') return res.status(400).json({ success: false, code: 'INVALID_EXPECTED_STATE', error: 'Invalid expected suspension state.' });
-        if (Object.hasOwn(body, 'expectedRole') && !['ADMIN', 'SUPPORT', 'USER', 'SUPER_ADMIN'].includes(String(body.expectedRole).toUpperCase())) return res.status(400).json({ success: false, code: 'INVALID_EXPECTED_STATE', error: 'Invalid expected role.' });
-        if (Object.hasOwn(body, 'expectedMembership') && !['Basic', 'Premium'].includes(body.expectedMembership)) return res.status(400).json({ success: false, code: 'INVALID_EXPECTED_STATE', error: 'Invalid expected membership.' });
-        const staleTarget = (Object.hasOwn(body, 'expectedSuspended') && body.expectedSuspended !== Boolean(target.disabled))
-            || (Object.hasOwn(body, 'expectedRole') && String(body.expectedRole).toUpperCase() !== currentRole)
-            || (Object.hasOwn(body, 'expectedMembership') && body.expectedMembership !== currentMembership);
-        if (staleTarget) return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This user changed after the page loaded. Refresh before trying again.' });
-
-        const requestedChanges = ['suspended', 'membership', 'role'].filter(field => Object.hasOwn(body, field));
-        // Validate the complete change set before touching Firebase Auth. Auth and
-        // Firestore are separate services, so preflight validation plus rollback
-        // below prevents an invalid membership field from leaving a user suspended
-        // without a corresponding profile/audit update.
-        if (!requestedChanges.length || requestedChanges.length > 2 || (requestedChanges.includes('role') && requestedChanges.length > 1)) {
-            return res.status(400).json({ success: false, code: 'INVALID_USER_CHANGE_SET', error: 'Send membership and/or suspension together, or send a role change separately.' });
-        }
-
-        const planned = {};
-        const changedFields = [];
-        if (typeof body.suspended === 'boolean') {
-            if (!allowed('users.update')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission.' });
-            if (uid === req.user.uid && body.suspended) return res.status(400).json({ success: false, code: 'SELF_SUSPENSION_PROHIBITED', error: 'Self-suspension is prohibited.' });
-            planned.suspended = body.suspended;
-            changedFields.push('suspended');
-        }
-
-        if (body.membership !== undefined) {
-            if (!allowed('payments.manage')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission.' });
-            if (!['Basic', 'Premium'].includes(body.membership)) return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP', error: 'Invalid membership.' });
-            const durationMonths = body.durationMonths === undefined ? 12 : Number(body.durationMonths);
-            if (!Number.isInteger(durationMonths) || durationMonths < 1 || durationMonths > 600) {
-                return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP_DURATION', error: 'Invalid membership duration.' });
-            }
-            if (durationMonths > 60 && !allowed('users.roles.manage')) {
-                return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Long-lived grants require SUPER_ADMIN.' });
-            }
-            let membershipEnds = new Date();
-            if (body.membershipEnds !== undefined && body.membership === 'Premium') {
-                const requestedEnd = new Date(String(body.membershipEnds));
-                const maxEnd = new Date();
-                maxEnd.setMonth(maxEnd.getMonth() + 600);
-                if (!Number.isFinite(requestedEnd.getTime()) || requestedEnd <= new Date() || requestedEnd > maxEnd) {
-                    return res.status(400).json({ success: false, code: 'INVALID_MEMBERSHIP_END', error: 'Membership end date must be in the future and within 600 months.' });
-                }
-                membershipEnds = requestedEnd;
-            } else {
-                membershipEnds.setMonth(membershipEnds.getMonth() + (body.membership === 'Premium' ? durationMonths : 0));
-            }
-            planned.membership = body.membership;
-            planned.paymentStatus = body.membership === 'Premium' ? 'ADMIN_GRANTED' : 'INACTIVE';
-            planned.membershipEnds = membershipEnds;
-            changedFields.push('membership');
-        }
-
-        if (body.role !== undefined) {
-            if (!allowed('users.roles.manage')) return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission.' });
-            const requestedRole = String(body.role).toUpperCase();
-            // There is deliberately no SUPER_ADMIN value in the accepted role
-            // set. SUPER_ADMIN is provisioned out-of-band and cannot be granted
-            // or removed by this Admin user-directory API.
-            if (!['ADMIN', 'SUPPORT', 'USER'].includes(requestedRole)) return res.status(400).json({ success: false, code: 'SUPER_ADMIN_ROLE_FORBIDDEN', error: 'SUPER_ADMIN cannot be granted or removed through this API.' });
-            if (currentRole === 'SUPER_ADMIN') return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN claims cannot be changed from this API.' });
-            if (uid === req.user.uid && requestedRole !== 'ADMIN') return res.status(400).json({ success: false, code: 'SELF_DEMOTION_PROHIBITED', error: 'Self-demotion is prohibited.' });
-            planned.role = requestedRole;
-            changedFields.push('role');
-        }
-
-        const previousClaims = { ...(target.customClaims || {}) };
-        const previousDisabled = Boolean(target.disabled);
-        let authDisabledChanged = false;
-        let authClaimsChanged = false;
-        try {
-            if (Object.hasOwn(planned, 'suspended')) {
-                await identityAdmin.auth().updateUser(uid, { disabled: planned.suspended });
-                authDisabledChanged = true;
-                if (planned.suspended) await identityAdmin.auth().revokeRefreshTokens(uid);
-            }
-            if (Object.hasOwn(planned, 'role')) {
-                await identityAdmin.auth().setCustomUserClaims(uid, { ...previousClaims, role: planned.role });
-                authClaimsChanged = true;
-                await identityAdmin.auth().revokeRefreshTokens(uid);
-            }
-
-            const updates = {
-                ...planned,
-                updatedAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
-            };
-            const batch = requestDb.batch();
-            batch.set(requestDb.collection('users').doc(uid), updates, { merge: true });
-            batch.set(requestDb.collection('security_audit_logs').doc(), {
-                action: 'USER_ADMIN_UPDATE', actorUid: req.user.uid, targetUid: uid,
-                changedFields, requestId: res.locals.requestId,
-                createdAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
-            });
-            await batch.commit();
-            return res.json({ success: true, uid, changedFields });
-        } catch (error) {
-            // Best-effort compensation for the cross-service portion. The failure
-            // remains a failure response and is visible to the Admin audit
-            // middleware; never claim success after only one store changed.
-            if (authClaimsChanged) await identityAdmin.auth().setCustomUserClaims(uid, previousClaims).catch(() => {});
-            if (authDisabledChanged) await identityAdmin.auth().updateUser(uid, { disabled: previousDisabled }).catch(() => {});
-            throw error;
-        }
-    } catch (error) {
-        console.error('[User admin update]', error.message);
-        const status = error.code === 'auth/user-not-found' ? 404 : (Number(error.status) >= 400 && Number(error.status) < 500 ? Number(error.status) : error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500);
-        return res.status(status).json({
-            success: false,
-            code: error.code || 'USER_ADMIN_UPDATE_FAILED',
-            error: status === 404 ? 'User not found.' : status === 500 ? 'Unable to update user.' : error.message,
-            requestId: res.locals.requestId,
-        });
-    }
-});
+// Authoritative Super Admin User Directory, User 360, AI Entitlements,
+// Platform Currency, Subscriptions Lifecycle, and Tenant Governance Routers.
+app.use('/api/admin/users', adminUsersRouter);
+app.use('/api/admin', adminPlatformOperationsRouter);
 async function deleteApplicationNotifications(database, applicationIds) {
     for (const applicationId of applicationIds) {
         try {
@@ -5700,6 +5469,16 @@ app.get('/api/auth/github/test-credentials', async (req, res) => {
     });
 });
 
+/**
+ * Enterprise & Super Admin Control Plane Router Integration
+ * Security Invariant: SUPER_ADMIN_PROTECTED — SUPER_ADMIN claims cannot be changed from this API.
+ */
+app.use('/api/enterprise', enterpriseRouter);
+app.use('/api/enterprise/m2m', enterpriseM2mRouter);
+app.use('/api/platform', platformRouter);
+app.use('/api/admin', adminAuditRouter);
+app.use('/api/admin/users', adminUsersRouter);
+app.use('/api/admin', adminPlatformOperationsRouter);
 
 app.use('/api', (req, res) => {
     return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'API route not found', requestId: res.locals.requestId } });

@@ -52,3 +52,40 @@ export const getHealthIndicator = () => platformFetch('/api/platform/health-indi
 export const getEnterpriseQueue = () => platformFetch('/api/platform/enterprise-queue');
 export const getOperators = () => platformFetch('/api/platform/operators');
 export const setOperatorRole = (uid, role, expectedRole) => platformFetch('/api/platform/operators', { method: 'POST', body: JSON.stringify({ uid, role, ...(expectedRole ? { expectedRole } : {}) }) });
+
+// Super Admin User Control-Plane & User 360 APIs
+export const getAdminUsers = (params = {}) => {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') query.set(key, String(value));
+  }
+  return platformFetch(`/api/admin/users${query.toString() ? `?${query}` : ''}`);
+};
+export const createAdminUser = (body) => platformFetch('/api/admin/users', { method: 'POST', body: JSON.stringify(body || {}) });
+export const getUser360 = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/details`);
+export const assignUserTenant = (uid, body) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/tenants`, { method: 'POST', body: JSON.stringify(body || {}) });
+export const removeUserTenant = (uid, tenantId) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/tenants/${encodeURIComponent(tenantId)}`, { method: 'DELETE' });
+export const getUserAiEntitlement = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-entitlement`);
+export const updateUserAiEntitlement = (uid, body) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-entitlement`, { method: 'PUT', body: JSON.stringify(body || {}) });
+export const removeUserAiEntitlement = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-entitlement`, { method: 'DELETE' });
+export const resetUserAiQuota = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/ai-quota-reset`, { method: 'POST', body: JSON.stringify({}) });
+
+// Super Admin Platform Currency & Subscriptions
+export const getPlatformCurrency = () => platformFetch('/api/admin/platform/currency');
+export const updatePlatformCurrency = (body) => platformFetch('/api/admin/platform/currency', { method: 'PUT', body: JSON.stringify(body || {}) });
+export const getAdminSubscriptions = (params = {}) => {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') query.set(key, String(value));
+  }
+  return platformFetch(`/api/admin/subscriptions${query.toString() ? `?${query}` : ''}`);
+};
+export const getAdminAiEntitlements = () => platformFetch('/api/admin/ai/entitlements');
+
+// Super Admin Tenant 360 Governance
+export const addTenantMember = (tenantId, body) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/members`, { method: 'POST', body: JSON.stringify(body || {}) });
+export const removeTenantMember = (tenantId, principalId) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(principalId)}`, { method: 'DELETE' });
+export const updateTenantMember = (tenantId, principalId, body) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(principalId)}`, { method: 'PATCH', body: JSON.stringify(body || {}) });
+export const updateTenantCommercials = (tenantId, body) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/commercials`, { method: 'PATCH', body: JSON.stringify(body || {}) });
+export const updateTenantAiPolicy = (tenantId, body) => platformFetch(`/api/admin/platform/tenants/${encodeURIComponent(tenantId)}/ai-policy`, { method: 'PATCH', body: JSON.stringify(body || {}) });
+

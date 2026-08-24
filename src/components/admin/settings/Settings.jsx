@@ -29,6 +29,7 @@ import LlmGeoSettings from './LlmGeoSettings';
 import ModulesSettings from './ModulesSettings';
 import FeatureFlagsSettings from './FeatureFlagsSettings';
 import PlatformConfigSettings from './PlatformConfigSettings';
+import PlatformCurrencySettings from './PlatformCurrencySettings';
 import { FaCircle } from 'react-icons/fa';
 
 // All settings metadata
@@ -46,6 +47,7 @@ const ALL_SETTINGS = [
     { key: 'exportPdfSettings', label: 'PDF Exporter', group: 'AI & Services', description: 'Puppeteer render engine' },
     { key: 'jobScraperSettings', label: 'Job & Naukri Scraper', group: 'AI & Services', description: 'Naukri & LinkedIn config' },
     { key: 'twilioSmsSettings', label: 'Twilio SMS', group: 'AI & Services', description: 'SMS Notification alerts' },
+    { key: 'currencySettings', label: 'Platform Currency', group: 'Payments', description: 'Authoritative currency standard, ISO-4217 & multi-currency' },
     { key: 'ordersManagement', label: 'Orders & Transactions', group: 'Payments', description: 'Master customer invoices & 1-Click refunds' },
     { key: 'watermarkSettings', label: 'PDF Watermark', group: 'Payments', description: 'Free Tier Watermarks' },
     { key: 'subscriptionsSettings', label: 'Subscriptions & Gateways', group: 'Payments', description: 'Razorpay, Stripe, pricing & GST' },
@@ -108,6 +110,7 @@ class SettingsContent extends Component {
                     {step === 'exportPdfSettings' && <ExportPdfSettings />}
                     {step === 'jobScraperSettings' && <JobScraperSettings />}
                     {step === 'twilioSmsSettings' && <TwilioSmsSettings />}
+                    {step === 'currencySettings' && <PlatformCurrencySettings />}
                     {step === 'ordersManagement' && <SubscriptionSetting defaultTab="invoices" />}
                     {step === 'watermarkSettings' && <WatermarkSettings />}
                     {(step === 'subscriptionsSettings' || step === 'paymentSettings') && <SubscriptionSetting defaultTab="gateways" />}

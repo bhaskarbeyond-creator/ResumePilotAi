@@ -3,11 +3,36 @@ const admin = require('../services/firebaseAdmin');
 const PERMISSIONS = Object.freeze({
   SUPER_ADMIN: ['*'],
   ADMIN: [
-    'users.read', 'users.update', 'users.delete', 'email.template.manage',
-    'email.logs.read', 'system.config.read', 'system.config.write', 'payments.manage',
-    'notifications.send'
+    'users.read', 'users.create', 'users.update', 'users.delete', 'users.roles.manage',
+    'tenants.read', 'tenants.write', 'tenants.manage',
+    'email.template.manage', 'email.logs.read',
+    'system.config.read', 'system.config.write',
+    'payments.manage', 'payments.read',
+    'notifications.send',
+    'ai.entitlements.manage', 'ai.usage.read',
+    'audit.read', 'security.read'
   ],
-  SUPPORT: ['users.read', 'email.logs.read']
+  AUDITOR: [
+    'users.read', 'tenants.read', 'email.logs.read', 'system.config.read',
+    'payments.read', 'ai.usage.read', 'audit.read', 'security.read'
+  ],
+  SUPPORT: [
+    'users.read', 'email.logs.read', 'tenants.read', 'tickets.manage'
+  ],
+  ENTERPRISE_ADMIN: [
+    'tenant.members.manage', 'tenant.roles.manage', 'tenant.ai.policy',
+    'tenant.billing.view', 'tenant.audit.read', 'tenant.workspaces.manage',
+    'workspace.read', 'workspace.manage', 'workspace.members.manage'
+  ],
+  ENTERPRISE_MEMBER: [
+    'tenant.resumes.write', 'tenant.interviews.execute', 'tenant.ai.consume', 'workspace.read'
+  ],
+  EMPLOYER: [
+    'jobs.manage', 'applications.review', 'candidates.contact'
+  ],
+  USER: [
+    'resumes.manage', 'coverletters.manage', 'interviews.execute', 'subscription.self'
+  ]
 });
 
 function unauthorized(res, code = 'AUTH_REQUIRED') {
