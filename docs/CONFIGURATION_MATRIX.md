@@ -1,5 +1,18 @@
 # ResumePilot AI — Configuration & Environment Matrix
 
+> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24).** Census re-derived from source:
+> **97** app-level backend environment variables (excluding `node_modules`) and
+> **18** `VITE_*` build-time public variables.
+>
+> **`FIREBASE_TOTP_MFA_ENABLED` does not exist in this codebase** — a full-tree
+> search returns no match. MFA enforcement is governed by
+> `SUPER_ADMIN_MFA_REQUIRED` (defaults to enabled when `NODE_ENV=production`),
+> with `SENSITIVE_AUTH_MAX_AGE_MS` (default `600000`) and
+> `REQUIRE_RECENT_AUTH_IN_TEST`. Any runbook referencing
+> `FIREBASE_TOTP_MFA_ENABLED` describes an unimplemented setting.
+> See `FINAL_FORENSIC_CODEBASE_AUDIT.md` §10.
+
+
 > **Authoritative Configuration & Environment Census**  
 > **Source Commit:** `8c7905f`  
 > **Classification:** AUTHORITATIVE SOURCE OF TRUTH

@@ -25,6 +25,10 @@ class SubscriptionSetting extends Component {
             // Inline notice for invoice/export actions. These used to be native
             // alert() dialogs.
             invoiceNotice: null,
+            // Honest surfacing of payment-projection load failures. `false` means
+            // the gateway fields below are placeholders, not stored values.
+            paymentSettingsNotice: null,
+            paymentSettingsLoaded: false,
 
             // Payment Gateway API Credentials State
             razorpayKeyId: '',
@@ -198,7 +202,16 @@ class SubscriptionSetting extends Component {
             if (systemSettings && systemSettings.modules) {
                 this.setState({ enableCouponsModule: systemSettings.modules.enableCouponsModule !== false });
             }
+        } catch (e) {
+            console.warn('getSystemSettings error:', e);
+        }
 
+        // Payment gateway projection. A failure here MUST be surfaced: previously
+        // this was a bare console.warn, so an authorisation failure (or any load
+        // error) rendered every gateway field empty with `paymentRevision: 0` and
+        // no explanation — operators saw "Razorpay values disappeared" and the
+        // next save failed with an unexplained 409 revision conflict.
+        try {
             const paymentData = await getAdminPaymentSettings();
             if (paymentData) {
                 const { publicKeys, configuredProviders, maskedKeys, credentialSources } = paymentData;
@@ -225,9 +238,23 @@ class SubscriptionSetting extends Component {
                     paytmMerchantKey: '',
                     phonepeSaltKey: '',
                 });
+                this.setState({ paymentSettingsNotice: null, paymentSettingsLoaded: true });
+            } else {
+                this.setState({
+                    paymentSettingsLoaded: false,
+                    paymentSettingsNotice: 'Payment gateway settings returned no data. Existing credentials were left untouched — nothing has been changed.',
+                });
             }
         } catch (e) {
-            console.warn('Error in componentDidMount loading settings:', e);
+            // Honest failure. Never render silently-empty gateway fields: an empty
+            // panel plus a stale revision invites an overwrite and an unexplained
+            // 409 on the next save.
+            console.warn('Error loading payment settings:', e);
+            this.setState({
+                paymentSettingsLoaded: false,
+                paymentSettingsNotice:
+                    `Could not load payment gateway settings${e?.message ? `: ${e.message}` : ''}. Fields below are NOT the stored values — saving now would not change stored credentials. Refresh, and if this persists confirm your role and MFA session.`,
+            });
         }
     }
 
@@ -1637,6 +1664,17 @@ class SubscriptionSetting extends Component {
             this.setState({ couponErrorMsg: 'Payment credential and gateway changes are Super Admin-only. This view is read-only for Admin.' });
             return;
         }
+        if (!this.state.paymentSettingsLoaded) {
+            // The projection never loaded, so `paymentRevision` is a placeholder and
+            // the visible fields are not the stored values. Saving here would send a
+            // bogus expectedRevision and could present misleading state. Fail loudly
+            // instead of pretending.
+            this.setState({
+                paymentSettingsNotice: 'Payment gateway settings are not loaded, so saving is disabled. Reload this panel to fetch the current stored configuration before editing.',
+                couponErrorMsg: 'Save blocked: payment settings are not loaded. Reload the panel and try again.',
+            });
+            return;
+        }
         try {
             const result = await setSubscriptionsData(
             this.state.checkedSubscriptions,
@@ -1719,6 +1757,22 @@ class SubscriptionSetting extends Component {
 
         return (
             <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6">
+                {this.state.paymentSettingsNotice && (
+                    <div
+                        role="alert"
+                        data-testid="payment-settings-notice"
+                        className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900 flex items-start gap-2"
+                    >
+                        <span className="flex-1">{this.state.paymentSettingsNotice}</span>
+                        <button
+                            type="button"
+                            onClick={() => this.setState({ paymentSettingsNotice: null })}
+                            className="underline underline-offset-2"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                )}
                 {this.state.invoiceNotice && (
                     <div
                         role="alert"

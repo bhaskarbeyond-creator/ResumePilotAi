@@ -1,4 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+/* Poppins is self-hosted from /fonts/poppins.css (linked with rel=preload in
+ * index.html, 36 @font-face rules covering weights 300-900 in normal + italic).
+ *
+ * RCA (forensic CSS audit): this file previously began with
+ *   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;...;900&display=swap');
+ * which loaded the SAME family a second time from a third-party origin. That
+ * import is render-blocking, added a hard runtime dependency on Google's origin
+ * (and a CSP allow-list entry for fonts.googleapis.com / fonts.gstatic.com),
+ * downloaded nine weights on top of the seven already self-hosted, and produced
+ * two competing @font-face sets for `Poppins` whose winner depended on
+ * stylesheet load order. The remote import is removed so the self-hosted file is
+ * the single source of truth.
+ *
+ * Known, accepted consequence: weights 100 and 200 were only on the Google URL
+ * and are not self-hosted. The single `font-extralight` (200) usage in
+ * src/components/PortfolioBuilder/PortfolioComponents/Hero3.jsx now resolves to
+ * the nearest available self-hosted weight (300) — a negligible difference on one
+ * decorative hero line, with no fallback to a different family.
+ */
 @import 'tailwindcss';
 
 /* Preserve original heading styles */

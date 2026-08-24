@@ -1,5 +1,23 @@
 # ResumePilot AI — Security, RBAC & MFA Architecture
 
+> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24).** The MFA state machine is correct
+> and `sign_in_second_factor` was confirmed to be a genuine Firebase ID-token
+> claim (`request.auth.token.firebase.sign_in_second_factor`).
+>
+> However the **Admin console conflated `MFA_ENROLLED` with `MFA_VERIFIED`**:
+> `Admin.jsx` derived a single `hasMfa` flag from
+> `claim || user.multiFactor?.enrolledFactors?.length`. A Super Admin who had
+> enrolled TOTP but signed in without completing the challenge saw no warning
+> banner and then received `SUPER_ADMIN_MFA_REQUIRED` on every protected action.
+> Fixed: `mfaVerified` now derives **only** from the verified claim (matching
+> `backend/security/auth.js:hasSecondFactor`), `mfaEnrolled` is separate, and the
+> banner is driven by `!mfaVerified`. The backend remained authoritative
+> throughout — this was a UI-state defect, not a bypass.
+>
+> **MFA PRODUCTION CONFIGURATION = NOT VERIFIED.** Whether the Firebase project
+> has the TOTP provider enabled cannot be read from this repository.
+
+
 > **Authoritative Security Architecture Specification**  
 > **Source Commit:** `8c7905f`  
 > **Classification:** AUTHORITATIVE SOURCE OF TRUTH

@@ -1,5 +1,19 @@
 # FINAL API INVENTORY
 
+> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24).** Independently re-measured from
+> source (mount prefixes and array-form registrations resolved):
+> **276 route verbs across 236 unique paths**, not 266/409.
+> **0** frontend calls without a backend route. **7** backend routes without a
+> frontend consumer, all public/infra by design: `/healthz`, `/readyz`,
+> `/llms.txt`, `/custom-pages.json`, `/public/custom-pages.json`,
+> `/trusted-by.json`, `/public/trusted-by.json`.
+> One authorisation divergence was found and fixed: `GET /api/platform/payment-settings`
+> was `requireSuperAdmin` while its alias `GET /api/admin/payment-settings` was
+> `requirePermission('system.config.read')`; both are now
+> `system.config.read`. The **write** is unchanged (SUPER_ADMIN + MFA + recent
+> auth). See `FINAL_FORENSIC_CODEBASE_AUDIT.md`.
+
+
 **Generated:** 2026-08-24T05:40:09.631Z
 **Source commit:** `1808506eefae5c6b19ce1081a3272f560b91acea`
 **Authority:** Express runtime routing table collected by `backend/services/platformHealth.js`.

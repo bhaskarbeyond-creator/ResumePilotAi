@@ -1,5 +1,46 @@
 # ResumePilot AI — UI/UX Design System & Standards
 
+> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24) — CSS architecture.**
+> `src/cv-templates/css/globalTemplateEnhancements.css` is linked from
+> `index.html` and therefore applies on **every** route. It contained four rule
+> groups with **unscoped global selectors** carrying `!important`:
+>
+> ```css
+> p, [class*="-description"], [class*="-summary"] { text-align: justify !important; }
+> .cv-content, [class*="-content"], .sectionTitle, .rightSection { width:100% !important; max-width:100% !important; }
+> h1..h6, [class*="-title"], [class*="-head"] { break-after: avoid !important; }
+> section, [class*="item"], [class*="grid"], [class*="-card"] { break-inside: avoid !important; }
+> ```
+>
+> Because they were `!important` they **silently defeated Tailwind's
+> `text-left` / `text-center` / `text-right` utilities on every paragraph in the
+> application** — Admin, Enterprise, Dashboard, Auth, Blog chrome, modals, toasts.
+> `[class*="-content"]` additionally forced full width on `blog-content`,
+> `modal-content`, `dashboard-content`, etc.
+>
+> **Fixed**: all four groups are now scoped to the resume document containers
+> every template renders into — `[class*="-board"]`, `[data-cv-board]`,
+> `.cv-board`. No template declares `text-align: left|center !important`, so
+> template output is unchanged.
+>
+> **Order-independence clarification.** The prior claim was narrowly true for the
+> wrong reason: this sheet is emitted as a separate chunk but is `<link>`-ed
+> **statically** in `index.html`, so its leak was **deterministic and always-on,
+> not visit-order-dependent**. The genuine order-dependent residue is
+> **print-only**: `@media print` rules in lazy chunks (`CoverLetter`, `Cv*`,
+> `EnterpriseConsole`) persist in `<head>` for the SPA session, so printing a
+> later route hides `nav/header/footer/button/input/textarea`. Screen rendering
+> does not depend on visit order, reload, or chunk order.
+>
+> **Fonts.** Poppins was loaded twice — self-hosted from `/fonts/poppins.css`
+> (36 `@font-face` rules) *and* via a render-blocking remote
+> `@import url('https://fonts.googleapis.com/css2?family=Poppins…')` in
+> `src/tailwind.css`, producing two competing `@font-face` sets whose winner
+> depended on load order. The remote import is removed. Accepted consequence:
+> weights 100/200 are not self-hosted, so the single `font-extralight` usage
+> resolves to 300.
+
+
 > **Authoritative UI/UX Standard**  
 > **Source Commit:** `8c7905f`  
 > **Classification:** AUTHORITATIVE SOURCE OF TRUTH

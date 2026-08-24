@@ -1,5 +1,29 @@
 # ResumePilot AI — Final Exhaustive System Certification & Forensic Completeness Audit
 
+> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24).** An independent adversarial review
+> superseded several figures in this report. See
+> [`FINAL_FORENSIC_CODEBASE_AUDIT.md`](./FINAL_FORENSIC_CODEBASE_AUDIT.md).
+>
+> - The SHA baseline quoted here (`c8ae5656…`) **does not exist in this
+>   repository**. `git log --oneline --all` shows exactly one commit,
+>   `049b486`. `backend/COMMIT_SHA` holds `29ff2e12…`, which
+>   `git cat-file -t` cannot resolve. The claimed
+>   `LOCAL == ORIGIN/MAIN == DEPLOYED BACKEND == DEPLOYED FRONTEND (5/5 PASS)`
+>   is **not reproducible**.
+> - **266 endpoints / 409 route verbs** → measured **236 unique paths / 276
+>   verbs**.
+> - **366/366 tests** → measured **827 passing** at baseline (273 security + 358
+>   product + 196 enterprise); **849** after this audit's additions.
+> - **"0 broken click handlers / 54/54 capabilities"** counted
+>   `src/components/BuildResume/steps/FinalizeStep.jsx`, which is unreachable
+>   from `src/main.jsx` and imports a module that does not exist.
+> - **`npm run ci:security` was failing at step 1**: `npm run lint` exited 1 with
+>   two `no-undef` errors.
+> - Seven real defects (D1–D9) were found that this report's green suite missed.
+> - **LIVE PRODUCTION was not re-verified by the audit**; the browser probe
+>   results in §7 are not reproduced here and remain UNVERIFIED.
+
+
 **Target Environment**: `https://airesume.projectdemo.guru`  
 **Execution Timestamp**: 2026-08-24T12:18:00Z  
 **Authoritative SHA Baseline**: `c8ae56565ce7cbfbead7b0b2e8ca8cbe073c6833`  

@@ -2783,16 +2783,24 @@ export async function listBlogPosts(options = {}) {
         return result;
     } catch (error) {
         console.warn('Unable to list blog posts; falling back to empty list:', error?.message);
+        // RCA (forensic audit): `page` and `limit` were destructured from
+        // `options` INSIDE the try block, so they were block-scoped to the try and
+        // not visible here. This fallback therefore threw
+        // `ReferenceError: page is not defined` instead of returning the intended
+        // empty-list envelope — the graceful degradation path was dead and the
+        // caller received an unrelated runtime error. Read from `options`, which is
+        // always in scope, so the fallback actually returns.
         return {
             success: true,
             posts: [],
+            stats: null,
             pagination: {
                 totalCount: 0,
                 totalPages: 0,
-                currentPage: page || 1,
+                currentPage: Number(options?.page) || 1,
                 hasNextPage: false,
                 hasPreviousPage: false,
-                limit: limit || 10
+                limit: Number(options?.limit) || 10
             }
         };
     }
