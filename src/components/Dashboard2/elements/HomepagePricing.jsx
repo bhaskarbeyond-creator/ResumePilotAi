@@ -44,7 +44,7 @@ const HomepagePricing = ({ nextStep, t }) => {
 
     const { currency, monthly, quartarly, yearly } = pricingData;
     return (
-        <section id="pricing" className="py-20 scroll-mt-20 relative ">
+        <section id="pricing" className="py-20 scroll-mt-20 relative overflow-hidden">
             {/* Enhanced Background decorative elements */}
             <div className="absolute inset-0 -z-10 pointer-events-none">
                 <div className="absolute top-1/4 left-10 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl animate-pulse"></div>

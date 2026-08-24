@@ -2,6 +2,7 @@
 @use 'sass:color';
 .custom-page {
     width: 100%;
+    overflow-x: hidden;
     font-family: $font;
     display: flex;
     flex-direction: column;

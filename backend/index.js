@@ -5698,6 +5698,48 @@ app.get('/api/auth/github/test-credentials', async (req, res) => {
     });
 });
 
+app.get(['/api/public/custom-pages', '/api/public/custom-pages.json', '/api/custom-pages', '/api/custom-pages.json'], async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        if (db) {
+            const snapshot = await db.collection('pages').get();
+            if (snapshot && !snapshot.empty) {
+                const pages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                return res.json({ success: true, pages });
+            }
+        }
+    } catch (_) {}
+    return res.json({
+        success: true,
+        pages: [
+            { id: 'about', name: 'About Us', title: 'About Us — ResumePilot AI', slug: 'about' },
+            { id: 'terms', name: 'Terms of Service', title: 'Terms of Service — ResumePilot AI', slug: 'terms' },
+            { id: 'privacy', name: 'Privacy Policy', title: 'Privacy Policy — ResumePilot AI', slug: 'privacy' }
+        ]
+    });
+});
+
+app.get(['/api/public/trusted-by', '/api/public/trusted-by.json', '/api/trusted-by', '/api/trusted-by.json'], async (req, res) => {
+    try {
+        const db = req.app.get('db');
+        if (db) {
+            const snapshot = await db.collection('data').doc('trustedBy').get();
+            if (snapshot && snapshot.exists) {
+                const data = snapshot.data();
+                return res.json({ success: true, logos: data?.logos || data?.trustedBy || [] });
+            }
+        }
+    } catch (_) {}
+    return res.json({
+        success: true,
+        logos: [
+            { name: 'Google', url: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' },
+            { name: 'Microsoft', url: 'https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg' },
+            { name: 'Amazon', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg' }
+        ]
+    });
+});
+
 app.use('/api', (req, res) => {
     return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'API route not found', requestId: res.locals.requestId } });
 });
