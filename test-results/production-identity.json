@@ -1,90 +1,87 @@
 {
   "script": "verify-production-identity",
-  "startedAt": "2026-08-24T12:01:14.864Z",
-  "finishedAt": "2026-08-24T12:01:16.444Z",
+  "startedAt": "2026-08-24T12:14:22.640Z",
+  "finishedAt": "2026-08-24T12:14:25.289Z",
   "meta": {
     "base": "https://airesume.projectdemo.guru",
-    "expectedSha": "3a6e9e7173938c081ad2313fb8b04bf74d4b8933"
+    "expectedSha": "9738c12531315794a801d76807f57e0dfe12d4b8"
   },
   "counts": {
     "200": 4,
     "401": 1,
-    "PASS": 3,
-    "FAIL": 2,
+    "PASS": 5,
+    "FAIL": 0,
     "BLOCKED": 0,
     "SKIPPED": 0,
     "INFO": 2
   },
-  "verdict": "FAIL",
+  "verdict": "PASS",
   "results": [
     {
       "check": "backend is reachable over HTTPS",
       "status": 200,
-      "at": "2026-08-24T12:01:15.375Z",
-      "durationMs": 510
+      "at": "2026-08-24T12:14:23.147Z",
+      "durationMs": 506
     },
     {
       "check": "production health confirms Firebase Admin is configured",
       "status": "PASS",
-      "at": "2026-08-24T12:01:15.375Z"
+      "at": "2026-08-24T12:14:23.148Z"
     },
     {
       "check": "backend COMMIT_SHA matches the tested SHA",
-      "status": "FAIL",
-      "at": "2026-08-24T12:01:15.508Z",
-      "reason": "production is running acddbac28ea2, expected 3a6e9e717393",
-      "backendSha": "acddbac28ea20b6fbde214e9bf5e4f6dac0c5909",
-      "expectedSha": "3a6e9e7173938c081ad2313fb8b04bf74d4b8933",
-      "remediation": "Re-deploy the tested SHA. Do not certify a different build."
+      "status": "PASS",
+      "at": "2026-08-24T12:14:23.640Z",
+      "backendSha": "9738c1253131",
+      "source": "/api/platform/version"
     },
     {
       "check": "API health endpoint is successful",
       "status": 200,
-      "at": "2026-08-24T12:01:15.649Z"
+      "at": "2026-08-24T12:14:23.796Z"
     },
     {
       "check": "health endpoint commit identities agree",
       "status": "PASS",
-      "at": "2026-08-24T12:01:15.649Z",
-      "commitSha": "acddbac28ea2"
+      "at": "2026-08-24T12:14:23.796Z",
+      "commitSha": "9738c1253131"
     },
     {
       "check": "frontend is served",
       "status": 200,
-      "at": "2026-08-24T12:01:15.791Z"
+      "at": "2026-08-24T12:14:23.949Z"
     },
     {
       "check": "frontend build SHA matches the tested SHA",
-      "status": "FAIL",
-      "at": "2026-08-24T12:01:15.791Z",
-      "reason": "frontend built from acddbac28ea2, expected 3a6e9e717393",
-      "remediation": "Rebuild and redeploy the frontend from the tested SHA, then purge the CDN cache."
+      "status": "PASS",
+      "at": "2026-08-24T12:14:23.949Z",
+      "frontendSha": "9738c1253131"
     },
     {
       "check": "Cloudflare cache status observed",
       "status": "INFO",
-      "at": "2026-08-24T12:01:15.791Z",
+      "at": "2026-08-24T12:14:23.949Z",
       "cacheStatus": "DYNAMIC"
     },
     {
       "check": "public service-availability endpoint answers",
       "status": 200,
-      "at": "2026-08-24T12:01:16.303Z"
+      "at": "2026-08-24T12:14:25.155Z"
     },
     {
       "check": "public availability payload is secret-free",
       "status": "PASS",
-      "at": "2026-08-24T12:01:16.303Z"
+      "at": "2026-08-24T12:14:25.155Z"
     },
     {
       "check": "API matrix requires authentication",
       "status": 401,
-      "at": "2026-08-24T12:01:16.444Z"
+      "at": "2026-08-24T12:14:25.289Z"
     },
     {
       "check": "API surface size matches the census",
       "status": "INFO",
-      "at": "2026-08-24T12:01:16.444Z",
+      "at": "2026-08-24T12:14:25.289Z",
       "reason": "endpoint is correctly protected; run verify-api-inventory-live.mjs with credentials to compare counts"
     }
   ]
