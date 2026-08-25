@@ -1,8 +1,8 @@
 # RESUMEPILOT AI — FINAL HUMAN-CENTRIC BROWSER UAT MATRIX
 
-**Release Commit SHA:** `35a1379e0f392f5bb367d0195b6781c2bd29fbd2`  
+**Release Commit SHA:** `d0161a6c9440dd4eb9e8dfdcd23a551f73e09c7f`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `35a1379e0f392f5bb367d0195b6781c2bd29fbd2`  
+**Live Deployed SHA:** `d0161a6c9440dd4eb9e8dfdcd23a551f73e09c7f`  
 **Execution Standard:** Zero-Trust Human User Intent Verification  
 **Evaluation Scope:** 20 Critical Real-World Human User Journeys across all 8 User Roles
 
