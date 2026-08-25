@@ -247,13 +247,16 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         }
     };
 
+    const [deleteJobModal, setDeleteJobModal] = useState({ isOpen: false, job: null });
+
     // Handle delete job
-    const handleDeleteJob = async (job) => {
-        const confirmed = window.confirm(
-            `Delete the job "${job.title}"? This is allowed only when it has no applications and cannot be undone.`
-        );
-        
-        if (!confirmed) return;
+    const handleDeleteJob = (job) => {
+        setDeleteJobModal({ isOpen: true, job });
+    };
+
+    const confirmDeleteJob = async () => {
+        const job = deleteJobModal.job;
+        if (!job) return;
         
         try {
             const result = await deleteJobPosting(job.id, job.revision);
@@ -261,7 +264,6 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
             if (result.success) {
                 setJobs((prevJobs) => prevJobs.filter((j) => j.id !== job.id));
                 showToast('success', 'Success', 'Job deleted successfully');
-                // Close expanded view if this job was expanded
                 if (expandedJob === job.id) {
                     setExpandedJob(null);
                 }
@@ -271,6 +273,8 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         } catch (error) {
             console.error('Error deleting job:', error);
             showToast('error', 'Error', `Failed to delete job: ${error.message}`);
+        } finally {
+            setDeleteJobModal({ isOpen: false, job: null });
         }
     };
 
@@ -690,6 +694,42 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
                     onJobUpdated={handleJobUpdated}
                     showToast={showToast}
                 />
+
+                {/* In-App Delete Job Confirmation Modal with ESC key handling */}
+                {deleteJobModal.isOpen && deleteJobModal.job && (
+                    <div
+                        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+                        role="presentation"
+                        onKeyDown={(e) => { if (e.key === 'Escape') setDeleteJobModal({ isOpen: false, job: null }); }}>
+                        <div
+                            role="alertdialog"
+                            aria-modal="true"
+                            aria-labelledby="delete-job-title"
+                            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
+                            <h3 id="delete-job-title" className="text-base font-bold text-slate-900">
+                                Confirm Job Deletion
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Delete the job <strong>"{deleteJobModal.job.title}"</strong>? This is allowed only when it has no applications and cannot be undone.
+                            </p>
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    autoFocus
+                                    onClick={() => setDeleteJobModal({ isOpen: false, job: null })}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmDeleteJob}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
+                                    Delete Job
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 </div>
             </div>
     );

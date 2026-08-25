@@ -749,10 +749,20 @@ const PortfolioBuilder = () => {
         }
     };
 
-    const handleReloadPortfolioConflict = async () => {
-        if (!currentPortfolioId || !window.confirm('Reload the newer saved portfolio? Your unsaved local changes will be discarded.')) return;
-        setPortfolioConflict(false);
-        await handleLoadPortfolio(currentPortfolioId);
+    const handleReloadPortfolioConflict = () => {
+        if (!currentPortfolioId) return;
+        setConfirmModal({
+            show: true,
+            title: 'Discard Local Changes?',
+            message: 'Reload the newer saved portfolio? Your unsaved local changes will be discarded.',
+            confirmText: 'Reload Portfolio',
+            cancelText: 'Cancel',
+            onConfirm: async () => {
+                hideConfirmModal();
+                setPortfolioConflict(false);
+                await handleLoadPortfolio(currentPortfolioId);
+            },
+        });
     };
 
     const handleSaveConflictAsCopy = async () => {

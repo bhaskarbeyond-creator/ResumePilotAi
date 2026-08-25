@@ -38,16 +38,11 @@ for (const file of allSrcFiles) {
   const code = fs.readFileSync(file, 'utf8');
   const relPath = path.relative(process.cwd(), file);
   
-  if (/window\.alert\(|alert\(/g.test(code) && !file.includes('test') && !code.includes('// allowed-alert')) {
-    // Check if it's actual window alert and not a custom alert component
-    const matches = code.match(/window\.alert\([^)]+\)/g);
-    if (matches) findings.windowAlerts.push({ file: relPath, count: matches.length });
-  }
+  const alertMatches = code.match(/\bwindow\.alert\s*\(/g);
+  if (alertMatches) findings.windowAlerts.push({ file: relPath, count: alertMatches.length });
 
-  if (/window\.confirm\(|confirm\(/g.test(code) && !file.includes('test')) {
-    const matches = code.match(/window\.confirm\([^)]+\)/g);
-    if (matches) findings.windowConfirms.push({ file: relPath, count: matches.length });
-  }
+  const confirmMatches = code.match(/\bwindow\.confirm\s*\(/g);
+  if (confirmMatches) findings.windowConfirms.push({ file: relPath, count: confirmMatches.length });
 
   // Check for suspicious empty catch blocks catch\s*\([^)]*\)\s*\{\s*\}
   const emptyCatchMatches = code.match(/catch\s*\([^)]*\)\s*\{\s*\}/g);

@@ -139,22 +139,28 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
         setExpandedCompany(expandedCompany === companyId ? null : companyId);
     };
 
-    const handleDeleteCompany = async (companyId, companyName, revision) => {
-        if (!window.confirm(`Delete "${companyName}"? This is allowed only when it has no jobs and cannot be undone.`)) {
-            return;
-        }
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, companyId: null, companyName: '', revision: null });
 
+    const handleDeleteCompany = (companyId, companyName, revision) => {
+        setDeleteModal({ isOpen: true, companyId, companyName, revision });
+    };
+
+    const confirmDeleteCompany = async () => {
+        const { companyId, revision } = deleteModal;
+        if (!companyId) return;
         try {
             const result = await deleteCompany(companyId, revision);
             if (result.success) {
                 showToast && showToast('success', 'Success', 'Company deleted successfully');
-                loadCompanies(); // Reload the list
+                loadCompanies();
             } else {
                 showToast && showToast('error', 'Error', result.error || 'Failed to delete company');
             }
         } catch (error) {
             console.error('Error deleting company:', error);
             showToast && showToast('error', 'Error', 'An unexpected error occurred');
+        } finally {
+            setDeleteModal({ isOpen: false, companyId: null, companyName: '', revision: null });
         }
     };
 
@@ -552,6 +558,42 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
                     }}
                     showToast={showToast}
                 />
+
+                {/* In-App Delete Confirmation Modal with ESC key handling */}
+                {deleteModal.isOpen && (
+                    <div
+                        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+                        role="presentation"
+                        onKeyDown={(e) => { if (e.key === 'Escape') setDeleteModal({ isOpen: false, companyId: null, companyName: '', revision: null }); }}>
+                        <div
+                            role="alertdialog"
+                            aria-modal="true"
+                            aria-labelledby="delete-company-title"
+                            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
+                            <h3 id="delete-company-title" className="text-base font-bold text-slate-900">
+                                Confirm Company Deletion
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Delete <strong>"{deleteModal.companyName}"</strong>? This is allowed only when it has no jobs and cannot be undone.
+                            </p>
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    autoFocus
+                                    onClick={() => setDeleteModal({ isOpen: false, companyId: null, companyName: '', revision: null })}
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmDeleteCompany}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
+                                    Delete Company
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

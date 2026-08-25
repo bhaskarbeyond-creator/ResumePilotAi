@@ -57,19 +57,26 @@ const DashboardPortfolios = ({ t, showToast }) => {
         }
     };
 
-    const handleDeletePortfolio = async (portfolioId) => {
-        if (window.confirm(t('DashboardPortfolios.deleteConfirmation'))) {
-            try {
-                const user = fire.auth().currentUser;
-                if (user) {
-                    await deletePortfolio(user.uid, portfolioId);
-                    setPortfolios(portfolios.filter((p) => p.id !== portfolioId));
-                    showToast && showToast('success', 'Success', t('DashboardPortfolios.messages.deleteSuccess'));
-                }
-            } catch (error) {
-                console.error('Error deleting portfolio:', error);
-                showToast && showToast('error', 'Error', t('DashboardPortfolios.messages.deleteError'));
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, portfolioId: null });
+
+    const handleDeletePortfolio = (portfolioId) => {
+        setDeleteModal({ isOpen: true, portfolioId });
+    };
+
+    const confirmDeletePortfolio = async () => {
+        if (!deleteModal.portfolioId) return;
+        try {
+            const user = fire.auth().currentUser;
+            if (user) {
+                await deletePortfolio(user.uid, deleteModal.portfolioId);
+                setPortfolios(portfolios.filter((p) => p.id !== deleteModal.portfolioId));
+                showToast && showToast('success', 'Success', t('DashboardPortfolios.messages.deleteSuccess', 'Portfolio deleted successfully'));
             }
+        } catch (error) {
+            console.error('Error deleting portfolio:', error);
+            showToast && showToast('error', 'Error', t('DashboardPortfolios.messages.deleteError', 'Failed to delete portfolio'));
+        } finally {
+            setDeleteModal({ isOpen: false, portfolioId: null });
         }
     };
 
@@ -373,6 +380,42 @@ const DashboardPortfolios = ({ t, showToast }) => {
                     <>{viewMode === 'grid' ? renderGridView() : renderListView()}</>
                 )}
             </div>
+
+            {/* In-App Delete Confirmation Modal with ESC key handling */}
+            {deleteModal.isOpen && (
+                <div
+                    className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+                    role="presentation"
+                    onKeyDown={(e) => { if (e.key === 'Escape') setDeleteModal({ isOpen: false, portfolioId: null }); }}>
+                    <div
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-portfolio-title"
+                        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 border border-slate-200">
+                        <h3 id="delete-portfolio-title" className="text-base font-bold text-slate-900">
+                            {t('DashboardPortfolios.deleteModal.title', 'Confirm Portfolio Deletion')}
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            {t('DashboardPortfolios.deleteConfirmation', 'Are you sure you want to delete this portfolio? This action cannot be undone.')}
+                        </p>
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                autoFocus
+                                onClick={() => setDeleteModal({ isOpen: false, portfolioId: null })}
+                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDeletePortfolio}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer">
+                                {t('common.delete', 'Delete Portfolio')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -29,21 +29,32 @@ class ResumesList extends Component {
         super(props);
         this.state = {
             resumes: 'loading',
+            deleteModal: { isOpen: false, userId: null, resumeId: null },
         };
         this.setAsCurrentResume = this.setAsCurrentResume.bind(this);
         this.returnResumes = this.returnResumes.bind(this);
         this.deleteResume = this.deleteResume.bind(this);
+        this.confirmDeleteResume = this.confirmDeleteResume.bind(this);
     }
-    async deleteResume(userId, resumeId) {
-        if (!userId || !window.confirm(this.props.t('ResumesList.deleteConfirm', 'Are you sure you want to delete this resume? This action cannot be undone.'))) return;
+    deleteResume(userId, resumeId) {
+        if (!userId || !resumeId) return;
+        this.setState({ deleteModal: { isOpen: true, userId, resumeId } });
+    }
+    async confirmDeleteResume() {
+        const { deleteModal } = this.state;
+        if (!deleteModal.userId || !deleteModal.resumeId) return;
         try {
-            await deleteResumeDraft(userId, resumeId);
-            if (resumeId === localStorage.getItem('currentResumeId')) localStorage.removeItem('currentResumeId');
-            this.setState(current => ({ resumes: current.resumes.filter(item => item.id !== resumeId) }));
+            await deleteResumeDraft(deleteModal.userId, deleteModal.resumeId);
+            if (deleteModal.resumeId === localStorage.getItem('currentResumeId')) localStorage.removeItem('currentResumeId');
+            this.setState(current => ({ 
+                resumes: current.resumes.filter(item => item.id !== deleteModal.resumeId),
+                deleteModal: { isOpen: false, userId: null, resumeId: null }
+            }));
             this.props.showDeletedToast();
         } catch (error) {
             console.error('Resume deletion failed:', error);
             this.props.showToast?.('Resume could not be deleted.', 'error');
+            this.setState({ deleteModal: { isOpen: false, userId: null, resumeId: null } });
         }
     }
     setAsCurrentResume(resumeId) {
@@ -152,6 +163,42 @@ class ResumesList extends Component {
                         )}
                     </div>
                 </div>
+
+                {/* In-App Delete Confirmation Modal with ESC key handling */}
+                {this.state.deleteModal.isOpen && (
+                    <div
+                        className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+                        role="presentation"
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+                        onKeyDown={(e) => { if (e.key === 'Escape') this.setState({ deleteModal: { isOpen: false, userId: null, resumeId: null } }); }}>
+                        <div
+                            role="alertdialog"
+                            aria-modal="true"
+                            style={{ backgroundColor: '#fff', borderRadius: '16px', maxWidth: '420px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0' }}>
+                            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 12px 0' }}>
+                                {t('ResumesList.deleteModal.title', 'Confirm Resume Deletion')}
+                            </h3>
+                            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.5', margin: '0 0 20px 0' }}>
+                                {t('ResumesList.deleteConfirm', 'Are you sure you want to delete this resume? This action cannot be undone.')}
+                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                <button
+                                    type="button"
+                                    autoFocus
+                                    onClick={() => this.setState({ deleteModal: { isOpen: false, userId: null, resumeId: null } })}
+                                    style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', color: '#334155', fontWeight: 'bold', fontSize: '12px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+                                    {t('common.cancel', 'Cancel')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={this.confirmDeleteResume}
+                                    style={{ padding: '8px 16px', backgroundColor: '#dc2626', color: '#fff', fontWeight: 'bold', fontSize: '12px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
+                                    {t('common.delete', 'Delete Resume')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
