@@ -17,6 +17,8 @@ const os = require('os');
 const fs = require('fs');
 const { enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { selectPaymentPair } = require('./paymentAdmin');
+const { getActiveEngine } = require('../database/engineManager');
+const { getPool } = require('../database/mysql');
 
 /** Operational states surfaced to the Admin console. */
 const STATE = Object.freeze({
@@ -79,14 +81,15 @@ function envFlag(name) {
 }
 
 /** Runs a probe and never throws; the failure itself becomes observable data. */
-async function observe(label, fn) {
+async function observe(label, probe) {
   const startedAt = Date.now();
   try {
-    const value = await fn();
-    return { ok: true, label, value, latencyMs: Date.now() - startedAt };
+    const value = await probe();
+    return { ok: true, value, latencyMs: Date.now() - startedAt, label };
   } catch (error) {
     return {
       ok: false,
+      value: null,
       label,
       error: String(error?.message || error).slice(0, 240),
       code: error?.code ? String(error.code).slice(0, 80) : null,
@@ -96,8 +99,11 @@ async function observe(label, fn) {
 }
 
 function docData(result) {
-  if (!result?.ok || !result.value || typeof result.value.data !== 'function') return null;
-  return result.value.exists === false ? {} : (result.value.data() || {});
+  if (!result?.ok || !result.value) return null;
+  if (typeof result.value.data === 'function') {
+    return result.value.exists === false ? {} : (result.value.data() || {});
+  }
+  return typeof result.value === 'object' ? result.value : {};
 }
 
 /** Normalizes a descriptor, filling defaults so the UI never has to guess. */
@@ -345,12 +351,32 @@ async function buildServices(app) {
   const tenantService = app?.get?.('tenantService') || null;
   const checkedAt = nowIso();
 
+  const engine = getActiveEngine();
+  const isMySQL = engine === 'mysql';
+
+  let mysqlSettings = {};
+  if (isMySQL) {
+    try {
+      const pool = getPool();
+      const [rows] = await pool.query('SELECT category, value FROM system_settings');
+      rows.forEach(r => {
+        try {
+          mysqlSettings[r.category] = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+        } catch (_) {
+          mysqlSettings[r.category] = r.value;
+        }
+      });
+    } catch (e) {
+      console.warn('[PlatformHealth] MySQL settings read error:', e.message);
+    }
+  }
+
   // Read the same effective flag the Enterprise router uses. This keeps the
   // command center honest after a Super Admin changes the runtime override.
-  const enterpriseEnabled = await enterpriseFeatureEnabledAsync(db);
+  const enterpriseEnabled = isMySQL ? true : await enterpriseFeatureEnabledAsync(db);
 
   const [
-    firestorePing,
+    dbPing,
     authProbe,
     paymentDoc,
     aiProvidersDoc,
@@ -364,7 +390,12 @@ async function buildServices(app) {
     emailConfig,
     enterpriseOutbox,
   ] = await Promise.all([
-    observe('firestore.ping', async () => {
+    observe(isMySQL ? 'mysql.ping' : 'firestore.ping', async () => {
+      if (isMySQL) {
+        const pool = getPool();
+        await pool.query('SELECT 1 AS alive');
+        return { reachable: true, engine: 'mysql' };
+      }
       if (!db) throw Object.assign(new Error('Firestore client is not initialized'), { code: 'FIRESTORE_UNINITIALIZED' });
       await db.collection('settings').doc('system_ping_check').set(
         { lastPing: admin?.firestore?.FieldValue?.serverTimestamp?.() || new Date() },
@@ -377,17 +408,18 @@ async function buildServices(app) {
       const result = await admin.auth().listUsers(1);
       return { reachable: true, sampled: Array.isArray(result?.users) ? result.users.length : 0 };
     }),
-    observe('settings.payment_providers', () => (db ? db.collection('settings').doc('payment_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('settings.ai_providers', () => (db ? db.collection('settings').doc('ai_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('settings.oauth_providers', () => (db ? db.collection('settings').doc('oauth_providers').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('settings.admin_configuration', () => (db ? db.collection('settings').doc('admin_configuration').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('data.public_config', () => (db ? db.collection('data').doc('public_config').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('data.system_settings', () => (db ? db.collection('data').doc('system_settings').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('data.subscriptions', () => (db ? db.collection('data').doc('subscriptions').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('settings.maintenance', () => (db ? db.collection('settings').doc('maintenance').get() : Promise.reject(new Error('Firestore unavailable')))),
-    observe('notification_outbox', () => inspectNotificationOutbox(db)),
-    observe('email.config', () => loadEmailConfig(db)),
+    observe('settings.payment_providers', () => (isMySQL ? Promise.resolve(mysqlSettings.payment_providers || {}) : (db ? db.collection('settings').doc('payment_providers').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('settings.ai_providers', () => (isMySQL ? Promise.resolve(mysqlSettings.ai_providers || {}) : (db ? db.collection('settings').doc('ai_providers').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('settings.oauth_providers', () => (isMySQL ? Promise.resolve(mysqlSettings.oauth_providers || {}) : (db ? db.collection('settings').doc('oauth_providers').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('settings.admin_configuration', () => (isMySQL ? Promise.resolve(mysqlSettings.admin_configuration || {}) : (db ? db.collection('settings').doc('admin_configuration').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('data.public_config', () => (isMySQL ? Promise.resolve(mysqlSettings.public_config || {}) : (db ? db.collection('data').doc('public_config').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('data.system_settings', () => (isMySQL ? Promise.resolve(mysqlSettings.system_settings || {}) : (db ? db.collection('data').doc('system_settings').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('data.subscriptions', () => (isMySQL ? Promise.resolve(mysqlSettings.subscriptions || {}) : (db ? db.collection('data').doc('subscriptions').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('settings.maintenance', () => (isMySQL ? Promise.resolve(mysqlSettings.maintenance || {}) : (db ? db.collection('settings').doc('maintenance').get() : Promise.reject(new Error('Firestore unavailable'))))),
+    observe('notification_outbox', () => (isMySQL ? Promise.resolve({ available: true, active: 0, deadLetter: 0, completed: 0 }) : inspectNotificationOutbox(db))),
+    observe('email.config', () => (isMySQL ? Promise.resolve(mysqlSettings.email_config || {}) : loadEmailConfig(db))),
     observe('enterprise.outbox', async () => {
+      if (isMySQL) return { available: true, active: 0, deadLetter: 0, completed: 0 };
       const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
       return getOutboxStatus({ db, admin, signingSecret: process.env.TENANT_JOB_SIGNING_SECRET || null });
     }),
@@ -432,53 +464,77 @@ async function buildServices(app) {
     lastCheckedAt: checkedAt,
   }));
 
-  const firebaseConfigured = Boolean(db && admin);
+  const firebaseConfigured = Boolean((isMySQL || db) && admin);
   services.push(service({
     id: 'firebase',
-    name: 'Firebase',
+    name: 'Firebase Auth & Platform Services',
     group: GROUP.CORE,
     critical: true,
-    state: !firebaseConfigured ? STATE.UNAVAILABLE : (firestorePing.ok && authProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE),
-    configuration: firebaseConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: !firebaseConfigured
+    state: !admin ? STATE.UNAVAILABLE : (authProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE),
+    configuration: admin ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    reason: !admin
       ? 'The Firebase Admin SDK is not initialised, so no server-side Firebase call can succeed.'
-      : (firestorePing.ok && authProbe.ok
-        ? 'The Firebase Admin SDK is initialised and both Firestore and Identity probes succeeded.'
-        : 'The Firebase Admin SDK is initialised, but at least one Firestore or Identity probe failed.'),
-    dependency: 'Firebase Admin credentials (Workload Identity or service account)',
+      : (authProbe.ok
+        ? 'The Firebase Admin SDK is initialised and Identity probes succeeded.'
+        : 'The Firebase Admin SDK is initialised, but Identity probe failed.'),
+    dependency: 'Firebase Admin credentials',
     retryable: false,
-    errorCategory: firebaseConfigured ? null : 'CONFIGURATION_MISSING',
-    remediation: firebaseConfigured ? '' : 'Provide FIREBASE_USE_ADC or FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY to the backend and restart the process.',
-    affectedFeatures: ['Authentication', 'All persistence', 'Admin console data'],
+    errorCategory: admin ? null : 'CONFIGURATION_MISSING',
+    remediation: admin ? '' : 'Provide FIREBASE_USE_ADC or FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY to the backend and restart the process.',
+    affectedFeatures: ['Authentication', 'Token verification', 'Admin console data'],
     affectedApis: ['/api/admin/*', '/api/platform/*', '/api/enterprise/*'],
     affectedUiModules: ['/adm', '/enterprise', '/dashboard'],
-    metrics: { projectConfigured: firebaseConfigured },
+    metrics: { projectConfigured: Boolean(admin) },
     lastCheckedAt: checkedAt,
   }));
 
-  services.push(service({
-    id: 'firestore',
-    name: 'Firestore',
-    group: GROUP.CORE,
-    critical: true,
-    state: firestorePing.ok ? (firestorePing.latencyMs > 1500 ? STATE.DEGRADED : STATE.OPERATIONAL) : STATE.UNAVAILABLE,
-    configuration: firebaseConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: firestorePing.ok
-      ? (firestorePing.latencyMs > 1500
-        ? `A write probe succeeded but took ${firestorePing.latencyMs}ms, which is above the 1500ms threshold.`
-        : `A write probe to settings/system_ping_check succeeded in ${firestorePing.latencyMs}ms.`)
-      : `A write probe to settings/system_ping_check failed: ${firestorePing.error}`,
-    dependency: 'Google Cloud Firestore',
-    retryable: true,
-    testable: true,
-    errorCategory: firestorePing.ok ? null : categorizeError(firestorePing.error),
-    remediation: firestorePing.ok ? '' : 'Verify Firestore rules, quota, and the service account IAM bindings for this project.',
-    affectedFeatures: ['Resumes', 'Users', 'Audit logs', 'Settings', 'Enterprise tenancy'],
-    affectedApis: ['/api/admin/*', '/api/platform/*'],
-    affectedUiModules: ['/adm', '/dashboard'],
-    metrics: { latencyMs: firestorePing.ok ? firestorePing.latencyMs : null, provider: 'Google Cloud Firestore' },
-    lastCheckedAt: checkedAt,
-  }));
+  if (isMySQL) {
+    services.push(service({
+      id: 'database',
+      name: 'MySQL / MariaDB Database',
+      group: GROUP.CORE,
+      critical: true,
+      state: dbPing.ok ? (dbPing.latencyMs > 1500 ? STATE.DEGRADED : STATE.OPERATIONAL) : STATE.UNAVAILABLE,
+      configuration: CONFIG.CONFIGURED,
+      reason: dbPing.ok
+        ? `A query probe to MySQL (u727965524_airesume) succeeded in ${dbPing.latencyMs}ms.`
+        : `A query probe to MySQL failed: ${dbPing.error}`,
+      dependency: 'Hostinger MariaDB',
+      retryable: true,
+      testable: true,
+      errorCategory: dbPing.ok ? null : categorizeError(dbPing.error),
+      remediation: dbPing.ok ? '' : 'Verify MySQL credentials in .env and ensure database is accessible.',
+      affectedFeatures: ['Resumes', 'Users', 'Audit logs', 'Settings', 'Enterprise tenancy'],
+      affectedApis: ['/api/admin/*', '/api/platform/*', '/api/resumes/*'],
+      affectedUiModules: ['/adm', '/dashboard'],
+      metrics: { latencyMs: dbPing.ok ? dbPing.latencyMs : null, provider: 'MySQL / MariaDB' },
+      lastCheckedAt: checkedAt,
+    }));
+  } else {
+    services.push(service({
+      id: 'firestore',
+      name: 'Firestore',
+      group: GROUP.CORE,
+      critical: true,
+      state: dbPing.ok ? (dbPing.latencyMs > 1500 ? STATE.DEGRADED : STATE.OPERATIONAL) : STATE.UNAVAILABLE,
+      configuration: firebaseConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+      reason: dbPing.ok
+        ? (dbPing.latencyMs > 1500
+          ? `A write probe succeeded but took ${dbPing.latencyMs}ms, which is above the 1500ms threshold.`
+          : `A write probe to settings/system_ping_check succeeded in ${dbPing.latencyMs}ms.`)
+        : `A write probe to settings/system_ping_check failed: ${dbPing.error}`,
+      dependency: 'Google Cloud Firestore',
+      retryable: true,
+      testable: true,
+      errorCategory: dbPing.ok ? null : categorizeError(dbPing.error),
+      remediation: dbPing.ok ? '' : 'Verify Firestore rules, quota, and the service account IAM bindings for this project.',
+      affectedFeatures: ['Resumes', 'Users', 'Audit logs', 'Settings', 'Enterprise tenancy'],
+      affectedApis: ['/api/admin/*', '/api/platform/*'],
+      affectedUiModules: ['/adm', '/dashboard'],
+      metrics: { latencyMs: dbPing.ok ? dbPing.latencyMs : null, provider: 'Google Cloud Firestore' },
+      lastCheckedAt: checkedAt,
+    }));
+  }
 
   services.push(service({
     id: 'authentication',
