@@ -289,6 +289,13 @@ async function replicateToFirestore(adminFirestore, event) {
         } else {
             await ref.set(data, { merge: true });
         }
+    } else if (entity_type === 'payment_orders') {
+        const ref = adminFirestore.collection('payment_orders').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
     } else {
         throw new Error(`Unsupported entity type for Firestore replication: ${entity_type}`);
     }
@@ -393,6 +400,17 @@ async function replicateToMySQL(event, poolOverride = null) {
                  VALUES (?, ?, ?, ?, ?)
                  ON DUPLICATE KEY UPDATE title=VALUES(title), template=VALUES(template), data=VALUES(data), updated_at=CURRENT_TIMESTAMP`,
                 [entity_id, userId, String(data.title || 'Untitled Cover Letter').slice(0, 160), String(data.template || 'Cover1').slice(0, 50), JSON.stringify(data)]
+            );
+        }
+    } else if (entity_type === 'payment_orders') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM payment_orders WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO payment_orders (id, uid, plan_id, provider, amount, original_amount, currency, status, provider_payment_id, provider_order_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE status=VALUES(status), amount=VALUES(amount), currency=VALUES(currency), provider_payment_id=VALUES(provider_payment_id), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.uid || data.userId || 'user-1', data.planId || data.plan_id || 'monthly', data.provider || 'razorpay', Number(data.amount || 0), Number(data.originalAmount || data.amount || 0), data.currency || 'INR', data.status || 'PAYMENT_CREATED', data.providerPaymentId || null, data.providerOrderId || null]
             );
         }
     }

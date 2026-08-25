@@ -812,9 +812,9 @@ router.get('/command-center', async (req, res) => {
       pendingPaymentsCnt
     ] = db ? await Promise.all([
       safeQuery('users-count', () => db.collection('users').count().get()),
-      safeQuery('resumes-count', () => db.collection('resumes').count().get()),
-      safeQuery('portfolios-count', () => db.collection('portfolios').count().get()),
-      safeQuery('covers-count', () => db.collection('covers').count().get()),
+      safeQuery('resumes-count', () => (typeof db.collectionGroup === 'function' ? db.collectionGroup('resumes') : db.collection('resumes')).count().get()),
+      safeQuery('portfolios-count', () => (typeof db.collectionGroup === 'function' ? db.collectionGroup('portfolios') : db.collection('portfolios')).count().get()),
+      safeQuery('covers-count', () => (typeof db.collectionGroup === 'function' ? db.collectionGroup('covers') : db.collection('covers')).count().get()),
       safeQuery('payments-paid', () => db.collection('payment_orders').where('status', 'in', ['ACTIVE', 'COMPLETED', 'PAID']).get()),
       safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
       safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
