@@ -706,6 +706,11 @@ router.get('/command-center', async (req, res) => {
   let suspendedAgg = { ok: true, value: 0 };
   let activeTenantAgg = { ok: true, value: 0 };
   let tenantTotalAgg = { ok: true, value: 0 };
+  let announcementsResult = { ok: false };
+  let maintenanceResult = { ok: false };
+  let tenantsResult = { ok: false };
+  let paymentFailedAgg = { ok: true, value: 0 };
+  let highSecurityAgg = { ok: true, value: 0 };
 
   let featureFlagsSummary = { enabled: 0, disabled: 0, total: 0, source: 'DEFAULTS_ONLY' };
   try {
