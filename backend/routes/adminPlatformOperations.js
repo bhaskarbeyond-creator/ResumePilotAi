@@ -261,7 +261,7 @@ router.patch('/platform/tenants/:tenantId/ai-policy', requireRecentAdminAuthenti
   const tenantId = String(req.params.tenantId || '').trim();
   const db = req.app.get('db');
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
-  const { dailyLimit, allowedProviders, allowedModels, primaryModel } = req.body || {};
+  const { dailyLimit, allowedProviders, allowedModels, primaryModel, customProviderKeys } = req.body || {};
 
   if (!db) return res.status(503).json({ success: false, code: 'DATABASE_UNAVAILABLE', error: 'Database unavailable' });
 
@@ -270,21 +270,48 @@ router.patch('/platform/tenants/:tenantId/ai-policy', requireRecentAdminAuthenti
     const snap = await tenantRef.get();
     if (!snap.exists) return res.status(404).json({ success: false, code: 'TENANT_NOT_FOUND', error: 'Tenant not found' });
 
+    const existingPolicy = snap.data()?.aiPolicy || {};
+    const existingKeys = existingPolicy.customProviderKeys || {};
+    
+    // Merge new custom keys, keeping existing ones if blank
+    const updatedCustomKeys = { ...existingKeys };
+    if (customProviderKeys && typeof customProviderKeys === 'object') {
+      for (const [provider, keyVal] of Object.entries(customProviderKeys)) {
+        if (keyVal === '__REMOVE__') {
+          delete updatedCustomKeys[provider];
+        } else if (typeof keyVal === 'string' && keyVal.trim().length > 0) {
+          updatedCustomKeys[provider] = keyVal.trim();
+        }
+      }
+    }
+
     const aiPolicy = {
       dailyLimit: Math.max(10, Math.min(500000, Number(dailyLimit) || 5000)),
-      allowedProviders: Array.isArray(allowedProviders) ? allowedProviders : ['gemini', 'nvidia', 'openai'],
-      allowedModels: Array.isArray(allowedModels) ? allowedModels : [],
-      primaryModel: primaryModel ? String(primaryModel).trim() : 'meta/llama-3.2-11b-vision-instruct',
+      allowedProviders: Array.isArray(allowedProviders) ? allowedProviders : (existingPolicy.allowedProviders || ['gemini', 'nvidia', 'openai']),
+      allowedModels: Array.isArray(allowedModels) ? allowedModels : (existingPolicy.allowedModels || []),
+      primaryModel: primaryModel ? String(primaryModel).trim() : (existingPolicy.primaryModel || 'meta/llama-3.2-11b-vision-instruct'),
+      customProviderKeys: updatedCustomKeys,
       updatedAt: new Date().toISOString(),
       updatedBy: req.user.uid,
     };
 
     await tenantRef.set({ aiPolicy }, { merge: true });
-    return res.json({ success: true, message: 'Tenant AI policy updated.', aiPolicy });
+    
+    // Return sanitized policy with keys masked
+    const sanitizedCustomKeys = Object.fromEntries(
+      Object.entries(updatedCustomKeys).map(([p, k]) => [p, k ? `${k.slice(0, 4)}...${k.slice(-4)}` : ''])
+    );
+
+    return res.json({
+      success: true,
+      message: 'Tenant AI policy & dedicated provider keys updated.',
+      aiPolicy: { ...aiPolicy, customProviderKeys: sanitizedCustomKeys }
+    });
   } catch (error) {
     return res.status(500).json({ success: false, code: 'AI_POLICY_UPDATE_FAILED', error: error.message });
   }
 });
+
 
 module.exports = {
   adminPlatformOperationsRouter: router,

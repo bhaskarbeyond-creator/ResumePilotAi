@@ -35,17 +35,23 @@ function normalizeAllowedProviders(policy = {}, configuredProviders = {}) {
 
 function applyTenantAiPolicy(configuration, context, policy = {}) {
   const allowedProviders = normalizeAllowedProviders(policy, configuration.providers);
+  const customKeys = policy.customProviderKeys || {};
   // Model governance is enforced server-side: when the tenant declares a model
   // allowlist, providers whose effective model is not allowlisted are disabled
   // even if the provider itself is approved.
   const allowedModels = Array.isArray(policy.allowedModels)
     ? new Set(policy.allowedModels.map(value => String(value).trim()))
     : null;
-  const providers = Object.fromEntries(Object.entries(configuration.providers || {}).map(([name, provider]) => [name, {
-    ...provider,
-    enabled: provider.enabled === true && allowedProviders.has(name)
-      && (!allowedModels || allowedModels.size === 0 || allowedModels.has(String(provider.model || ''))),
-  }]));
+  const providers = Object.fromEntries(Object.entries(configuration.providers || {}).map(([name, provider]) => {
+    const effectiveKey = String(customKeys[name] || provider.key || '').trim();
+    return [name, {
+      ...provider,
+      key: effectiveKey,
+      enabled: provider.enabled === true && allowedProviders.has(name)
+        && Boolean(effectiveKey)
+        && (!allowedModels || allowedModels.size === 0 || allowedModels.has(String(provider.model || ''))),
+    }];
+  }));
   // The tenant-preferred primary model takes effect only through provider
   // selection: the primary becomes the provider actually serving that model.
   const modelPreferredPrimary = String(policy.primaryModel || '')

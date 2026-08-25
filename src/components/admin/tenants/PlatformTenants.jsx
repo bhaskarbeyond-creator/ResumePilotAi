@@ -54,6 +54,10 @@ export default function PlatformTenants() {
   const [policySeats, setPolicySeats] = useState(50);
   const [policyCurrency, setPolicyCurrency] = useState('INR');
   const [policyBillingStatus, setPolicyBillingStatus] = useState('ACTIVE');
+  const [showDedicatedKeys, setShowDedicatedKeys] = useState(false);
+  const [nvidiaCustomKey, setNvidiaCustomKey] = useState('');
+  const [geminiCustomKey, setGeminiCustomKey] = useState('');
+  const [openaiCustomKey, setOpenaiCustomKey] = useState('');
   const [savingPolicy, setSavingPolicy] = useState(false);
 
 
@@ -290,9 +294,15 @@ export default function PlatformTenants() {
     setSavingPolicy(true);
     setActionError(null);
     try {
+      const customProviderKeys = {};
+      if (nvidiaCustomKey.trim()) customProviderKeys.nvidia = nvidiaCustomKey.trim();
+      if (geminiCustomKey.trim()) customProviderKeys.gemini = geminiCustomKey.trim();
+      if (openaiCustomKey.trim()) customProviderKeys.openai = openaiCustomKey.trim();
+
       await updateTenantAiPolicy(selectedTenant.id, {
         dailyLimit: Number(policyDailyLimit) || 5000,
         primaryModel: policyPrimaryModel.trim(),
+        ...(Object.keys(customProviderKeys).length > 0 ? { customProviderKeys } : {}),
       });
       await updateTenantCommercials(selectedTenant.id, {
         plan: policyPlan.trim(),
@@ -300,7 +310,10 @@ export default function PlatformTenants() {
         currency: policyCurrency.trim(),
         billingStatus: policyBillingStatus,
       });
-      setNotification(`Custom agreement & AI quota policy updated for "${selectedTenant.displayName}".`);
+      setNvidiaCustomKey('');
+      setGeminiCustomKey('');
+      setOpenaiCustomKey('');
+      setNotification(`Custom agreement & dedicated AI keys updated for "${selectedTenant.displayName}".`);
       setDetailRefresh(v => v + 1);
       fetchTenants();
     } catch (err) {
@@ -309,6 +322,7 @@ export default function PlatformTenants() {
       setSavingPolicy(false);
     }
   };
+
 
   const handleDecommission = async (tenant) => {
     if (!isSuperAdmin) return;
@@ -1041,6 +1055,65 @@ export default function PlatformTenants() {
                           </div>
                         </div>
 
+                        {/* Dedicated BYOK API Keys Section */}
+                        <div className="pt-2 border-t border-indigo-100/60">
+                          <button
+                            type="button"
+                            onClick={() => setShowDedicatedKeys(prev => !prev)}
+                            className="flex items-center justify-between w-full text-left py-1 text-xs font-bold text-indigo-900 hover:text-indigo-700 cursor-pointer"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <span>🔑</span> Dedicated Tenant AI Keys (BYOK — Bring Your Own Key)
+                            </span>
+                            <span className="text-[11px] text-indigo-600 font-semibold">
+                              {showDedicatedKeys ? '▲ Hide Dedicated Keys' : '▼ Configure Dedicated Keys (Optional)'}
+                            </span>
+                          </button>
+                          
+                          {showDedicatedKeys && (
+                            <div className="mt-2.5 p-3.5 bg-white border border-indigo-100 rounded-xl space-y-3 animate-fade-in">
+                              <p className="text-[11px] text-slate-600 leading-relaxed">
+                                Enter dedicated API keys for this tenant. When configured, AI operations from this organization are routed exclusively through these credentials and billed to the tenant's own provider account.
+                              </p>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">NVIDIA NIM Dedicated Key</label>
+                                  <input
+                                    type="password"
+                                    value={nvidiaCustomKey}
+                                    onChange={e => setNvidiaCustomKey(e.target.value)}
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Active)' : 'nvapi-...'}
+                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Google Gemini Dedicated Key</label>
+                                  <input
+                                    type="password"
+                                    value={geminiCustomKey}
+                                    onChange={e => setGeminiCustomKey(e.target.value)}
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Active)' : 'AIza...'}
+                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">OpenAI Dedicated Key</label>
+                                  <input
+                                    type="password"
+                                    value={openaiCustomKey}
+                                    onChange={e => setOpenaiCustomKey(e.target.value)}
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Active)' : 'sk-...'}
+                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex justify-end pt-1">
                           <button
                             type="submit"
@@ -1050,6 +1123,7 @@ export default function PlatformTenants() {
                             <FiSave /> {savingPolicy ? 'Saving Agreement…' : 'Save Agreement & AI Policy'}
                           </button>
                         </div>
+
                       </form>
                     </div>
                   )}
