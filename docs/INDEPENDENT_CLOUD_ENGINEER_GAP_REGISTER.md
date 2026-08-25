@@ -316,6 +316,36 @@ Coverage for these areas exists under other filenames, so this is a citation def
 missing tests — but a reviewer following the matrix cannot reproduce the stated evidence, and these
 are the three most security-sensitive workflows in the pack.
 
+**Fourth citation defect — mismatched rather than missing (UAT-18).** UAT-18 cites
+`scripts/verify-backup-rollback.mjs` as evidence for *"Trigger manual backup → verify **SHA-256
+integrity**"*. That file exists but does something different: it verifies that a backup artefact
+exists, is recent (`MAX_BACKUP_AGE_MIN`, default 120) and non-trivial in size (`MIN_BACKUP_BYTES`,
+default 1024), and that `ROLLBACK_SHA` is a resolvable commit that is an ancestor of `HEAD`. It
+performs **no SHA-256 checksum verification and no restore** — by design, its own header states it
+*"deliberately does NOT perform a rollback"*. Genuine SHA-256 checksum verification does exist, but
+in the **Enterprise tenant backup module** (`enterpriseBackup.exportTenantSnapshot` /
+`verifySnapshot`), covered by 4 passing tests. The citation therefore points at the wrong
+mechanism.
+
+**Correction to an earlier audit statement.** This audit initially recorded restore as "NOT VERIFIED
+— no executed restore drill observable in-repo". That was **too strong and is corrected here.**
+Restore *is* genuinely verified for the Enterprise tenant plane by 6 passing tests, including a full
+catastrophic-loss drill:
+
+```
+ok 1 - tenant snapshot export includes partition tree and control plane with verified checksums
+ok 2 - snapshot tampering is detected by checksum verification
+ok 3 - restore: dry-run performs zero writes, apply restores, and rollback re-applies the previous snapshot
+ok 4 - restore refuses documents that do not belong to the snapshot tenant
+ok 5 - Disaster Recovery: full tenant snapshot, catastrophic loss, and verified restore
+ok 6 - Disaster Recovery: partial-failure recovery — re-running restore is idempotent
+# tests 6  # pass 6  # fail 0
+```
+
+What remains **NOT VERIFIED** is narrower than originally stated: a production-scale MySQL
+(`mysqldump`) restore drill with schema-integrity, foreign-key and application-startup validation,
+and any production backup artefact. Both are BLOCKED on host access.
+
 ---
 
 ## P2-04 — Authoritative SHA absent from all documentation

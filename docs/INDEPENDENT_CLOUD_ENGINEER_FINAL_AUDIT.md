@@ -70,9 +70,9 @@ contains P1-01/02/03.**
 | AI verified | ⚠️ PARTIAL |
 | Control Plane verified | ⚠️ PARTIAL |
 | Self-healing verified | ⚠️ PARTIAL |
-| Backup verified | ⚠️ BLOCKED |
-| Restore verified | ❌ NOT VERIFIED |
-| DR verified | ❌ NOT VERIFIED |
+| Backup verified | ⚠️ PARTIAL (Enterprise plane ✅ in test; production dump BLOCKED) |
+| Restore verified | ⚠️ PARTIAL (Enterprise plane ✅ in test incl. catastrophic-loss drill; MySQL restore NOT VERIFIED) |
+| DR verified | ⚠️ PARTIAL (Enterprise DR drill ✅ 6/6; production-scale DR NOT VERIFIED) |
 | Production verified | ❌ FAIL (config drift) |
 | UAT-01..18 verified | ❌ FAIL (0 fully confirmable) |
 | No P0 | ✅ PASS (0 found) |
@@ -328,14 +328,45 @@ could not be observed live: **PARTIALLY VERIFIED.**
 
 ## 21. Backup / restore / DR audit
 
-`scripts/verify-backup-rollback.mjs` and `create-production-freeze-backup.mjs` exist. The repository
-contains one artefact: `backups/local-backup-pre-cert.tar.gz` (23,767,281 bytes) — explicitly a
-**local** pre-certification backup.
+**Correction to an earlier statement in this audit.** An initial reading recorded restore as
+"NOT VERIFIED — no executed restore drill observable in-repo". That was wrong, and the corrected
+finding follows.
 
-**BACKUP: BLOCKED** (no host access to confirm daily automated dumps or checksums).
-**RESTORE: NOT VERIFIED** — no executed restore drill, schema-integrity check, foreign-key
-verification or post-restore startup validation is observable. A backup file existing is not proof
-of disaster recovery. The certification's "RESTORE TEST: PASS (VERIFIED)" is **not substantiated**.
+`scripts/verify-backup-rollback.mjs` exists but is a **deploy-readiness** verifier, not a database
+backup verifier: it checks that a backup artefact exists, is recent (`MAX_BACKUP_AGE_MIN`, default
+120) and non-trivial (`MIN_BACKUP_BYTES`, default 1024), and that `ROLLBACK_SHA` resolves and is an
+ancestor of `HEAD`. It performs no checksum verification and explicitly does not roll back.
+
+The real backup/restore machinery is `backend/enterprise/enterpriseBackup.js`, and it is genuinely
+tested — **6/6 passing**, including a catastrophic-loss drill:
+
+```
+ok - tenant snapshot export includes partition tree and control plane with verified checksums
+ok - snapshot tampering is detected by checksum verification
+ok - restore: dry-run performs zero writes, apply restores, and rollback re-applies the previous snapshot
+ok - restore refuses documents that do not belong to the snapshot tenant
+ok - Disaster Recovery: full tenant snapshot, catastrophic loss, and verified restore
+ok - Disaster Recovery: partial-failure recovery — re-running restore is idempotent
+```
+
+This covers snapshot → simulated catastrophic loss → verified restore → reconciliation, SHA-256
+checksum verification, tamper detection, dry-run with zero writes, rollback re-applying the previous
+snapshot, idempotent re-run after partial failure, and cross-tenant document refusal. That is real
+DR verification, not a mock.
+
+**Corrected statuses:**
+
+| Layer | Status |
+|---|---|
+| Enterprise tenant-plane **BACKUP** with SHA-256 checksums | ✅ **VERIFIED** (test) |
+| Enterprise tenant-plane **RESTORE** incl. catastrophic-loss drill, rollback, idempotency | ✅ **VERIFIED** (test) |
+| Production daily automated dump | ⚠️ **BLOCKED** (no host access; only local `backups/local-backup-pre-cert.tar.gz`, 23,767,281 bytes, is observable) |
+| Production-scale MySQL/`mysqldump` **RESTORE** drill with schema + FK + application-startup validation | ❌ **NOT VERIFIED** |
+
+The certification's unqualified "RESTORE TEST: PASS (VERIFIED)" is therefore **overstated rather
+than false**: it holds for the Enterprise plane and is unproven for the MySQL primary. UAT-18's
+citation of `verify-backup-rollback.mjs` for "SHA-256 integrity" points at the wrong mechanism
+(GAP P2-03).
 
 ## 22. Deployment / PM2 audit
 
@@ -396,9 +427,9 @@ marked PASS from documentation alone.
 | UAT-15 | Enterprise — AI quota governance | ⚠️ cited `tenant-quota.test.js` **missing** | ❌ Enterprise plane UNAVAILABLE | **NOT VERIFIED** |
 | UAT-16 | Super Admin — database failover gate | ✅ cited tests exist & pass — **but gate failed open (P1-02) and ADMIN was authorised (P1-01)** | ❌ fixes not deployed | **FAIL** |
 | UAT-17 | Super Admin — operator mgmt / revocation | ✅ `totp-mfa-lifecycle` | BLOCKED | **PARTIALLY VERIFIED** |
-| UAT-18 | Platform — DR backup & integrity | ⚠️ script exists; local artefact only | ❌ no restore evidence | **NOT VERIFIED** |
+| UAT-18 | Platform — DR backup & integrity | ✅ Enterprise DR drill 6/6 (snapshot→loss→restore, checksums, tamper detection, rollback, idempotency); ⚠️ cited `verify-backup-rollback.mjs` verifies artefact age/size + git SHA, **not** SHA-256 integrity | ❌ no production MySQL restore evidence | **PARTIALLY VERIFIED** |
 
-**Result: 0 PASS · 12 PARTIALLY VERIFIED · 2 FAIL (UAT-12, UAT-16) · 4 NOT VERIFIED (UAT-13 partial, UAT-14, UAT-15, UAT-18).**
+**Result: 0 PASS · 13 PARTIALLY VERIFIED · 2 FAIL (UAT-12, UAT-16) · 3 NOT VERIFIED (UAT-14, UAT-15, and UAT-13 whose cited evidence is missing though the control itself was independently re-proven).**
 The claimed "18/18 PASS, 0 failed, 0 blocked" is **disproved**.
 
 ## 25. Performance audit
@@ -477,12 +508,15 @@ Summary: **0 P0 · 5 P1 (3 fixed, 2 open-blocked) · 5 P2 (1 fixed) · 3 P3.**
 **PRINCIPAL DEVELOPER CERTIFICATION: PARTIALLY AGREED / DISAGREED on central claims.**
 
 Agreed: release identity, MySQL-primary architecture, Firestore-native Enterprise design, security
-test coverage, zero vulnerabilities, clean build, Support RBAC, payment signature handling, and the
-quality of the health engine.
+test coverage, zero vulnerabilities, clean build, Support RBAC, payment signature handling, the
+quality of the health engine, and — on correction during this audit — the Enterprise backup/restore
+and DR implementation, which is genuinely tested (6/6, including a catastrophic-loss drill with
+SHA-256 checksums, tamper detection, dry-run, rollback and idempotency).
 
 Disagreed: "676/676 tests, 0 failed"; "100% parity"; "Monotonic revision guard"; "Super Admin + TOTP
 database switch"; "AES-256-GCM encryption verified" as a *live* property; "Enterprise verified";
-"Notifications verified"; "Restore verified"; and "18/18 UAT workflows PASS".
+"Notifications verified"; "Restore verified" as an unqualified platform property; and "18/18 UAT
+workflows PASS".
 
 **Required before UAT can be certified:**
 
@@ -494,9 +528,10 @@ database switch"; "AES-256-GCM encryption verified" as a *live* property; "Enter
    `tenantGc` are no longer `DISABLED` / `MANUAL_SCRIPT_ONLY` (P1-05).
 4. Re-issue the certification documents with the correct SHA, correct test counts, and valid
    evidence citations (P2-02, P2-03, P2-04).
-5. Perform an actual restore drill with schema, foreign-key and application-startup verification
-   before claiming DR.
-6. Re-verify UAT-12, UAT-14, UAT-15, UAT-16 and UAT-18 live with real credentials.
+5. Perform a **production-scale MySQL** restore drill with schema, foreign-key and
+   application-startup verification before claiming platform-wide DR. The Enterprise tenant-plane
+   DR drill is already verified (6/6) and does not need repeating.
+6. Re-verify UAT-12, UAT-14, UAT-15 and UAT-16 live with real credentials.
 
 Post-UAT (non-blocking, do not gate UAT): P2-05 revision-guard coverage, P3-01 tracked engine state,
 P3-02 retry jitter, P3-03 readiness semantics.
