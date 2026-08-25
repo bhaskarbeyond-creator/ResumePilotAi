@@ -18,6 +18,7 @@ const { loadProviderConfiguration, generateWithProviders } = require('./services
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
+const { resolveEffectiveEntitlement } = require('./security/entitlements');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
@@ -3398,9 +3399,9 @@ app.post('/api/export-docx', async (req, res) => {
     if (!resumeSnap.exists) return res.status(404).json({ error: 'Resume not found' });
     const ownerSnap = await requestDb.collection('users').doc(req.user.uid).get();
     const owner = ownerSnap.data() || {};
-    const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
-    if (owner.membership !== 'Premium' || !['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus) || membershipEnd <= new Date()) {
-        return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for DOCX export', requestId: res.locals.requestId } });
+    const entitlement = resolveEffectiveEntitlement(owner, { userClaims: req.user || {} });
+    if (!entitlement.allowsDocxExport) {
+        return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription or enterprise plan is required for DOCX export', requestId: res.locals.requestId } });
     }
     try {
         const stored = resumeSnap.data() || {};

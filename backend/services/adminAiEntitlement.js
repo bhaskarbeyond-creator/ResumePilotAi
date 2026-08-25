@@ -1,11 +1,12 @@
 'use strict';
 
 const crypto = require('crypto');
+const { resolveEffectiveEntitlement } = require('../security/entitlements');
 
 const DEFAULT_GLOBAL_QUOTAS = Object.freeze({
   Basic: { dailyRequests: 10, maxTokens: 2048, label: 'Free / Basic Tier' },
   Premium: { dailyRequests: 100, maxTokens: 4096, label: 'Pro / Premium Tier' },
-  Enterprise: { dailyRequests: 1000, maxTokens: 8192, label: 'Enterprise Tier' },
+  Enterprise: { dailyRequests: 5000, maxTokens: 8192, label: 'Enterprise Tier' },
   Admin: { dailyRequests: 10000, maxTokens: 16384, label: 'Administrative Access' },
 });
 
@@ -21,18 +22,17 @@ async function getUserAiEntitlement(db, uid) {
     return { uid, dailyLimit: 10, usedToday: 0, remainingToday: 10, plan: 'Basic', customOverride: null };
   }
   try {
-    const [userDoc, usageDoc] = await Promise.all([
+    const [userDoc, usageDoc, quotaDoc] = await Promise.all([
       db.collection('users').doc(uid).get(),
       db.collection('ai_usage').doc(`${dayKey()}_${crypto.createHash('sha256').update(uid).digest('hex')}`).get().catch(() => null),
+      db.collection('settings').doc('ai_quota').get().catch(() => null),
     ]);
     const userData = userDoc.exists ? (userDoc.data() || {}) : {};
-    const plan = userData.membership || 'Basic';
-    const baseQuota = DEFAULT_GLOBAL_QUOTAS[plan]?.dailyRequests || 10;
-    
-    // Check if custom override is active and unexpired
-    const override = userData.aiQuotaOverride || null;
-    const isOverrideActive = override && (!override.expiresAt || new Date(override.expiresAt).getTime() > Date.now());
-    const effectiveLimit = isOverrideActive ? Number(override.dailyLimit || baseQuota) : baseQuota;
+    const quotaConfig = quotaDoc?.exists ? (quotaDoc.data() || {}) : {};
+    const entitlement = resolveEffectiveEntitlement(userData, { quotaConfig });
+    const plan = entitlement.effectiveTier;
+    const baseQuota = DEFAULT_GLOBAL_QUOTAS[plan]?.dailyRequests || entitlement.dailyLimit;
+    const effectiveLimit = entitlement.dailyLimit;
     
     const usedToday = usageDoc?.exists ? Number(usageDoc.data()?.count || 0) : 0;
     const remainingToday = Math.max(0, effectiveLimit - usedToday);
@@ -45,7 +45,7 @@ async function getUserAiEntitlement(db, uid) {
       usedToday,
       remainingToday,
       isExhausted: remainingToday <= 0,
-      customOverride: isOverrideActive ? override : null,
+      customOverride: userData.aiQuotaOverride || null,
       lastResetAt: userData.aiQuotaLastResetAt || null,
     };
   } catch (error) {

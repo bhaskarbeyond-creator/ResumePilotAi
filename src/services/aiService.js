@@ -52,7 +52,7 @@ export function buildAiRequest(endpointName, payload = {}) {
     return { url: `/api/${endpointName}`, body: payload };
 }
 
-async function getAuthHeaders(forceRefresh = false) {
+async function getAuthHeaders(forceRefresh = false, tenantId = null) {
     const headers = { 'Content-Type': 'application/json' };
     try {
         const fireModule = await import('../conf/fire.js').catch(() => null);
@@ -75,6 +75,13 @@ async function getAuthHeaders(forceRefresh = false) {
             }
         }
     } catch (_) {}
+
+    // Inject active tenant ID header for BYOK & Enterprise quota routing
+    const activeTenant = tenantId || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('activeTenantId') || sessionStorage.getItem('selectedTenantId')) : null) || (typeof localStorage !== 'undefined' ? (localStorage.getItem('activeTenantId') || localStorage.getItem('selectedTenantId')) : null);
+    if (activeTenant && typeof activeTenant === 'string') {
+        headers['X-Tenant-Id'] = activeTenant.trim();
+    }
+
     return headers;
 }
 

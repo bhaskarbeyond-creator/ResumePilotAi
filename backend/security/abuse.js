@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { resolveEffectiveEntitlement } = require('./entitlements');
 
 const buckets = new Map();
 
@@ -88,21 +89,12 @@ async function enforceDailyAiQuota(req, res, next) {
     ]);
     const userData = userSnap.data() || {};
     const quotaConfig = quotaSnap.data() || {};
-    const isAdmin = Boolean(
-      req.user?.admin ||
-      userData.role === 'admin' ||
-      userData.isAdmin ||
-      userData.membership === 'Admin' ||
-      userData.membership === 'admin' ||
-      req.user?.email === 'admin@airesume.guru' ||
-      req.user?.email === 'bhaskarbeyond@gmail.com'
-    );
-    const tier = String(userData.membership || 'Basic').toLowerCase();
-    const limit = isAdmin
-      ? Number(quotaConfig.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000)
-      : tier === 'premium'
-      ? Number(quotaConfig.premiumDailyLimit || process.env.AI_PREMIUM_DAILY_LIMIT || 100)
-      : Number(quotaConfig.basicDailyLimit || process.env.AI_BASIC_DAILY_LIMIT || 10);
+    const entitlement = resolveEffectiveEntitlement(userData, {
+      userClaims: req.user || {},
+      tenantData: req.tenantContext?.tenant || null,
+      quotaConfig,
+    });
+    const limit = entitlement.dailyLimit;
     let count = 0;
     await db.runTransaction(async tx => {
       const snap = await tx.get(ref);
