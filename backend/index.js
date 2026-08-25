@@ -3646,13 +3646,13 @@ app.get('/api/health', (req, res) => {
     return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
 });
 
-app.get('/readyz', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
+function computeReadyzPayload(req) {
     const requestDb = req.app.get('db');
     const firebaseReady = Boolean(requestDb && admin?.auth);
     const tenantService = req.app.get('tenantService');
     const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
-    return res.status(firebaseReady ? 200 : 503).json({
+
+    return {
         status: firebaseReady ? 'ready' : 'not_ready',
         checks: {
             firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
@@ -3669,32 +3669,18 @@ app.get('/readyz', (req, res) => {
             tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'MANUAL_SCRIPT_ONLY',
             pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
         },
-    });
+    };
+}
+
+app.get('/readyz', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const payload = computeReadyzPayload(req);
+    return res.status(payload.status === 'ready' ? 200 : 503).json(payload);
 });
 app.get('/api/readyz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const requestDb = req.app.get('db');
-    const firebaseReady = Boolean(requestDb && admin?.auth);
-    const tenantService = req.app.get('tenantService');
-    const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
-    return res.status(firebaseReady ? 200 : 503).json({
-        status: firebaseReady ? 'ready' : 'not_ready',
-        checks: {
-            firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
-            enterprise: enterpriseRuntime ? {
-                dataProvider: enterpriseRuntime.dataProvider,
-                dataPlaneConfigured: enterpriseRuntime.dataPlaneConfigured === true,
-                encryption: enterpriseRuntime.encryption?.provider || 'none',
-                quotaStore: enterpriseRuntime.quotaStore,
-                queue: 'firestore-durable-outbox',
-            } : 'UNAVAILABLE',
-            aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
-            cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
-            notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
-            tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'MANUAL_SCRIPT_ONLY',
-            pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
-        },
-    });
+    const payload = computeReadyzPayload(req);
+    return res.status(payload.status === 'ready' ? 200 : 503).json(payload);
 });
 
 
