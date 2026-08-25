@@ -110,9 +110,10 @@ class MySQLRepository {
 
             const keys = Object.keys(values);
             const placeholders = keys.map(() => '?').join(', ');
-            const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+            const updateClause = keys.map(k => `\`${k}\` = VALUES(\`${k}\`)`).join(', ');
+            const columnList = keys.map(k => `\`${k}\``).join(', ');
 
-            const sql = `INSERT INTO resumes (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`;
+            const sql = `INSERT INTO resumes (${columnList}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`;
             await connection.query(sql, Object.values(values));
 
             await connection.commit();

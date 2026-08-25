@@ -228,9 +228,9 @@ async function migrateUsersAndSubcollections() {
                         ];
 
                         await mysqlPool.query(
-                            `INSERT INTO resumes (id, user_id, title, template, revision, firstname, lastname, email, phone, occupation, country, city, address, postalcode, website, linkedin, github, photo, showPhoto, summary, employments, educations, skills, languages, hobbies, projects, certifications, achievements, references, customSections, sectionOrder, hiddenSections, completedSteps, created_at, updated_at)
+                            `INSERT INTO resumes (\`id\`, \`user_id\`, \`title\`, \`template\`, \`revision\`, \`firstname\`, \`lastname\`, \`email\`, \`phone\`, \`occupation\`, \`country\`, \`city\`, \`address\`, \`postalcode\`, \`website\`, \`linkedin\`, \`github\`, \`photo\`, \`showPhoto\`, \`summary\`, \`employments\`, \`educations\`, \`skills\`, \`languages\`, \`hobbies\`, \`projects\`, \`certifications\`, \`achievements\`, \`references\`, \`customSections\`, \`sectionOrder\`, \`hiddenSections\`, \`completedSteps\`, \`created_at\`, \`updated_at\`)
                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                             ON DUPLICATE KEY UPDATE title=VALUES(title), template=VALUES(template), revision=VALUES(revision), summary=VALUES(summary), updated_at=VALUES(updated_at)`,
+                             ON DUPLICATE KEY UPDATE \`title\`=VALUES(\`title\`), \`template\`=VALUES(\`template\`), \`revision\`=VALUES(\`revision\`), \`summary\`=VALUES(\`summary\`), \`updated_at\`=VALUES(\`updated_at\`)`,
                             resumeValues
                         );
                         stats.resumes.written++;

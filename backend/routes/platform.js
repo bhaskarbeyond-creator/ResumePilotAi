@@ -751,8 +751,8 @@ router.get('/command-center', async (req, res) => {
       }
 
       statsData = {
-        numberOfUsers: baseUsers + Number(userCnt[0]?.c || 0),
-        numberOfResumesCreated: baseResumes + Number(resumeCnt[0]?.c || 0) + Number(portfolioCnt[0]?.c || 0) + Number(coverCnt[0]?.c || 0),
+        numberOfUsers: Math.max(baseUsers, Number(userCnt[0]?.c || 0)),
+        numberOfResumesCreated: Math.max(baseResumes, Number(resumeCnt[0]?.c || 0) + Number(portfolioCnt[0]?.c || 0) + Number(coverCnt[0]?.c || 0)),
         numberOfResumesDownloaded: baseDownloads,
       };
 
