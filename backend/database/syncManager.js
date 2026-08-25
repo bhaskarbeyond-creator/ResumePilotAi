@@ -198,6 +198,8 @@ async function replicateToFirestore(adminFirestore, event) {
         } else {
             await ref.set(data, { merge: true });
         }
+    } else {
+        throw new Error(`Unsupported entity type for Firestore replication: ${entity_type}`);
     }
 }
 
