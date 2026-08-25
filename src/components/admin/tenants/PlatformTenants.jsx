@@ -5,6 +5,7 @@ import {
   decommissionTenant, getTenantDetail, renameTenant,
   addTenantMember, removeTenantMember, updateTenantCommercials, updateTenantAiPolicy
 } from '../../../services/platformApi';
+import { testAdminAiProvider } from '../../../services/adminAiSettings';
 import {
   FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
   FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus,
@@ -58,6 +59,11 @@ export default function PlatformTenants() {
   const [nvidiaCustomKey, setNvidiaCustomKey] = useState('');
   const [geminiCustomKey, setGeminiCustomKey] = useState('');
   const [openaiCustomKey, setOpenaiCustomKey] = useState('');
+  const [groqCustomKey, setGroqCustomKey] = useState('');
+  const [openrouterCustomKey, setOpenrouterCustomKey] = useState('');
+  const [deepseekCustomKey, setDeepseekCustomKey] = useState('');
+  const [testingKey, setTestingKey] = useState({});
+  const [testResults, setTestResults] = useState({});
   const [savingPolicy, setSavingPolicy] = useState(false);
 
 
@@ -288,6 +294,43 @@ export default function PlatformTenants() {
     }
   }, [selectedTenant]);
 
+  const handleTestTenantKey = async (provider, rawKey) => {
+    const key = rawKey.trim();
+    if (!key && !selectedTenant?.aiPolicy?.customProviderKeys?.[provider]) {
+      setActionError(`Enter the ${provider} API key to test connection.`);
+      return;
+    }
+    setTestingKey(prev => ({ ...prev, [provider]: true }));
+    setTestResults(prev => ({ ...prev, [provider]: null }));
+    setActionError(null);
+    try {
+      const startTime = Date.now();
+      await testAdminAiProvider({
+        provider,
+        apiKey: key,
+      });
+      const latency = Date.now() - startTime;
+      const speedRating = latency < 800 ? '⚡ Ultra Fast' : latency < 3000 ? '✓ Fast' : '⏳ Normal';
+      setTestResults(prev => ({
+        ...prev,
+        [provider]: {
+          success: true,
+          message: `✓ Connected (${latency}ms, ${speedRating})`,
+        }
+      }));
+    } catch (err) {
+      setTestResults(prev => ({
+        ...prev,
+        [provider]: {
+          success: false,
+          message: `❌ ${err.message || 'Connection failed'}`,
+        }
+      }));
+    } finally {
+      setTestingKey(prev => ({ ...prev, [provider]: false }));
+    }
+  };
+
   const handleSaveAgreementPolicy = async (e) => {
     if (e) e.preventDefault();
     if (!selectedTenant || !isSuperAdmin || savingPolicy) return;
@@ -298,6 +341,9 @@ export default function PlatformTenants() {
       if (nvidiaCustomKey.trim()) customProviderKeys.nvidia = nvidiaCustomKey.trim();
       if (geminiCustomKey.trim()) customProviderKeys.gemini = geminiCustomKey.trim();
       if (openaiCustomKey.trim()) customProviderKeys.openai = openaiCustomKey.trim();
+      if (groqCustomKey.trim()) customProviderKeys.groq = groqCustomKey.trim();
+      if (openrouterCustomKey.trim()) customProviderKeys.openrouter = openrouterCustomKey.trim();
+      if (deepseekCustomKey.trim()) customProviderKeys.deepseek = deepseekCustomKey.trim();
 
       await updateTenantAiPolicy(selectedTenant.id, {
         dailyLimit: Number(policyDailyLimit) || 5000,
@@ -313,6 +359,9 @@ export default function PlatformTenants() {
       setNvidiaCustomKey('');
       setGeminiCustomKey('');
       setOpenaiCustomKey('');
+      setGroqCustomKey('');
+      setOpenrouterCustomKey('');
+      setDeepseekCustomKey('');
       setNotification(`Custom agreement & dedicated AI keys updated for "${selectedTenant.displayName}".`);
       setDetailRefresh(v => v + 1);
       fetchTenants();
@@ -322,6 +371,7 @@ export default function PlatformTenants() {
       setSavingPolicy(false);
     }
   };
+
 
 
   const handleDecommission = async (tenant) => {
@@ -1071,47 +1121,219 @@ export default function PlatformTenants() {
                           </button>
                           
                           {showDedicatedKeys && (
-                            <div className="mt-2.5 p-3.5 bg-white border border-indigo-100 rounded-xl space-y-3 animate-fade-in">
+                            <div className="mt-2.5 p-4 bg-white border border-indigo-100 rounded-xl space-y-4 animate-fade-in shadow-xs">
                               <p className="text-[11px] text-slate-600 leading-relaxed">
-                                Enter dedicated API keys for this tenant. When configured, AI operations from this organization are routed exclusively through these credentials and billed to the tenant's own provider account.
+                                Enter dedicated API keys for this tenant across any of the 6 supported base AI providers. When configured, AI operations from this organization are routed exclusively through these credentials and billed to the tenant's own provider account. You can test each provider's connection latency and validity prior to saving.
                               </p>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div>
-                                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">NVIDIA NIM Dedicated Key</label>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                                {/* 1. NVIDIA NIM */}
+                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-emerald-500"></span> NVIDIA NIM
+                                    </span>
+                                    {selectedTenant.aiPolicy?.customProviderKeys?.nvidia && (
+                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active</span>
+                                    )}
+                                  </div>
                                   <input
                                     type="password"
                                     value={nvidiaCustomKey}
                                     onChange={e => setNvidiaCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Active)' : 'nvapi-...'}
-                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Dedicated Active)' : 'nvapi-...'}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
                                   />
+                                  <div className="flex items-center justify-between pt-0.5">
+                                    <button
+                                      type="button"
+                                      disabled={testingKey.nvidia}
+                                      onClick={() => handleTestTenantKey('nvidia', nvidiaCustomKey)}
+                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      {testingKey.nvidia ? 'Testing…' : '⚡ Test Connection'}
+                                    </button>
+                                    {testResults.nvidia && (
+                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.nvidia.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {testResults.nvidia.message}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
-                                <div>
-                                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">Google Gemini Dedicated Key</label>
+                                {/* 2. Google Gemini */}
+                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-blue-500"></span> Google Gemini
+                                    </span>
+                                    {selectedTenant.aiPolicy?.customProviderKeys?.gemini && (
+                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active</span>
+                                    )}
+                                  </div>
                                   <input
                                     type="password"
                                     value={geminiCustomKey}
                                     onChange={e => setGeminiCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Active)' : 'AIza...'}
-                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Dedicated Active)' : 'AIza...'}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
                                   />
+                                  <div className="flex items-center justify-between pt-0.5">
+                                    <button
+                                      type="button"
+                                      disabled={testingKey.gemini}
+                                      onClick={() => handleTestTenantKey('gemini', geminiCustomKey)}
+                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      {testingKey.gemini ? 'Testing…' : '⚡ Test Connection'}
+                                    </button>
+                                    {testResults.gemini && (
+                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.gemini.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {testResults.gemini.message}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
-                                <div>
-                                  <label className="block text-[10px] font-bold uppercase text-slate-600 mb-1">OpenAI Dedicated Key</label>
+                                {/* 3. OpenAI */}
+                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-teal-500"></span> OpenAI
+                                    </span>
+                                    {selectedTenant.aiPolicy?.customProviderKeys?.openai && (
+                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active</span>
+                                    )}
+                                  </div>
                                   <input
                                     type="password"
                                     value={openaiCustomKey}
                                     onChange={e => setOpenaiCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Active)' : 'sk-...'}
-                                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Dedicated Active)' : 'sk-...'}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
                                   />
+                                  <div className="flex items-center justify-between pt-0.5">
+                                    <button
+                                      type="button"
+                                      disabled={testingKey.openai}
+                                      onClick={() => handleTestTenantKey('openai', openaiCustomKey)}
+                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      {testingKey.openai ? 'Testing…' : '⚡ Test Connection'}
+                                    </button>
+                                    {testResults.openai && (
+                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openai.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {testResults.openai.message}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* 4. Groq Cloud */}
+                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-orange-500"></span> Groq Cloud
+                                    </span>
+                                    {selectedTenant.aiPolicy?.customProviderKeys?.groq && (
+                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active</span>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="password"
+                                    value={groqCustomKey}
+                                    onChange={e => setGroqCustomKey(e.target.value)}
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.groq ? '•••••••• (Dedicated Active)' : 'gsk_...'}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                  />
+                                  <div className="flex items-center justify-between pt-0.5">
+                                    <button
+                                      type="button"
+                                      disabled={testingKey.groq}
+                                      onClick={() => handleTestTenantKey('groq', groqCustomKey)}
+                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      {testingKey.groq ? 'Testing…' : '⚡ Test Connection'}
+                                    </button>
+                                    {testResults.groq && (
+                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.groq.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {testResults.groq.message}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* 5. OpenRouter */}
+                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-violet-500"></span> OpenRouter
+                                    </span>
+                                    {selectedTenant.aiPolicy?.customProviderKeys?.openrouter && (
+                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active</span>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="password"
+                                    value={openrouterCustomKey}
+                                    onChange={e => setOpenrouterCustomKey(e.target.value)}
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openrouter ? '•••••••• (Dedicated Active)' : 'sk-or-v1-...'}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                  />
+                                  <div className="flex items-center justify-between pt-0.5">
+                                    <button
+                                      type="button"
+                                      disabled={testingKey.openrouter}
+                                      onClick={() => handleTestTenantKey('openrouter', openrouterCustomKey)}
+                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      {testingKey.openrouter ? 'Testing…' : '⚡ Test Connection'}
+                                    </button>
+                                    {testResults.openrouter && (
+                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openrouter.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {testResults.openrouter.message}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* 6. DeepSeek */}
+                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-cyan-500"></span> DeepSeek
+                                    </span>
+                                    {selectedTenant.aiPolicy?.customProviderKeys?.deepseek && (
+                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active</span>
+                                    )}
+                                  </div>
+                                  <input
+                                    type="password"
+                                    value={deepseekCustomKey}
+                                    onChange={e => setDeepseekCustomKey(e.target.value)}
+                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.deepseek ? '•••••••• (Dedicated Active)' : 'sk-...'}
+                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                  />
+                                  <div className="flex items-center justify-between pt-0.5">
+                                    <button
+                                      type="button"
+                                      disabled={testingKey.deepseek}
+                                      onClick={() => handleTestTenantKey('deepseek', deepseekCustomKey)}
+                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      {testingKey.deepseek ? 'Testing…' : '⚡ Test Connection'}
+                                    </button>
+                                    {testResults.deepseek && (
+                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.deepseek.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                        {testResults.deepseek.message}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           )}
+
                         </div>
 
                         <div className="flex justify-end pt-1">
