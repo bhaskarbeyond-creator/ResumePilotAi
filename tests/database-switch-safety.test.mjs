@@ -141,6 +141,17 @@ describe('Database Engine Switching Safety Test Suite', () => {
 
     after(async () => {
         try {
+            const fs = await import('node:fs');
+            const path = await import('node:path');
+            const statePath = path.join(process.cwd(), 'backend', 'database', 'engine_state.json');
+            fs.writeFileSync(statePath, JSON.stringify({
+                engine: 'mysql',
+                switchedBy: 'SUPER_ADMIN',
+                switchedAt: new Date().toISOString(),
+                previousEngine: 'firestore'
+            }, null, 2), 'utf8');
+        } catch (_) {}
+        try {
             const { getPool } = await import('../backend/database/mysql.js');
             await getPool().end();
         } catch (_) {}
