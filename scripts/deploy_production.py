@@ -49,10 +49,21 @@ def main():
                 tar.add(item_path, arcname=item)
 
     # 5. SCP tarballs to remote server
+    def scp_upload(src, dest):
+        ssh_opts = ['-o', 'BatchMode=yes', '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3', '-o', 'ConnectTimeout=30']
+        for attempt in range(1, 4):
+            try:
+                subprocess.check_call(['scp'] + ssh_opts + [src, dest])
+                return
+            except subprocess.CalledProcessError as e:
+                print(f"SCP upload attempt {attempt} failed: {e}. Retrying...")
+                time.sleep(2)
+        subprocess.check_call(['scp'] + ssh_opts + [src, dest])
+
     print("Uploading backend package via SCP...")
-    subprocess.check_call(['scp', '-o', 'BatchMode=yes', backend_tar, 'airesume:~/backend_src.tar.gz'])
+    scp_upload(backend_tar, 'airesume:~/backend_src.tar.gz')
     print("Uploading frontend package via SCP...")
-    subprocess.check_call(['scp', '-o', 'BatchMode=yes', frontend_tar, 'airesume:~/frontend_dist.tar.gz'])
+    scp_upload(frontend_tar, 'airesume:~/frontend_dist.tar.gz')
 
     # 6. Execute extraction and restart on remote server
     remote_script = f"""
