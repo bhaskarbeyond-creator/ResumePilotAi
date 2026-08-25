@@ -730,22 +730,29 @@ router.get('/command-center', async (req, res) => {
       const [earningsRows] = await pool.query('SELECT COALESCE(SUM(amount), 0) as total FROM payment_orders WHERE status IN ("ACTIVE", "COMPLETED", "PAID")');
       const [statsRows] = await pool.query('SELECT * FROM stats WHERE id = ?', ['stats']);
       
-      let downloadCount = 0;
+      let baseUsers = 0;
+      let baseResumes = 0;
+      let baseDownloads = 0;
+      let baseEarnings = 0;
+
       if (statsRows.length) {
         try {
           const parsed = typeof statsRows[0].data === 'string' ? JSON.parse(statsRows[0].data) : statsRows[0].data;
-          downloadCount = Number(parsed?.downloads || parsed?.numberOfResumesDownloaded || 0);
+          baseUsers = Number(parsed?.numberOfUsers || parsed?.users || 0);
+          baseResumes = Number(parsed?.numberOfResumesCreated || parsed?.resumes || 0);
+          baseDownloads = Number(parsed?.numberOfResumesDownloaded || parsed?.downloads || 0);
+          baseEarnings = Number(parsed?.totalEarnings || parsed?.earnings || 0);
         } catch (_) {}
       }
 
       statsData = {
-        numberOfUsers: Number(userCnt[0]?.c || 0),
-        numberOfResumesCreated: Number(resumeCnt[0]?.c || 0) + Number(portfolioCnt[0]?.c || 0) + Number(coverCnt[0]?.c || 0),
-        numberOfResumesDownloaded: downloadCount,
+        numberOfUsers: baseUsers + Number(userCnt[0]?.c || 0),
+        numberOfResumesCreated: baseResumes + Number(resumeCnt[0]?.c || 0) + Number(portfolioCnt[0]?.c || 0) + Number(coverCnt[0]?.c || 0),
+        numberOfResumesDownloaded: baseDownloads,
       };
 
       earningsData = {
-        amount: Number(earningsRows[0]?.total || 0),
+        amount: Math.max(baseEarnings, Number(earningsRows[0]?.total || 0)),
         currency: 'USD'
       };
 

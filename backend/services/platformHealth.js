@@ -358,12 +358,12 @@ async function buildServices(app) {
   if (isMySQL) {
     try {
       const pool = getPool();
-      const [rows] = await pool.query('SELECT category, value FROM system_settings');
+      const [rows] = await pool.query('SELECT category, data FROM system_settings');
       rows.forEach(r => {
         try {
-          mysqlSettings[r.category] = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+          mysqlSettings[r.category] = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
         } catch (_) {
-          mysqlSettings[r.category] = r.value;
+          mysqlSettings[r.category] = r.data;
         }
       });
     } catch (e) {
@@ -424,6 +424,8 @@ async function buildServices(app) {
       return getOutboxStatus({ db, admin, signingSecret: process.env.TENANT_JOB_SIGNING_SECRET || null });
     }),
   ]);
+
+  const firestorePing = dbPing;
 
   const publicConfig = docData(publicConfigDoc) || {};
   const payments = resolvePaymentProviders(docData(paymentDoc), docData(legacySubscriptionsDoc), publicConfig);
