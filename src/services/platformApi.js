@@ -52,6 +52,7 @@ export const getHealthIndicator = () => platformFetch('/api/platform/health-indi
 export const getEnterpriseQueue = () => platformFetch('/api/platform/enterprise-queue');
 export const getOperators = () => platformFetch('/api/platform/operators');
 export const setOperatorRole = (uid, role, expectedRole) => platformFetch('/api/platform/operators', { method: 'POST', body: JSON.stringify({ uid, role, ...(expectedRole ? { expectedRole } : {}) }) });
+export const revokeOperatorSessions = (uid) => platformFetch(`/api/platform/operators/${encodeURIComponent(uid)}/revoke-sessions`, { method: 'POST', body: JSON.stringify({}) });
 
 // Super Admin User Control-Plane & User 360 APIs
 export const getAdminUsers = (params = {}) => {

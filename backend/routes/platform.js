@@ -1508,6 +1508,50 @@ router.post('/operators', requireRecentAdminAuthentication, async (req, res) => 
   }
 });
 
+router.post('/operators/:uid/revoke-sessions', requireRecentAdminAuthentication, async (req, res) => {
+  const uid = String(req.params.uid || '').trim();
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+    return res.status(400).json({ error: { code: 'INVALID_UID', message: 'A valid uid is required' } });
+  }
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  if (!db || !admin?.auth) {
+    return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
+  }
+  try {
+    const target = await admin.auth().getUser(uid);
+    await admin.auth().revokeRefreshTokens(uid);
+    await db.collection('security_audit_logs').doc().set({
+      action: 'PLATFORM_OPERATOR_SESSIONS_REVOKED',
+      actorUid: req.user?.uid,
+      targetUid: uid,
+      targetEmail: target.email || null,
+      requestId: res.locals?.requestId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await recordAdminAuditLog(db, admin, {
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_OPERATOR_SESSIONS_REVOKED',
+      category: 'iam.operators',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'POST',
+      pathname: req.originalUrl,
+      statusCode: 200,
+      resourceType: 'user',
+      resourceId: uid,
+      metadata: { targetEmail: target.email || null },
+      requestId: res.locals?.requestId,
+    });
+    return res.json({ success: true, message: `All active sessions and refresh tokens for operator ${target.email || uid} have been revoked.` });
+  } catch (error) {
+    const status = error.code === 'auth/user-not-found' ? 404 : 500;
+    return res.status(status).json({ error: { code: status === 404 ? 'USER_NOT_FOUND' : 'SESSION_REVOCATION_FAILED', message: status === 404 ? 'User not found' : error.message } });
+  }
+});
+
 router.get('/tenants/:tenantId', async (req, res) => {
   const tenantId = String(req.params.tenantId || '').trim();
   const tenantService = req.app?.get('tenantService');
