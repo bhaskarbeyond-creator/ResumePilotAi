@@ -228,7 +228,7 @@ router.patch('/platform/tenants/:tenantId/members/:principalId', requireRecentAd
 });
 
 // 5. TENANT COMMERCIALS & PLAN BINDING
-router.patch('/platform/tenants/:tenantId/commercials', requireRecentAdminAuthentication, async (req, res) => {
+router.patch('/platform/tenants/:tenantId/commercials', requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
   const tenantId = String(req.params.tenantId || '').trim();
   const db = req.app.get('db');
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
@@ -257,7 +257,7 @@ router.patch('/platform/tenants/:tenantId/commercials', requireRecentAdminAuthen
 });
 
 // 6. TENANT AI POLICY & QUOTA BUCKETS
-router.patch('/platform/tenants/:tenantId/ai-policy', requireRecentAdminAuthentication, async (req, res) => {
+router.patch('/platform/tenants/:tenantId/ai-policy', requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
   const tenantId = String(req.params.tenantId || '').trim();
   const db = req.app.get('db');
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
