@@ -360,13 +360,31 @@ const DatabaseSettings = () => {
                     </div>
 
                     <div className="mt-5 space-y-2 text-xs text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center">
                             <span className="font-semibold text-slate-500">Status:</span>
                             <span className={`font-bold flex items-center gap-1 ${
-                                engineDetails.firestore?.connected ? 'text-emerald-600' : 'text-red-600'
+                                engineDetails.firestore?.connected
+                                    ? (engineDetails.firestore?.quotaExceeded ? 'text-amber-600' : 'text-emerald-600')
+                                    : 'text-red-600'
                             }`}>
-                                {engineDetails.firestore?.connected ? <FaCheckCircle /> : <FaTimesCircle />}
-                                {engineDetails.firestore?.connected ? 'Connected' : 'Unavailable'}
+                                {engineDetails.firestore?.connected ? (
+                                    engineDetails.firestore?.quotaExceeded ? (
+                                        <>
+                                            <FaExclamationTriangle className="text-amber-500" />
+                                            <span>Quota Limited (Standby)</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaCheckCircle className="text-emerald-600" />
+                                            <span>Connected</span>
+                                        </>
+                                    )
+                                ) : (
+                                    <>
+                                        <FaTimesCircle className="text-red-600" />
+                                        <span>Unavailable</span>
+                                    </>
+                                )}
                             </span>
                         </div>
                         <div className="flex justify-between">
@@ -377,6 +395,12 @@ const DatabaseSettings = () => {
                             <span className="font-semibold text-slate-500">Latency:</span>
                             <span>{engineDetails.firestore?.latencyMs !== undefined ? `${engineDetails.firestore.latencyMs}ms` : '—'}</span>
                         </div>
+                        {engineDetails.firestore?.quotaExceeded && (
+                            <div className="mt-2 pt-2 border-t border-amber-200 text-[11px] text-amber-800 flex items-start gap-1.5">
+                                <FaInfoCircle className="mt-0.5 text-amber-600 shrink-0" />
+                                <span>Google Cloud free-tier daily read limit reached. MariaDB / MySQL is active primary.</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-5 flex items-center gap-3">

@@ -94,6 +94,18 @@ async function testEngineConnectivity(engine, firestoreDb) {
             try {
                 await db.collection('settings').limit(1).get();
             } catch (queryErr) {
+                const isQuota = /RESOURCE_EXHAUSTED|Quota exceeded/i.test(queryErr.message) || queryErr.code === 8;
+                if (isQuota) {
+                    return {
+                        connected: true,
+                        quotaExceeded: true,
+                        status: 'quota_limited',
+                        latencyMs: Date.now() - start,
+                        projectId: db.projectId || process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf',
+                        warning: 'Google Cloud Firestore free-tier read quota reached; resets automatically at midnight UTC. Standby operations remain configured.',
+                        error: queryErr.message,
+                    };
+                }
                 return {
                     connected: false,
                     latencyMs: Date.now() - start,
