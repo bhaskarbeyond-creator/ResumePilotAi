@@ -387,27 +387,42 @@ class FirestoreTenantRegistry {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     
-    // Step 1: Query and delete all workspaces
-    const workspacesRef = this.db.collection('enterprise_workspaces').where('tenantId', '==', tenantId);
-    const workspacesSnap = await workspacesRef.get();
+    const collectionsToQuery = [
+      'enterprise_workspaces',
+      'enterprise_memberships',
+      'enterprise_workspace_memberships',
+      'enterprise_teams',
+      'enterprise_team_members',
+      'enterprise_outbox'
+    ];
     
-    // Step 2: Query and delete all memberships
-    const membershipsRef = this.db.collection('enterprise_memberships').where('tenantId', '==', tenantId);
-    const membershipsSnap = await membershipsRef.get();
-
-    // Step 3: Query and delete all workspace memberships
-    const wsMembershipsRef = this.db.collection('enterprise_workspace_memberships').where('tenantId', '==', tenantId);
-    const wsMembershipsSnap = await wsMembershipsRef.get();
-
     const batch = this.db.batch();
-    workspacesSnap.docs.forEach(doc => batch.delete(doc.ref));
-    membershipsSnap.docs.forEach(doc => batch.delete(doc.ref));
-    wsMembershipsSnap.docs.forEach(doc => batch.delete(doc.ref));
     
-    // Finally, delete the tenant record itself
+    // 1. Delete associated queryable collections
+    for (const col of collectionsToQuery) {
+      const snap = await this.db.collection(col).where('tenantId', '==', tenantId).get();
+      snap.docs.forEach(doc => batch.delete(doc.ref));
+    }
+    
+    // 2. Delete the slug map 
+    // We have to query it because the document ID is the slug itself, but the field is tenantId
+    const slugsSnap = await this.db.collection('enterprise_tenant_slugs').where('tenantId', '==', tenantId).get();
+    slugsSnap.docs.forEach(doc => batch.delete(doc.ref));
+    
+    // 3. Delete configurations
+    batch.delete(this.db.collection('enterprise_tenant_configurations').doc(tenantId));
+    
+    // 4. Delete the main tenant document
     batch.delete(this.db.collection('enterprise_tenants').doc(tenantId));
     
     await batch.commit();
+    
+    // 5. Recursively delete the entire tenant data partition (resources, audit, AI usage)
+    if (typeof this.db.recursiveDelete === 'function') {
+      const tenantPartitionRef = this.db.collection('tenants').doc(tenantId);
+      await this.db.recursiveDelete(tenantPartitionRef);
+    }
+    
     return true;
   }
 
@@ -1060,6 +1075,12 @@ class InMemoryTenantRegistry {
     }
     for (const [key, val] of this.workspaceMemberships.entries()) {
       if (val.tenantId === tenantId) this.workspaceMemberships.delete(key);
+    }
+    for (const [key, val] of this.teams.entries()) {
+      if (val.tenantId === tenantId) this.teams.delete(key);
+    }
+    for (const [key, val] of this.teamMembers.entries()) {
+      if (val.tenantId === tenantId) this.teamMembers.delete(key);
     }
     this.tenants.delete(tenantId);
     return true;
