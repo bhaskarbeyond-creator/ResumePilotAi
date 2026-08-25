@@ -243,7 +243,8 @@ router.post('/', async (req, res) => {
         }
 
         const firestoreDb = req.app.get('db');
-        const switchedBy = req.user?.email || req.user?.uid || 'SUPER_ADMIN';
+        const actor = req.user?.email || req.user?.uid || 'SUPER_ADMIN';
+        const switchedBy = force ? `EMERGENCY_FAILOVER(${actor})` : actor;
 
         // Pre-Switch Safety & Parity Gate
         if (!force) {
@@ -259,9 +260,6 @@ router.post('/', async (req, res) => {
                 });
             }
         }
-
-        const actor = req.user?.email || req.user?.uid || 'SUPER_ADMIN';
-        const switchedBy = force ? `EMERGENCY_FAILOVER(${actor})` : actor;
 
         const result = await switchActiveEngine(targetEngine, switchedBy, firestoreDb);
         return res.json(result);
