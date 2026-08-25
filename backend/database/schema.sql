@@ -539,4 +539,19 @@ CREATE TABLE IF NOT EXISTS database_engine_state (
     switch_lock_expires_at BIGINT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 28. Intelligent Sync Worker Heartbeat & Telemetry
+CREATE TABLE IF NOT EXISTS sync_worker_state (
+    worker_id VARCHAR(64) NOT NULL PRIMARY KEY, -- 'primary_sync_worker'
+    worker_pid INT NOT NULL,
+    worker_status VARCHAR(32) NOT NULL DEFAULT 'RUNNING', -- RUNNING, STOPPED, PAUSED
+    last_heartbeat_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_sync_started_at TIMESTAMP NULL,
+    last_sync_completed_at TIMESTAMP NULL,
+    last_successful_event_at TIMESTAMP NULL,
+    last_failed_event_at TIMESTAMP NULL,
+    consecutive_failures INT NOT NULL DEFAULT 0,
+    total_events_processed BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -2,6 +2,9 @@ const crypto = require('crypto');
 const { getPool } = require('./mysql');
 const { getActiveEngine } = require('./engineManager');
 
+let backgroundWorkerTimer = null;
+let isWorkerProcessing = false;
+
 /**
  * Calculates a deterministic canonical SHA-256 hash of an entity payload.
  * Ignores volatile timestamps and internal metadata for stable comparison.
@@ -68,7 +71,51 @@ async function enqueueOutboxEvent(connection, {
 }
 
 /**
- * Fetches current sync metrics and health indicators from MariaDB.
+ * Updates the background worker heartbeat in MariaDB.
+ */
+async function updateWorkerHeartbeat(status = 'RUNNING', updates = {}) {
+    try {
+        const pool = getPool();
+        const setClauses = [
+            'worker_pid = ?',
+            'worker_status = ?',
+            'last_heartbeat_at = NOW()'
+        ];
+        const values = [process.pid, status];
+
+        if (updates.lastSyncStartedAt) {
+            setClauses.push('last_sync_started_at = NOW()');
+        }
+        if (updates.lastSyncCompletedAt) {
+            setClauses.push('last_sync_completed_at = NOW()');
+        }
+        if (updates.lastSuccessfulEventAt) {
+            setClauses.push('last_successful_event_at = NOW()');
+        }
+        if (updates.lastFailedEventAt) {
+            setClauses.push('last_failed_event_at = NOW()');
+        }
+        if (typeof updates.consecutiveFailures === 'number') {
+            setClauses.push('consecutive_failures = ?');
+            values.push(updates.consecutiveFailures);
+        }
+        if (updates.processedCount && updates.processedCount > 0) {
+            setClauses.push('total_events_processed = total_events_processed + ?');
+            values.push(updates.processedCount);
+        }
+
+        values.push('primary_sync_worker');
+
+        await pool.query(`
+            UPDATE sync_worker_state 
+            SET ${setClauses.join(', ')}
+            WHERE worker_id = ?
+        `, values);
+    } catch (_) {}
+}
+
+/**
+ * Fetches current sync metrics, health indicators, and worker heartbeat telemetry from MariaDB.
  */
 async function getSyncHealthStatus() {
     const pool = getPool();
@@ -93,17 +140,30 @@ async function getSyncHealthStatus() {
             SELECT COUNT(*) as active_conflicts FROM sync_conflicts WHERE resolution = 'PENDING'
         `);
 
+        const [workerRows] = await pool.query(`
+            SELECT * FROM sync_worker_state WHERE worker_id = 'primary_sync_worker'
+        `);
+
         const stats = counts[0] || {};
         const activeConflicts = conflictCounts[0]?.active_conflicts || 0;
+        const workerInfo = workerRows[0] || null;
 
         let syncLagSeconds = 0;
         if (stats.oldest_pending_at) {
             syncLagSeconds = Math.max(0, Math.floor((Date.now() - new Date(stats.oldest_pending_at).getTime()) / 1000));
         }
 
+        // Heartbeat freshness threshold: 20 seconds
+        const heartbeatAgeSeconds = workerInfo?.last_heartbeat_at 
+            ? Math.floor((Date.now() - new Date(workerInfo.last_heartbeat_at).getTime()) / 1000)
+            : 9999;
+        
+        const isWorkerRunning = Boolean(workerInfo && workerInfo.worker_status === 'RUNNING' && heartbeatAgeSeconds <= 20);
+
         const isHealthy = Number(stats.dead_letter_count || 0) === 0 &&
                           Number(activeConflicts || 0) === 0 &&
-                          syncLagSeconds < 60;
+                          syncLagSeconds < 60 &&
+                          isWorkerRunning;
 
         return {
             activeEngine,
@@ -117,7 +177,20 @@ async function getSyncHealthStatus() {
             failedCount: Number(stats.failed_count || 0),
             deadLetterCount: Number(stats.dead_letter_count || 0),
             conflictCount: Number(activeConflicts || 0),
-            lastSuccessfulSyncAt: stats.last_sync_at ? new Date(stats.last_sync_at).toISOString() : null,
+            lastSuccessfulSyncAt: stats.last_sync_at ? new Date(stats.last_sync_at).toISOString() : (workerInfo?.last_successful_event_at ? new Date(workerInfo.last_successful_event_at).toISOString() : null),
+            // Worker Telemetry
+            worker: {
+                status: isWorkerRunning ? 'RUNNING' : 'STOPPED',
+                pid: workerInfo?.worker_pid || 0,
+                heartbeatAgeSeconds,
+                lastHeartbeatAt: workerInfo?.last_heartbeat_at ? new Date(workerInfo.last_heartbeat_at).toISOString() : null,
+                lastSyncStartedAt: workerInfo?.last_sync_started_at ? new Date(workerInfo.last_sync_started_at).toISOString() : null,
+                lastSyncCompletedAt: workerInfo?.last_sync_completed_at ? new Date(workerInfo.last_sync_completed_at).toISOString() : null,
+                lastSuccessfulEventAt: workerInfo?.last_successful_event_at ? new Date(workerInfo.last_successful_event_at).toISOString() : null,
+                lastFailedEventAt: workerInfo?.last_failed_event_at ? new Date(workerInfo.last_failed_event_at).toISOString() : null,
+                consecutiveFailures: workerInfo?.consecutive_failures || 0,
+                totalEventsProcessed: workerInfo?.total_events_processed || 0
+            }
         };
     } catch (err) {
         return {
@@ -133,13 +206,18 @@ async function getSyncHealthStatus() {
             failedCount: 0,
             deadLetterCount: 0,
             conflictCount: 0,
-            lastSuccessfulSyncAt: null
+            lastSuccessfulSyncAt: null,
+            worker: {
+                status: 'STOPPED',
+                pid: 0,
+                lastHeartbeatAt: null
+            }
         };
     }
 }
 
 /**
- * Replicates a single outbox record from MySQL to Firestore.
+ * Replicates a single outbox record from MySQL to Firestore with monotonic versioning protection.
  */
 async function replicateToFirestore(adminFirestore, event) {
     if (!adminFirestore) {
@@ -148,6 +226,7 @@ async function replicateToFirestore(adminFirestore, event) {
 
     const { entity_type, entity_id, operation, payload, version } = event;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
+    const incomingVersion = Number(version || data.revision || 1);
 
     if (entity_type === 'resumes') {
         const userId = data.user_id || data.userId;
@@ -157,9 +236,21 @@ async function replicateToFirestore(adminFirestore, event) {
         if (operation === 'DELETE') {
             await ref.delete();
         } else {
+            // Monotonic Revision Guard (Out-of-Order Stale Event Protection)
+            try {
+                const existingSnap = await ref.get();
+                if (existingSnap.exists) {
+                    const existingRevision = Number(existingSnap.data()?.revision || 0);
+                    if (existingRevision > incomingVersion) {
+                        console.log(`[SyncWorker] Monotonic guard: Stale version ${incomingVersion} ignored (Firestore is at revision ${existingRevision})`);
+                        return; // Successfully acknowledged without state regression
+                    }
+                }
+            } catch (_) {}
+
             await ref.set({
                 ...data,
-                revision: Number(version || data.revision || 1),
+                revision: incomingVersion,
                 updatedAt: new Date(),
             }, { merge: true });
         }
@@ -204,24 +295,32 @@ async function replicateToFirestore(adminFirestore, event) {
 }
 
 /**
- * Replicates an event from Firestore change capture to MySQL.
+ * Replicates an event from Firestore change capture to MySQL with monotonic versioning protection.
  */
 async function replicateToMySQL(event) {
     const pool = getPool();
     const { entity_type, entity_id, operation, payload, version } = event;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
+    const incomingVersion = Number(version || data.revision || 1);
 
     if (entity_type === 'resumes') {
         if (operation === 'DELETE') {
             await pool.query('DELETE FROM resumes WHERE id = ?', [entity_id]);
         } else {
+            // Monotonic Revision Guard
+            const [existing] = await pool.query('SELECT revision FROM resumes WHERE id = ?', [entity_id]);
+            if (existing.length > 0 && Number(existing[0].revision) > incomingVersion) {
+                console.log(`[SyncWorker] Monotonic guard: Stale version ${incomingVersion} ignored (MySQL is at revision ${existing[0].revision})`);
+                return;
+            }
+
             const userId = data.user_id || data.userId;
             const values = [
                 entity_id,
                 userId,
                 data.title || 'Untitled Resume',
                 data.template || 'Cv1',
-                Number(version || data.revision || 1),
+                incomingVersion,
                 data.firstname || '',
                 data.lastname || '',
                 data.email || '',
@@ -339,6 +438,62 @@ async function processSyncQueue(batchSize = 25, adminFirestore = null) {
 }
 
 /**
+ * Starts the Autonomous Continuous Background Sync Worker.
+ * Polls for outbox events, replicates them automatically, and publishes real-time heartbeats.
+ */
+function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
+    if (backgroundWorkerTimer) {
+        return; // Already running
+    }
+
+    console.log(`[SyncWorker] 🟢 Autonomous Background Sync Worker started (PID: ${process.pid}, Interval: ${pollIntervalMs}ms)`);
+    updateWorkerHeartbeat('RUNNING');
+
+    backgroundWorkerTimer = setInterval(async () => {
+        if (isWorkerProcessing) return;
+        isWorkerProcessing = true;
+
+        try {
+            await updateWorkerHeartbeat('RUNNING');
+            const result = await processSyncQueue(25, adminFirestore);
+            
+            if (result.processed > 0 || result.failed > 0) {
+                await updateWorkerHeartbeat('RUNNING', {
+                    lastSyncCompletedAt: true,
+                    lastSuccessfulEventAt: result.processed > 0,
+                    lastFailedEventAt: result.failed > 0,
+                    consecutiveFailures: result.failed > 0 ? undefined : 0,
+                    processedCount: result.processed
+                });
+            }
+        } catch (err) {
+            await updateWorkerHeartbeat('RUNNING', {
+                lastFailedEventAt: true,
+                consecutiveFailures: 1
+            });
+        } finally {
+            isWorkerProcessing = false;
+        }
+    }, pollIntervalMs);
+
+    if (backgroundWorkerTimer.unref) {
+        backgroundWorkerTimer.unref(); // Avoid holding event loop on process exit
+    }
+}
+
+/**
+ * Gracefully stops the continuous sync worker.
+ */
+function stopBackgroundSyncWorker() {
+    if (backgroundWorkerTimer) {
+        clearInterval(backgroundWorkerTimer);
+        backgroundWorkerTimer = null;
+        console.log('[SyncWorker] 🔴 Background Sync Worker stopped.');
+        updateWorkerHeartbeat('STOPPED');
+    }
+}
+
+/**
  * Pre-Switch Synchronization & Parity Gate.
  * Must be executed prior to any Super Admin database switch.
  */
@@ -418,8 +573,10 @@ module.exports = {
     calculateContentHash,
     enqueueOutboxEvent,
     getSyncHealthStatus,
-    processSyncQueue,
-    flushAndVerifyBeforeSwitch,
     replicateToFirestore,
-    replicateToMySQL
+    replicateToMySQL,
+    processSyncQueue,
+    startBackgroundSyncWorker,
+    stopBackgroundSyncWorker,
+    flushAndVerifyBeforeSwitch
 };

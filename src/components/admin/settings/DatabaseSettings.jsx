@@ -224,19 +224,35 @@ const DatabaseSettings = () => {
             {/* Sync Telemetry Dashboard */}
             {syncHealth && (
                 <div className="p-6 bg-slate-900 text-slate-200 rounded-2xl border border-slate-800 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
                         <div className="flex items-center gap-2 font-bold text-sm text-white">
                             <FaExchangeAlt className="text-emerald-400" />
-                            <span>Intelligent Replication & Standby Telemetry</span>
+                            <span>Autonomous Background Sync Worker & Telemetry</span>
                         </div>
-                        <span className={`px-2.5 py-0.5 text-xs font-bold rounded-md ${
-                            syncHealth.isHealthy ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
-                        }`}>
-                            {syncHealth.isHealthy ? '● SYNC HEALTHY' : '▲ ATTENTION REQUIRED'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-0.5 text-xs font-bold rounded-md flex items-center gap-1.5 ${
+                                syncHealth.worker?.status === 'RUNNING' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            }`}>
+                                <span className={`w-2 h-2 rounded-full ${syncHealth.worker?.status === 'RUNNING' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`}></span>
+                                WORKER: {syncHealth.worker?.status || 'RUNNING'} {syncHealth.worker?.pid ? `(PID ${syncHealth.worker.pid})` : ''}
+                            </span>
+                            <span className={`px-2.5 py-0.5 text-xs font-bold rounded-md ${
+                                syncHealth.isHealthy ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                            }`}>
+                                {syncHealth.isHealthy ? '● SYNC HEALTHY' : '▲ ATTENTION'}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-xs">
+                        <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <div className="text-slate-400">Worker Heartbeat</div>
+                            <div className="text-sm font-bold text-white mt-0.5">
+                                {syncHealth.worker?.heartbeatAgeSeconds !== undefined && syncHealth.worker?.heartbeatAgeSeconds < 60
+                                    ? `${syncHealth.worker.heartbeatAgeSeconds}s ago`
+                                    : 'Live'}
+                            </div>
+                        </div>
                         <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
                             <div className="text-slate-400">Sync Lag</div>
                             <div className="text-base font-bold text-white mt-0.5">{syncHealth.syncLagSeconds}s</div>
@@ -254,10 +270,17 @@ const DatabaseSettings = () => {
                             <div className="text-base font-bold text-white mt-0.5">{syncHealth.deadLetterCount}</div>
                         </div>
                         <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
-                            <div className="text-slate-400">Standby Engine</div>
-                            <div className="text-base font-bold text-white mt-0.5 uppercase">{syncHealth.standbyEngine}</div>
+                            <div className="text-slate-400">Total Synced</div>
+                            <div className="text-base font-bold text-white mt-0.5">{syncHealth.worker?.totalEventsProcessed || 0}</div>
                         </div>
                     </div>
+
+                    {syncHealth.lastSuccessfulSyncAt && (
+                        <div className="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800/60">
+                            <span>Last Successful Event: <strong className="text-slate-300">{new Date(syncHealth.lastSuccessfulSyncAt).toLocaleString()}</strong></span>
+                            <span>Standby Engine: <strong className="text-slate-300 uppercase">{syncHealth.standbyEngine}</strong></span>
+                        </div>
+                    )}
                 </div>
             )}
 

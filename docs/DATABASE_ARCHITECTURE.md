@@ -28,10 +28,11 @@ ResumePilot AI implements a resilient **Repository Pattern with Dynamic Runtime 
           │         MySQLRepository          │    │       FirestoreRepository        │
           ├──────────────────────────────────┤    ├──────────────────────────────────┤
           │ • Hostinger MariaDB Local Socket │    │ • Google Cloud Firestore (GCP)   │
-          │ • InnoDB 26 Relational Tables    │    │ • Document & Subcollections      │
+          │ • InnoDB 30 Relational Tables    │    │ • Document & Subcollections      │
           │ • ACID Row Locks (FOR UPDATE)    │    │ • Revision Transactions          │
           │ • Durable Outbox Replication     │    │ • Change Capture Replication     │
-          │ • Latency: ~16ms                 │    │ • Latency: ~250ms - 650ms        │
+          │ • Continuous Daemon Sync Worker  │    │ • Continuous Daemon Sync Worker  │
+          │ • Latency: ~110ms - 144ms        │    │ • Latency: ~190ms - 233ms        │
           └──────────────────────────────────┘    └──────────────────────────────────┘
 ```
 

@@ -190,6 +190,19 @@ const initSystemFonts = () => {
 };
 initSystemFonts();
 
+// Start Autonomous Dual-Database Background Sync Worker (continuous polling + heartbeat)
+const { startBackgroundSyncWorker, stopBackgroundSyncWorker } = require('./database/syncManager');
+if (process.env.NODE_ENV !== 'test') {
+    startBackgroundSyncWorker(db, 3000);
+}
+
+process.on('SIGTERM', () => {
+    stopBackgroundSyncWorker();
+});
+process.on('SIGINT', () => {
+    stopBackgroundSyncWorker();
+});
+
 app.use((req, res, next) => {
     const suppliedRequestId = req.get('x-request-id') || '';
     res.locals.requestId = /^[A-Za-z0-9._-]{1,80}$/.test(suppliedRequestId)
