@@ -18,7 +18,7 @@
 process.env.NODE_ENV = 'test';
 
 const path = require('path');
-const { test } = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { setTokenVerifierForTests } = require('../security/auth');
@@ -206,4 +206,11 @@ test('P1-03: guard fails closed (no write) when its read throws', async () => {
     'the read failure must propagate so the outbox retries instead of regressing data',
   );
   assert.equal(fs.writes.length, 0, 'a stale write must never land when parity of revision is unknown');
+});
+
+after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
 });

@@ -108,6 +108,7 @@ class ServerKeyEncryptionProvider {
   describe() {
     return Object.freeze({
       provider: 'server-key',
+      configured: true,
       algorithm: ALGORITHM,
       activeVersion: this.activeVersion,
       keyVersions: [...this.keys.keys()].sort(),

@@ -284,6 +284,14 @@ async function replicateToFirestore(adminFirestore, event) {
         if (operation === 'DELETE') {
             await ref.delete();
         } else {
+            const existingSnap = await ref.get();
+            if (existingSnap.exists) {
+                const existingRevision = Number(existingSnap.data()?.revision || existingSnap.data()?.version || 0);
+                if (existingRevision > 0 && incomingVersion > 0 && existingRevision > incomingVersion) {
+                    console.log(`[SyncWorker] Monotonic guard: Stale portfolio version ${incomingVersion} ignored (Firestore is at revision ${existingRevision})`);
+                    return;
+                }
+            }
             await ref.set({ ...data, updatedAt: new Date() }, { merge: true });
         }
     } else if (entity_type === 'covers') {
@@ -293,6 +301,14 @@ async function replicateToFirestore(adminFirestore, event) {
         if (operation === 'DELETE') {
             await ref.delete();
         } else {
+            const existingSnap = await ref.get();
+            if (existingSnap.exists) {
+                const existingRevision = Number(existingSnap.data()?.revision || existingSnap.data()?.version || 0);
+                if (existingRevision > 0 && incomingVersion > 0 && existingRevision > incomingVersion) {
+                    console.log(`[SyncWorker] Monotonic guard: Stale cover version ${incomingVersion} ignored (Firestore is at revision ${existingRevision})`);
+                    return;
+                }
+            }
             await ref.set({ ...data, updatedAt: new Date() }, { merge: true });
         }
     } else if (entity_type === 'settings' || entity_type === 'system_settings') {
@@ -781,7 +797,8 @@ async function processFirestoreOutbox(adminFirestore, batchSize = 25, poolOverri
             processed += 1;
         } catch (err) {
             const isDeadLetter = attempts >= 5;
-            const backoffMs = Math.min(300000, 1000 * Math.pow(2, attempts));
+            const jitter = 0.8 + Math.random() * 0.4;
+            const backoffMs = Math.min(300000, Math.round(1000 * Math.pow(2, attempts) * jitter));
             const nextAttemptAt = TimestampCtor.fromMillis(Date.now() + backoffMs);
             await doc.ref.set({
                 status: isDeadLetter ? 'DEAD_LETTER' : 'RETRYING',

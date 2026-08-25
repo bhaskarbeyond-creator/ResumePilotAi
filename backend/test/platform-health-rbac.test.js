@@ -9,7 +9,7 @@
  */
 process.env.NODE_ENV = 'test';
 
-const test = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 
@@ -237,4 +237,11 @@ test('a disabled enterprise tenancy is reported as DISABLED, not as an outage', 
     assert.match(service.reason, /deliberate|intentional|disabled|false/i);
     assert.equal(service.configuration, 'DISABLED_BY_CONFIGURATION');
   }
+});
+
+after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
 });

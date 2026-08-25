@@ -17,6 +17,8 @@ test('notification outbox identity and retry policy are deterministic and bounde
   assert.equal(retryDelay(1), 60_000);
   assert.equal(retryDelay(2), 120_000);
   assert.ok(retryDelay(20) <= 3_600_000);
+  const jittered = retryDelay(1, true);
+  assert.ok(jittered >= 48_000 && jittered <= 72_000, `Jittered delay (${jittered}) should be within 80%-120% of base`);
 });
 
 test('worker leases recover crashes and terminal records leave the due-query index', () => {

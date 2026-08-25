@@ -48,8 +48,12 @@ async function claimDueEvent(db, admin, workerId, now = Date.now()) {
   return null;
 }
 
-function retryDelay(attemptCount) {
-  return Math.min(MAX_RETRY_MS, BASE_RETRY_MS * (2 ** Math.max(0, attemptCount - 1)));
+function retryDelay(attemptCount, withJitter = false) {
+  const baseDelay = Math.min(MAX_RETRY_MS, BASE_RETRY_MS * (2 ** Math.max(0, attemptCount - 1)));
+  if (!withJitter) return baseDelay;
+  // Full jitter: decorrelates retry storms across concurrent workers (0.8x - 1.2x)
+  const jitterFactor = 0.8 + Math.random() * 0.4;
+  return Math.min(MAX_RETRY_MS, Math.round(baseDelay * jitterFactor));
 }
 
 async function finishAttempt(db, admin, event, workerId, result, now = Date.now()) {
@@ -69,7 +73,7 @@ async function finishAttempt(db, admin, event, workerId, result, now = Date.now(
     const terminal = attemptCount >= MAX_ATTEMPTS;
     transaction.update(event.ref, {
       state: terminal ? 'DEAD_LETTER' : 'RETRYING', attemptCount,
-      nextAttemptAt: terminal ? admin.firestore.FieldValue.delete() : admin.firestore.Timestamp.fromMillis(now + retryDelay(attemptCount)),
+      nextAttemptAt: terminal ? admin.firestore.FieldValue.delete() : admin.firestore.Timestamp.fromMillis(now + retryDelay(attemptCount, true)),
       lastError: String(result?.error || 'Provider attempt failed').slice(0, 500),
       leaseOwner: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });

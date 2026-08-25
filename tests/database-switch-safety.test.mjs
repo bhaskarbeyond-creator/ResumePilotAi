@@ -6,6 +6,12 @@ import {
     switchActiveEngine,
 } from '../backend/database/engineManager.js';
 
+import fs from 'node:fs';
+import path from 'node:path';
+
+const statePathInit = path.join(process.cwd(), 'backend', 'database', 'engine_state.json');
+const initialStateSnapshot = fs.existsSync(statePathInit) ? fs.readFileSync(statePathInit, 'utf8') : null;
+
 describe('Database Engine Switching Safety Test Suite', () => {
     it('1. getActiveEngine returns either firestore or mysql', () => {
         const engine = getActiveEngine();
@@ -144,12 +150,11 @@ describe('Database Engine Switching Safety Test Suite', () => {
             const fs = await import('node:fs');
             const path = await import('node:path');
             const statePath = path.join(process.cwd(), 'backend', 'database', 'engine_state.json');
-            fs.writeFileSync(statePath, JSON.stringify({
-                engine: 'mysql',
-                switchedBy: 'SUPER_ADMIN',
-                switchedAt: new Date().toISOString(),
-                previousEngine: 'firestore'
-            }, null, 2), 'utf8');
+            if (initialStateSnapshot !== null) {
+                fs.writeFileSync(statePath, initialStateSnapshot, 'utf8');
+            } else {
+                fs.rmSync(statePath, { force: true });
+            }
         } catch (_) {}
         try {
             const { getPool } = await import('../backend/database/mysql.js');

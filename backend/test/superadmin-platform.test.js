@@ -2,7 +2,7 @@
 
 process.env.NODE_ENV = 'test';
 
-const test = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const {
@@ -271,4 +271,11 @@ test('Platform API: Super Admin mutations require MFA when SUPER_ADMIN_MFA_REQUI
   } finally {
     delete process.env.SUPER_ADMIN_MFA_REQUIRED;
   }
+});
+
+after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
 });
