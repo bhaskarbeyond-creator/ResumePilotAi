@@ -76,7 +76,7 @@ def main():
     """
 
     print("Deploying on remote host...")
-    ssh_proc = subprocess.run(['ssh', 'airesume', remote_script], capture_output=True, text=True)
+    ssh_proc = subprocess.run(['ssh', 'airesume', remote_script], capture_output=True, text=True, encoding='utf-8', errors='replace')
     print(ssh_proc.stdout)
     if ssh_proc.stderr:
         print("STDERR:", ssh_proc.stderr)
