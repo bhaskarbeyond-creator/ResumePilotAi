@@ -6,6 +6,8 @@ import tempfile
 import time
 
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     print("=== STARTING ZERO-DOWNTIME PRODUCTION DEPLOYMENT ===")
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     dist_dir = os.path.join(root_dir, 'dist')
