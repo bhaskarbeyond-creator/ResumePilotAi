@@ -52,18 +52,25 @@ function fallbackCurrencyConfig() {
 async function getPlatformCurrencyConfig(db) {
   if (!db) return fallbackCurrencyConfig();
   try {
-    const [sysDoc, pubDoc] = await Promise.all([
+    const [sysDoc, pubDoc, subDoc, payDoc] = await Promise.all([
       db.collection('data').doc('system_settings').get().catch(() => ({ exists: false, data: () => ({}) })),
       db.collection('data').doc('public_config').get().catch(() => ({ exists: false, data: () => ({}) })),
+      db.collection('data').doc('subscriptions').get().catch(() => ({ exists: false, data: () => ({}) })),
+      db.collection('settings').doc('payment_providers').get().catch(() => ({ exists: false, data: () => ({}) })),
     ]);
     const sysData = (sysDoc && typeof sysDoc.data === 'function') ? (sysDoc.data() || {}) : {};
     const pubData = (pubDoc && typeof pubDoc.data === 'function') ? (pubDoc.data() || {}) : {};
+    const subData = (subDoc && typeof subDoc.data === 'function') ? (subDoc.data() || {}) : {};
+    const payData = (payDoc && typeof payDoc.data === 'function') ? (payDoc.data() || {}) : {};
+
     const code = normalizeCurrencyCode(
       sysData.currency ||
       sysData.defaultCurrency ||
       pubData.currency ||
       pubData.subscriptions?.currency ||
       pubData.currencyMeta?.code ||
+      subData.currency ||
+      payData.currency ||
       process.env.DEFAULT_CURRENCY ||
       process.env.CURRENCY ||
       'INR'

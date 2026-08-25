@@ -418,11 +418,11 @@ router.get('/overview', async (req, res) => {
 
     return res.json({
       kpis: {
-        totalUsers: statsData ? (statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? null) : null,
-        resumesCreated: statsData ? (statsData.resumes ?? statsData.numberOfResumesCreated ?? null) : null,
-        totalDownloads: statsData ? (statsData.downloads ?? statsData.numberOfResumesDownloaded ?? null) : null,
+        totalUsers: statsData ? Math.max(0, statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? 0) : null,
+        resumesCreated: statsData ? Math.max(0, statsData.resumes ?? statsData.numberOfResumesCreated ?? 0) : null,
+        totalDownloads: statsData ? Math.max(0, statsData.downloads ?? statsData.numberOfResumesDownloaded ?? 0) : null,
         totalEarningsCents: earningsData ? (earningsData.total ?? earningsData.amount ?? null) : null,
-        currency: earningsData?.currency || platformCurrency.code || 'INR',
+        currency: platformCurrency.code || 'INR',
         currencySymbol: platformCurrency.symbol || '₹',
         tenants: tenantCounts,
       },
@@ -793,7 +793,25 @@ router.get('/command-center', async (req, res) => {
     const securityResult = db ? await safeQuery('security', () => db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(20).get()) : { ok: false };
     const auditResult = db ? await safeQuery('audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(8).get()) : { ok: false };
 
-    const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, tenantsTotalCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
+    const [
+      usersCntSnap,
+      resumesCntSnap,
+      portfoliosCntSnap,
+      coversCntSnap,
+      paidPaymentsSnap,
+      paymentsFailCnt,
+      securityHighCnt,
+      suspendedTenantsCnt,
+      activeTenantsCnt,
+      tenantsTotalCnt,
+      activePaymentsCnt,
+      pendingPaymentsCnt
+    ] = db ? await Promise.all([
+      safeQuery('users-count', () => db.collection('users').count().get()),
+      safeQuery('resumes-count', () => db.collection('resumes').count().get()),
+      safeQuery('portfolios-count', () => db.collection('portfolios').count().get()),
+      safeQuery('covers-count', () => db.collection('covers').count().get()),
+      safeQuery('payments-paid', () => db.collection('payment_orders').where('status', 'in', ['ACTIVE', 'COMPLETED', 'PAID']).get()),
       safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
       safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
       safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
@@ -801,7 +819,7 @@ router.get('/command-center', async (req, res) => {
       safeQuery('tenants-total-count', () => db.collection('enterprise_tenants').count().get()),
       safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
       safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
-    ]) : [{}, {}, {}, {}, {}, {}, {}];
+    ]) : [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
 
     sources.stats = statsResult.ok ? 'ok' : 'unavailable';
     sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
@@ -812,6 +830,38 @@ router.get('/command-center', async (req, res) => {
 
     if (statsResult.ok && statsResult.value.exists) statsData = statsResult.value.data();
     if (earningsResult.ok && earningsResult.value.exists) earningsData = earningsResult.value.data();
+
+    const usersCnt = countFrom(usersCntSnap).ok ? countFrom(usersCntSnap).value : 0;
+    const resumesCnt = countFrom(resumesCntSnap).ok ? countFrom(resumesCntSnap).value : 0;
+    const portfoliosCnt = countFrom(portfoliosCntSnap).ok ? countFrom(portfoliosCntSnap).value : 0;
+    const coversCnt = countFrom(coversCntSnap).ok ? countFrom(coversCntSnap).value : 0;
+
+    let realPaidEarnings = 0;
+    if (paidPaymentsSnap.ok && paidPaymentsSnap.value) {
+      paidPaymentsSnap.value.forEach(doc => {
+        const d = doc.data() || {};
+        realPaidEarnings += Number(d.amount || 0);
+      });
+    }
+
+    const baseUsers = Math.max(0, Number(statsData.numberOfUsers || statsData.users || 0));
+    const baseResumes = Math.max(0, Number(statsData.numberOfResumesCreated || statsData.resumes || 0));
+    const totalEngineered = resumesCnt + portfoliosCnt + coversCnt;
+
+    statsData = {
+      numberOfUsers: Math.max(baseUsers, usersCnt),
+      numberOfResumesCreated: totalEngineered > 0 ? totalEngineered : Math.max(0, baseResumes),
+      numberOfResumesDownloaded: Math.max(0, Number(statsData.numberOfResumesDownloaded || statsData.downloads || 0)),
+    };
+
+    if (realPaidEarnings > 0 || !earningsData.amount) {
+      earningsData = {
+        amount: realPaidEarnings > 0 ? realPaidEarnings : Number(earningsData.amount || earningsData.total || 0),
+        currency: platformCurrency.code || 'INR'
+      };
+    } else {
+      earningsData.currency = platformCurrency.code || 'INR';
+    }
 
     if (tenantsResult.ok) {
       tenantsResult.value.forEach(doc => {
@@ -977,7 +1027,7 @@ router.get('/command-center', async (req, res) => {
       resumesCreated: statsData.numberOfResumesCreated ?? statsData.resumes ?? 0,
       totalDownloads: statsData.numberOfResumesDownloaded ?? statsData.downloads ?? 0,
       totalEarnings: earningsData.amount ?? earningsData.total ?? 0,
-      currency: earningsData.currency || platformCurrency.code || 'INR',
+      currency: platformCurrency.code || 'INR',
       currencySymbol: platformCurrency.symbol || (platformCurrency.code === 'INR' ? '₹' : (platformCurrency.code === 'EUR' ? '€' : (platformCurrency.code === 'GBP' ? '£' : '$'))),
       tenants: {
         total: tenantTotalAgg.ok ? tenantTotalAgg.value : isMySQL ? 0 : tenantsResult.ok ? tenants.length : null,
