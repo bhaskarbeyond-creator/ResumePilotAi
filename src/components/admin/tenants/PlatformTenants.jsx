@@ -15,20 +15,19 @@ import {
 
 
 
-// Curated Presets for Enterprise Agreements
+// Authoritative System-Configured Presets
 const PLAN_PRESETS = [
   'Enterprise Standard',
   'Enterprise Growth',
   'Enterprise Scale',
   'Enterprise Global Unlimited',
-  'Enterprise Custom SLA',
   'Custom Plan...'
 ];
 
 const SEAT_PRESETS = [
   { label: '10 Seats (Starter Pilot)', value: 10 },
   { label: '25 Seats (Team Tier)', value: 25 },
-  { label: '50 Seats (Standard Enterprise)', value: 50 },
+  { label: '50 Seats (Standard Enterprise Default)', value: 50 },
   { label: '100 Seats (Business Tier)', value: 100 },
   { label: '250 Seats (Scale Tier)', value: 250 },
   { label: '500 Seats (Enterprise Tier)', value: 500 },
@@ -36,69 +35,90 @@ const SEAT_PRESETS = [
   { label: 'Custom Seat Limit...', value: 'custom' }
 ];
 
+// Authoritative CURRENCY_REGISTRY from backend/services/platformCurrency.js
 const CURRENCY_OPTIONS = [
-  { code: 'INR', label: 'INR (₹) - Indian Rupee', symbol: '₹' },
-  { code: 'USD', label: 'USD ($) - US Dollar', symbol: '$' },
-  { code: 'EUR', label: 'EUR (€) - Euro', symbol: '€' },
-  { code: 'GBP', label: 'GBP (£) - British Pound', symbol: '£' },
-  { code: 'AUD', label: 'AUD ($) - Australian Dollar', symbol: '$' },
-  { code: 'CAD', label: 'CAD ($) - Canadian Dollar', symbol: '$' },
-  { code: 'AED', label: 'AED (د.إ) - UAE Dirham', symbol: 'د.إ' },
-  { code: 'SGD', label: 'SGD ($) - Singapore Dollar', symbol: '$' }
+  { code: 'INR', label: 'INR (₹) — Indian Rupee (Platform Base)', symbol: '₹' },
+  { code: 'USD', label: 'USD ($) — US Dollar', symbol: '$' },
+  { code: 'EUR', label: 'EUR (€) — Euro', symbol: '€' },
+  { code: 'GBP', label: 'GBP (£) — British Pound', symbol: '£' },
+  { code: 'CAD', label: 'CAD (CA$) — Canadian Dollar', symbol: 'CA$' },
+  { code: 'AUD', label: 'AUD (A$) — Australian Dollar', symbol: 'A$' },
+  { code: 'SGD', label: 'SGD (S$) — Singapore Dollar', symbol: 'S$' },
+  { code: 'AED', label: 'AED (AED) — UAE Dirham', symbol: 'AED ' },
+  { code: 'JPY', label: 'JPY (¥) — Japanese Yen', symbol: '¥' }
 ];
 
+// Authoritative Daily Operations Buckets from backend/enterprise/tenantQuota.js
 const DAILY_LIMIT_PRESETS = [
-  { label: '1,000 requests / day (Basic Pilot)', value: 1000 },
-  { label: '2,500 requests / day (Standard Tier)', value: 2500 },
-  { label: '5,000 requests / day (Enterprise Default)', value: 5000 },
-  { label: '10,000 requests / day (High Concurrency)', value: 10000 },
-  { label: '25,000 requests / day (Heavy Production)', value: 25000 },
-  { label: '50,000 requests / day (Uncapped Burst)', value: 50000 },
+  { label: '1,000 ops / day (Basic Pilot Tier)', value: 1000 },
+  { label: '2,500 ops / day (Standard Workgroup)', value: 2500 },
+  { label: '5,000 ops / day (Enterprise Default)', value: 5000 },
+  { label: '10,000 ops / day (High Concurrency)', value: 10000 },
+  { label: '25,000 ops / day (Heavy Production)', value: 25000 },
+  { label: '50,000 ops / day (Uncapped Dedicated Quota)', value: 50000 },
   { label: 'Custom Daily Quota...', value: 'custom' }
 ];
 
+// Authoritative Models from backend/services/aiRuntime.js & AiSettings.jsx
 const LLM_MODEL_OPTIONS = [
-  { id: 'meta/llama-3.2-11b-vision-instruct', label: 'NVIDIA NIM: Llama 3.2 11B Vision (Fast Default)', provider: 'NVIDIA' },
-  { id: 'nvidia/nemotron-mini-4b-instruct', label: 'NVIDIA NIM: Nemotron Mini 4B (Ultra Reliable)', provider: 'NVIDIA' },
-  { id: 'gemini-1.5-flash', label: 'Google Gemini: Gemini 1.5 Flash (High Concurrency)', provider: 'Gemini' },
-  { id: 'gemini-1.5-pro', label: 'Google Gemini: Gemini 1.5 Pro (Deep Reasoning)', provider: 'Gemini' },
-  { id: 'gpt-4o-mini', label: 'OpenAI: GPT-4o Mini (Cost Effective)', provider: 'OpenAI' },
-  { id: 'gpt-4o', label: 'OpenAI: GPT-4o (Flagship Model)', provider: 'OpenAI' },
-  { id: 'llama-3.3-70b-versatile', label: 'Groq Cloud: Llama 3.3 70B Versatile (Ultra Low Latency)', provider: 'Groq' },
-  { id: 'deepseek/deepseek-chat', label: 'DeepSeek: DeepSeek-V3 Chat', provider: 'DeepSeek' },
-  { id: 'meta-llama/llama-3.2-3b-instruct', label: 'OpenRouter: Llama 3.2 3B Instruct', provider: 'OpenRouter' },
+  { id: 'meta/llama-3.2-11b-vision-instruct', label: 'NVIDIA NIM: meta/llama-3.2-11b-vision-instruct (Fast Default)', provider: 'NVIDIA' },
+  { id: 'nvidia/nemotron-mini-4b-instruct', label: 'NVIDIA NIM: nvidia/nemotron-mini-4b-instruct (Ultra Reliable ~206ms)', provider: 'NVIDIA' },
+  { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'NVIDIA NIM: nvidia/llama-3.1-nemotron-70b-instruct (70B Model)', provider: 'NVIDIA' },
+  { id: 'gemini-2.0-flash', label: 'Google Gemini: gemini-2.0-flash (High Speed Default)', provider: 'Gemini' },
+  { id: 'gemini-1.5-flash', label: 'Google Gemini: gemini-1.5-flash (Standard)', provider: 'Gemini' },
+  { id: 'gemini-1.5-pro', label: 'Google Gemini: gemini-1.5-pro (Deep Reasoning)', provider: 'Gemini' },
+  { id: 'gpt-4o-mini', label: 'OpenAI: gpt-4o-mini (Cost Effective Default)', provider: 'OpenAI' },
+  { id: 'gpt-4o', label: 'OpenAI: gpt-4o (Flagship Model)', provider: 'OpenAI' },
+  { id: 'gpt-4-turbo', label: 'OpenAI: gpt-4-turbo', provider: 'OpenAI' },
+  { id: 'llama-3.3-70b-versatile', label: 'Groq Cloud: llama-3.3-70b-versatile (Ultra Low Latency Default)', provider: 'Groq' },
+  { id: 'llama-3.1-8b-instant', label: 'Groq Cloud: llama-3.1-8b-instant (Fastest)', provider: 'Groq' },
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'OpenRouter: meta-llama/llama-3.3-70b-instruct:free (Default)', provider: 'OpenRouter' },
+  { id: 'meta-llama/llama-3.2-3b-instruct', label: 'OpenRouter: meta-llama/llama-3.2-3b-instruct', provider: 'OpenRouter' },
+  { id: 'deepseek-chat', label: 'DeepSeek: deepseek-chat (V3 Chat Default)', provider: 'DeepSeek' },
+  { id: 'deepseek-reasoner', label: 'DeepSeek: deepseek-reasoner (R1 Reasoning)', provider: 'DeepSeek' },
   { id: 'custom', label: 'Custom Model ID...', provider: 'Custom' }
 ];
 
+// Authoritative Provider Presets from backend/services/aiRuntime.js
 const PROVIDER_PRESET_MODELS = {
   nvidia: [
-    { id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B Vision (Primary Default)' },
-    { id: 'nvidia/nemotron-mini-4b-instruct', label: 'Nemotron Mini 4B (Ultra Reliable)' },
-    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'Llama 3.1 Nemotron 70B' }
+    { id: 'meta/llama-3.2-11b-vision-instruct', label: 'meta/llama-3.2-11b-vision-instruct (Primary Default)' },
+    { id: 'nvidia/nemotron-mini-4b-instruct', label: 'nvidia/nemotron-mini-4b-instruct (Ultra-Reliable)' },
+    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'nvidia/llama-3.1-nemotron-70b-instruct (70B)' }
   ],
   gemini: [
-    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Default)' },
-    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-    { id: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash' }
+    { id: 'gemini-2.0-flash', label: 'gemini-2.0-flash (Primary Default)' },
+    { id: 'gemini-1.5-flash', label: 'gemini-1.5-flash (Standard)' },
+    { id: 'gemini-1.5-pro', label: 'gemini-1.5-pro (Deep Reasoning)' }
   ],
   openai: [
-    { id: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
-    { id: 'gpt-4o', label: 'GPT-4o Flagship' },
-    { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' }
+    { id: 'gpt-4o-mini', label: 'gpt-4o-mini (Primary Default)' },
+    { id: 'gpt-4o', label: 'gpt-4o (Flagship)' },
+    { id: 'gpt-4-turbo', label: 'gpt-4-turbo' }
   ],
   groq: [
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile (Default)' },
-    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' }
+    { id: 'llama-3.3-70b-versatile', label: 'llama-3.3-70b-versatile (Primary Default)' },
+    { id: 'llama-3.1-8b-instant', label: 'llama-3.1-8b-instant (Fastest)' }
   ],
   openrouter: [
-    { id: 'meta-llama/llama-3.2-3b-instruct', label: 'Llama 3.2 3B Instruct (Default)' },
-    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' }
+    { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'meta-llama/llama-3.3-70b-instruct:free (Primary Default)' },
+    { id: 'meta-llama/llama-3.2-3b-instruct', label: 'meta-llama/llama-3.2-3b-instruct' }
   ],
   deepseek: [
-    { id: 'deepseek/deepseek-chat', label: 'DeepSeek-V3 Chat (Default)' },
-    { id: 'deepseek/deepseek-reasoner', label: 'DeepSeek-R1 Reasoner' }
+    { id: 'deepseek-chat', label: 'deepseek-chat (Primary Default - V3)' },
+    { id: 'deepseek-reasoner', label: 'deepseek-reasoner (R1 Reasoning)' }
   ]
 };
+
+// Authoritative Roles from backend/enterprise/constants.js
+const TENANT_ROLE_OPTIONS = [
+  { id: 'MEMBER', label: 'MEMBER (Standard Workspace Access)' },
+  { id: 'ADMIN', label: 'ADMIN (Tenant Administration & Security)' },
+  { id: 'OWNER', label: 'OWNER (Full Tenant Ownership & Legal Control)' },
+  { id: 'BILLING_ADMIN', label: 'BILLING_ADMIN (Invoices & Plan Management)' },
+  { id: 'WORKSPACE_MANAGER', label: 'WORKSPACE_MANAGER (Workspace & Resource Manager)' },
+  { id: 'VIEWER', label: 'VIEWER (Read-Only Observer)' }
+];
 
 const DECOMMISSION_REASONS = [
   'Contract Terminated / Expired',
@@ -110,10 +130,11 @@ const DECOMMISSION_REASONS = [
   'Other Justification (Custom text)'
 ];
 
+// Authoritative ISOLATION_TIERS from backend/enterprise/constants.js
 const ISOLATION_TIER_OPTIONS = [
-  { id: 'STANDARD', label: 'STANDARD - Shared Multi-Tenant Isolation' },
-  { id: 'ENTERPRISE', label: 'ENTERPRISE - Dedicated Tenant Space' },
-  { id: 'REGULATED', label: 'REGULATED - Isolated Compliance & VPC' }
+  { id: 'STANDARD', label: 'STANDARD — Shared Multi-Tenant Isolation' },
+  { id: 'ENTERPRISE', label: 'ENTERPRISE — Dedicated Tenant Namespace' },
+  { id: 'REGULATED', label: 'REGULATED — Isolated Compliance & VPC' }
 ];
 
 const REGION_OPTIONS = [
@@ -1240,9 +1261,9 @@ export default function PlatformTenants() {
                                 className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
                               >
                                 <option value="all">All Roles ({(selectedDetail?.users?.items || []).length})</option>
-                                <option value="OWNER">Owners Only</option>
-                                <option value="ADMIN">Admins Only</option>
-                                <option value="MEMBER">Members Only</option>
+                                {TENANT_ROLE_OPTIONS.map(r => (
+                                  <option key={r.id} value={r.id}>{r.id}</option>
+                                ))}
                               </select>
                             </div>
 
@@ -1276,9 +1297,9 @@ export default function PlatformTenants() {
                                 onChange={e => setMemberRole(e.target.value)}
                                 className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
                               >
-                                <option value="MEMBER">MEMBER (Standard Workspace Access)</option>
-                                <option value="ADMIN">ADMIN (Organization Administration)</option>
-                                <option value="OWNER">OWNER (Full Tenant Ownership &amp; Billing)</option>
+                                {TENANT_ROLE_OPTIONS.map(r => (
+                                  <option key={r.id} value={r.id}>{r.label}</option>
+                                ))}
                               </select>
                               <button
                                 type="submit"
@@ -1559,8 +1580,23 @@ export default function PlatformTenants() {
                                     <span className="h-2 w-2 rounded-full bg-emerald-500"></span> NVIDIA NIM
                                   </span>
                                   {selectedTenant.aiPolicy?.customProviderKeys?.nvidia && (
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active</span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active Key</span>
                                   )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Configured Model</label>
+                                  <select
+                                    value={policyPrimaryModel.startsWith('meta/') || policyPrimaryModel.startsWith('nvidia/') ? policyPrimaryModel : PROVIDER_PRESET_MODELS.nvidia[0].id}
+                                    onChange={e => {
+                                      setPolicyPrimaryModel(e.target.value);
+                                      setSelectedModelOption(e.target.value);
+                                    }}
+                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                                  >
+                                    {PROVIDER_PRESET_MODELS.nvidia.map(m => (
+                                      <option key={m.id} value={m.id}>{m.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <input
                                   type="password"
@@ -1595,8 +1631,23 @@ export default function PlatformTenants() {
                                     <span className="h-2 w-2 rounded-full bg-blue-500"></span> Google Gemini
                                   </span>
                                   {selectedTenant.aiPolicy?.customProviderKeys?.gemini && (
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active</span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active Key</span>
                                   )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Configured Model</label>
+                                  <select
+                                    value={policyPrimaryModel.startsWith('gemini') ? policyPrimaryModel : PROVIDER_PRESET_MODELS.gemini[0].id}
+                                    onChange={e => {
+                                      setPolicyPrimaryModel(e.target.value);
+                                      setSelectedModelOption(e.target.value);
+                                    }}
+                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                                  >
+                                    {PROVIDER_PRESET_MODELS.gemini.map(m => (
+                                      <option key={m.id} value={m.id}>{m.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <input
                                   type="password"
@@ -1631,8 +1682,23 @@ export default function PlatformTenants() {
                                     <span className="h-2 w-2 rounded-full bg-teal-500"></span> OpenAI
                                   </span>
                                   {selectedTenant.aiPolicy?.customProviderKeys?.openai && (
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active</span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active Key</span>
                                   )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Configured Model</label>
+                                  <select
+                                    value={policyPrimaryModel.startsWith('gpt-') ? policyPrimaryModel : PROVIDER_PRESET_MODELS.openai[0].id}
+                                    onChange={e => {
+                                      setPolicyPrimaryModel(e.target.value);
+                                      setSelectedModelOption(e.target.value);
+                                    }}
+                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                                  >
+                                    {PROVIDER_PRESET_MODELS.openai.map(m => (
+                                      <option key={m.id} value={m.id}>{m.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <input
                                   type="password"
@@ -1667,8 +1733,23 @@ export default function PlatformTenants() {
                                     <span className="h-2 w-2 rounded-full bg-orange-500"></span> Groq Cloud
                                   </span>
                                   {selectedTenant.aiPolicy?.customProviderKeys?.groq && (
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active</span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active Key</span>
                                   )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Configured Model</label>
+                                  <select
+                                    value={policyPrimaryModel.includes('llama') && !policyPrimaryModel.includes('meta/') ? policyPrimaryModel : PROVIDER_PRESET_MODELS.groq[0].id}
+                                    onChange={e => {
+                                      setPolicyPrimaryModel(e.target.value);
+                                      setSelectedModelOption(e.target.value);
+                                    }}
+                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                                  >
+                                    {PROVIDER_PRESET_MODELS.groq.map(m => (
+                                      <option key={m.id} value={m.id}>{m.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <input
                                   type="password"
@@ -1703,8 +1784,23 @@ export default function PlatformTenants() {
                                     <span className="h-2 w-2 rounded-full bg-violet-500"></span> OpenRouter
                                   </span>
                                   {selectedTenant.aiPolicy?.customProviderKeys?.openrouter && (
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active</span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active Key</span>
                                   )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Configured Model</label>
+                                  <select
+                                    value={policyPrimaryModel.startsWith('meta-llama/') ? policyPrimaryModel : PROVIDER_PRESET_MODELS.openrouter[0].id}
+                                    onChange={e => {
+                                      setPolicyPrimaryModel(e.target.value);
+                                      setSelectedModelOption(e.target.value);
+                                    }}
+                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                                  >
+                                    {PROVIDER_PRESET_MODELS.openrouter.map(m => (
+                                      <option key={m.id} value={m.id}>{m.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <input
                                   type="password"
@@ -1739,8 +1835,23 @@ export default function PlatformTenants() {
                                     <span className="h-2 w-2 rounded-full bg-cyan-500"></span> DeepSeek
                                   </span>
                                   {selectedTenant.aiPolicy?.customProviderKeys?.deepseek && (
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active</span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active Key</span>
                                   )}
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Configured Model</label>
+                                  <select
+                                    value={policyPrimaryModel.startsWith('deepseek') ? policyPrimaryModel : PROVIDER_PRESET_MODELS.deepseek[0].id}
+                                    onChange={e => {
+                                      setPolicyPrimaryModel(e.target.value);
+                                      setSelectedModelOption(e.target.value);
+                                    }}
+                                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                                  >
+                                    {PROVIDER_PRESET_MODELS.deepseek.map(m => (
+                                      <option key={m.id} value={m.id}>{m.label}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <input
                                   type="password"
