@@ -607,128 +607,300 @@ export default function PlatformTenants() {
         </div>
       )}
 
+      {/* Centered Grand Tenant 360 Workspace Modal */}
       {selectedTenant && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/50" onClick={() => setSelectedTenant(null)}>
-          <aside className="h-full w-full max-w-md bg-white shadow-2xl p-5 overflow-y-auto" onClick={e => e.stopPropagation()} aria-label="Tenant detail">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{selectedTenant.displayName}</h3>
-                <p className="text-xs font-mono text-slate-500">{selectedTenant.id}</p>
-                {isSuperAdmin && <div className="mt-2 flex gap-2"><label className="sr-only" htmlFor="platform-tenant-name">Tenant display name</label><input id="platform-tenant-name" value={editingTenantName} onChange={event => setEditingTenantName(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs" maxLength={120} /><button type="button" onClick={handleRename} disabled={renaming} className="rounded-lg bg-indigo-600 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-50">{renaming ? 'Saving…' : 'Rename'}</button></div>}
-              </div>
-              <button type="button" onClick={() => setSelectedTenant(null)} className="p-1 text-slate-400"><FiX /></button>
-            </div>
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Slug</dt><dd className="font-semibold">{selectedTenant.slug}</dd></div>
-              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Lifecycle</dt><dd className="font-semibold">{selectedTenant.lifecycleState}</dd></div>
-              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Isolation</dt><dd className="font-semibold">{selectedTenant.isolationTier}</dd></div>
-              <div><dt className="uppercase text-[10px] font-extrabold text-slate-400">Region</dt><dd className="font-semibold">{selectedTenant.region || 'default'}</dd></div>
-            </dl>
-            {detailLoading && <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500" role="status">Loading tenant users, memberships, usage, security, M2M, audit, and configuration…</div>}
-            {detailError && <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800" role="alert">{detailError}<button type="button" className="ml-2 font-bold underline" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button></div>}
-            {selectedDetail && <div className="mt-5 space-y-3" data-testid="tenant-detail-sections">
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(selectedDetail.overview || {}).map(([key, item]) => <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-[10px] font-extrabold uppercase text-slate-400">{key.replaceAll('_', ' ')}</p><p className="mt-1 text-sm font-bold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p><p className="text-[10px] text-slate-500">{item?.source || 'unknown'}</p></div>)}
-              </div>
-              <div className="rounded-xl border border-slate-200 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                      <FiUser className="text-indigo-600" /> Users &amp; Memberships
-                    </h4>
-                    <p className="mt-0.5 text-[11px] text-slate-500">{selectedDetail.users?.source || 'unknown'} · {selectedDetail.memberships?.items?.length ?? (selectedDetail.users?.items?.length || 0)} members</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" onClick={() => setSelectedTenant(null)}>
+          <div
+            className="w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tenant detail"
+          >
+            {/* Header Gradient Banner */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-xl text-indigo-300 shrink-0">
+                  <FiServer />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-extrabold text-white truncate">{selectedTenant.displayName}</h3>
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                      selectedTenant.lifecycleState === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}>
+                      {selectedTenant.lifecycleState}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                      {selectedTenant.isolationTier}
+                    </span>
                   </div>
-                  {isSuperAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddMember(prev => !prev)}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold flex items-center gap-1 transition"
-                    >
-                      <FiUserPlus /> Add Member
-                    </button>
-                  )}
-                </div>
-
-                {/* Add Member Form */}
-                {showAddMember && (
-                  <form onSubmit={handleAddMember} className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <p className="text-[11px] font-bold text-slate-800">Add User to Organization</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        required
-                        placeholder="User email address"
-                        value={memberEmail}
-                        onChange={e => setMemberEmail(e.target.value)}
-                        className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                      />
-                      <select
-                        value={memberRole}
-                        onChange={e => setMemberRole(e.target.value)}
-                        className="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold"
-                      >
-                        <option value="MEMBER">Member</option>
-                        <option value="ADMIN">Admin</option>
-                        <option value="OWNER">Owner</option>
-                      </select>
-                      <button
-                        type="submit"
-                        disabled={memberBusy}
-                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {memberBusy ? 'Adding…' : 'Add'}
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                <div className="mt-3 max-h-40 space-y-1.5 overflow-y-auto">
-                  {(selectedDetail.users?.items || []).length === 0 ? (
-                    <p className="text-[11px] text-slate-400 italic py-2 text-center">No assigned members in this organization.</p>
-                  ) : (
-                    (selectedDetail.users?.items || []).map(user => (
-                      <div key={user.id} className="flex items-center justify-between gap-2 p-2 bg-slate-50 border border-slate-100 rounded-lg text-[11px]">
-                        <div className="truncate">
-                          <span className="font-semibold text-slate-900">{user.email || user.id}</span>
-                          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-slate-200 text-[10px] font-bold text-slate-700">{user.roles?.join(', ') || user.role || 'MEMBER'}</span>
-                        </div>
-                        {isSuperAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveMember(user.id, user.email || user.id)}
-                            disabled={memberBusy}
-                            className="p-1 text-slate-400 hover:text-red-600 rounded transition"
-                            title="Remove member from tenant"
-                          >
-                            <FiTrash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
+                  <p className="text-xs text-slate-400 font-mono mt-0.5 truncate select-all">{selectedTenant.id}</p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Usage</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.usage?.source || 'unknown'}</p><p className="mt-2 text-xs">Requests: {selectedDetail.usage?.requests ?? 'Unavailable'}</p><p className="text-xs">Tokens: {selectedDetail.usage?.inputTokens === null ? 'Unavailable' : `${(selectedDetail.usage?.inputTokens || 0) + (selectedDetail.usage?.outputTokens || 0)}`}</p></div><div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Security &amp; M2M</h4><p className="mt-1 text-[11px] text-slate-500">Security: {selectedDetail.security?.source || 'unknown'} · M2M: {selectedDetail.m2m?.source || 'unknown'}</p><p className="mt-2 text-xs">Service accounts: {selectedDetail.m2m?.accounts?.length ?? 'Unavailable'}</p></div></div>
-              <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Audit &amp; activity</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.audit?.source || 'unknown'}</p><div className="mt-2 space-y-1">{(selectedDetail.activity?.events || []).slice(0, 5).map(event => <div key={event.id} className="flex justify-between gap-2 text-[10px]"><span className="font-semibold">{event.action}</span><span className="text-slate-400">{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : 'time unavailable'}</span></div>)}</div></div>
-              <div className="rounded-xl border border-slate-200 p-3"><h4 className="text-xs font-extrabold text-slate-800">Configuration</h4><p className="mt-1 text-[11px] text-slate-500">Source: {selectedDetail.configuration?.source || 'unknown'} · Plan: {selectedDetail.plan?.value || 'not recorded'}</p></div>
-            </div>}
-            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href={`/enterprise?tab=audit&tenant=${encodeURIComponent(selectedTenant.id)}`}>Tenant audit</a>
-              <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>Usage</a>
-              <a className="px-3 py-1.5 rounded-lg bg-slate-100 font-bold" href="/adm/security">Security events</a>
-            </div>
-            {isSuperAdmin && selectedTenant.lifecycleState !== 'DELETING' && selectedTenant.lifecycleState !== 'DELETED' && (
-              <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-xs">
-                <p className="font-bold text-red-800">Decommission (SUPER_ADMIN)</p>
-                <p className="text-red-700 mt-1">Uses the existing Enterprise lifecycle transition to DELETING. This does not hard-delete data immediately.</p>
-                <textarea className="mt-2 w-full rounded-lg border border-red-200 p-2" rows={3} placeholder="Required reason (min 8 characters)" value={decommissionReason} onChange={e => setDecommissionReason(e.target.value)} />
-                <button type="button" onClick={() => handleDecommission(selectedTenant)} disabled={busyTenant === `${selectedTenant.id}:DELETING`} className="mt-2 px-3 py-1.5 rounded-lg bg-red-700 text-white font-bold">
-                  {busyTenant === `${selectedTenant.id}:DELETING` ? 'Decommissioning…' : 'Decommission tenant'}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTenant(null)}
+                  className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+                  aria-label="Close modal"
+                >
+                  <FiX className="h-5 w-5" />
                 </button>
               </div>
-            )}
-          </aside>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Rename Strip for SuperAdmin */}
+              {isSuperAdmin && (
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Organization Display Name</p>
+                    <p className="text-[11px] text-slate-500">Update the public display name of this enterprise tenant.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="platform-tenant-name"
+                      value={editingTenantName}
+                      onChange={event => setEditingTenantName(event.target.value)}
+                      className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-indigo-500 min-w-[200px]"
+                      maxLength={120}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRename}
+                      disabled={renaming}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50"
+                    >
+                      {renaming ? 'Saving…' : 'Rename'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Attributes Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Slug / Namespace</p>
+                  <p className="text-xs font-mono font-bold text-slate-900 mt-1 truncate">{selectedTenant.slug}</p>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Lifecycle State</p>
+                  <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.lifecycleState}</p>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Isolation Tier</p>
+                  <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.isolationTier}</p>
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Hosting Region</p>
+                  <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.region || 'default'}</p>
+                </div>
+              </div>
+
+              {detailLoading && (
+                <div className="p-8 rounded-2xl border border-slate-200 bg-slate-50 text-center space-y-2" role="status">
+                  <FiRefreshCw className="h-6 w-6 animate-spin text-indigo-600 mx-auto" />
+                  <p className="text-xs font-bold text-slate-600">Loading tenant telemetry, users, usage metrics and audit trail…</p>
+                </div>
+              )}
+
+              {detailError && (
+                <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-xs text-red-800 flex items-center justify-between" role="alert">
+                  <span>{detailError}</span>
+                  <button type="button" className="font-bold underline" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button>
+                </div>
+              )}
+
+              {selectedDetail && (
+                <div className="space-y-6" data-testid="tenant-detail-sections">
+                  {/* Overview Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {Object.entries(selectedDetail.overview || {}).map(([key, item]) => (
+                      <div key={key} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5">
+                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{key.replaceAll('_', ' ')}</p>
+                        <p className="mt-1 text-sm font-extrabold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{item?.source || 'unknown'}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Users & Memberships Card */}
+                  <div className="rounded-2xl border border-slate-200 p-5 bg-white space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                          <FiUser className="text-indigo-600" /> Users &amp; Memberships
+                        </h4>
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {selectedDetail.users?.source || 'unknown'} · {selectedDetail.memberships?.items?.length ?? (selectedDetail.users?.items?.length || 0)} registered members
+                        </p>
+                      </div>
+                      {isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddMember(prev => !prev)}
+                          className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition"
+                        >
+                          <FiUserPlus /> Add Member
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Add Member Form */}
+                    {showAddMember && (
+                      <form onSubmit={handleAddMember} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-fade-in">
+                        <p className="text-xs font-bold text-slate-900">Add User to Organization</p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="email"
+                            required
+                            placeholder="User email address"
+                            value={memberEmail}
+                            onChange={e => setMemberEmail(e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:border-indigo-500 font-medium"
+                          />
+                          <select
+                            value={memberRole}
+                            onChange={e => setMemberRole(e.target.value)}
+                            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
+                          >
+                            <option value="MEMBER">Member</option>
+                            <option value="ADMIN">Admin</option>
+                            <option value="OWNER">Owner</option>
+                          </select>
+                          <button
+                            type="submit"
+                            disabled={memberBusy}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition disabled:opacity-50 shadow-xs"
+                          >
+                            {memberBusy ? 'Adding…' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-y-auto">
+                      {(selectedDetail.users?.items || []).length === 0 ? (
+                        <p className="col-span-2 text-xs text-slate-400 italic py-4 text-center">No assigned members in this organization.</p>
+                      ) : (
+                        (selectedDetail.users?.items || []).map(user => (
+                          <div key={user.id} className="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
+                            <div className="truncate">
+                              <span className="font-bold text-slate-900">{user.email || user.id}</span>
+                              <span className="ml-2 px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800">{user.roles?.join(', ') || user.role || 'MEMBER'}</span>
+                            </div>
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMember(user.id, user.email || user.id)}
+                                disabled={memberBusy}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                title="Remove member from tenant"
+                              >
+                                <FiTrash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2-Column Telemetry & Security Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Usage */}
+                    <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 space-y-2">
+                      <h4 className="text-xs font-extrabold text-slate-900">Usage &amp; Quotas</h4>
+                      <p className="text-[11px] text-slate-500">Source: {selectedDetail.usage?.source || 'unknown'}</p>
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Requests</p>
+                          <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.usage?.requests ?? 'Unavailable'}</p>
+                        </div>
+                        <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Tokens</p>
+                          <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.usage?.inputTokens === null ? 'Unavailable' : `${(selectedDetail.usage?.inputTokens || 0) + (selectedDetail.usage?.outputTokens || 0)}`}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security & M2M */}
+                    <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 space-y-2">
+                      <h4 className="text-xs font-extrabold text-slate-900">Security &amp; M2M</h4>
+                      <p className="text-[11px] text-slate-500">Security: {selectedDetail.security?.source || 'unknown'} · M2M: {selectedDetail.m2m?.source || 'unknown'}</p>
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                        <p className="text-[10px] font-black text-slate-400 uppercase">Service Accounts</p>
+                        <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.m2m?.accounts?.length ?? 'Unavailable'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Audit & Activity */}
+                  <div className="rounded-2xl border border-slate-200 p-4 bg-white space-y-2">
+                    <h4 className="text-xs font-extrabold text-slate-900">Recent Audit &amp; Activity Stream</h4>
+                    <p className="text-[11px] text-slate-500">Source: {selectedDetail.audit?.source || 'unknown'}</p>
+                    <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
+                      {(selectedDetail.activity?.events || []).length === 0 ? (
+                        <p className="text-xs text-slate-400 italic py-2">No recent audit events recorded for this organization.</p>
+                      ) : (
+                        (selectedDetail.activity?.events || []).slice(0, 5).map(event => (
+                          <div key={event.id} className="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                            <span className="font-bold text-slate-800">{event.action}</span>
+                            <span className="text-[11px] text-slate-400">{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : 'time unavailable'}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Link Pills */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=audit&tenant=${encodeURIComponent(selectedTenant.id)}`}>
+                  Tenant Audit Trail →
+                </a>
+                <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>
+                  Usage Analytics →
+                </a>
+                <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href="/adm/security">
+                  Security Events →
+                </a>
+              </div>
+
+              {/* SuperAdmin Decommission Zone */}
+              {isSuperAdmin && selectedTenant.lifecycleState !== 'DELETING' && selectedTenant.lifecycleState !== 'DELETED' && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 text-xs space-y-3">
+                  <div className="flex items-center gap-2 text-rose-900 font-extrabold text-sm">
+                    <FiShieldOff className="text-rose-600" /> Organization Decommissioning Zone
+                  </div>
+                  <p className="text-rose-800 leading-relaxed">
+                    Uses the authoritative Enterprise lifecycle state machine to transition this organization to <strong>DELETING</strong>. 
+                    Data will enter the enterprise retention grace period before hard deletion.
+                  </p>
+                  <textarea
+                    className="w-full rounded-xl border border-rose-200 bg-white p-3 text-xs font-medium focus:outline-hidden focus:border-rose-500"
+                    rows={2}
+                    placeholder="Required decommission justification reason (minimum 8 characters)"
+                    value={decommissionReason}
+                    onChange={e => setDecommissionReason(e.target.value)}
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleDecommission(selectedTenant)}
+                      disabled={busyTenant === `${selectedTenant.id}:DELETING`}
+                      className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-xs disabled:opacity-50"
+                    >
+                      {busyTenant === `${selectedTenant.id}:DELETING` ? 'Decommissioning…' : 'Decommission Organization'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
       {/* Confirmation Modal */}

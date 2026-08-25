@@ -169,35 +169,35 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
         {
             label: 'Control Plane',
             items: [
-                { path: '/adm/dashboard', icon: FiGrid, label: 'Command Center' },
-                { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry' },
-                { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail' },
-                { path: '/adm/security', icon: FiLock, label: 'Security Events' },
-                { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor' },
-                { path: '/adm/operations', icon: FiTool, label: 'Platform Operations' },
-                { path: '/adm/attention', icon: FiAlertTriangle, label: 'Attention' },
-                { path: '/adm/health', icon: FaHeartbeat, label: 'Platform Health', healthIndicator: true },
+                { path: '/adm/dashboard', icon: FiGrid, label: 'Command Center', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+                { path: '/adm/tenants', icon: FaServer, label: 'Tenants Registry', badgeColor: 'bg-sky-50 text-sky-600 border-sky-100' },
+                { path: '/adm/audit-logs', icon: FiShield, label: 'Admin Audit Trail', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
+                { path: '/adm/security', icon: FiLock, label: 'Security Events', badgeColor: 'bg-rose-50 text-rose-600 border-rose-100' },
+                { path: '/adm/queues', icon: FiActivity, label: 'Queue & DLQ Monitor', badgeColor: 'bg-amber-50 text-amber-600 border-amber-100' },
+                { path: '/adm/operations', icon: FiTool, label: 'Platform Operations', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
+                { path: '/adm/attention', icon: FiAlertTriangle, label: 'Attention', badgeColor: 'bg-orange-50 text-orange-600 border-orange-100' },
+                { path: '/adm/health', icon: FaHeartbeat, label: 'Platform Health', healthIndicator: true, badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
             ],
         },
         {
             label: 'Identity',
             items: [
-                { path: '/adm/users', icon: FiUsers, label: 'Users Manager' },
-                { path: '/adm/operators', icon: FiLock, label: 'Platform Operators' },
+                { path: '/adm/users', icon: FiUsers, label: 'Users Manager', badgeColor: 'bg-blue-50 text-blue-600 border-blue-100' },
+                { path: '/adm/operators', icon: FiLock, label: 'Platform Operators', badgeColor: 'bg-teal-50 text-teal-600 border-teal-100' },
             ],
         },
         {
             label: 'Consumer Product',
             items: [
-                { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications' },
-                { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager' },
-                { path: '/adm/company-management', icon: FaRegBuilding, label: 'Company Management' },
-                { path: '/adm/blog-management', icon: FiFileText, label: 'Blog Management' },
-                { path: '/adm/landing-pages', icon: FiGlobe, label: 'Landing Pages' },
-                { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews' },
-                { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by' },
-                { path: '/adm/messages', icon: FiMail, label: 'Messages' },
-                { path: '/adm/phrases', icon: FiType, label: 'Phrases' },
+                { path: '/adm/employer-applications', icon: FiBriefcase, label: 'Employer Applications', badgeColor: 'bg-cyan-50 text-cyan-600 border-cyan-100' },
+                { path: '/adm/jobs-manager', icon: FiLayers, label: 'Jobs Manager', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+                { path: '/adm/company-management', icon: FaRegBuilding, label: 'Company Management', badgeColor: 'bg-violet-50 text-violet-600 border-violet-100' },
+                { path: '/adm/blog-management', icon: FiFileText, label: 'Blog Management', badgeColor: 'bg-amber-50 text-amber-600 border-amber-100' },
+                { path: '/adm/landing-pages', icon: FiGlobe, label: 'Landing Pages', badgeColor: 'bg-sky-50 text-sky-600 border-sky-100' },
+                { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews', badgeColor: 'bg-pink-50 text-pink-600 border-pink-100' },
+                { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by', badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+                { path: '/adm/messages', icon: FiMail, label: 'Messages', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
+                { path: '/adm/phrases', icon: FiType, label: 'Phrases', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
             ],
         },
     ];
@@ -312,13 +312,15 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         <Link to={homeItem.path} onClick={onCloseMobile}>
                             <div className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl mb-1 ${
                                 location.pathname === homeItem.path
-                                    ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
-                                    : 'text-slate-700 font-semibold hover:bg-slate-100/80 hover:text-slate-950'
-                            } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
-                                <homeItem.icon className={`text-[1.15rem] min-w-[20px] transition-colors ${
-                                    location.pathname === homeItem.path ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
-                                } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                                {!sidebarCollapsed && <span className="flex-1">{homeItem.label}</span>}
+                                    ? 'bg-indigo-50/90 text-indigo-950 font-extrabold border border-indigo-200/70 shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                    : 'text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-950'
+                            } ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}>
+                                <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
+                                    sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'
+                                } ${location.pathname === homeItem.path ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:scale-105'}`}>
+                                    <homeItem.icon className="text-[0.95rem]" />
+                                </div>
+                                {!sidebarCollapsed && <span className="flex-1 truncate">{homeItem.label}</span>}
                             </div>
                         </Link>
 
@@ -336,16 +338,18 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                 }}
                                 className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl cursor-pointer ${
                                     isSettingsPage
-                                        ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
-                                        : 'text-slate-700 font-semibold hover:bg-slate-100/80 hover:text-slate-950'
-                                } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}
+                                        ? 'bg-indigo-50/90 text-indigo-950 font-extrabold border border-indigo-200/70 shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                        : 'text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-950'
+                                } ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}
                             >
-                                <FiSettings className={`text-[1.15rem] min-w-[20px] transition-colors ${
-                                    isSettingsPage ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
-                                } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
+                                    sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'
+                                } ${isSettingsPage ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 border border-slate-200 group-hover:scale-105'}`}>
+                                    <FiSettings className="text-[0.95rem]" />
+                                </div>
                                 {!sidebarCollapsed && (
                                     <>
-                                        <span className="flex-1">Settings</span>
+                                        <span className="flex-1 truncate">Settings</span>
                                         {settingsOpen
                                             ? <FiChevronDown className="w-3.5 h-3.5 text-slate-500" />
                                             : <FiChevronRight className="w-3.5 h-3.5 text-slate-400" />}
@@ -404,41 +408,50 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         {navGroups.map(group => (
                             <div key={group.label} className="mb-2">
                                 {!sidebarCollapsed && <p className="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.label}</p>}
-                                {group.items.map(item => (
-                                    <Link to={item.path} key={item.path} onClick={onCloseMobile}>
-                                        <div
-                                            className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl mb-1 cursor-pointer ${
-                                                location.pathname === item.path || location.pathname.startsWith(item.path)
-                                                    ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
-                                                    : 'text-slate-700 font-semibold hover:bg-slate-100/80 hover:text-slate-950'
-                                            } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2 px-3.5'}`}
-                                        >
-                                            <item.icon className={`text-[1.15rem] min-w-[20px] transition-colors ${
-                                                location.pathname === item.path || location.pathname.startsWith(item.path) ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
-                                            } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                                            {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
-                                            {item.healthIndicator && (
-                                                <span
-                                                    className={`flex-none rounded-full ${healthDotClass} ${sidebarCollapsed ? 'absolute right-1.5 top-1.5 h-1.5 w-1.5' : 'h-2 w-2'}`}
-                                                    role="img"
-                                                    aria-label={healthDotLabel}
-                                                    title={healthDotLabel}
-                                                    data-testid="sidebar-health-indicator"
-                                                    data-indicator={healthIndicator.state === 'ready' ? healthIndicator.indicator : healthIndicator.state}
-                                                />
-                                            )}
-                                        </div>
-                                    </Link>
-                                ))}
+                                {group.items.map(item => {
+                                    const isCurrent = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                                    return (
+                                        <Link to={item.path} key={item.path} onClick={onCloseMobile}>
+                                            <div
+                                                className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl mb-1 cursor-pointer ${
+                                                    isCurrent
+                                                        ? 'bg-indigo-50/90 text-indigo-950 font-extrabold border border-indigo-200/70 shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                                        : 'text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-950'
+                                                } ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}
+                                            >
+                                                <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
+                                                    sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'
+                                                } ${isCurrent ? 'bg-indigo-600 text-white shadow-xs' : `${item.badgeColor || 'bg-slate-100 text-slate-600 border-slate-200'} border group-hover:scale-105`}`}>
+                                                    <item.icon className="text-[0.95rem]" />
+                                                </div>
+                                                {!sidebarCollapsed && <span className="flex-1 truncate">{item.label}</span>}
+                                                {item.healthIndicator && (
+                                                    <span
+                                                        className={`flex-none rounded-full ${healthDotClass} ${sidebarCollapsed ? 'absolute right-1.5 top-1.5 h-2 w-2 ring-2 ring-white' : 'h-2 w-2'}`}
+                                                        role="img"
+                                                        aria-label={healthDotLabel}
+                                                        title={healthDotLabel}
+                                                        data-testid="sidebar-health-indicator"
+                                                        data-indicator={healthIndicator.state === 'ready' ? healthIndicator.indicator : healthIndicator.state}
+                                                    />
+                                                )}
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                         ))}
 
                         {/* Logout */}
                         <div
                             onClick={handleLogout}
-                            className={`group flex items-center text-[0.84rem] font-bold transition-all duration-200 rounded-xl mb-1 cursor-pointer text-slate-700 hover:bg-red-50 hover:text-red-700 ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
-                            <FiLogOut className={`text-[1.15rem] min-w-[20px] transition-colors text-slate-500 group-hover:text-red-600 ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
-                            {!sidebarCollapsed && <span className="flex-1">Logout</span>}
+                            className={`group flex items-center text-[0.84rem] font-bold transition-all duration-200 rounded-xl mb-1 cursor-pointer text-slate-700 hover:bg-red-50 hover:text-red-700 ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}>
+                            <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
+                                sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'
+                            } bg-red-50 text-red-600 border border-red-100 group-hover:scale-105`}>
+                                <FiLogOut className="text-[0.95rem]" />
+                            </div>
+                            {!sidebarCollapsed && <span className="flex-1 truncate">Logout</span>}
                         </div>
                     </div>
                 </div>

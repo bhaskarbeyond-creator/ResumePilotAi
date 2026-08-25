@@ -1218,11 +1218,20 @@ async function dispatchMailWithFallback(config, mailOptions) {
         mailOptions.replyTo = config.smtp?.replyTo || config.smtp?.username || `support@${new URL(publicSiteOrigin()).hostname}`;
     }
 
-    if (config.smtp?.host) {
+    const hasPrimaryCreds = Boolean(config.smtp?.username && config.smtp?.password);
+    const hasFallbackCreds = Boolean(config.fallbackSmtp?.enabled && config.fallbackSmtp?.username && config.fallbackSmtp?.password);
+
+    if (!hasPrimaryCreds && !hasFallbackCreds) {
+        const notConfigured = new Error('No valid SMTP credentials configured.');
+        notConfigured.code = 'EMAIL_NOT_CONFIGURED';
+        throw notConfigured;
+    }
+
+    if (config.smtp?.host && hasPrimaryCreds) {
         if (!allowedEncryption.has(String(config.smtp.encryption || '').toLowerCase())) throw new Error('Encrypted SMTP transport is required');
         primaryTarget = await assertPublicNetworkTarget(config.smtp.host);
     }
-    if (config.fallbackSmtp?.enabled && config.fallbackSmtp?.host) {
+    if (config.fallbackSmtp?.enabled && config.fallbackSmtp?.host && hasFallbackCreds) {
         if (!allowedEncryption.has(String(config.fallbackSmtp.encryption || '').toLowerCase())) throw new Error('Encrypted fallback SMTP transport is required');
         fallbackTarget = await assertPublicNetworkTarget(config.fallbackSmtp.host);
     }

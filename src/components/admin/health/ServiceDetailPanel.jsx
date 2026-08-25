@@ -51,16 +51,16 @@ export default function ServiceDetailPanel({ open, loading, error, detail, onClo
   const tone = service ? describeState(service.state) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="presentation">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]" onClick={onClose} aria-hidden="true" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" role="presentation" onClick={onClose}>
       <aside
         role="dialog"
         data-testid="health-detail-panel"
         aria-modal="true"
         aria-label={service ? `${service.name} operational detail` : 'Service operational detail'}
-        className="relative flex h-full w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-l-2xl"
+        onClick={e => e.stopPropagation()}
+        className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden bg-white rounded-3xl shadow-2xl border border-slate-200"
       >
-        <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+        <header className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white flex items-start justify-between gap-3 shrink-0">
           <div className="min-w-0">
             <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
               {service ? (GROUP_LABEL[service.group] || service.group) : 'Platform Health'}
@@ -78,9 +78,9 @@ export default function ServiceDetailPanel({ open, loading, error, detail, onClo
             type="button"
             onClick={onClose}
             aria-label="Close service detail"
-            className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
           >
-            <FiX aria-hidden="true" />
+            <FiX className="h-5 w-5" aria-hidden="true" />
           </button>
         </header>
 
