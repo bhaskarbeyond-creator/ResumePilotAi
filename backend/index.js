@@ -2756,7 +2756,21 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
         providerSecrets._revision = nextRevision;
         const batch = requestDb.batch();
         batch.set(paymentRef, providerSecrets, { merge: true });
-        batch.set(publicRef, { subscriptions: publicSettings, _settingsRevisions: { payments: nextRevision } }, { merge: true });
+        batch.set(publicRef, { subscriptions: publicSettings, currency: publicSettings.currency, currencySymbol: publicSettings.currency === 'INR' ? '₹' : publicSettings.currency === 'EUR' ? '€' : publicSettings.currency === 'GBP' ? '£' : '$', _settingsRevisions: { payments: nextRevision } }, { merge: true });
+        // Keep data/system_settings.currency in sync with the subscription currency
+        // so that getPlatformCurrencyConfig (which checks system_settings first) always
+        // reflects the admin's latest currency choice.
+        const sysSettingsRef = requestDb.collection('data').doc('system_settings');
+        batch.set(sysSettingsRef, {
+            currency: publicSettings.currency,
+            currencyMeta: {
+                code: publicSettings.currency,
+                symbol: publicSettings.currency === 'INR' ? '₹' : publicSettings.currency === 'EUR' ? '€' : publicSettings.currency === 'GBP' ? '£' : publicSettings.currency === 'CAD' ? 'CA$' : publicSettings.currency === 'AUD' ? 'A$' : publicSettings.currency === 'JPY' ? '¥' : '$',
+                name: publicSettings.currency === 'INR' ? 'Indian Rupee' : publicSettings.currency === 'EUR' ? 'Euro' : publicSettings.currency === 'GBP' ? 'British Pound' : publicSettings.currency === 'CAD' ? 'Canadian Dollar' : publicSettings.currency === 'AUD' ? 'Australian Dollar' : publicSettings.currency === 'JPY' ? 'Japanese Yen' : 'US Dollar',
+            },
+            currencyUpdatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
+            currencyUpdatedBy: req.user?.uid || 'admin_console',
+        }, { merge: true });
         batch.set(requestDb.collection('security_audit_logs').doc(), {
             action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
             requestId: res.locals.requestId, revision: nextRevision,
