@@ -270,7 +270,8 @@ const publicApiPaths = new Set([
     '/public/custom-pages', '/public/custom-pages.json',
     '/public/trusted-by', '/public/trusted-by.json',
     '/custom-pages', '/custom-pages.json',
-    '/trusted-by', '/trusted-by.json'
+    '/trusted-by', '/trusted-by.json',
+    '/cms-pages', '/blog-data', '/jobs-data'
 ]);
 // Enterprise API authentication accepts exactly one credential kind per request:
 // a Firebase bearer token (tenant member or support elevation) or an x-api-key
