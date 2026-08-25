@@ -256,50 +256,29 @@ const AuthWrapper = () => {
         return () => unsubscribe();
     }, []);
 
-    // One server-confirmed public-config listener feeds every module consumer in
-    // this browser context. Firestore supplies cross-tab updates; cached snapshots
-    // are ignored so a stale default-ON value cannot overwrite a confirmed OFF.
-    useEffect(() => {
-        let unsubscribe = () => {};
-        try {
-            unsubscribe = fire.firestore().collection('data').doc('public_config').onSnapshot(
-                { includeMetadataChanges: true },
-                (snapshot) => {
-                    if (!snapshot.exists) return;
-                    const settings = settingsFromSnapshot(snapshot);
-                    if (settings._settingsSource !== 'remote' || !settings.modules) return;
-                    window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
-                        detail: {
-                            category: 'modules',
-                            revision: settings._settingsRevisions?.modules,
-                            modules: settings.modules,
-                            source: 'firestore-server',
-                        }
-                    }));
-                },
-                () => { /* consumers keep their last server-confirmed state */ }
-            );
-        } catch {
-            unsubscribe = () => {};
-        }
-        return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
-    }, []);
-
+    // In the dual-database architecture, public configuration and maintenance state
+    // are fetched from the backend REST API, eliminating raw Firestore quota limits.
     useEffect(() => {
         if (authLoading) return undefined;
         let active = true;
+
         Promise.all([
-            fire.firestore().collection('data').doc('public_config').get(),
+            fetch('/api/health').then(r => r.json()).catch(() => ({})),
             user?.getIdTokenResult?.().catch(() => null) || Promise.resolve(null),
-        ]).then(([snapshot, token]) => {
+        ]).then(([healthData, token]) => {
             if (!active) return;
-            const config = snapshot.data()?.systemHealth || {};
+            const config = healthData?.systemHealth || {};
             const role = String(token?.claims?.role || '').toUpperCase();
-            setMaintenance({ loading: false, enabled: config.maintenanceMode === true, message: String(config.maintenanceMessage || 'Scheduled maintenance is in progress.'), admin: ['ADMIN', 'SUPER_ADMIN'].includes(role) });
+            setMaintenance({
+                loading: false,
+                enabled: config.maintenanceMode === true,
+                message: String(config.maintenanceMessage || 'Scheduled maintenance is in progress.'),
+                admin: ['ADMIN', 'SUPER_ADMIN'].includes(role)
+            });
         }).catch(() => {
-            // Fail open if public configuration is unavailable; infrastructure health controls remain independent.
             if (active) setMaintenance({ loading: false, enabled: false, message: '', admin: false });
         });
+
         return () => { active = false; };
     }, [authLoading, user]);
 

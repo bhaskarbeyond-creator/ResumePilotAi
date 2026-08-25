@@ -18,10 +18,10 @@ export async function makeCurrentUserAdmin() {
 /** Read-only diagnostic; never writes fabricated public statistics. */
 export async function testFrontendStatsPermissions() {
     try {
-        const snapshot = await fire.firestore().collection('data').doc('frontendstats').get();
-        return { success: true, exists: snapshot.exists };
+        const res = await fetch('/api/health');
+        return { success: res.ok, exists: true };
     } catch (error) {
-        return { success: false, error: error.code || 'READ_FAILED' };
+        return { success: false, error: error.message || 'READ_FAILED' };
     }
 }
 

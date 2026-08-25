@@ -157,24 +157,12 @@ const BuildResume = () => {
         };
         window.addEventListener('systemSettingsUpdated', handleSettingsUpdated);
 
-        let unsubscribePublicConfig = () => {};
-        try {
-            unsubscribePublicConfig = fire.firestore().collection('data').doc('public_config').onSnapshot(
-                { includeMetadataChanges: true },
-                (snapshot) => {
-                    if (!snapshot.exists) return;
-                    const settings = settingsFromSnapshot(snapshot);
-                    if (settings._settingsSource === 'remote') syncSettings(settings);
-                },
-                () => { /* keep the last known ATS flag if the listener drops */ }
-            );
-        } catch {
-            unsubscribePublicConfig = () => {};
-        }
+        getSystemSettings().then((settings) => {
+            syncSettings(settings, { allowMissingDefault: true });
+        }).catch(() => {});
 
         return () => {
             window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
-            if (typeof unsubscribePublicConfig === 'function') unsubscribePublicConfig();
         };
     }, [location.search]);
 

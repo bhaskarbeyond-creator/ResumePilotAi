@@ -178,20 +178,7 @@ class CoverLetter extends Component {
             }
         };
         window.addEventListener('systemSettingsUpdated', this.handleSettingsUpdated);
-
-        try {
-            this.unsubscribePublicConfig = fire.firestore().collection('data').doc('public_config').onSnapshot(
-                { includeMetadataChanges: true },
-                (snapshot) => {
-                    if (!snapshot.exists) return;
-                    const settings = settingsFromSnapshot(snapshot);
-                    if (settings._settingsSource === 'remote') this.applyAtsVisibility(settings);
-                },
-                () => { /* keep the last known ATS flag if the listener drops */ }
-            );
-        } catch {
-            this.unsubscribePublicConfig = () => {};
-        }
+        this.unsubscribePublicConfig = () => {};
     };
 
     handleKeyDown = (e) => {
