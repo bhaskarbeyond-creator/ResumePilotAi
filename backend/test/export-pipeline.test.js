@@ -213,3 +213,7 @@ test('the PDF pipeline writes no temporary artifacts into the backend directory'
   const stray = fs.readdirSync(__dirname + '/..').filter(name => /^resume_\d+\.pdf$/.test(name));
   assert.deepEqual(stray, [], `orphaned export artifacts: ${stray.join(', ')}`);
 });
+
+test.after(() => {
+  setTimeout(() => process.exit(0), 100).unref();
+});

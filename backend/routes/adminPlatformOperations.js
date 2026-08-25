@@ -25,7 +25,7 @@ router.get('/platform/currency', async (req, res) => {
   return res.json({ success: true, currency: currencyConfig });
 });
 
-router.put('/platform/currency', requireRecentAdminAuthentication, async (req, res) => {
+router.put('/platform/currency', requireAuth, requireRecentAdminAuthentication, async (req, res) => {
   const db = req.app.get('db');
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
   const { currency, allowMultiCurrency } = req.body || {};

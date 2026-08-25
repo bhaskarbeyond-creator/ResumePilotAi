@@ -99,7 +99,7 @@ async function setPlatformCurrencyConfig({ db, admin, currency, allowMultiCurren
   const sysRef = db.collection('data').doc('system_settings');
   const pubRef = db.collection('data').doc('public_config');
   
-  await db.runTransaction(async transaction => {
+  const transactionPromise = db.runTransaction(async transaction => {
     const sysSnap = await transaction.get(sysRef);
     const existing = sysSnap.data() || {};
     beforeState = {
@@ -137,6 +137,12 @@ async function setPlatformCurrencyConfig({ db, admin, currency, allowMultiCurren
       createdAt: now,
     });
   });
+
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(Object.assign(new Error('Database transaction timeout'), { code: 'DATABASE_TIMEOUT', status: 503 })), 5000)
+  );
+
+  await Promise.race([transactionPromise, timeoutPromise]);
   
   return {
     ...meta,

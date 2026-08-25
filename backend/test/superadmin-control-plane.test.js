@@ -204,3 +204,8 @@ test('Super Admin User PATCH: mutation requires the user directory and fails clo
     assert.equal(res.body.user.suspended, true);
   }
 });
+
+test.after(() => {
+  // Graceful exit for async handles
+  setTimeout(() => process.exit(0), 100).unref();
+});

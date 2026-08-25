@@ -1,113 +1,59 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 test('OAuth vs Password Authentication State & Security Separation', async (t) => {
-    await t.test('detects pure OAuth accounts vs password accounts accurately', () => {
-        const googleUser = {
-            uid: 'oauth_user_1',
-            email: 'dev@gmail.com',
-            providerData: [{ providerId: 'google.com' }],
-        };
-        const passwordUser = {
-            uid: 'pwd_user_1',
-            email: 'dev@company.com',
-            providerData: [{ providerId: 'password' }],
-        };
-        const dualUser = {
-            uid: 'dual_user_1',
-            email: 'dev@gmail.com',
-            providerData: [{ providerId: 'google.com' }, { providerId: 'password' }],
-        };
+    const settingsPath = path.resolve('src/components/Dashboard/DashboardSettings/DashboardSettings.jsx');
+    const settingsCode = fs.readFileSync(settingsPath, 'utf8');
 
-        const checkProviders = (user) => {
-            const providers = (user.providerData || []).map(p => p.providerId).filter(Boolean);
-            const usesPassword = providers.includes('password');
-            const isOAuthOnly = providers.length > 0 && !usesPassword;
-            const primaryOAuth = providers.find(p => p !== 'password') === 'google.com' ? 'Google' : (providers.find(p => p !== 'password') || 'OAuth');
-            return { usesPassword, isOAuthOnly, primaryOAuth };
-        };
-
-        const googleState = checkProviders(googleUser);
-        assert.equal(googleState.usesPassword, false);
-        assert.equal(googleState.isOAuthOnly, true);
-        assert.equal(googleState.primaryOAuth, 'Google');
-
-        const pwdState = checkProviders(passwordUser);
-        assert.equal(pwdState.usesPassword, true);
-        assert.equal(pwdState.isOAuthOnly, false);
-
-        const dualState = checkProviders(dualUser);
-        assert.equal(dualState.usesPassword, true);
-        assert.equal(dualState.isOAuthOnly, false);
-        assert.equal(dualState.primaryOAuth, 'Google');
+    await t.test('detects pure OAuth accounts vs password accounts accurately in component code', () => {
+        assert.ok(settingsCode.includes('usesPasswordProvider'), 'DashboardSettings must define usesPasswordProvider');
+        assert.ok(settingsCode.includes('isOAuthOnly'), 'DashboardSettings must define isOAuthOnly');
+        assert.ok(settingsCode.includes('primaryOAuthProvider'), 'DashboardSettings must define primaryOAuthProvider');
+        assert.ok(
+            settingsCode.includes("userAuthProviders.includes('password')"),
+            'Component must check for password provider in userAuthProviders'
+        );
     });
 
     await t.test('does not require current password when OAuth-only user sets security password', () => {
-        const validatePasswordUpdate = ({ usesPassword, currentPassword, newPassword, confirmPassword }) => {
-            if (usesPassword && !currentPassword) {
-                return { success: false, error: 'Current password is required to verify identity for credential updates.' };
-            }
-            if (newPassword.length < 8) {
-                return { success: false, error: 'Security password must be at least 8 characters long.' };
-            }
-            if (newPassword !== confirmPassword) {
-                return { success: false, error: 'New passwords do not match. Please verify.' };
-            }
-            return { success: true, message: usesPassword ? 'Password updated' : 'Security password created' };
-        };
-
-        // OAuth user creating password with empty currentPassword
-        const oauthResult = validatePasswordUpdate({
-            usesPassword: false,
-            currentPassword: '',
-            newPassword: 'StrongPassword123!',
-            confirmPassword: 'StrongPassword123!',
-        });
-        assert.equal(oauthResult.success, true);
-        assert.equal(oauthResult.message, 'Security password created');
-
-        // Password user without currentPassword -> must fail
-        const pwdMissingCurrent = validatePasswordUpdate({
-            usesPassword: true,
-            currentPassword: '',
-            newPassword: 'StrongPassword123!',
-            confirmPassword: 'StrongPassword123!',
-        });
-        assert.equal(pwdMissingCurrent.success, false);
-        assert.match(pwdMissingCurrent.error, /Current password is required/);
-
-        // Password user with valid currentPassword -> succeeds
-        const pwdSuccess = validatePasswordUpdate({
-            usesPassword: true,
-            currentPassword: 'ExistingPassword123!',
-            newPassword: 'StrongPassword123!',
-            confirmPassword: 'StrongPassword123!',
-        });
-        assert.equal(pwdSuccess.success, true);
-        assert.equal(pwdSuccess.message, 'Password updated');
+        assert.ok(
+            settingsCode.includes('if (usesPasswordProvider && (isEmailChanged || isPasswordChanged) && !accountPasswordState.currentPassword) {'),
+            'handleAccountSubmit must guard currentPassword validation with usesPasswordProvider'
+        );
+        assert.ok(
+            settingsCode.includes('usesPasswordProvider ? (') || settingsCode.includes('usesPasswordProvider ?'),
+            'Current Password input field must be conditionally hidden for OAuth users'
+        );
     });
 
-    await t.test('OAuth sign in does not overwrite existing password credential', () => {
-        // Simulating user database record
-        const userDoc = {
-            userId: 'user_123',
-            email: 'dev@gmail.com',
-            authProvider: 'email',
-            hasLocalPassword: true,
-        };
+    await t.test('renders dynamic and transparent terminology for OAuth password creation', () => {
+        assert.ok(
+            settingsCode.includes('Create Account Security Password') && settingsCode.includes('Security Password Update & Re-authentication'),
+            'UI must render "Create Account Security Password" for OAuth and "Security Password Update & Re-authentication" for password users'
+        );
+        assert.ok(
+            settingsCode.includes('Create Account Security Password ✓') && settingsCode.includes('Update Account Security ✓'),
+            'Button text must dynamically switch between Create and Update'
+        );
+        assert.ok(
+            settingsCode.includes('without affecting your'),
+            'OAuth guidance banner must explain that OAuth login identity is preserved'
+        );
+    });
 
-        // Simulating OAuth login metadata refresh
-        const updateOnOAuthLogin = (doc, oauthProvider) => {
-            return {
-                ...doc,
-                lastLoginAt: new Date().toISOString(),
-                // Preserves existing auth credentials
-                authProvider: doc.authProvider || oauthProvider,
-            };
-        };
+    await t.test('account deletion modal provides keyword confirmation for OAuth users', () => {
+        assert.ok(
+            settingsCode.includes("disabled={deleteInputText !== 'DELETE' || (usesPasswordProvider && !deletePassword) || isSubmitting}"),
+            'Delete modal button must only require deletePassword if user usesPasswordProvider'
+        );
+    });
 
-        const refreshed = updateOnOAuthLogin(userDoc, 'google');
-        assert.equal(refreshed.hasLocalPassword, true);
-        assert.equal(refreshed.authProvider, 'email');
+    await t.test('double-submit protection is enforced during password creation and update', () => {
+        assert.ok(
+            settingsCode.includes('disabled={isSubmitting}'),
+            'Save button must be disabled when isSubmitting is true to prevent double submission'
+        );
     });
 });

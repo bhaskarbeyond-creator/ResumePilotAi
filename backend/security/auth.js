@@ -121,6 +121,9 @@ function superAdminMfaEnforced() {
 }
 
 function requireSuperAdmin(req, res, next) {
+  if (!req.user) {
+    return requireAuth(req, res, () => requireSuperAdmin(req, res, next));
+  }
   if (!isSuperAdmin(req.user)) {
     return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId } });
   }
@@ -147,6 +150,9 @@ function requireSuperAdmin(req, res, next) {
  * window.
  */
 function requireRecentAdminAuthentication(req, res, next) {
+  if (!req.user) {
+    return requireAuth(req, res, () => requireRecentAdminAuthentication(req, res, next));
+  }
   const superAdminResult = requireSuperAdmin(req, res, () => {});
   if (superAdminResult) return superAdminResult;
   const shouldEnforce = process.env.NODE_ENV === 'production' || process.env.REQUIRE_RECENT_AUTH_IN_TEST === 'true';

@@ -1,8 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { normalizeResumeData, EMPTY_RESUME } from '../src/utils/resumeData.js';
 
 test('Live Preview State & Data Transformation Forensic Verification', async (t) => {
+    const homepagePath = path.resolve('src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx');
+    const homepageCode = fs.readFileSync(homepagePath, 'utf8');
+
+    await t.test('DashboardHomepage renders Live Preview action in 3-dots action dropdown menu', () => {
+        assert.ok(
+            homepageCode.includes('Live Preview'),
+            'DashboardHomepage must render "Live Preview" in 3-dots menu'
+        );
+        assert.ok(
+            homepageCode.includes('this.openDocumentPreview(document)'),
+            'Clicking Live Preview must invoke openDocumentPreview(document)'
+        );
+        assert.ok(
+            homepageCode.includes('FaEye'),
+            'Live Preview action must render FaEye icon'
+        );
+        assert.ok(
+            homepageCode.includes('previewingDocument: document') && homepageCode.includes('showPreviewModal: true'),
+            'openDocumentPreview must set previewingDocument and showPreviewModal'
+        );
+    });
+
     await t.test('generates normalized preview view-model from empty resume without throwing', () => {
         const raw = normalizeResumeData(EMPTY_RESUME);
         assert.ok(Array.isArray(raw.employments));
