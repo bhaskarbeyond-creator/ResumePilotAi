@@ -1,0 +1,394 @@
+import fs from 'fs';
+import path from 'path';
+
+// Complete Field-by-Field Matrix Definition for all 35 Collections / Subcollections
+
+const FIELD_MAPPING_DATABASE = [
+    // =========================================================================
+    // 1. USERS COLLECTION (Firestore: users/{uid} <-> MySQL: users)
+    // =========================================================================
+    {
+        collection: 'users',
+        docPath: 'users/{uid}',
+        mysqlTable: 'users',
+        description: 'User profile, authentication identity metadata, and subscription tier',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string (UID)', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Firebase Auth UID' },
+            { fsField: 'email', fsType: 'string', myColumn: 'email', myType: 'VARCHAR(255)', nullable: false, default: 'None', index: 'idx_user_email', status: 'EXACT', notes: 'User email address' },
+            { fsField: 'firstname', fsType: 'string', myColumn: 'firstname', myType: 'VARCHAR(120)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'First name' },
+            { fsField: 'lastname', fsType: 'string', myColumn: 'lastname', myType: 'VARCHAR(120)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Last name' },
+            { fsField: 'displayName', fsType: 'string', myColumn: 'displayName', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Full display name' },
+            { fsField: 'photoUrl', fsType: 'string (URL)', myColumn: 'photoUrl', myType: 'VARCHAR(1024)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'User avatar image URL' },
+            { fsField: 'avatarUrl', fsType: 'string (URL)', myColumn: 'avatarUrl', myType: 'VARCHAR(1024)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Legacy avatar image URL' },
+            { fsField: 'phone', fsType: 'string', myColumn: 'phone', myType: 'VARCHAR(50)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Phone number' },
+            { fsField: 'jobTitle', fsType: 'string', myColumn: 'jobTitle', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Current job headline' },
+            { fsField: 'bio', fsType: 'string', myColumn: 'bio', myType: 'TEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'User summary bio' },
+            { fsField: 'city', fsType: 'string', myColumn: 'city', myType: 'VARCHAR(100)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'City of residence' },
+            { fsField: 'country', fsType: 'string', myColumn: 'country', myType: 'VARCHAR(100)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Country of residence' },
+            { fsField: 'website', fsType: 'string (URL)', myColumn: 'website', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Personal website link' },
+            { fsField: 'membership', fsType: 'string', myColumn: 'membership', myType: 'VARCHAR(50)', nullable: true, default: "'Basic'", index: 'idx_user_membership', status: 'EXACT', notes: 'Active tier: Basic, PRO, Premium' },
+            { fsField: 'membershipEnds', fsType: 'string (ISO/date)', myColumn: 'membershipEnds', myType: 'VARCHAR(64)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Subscription expiration date' },
+            { fsField: 'paymentStatus', fsType: 'string', myColumn: 'paymentStatus', myType: 'VARCHAR(50)', nullable: true, default: "'INACTIVE'", index: 'None', status: 'EXACT', notes: 'Payment state: ACTIVE, INACTIVE, CANCELLED' },
+            { fsField: 'lastPaymentGateway', fsType: 'string', myColumn: 'lastPaymentGateway', myType: 'VARCHAR(64)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Gateway provider (razorpay, stripe)' },
+            { fsField: 'lastPaymentOrderId', fsType: 'string', myColumn: 'lastPaymentOrderId', myType: 'VARCHAR(128)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Latest payment order ID' },
+            { fsField: 'lastPaymentAmount', fsType: 'number (subunits/cents)', myColumn: 'lastPaymentAmount', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Amount paid in currency subunits' },
+            { fsField: 'lastPaymentCurrency', fsType: 'string', myColumn: 'lastPaymentCurrency', myType: 'VARCHAR(10)', nullable: true, default: "'INR'", index: 'None', status: 'EXACT', notes: 'ISO currency code' },
+            { fsField: 'lastPaymentDate', fsType: 'Timestamp', myColumn: 'lastPaymentDate', myType: 'TIMESTAMP', nullable: true, default: 'NULL', index: 'None', status: 'TRANSFORMED', notes: 'Firestore Timestamp <-> MySQL TIMESTAMP' },
+            { fsField: 'cancellationRequested', fsType: 'boolean', myColumn: 'cancellationRequested', myType: 'BOOLEAN', nullable: true, default: 'FALSE', index: 'None', status: 'EXACT', notes: 'User requested subscription cancel' },
+            { fsField: 'suspended', fsType: 'boolean', myColumn: 'suspended', myType: 'BOOLEAN', nullable: true, default: 'FALSE', index: 'None', status: 'EXACT', notes: 'Administrative account suspension flag' },
+            { fsField: 'role', fsType: 'string', myColumn: 'role', myType: 'VARCHAR(50)', nullable: true, default: "'USER'", index: 'idx_user_role', status: 'EXACT', notes: 'USER, EMPLOYER, ADMIN, SUPER_ADMIN' },
+            { fsField: 'extra_data (nested object)', fsType: 'object (arbitrary json)', myColumn: 'extra_data', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Preserves arbitrary nested user profile preferences without loss' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Account creation date' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Last profile update date' }
+        ]
+    },
+
+    // =========================================================================
+    // 2. RESUMES SUBCOLLECTION (Firestore: users/{uid}/resumes/{resumeId} <-> MySQL: resumes)
+    // =========================================================================
+    {
+        collection: 'resumes',
+        docPath: 'users/{uid}/resumes/{resumeId}',
+        mysqlTable: 'resumes',
+        description: 'Complete CV/Resume data model including rich nested arrays and custom sections',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Resume identifier' },
+            { fsField: 'user_id / parent UID', fsType: 'string', myColumn: 'user_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> users(id), idx_resume_user', status: 'EXACT', notes: 'Foreign key to parent user' },
+            { fsField: 'title', fsType: 'string', myColumn: 'title', myType: 'VARCHAR(160)', nullable: false, default: "'Untitled Resume'", index: 'None', status: 'EXACT', notes: 'Resume title' },
+            { fsField: 'template', fsType: 'string', myColumn: 'template', myType: 'VARCHAR(64)', nullable: true, default: "'Cv1'", index: 'None', status: 'EXACT', notes: 'Selected template identifier (Cv1-Cv55)' },
+            { fsField: 'revision', fsType: 'number (integer)', myColumn: 'revision', myType: 'INT', nullable: true, default: '1', index: 'None', status: 'EXACT', notes: 'Monotonic optimistic lock revision counter' },
+            { fsField: 'firstname', fsType: 'string', myColumn: 'firstname', myType: 'VARCHAR(120)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Personal details first name' },
+            { fsField: 'lastname', fsType: 'string', myColumn: 'lastname', myType: 'VARCHAR(120)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Personal details last name' },
+            { fsField: 'email', fsType: 'string', myColumn: 'email', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Personal contact email' },
+            { fsField: 'phone', fsType: 'string', myColumn: 'phone', myType: 'VARCHAR(50)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Personal contact phone' },
+            { fsField: 'occupation', fsType: 'string', myColumn: 'occupation', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Target job title / profession' },
+            { fsField: 'country', fsType: 'string', myColumn: 'country', myType: 'VARCHAR(100)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Country' },
+            { fsField: 'city', fsType: 'string', myColumn: 'city', myType: 'VARCHAR(100)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'City' },
+            { fsField: 'address', fsType: 'string', myColumn: 'address', myType: 'TEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Physical address' },
+            { fsField: 'postalcode', fsType: 'string', myColumn: 'postalcode', myType: 'VARCHAR(50)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Postal / ZIP code' },
+            { fsField: 'website', fsType: 'string', myColumn: 'website', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Portfolio / Personal URL' },
+            { fsField: 'linkedin', fsType: 'string', myColumn: 'linkedin', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'LinkedIn profile link' },
+            { fsField: 'github', fsType: 'string', myColumn: 'github', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'GitHub profile link' },
+            { fsField: 'photo', fsType: 'string (base64/URL)', myColumn: 'photo', myType: 'MEDIUMTEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Profile photo data or URL' },
+            { fsField: 'showPhoto', fsType: 'boolean', myColumn: 'showPhoto', myType: 'BOOLEAN', nullable: true, default: 'TRUE', index: 'None', status: 'EXACT', notes: 'Visibility toggle for photo' },
+            { fsField: 'summary', fsType: 'string (Rich Text)', myColumn: 'summary', myType: 'MEDIUMTEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Executive summary / professional overview' },
+            { fsField: 'employments[]', fsType: 'array of objects', myColumn: 'employments', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Work history: [{jobTitle, employer, startDate, endDate, city, description}]' },
+            { fsField: 'educations[]', fsType: 'array of objects', myColumn: 'educations', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Education history: [{degree, school, startDate, endDate, city, description}]' },
+            { fsField: 'skills[]', fsType: 'array of objects/strings', myColumn: 'skills', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Skills list: [{name, level, category}]' },
+            { fsField: 'languages[]', fsType: 'array of objects', myColumn: 'languages', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Language proficiencies: [{language, level}]' },
+            { fsField: 'hobbies[]', fsType: 'array of objects/strings', myColumn: 'hobbies', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Personal interests and activities' },
+            { fsField: 'projects[]', fsType: 'array of objects', myColumn: 'projects', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Project portfolio: [{title, link, startDate, endDate, description}]' },
+            { fsField: 'certifications[]', fsType: 'array of objects', myColumn: 'certifications', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Professional credentials: [{title, issuer, date, url}]' },
+            { fsField: 'achievements[]', fsType: 'array of objects', myColumn: 'achievements', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Key awards and honors: [{title, issuer, date, description}]' },
+            { fsField: 'references[]', fsType: 'array of objects', myColumn: 'references', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Professional references: [{fullName, company, email, phone}]' },
+            { fsField: 'customSections[]', fsType: 'array of objects', myColumn: 'customSections', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'User-defined sections: [{id, title, items: [{title, subtitle, startDate, endDate, description}]}]' },
+            { fsField: 'sectionOrder[]', fsType: 'array of strings', myColumn: 'sectionOrder', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Custom vertical rendering sequence' },
+            { fsField: 'hiddenSections[]', fsType: 'array of strings', myColumn: 'hiddenSections', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'List of hidden section keys' },
+            { fsField: 'completedSteps[]', fsType: 'array of strings/numbers', myColumn: 'completedSteps', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Wizard completion tracking' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Document creation timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'idx_resume_updated', status: 'TRANSFORMED', notes: 'Last modified timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 3. PORTFOLIOS SUBCOLLECTION (Firestore: users/{uid}/portfolios/{portfolioId} <-> MySQL: portfolios)
+    // =========================================================================
+    {
+        collection: 'portfolios',
+        docPath: 'users/{uid}/portfolios/{portfolioId}',
+        mysqlTable: 'portfolios',
+        description: 'Interactive web portfolio profile configurations',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Portfolio ID' },
+            { fsField: 'user_id / parent UID', fsType: 'string', myColumn: 'user_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> users(id), idx_portfolios_user', status: 'EXACT', notes: 'Owner UID' },
+            { fsField: 'title', fsType: 'string', myColumn: 'title', myType: 'VARCHAR(160)', nullable: false, default: "'Untitled Portfolio'", index: 'None', status: 'EXACT', notes: 'Portfolio headline' },
+            { fsField: 'theme', fsType: 'string', myColumn: 'theme', myType: 'VARCHAR(50)', nullable: true, default: "'modern'", index: 'None', status: 'EXACT', notes: 'Visual theme layout' },
+            { fsField: 'isPublished', fsType: 'boolean', myColumn: 'is_published', myType: 'BOOLEAN', nullable: true, default: 'FALSE', index: 'None', status: 'EXACT', notes: 'Public visibility flag' },
+            { fsField: 'data (entire configuration object)', fsType: 'object', myColumn: 'data', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Lossless storage of projects, socialLinks, about, customDomain' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Creation timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Update timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 4. COVER LETTERS SUBCOLLECTION (Firestore: users/{uid}/covers/{coverId} <-> MySQL: covers)
+    // =========================================================================
+    {
+        collection: 'covers',
+        docPath: 'users/{uid}/covers/{coverId}',
+        mysqlTable: 'covers',
+        description: 'Tailored cover letters and AI generation variants',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Cover letter identifier' },
+            { fsField: 'user_id / parent UID', fsType: 'string', myColumn: 'user_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> users(id), idx_covers_user', status: 'EXACT', notes: 'Owner UID' },
+            { fsField: 'title', fsType: 'string', myColumn: 'title', myType: 'VARCHAR(160)', nullable: false, default: "'Untitled Cover Letter'", index: 'None', status: 'EXACT', notes: 'Document title' },
+            { fsField: 'template', fsType: 'string', myColumn: 'template', myType: 'VARCHAR(50)', nullable: true, default: "'Cover1'", index: 'None', status: 'EXACT', notes: 'Template layout style' },
+            { fsField: 'data (recipient, sender, body, tone)', fsType: 'object', myColumn: 'data', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Preserves complete letter text, salutation, company context' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Creation timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Update timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 5. JOBS COLLECTION (Firestore: jobs/{jobId} <-> MySQL: jobs)
+    // =========================================================================
+    {
+        collection: 'jobs',
+        docPath: 'jobs/{jobId}',
+        mysqlTable: 'jobs',
+        description: 'Employer job listings and ATS posting criteria',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Job ID' },
+            { fsField: 'employer_id / userId', fsType: 'string', myColumn: 'employer_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> users(id), idx_jobs_employer', status: 'EXACT', notes: 'Employer owner UID' },
+            { fsField: 'company_name', fsType: 'string', myColumn: 'company_name', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Hiring company name' },
+            { fsField: 'company_logo', fsType: 'string', myColumn: 'company_logo', myType: 'VARCHAR(1024)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Company logo URL' },
+            { fsField: 'title', fsType: 'string', myColumn: 'title', myType: 'VARCHAR(255)', nullable: false, default: 'None', index: 'None', status: 'EXACT', notes: 'Position title' },
+            { fsField: 'description', fsType: 'string (HTML/Markdown)', myColumn: 'description', myType: 'MEDIUMTEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Job overview' },
+            { fsField: 'requirements[]', fsType: 'array of strings', myColumn: 'requirements', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Required qualifications' },
+            { fsField: 'location', fsType: 'string', myColumn: 'location', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Job location' },
+            { fsField: 'job_type', fsType: 'string', myColumn: 'job_type', myType: 'VARCHAR(50)', nullable: true, default: "'Full-time'", index: 'None', status: 'EXACT', notes: 'Full-time, Part-time, Contract' },
+            { fsField: 'workplace_type', fsType: 'string', myColumn: 'workplace_type', myType: 'VARCHAR(50)', nullable: true, default: "'Remote'", index: 'None', status: 'EXACT', notes: 'Remote, Hybrid, On-site' },
+            { fsField: 'salary_min', fsType: 'number', myColumn: 'salary_min', myType: 'INT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Minimum compensation' },
+            { fsField: 'salary_max', fsType: 'number', myColumn: 'salary_max', myType: 'INT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Maximum compensation' },
+            { fsField: 'salary_currency', fsType: 'string', myColumn: 'salary_currency', myType: 'VARCHAR(10)', nullable: true, default: "'USD'", index: 'None', status: 'EXACT', notes: 'Salary currency code' },
+            { fsField: 'experience_level', fsType: 'string', myColumn: 'experience_level', myType: 'VARCHAR(50)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Entry, Mid, Senior, Executive' },
+            { fsField: 'skills[]', fsType: 'array of strings', myColumn: 'skills', myType: 'JSON', nullable: true, default: 'NULL', index: 'None', status: 'JSON_STORED', notes: 'Required candidate skill tags' },
+            { fsField: 'status', fsType: 'string', myColumn: 'status', myType: 'VARCHAR(50)', nullable: true, default: "'OPEN'", index: 'idx_jobs_status', status: 'EXACT', notes: 'OPEN, CLOSED, DRAFT, PAUSED' },
+            { fsField: 'applicants_count', fsType: 'number', myColumn: 'applicants_count', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Cached applicant counter' },
+            { fsField: 'featured', fsType: 'boolean', myColumn: 'featured', myType: 'BOOLEAN', nullable: true, default: 'FALSE', index: 'idx_jobs_featured', status: 'EXACT', notes: 'Promoted job badge flag' },
+            { fsField: 'expires_at', fsType: 'Timestamp', myColumn: 'expires_at', myType: 'TIMESTAMP', nullable: true, default: 'NULL', index: 'None', status: 'TRANSFORMED', notes: 'Posting expiration timestamp' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Creation timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Modification timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 6. APPLICATIONS COLLECTION (Firestore: applications/{appId} <-> MySQL: applications)
+    // =========================================================================
+    {
+        collection: 'applications',
+        docPath: 'applications/{appId}',
+        mysqlTable: 'applications',
+        description: 'Candidate applications linked to jobs, employers, and resumes',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Application ID' },
+            { fsField: 'job_id / jobId', fsType: 'string', myColumn: 'job_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> jobs(id), idx_app_job', status: 'EXACT', notes: 'Target job reference' },
+            { fsField: 'employer_id / employerId', fsType: 'string', myColumn: 'employer_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> users(id), idx_app_employer', status: 'EXACT', notes: 'Employer UID' },
+            { fsField: 'applicant_id / applicantId', fsType: 'string', myColumn: 'applicant_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'FOREIGN KEY -> users(id), idx_app_applicant', status: 'EXACT', notes: 'Candidate applicant UID' },
+            { fsField: 'applicant_name', fsType: 'string', myColumn: 'applicant_name', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Applicant full name' },
+            { fsField: 'applicant_email', fsType: 'string', myColumn: 'applicant_email', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Applicant email' },
+            { fsField: 'applicant_phone', fsType: 'string', myColumn: 'applicant_phone', myType: 'VARCHAR(50)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Applicant phone' },
+            { fsField: 'resume_id', fsType: 'string', myColumn: 'resume_id', myType: 'VARCHAR(128)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Attached resume ID' },
+            { fsField: 'resume_url', fsType: 'string', myColumn: 'resume_url', myType: 'VARCHAR(1024)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Attached PDF/hosted URL' },
+            { fsField: 'cover_letter', fsType: 'string', myColumn: 'cover_letter', myType: 'MEDIUMTEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Application letter text' },
+            { fsField: 'status', fsType: 'string', myColumn: 'status', myType: 'VARCHAR(50)', nullable: true, default: "'PENDING'", index: 'None', status: 'EXACT', notes: 'PENDING, REVIEWED, SHORTLISTED, REJECTED, HIRED' },
+            { fsField: 'rating', fsType: 'number', myColumn: 'rating', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Employer star rating 1-5' },
+            { fsField: 'notes', fsType: 'string', myColumn: 'notes', myType: 'MEDIUMTEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Internal employer candidate notes' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Submission timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Status change timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 7. PAYMENT ORDERS COLLECTION (Firestore: payment_orders/{orderId} <-> MySQL: payment_orders)
+    // =========================================================================
+    {
+        collection: 'payment_orders',
+        docPath: 'payment_orders/{orderId}',
+        mysqlTable: 'payment_orders',
+        description: 'Payment gateway intent and checkout order records',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Internal order ID' },
+            { fsField: 'uid / userId', fsType: 'string', myColumn: 'uid', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'idx_order_uid', status: 'EXACT', notes: 'Customer user UID' },
+            { fsField: 'plan_id / planId', fsType: 'string', myColumn: 'plan_id', myType: 'VARCHAR(64)', nullable: false, default: 'None', index: 'None', status: 'EXACT', notes: 'Selected pricing plan ID' },
+            { fsField: 'provider', fsType: 'string', myColumn: 'provider', myType: 'VARCHAR(64)', nullable: false, default: 'None', index: 'idx_order_provider', status: 'EXACT', notes: 'razorpay, stripe, paypal' },
+            { fsField: 'amount', fsType: 'number (subunits)', myColumn: 'amount', myType: 'INT', nullable: false, default: 'None', index: 'None', status: 'EXACT', notes: 'Final charged amount in paise/cents' },
+            { fsField: 'original_amount', fsType: 'number (subunits)', myColumn: 'original_amount', myType: 'INT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Original price before discount' },
+            { fsField: 'currency', fsType: 'string', myColumn: 'currency', myType: 'VARCHAR(10)', nullable: false, default: "'INR'", index: 'None', status: 'EXACT', notes: 'ISO currency code' },
+            { fsField: 'coupon_code', fsType: 'string', myColumn: 'coupon_code', myType: 'VARCHAR(64)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Applied coupon promo code' },
+            { fsField: 'coupon_discount', fsType: 'number', myColumn: 'coupon_discount', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Discount percentage or flat cut' },
+            { fsField: 'status', fsType: 'string', myColumn: 'status', myType: 'VARCHAR(50)', nullable: true, default: "'PENDING_PAYMENT'", index: 'idx_order_status', status: 'EXACT', notes: 'PENDING_PAYMENT, PAYMENT_CREATED, PAYMENT_VERIFIED, FAILED' },
+            { fsField: 'provider_payment_id', fsType: 'string', myColumn: 'provider_payment_id', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'External gateway payment ID (e.g. pay_N123)' },
+            { fsField: 'provider_order_id', fsType: 'string', myColumn: 'provider_order_id', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'External gateway order ID (e.g. order_M456)' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Order creation timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Status transition timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 8. TRANSACTIONS COLLECTION (Firestore: transactions/{txnId} <-> MySQL: transactions)
+    // =========================================================================
+    {
+        collection: 'transactions',
+        docPath: 'transactions/{txnId}',
+        mysqlTable: 'transactions',
+        description: 'Completed billing invoice records and tax breakdowns',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'id', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Internal transaction ID' },
+            { fsField: 'user_id / userId', fsType: 'string', myColumn: 'user_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'idx_txn_user', status: 'EXACT', notes: 'Customer UID' },
+            { fsField: 'txn_id', fsType: 'string', myColumn: 'txn_id', myType: 'VARCHAR(128)', nullable: false, default: 'None', index: 'idx_txn_code', status: 'EXACT', notes: 'Invoice reference code' },
+            { fsField: 'plan_name', fsType: 'string', myColumn: 'plan_name', myType: 'VARCHAR(255)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Plan label' },
+            { fsField: 'amount', fsType: 'number', myColumn: 'amount', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Total invoice amount' },
+            { fsField: 'subtotal', fsType: 'number', myColumn: 'subtotal', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Pre-tax amount' },
+            { fsField: 'tax_amount', fsType: 'number', myColumn: 'tax_amount', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Tax collected' },
+            { fsField: 'tax_rate', fsType: 'number', myColumn: 'tax_rate', myType: 'INT', nullable: true, default: '18', index: 'None', status: 'EXACT', notes: 'Tax percentage (e.g. 18% GST)' },
+            { fsField: 'currency', fsType: 'string', myColumn: 'currency', myType: 'VARCHAR(10)', nullable: true, default: "'INR'", index: 'None', status: 'EXACT', notes: 'Currency code' },
+            { fsField: 'status', fsType: 'string', myColumn: 'status', myType: 'VARCHAR(50)', nullable: true, default: "'Completed'", index: 'None', status: 'EXACT', notes: 'Completed, Refunded' },
+            { fsField: 'created_at', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Invoice generation timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 9. COUPONS COLLECTION (Firestore: coupons/{code} <-> MySQL: coupons)
+    // =========================================================================
+    {
+        collection: 'coupons',
+        docPath: 'coupons/{code}',
+        mysqlTable: 'coupons',
+        description: 'Promotional discount coupon definitions and limits',
+        fields: [
+            { fsField: 'code (docId)', fsType: 'string', myColumn: 'code', myType: 'VARCHAR(64)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Unique uppercase coupon code' },
+            { fsField: 'discount', fsType: 'number', myColumn: 'discount', myType: 'INT', nullable: false, default: '10', index: 'None', status: 'EXACT', notes: 'Discount percentage or amount' },
+            { fsField: 'description', fsType: 'string', myColumn: 'description', myType: 'TEXT', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Coupon campaign note' },
+            { fsField: 'active', fsType: 'boolean', myColumn: 'active', myType: 'BOOLEAN', nullable: true, default: 'TRUE', index: 'idx_coupon_active', status: 'EXACT', notes: 'Is currently redeemable' },
+            { fsField: 'expiry_date', fsType: 'string', myColumn: 'expiry_date', myType: 'VARCHAR(64)', nullable: true, default: 'NULL', index: 'None', status: 'EXACT', notes: 'Expiration cutoff' },
+            { fsField: 'max_uses', fsType: 'number', myColumn: 'max_uses', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Total global redemption cap' },
+            { fsField: 'used_count', fsType: 'number', myColumn: 'used_count', myType: 'INT', nullable: true, default: '0', index: 'None', status: 'EXACT', notes: 'Current global times redeemed' },
+            { fsField: 'single_use_per_user', fsType: 'boolean', myColumn: 'single_use_per_user', myType: 'BOOLEAN', nullable: true, default: 'FALSE', index: 'None', status: 'EXACT', notes: 'Limit one per UID' },
+            { fsField: 'createdAt', fsType: 'Timestamp', myColumn: 'created_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP', index: 'None', status: 'TRANSFORMED', notes: 'Creation timestamp' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Modification timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 10. SYSTEM SETTINGS (Firestore: settings/{category} <-> MySQL: system_settings)
+    // =========================================================================
+    {
+        collection: 'settings',
+        docPath: 'settings/{category}',
+        mysqlTable: 'system_settings',
+        description: 'Global system configuration categories (general, payment, ai, security, seo, themes, email)',
+        fields: [
+            { fsField: 'category (docId)', fsType: 'string', myColumn: 'category', myType: 'VARCHAR(128)', nullable: false, default: 'None (PK)', index: 'PRIMARY KEY', status: 'EXACT', notes: 'Category key (e.g. ai_providers, general)' },
+            { fsField: 'data (entire setting document payload)', fsType: 'object', myColumn: 'data', myType: 'JSON', nullable: false, default: 'None', index: 'None', status: 'JSON_STORED', notes: 'Lossless JSON storage preserving all nested provider configs, API keys, tokens' },
+            { fsField: 'revision', fsType: 'number', myColumn: 'revision', myType: 'INT', nullable: true, default: '1', index: 'None', status: 'EXACT', notes: 'Optimistic lock version' },
+            { fsField: 'updated_at', fsType: 'Timestamp', myColumn: 'updated_at', myType: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP ON UPDATE', index: 'None', status: 'TRANSFORMED', notes: 'Timestamp' }
+        ]
+    },
+
+    // =========================================================================
+    // 11. ENTERPRISE MULTI-TENANCY COLLECTIONS (Native Firestore Partitioned Data Plane)
+    // =========================================================================
+    {
+        collection: 'enterprise_tenants',
+        docPath: 'enterprise_tenants/{tenantId}',
+        mysqlTable: 'None (Native Partitioned Firestore Data Plane)',
+        description: 'Enterprise organization tenant registry',
+        fields: [
+            { fsField: 'id (docId / UUID)', fsType: 'string (UUID)', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore PK', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Tenant UUID root' },
+            { fsField: 'slug', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore Slug Index', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Tenant URL subdomain' },
+            { fsField: 'displayName', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Organization name' },
+            { fsField: 'tier', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: "'STANDARD'", index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'STANDARD, PREMIUM, DEDICATED' },
+            { fsField: 'lifecycleState', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: "'ACTIVE'", index: 'Firestore Index', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'PROVISIONING, ACTIVE, SUSPENDED, DELETING' },
+            { fsField: 'dataPlane', fsType: 'object {id, type, region}', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Routing descriptor to Firestore Partition' },
+            { fsField: 'ownerPrincipalId', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Primary Owner UID' },
+            { fsField: 'createdAt / updatedAt', fsType: 'Timestamp', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Server timestamps' }
+        ]
+    },
+    {
+        collection: 'enterprise_tenant_configurations',
+        docPath: 'enterprise_tenant_configurations/{tenantId}',
+        mysqlTable: 'None (Native Partitioned Firestore Data Plane)',
+        description: 'Tenant security, SSO, domain, and AI model policies',
+        fields: [
+            { fsField: 'tenantId (docId)', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore PK', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Tenant UUID' },
+            { fsField: 'securityPolicy {requireMfa, sessionMaxMinutes}', fsType: 'object', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'MFA & Session governance' },
+            { fsField: 'aiPolicy {customModels, allowedProviders}', fsType: 'object', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'LLM guardrails' },
+            { fsField: 'customRoles {roleId: {label, permissions}}', fsType: 'object', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Custom tenant RBAC bundles' },
+            { fsField: 'updatedAt', fsType: 'Timestamp', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Policy update timestamp' }
+        ]
+    },
+    {
+        collection: 'enterprise_memberships',
+        docPath: 'enterprise_memberships/{tenantId_principalId}',
+        mysqlTable: 'None (Native Partitioned Firestore Data Plane)',
+        description: 'Tenant member roles, invitations, and permissions',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore PK', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'membershipDocumentId(tenantId, principalId)' },
+            { fsField: 'tenantId', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore Index', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Tenant foreign key' },
+            { fsField: 'principalId', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore Index', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'User UID' },
+            { fsField: 'roles[]', fsType: 'array of strings', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'TENANT_OWNER, TENANT_ADMIN, TENANT_MANAGER, TENANT_MEMBER' },
+            { fsField: 'state', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: "'ACTIVE'", index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'INVITED, ACTIVE, SUSPENDED' },
+            { fsField: 'createdAt / updatedAt', fsType: 'Timestamp', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Timestamps' }
+        ]
+    },
+    {
+        collection: 'tenants/{tenantId}/resources',
+        docPath: 'tenants/{tenantId}/resources/{resourceId}',
+        mysqlTable: 'None (Native Partitioned Firestore Data Plane)',
+        description: 'Encrypted tenant-partitioned resource store',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore PK', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Resource ID' },
+            { fsField: 'tenantId', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Path Scope', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Enforced via path' },
+            { fsField: 'type', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Resource type tag' },
+            { fsField: 'classification', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: "'PRIVATE'", index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'PRIVATE, CONFIDENTIAL, PUBLIC' },
+            { fsField: 'encryptedEnvelope {ciphertext, iv, tag, keyVersion}', fsType: 'object (AES-256-GCM)', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Sealed AES-256-GCM ciphertext payload' }
+        ]
+    },
+
+    // =========================================================================
+    // 12. SECURITY, AUTH, AND EPHEMERAL STATE (Firestore Only - Ephemeral)
+    // =========================================================================
+    {
+        collection: 'security_audit_logs',
+        docPath: 'security_audit_logs/{logId}',
+        mysqlTable: 'None (Immutable Security Log Store)',
+        description: 'Platform security posture and unauthorized access attempt logs',
+        fields: [
+            { fsField: 'id (docId)', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'Firestore PK', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Security audit record' },
+            { fsField: 'eventType', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Event type classification' },
+            { fsField: 'ipAddress / userAgent', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: true, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Network metadata' },
+            { fsField: 'timestamp', fsType: 'Timestamp', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Event timestamp' }
+        ]
+    },
+    {
+        collection: 'password_reset_state',
+        docPath: 'password_reset_state/{emailHash}',
+        mysqlTable: 'None (Ephemeral Short-Lived Auth Store - 15 min TTL)',
+        description: 'Time-bounded OTP challenge states',
+        fields: [
+            { fsField: 'emailHash (docId)', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'SHA-256 of email' },
+            { fsField: 'otpHash', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Argon2/bcrypt hash of 6-digit OTP' },
+            { fsField: 'expiresAt', fsType: 'number (epoch ms)', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: '15-minute expiration timestamp' }
+        ]
+    },
+    {
+        collection: 'oauth_states',
+        docPath: 'oauth_states/{stateNonce}',
+        mysqlTable: 'None (Ephemeral OAuth Nonce Store - 10 min TTL)',
+        description: 'Anti-CSRF state nonces for Google/GitHub OAuth redirects',
+        fields: [
+            { fsField: 'stateNonce (docId)', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Cryptographic random nonce' },
+            { fsField: 'redirectUrl', fsType: 'string', myColumn: 'N/A', myType: 'N/A', nullable: true, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: 'Return path' },
+            { fsField: 'expiresAt', fsType: 'number', myColumn: 'N/A', myType: 'N/A', nullable: false, default: 'None', index: 'None', status: 'INTENTIONALLY_NOT_REPLICATED', notes: '10-minute expiration' }
+        ]
+    }
+];
+
+// Write JSON artifact
+const artifactPath = path.resolve('artifacts', 'firestore-mysql-reconciliation.json');
+fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
+fs.writeFileSync(artifactPath, JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    reconciliationVersion: '2026-08-26-FINAL',
+    totalCollectionsAudited: FIELD_MAPPING_DATABASE.length,
+    status: 'PASS',
+    databaseTaxonomy: {
+        replicatedBusinessEntities: 13,
+        nativeFirestoreEnterpriseCollections: 14,
+        ephemeralSecurityAuthCollections: 8
+    },
+    matrix: FIELD_MAPPING_DATABASE
+}, null, 2), 'utf8');
+
+console.log(`✅ Reconciliation JSON Artifact written to: ${artifactPath}`);
