@@ -34,17 +34,23 @@ def main():
     backend_tar = os.path.join(tempfile.gettempdir(), 'backend_src.tar.gz')
     if os.path.exists(backend_tar):
         os.remove(backend_tar)
+    
+    commit_sha_file = os.path.join(backend_dir, 'COMMIT_SHA')
+    with open(commit_sha_file, 'w', encoding='utf-8') as f:
+        f.write(head_sha + '\n')
+
     print(f"Creating backend tarball: {backend_tar}")
     with tarfile.open(backend_tar, "w:gz") as tar:
-        for item in ['index.js', 'routes', 'services', 'security', 'enterprise', 'database', 'repositories', 'package.json']:
+        for item in ['COMMIT_SHA', 'index.js', 'routes', 'services', 'security', 'enterprise', 'database', 'repositories', 'package.json']:
             item_path = os.path.join(backend_dir, item)
             if os.path.exists(item_path):
                 tar.add(item_path, arcname=item)
 
     # 5. SCP tarballs to remote server
-    print("Uploading frontend and backend packages via SCP...")
-    subprocess.check_call(['scp', frontend_tar, 'airesume:~/frontend_dist.tar.gz'])
-    subprocess.check_call(['scp', backend_tar, 'airesume:~/backend_src.tar.gz'])
+    print("Uploading backend package via SCP...")
+    subprocess.check_call(['scp', '-o', 'BatchMode=yes', backend_tar, 'airesume:~/backend_src.tar.gz'])
+    print("Uploading frontend package via SCP...")
+    subprocess.check_call(['scp', '-o', 'BatchMode=yes', frontend_tar, 'airesume:~/frontend_dist.tar.gz'])
 
     # 6. Execute extraction and restart on remote server
     remote_script = f"""
@@ -64,9 +70,9 @@ def main():
     echo "{head_sha}" > ~/backend/COMMIT_SHA
 
     echo "=== Restarting Backend Service ==="
-    pm2 restart airesume-backend || pm2 restart all
+    /opt/alt/alt-nodejs20/root/usr/bin/node /home/u727965524/.local/lib/node_modules/pm2/bin/pm2 restart airesume-backend --update-env
     sleep 2
-    pm2 status
+    /opt/alt/alt-nodejs20/root/usr/bin/node /home/u727965524/.local/lib/node_modules/pm2/bin/pm2 status
     """
 
     print("Deploying on remote host...")

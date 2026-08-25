@@ -811,36 +811,6 @@ router.get('/command-center', async (req, res) => {
     }
   }
 
-  const recentSecurity = [];
-  if (securityResult.ok) {
-    securityResult.value.forEach(doc => {
-      const data = doc.data() || {};
-      const severity = String(data.severity || (String(data.action || '').includes('DENIED') ? 'HIGH' : 'INFO')).toUpperCase();
-      recentSecurity.push({
-        id: doc.id,
-        action: data.action || 'UNKNOWN',
-        actorUid: data.actorUid || null,
-        severity,
-        createdAt: isoFrom(data.createdAt),
-      });
-    });
-  }
-
-  const recentAudit = [];
-  if (auditResult.ok) {
-    auditResult.value.forEach(doc => {
-      const data = doc.data() || {};
-      recentAudit.push({
-        id: doc.id,
-        action: data.action,
-        actorEmail: data.actorEmail || data.actorUid,
-        severity: data.severity || 'INFO',
-        pathname: data.pathname,
-        createdAt: isoFrom(data.createdAt) || data.occurredAt || null,
-      });
-    });
-  }
-
   const announcements = [];
   if (announcementsResult.ok) {
     announcementsResult.value.forEach(doc => {
