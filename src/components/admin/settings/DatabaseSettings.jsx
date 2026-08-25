@@ -3,25 +3,32 @@ import {
     getDatabaseSettings,
     switchDatabaseEngine,
     testDatabaseConnection,
-    initializeMySqlSchema
+    initializeMySqlSchema,
+    triggerSyncNow,
+    verifyDatabaseParity,
+    retryDeadLetters
 } from '../../../services/api/databaseAdmin';
 import {
     FaDatabase, FaFire, FaServer, FaCheckCircle, FaTimesCircle,
     FaExclamationTriangle, FaSpinner, FaSyncAlt, FaShieldAlt,
-    FaInfoCircle, FaBolt, FaHistory, FaCheck, FaExclamationCircle
+    FaInfoCircle, FaBolt, FaHistory, FaCheck, FaExclamationCircle,
+    FaExchangeAlt, FaLayerGroup, FaCheckDouble
 } from 'react-icons/fa';
 
 const DatabaseSettings = () => {
     const [loading, setLoading] = useState(true);
-    const [activeEngine, setActiveEngine] = useState('firestore');
+    const [activeEngine, setActiveEngine] = useState('mysql');
     const [engineDetails, setEngineDetails] = useState({ firestore: {}, mysql: {} });
+    const [syncHealth, setSyncHealth] = useState(null);
     const [recentAudits, setRecentAudits] = useState([]);
     
     // Testing & action states
     const [testingEngine, setTestingEngine] = useState(null);
-    const [testResult, setTestResult] = useState(null);
     const [switching, setSwitching] = useState(false);
     const [initializingSchema, setInitializingSchema] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [verifyingParity, setVerifyingParity] = useState(false);
+    const [parityResult, setParityResult] = useState(null);
     
     // UI Feedback
     const [statusMessage, setStatusMessage] = useState(null);
@@ -37,8 +44,9 @@ const DatabaseSettings = () => {
         setErrorMessage(null);
         try {
             const data = await getDatabaseSettings();
-            setActiveEngine(data.activeEngine || 'firestore');
+            setActiveEngine(data.activeEngine || 'mysql');
             setEngineDetails(data.engineDetails || {});
+            setSyncHealth(data.syncHealth || null);
             setRecentAudits(data.recentAudits || []);
         } catch (err) {
             setErrorMessage(err.message || 'Failed to load database configuration.');
@@ -49,19 +57,49 @@ const DatabaseSettings = () => {
 
     const handleTestConnection = async (engine) => {
         setTestingEngine(engine);
-        setTestResult(null);
         try {
             const result = await testDatabaseConnection(engine);
-            setTestResult({ engine, ...result });
             if (result.connected) {
                 setStatusMessage(`Connection to ${engine.toUpperCase()} succeeded (${result.latencyMs}ms).`);
             } else {
                 setErrorMessage(`Connection to ${engine.toUpperCase()} failed: ${result.error}`);
             }
+            await loadSettings();
         } catch (err) {
             setErrorMessage(`Failed to test ${engine}: ${err.message}`);
         } finally {
             setTestingEngine(null);
+        }
+    };
+
+    const handleSyncNow = async () => {
+        setSyncing(true);
+        setStatusMessage(null);
+        setErrorMessage(null);
+        try {
+            const result = await triggerSyncNow();
+            setStatusMessage(`Sync completed: ${result.processed} processed, ${result.failed} retrying.`);
+            setSyncHealth(result.currentHealth || syncHealth);
+            await loadSettings();
+        } catch (err) {
+            setErrorMessage(`Sync failed: ${err.message}`);
+        } finally {
+            setSyncing(false);
+        }
+    };
+
+    const handleVerifyParity = async () => {
+        setVerifyingParity(true);
+        setStatusMessage(null);
+        setErrorMessage(null);
+        try {
+            const result = await verifyDatabaseParity();
+            setParityResult(result);
+            setStatusMessage(`Parity Verification: ${result.parityPercentage}% Match across all collections.`);
+        } catch (err) {
+            setErrorMessage(`Parity verification failed: ${err.message}`);
+        } finally {
+            setVerifyingParity(false);
         }
     };
 
@@ -85,7 +123,7 @@ const DatabaseSettings = () => {
         setConfirmModal({ isOpen: true, targetEngine });
     };
 
-    const executeSwitch = async () => {
+    const executeSwitch = async (force = false) => {
         const target = confirmModal.targetEngine;
         setConfirmModal({ isOpen: false, targetEngine: null });
         setSwitching(true);
@@ -93,7 +131,7 @@ const DatabaseSettings = () => {
         setErrorMessage(null);
 
         try {
-            const result = await switchDatabaseEngine(target);
+            const result = await switchDatabaseEngine(target, force);
             setActiveEngine(result.engine);
             setStatusMessage(result.message || `Successfully switched active database to ${target.toUpperCase()}!`);
             await loadSettings();
@@ -108,7 +146,7 @@ const DatabaseSettings = () => {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-slate-500 space-y-3">
                 <FaSpinner className="animate-spin text-3xl text-emerald-600" />
-                <p className="text-sm font-semibold">Inspecting database backends & connectivity...</p>
+                <p className="text-sm font-semibold">Inspecting dual-database backends & sync telemetry...</p>
             </div>
         );
     }
@@ -123,29 +161,47 @@ const DatabaseSettings = () => {
                     </div>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h2 className="text-lg font-bold">Dual-Database Engine Control</h2>
+                            <h2 className="text-lg font-bold">Dual-Database Engine Control Plane</h2>
                             <span className={`px-3 py-0.5 text-xs font-black rounded-full uppercase tracking-wider ${
                                 activeEngine === 'mysql' 
                                     ? 'bg-blue-500 text-white' 
                                     : 'bg-amber-500 text-slate-950'
                             }`}>
-                                ACTIVE: {activeEngine.toUpperCase()}
+                                PRIMARY: {activeEngine.toUpperCase()}
                             </span>
                         </div>
                         <p className="text-xs text-slate-400 mt-1">
-                            Switch between Cloud Firestore and High-Performance MySQL/MariaDB with zero data loss.
+                            High-Performance MariaDB & Google Cloud Firestore with zero-downtime intelligent replication.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={handleSyncNow}
+                        disabled={syncing}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50"
+                    >
+                        <FaSyncAlt className={syncing ? 'animate-spin' : ''} />
+                        Sync Now
+                    </button>
+
+                    <button
+                        onClick={handleVerifyParity}
+                        disabled={verifyingParity}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50"
+                    >
+                        <FaCheckDouble className={verifyingParity ? 'animate-spin' : ''} />
+                        Verify Parity
+                    </button>
+
+                    <button
                         onClick={loadSettings}
                         disabled={loading || switching}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 disabled:opacity-50"
                     >
                         <FaSyncAlt className={loading ? 'animate-spin' : ''} />
-                        Refresh Status
+                        Refresh
                     </button>
                 </div>
             </div>
@@ -162,6 +218,92 @@ const DatabaseSettings = () => {
                 <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm font-medium">
                     <FaExclamationTriangle className="text-red-600 text-base shrink-0" />
                     <span>{errorMessage}</span>
+                </div>
+            )}
+
+            {/* Sync Telemetry Dashboard */}
+            {syncHealth && (
+                <div className="p-6 bg-slate-900 text-slate-200 rounded-2xl border border-slate-800 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div className="flex items-center gap-2 font-bold text-sm text-white">
+                            <FaExchangeAlt className="text-emerald-400" />
+                            <span>Intelligent Replication & Standby Telemetry</span>
+                        </div>
+                        <span className={`px-2.5 py-0.5 text-xs font-bold rounded-md ${
+                            syncHealth.isHealthy ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                        }`}>
+                            {syncHealth.isHealthy ? '● SYNC HEALTHY' : '▲ ATTENTION REQUIRED'}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+                        <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <div className="text-slate-400">Sync Lag</div>
+                            <div className="text-base font-bold text-white mt-0.5">{syncHealth.syncLagSeconds}s</div>
+                        </div>
+                        <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <div className="text-slate-400">Pending Outbox</div>
+                            <div className="text-base font-bold text-white mt-0.5">{syncHealth.pendingCount}</div>
+                        </div>
+                        <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <div className="text-slate-400">Active Conflicts</div>
+                            <div className="text-base font-bold text-white mt-0.5">{syncHealth.conflictCount}</div>
+                        </div>
+                        <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <div className="text-slate-400">Dead Letters</div>
+                            <div className="text-base font-bold text-white mt-0.5">{syncHealth.deadLetterCount}</div>
+                        </div>
+                        <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                            <div className="text-slate-400">Standby Engine</div>
+                            <div className="text-base font-bold text-white mt-0.5 uppercase">{syncHealth.standbyEngine}</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Parity Results Matrix */}
+            {parityResult && (
+                <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
+                            <FaCheckDouble className="text-indigo-600" />
+                            <span>Database Parity Reconciliation Matrix</span>
+                        </div>
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">
+                            {parityResult.parityPercentage}% Match
+                        </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-200 text-slate-500">
+                                    <th className="py-2">Collection / Table</th>
+                                    <th className="py-2">Firestore Count</th>
+                                    <th className="py-2">MySQL Count</th>
+                                    <th className="py-2">Discrepancy</th>
+                                    <th className="py-2">Parity Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {parityResult.parityTable?.map((row, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50">
+                                        <td className="py-2.5 font-bold font-mono text-slate-800">{row.entity}</td>
+                                        <td className="py-2.5">{row.firestore}</td>
+                                        <td className="py-2.5">{row.mysql}</td>
+                                        <td className="py-2.5 font-bold">{row.diff}</td>
+                                        <td className="py-2.5">
+                                            <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
+                                                row.match ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                                {row.match ? '✓ 100% MATCH' : 'MISMATCH'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
@@ -186,7 +328,7 @@ const DatabaseSettings = () => {
 
                         {activeEngine === 'firestore' && (
                             <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-slate-950 text-xs font-black rounded-full">
-                                <FaCheck /> ACTIVE
+                                <FaCheck /> PRIMARY
                             </span>
                         )}
                     </div>
@@ -203,7 +345,7 @@ const DatabaseSettings = () => {
                         </div>
                         <div className="flex justify-between">
                             <span className="font-semibold text-slate-500">Project ID:</span>
-                            <span className="font-mono">{engineDetails.firestore?.projectId || 'ai-resume-builder'}</span>
+                            <span className="font-mono">{engineDetails.firestore?.projectId || 'ai-resume-builder-424cf'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="font-semibold text-slate-500">Latency:</span>
@@ -248,13 +390,13 @@ const DatabaseSettings = () => {
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-900">MySQL / MariaDB</h3>
-                                <p className="text-xs text-slate-500">Hostinger & Dedicated SQL Engine</p>
+                                <p className="text-xs text-slate-500">Relational InnoDB / Hostinger Local</p>
                             </div>
                         </div>
 
                         {activeEngine === 'mysql' && (
                             <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-xs font-black rounded-full">
-                                <FaCheck /> ACTIVE
+                                <FaCheck /> PRIMARY
                             </span>
                         )}
                     </div>
@@ -270,12 +412,8 @@ const DatabaseSettings = () => {
                             </span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="font-semibold text-slate-500">Host / Database:</span>
-                            <span className="font-mono">{engineDetails.mysql?.host || '127.0.0.1'} / {engineDetails.mysql?.database || 'ai_resume_builder'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="font-semibold text-slate-500">Server Version:</span>
-                            <span className="font-mono">{engineDetails.mysql?.version || 'Unknown'}</span>
+                            <span className="font-semibold text-slate-500">Database:</span>
+                            <span className="font-mono">{engineDetails.mysql?.database || 'u727965524_airesume'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="font-semibold text-slate-500">Latency:</span>
@@ -308,110 +446,23 @@ const DatabaseSettings = () => {
                 </div>
             </div>
 
-            {/* Utility Actions: Schema Verification & Migration */}
-            <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Database Utilities & Schema Maintenance</h4>
-                        <p className="text-xs text-slate-500">Ensure all MySQL tables, indexes, and constraints exist before switching traffic.</p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={handleInitializeSchema}
-                        disabled={initializingSchema}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50"
-                    >
-                        {initializingSchema ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
-                        Verify / Initialize Schema
-                    </button>
-                </div>
-            </div>
-
-            {/* Switch Audit Log */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <FaHistory className="text-slate-500" />
-                        <h4 className="font-bold text-slate-900 text-sm">Database Switch Audit History</h4>
-                    </div>
-                    <span className="text-xs text-slate-500">Last 20 Operations</span>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-100">
-                            <tr>
-                                <th className="p-3.5">Timestamp</th>
-                                <th className="p-3.5">Switched By</th>
-                                <th className="p-3.5">From</th>
-                                <th className="p-3.5">To</th>
-                                <th className="p-3.5">Status</th>
-                                <th className="p-3.5">Error / Details</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-slate-700">
-                            {recentAudits.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="p-6 text-center text-slate-400 italic">
-                                        No database switch events recorded yet.
-                                    </td>
-                                </tr>
-                            ) : (
-                                recentAudits.map((a, idx) => (
-                                    <tr key={a.id || idx} className="hover:bg-slate-50/50">
-                                        <td className="p-3.5 font-mono text-slate-500">
-                                            {a.created_at ? new Date(a.created_at).toLocaleString() : '—'}
-                                        </td>
-                                        <td className="p-3.5 font-semibold text-slate-900">{a.switched_by || 'SUPER_ADMIN'}</td>
-                                        <td className="p-3.5 font-mono uppercase">{a.from_engine || '—'}</td>
-                                        <td className="p-3.5 font-mono uppercase font-bold text-slate-900">{a.to_engine || '—'}</td>
-                                        <td className="p-3.5">
-                                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                                                a.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
-                                            }`}>
-                                                {a.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-3.5 text-slate-500 truncate max-w-xs">{a.error_message || '—'}</td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Confirmation Modal */}
+            {/* Switch Confirmation Modal */}
             {confirmModal.isOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex items-center gap-3 text-amber-600">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl shrink-0">
-                                <FaExclamationCircle />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-slate-900 text-base">Confirm Database Engine Switch</h3>
-                                <p className="text-xs text-slate-500">Authorize active data plane transition</p>
-                            </div>
+                <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+                        <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl">
+                            <FaShieldAlt />
                         </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                            You are about to switch the application data layer from{' '}
-                            <strong className="text-slate-900 uppercase">{activeEngine}</strong> to{' '}
-                            <strong className="text-slate-900 uppercase">{confirmModal.targetEngine}</strong>.
-                            All subsequent reads and writes will route directly through the new engine.
-                        </p>
-
-                        <div className="p-3.5 bg-slate-50 rounded-xl text-xs text-slate-600 border border-slate-200 space-y-1">
-                            <p className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                <FaShieldAlt className="text-emerald-600" /> Automatic Safety Checks:
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900">
+                                Confirm Database Switch to {confirmModal.targetEngine?.toUpperCase()}
+                            </h3>
+                            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                                The system will perform pre-switch synchronization, drain the outbox queue, and verify data parity before switching active routing.
                             </p>
-                            <p className="text-slate-500">• Live connection check is required before activation.</p>
-                            <p className="text-slate-500">• Firestore data remains completely untouched and safe as fallback.</p>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 pt-2">
+                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                             <button
                                 type="button"
                                 onClick={() => setConfirmModal({ isOpen: false, targetEngine: null })}
@@ -421,15 +472,58 @@ const DatabaseSettings = () => {
                             </button>
                             <button
                                 type="button"
-                                onClick={executeSwitch}
-                                className="px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition shadow-md"
+                                onClick={() => executeSwitch(false)}
+                                disabled={switching}
+                                className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-sm flex items-center gap-1.5"
                             >
-                                Confirm & Switch to {confirmModal.targetEngine?.toUpperCase()}
+                                {switching ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                Confirm & Switch
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Audit Log Table */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 font-bold text-sm text-slate-900 border-b border-slate-100 pb-3">
+                    <FaHistory className="text-slate-500" />
+                    <span>Database Engine Switch Audit History</span>
+                </div>
+
+                {recentAudits.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No database engine switches recorded yet.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead>
+                                <tr className="border-b border-slate-100 text-slate-400 font-semibold">
+                                    <th className="py-2">Timestamp</th>
+                                    <th className="py-2">Initiator</th>
+                                    <th className="py-2">Transition</th>
+                                    <th className="py-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {recentAudits.map((a, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50">
+                                        <td className="py-2 text-slate-600">{new Date(a.createdAt).toLocaleString()}</td>
+                                        <td className="py-2 font-mono text-slate-800">{a.switchedBy}</td>
+                                        <td className="py-2 font-bold">{a.fromEngine?.toUpperCase()} ➔ {a.toEngine?.toUpperCase()}</td>
+                                        <td className="py-2">
+                                            <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                                a.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                                {a.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

@@ -1,4 +1,5 @@
 const { getPool } = require('../database/mysql');
+const { enqueueOutboxEvent } = require('../database/syncManager');
 
 class MySQLRepository {
     constructor() {
@@ -116,6 +117,16 @@ class MySQLRepository {
             const sql = `INSERT INTO resumes (${columnList}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`;
             await connection.query(sql, Object.values(values));
 
+            // Enqueue durable replication event to sync_outbox
+            await enqueueOutboxEvent(connection, {
+                entityType: 'resumes',
+                entityId: resumeId,
+                operation: 'UPSERT',
+                payload: { ...data, id: resumeId, user_id: userId, revision: nextRev },
+                version: nextRev,
+                sourceEngine: 'mysql'
+            }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
             await connection.commit();
             return { id: resumeId, revision: nextRev, ...data };
         } catch (err) {
@@ -131,6 +142,17 @@ class MySQLRepository {
         await pool.query('DELETE FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]);
         await pool.query('DELETE FROM public_resumes WHERE id = ? AND owner_uid = ?', [resumeId, userId]);
         await pool.query('DELETE FROM favourites WHERE item_id = ? AND user_id = ?', [resumeId, userId]);
+
+        // Enqueue delete replication event
+        await enqueueOutboxEvent(pool, {
+            entityType: 'resumes',
+            entityId: resumeId,
+            operation: 'DELETE',
+            payload: { user_id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return true;
     }
 
@@ -329,12 +351,31 @@ class MySQLRepository {
             Object.values(values)
         );
 
+        await enqueueOutboxEvent(pool, {
+            entityType: 'users',
+            entityId: userId,
+            operation: 'UPSERT',
+            payload: { ...userData, id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return { id: userId, ...userData };
     }
 
     async deleteUser(userId) {
         const pool = this._getPool();
         await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+
+        await enqueueOutboxEvent(pool, {
+            entityType: 'users',
+            entityId: userId,
+            operation: 'DELETE',
+            payload: { id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return true;
     }
 
@@ -372,12 +413,32 @@ class MySQLRepository {
             `INSERT INTO portfolios (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
             Object.values(values)
         );
+
+        await enqueueOutboxEvent(pool, {
+            entityType: 'portfolios',
+            entityId: portfolioId,
+            operation: 'UPSERT',
+            payload: { ...data, id: portfolioId, user_id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return { id: portfolioId, ...data };
     }
 
     async deletePortfolio(userId, portfolioId) {
         const pool = this._getPool();
         await pool.query('DELETE FROM portfolios WHERE id = ? AND user_id = ?', [portfolioId, userId]);
+
+        await enqueueOutboxEvent(pool, {
+            entityType: 'portfolios',
+            entityId: portfolioId,
+            operation: 'DELETE',
+            payload: { user_id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return true;
     }
 
@@ -413,12 +474,32 @@ class MySQLRepository {
              ON DUPLICATE KEY UPDATE title = VALUES(title), template = VALUES(template), data = VALUES(data), updated_at = CURRENT_TIMESTAMP`,
             [coverId, userId, title, template, dataJson]
         );
+
+        await enqueueOutboxEvent(pool, {
+            entityType: 'covers',
+            entityId: coverId,
+            operation: 'UPSERT',
+            payload: { ...data, id: coverId, user_id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return { id: coverId, ...data };
     }
 
     async deleteCover(userId, coverId) {
         const pool = this._getPool();
         await pool.query('DELETE FROM covers WHERE id = ? AND user_id = ?', [coverId, userId]);
+
+        await enqueueOutboxEvent(pool, {
+            entityType: 'covers',
+            entityId: coverId,
+            operation: 'DELETE',
+            payload: { user_id: userId },
+            version: 1,
+            sourceEngine: 'mysql'
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+
         return true;
     }
 

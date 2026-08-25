@@ -53,15 +53,30 @@ async function testEngineConnectivity(engine, firestoreDb) {
             if (!db) {
                 try {
                     const admin = require('../services/firebaseAdmin');
-                    if (admin.apps.length > 0) {
+                    if (admin && admin.apps && admin.apps.length > 0) {
                         db = admin.firestore();
                     } else if (process.env.FIREBASE_PROJECT_ID) {
-                        admin.initializeApp({
-                            projectId: process.env.FIREBASE_PROJECT_ID
-                        });
+                        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+                            admin.initializeApp({
+                                credential: admin.credential.cert({
+                                    projectId: process.env.FIREBASE_PROJECT_ID,
+                                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                                    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                                }),
+                                projectId: process.env.FIREBASE_PROJECT_ID
+                            });
+                        } else {
+                            admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
+                        }
                         db = admin.firestore();
                     }
-                } catch (e) {}
+                } catch (e) {
+                    return {
+                        connected: false,
+                        latencyMs: Date.now() - start,
+                        error: e.message || 'Firestore initialization failed',
+                    };
+                }
             }
             if (!db) {
                 return {

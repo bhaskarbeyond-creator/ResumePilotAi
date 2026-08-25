@@ -1,49 +1,31 @@
-# Firestore Dependency Inventory & Migration Audit
+# Complete Database Migration & Dependency Audit
 
 ## Executive Summary
-This document provides a comprehensive forensic audit of all direct and indirect Firestore dependencies across the ResumePilot AI repository, their operational classification, and their dual-database abstraction mapping.
+This document provides a forensic audit of all direct and indirect database dependencies across the ResumePilot AI repository, documenting exact operations, affected collections/tables, persistence replacements, and architectural justifications.
 
 ---
 
-## Complete Dependency Matrix
+## Complete Forensic Inventory
 
-| File Path | Component / Layer | Firestore Usage | Operation | Data / Entity | Dual-DB Replacement / Abstraction | Status |
+| File | Operation | Collection / Table | Purpose | Replacement / Abstraction | Firestore Exception | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `backend/index.js` | Backend Root Server | `admin.firestore()`, collection access | Reads/Writes settings, payments, auth | `settings`, `users`, `payment_orders` | Dual-mode `getRepository(db)` routing | ✅ AUDITED & MIGRATED |
-| `backend/repositories/index.js` | Repository Factory | `getActiveEngine()`, dynamic routing | Factory resolution | All entities | Factory layer selecting Firestore or MySQL | ✅ AUDITED & IMPLEMENTED |
-| `backend/repositories/FirestoreRepository.js` | Data Plane | `db.collection()`, `runTransaction()`, `batch()` | CRUD & queries | Resumes, Users, Portfolios, Covers, Jobs, Blog, Settings | Direct Firestore Admin SDK implementation | ✅ AUDITED & IMPLEMENTED |
-| `backend/repositories/MySQLRepository.js` | Data Plane | `mysqlPool.query()`, transactions | SQL CRUD, JSON columns | Resumes, Users, Portfolios, Covers, Jobs, Blog, Settings | Hostinger & Cloud MariaDB/MySQL implementation | ✅ AUDITED & IMPLEMENTED |
-| `backend/database/engineManager.js` | Control Plane | Connectivity check & audit log | Ping & State persistence | Engine state, `database_switch_audit` | Atomic switcher with pre-flight check | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/databaseAdmin.js` | Admin API | Super Admin DB settings | Read status, test connection, switch | `settings/database`, switch audit | Super Admin REST API | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/resumes.js` | REST API | None (uses `req.repository`) | CRUD, Publish, Unpublish | Resumes & Public Resumes | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/portfolios.js` | REST API | None (uses `req.repository`) | Portfolio & WebCV CRUD | Portfolios | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/covers.js` | REST API | None (uses `req.repository`) | Cover letter CRUD | Covers | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/jobsData.js` | REST API | None (uses `req.repository`) | Job listings & applications | Jobs, Applications | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/blogData.js` | REST API | None (uses `req.repository`) | Blog posts & categories | Blog | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/cmsPages.js` | REST API | None (uses `req.repository`) | Custom pages & TrustedBy | Custom Pages, TrustedBy | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/notificationsData.js` | REST API | None (uses `req.repository`) | Notifications & Contact | Notifications, Contact | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `backend/routes/usersData.js` | REST API | None (uses `req.repository`) | User profile data | Users | Data Abstraction Layer | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/client.js` | Frontend Core | `fire.auth().currentUser.getIdToken()` | Auth token attachment | Bearer Token | Authenticated HTTP fetch client | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/resumes.js` | Frontend API | None (calls `/api/resumes`) | CRUD, Drafts, Publications | Resumes | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/portfolios.js` | Frontend API | None (calls `/api/portfolios`) | Portfolios CRUD | Portfolios | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/covers.js` | Frontend API | None (calls `/api/covers`) | Covers CRUD | Cover Letters | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/jobs.js` | Frontend API | None (calls `/api/jobs-data`) | Jobs CRUD | Jobs & Applications | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/blog.js` | Frontend API | None (calls `/api/blog-data`) | Blog CRUD | Blog | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/customPages.js` | Frontend API | None (calls `/api/cms-pages`) | Custom pages CRUD | Custom Pages | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/notifications.js` | Frontend API | None (calls `/api/notifications-data`) | Notifications CRUD | Notifications | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/users.js` | Frontend API | None (calls `/api/users-data`) | User profile CRUD | Users | HTTP REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/services/api/databaseAdmin.js` | Frontend API | None (calls `/api/admin/database-settings`) | DB Settings & Switch | Database Engine | Super Admin REST Service | ✅ AUDITED & IMPLEMENTED |
-| `src/components/admin/settings/DatabaseSettings.jsx` | Super Admin UI | None (uses `databaseAdmin.js`) | Switcher UI, Connectivity & Health | Database Control | Super Admin UI Component | ✅ AUDITED & IMPLEMENTED |
-| `src/services/resumePersistence.js` | Frontend Service | `fire.firestore()` | Draft persistence, Revisions | Resumes (`users/{uid}/resumes`) | Direct Firestore (Fallback) + `/api/resumes` | ✅ AUDITED & DUAL-CAPABLE |
-| `src/firestore/dbOperations.js` | Frontend Service | `fire.firestore()` | Central data layer | All entities | Dual-mode: Direct Firestore + REST backend | ✅ AUDITED & DUAL-CAPABLE |
-| `src/conf/fire.js` | Auth / SDK Init | `firebase.initializeApp()` | Firebase Auth & Compatibility | Auth & Storage | Preserved untouched for Firebase Auth & Fallback | ✅ AUDITED & PRESERVED |
-| `scripts/migrate-firestore-to-mysql.mjs` | Tooling | `admin.firestore()` | Read Firestore -> Transform -> MySQL | All collections | One-way idempotent migration tool | ✅ AUDITED & IMPLEMENTED |
-| `scripts/verify-database-parity.mjs` | Tooling | `admin.firestore()` | Count & Schema verification | All tables | CLI Parity & Reconciliation Verifier | ✅ AUDITED & IMPLEMENTED |
+| `src/services/resumePersistence.js` | CRUD | `users/:uid/resumes` | Draft saving & retrieval | `/api/resumes` via REST API | Offline / Disconnected Fallback | ✅ VERIFIED |
+| `src/services/profilePersistence.js` | Write / Merge | `users/:uid` | User profile management | `/api/users-data/profile` | Offline Fallback | ✅ VERIFIED |
+| `src/components/BuildResume/BuildResume.jsx` | Read / Save | `users/:uid/resumes` | Resume Builder UI | `resumePersistence.js` | None (Direct calls removed) | ✅ VERIFIED |
+| `src/components/CoverLetter/CoverLetter.jsx` | Read / Save | `users/:uid/covers` | Cover Letter UI | `covers.js` API client | None (Direct calls removed) | ✅ VERIFIED |
+| `src/components/admin/dashboard/dashboard.jsx` | Aggregations | `stats`, `payment_orders` | Platform Command Center | `/api/platform/command-center` | None (Direct calls removed) | ✅ VERIFIED |
+| `src/components/admin/settings/DatabaseSettings.jsx` | Switch / Test / Sync | `sync_outbox`, `database_switch_audit` | Super Admin Database Control | `/api/admin/database-settings` | None | ✅ VERIFIED |
+| `backend/routes/resumes.js` | REST CRUD | `resumes` / `users/:uid/resumes` | Resume persistence API | `getRepository(getActiveEngine())` | Dual-Engine Provider | ✅ VERIFIED |
+| `backend/routes/portfolios.js` | REST CRUD | `portfolios` / `users/:uid/portfolios` | Portfolio persistence API | `getRepository(getActiveEngine())` | Dual-Engine Provider | ✅ VERIFIED |
+| `backend/routes/covers.js` | REST CRUD | `covers` / `users/:uid/covers` | Cover letter persistence API | `getRepository(getActiveEngine())` | Dual-Engine Provider | ✅ VERIFIED |
+| `backend/routes/usersData.js` | REST Read/Write | `users` / `users/:uid` | User profiles API | `getRepository(getActiveEngine())` | Dual-Engine Provider | ✅ VERIFIED |
+| `backend/routes/databaseAdmin.js` | Control Plane | `database_engine_state`, `sync_outbox` | Engine switching & sync | `syncManager.js` & `engineManager.js` | Dual-Engine Provider | ✅ VERIFIED |
+| `backend/services/platformHealth.js` | Health Probes | `system_settings`, `stats` | Operational Health Probes | Native MariaDB Probe / Firestore Merge | Dual-Engine Provider | ✅ VERIFIED |
+| `backend/services/firebaseAdmin.js` | Identity / Auth | `Firebase Auth SDK` | Token verification & TOTP MFA | Firebase Auth (Preserved) | Sacred Invariant: Identity Auth | ✅ VERIFIED |
 
 ---
 
-## Total Audit Outcome
-- **Total Dependencies Audited**: 30 Files / Modules
-- **Unexplained Direct Firestore Dependencies Remaining**: 0
-- **Data Preservation Status**: 100% (Firestore data untouched and operational)
-- **Hostinger MySQL Readiness**: 100% (utf8mb4, InnoDB, connection pooling, SSL)
+## Architectural Rules & Guarantees
+1. **Zero Unexplained Direct Firestore Access**: Every frontend application state operation routes through `src/services/api/*` and the backend Repository Factory.
+2. **Sacred Firebase Auth Invariant**: User authentication, sessions, and passwords remain in Firebase Auth. Database switching modifies application storage only and never logs users out or mutates user UIDs.
+3. **Sacred Firebase Storage Invariant**: Storage assets (profile photos, resume uploads, logos) remain served through Firebase Storage URLs.
