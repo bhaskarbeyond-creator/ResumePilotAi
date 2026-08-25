@@ -260,6 +260,9 @@ router.post('/', async (req, res) => {
             }
         }
 
+        const actor = req.user?.email || req.user?.uid || 'SUPER_ADMIN';
+        const switchedBy = force ? `EMERGENCY_FAILOVER(${actor})` : actor;
+
         const result = await switchActiveEngine(targetEngine, switchedBy, firestoreDb);
         return res.json(result);
     } catch (err) {

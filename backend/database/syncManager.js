@@ -1104,13 +1104,14 @@ async function flushAndVerifyBeforeSwitch(adminFirestore = null) {
             } catch (_) {}
         }
 
-        const safeToSwitch = activeConflicts === 0 && deadLetters === 0 && pendingEvents === 0;
+        const safeToSwitch = activeConflicts === 0 && deadLetters === 0 && pendingEvents === 0 && parityPercentage === 100;
         let reason = null;
         if (!safeToSwitch) {
             const issues = [];
             if (pendingEvents > 0) issues.push(`${pendingEvents} pending sync events in queue`);
             if (activeConflicts > 0) issues.push(`${activeConflicts} unresolved data conflicts`);
             if (deadLetters > 0) issues.push(`${deadLetters} dead-letter events require admin review`);
+            if (parityPercentage < 100) issues.push(`Standby parity is ${parityPercentage}% (< 100% required for normal zero-data-loss switch)`);
             reason = `Pre-switch validation blocked: ${issues.join(', ')}`;
         }
 
