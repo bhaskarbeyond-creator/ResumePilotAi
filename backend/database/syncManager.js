@@ -244,17 +244,22 @@ async function replicateToFirestore(adminFirestore, event) {
         if (operation === 'DELETE') {
             await ref.delete();
         } else {
-            // Monotonic Revision Guard (Out-of-Order Stale Event Protection)
-            try {
-                const existingSnap = await ref.get();
-                if (existingSnap.exists) {
-                    const existingRevision = Number(existingSnap.data()?.revision || 0);
-                    if (existingRevision > incomingVersion) {
-                        console.log(`[SyncWorker] Monotonic guard: Stale version ${incomingVersion} ignored (Firestore is at revision ${existingRevision})`);
-                        return; // Successfully acknowledged without state regression
-                    }
+            // Monotonic Revision Guard (Out-of-Order Stale Event Protection).
+            //
+            // FAILS CLOSED: if the guard's own read cannot be completed we must
+            // NOT write, because we cannot know whether this event is stale.
+            // The error propagates to processSyncQueue, which retries the event
+            // with backoff and dead-letters it after max_retries. Swallowing it
+            // here would let a stale event regress Firestore to an older
+            // revision, defeating the guard entirely.
+            const existingSnap = await ref.get();
+            if (existingSnap.exists) {
+                const existingRevision = Number(existingSnap.data()?.revision || 0);
+                if (existingRevision > incomingVersion) {
+                    console.log(`[SyncWorker] Monotonic guard: Stale version ${incomingVersion} ignored (Firestore is at revision ${existingRevision})`);
+                    return; // Successfully acknowledged without state regression
                 }
-            } catch (_) {}
+            }
 
             await ref.set({
                 ...data,
@@ -1092,9 +1097,17 @@ async function flushAndVerifyBeforeSwitch(adminFirestore = null) {
         const deadLetters = (deadLetterRows[0]?.c || 0) + reverseDeadLetters;
         const pendingEvents = (pendingRows[0]?.c || 0) + reversePending;
 
-        // 3. Quick entity count parity calculation
-        let parityPercentage = 100;
-        if (adminFirestore) {
+        // 3. Quick entity count parity calculation.
+        //
+        // FAILS CLOSED: parityPercentage starts at 0 and is only ever raised to
+        // 100 when the probe actually ran and both sides matched. A Firestore
+        // outage (or a missing Firestore handle) must block the switch, never
+        // silently report "100% parity".
+        let parityPercentage = 0;
+        let parityError = null;
+        if (!adminFirestore) {
+            parityError = 'Firestore handle unavailable: standby parity could not be measured';
+        } else {
             try {
                 const [userSnap, [myUsers], [myResumes]] = await Promise.all([
                     adminFirestore.collection('users').get(),
@@ -1106,8 +1119,13 @@ async function flushAndVerifyBeforeSwitch(adminFirestore = null) {
                 if (fsUsers !== dbUsers) {
                     const diff = Math.abs(fsUsers - dbUsers);
                     parityPercentage = Math.max(0, Math.round(100 - (diff / Math.max(fsUsers, dbUsers, 1)) * 100));
+                } else {
+                    parityPercentage = 100;
                 }
-            } catch (_) {}
+            } catch (err) {
+                parityPercentage = 0;
+                parityError = `Parity probe failed: ${err?.message || err}`;
+            }
         }
 
         const safeToSwitch = activeConflicts === 0 && deadLetters === 0 && pendingEvents === 0 && parityPercentage === 100;
@@ -1117,7 +1135,11 @@ async function flushAndVerifyBeforeSwitch(adminFirestore = null) {
             if (pendingEvents > 0) issues.push(`${pendingEvents} pending sync events in queue`);
             if (activeConflicts > 0) issues.push(`${activeConflicts} unresolved data conflicts`);
             if (deadLetters > 0) issues.push(`${deadLetters} dead-letter events require admin review`);
-            if (parityPercentage < 100) issues.push(`Standby parity is ${parityPercentage}% (< 100% required for normal zero-data-loss switch)`);
+            if (parityPercentage < 100) {
+                issues.push(parityError
+                    ? `Standby parity is UNVERIFIED (${parityError}) — a normal zero-data-loss switch requires measured 100% parity`
+                    : `Standby parity is ${parityPercentage}% (< 100% required for normal zero-data-loss switch)`);
+            }
             reason = `Pre-switch validation blocked: ${issues.join(', ')}`;
         }
 
