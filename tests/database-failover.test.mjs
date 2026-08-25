@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { getActiveEngine, testEngineConnectivity } from '../backend/database/engineManager.js';
 import { flushAndVerifyBeforeSwitch } from '../backend/database/syncManager.js';
@@ -27,5 +27,12 @@ describe('Dual-Database Safe Failover & Switching Validation Test Suite', () => 
         const active = getActiveEngine();
         const standby = active === 'mysql' ? 'firestore' : 'mysql';
         assert.notEqual(active, standby);
+    });
+
+    after(async () => {
+        try {
+            const { getPool } = await import('../backend/database/mysql.js');
+            await getPool().end();
+        } catch (_) {}
     });
 });

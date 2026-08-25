@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     calculateContentHash,
@@ -139,5 +139,12 @@ describe('Intelligent Synchronization & Outbox Engine Test Suite', () => {
         const result = await processSyncQueue(10, { collection: () => ({ doc: () => ({ get: async () => ({ exists: false }), set: async () => ({}), delete: async () => ({}) }) }) }, fakePool);
         assert.equal(result.processed, 0);
         assert.equal(result.deadLettered, 1, 'an event at max retries transitions to DEAD_LETTER');
+    });
+
+    after(async () => {
+        try {
+            const { getPool } = await import('../backend/database/mysql.js');
+            await getPool().end();
+        } catch (_) {}
     });
 });

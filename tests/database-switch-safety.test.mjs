@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     getActiveEngine,
@@ -78,6 +78,10 @@ describe('Database Engine Switching Safety Test Suite', () => {
         // engine, so the switch target is 'firestore', whose connectivity can
         // be satisfied (and deliberately slowed) by an injected mock db.
         const childScript = `
+            const fs = require('node:fs');
+            const path = require('node:path');
+            const stateFile = path.join(process.cwd(), 'backend', 'database', 'engine_state.json');
+            fs.writeFileSync(stateFile, JSON.stringify({ engine: 'mysql', switchedBy: 'TEST_INIT', switchedAt: new Date().toISOString() }), 'utf8');
             const { switchActiveEngine, getActiveEngine } = require(${JSON.stringify(path.join(process.cwd(), 'backend', 'database', 'engineManager.js'))});
             (async () => {
                 const slowDb = {
@@ -92,11 +96,13 @@ describe('Database Engine Switching Safety Test Suite', () => {
                 try { await switchActiveEngine('firestore', 'TEST_ADMIN_2', slowDb); }
                 catch (err) { concurrentError = { status: err.status, message: err.message }; }
                 const completed = await first;
+                try { const { getPool } = require(path.join(process.cwd(), 'backend', 'database', 'mysql.js')); await getPool().end(); } catch (_) {}
                 console.log(JSON.stringify({
                     firstSwitch: { success: completed.success, engine: completed.engine },
                     concurrentError,
                     finalEngine: getActiveEngine(),
                 }));
+                process.exit(0);
             })().catch(err => { console.error(err); process.exit(1); });
         `;
         let output;
@@ -131,5 +137,12 @@ describe('Database Engine Switching Safety Test Suite', () => {
         } else {
             assert.equal(typeof report.diverged, 'boolean');
         }
+    });
+
+    after(async () => {
+        try {
+            const { getPool } = await import('../backend/database/mysql.js');
+            await getPool().end();
+        } catch (_) {}
     });
 });
