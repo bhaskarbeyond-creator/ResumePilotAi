@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
 import { useAdminSession } from '../AdminContext';
-import { decommissionTenant, getTenantDetail, renameTenant, addTenantMember, removeTenantMember } from '../../../services/platformApi';
+import {
+  decommissionTenant, getTenantDetail, renameTenant,
+  addTenantMember, removeTenantMember, updateTenantCommercials, updateTenantAiPolicy
+} from '../../../services/platformApi';
 import {
   FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
-  FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus, FiTrash2, FiUser
+  FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus,
+  FiTrash2, FiUser, FiCpu, FiDollarSign, FiSave, FiLayers
 } from 'react-icons/fi';
 
 
@@ -42,6 +46,15 @@ export default function PlatformTenants() {
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState('MEMBER');
   const [memberBusy, setMemberBusy] = useState(false);
+
+  // Custom Agreement & AI Policy State
+  const [policyDailyLimit, setPolicyDailyLimit] = useState(5000);
+  const [policyPrimaryModel, setPolicyPrimaryModel] = useState('meta/llama-3.2-11b-vision-instruct');
+  const [policyPlan, setPolicyPlan] = useState('Enterprise Standard');
+  const [policySeats, setPolicySeats] = useState(50);
+  const [policyCurrency, setPolicyCurrency] = useState('INR');
+  const [policyBillingStatus, setPolicyBillingStatus] = useState('ACTIVE');
+  const [savingPolicy, setSavingPolicy] = useState(false);
 
 
   const fetchTenants = useCallback(async () => {
@@ -260,7 +273,42 @@ export default function PlatformTenants() {
     }
   };
 
+  useEffect(() => {
+    if (selectedTenant) {
+      setPolicyDailyLimit(selectedTenant.aiPolicy?.dailyLimit || 5000);
+      setPolicyPrimaryModel(selectedTenant.aiPolicy?.primaryModel || 'meta/llama-3.2-11b-vision-instruct');
+      setPolicyPlan(selectedTenant.plan || 'Enterprise Standard');
+      setPolicySeats(selectedTenant.seatLimit || 50);
+      setPolicyCurrency(selectedTenant.currency || 'INR');
+      setPolicyBillingStatus(selectedTenant.billingStatus || 'ACTIVE');
+    }
+  }, [selectedTenant]);
 
+  const handleSaveAgreementPolicy = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedTenant || !isSuperAdmin || savingPolicy) return;
+    setSavingPolicy(true);
+    setActionError(null);
+    try {
+      await updateTenantAiPolicy(selectedTenant.id, {
+        dailyLimit: Number(policyDailyLimit) || 5000,
+        primaryModel: policyPrimaryModel.trim(),
+      });
+      await updateTenantCommercials(selectedTenant.id, {
+        plan: policyPlan.trim(),
+        seatLimit: Number(policySeats) || 50,
+        currency: policyCurrency.trim(),
+        billingStatus: policyBillingStatus,
+      });
+      setNotification(`Custom agreement & AI quota policy updated for "${selectedTenant.displayName}".`);
+      setDetailRefresh(v => v + 1);
+      fetchTenants();
+    } catch (err) {
+      setActionError(err.message || 'Failed to save agreement and AI policy.');
+    } finally {
+      setSavingPolicy(false);
+    }
+  };
 
   const handleDecommission = async (tenant) => {
     if (!isSuperAdmin) return;
@@ -896,6 +944,115 @@ export default function PlatformTenants() {
                       )}
                     </div>
                   </div>
+
+                  {/* Custom Commercial Agreement & AI Token Governance Card */}
+                  {isSuperAdmin && (
+                    <div className="rounded-2xl border border-indigo-100 bg-linear-to-br from-indigo-50/40 via-slate-50 to-white p-5 space-y-4 shadow-xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                            <FiCpu className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                              Custom Commercial Agreement &amp; AI Token Governance
+                              <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800 uppercase tracking-wider">
+                                Custom SLA
+                              </span>
+                            </h4>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              Configure contracted plan, seat capacity, daily AI request quotas, and primary LLM model.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleSaveAgreementPolicy} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {/* Commercial Plan */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Plan</label>
+                            <input
+                              type="text"
+                              required
+                              value={policyPlan}
+                              onChange={e => setPolicyPlan(e.target.value)}
+                              placeholder="e.g. Enterprise Custom SLA"
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                            />
+                          </div>
+
+                          {/* Contracted Seats */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Seats Limit</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={50000}
+                              required
+                              value={policySeats}
+                              onChange={e => setPolicySeats(Number(e.target.value))}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                            />
+                          </div>
+
+                          {/* Billing Currency */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Contract Currency</label>
+                            <select
+                              value={policyCurrency}
+                              onChange={e => setPolicyCurrency(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                            >
+                              <option value="INR">INR (₹)</option>
+                              <option value="USD">USD ($)</option>
+                              <option value="EUR">EUR (€)</option>
+                              <option value="GBP">GBP (£)</option>
+                            </select>
+                          </div>
+
+                          {/* Daily AI Operations Quota */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Daily AI Operations Quota</label>
+                            <input
+                              type="number"
+                              min={10}
+                              max={500000}
+                              required
+                              value={policyDailyLimit}
+                              onChange={e => setPolicyDailyLimit(Number(e.target.value))}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-0.5">Enforced atomically across all tenant members.</p>
+                          </div>
+
+                          {/* Primary LLM Model */}
+                          <div className="lg:col-span-2">
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Primary LLM Model Routing</label>
+                            <input
+                              type="text"
+                              required
+                              value={policyPrimaryModel}
+                              onChange={e => setPolicyPrimaryModel(e.target.value)}
+                              placeholder="e.g. meta/llama-3.2-11b-vision-instruct"
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-0.5">Active default: meta/llama-3.2-11b-vision-instruct</p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="submit"
+                            disabled={savingPolicy}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 shadow-xs cursor-pointer"
+                          >
+                            <FiSave /> {savingPolicy ? 'Saving Agreement…' : 'Save Agreement & AI Policy'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
 
                   {/* 2-Column Telemetry & Security Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
