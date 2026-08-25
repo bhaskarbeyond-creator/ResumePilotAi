@@ -612,6 +612,47 @@ class TenantService {
     return configuration;
   }
 
+  
+  async executeTenantGarbageCollection({ gracePeriodDays = 7, requestId = null } = {}) {
+    if (!this.registry.purgeTenantRecords) {
+      throw new Error("Registry does not support purging");
+    }
+    
+    // We get all tenants, then filter for DELETING and older than grace period
+    const allTenants = await this.registry.listAllTenants({ limit: 500 });
+    const now = Date.now();
+    const msInDay = 24 * 60 * 60 * 1000;
+    const gracePeriodMs = gracePeriodDays * msInDay;
+    
+    let purgedCount = 0;
+    
+    for (const tenant of allTenants) {
+      if (tenant.lifecycleState === 'DELETING') {
+        const updatedAtStr = tenant.updatedAt || tenant.createdAt;
+        const updatedAt = updatedAtStr ? new Date(updatedAtStr).getTime() : 0;
+        
+        if (now - updatedAt > gracePeriodMs) {
+          // Hard delete the tenant via the registry
+          await this.registry.purgeTenantRecords(tenant.id);
+          
+          if (this.db && this.admin?.firestore?.FieldValue) {
+            await this.db.collection('security_audit_logs').doc().set({
+              action: 'PLATFORM_TENANT_HARD_DELETED',
+              actorRole: 'SYSTEM_DAEMON',
+              tenantId: tenant.id,
+              requestId: requestId || null,
+              timestamp: this.admin.firestore.FieldValue.serverTimestamp(),
+              metadata: { gracePeriodDays }
+            });
+          }
+          purgedCount++;
+        }
+      }
+    }
+    
+    return { purgedCount };
+  }
+
   async setTenantLifecycleAsPlatform({ user, tenantId, nextState, requestId }) {
     if (!isPlatformTenantProvisioner(user)) {
       throw Object.assign(new Error('Platform tenant lifecycle permission is required'), { code: 'FORBIDDEN', status: 403 });

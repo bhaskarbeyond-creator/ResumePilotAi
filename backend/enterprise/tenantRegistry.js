@@ -382,6 +382,35 @@ class FirestoreTenantRegistry {
     return configuration;
   }
 
+  
+  async purgeTenantRecords(tenantId) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    
+    // Step 1: Query and delete all workspaces
+    const workspacesRef = this.db.collection('enterprise_workspaces').where('tenantId', '==', tenantId);
+    const workspacesSnap = await workspacesRef.get();
+    
+    // Step 2: Query and delete all memberships
+    const membershipsRef = this.db.collection('enterprise_memberships').where('tenantId', '==', tenantId);
+    const membershipsSnap = await membershipsRef.get();
+
+    // Step 3: Query and delete all workspace memberships
+    const wsMembershipsRef = this.db.collection('enterprise_workspace_memberships').where('tenantId', '==', tenantId);
+    const wsMembershipsSnap = await wsMembershipsRef.get();
+
+    const batch = this.db.batch();
+    workspacesSnap.docs.forEach(doc => batch.delete(doc.ref));
+    membershipsSnap.docs.forEach(doc => batch.delete(doc.ref));
+    wsMembershipsSnap.docs.forEach(doc => batch.delete(doc.ref));
+    
+    // Finally, delete the tenant record itself
+    batch.delete(this.db.collection('enterprise_tenants').doc(tenantId));
+    
+    await batch.commit();
+    return true;
+  }
+
   async setTenantLifecycleState({ tenantId, nextState }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
@@ -1017,6 +1046,23 @@ class InMemoryTenantRegistry {
     const configuration = normalizeTenantConfiguration(tenantId, input, existing);
     this.configurations.set(tenantId, configuration);
     return configuration;
+  }
+
+  
+  async purgeTenantRecords(tenantId) {
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    
+    for (const [key, val] of this.workspaces.entries()) {
+      if (val.tenantId === tenantId) this.workspaces.delete(key);
+    }
+    for (const [key, val] of this.memberships.entries()) {
+      if (val.tenantId === tenantId) this.memberships.delete(key);
+    }
+    for (const [key, val] of this.workspaceMemberships.entries()) {
+      if (val.tenantId === tenantId) this.workspaceMemberships.delete(key);
+    }
+    this.tenants.delete(tenantId);
+    return true;
   }
 
   async setTenantLifecycleState({ tenantId, nextState }) {
