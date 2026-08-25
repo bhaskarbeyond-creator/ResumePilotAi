@@ -8,6 +8,21 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const admin = require('./services/firebaseAdmin');
+if (!admin.apps.length) {
+    const projectId = process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf';
+    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                projectId,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, String.fromCharCode(10)),
+            }),
+            projectId
+        });
+    } else {
+        admin.initializeApp({ projectId });
+    }
+}
 const { getPool } = require('./database/mysql');
 const { 
     getActiveEngine, 
@@ -146,11 +161,7 @@ async function runMasterVerification() {
 
     // 1. MySQL -> Outbox
     await pool.query('INSERT INTO users (id, email, displayName, role) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE displayName=VALUES(displayName)', [syncTestUid, 'sync@test.com', 'Sync Test User', 'USER']);
-    await pool.query(\`
-        INSERT INTO resumes (\`id\`, \`user_id\`, \`title\`, \`template\`, \`revision\`, \`summary\`)
-        VALUES (?, ?, ?, 'Cv1', 1, 'Sync test summary')
-        ON DUPLICATE KEY UPDATE \`title\`=VALUES(\`title\`), \`revision\`=VALUES(\`revision\`)
-    \`, [syncTestResId, syncTestUid, syncTestTitle]);
+    await pool.query('INSERT INTO resumes (id, user_id, title, template, revision, summary) VALUES (?, ?, ?, "Cv1", 1, "Sync test summary") ON DUPLICATE KEY UPDATE title=VALUES(title), revision=VALUES(revision)', [syncTestResId, syncTestUid, syncTestTitle]);
 
     const { eventId } = await enqueueOutboxEvent(pool, {
         entityType: 'resumes',
