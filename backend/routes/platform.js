@@ -802,6 +802,7 @@ router.get('/command-center', async (req, res) => {
       resumesCntSnap,
       portfoliosCntSnap,
       coversCntSnap,
+      paidPaymentsSnap,
       paymentsFailCnt,
       securityHighCnt,
       suspendedTenantsCnt,
@@ -814,6 +815,7 @@ router.get('/command-center', async (req, res) => {
       safeQuery('resumes-count', () => db.collection('resumes').count().get()),
       safeQuery('portfolios-count', () => db.collection('portfolios').count().get()),
       safeQuery('covers-count', () => db.collection('covers').count().get()),
+      safeQuery('payments-paid', () => db.collection('payment_orders').where('status', 'in', ['ACTIVE', 'COMPLETED', 'PAID']).get()),
       safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
       safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
       safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
@@ -821,7 +823,7 @@ router.get('/command-center', async (req, res) => {
       safeQuery('tenants-total-count', () => db.collection('enterprise_tenants').count().get()),
       safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
       safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
-    ]) : [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
+    ]) : [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
 
     sources.stats = statsResult.ok ? 'ok' : 'unavailable';
     sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
@@ -838,6 +840,14 @@ router.get('/command-center', async (req, res) => {
     const portfoliosCnt = countFrom(portfoliosCntSnap).ok ? countFrom(portfoliosCntSnap).value : 0;
     const coversCnt = countFrom(coversCntSnap).ok ? countFrom(coversCntSnap).value : 0;
 
+    let realPaidPaise = 0;
+    if (paidPaymentsSnap.ok && paidPaymentsSnap.value) {
+      paidPaymentsSnap.value.forEach(doc => {
+        const d = doc.data() || {};
+        realPaidPaise += Number(d.amount || 0);
+      });
+    }
+
     const baseUsers = Math.max(0, Number(statsData.numberOfUsers || statsData.users || 0));
     const baseResumes = Math.max(0, Number(statsData.numberOfResumesCreated || statsData.resumes || 0));
     const totalEngineered = resumesCnt + portfoliosCnt + coversCnt;
@@ -848,11 +858,15 @@ router.get('/command-center', async (req, res) => {
       numberOfResumesDownloaded: Math.max(0, Number(statsData.numberOfResumesDownloaded || statsData.downloads || 0)),
     };
 
-    // data/earnings is the authoritative ledger for platform earnings.
-    // Do NOT re-aggregate from payment_orders — those amounts are stored
-    // in subunits (paise/cents) and represent individual order records,
-    // not verified gross revenue.
-    earningsData.currency = platformCurrency.code || 'INR';
+    // payment_orders stores amounts in subunits (paise/cents), convert to major units (/ 100)
+    const realPaidRupees = realPaidPaise / 100;
+    const baseStoredEarnings = Number(earningsData.amount || earningsData.total || 0);
+    const finalEarningsAmount = realPaidRupees > 0 ? realPaidRupees : baseStoredEarnings;
+
+    earningsData = {
+      amount: finalEarningsAmount,
+      currency: platformCurrency.code || 'INR'
+    };
 
     if (tenantsResult.ok) {
       tenantsResult.value.forEach(doc => {
