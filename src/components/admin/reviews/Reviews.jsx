@@ -26,6 +26,17 @@ const Reviews = () => {
 
     React.useEffect(() => { loadReviews(); }, [loadReviews]);
 
+    React.useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            if (e.key === 'Escape' && !isLoading) {
+                if (reviewToDelete) setReviewToDelete(null);
+                if (confirmRating) setConfirmRating(false);
+            }
+        };
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [isLoading, reviewToDelete, confirmRating]);
+
     const handleDelete = async () => {
         if (!reviewToDelete) return;
         setIsLoading(true);

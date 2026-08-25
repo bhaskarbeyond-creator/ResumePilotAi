@@ -105,7 +105,11 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
 
     const handleEscapeKey = (e) => {
         if (e.key === 'Escape') {
-            handleClose();
+            if (previewTemplate) {
+                setPreviewTemplate(null);
+            } else {
+                handleClose();
+            }
         }
     };
 
@@ -114,7 +118,7 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
             document.addEventListener('keydown', handleEscapeKey);
             return () => document.removeEventListener('keydown', handleEscapeKey);
         }
-    }, [showModal]);
+    }, [showModal, previewTemplate]);
 
     // Template data
     const getTemplates = () => {

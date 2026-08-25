@@ -42,6 +42,18 @@ class EmployerApplications extends Component {
 
     componentDidMount() {
         this.loadApplications();
+        this.handleGlobalKeyDown = (event) => {
+            if (event.key === 'Escape' && !this.state.processingAction && this.state.reviewConfirmation) {
+                this.setState({ reviewConfirmation: null, reviewReason: '' });
+            }
+        };
+        window.addEventListener('keydown', this.handleGlobalKeyDown);
+    }
+
+    componentWillUnmount() {
+        if (this.handleGlobalKeyDown) {
+            window.removeEventListener('keydown', this.handleGlobalKeyDown);
+        }
     }
 
     loadApplications = async () => {

@@ -29,6 +29,16 @@ const LandingPages = () => {
         fetchStats();
     }, []);
 
+    useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            if (e.key === 'Escape' && !saving && confirmSave) {
+                setConfirmSave(false);
+            }
+        };
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [saving, confirmSave]);
+
     const fetchStats = async () => {
         try {
             setLoading(true);

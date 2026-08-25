@@ -50,6 +50,18 @@ class CompanyManagement extends Component {
 
     componentDidMount() {
         this.loadCompanies();
+        this.handleGlobalKeyDown = (event) => {
+            if (event.key === 'Escape' && !this.state.processingAction && this.state.pendingAction) {
+                this.setState({ pendingAction: null, rejectionReason: '' });
+            }
+        };
+        window.addEventListener('keydown', this.handleGlobalKeyDown);
+    }
+
+    componentWillUnmount() {
+        if (this.handleGlobalKeyDown) {
+            window.removeEventListener('keydown', this.handleGlobalKeyDown);
+        }
     }
 
     loadCompanies = async () => {

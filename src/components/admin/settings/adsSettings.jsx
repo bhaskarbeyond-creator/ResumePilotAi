@@ -25,6 +25,18 @@ class AdsSettings extends Component {
     }
     componentDidMount() {
         this.getAllAds();
+        this.handleGlobalKeyDown = (event) => {
+            if (event.key === 'Escape' && !this.state.saving && this.state.deleteTarget) {
+                this.setState({ deleteTarget: null });
+            }
+        };
+        window.addEventListener('keydown', this.handleGlobalKeyDown);
+    }
+
+    componentWillUnmount() {
+        if (this.handleGlobalKeyDown) {
+            window.removeEventListener('keydown', this.handleGlobalKeyDown);
+        }
     }
     // Handling changes of inputs
     handleChange(event, inputName) {

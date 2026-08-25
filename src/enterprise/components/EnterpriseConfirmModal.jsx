@@ -27,11 +27,16 @@ export default function EnterpriseConfirmModal({
   onConfirm,
   onClose,
 }) {
-  if (!isOpen) return null;
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleGlobalKey = (e) => {
+      if (e.key === 'Escape' && !busy) onClose();
+    };
+    window.addEventListener('keydown', handleGlobalKey);
+    return () => window.removeEventListener('keydown', handleGlobalKey);
+  }, [isOpen, busy, onClose]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape' && !busy) onClose();
-  };
+  if (!isOpen) return null;
 
   const getIcon = () => {
     if (variant === 'danger') return <FiAlertTriangle className="text-red-600 text-lg" />;

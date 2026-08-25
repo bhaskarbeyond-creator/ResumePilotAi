@@ -107,7 +107,10 @@ function DashboardSettings(props) {
     const [totpDisableModalOpen, setTotpDisableModalOpen] = useState(false);
     const [totpDisablePassword, setTotpDisablePassword] = useState('');
     const [loginHistory, setLoginHistory] = useState([]);
-    const usesPasswordProvider = fire.auth().currentUser?.providerData?.some(provider => provider.providerId === 'password') !== false;
+    const userAuthProviders = (fire.auth().currentUser?.providerData || []).map(provider => provider?.providerId).filter(Boolean);
+    const usesPasswordProvider = userAuthProviders.includes('password');
+    const isOAuthOnly = userAuthProviders.length > 0 && !usesPasswordProvider;
+    const primaryOAuthProvider = userAuthProviders.find(p => p !== 'password') === 'google.com' ? 'Google' : (userAuthProviders.find(p => p !== 'password') || 'OAuth');
 
     // Master Profile State matching ALL Resume & Cover Letter fields
     const [profile, setProfile] = useState({
@@ -143,6 +146,21 @@ function DashboardSettings(props) {
         setToastState({ msg, type });
         setTimeout(() => setToastState(null), 5000);
     };
+
+    // Global Escape Key Listener for dismissible modal dialogs
+    useEffect(() => {
+        const handleGlobalEscape = (e) => {
+            if (e.key === 'Escape') {
+                if (deleteAccountModalOpen && !isSubmitting) setDeleteAccountModalOpen(false);
+                if (totpSetupModalOpen && !isSubmitting) setTotpSetupModalOpen(false);
+                if (totpDisableModalOpen && !isSubmitting) setTotpDisableModalOpen(false);
+                if (showImageCropModal) setShowImageCropModal(false);
+                if (showSubscriptionModal) setShowSubscriptionModal(false);
+            }
+        };
+        window.addEventListener('keydown', handleGlobalEscape);
+        return () => window.removeEventListener('keydown', handleGlobalEscape);
+    }, [deleteAccountModalOpen, totpSetupModalOpen, totpDisableModalOpen, showImageCropModal, showSubscriptionModal, isSubmitting]);
 
     // Data Normalizers for legacy Firestore structures
     const normalizeSkills = (arr) => {
@@ -621,11 +639,12 @@ function DashboardSettings(props) {
         try {
             let updatedSomething = false;
 
-            // Require current password if user is changing email or password
+            // Check what changed
             const isEmailChanged = databaseAccountSettings.email && databaseAccountSettings.email !== (fire.auth().currentUser?.email || '');
             const isPasswordChanged = !!accountPasswordState.newPassword;
 
-            if ((isEmailChanged || isPasswordChanged) && !accountPasswordState.currentPassword) {
+            // Only require current password if user has a traditional password provider
+            if (usesPasswordProvider && (isEmailChanged || isPasswordChanged) && !accountPasswordState.currentPassword) {
                 triggerNotification('Current password is required to verify identity for credential updates.', 'error');
                 setIsSubmitting(false);
                 return;
@@ -633,14 +652,14 @@ function DashboardSettings(props) {
 
             // 1. Email update
             if (isEmailChanged) {
-                await updateUserEmail(accountPasswordState.currentPassword, databaseAccountSettings.email);
+                await updateUserEmail(usesPasswordProvider ? accountPasswordState.currentPassword : '', databaseAccountSettings.email);
                 updatedSomething = true;
             }
 
-            // 2. Password update
+            // 2. Password update / creation
             if (isPasswordChanged) {
-                if (accountPasswordState.newPassword.length < 12) {
-                    triggerNotification('New password must be at least 12 characters long.', 'error');
+                if (accountPasswordState.newPassword.length < 8) {
+                    triggerNotification('Security password must be at least 8 characters long.', 'error');
                     setIsSubmitting(false);
                     return;
                 }
@@ -649,13 +668,17 @@ function DashboardSettings(props) {
                     setIsSubmitting(false);
                     return;
                 }
-                await changePassword(accountPasswordState.currentPassword, accountPasswordState.newPassword);
+                await changePassword(usesPasswordProvider ? accountPasswordState.currentPassword : '', accountPasswordState.newPassword);
                 updatedSomething = true;
                 setAccountPasswordState({ currentPassword: '', newPassword: '', confirmPassword: '' });
             }
 
             if (updatedSomething) {
-                triggerNotification('Account security credentials updated successfully!');
+                triggerNotification(
+                    usesPasswordProvider
+                        ? 'Account security credentials updated successfully!'
+                        : 'Account security password created successfully! You can now sign in using either email & password or OAuth.'
+                );
             } else {
                 triggerNotification('No changes detected in account credentials.');
             }
@@ -664,6 +687,8 @@ function DashboardSettings(props) {
             let msg = err.message || 'Failed to update account security credentials.';
             if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
                 msg = 'Incorrect Current Password. Authentication failed.';
+            } else if (err.code === 'auth/requires-recent-login') {
+                msg = 'For security, please sign out and sign in again before updating credentials.';
             }
             triggerNotification(msg, 'error');
         } finally {
@@ -2386,36 +2411,48 @@ function DashboardSettings(props) {
                                     />
                                 </div>
 
-                                {/* Password Change Grid */}
+                                {/* Password Change / Creation Grid */}
                                 <div className="border-t border-slate-100 pt-6 space-y-4">
                                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                                        <FaKey className="w-3.5 h-3.5 text-indigo-600" /> Security Password Update & Re-authentication
+                                        <FaKey className="w-3.5 h-3.5 text-indigo-600" /> {usesPasswordProvider ? 'Security Password Update & Re-authentication' : 'Create Account Security Password'}
                                     </h3>
 
-                                    {/* Current Password Input for Identity Verification */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Current Password (Required for Email or Password Change)</label>
-                                        <div className="relative">
-                                            <input
-                                                type={showPasswordMap.current ? 'text' : 'password'}
-                                                value={accountPasswordState.currentPassword}
-                                                onChange={(e) => setAccountPasswordState({ ...accountPasswordState, currentPassword: e.target.value })}
-                                                placeholder="Enter current password to re-authenticate"
-                                                className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPasswordMap({ ...showPasswordMap, current: !showPasswordMap.current })}
-                                                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
-                                                {showPasswordMap.current ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
-                                            </button>
+                                    {usesPasswordProvider ? (
+                                        /* Current Password Input for Identity Verification */
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1">Current Password (Required for Email or Password Change)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showPasswordMap.current ? 'text' : 'password'}
+                                                    value={accountPasswordState.currentPassword}
+                                                    onChange={(e) => setAccountPasswordState({ ...accountPasswordState, currentPassword: e.target.value })}
+                                                    placeholder="Enter current password to re-authenticate"
+                                                    className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPasswordMap({ ...showPasswordMap, current: !showPasswordMap.current })}
+                                                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                                                    {showPasswordMap.current ? <FaEyeSlash className="w-3.5 h-3.5" /> : <FaEye className="w-3.5 h-3.5" />}
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 space-y-1">
+                                            <div className="font-bold flex items-center gap-1.5 text-blue-950">
+                                                <FaShieldAlt className="w-3.5 h-3.5 text-blue-600" />
+                                                <span>OAuth-Authenticated Account ({primaryOAuthProvider})</span>
+                                            </div>
+                                            <p className="text-blue-800 text-[11px] leading-relaxed">
+                                                You are currently signed in with {primaryOAuthProvider}. Set an independent security password below to also enable direct email and password login without affecting your {primaryOAuthProvider} account.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {/* New Security Password */}
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1">New Security Password</label>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1">{usesPasswordProvider ? 'New Security Password' : 'Set Security Password'}</label>
                                             <div className="relative">
                                                 <input
                                                     type={showPasswordMap.new ? 'text' : 'password'}
@@ -2435,13 +2472,13 @@ function DashboardSettings(props) {
 
                                         {/* Confirm New Password */}
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1">Confirm New Password</label>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1">{usesPasswordProvider ? 'Confirm New Password' : 'Confirm Password'}</label>
                                             <div className="relative">
                                                 <input
                                                     type={showPasswordMap.confirm ? 'text' : 'password'}
                                                     value={accountPasswordState.confirmPassword}
                                                     onChange={(e) => setAccountPasswordState({ ...accountPasswordState, confirmPassword: e.target.value })}
-                                                    placeholder="Re-enter new password"
+                                                    placeholder="Re-enter password"
                                                     className="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                                 />
                                                 <button
@@ -2485,7 +2522,7 @@ function DashboardSettings(props) {
                                             disabled={isSubmitting}
                                             className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
                                             <FaCheckCircle className="w-3.5 h-3.5" />
-                                            <span>{isSubmitting ? 'Updating Account...' : 'Update Account Security ✓'}</span>
+                                            <span>{isSubmitting ? 'Updating Account...' : (usesPasswordProvider ? 'Update Account Security ✓' : 'Create Account Security Password ✓')}</span>
                                         </button>
                                     </div>
                                 </div>

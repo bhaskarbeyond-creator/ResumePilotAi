@@ -22,6 +22,17 @@ const TrustedBy = () => {
     }, []);
     useEffect(() => { load(); }, [load]);
 
+    useEffect(() => {
+        const handleGlobalKeyDown = (e) => {
+            if (e.key === 'Escape' && !processing) {
+                if (deleteTarget) setDeleteTarget(null);
+                if (editing) setEditing(null);
+            }
+        };
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [processing, deleteTarget, editing]);
+
     const validate = data => {
         if (!data.name.trim()) return 'Company name is required.';
         if (!sanitizeImageUrl(data.imageUrl)) return 'Use a valid HTTPS or site-relative image URL.';

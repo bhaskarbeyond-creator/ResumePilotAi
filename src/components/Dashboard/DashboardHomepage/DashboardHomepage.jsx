@@ -330,6 +330,19 @@ class DashboardHomepage extends Component {
     };
     window.addEventListener('systemSettingsUpdated', this.handleSystemSettingsUpdated);
 
+    this.handleGlobalKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (this.state.showPreviewModal) {
+          this.closeDocumentPreview();
+        } else if (this.state.deleteModal.isOpen && !this.state.deleteModal.isDeleting) {
+          this.closeDeleteModal();
+        } else if (this.state.openDropdownId) {
+          this.setState({ openDropdownId: null });
+        }
+      }
+    };
+    window.addEventListener('keydown', this.handleGlobalKeyDown);
+
     // Reset pagination state to ensure we start from page 1
     this.setState(
       {
@@ -357,6 +370,9 @@ class DashboardHomepage extends Component {
     this.unsubscribeAuth?.();
     if (this.handleSystemSettingsUpdated) {
       window.removeEventListener('systemSettingsUpdated', this.handleSystemSettingsUpdated);
+    }
+    if (this.handleGlobalKeyDown) {
+      window.removeEventListener('keydown', this.handleGlobalKeyDown);
     }
   }
 
@@ -1140,6 +1156,9 @@ class DashboardHomepage extends Component {
                           {this.state.openDropdownId === document.id && (
                             <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-10 border border-slate-200">
                               <div className="py-1">
+                                <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
+                                  <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
+                                </button>
                                 <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
                                   <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
                                 </button>

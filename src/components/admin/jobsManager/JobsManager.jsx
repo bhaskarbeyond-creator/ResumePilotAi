@@ -56,10 +56,20 @@ class JobsManager extends Component {
 
     componentDidMount() {
         this.loadJobs();
+        this.handleGlobalKeyDown = (event) => {
+            if (event.key === 'Escape' && !this.state.processingAction) {
+                if (this.state.pendingAction) this.setState({ pendingAction: null });
+                if (this.state.isCreateModalOpen) this.setState({ isCreateModalOpen: false });
+            }
+        };
+        window.addEventListener('keydown', this.handleGlobalKeyDown);
     }
 
     componentWillUnmount() {
         if (this.searchTimer) clearTimeout(this.searchTimer);
+        if (this.handleGlobalKeyDown) {
+            window.removeEventListener('keydown', this.handleGlobalKeyDown);
+        }
     }
 
     loadJobs = async (page = 1) => {
