@@ -207,3 +207,71 @@ test('P1-03: guard fails closed (no write) when its read throws', async () => {
   );
   assert.equal(fs.writes.length, 0, 'a stale write must never land when parity of revision is unknown');
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * P1-06 — Firestore → MySQL resume replication must not drop fields
+ *
+ * replicateToMySQL() inserted all 33 resume columns but its
+ * ON DUPLICATE KEY UPDATE clause refreshed only title/template/revision/
+ * summary, so every other field was silently left stale once the row existed.
+ * The primary write path (MySQLRepository) derives its update clause from all
+ * columns, so the replication path was the lossy outlier.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+const RESUME_REPLICATED_COLUMNS = [
+  'user_id', 'title', 'template', 'revision', 'firstname', 'lastname', 'email',
+  'phone', 'occupation', 'country', 'city', 'address', 'postalcode', 'website',
+  'linkedin', 'github', 'photo', 'showPhoto', 'summary', 'employments',
+  'educations', 'skills', 'languages', 'hobbies', 'projects', 'certifications',
+  'achievements', 'references', 'customSections', 'sectionOrder',
+  'hiddenSections', 'completedSteps',
+];
+
+test('P1-06: replicating an existing resume refreshes every replicated column', async () => {
+  const MYSQL_PATH = require.resolve('../database/mysql');
+  const original = require.cache[MYSQL_PATH];
+
+  const issued = [];
+  let rowExists = true;
+  require.cache[MYSQL_PATH] = {
+    id: MYSQL_PATH, filename: MYSQL_PATH, loaded: true,
+    exports: {
+      getPool: () => ({
+        async query(sql) {
+          const s = String(sql).replace(/\s+/g, ' ');
+          issued.push(s);
+          if (/^SELECT revision FROM resumes/.test(s)) return [rowExists ? [{ revision: 1 }] : []];
+          return [[]];
+        },
+      }),
+      testConnection: async () => ({ connected: true }),
+    },
+  };
+  delete require.cache[require.resolve('../database/syncManager')];
+
+  try {
+    const { replicateToMySQL } = require('../database/syncManager');
+    await replicateToMySQL({
+      entity_type: 'resumes',
+      entity_id: 'resume-001',
+      operation: 'UPDATE',
+      version: 2,
+      payload: { user_id: 'user-1', skills: [{ name: 'Kubernetes' }] },
+    });
+
+    const write = issued.find(q => /INSERT INTO resumes/.test(q));
+    assert.ok(write, 'a write must be issued');
+    const updateClause = write.split('ON DUPLICATE KEY UPDATE')[1] || '';
+
+    const missing = RESUME_REPLICATED_COLUMNS.filter(
+      col => !new RegExp('`?' + col + '`?\\s*=').test(updateClause),
+    );
+    assert.deepEqual(
+      missing, [],
+      `these resume columns are inserted but not refreshed on update, so the standby would keep stale values: ${missing.join(', ')}`,
+    );
+  } finally {
+    delete require.cache[require.resolve('../database/syncManager')];
+    if (original) require.cache[MYSQL_PATH] = original;
+  }
+});

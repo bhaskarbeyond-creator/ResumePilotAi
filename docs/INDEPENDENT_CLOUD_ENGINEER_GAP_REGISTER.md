@@ -14,6 +14,7 @@ that look like defects but are defensible design are listed under **NOT A DEFECT
 | P1-01 | P1 HIGH | Plain ADMIN could switch the production database engine and run destructive DB admin | **FIXED + regression-tested** (not deployed) |
 | P1-02 | P1 HIGH | Database-switch parity gate fails **open** when the parity probe cannot run | **FIXED + regression-tested** (not deployed) |
 | P1-03 | P1 HIGH | Monotonic revision guard fails **open**, allowing stale-event data regression | **FIXED + regression-tested** (not deployed) |
+| P1-06 | P1 HIGH | Firestore→MySQL resume replication silently drops 29 of 33 columns on update | **FIXED + regression-tested** (not deployed) |
 | P1-04 | P1 HIGH | Live production Enterprise plane is UNAVAILABLE (encryption keys unconfigured) | **OPEN — BLOCKED on production access** |
 | P1-05 | P1 HIGH | Live production worker/feature configuration drifts from the committed PM2 template | **OPEN — BLOCKED on production access** |
 | P2-01 | P2 MEDIUM | Frozen release shipped with 1 failing test; "0 failed" certification claim false | **FIXED** (test corrected) |
@@ -253,7 +254,98 @@ environment does not match the release artefact, which is deployment drift by de
 
 ---
 
-## P2-01 — Frozen release shipped with a failing test
+## P1-06 — Firestore → MySQL resume replication drops 29 of 33 columns on update
+
+**Severity:** P1 HIGH (silent field loss in the DR/standby path; UAT-16 exercises it)
+
+**Claims disproved:** certification row 3 — *"35 Collections to 28 Relational Tables mapped;
+Functionally Equivalent & Lossless … 0 Missing Replicated Fields … VERIFIED (10/10)"*; row 2 —
+*"100% Lossless Replication"*.
+
+**Evidence.** `backend/database/syncManager.js`, `replicateToMySQL()`, `resumes` branch. The
+`INSERT` writes 33 columns, but the `ON DUPLICATE KEY UPDATE` clause refreshed only four:
+
+```sql
+INSERT INTO resumes (`id`,`user_id`,`title`,`template`,`revision`,`firstname`, … 33 columns …)
+VALUES (?, …)
+ON DUPLICATE KEY UPDATE `title`=VALUES(`title`), `template`=VALUES(`template`),
+                        `revision`=VALUES(`revision`), `summary`=VALUES(`summary`),
+                        updated_at=CURRENT_TIMESTAMP
+```
+
+So once a resume row exists, replicating an edit updates only `title`, `template`, `revision` and
+`summary`. The other 29 columns — `firstname`, `lastname`, `email`, `phone`, `occupation`,
+`country`, `city`, `address`, `postalcode`, `website`, `linkedin`, `github`, `photo`, `showPhoto`,
+`employments`, `educations`, `skills`, `languages`, `hobbies`, `projects`, `certifications`,
+`achievements`, `references`, `customSections`, `sectionOrder`, `hiddenSections`, `completedSteps`,
+`user_id` — are left at their previous values.
+
+**This is duplicated critical logic diverging.** The primary write path does it correctly —
+`MySQLRepository.js:114` derives the clause from every column:
+
+```js
+const updateClause = keys.map(k => `\`${k}\` = VALUES(\`${k}\`)`).join(', ');
+```
+
+Two implementations of the same logical write, one lossless and one lossy. Under MySQL-primary the
+application uses the correct path, so live data is unaffected today; the defect is **latent in the
+standby** and surfaces after a failover to Firestore followed by resume edits.
+
+**Reproduction** (real `replicateToMySQL()` against a recording pool, row pre-existing), pre-fix:
+
+```
+--- ON DUPLICATE KEY UPDATE clause actually executed ---
+`title`=VALUES(`title`), `template`=VALUES(`template`), `revision`=VALUES(`revision`), `summary`=VALUES(`summary`), updated_at=CURRENT_TIMESTAMP
+
+  firstname      updated on existing row: false
+  phone          updated on existing row: false
+  city           updated on existing row: false
+  skills         updated on existing row: false
+  employments    updated on existing row: false
+  sectionOrder   updated on existing row: false
+
+*** REPRODUCED: 6 edited field(s) are NOT replicated to an existing row ***
+```
+
+**Why P1 rather than P2.** UAT-16 explicitly exercises *"execute switch MySQL ↔ Firestore"*. Under
+that workflow a tester switches to Firestore, edits a resume, and switches back — the resume's
+skills, employments and contact details silently revert. That is user-visible data loss inside a
+certified UAT workflow, and it invalidates the "0 Missing Replicated Fields" invariant the switch
+gate is supposed to protect.
+
+**Fix applied.** Extended the `ON DUPLICATE KEY UPDATE` clause to cover all 32 non-primary-key
+columns, mirroring the primary path. `id` is intentionally excluded (primary key), and
+`created_at` is left to its default.
+
+**Post-fix verification:** all 8 spot-checked columns report `true`; the regression test asserts
+**every** one of the 32 replicated columns appears in the update clause.
+
+**Regression test:** 1 test (`P1-06: replicating an existing resume refreshes every replicated column`).
+
+**Scope note — other entity types.** The same partial-update pattern exists elsewhere but with far
+smaller surface: `users` refreshes `displayName`/`role`/`membership` but not `email`/`extra_data`;
+`jobs` refreshes `title`/`description`/`status`; `companies` refreshes 4 of its columns; and so on.
+`resumes` was the material outlier (29 dropped columns on the richest document). The remaining
+partial updates are recorded under **P2-07** rather than fixed, to keep this change minimal and
+reviewable on a frozen release.
+
+---
+
+## P2-07 — Other entity types also replicate a partial column set on update
+
+**Severity:** P2 MEDIUM — **OPEN** (post-UAT)
+
+`replicateToMySQL()` uses hand-written `ON DUPLICATE KEY UPDATE` clauses for 15 entity types. Most
+refresh only a subset of the columns they insert (e.g. `users` omits `email` and `extra_data`;
+`coupons` omits code/expiry; `reviews` omits author). The exposure is much smaller than P1-06 and
+the affected fields are mostly write-once, but the pattern is the same and the primary path
+(`MySQLRepository`) does not share it.
+
+**Recommended post-UAT remediation:** derive the replication update clause from the inserted column
+list (as `MySQLRepository` already does), or unify both paths behind a single mapping table so the
+two implementations cannot diverge again.
+
+
 
 **Severity:** P2 MEDIUM — **FIXED**
 
@@ -430,8 +522,8 @@ readiness contract) when a subsystem required for UAT is off.
 | Category | Count | Fixed on branch | Open (needs production access) | Open (post-UAT) |
 |---|---|---|---|---|
 | P0 | 0 | — | — | — |
-| P1 | 5 | 3 (P1-01, P1-02, P1-03) | 2 (P1-04, P1-05) | — |
-| P2 | 5 | 1 (P2-01) | 3 (P2-02, P2-03, P2-04 documentation) | 1 (P2-05) |
+| P1 | 6 | 4 (P1-01, P1-02, P1-03, P1-06) | 2 (P1-04, P1-05) | — |
+| P2 | 6 | 1 (P2-01) | 3 (P2-02, P2-03, P2-04 documentation) | 2 (P2-05, P2-07) |
 | P3 | 3 | 0 | — | 3 |
 
 **Code changes on `arena/01a03aa4-resumepilotai`:**
@@ -440,7 +532,7 @@ readiness contract) when a subsystem required for UAT is off.
 backend/database/syncManager.js            | 52 ++++++++++++++++--------
 backend/routes/databaseAdmin.js            | 12 +++----
 backend/test/platform-health-rbac.test.js  | 23 +++++++++--
-backend/test/independent-audit-regressions.test.js | new file, 9 tests
+backend/test/independent-audit-regressions.test.js | new file, 10 tests
 ```
 
 **Not deployed.** These fixes exist only on the audit branch. Live production still runs

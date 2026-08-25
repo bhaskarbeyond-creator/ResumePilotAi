@@ -27,12 +27,14 @@ But the certification's headline claims do not survive independent verification:
 1. **"676/676 tests, 0 failed" is false.** The frozen release had **1 failing test**. Measured
    totals are 919 tests across all suites (688 via `npm test`), not 676 — the tally omits the
    286-test backend integration suite, which is exactly where the failure lived.
-2. **Three P1 defects were reproduced and proven**, two of which defeat the invariants the
+2. **Four P1 code defects were reproduced and proven**, all of which defeat invariants the
    certification certifies: the database-switch parity gate **failed open** (authorising a switch
-   with Firestore down and parity never measured), the monotonic revision guard **failed open**
-   (allowing a stale event to regress data), and the database-engine switch was reachable by a
+   with Firestore down and parity never measured); the monotonic revision guard **failed open**
+   (allowing a stale event to regress data); the database-engine switch was reachable by a
    **plain ADMIN** with no Super Admin role and no TOTP — contradicting UAT-16's stated
-   "Super Admin + TOTP" precondition.
+   "Super Admin + TOTP" precondition; and Firestore→MySQL resume replication **silently dropped 29
+   of 33 columns** on update, contradicting "0 Missing Replicated Fields" and "100% Lossless
+   Replication".
 3. **Live production does not match the release artefact.** `/api/readyz` reports
    `encryption:"none"`, `notificationOutbox:"DISABLED"`, `tenantGc:"MANUAL_SCRIPT_ONLY"`;
    `/api/service-availability` reports `enterpriseTenancy:false`. The Enterprise plane is
@@ -52,12 +54,12 @@ contains P1-01/02/03.**
 | Release tag verified | ✅ PASS |
 | Clean working tree (at audit start) | ✅ PASS |
 | Build verified | ✅ PASS (5.00s, exit 0) |
-| Tests verified | ❌ FAIL as shipped (1 failure); ✅ PASS post-fix (928/928) |
+| Tests verified | ❌ FAIL as shipped (1 failure); ✅ PASS post-fix (929/929) |
 | Security verified | ✅ PASS (0 vulns, 28/28 security tests) |
 | Secrets verified | ✅ PASS |
 | Database verified | ⚠️ PARTIAL (code+test only) |
 | Firestore verified | ⚠️ PARTIAL |
-| Field parity verified | ❌ NOT VERIFIED live |
+| Field parity verified | ❌ FAIL pre-fix (P1-06 resume field loss); ⚠️ live row-level still BLOCKED |
 | Bidirectional sync verified | ❌ FAIL pre-fix (P1-03) |
 | Database switch verified | ❌ FAIL pre-fix (P1-01, P1-02) |
 | User verified | ⚠️ PARTIAL |
@@ -76,7 +78,7 @@ contains P1-01/02/03.**
 | Production verified | ❌ FAIL (config drift) |
 | UAT-01..18 verified | ❌ FAIL (0 fully confirmable) |
 | No P0 | ✅ PASS (0 found) |
-| No P1 | ❌ FAIL (5 found; 3 fixed, 2 open) |
+| No P1 | ❌ FAIL (6 found; 4 fixed, 2 open-blocked) |
 | No UAT-blocking defect | ❌ FAIL |
 
 ---
@@ -170,14 +172,39 @@ an unreadable source is reported as UNKNOWN rather than zero"* — and the live 
 ## 7. Field parity audit
 
 `FIRESTORE_MYSQL_FIELD_LEVEL_RECONCILIATION.md` asserts 35 collections → 28 tables with zero
-missing replicated fields. Code support is real (`calculateContentHash()` canonical SHA-256,
-`computeContinuousParity()`), and 21/21 parity tests pass.
+missing replicated fields. This audit performed an independent **code-level mapping audit** (no
+database access was available, so counts alone were not treated as evidence).
 
-**Status: NOT VERIFIED at field level.** This audit had no database access, so per-collection
-field-level comparison (IDs, timestamps, nested JSON, financial subunits, GST fields, revision,
-content hashes) could not be independently performed. Document-and-table counts were explicitly not
-treated as evidence. Additionally the *gate* that asserts 100% parity was itself broken (P1-02),
-which undermines reliance on it.
+**Schema coverage — verified.** Every one of the 24 collections named in the audit scope has a
+MySQL table: `users`, `resumes`, `portfolios`, `covers`, `favourites`, `job_tracker`,
+`public_resumes`, `jobs`, `applications`, `companies`, `blog`, `custom_pages`, `trusted_by`,
+`reviews`, `contact_messages`, `conversations`, `messages`, `notifications`, `payment_orders`,
+`transactions`, `subscriptions`, `coupons`, `coupon_redemptions`, `stats`. Firestore `settings/*`
+maps to `system_settings`. `schema.sql` defines **30** tables — the 24 above plus `system_settings`
+and five sync/control tables (`sync_outbox`, `sync_conflicts`, `sync_worker_state`,
+`database_engine_state`, `database_switch_audit`). The certification's "28 Relational Tables" does
+not match the schema.
+
+**Mapping fidelity — one P1 defect found and fixed (P1-06).** `replicateToMySQL()` inserted all 33
+`resumes` columns but its `ON DUPLICATE KEY UPDATE` refreshed only `title`, `template`, `revision`
+and `summary`. Replicating an edit to an existing resume therefore left 29 columns stale —
+including `employments`, `educations`, `skills`, `projects`, `certifications`, `sectionOrder` and
+all contact fields. The primary write path (`MySQLRepository.js:114`) derives its update clause
+from every column, so this was the replication path diverging from the correct implementation.
+Reproduced against the real function; fixed; regression-tested.
+
+**Type-fidelity observations (recorded, not fixed).** The mapping applies JS default coercion on
+write: `data.email || ''` and `data.firstname || ''` convert absent/null to empty string, and
+`data.showPhoto === false ? 0 : 1` maps an *absent* `showPhoto` to `1`. These are value-defaulting
+choices rather than type errors, but they mean absent and empty are not distinguishable after
+replication. `users` replication also synthesises `data.email || \`${entity_id}@example.com\`` — a
+fabricated address rather than a preserved null. Recorded under P2-07 / observations.
+
+**Not verified.** Live row-level comparison of IDs, timestamps, nested JSON, financial subunits and
+GST fields remains BLOCKED on database access. `payment_orders` replication does carry `amount` and
+`currency` in its update clause, and amounts are handled in integer subunits throughout
+`backend/security/payments.js`, which is the correct representation — but no live reconciliation was
+possible.
 
 ## 8. Sync audit
 
@@ -390,9 +417,9 @@ Forensic review of the claimed battery, measured with the project's own runner.
 | `test:db-parity` | 27 | **21 / 21 / 0** | 21 / 21 / 0 |
 | Enterprise (backend + UI) | 210 | **187 + 23 = 210 / 0** | 210 / 0 |
 | Export (5 files) | 49 | **38 / 38 / 0** | 38 / 38 / 0 |
-| **TOTAL** | **676** | **919 / 918 / 1 FAIL** | **928 / 928 / 0** |
+| **TOTAL** | **676** | **919 / 918 / 1 FAIL** | **929 / 929 / 0** |
 
-- **PASSED:** 918 (frozen) → 928 (post-fix)
+- **PASSED:** 918 (frozen) → 929 (post-fix)
 - **FAILED:** 1 (frozen) → 0 (post-fix)
 - **SKIPPED:** 0 · **CANCELLED:** 0 · **TODO:** 0 · **BLOCKED:** 0 · **FLAKY:** 0 (the failure was deterministic across 3 runs)
 
@@ -401,7 +428,7 @@ code paths with **no negative-path coverage**. No test asked what happens when t
 throws, when the revision-guard read throws, or when a plain ADMIN calls the switch. The suites were
 broad and genuine (real assertions, real persistence, real authorization, adversarial tenant cases)
 but systematically optimistic about infrastructure failure. That single blind spot accounts for all
-three P1s.
+four P1 code defects.
 
 ## 24. UAT audit (UAT-01 … UAT-18)
 
@@ -472,7 +499,7 @@ by the build. **PERFORMANCE: NOT VERIFIED.**
 
 **WEAKNESSES**
 - **Fail-open error handling in critical gates (P1, HIGH impact).** Three P1s traced to swallowed exceptions. *Mitigation:* fixes applied; add lint/test policy requiring justification for empty catches in `backend/database`.
-- **No negative-path coverage for infrastructure failure (HIGH impact).** Root cause of all three P1s. *Mitigation:* 9 regression tests added; extend the pattern to remaining gates.
+- **No negative-path coverage for infrastructure failure or update-of-existing-row paths (HIGH impact).** Root cause of all four P1 code defects: the suites tested happy-path inserts and never asked what happens when a probe throws or when a row already exists. *Mitigation:* 10 regression tests added; extend the pattern to remaining gates and to the other 14 replicated entity types (P2-07).
 - **Configuration drift between artefact and production (P1).** *Mitigation:* add a startup assertion that fails readiness when a template-declared worker is unconfigured.
 - **Single-instance dependency (MEDIUM).** The switch mutex is in-process. *Mitigation:* implement the documented `database_engine_state` cross-process lock before scaling.
 - **Documentation drift (P2).** Authoritative SHA in 0/74 docs; 3 invalid evidence citations. *Mitigation:* generate the SHA and test counts into the certification from CI.
@@ -499,7 +526,7 @@ See **`docs/INDEPENDENT_CLOUD_ENGINEER_EVIDENCE_MATRIX.md`** (mandatory delivera
 
 See **`docs/INDEPENDENT_CLOUD_ENGINEER_GAP_REGISTER.md`** (mandatory deliverable, produced in this audit).
 
-Summary: **0 P0 · 5 P1 (3 fixed, 2 open-blocked) · 5 P2 (1 fixed) · 3 P3.**
+Summary: **0 P0 · 6 P1 (4 fixed, 2 open-blocked) · 6 P2 (1 fixed) · 3 P3.**
 
 ## 30. Final decision
 

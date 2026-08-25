@@ -450,7 +450,18 @@ async function replicateToMySQL(event, poolOverride = null) {
             const sql = `
                 INSERT INTO resumes (\`id\`, \`user_id\`, \`title\`, \`template\`, \`revision\`, \`firstname\`, \`lastname\`, \`email\`, \`phone\`, \`occupation\`, \`country\`, \`city\`, \`address\`, \`postalcode\`, \`website\`, \`linkedin\`, \`github\`, \`photo\`, \`showPhoto\`, \`summary\`, \`employments\`, \`educations\`, \`skills\`, \`languages\`, \`hobbies\`, \`projects\`, \`certifications\`, \`achievements\`, \`references\`, \`customSections\`, \`sectionOrder\`, \`hiddenSections\`, \`completedSteps\`)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE \`title\`=VALUES(\`title\`), \`template\`=VALUES(\`template\`), \`revision\`=VALUES(\`revision\`), \`summary\`=VALUES(\`summary\`), updated_at=CURRENT_TIMESTAMP
+                ON DUPLICATE KEY UPDATE
+                    \`user_id\`=VALUES(\`user_id\`), \`title\`=VALUES(\`title\`), \`template\`=VALUES(\`template\`), \`revision\`=VALUES(\`revision\`),
+                    \`firstname\`=VALUES(\`firstname\`), \`lastname\`=VALUES(\`lastname\`), \`email\`=VALUES(\`email\`), \`phone\`=VALUES(\`phone\`),
+                    \`occupation\`=VALUES(\`occupation\`), \`country\`=VALUES(\`country\`), \`city\`=VALUES(\`city\`), \`address\`=VALUES(\`address\`),
+                    \`postalcode\`=VALUES(\`postalcode\`), \`website\`=VALUES(\`website\`), \`linkedin\`=VALUES(\`linkedin\`), \`github\`=VALUES(\`github\`),
+                    \`photo\`=VALUES(\`photo\`), \`showPhoto\`=VALUES(\`showPhoto\`), \`summary\`=VALUES(\`summary\`),
+                    \`employments\`=VALUES(\`employments\`), \`educations\`=VALUES(\`educations\`), \`skills\`=VALUES(\`skills\`),
+                    \`languages\`=VALUES(\`languages\`), \`hobbies\`=VALUES(\`hobbies\`), \`projects\`=VALUES(\`projects\`),
+                    \`certifications\`=VALUES(\`certifications\`), \`achievements\`=VALUES(\`achievements\`), \`references\`=VALUES(\`references\`),
+                    \`customSections\`=VALUES(\`customSections\`), \`sectionOrder\`=VALUES(\`sectionOrder\`),
+                    \`hiddenSections\`=VALUES(\`hiddenSections\`), \`completedSteps\`=VALUES(\`completedSteps\`),
+                    updated_at=CURRENT_TIMESTAMP
             `;
             await pool.query(sql, values);
         }
