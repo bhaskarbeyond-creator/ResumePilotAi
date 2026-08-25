@@ -387,25 +387,25 @@ export default function User360Drawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-xs transition-opacity animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-sm transition-all animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="user-360-title"
     >
       <div
-        className="w-full max-w-2xl bg-white shadow-2xl h-full flex flex-col overflow-hidden border-l border-slate-200"
+        className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200/80 flex flex-col h-[90vh] max-h-[860px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drawer Header */}
-        <div className="p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white flex items-start justify-between shrink-0 border-b border-indigo-900/30">
+        {/* Workspace Header */}
+        <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white flex items-center justify-between shrink-0 border-b border-indigo-900/30">
           <div className="flex items-center gap-4">
             <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center font-black text-2xl text-white shadow-lg ring-2 ring-indigo-400/30 shrink-0">
               {u?.displayName ? u.displayName.charAt(0).toUpperCase() : <FiUser />}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 id="user-360-title" className="text-xl font-black tracking-tight text-white">
+                <h2 id="user-360-title" className="text-lg sm:text-xl font-black tracking-tight text-white">
                   {u?.displayName || 'User Profile'}
                 </h2>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
@@ -422,7 +422,7 @@ export default function User360Drawer({
                   </span>
                 )}
               </div>
-              <div className="text-xs text-slate-300 font-mono mt-1.5 flex items-center gap-2 flex-wrap">
+              <div className="text-xs text-slate-300 font-mono mt-1 flex items-center gap-2 flex-wrap">
                 <span className="font-semibold">{u?.email || 'No email associated'}</span>
                 <span className="text-slate-500">•</span>
                 <button
@@ -441,66 +441,115 @@ export default function User360Drawer({
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close drawer"
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
-          >
-            <FiX className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Tab Navigation - Hidden Scrollbar */}
-        <div className="flex items-center border-b border-slate-200 bg-slate-50/90 px-4 shrink-0 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-xs">
-          {[
-            { id: 'identity', label: 'Identity & Security', icon: <FiShield /> },
-            { id: 'tenancy', label: `Tenants (${userData?.tenancy?.totalTenants || 0})`, icon: <FiBriefcase /> },
-            { id: 'rbac', label: 'Roles & Access', icon: <FiKey /> },
-            { id: 'billing', label: 'Subscription & Billing', icon: <FiCreditCard /> },
-            { id: 'ai', label: 'AI Entitlements', icon: <FiCpu /> },
-            { id: 'audit', label: 'Audit Timeline', icon: <FiActivity /> },
-          ].map(tab => (
+          <div className="flex items-center gap-2">
             <button
-              key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3.5 font-bold border-b-2 whitespace-nowrap transition text-xs ${
-                activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-600 bg-white shadow-2xs'
-                  : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'
-              }`}
+              onClick={onClose}
+              aria-label="Close workspace"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
             >
-              <span className={activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'}>{tab.icon}</span>
-              {tab.label}
+              <FiX className="h-5 w-5" />
             </button>
-          ))}
+          </div>
         </div>
 
-
-        {/* Alert Notifications */}
-        {error && (
-          <div className="m-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center justify-between" role="alert">
-            <div className="flex items-center gap-2 font-medium">
-              <FiAlertTriangle className="text-red-600 shrink-0" />
-              <span>{error}</span>
+        {/* Workspace Body: Split-Panel Layout */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Rail Navigation Sidebar */}
+          <div className="w-64 shrink-0 bg-slate-50/90 border-r border-slate-200/80 p-3 space-y-1.5 overflow-y-auto flex flex-col justify-between">
+            <div className="space-y-1">
+              <p className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">User 360 Workspace</p>
+              {[
+                { id: 'identity', label: 'Identity & Security', desc: 'Auth, status, 2FA & reset', icon: <FiShield /> },
+                { id: 'tenancy', label: 'Tenants & Orgs', count: userData?.tenancy?.totalTenants || 0, desc: 'Enterprise workspaces', icon: <FiBriefcase /> },
+                { id: 'rbac', label: 'Roles & Access', desc: 'Platform permissions', icon: <FiKey /> },
+                { id: 'billing', label: 'Subscription & Billing', desc: 'Plan tier & invoices', icon: <FiCreditCard /> },
+                { id: 'ai', label: 'AI Entitlements', desc: 'Usage & custom quota', icon: <FiCpu /> },
+                { id: 'audit', label: 'Audit Timeline', desc: 'Security activity logs', icon: <FiActivity /> },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-2xl transition flex items-start gap-3 cursor-pointer ${
+                    activeTab === tab.id
+                      ? 'bg-white text-indigo-700 font-extrabold shadow-xs border border-slate-200/80'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                    activeTab === tab.id ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-200/70 text-slate-500'
+                  }`}>
+                    {tab.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold truncate">{tab.label}</p>
+                      {tab.count !== undefined && (
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                          activeTab === tab.id ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-[10px] mt-0.5 truncate ${activeTab === tab.id ? 'text-indigo-600/80' : 'text-slate-400'}`}>
+                      {tab.desc}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
-            <button type="button" onClick={() => setError('')} className="text-red-500 hover:text-red-700 font-bold ml-2">Dismiss</button>
-          </div>
-        )}
-        {success && (
-          <div className="m-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between" role="status">
-            <div className="flex items-center gap-2 font-medium">
-              <FiCheck className="text-emerald-600 shrink-0" />
-              <span>{success}</span>
-            </div>
-            <button type="button" onClick={() => setSuccess('')} className="text-emerald-500 hover:text-emerald-700 font-bold ml-2">Dismiss</button>
-          </div>
-        )}
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 text-slate-700 space-y-5">
-          {loading ? (
+            {/* Quick Actions Panel */}
+            <div className="p-3 bg-white rounded-2xl border border-slate-200/80 space-y-2 mt-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Quick Actions</p>
+              <button
+                type="button"
+                onClick={handleSuspensionToggle}
+                disabled={busyAction === 'suspend'}
+                className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs ${
+                  u?.suspended ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                }`}
+              >
+                {u?.suspended ? <><FiUnlock /> Restore</> : <><FiLock /> Suspend</>}
+              </button>
+              <button
+                type="button"
+                onClick={handleSendPasswordReset}
+                disabled={busyAction === 'reset-password' || !u?.email}
+                className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 flex items-center justify-center gap-1.5 transition shadow-2xs disabled:opacity-50"
+              >
+                <FiKey /> Reset Password
+              </button>
+            </div>
+          </div>
+
+          {/* Right Workspace Main Content Area */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-white">
+            {/* Alert Notifications */}
+            {error && (
+              <div className="m-4 mb-0 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center justify-between" role="alert">
+                <div className="flex items-center gap-2 font-medium">
+                  <FiAlertTriangle className="text-red-600 shrink-0" />
+                  <span>{error}</span>
+                </div>
+                <button type="button" onClick={() => setError('')} className="text-red-500 hover:text-red-700 font-bold ml-2">Dismiss</button>
+              </div>
+            )}
+            {success && (
+              <div className="m-4 mb-0 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between" role="status">
+                <div className="flex items-center gap-2 font-medium">
+                  <FiCheck className="text-emerald-600 shrink-0" />
+                  <span>{success}</span>
+                </div>
+                <button type="button" onClick={() => setSuccess('')} className="text-emerald-500 hover:text-emerald-700 font-bold ml-2">Dismiss</button>
+              </div>
+            )}
+
+            {/* Scrollable Content Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
               <FiRefreshCw className="h-8 w-8 animate-spin text-indigo-600" />
               <p className="text-xs font-bold uppercase tracking-wider">Loading complete User 360 profile…</p>
@@ -1084,6 +1133,8 @@ export default function User360Drawer({
           )}
         </div>
       </div>
+    </div>
+  </div>
 
       {/* Password Reset Link Modal */}
       {resetLinkData && (

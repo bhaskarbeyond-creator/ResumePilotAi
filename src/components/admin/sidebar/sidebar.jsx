@@ -303,20 +303,20 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 {/* Navigation Menu */}
                 <div className="flex-1 overflow-y-auto">
                     {!sidebarCollapsed && (
-                        <div className="px-6 py-2">
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</p>
+                        <div className="px-5 py-2">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">PLATFORM CONSOLE</p>
                         </div>
                     )}
 
-                    <div className="px-3">
+                    <div className="px-3 space-y-0.5">
                         <Link to={homeItem.path} onClick={onCloseMobile}>
-                            <div className={`group relative flex items-center text-[0.82rem] transition-all duration-200 rounded-lg mb-1 ${
+                            <div className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl mb-1 ${
                                 location.pathname === homeItem.path
-                                    ? 'bg-indigo-50/60 text-indigo-700 font-bold before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-indigo-600 before:shadow-[0_0_6px_rgba(79,70,229,0.4)]'
-                                    : 'text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900'
+                                    ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                    : 'text-slate-700 font-semibold hover:bg-slate-100/80 hover:text-slate-950'
                             } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
-                                <homeItem.icon className={`text-[1.1rem] min-w-[20px] transition-colors ${
-                                    location.pathname === homeItem.path ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                                <homeItem.icon className={`text-[1.15rem] min-w-[20px] transition-colors ${
+                                    location.pathname === homeItem.path ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
                                 } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                 {!sidebarCollapsed && <span className="flex-1">{homeItem.label}</span>}
                             </div>
@@ -334,28 +334,28 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                         if (!isSettingsPage) navigate('/adm/settings?tab=modulesSettings');
                                     }
                                 }}
-                                className={`group relative flex items-center text-[0.82rem] transition-all duration-200 rounded-lg cursor-pointer ${
+                                className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl cursor-pointer ${
                                     isSettingsPage
-                                        ? 'bg-indigo-50/60 text-indigo-700 font-bold before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-indigo-600 before:shadow-[0_0_6px_rgba(79,70,229,0.4)]'
-                                        : 'text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900'
+                                        ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                        : 'text-slate-700 font-semibold hover:bg-slate-100/80 hover:text-slate-950'
                                 } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}
                             >
-                                <FiSettings className={`text-[1.1rem] min-w-[20px] transition-colors ${
-                                    isSettingsPage ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                                <FiSettings className={`text-[1.15rem] min-w-[20px] transition-colors ${
+                                    isSettingsPage ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
                                 } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                 {!sidebarCollapsed && (
                                     <>
                                         <span className="flex-1">Settings</span>
                                         {settingsOpen
-                                            ? <FiChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                                            : <FiChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+                                            ? <FiChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                                            : <FiChevronRight className="w-3.5 h-3.5 text-slate-400" />}
                                     </>
                                 )}
                             </div>
 
                             {/* Settings Sub-menu — only when expanded & sidebar not collapsed */}
                             {settingsOpen && !sidebarCollapsed && (
-                                <div className="ml-4 mt-0.5 border-l-2 border-purple-100 pl-2 space-y-0">
+                                <div className="ml-4 mt-1 border-l-2 border-indigo-100 pl-2 space-y-0.5">
                                     {SETTINGS_GROUPS.map((group) => {
                                         const isGroupCollapsed = collapsedGroups[group.label];
                                         const groupHasActive = group.items.some(i => i.key === activeTab);
@@ -365,14 +365,14 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                                 <button
                                                     type="button"
                                                     onClick={() => toggleGroup(group.label)}
-                                                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left transition-all cursor-pointer mt-1 ${
-                                                        groupHasActive ? 'text-purple-700' : 'text-gray-400 hover:text-gray-700'
+                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer mt-1 ${
+                                                        groupHasActive ? 'text-indigo-800 font-extrabold bg-indigo-50/50' : 'text-slate-500 font-bold hover:text-slate-800'
                                                     }`}
                                                 >
-                                                    <span className="text-[9px] font-extrabold uppercase tracking-widest">{group.label}</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-wider">{group.label}</span>
                                                     {isGroupCollapsed
-                                                        ? <FiChevronRight className="w-2.5 h-2.5" />
-                                                        : <FiChevronDown className="w-2.5 h-2.5" />}
+                                                        ? <FiChevronRight className="w-3 h-3 text-slate-400" />
+                                                        : <FiChevronDown className="w-3 h-3 text-slate-600" />}
                                                 </button>
                                                 {/* Group items */}
                                                 {!isGroupCollapsed && group.items.map((item) => {
@@ -385,11 +385,11 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                                             onClick={() => handleSettingsTabClick(item.key)}
                                                             className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs transition-all cursor-pointer ${
                                                                 isActive
-                                                                    ? 'bg-purple-50 text-purple-700 font-bold border-l-2 border-purple-600 shadow-2xs'
-                                                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent'
+                                                                    ? 'bg-indigo-50 text-indigo-700 font-bold border-l-2 border-indigo-600 shadow-2xs'
+                                                                    : 'text-slate-700 font-medium hover:bg-slate-100 hover:text-slate-900 border-l-2 border-transparent'
                                                             }`}
                                                         >
-                                                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-purple-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                                                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'}`} />
                                                             <span className="truncate">{item.label}</span>
                                                         </button>
                                                     );
@@ -403,18 +403,18 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
 
                         {navGroups.map(group => (
                             <div key={group.label} className="mb-2">
-                                {!sidebarCollapsed && <p className="px-3 pt-3 pb-1 text-[9px] font-extrabold uppercase tracking-widest text-slate-400">{group.label}</p>}
+                                {!sidebarCollapsed && <p className="px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{group.label}</p>}
                                 {group.items.map(item => (
                                     <Link to={item.path} key={item.path} onClick={onCloseMobile}>
                                         <div
-                                            className={`group relative flex items-center text-[0.82rem] transition-all duration-200 rounded-lg mb-1 cursor-pointer ${
+                                            className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl mb-1 cursor-pointer ${
                                                 location.pathname === item.path || location.pathname.startsWith(item.path)
-                                                    ? 'bg-indigo-50/60 text-indigo-700 font-bold before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-indigo-600 before:shadow-[0_0_6px_rgba(79,70,229,0.4)]'
-                                                    : 'text-slate-600 font-medium hover:bg-slate-100 hover:text-slate-900'
+                                                    ? 'bg-indigo-50 text-indigo-700 font-extrabold shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                                    : 'text-slate-700 font-semibold hover:bg-slate-100/80 hover:text-slate-950'
                                             } ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2 px-3.5'}`}
                                         >
-                                            <item.icon className={`text-[1.1rem] min-w-[20px] transition-colors ${
-                                                location.pathname === item.path || location.pathname.startsWith(item.path) ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                                            <item.icon className={`text-[1.15rem] min-w-[20px] transition-colors ${
+                                                location.pathname === item.path || location.pathname.startsWith(item.path) ? 'text-indigo-600' : 'text-slate-500 group-hover:text-slate-800'
                                             } ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                             {!sidebarCollapsed && <span className="flex-1">{item.label}</span>}
                                             {item.healthIndicator && (
@@ -436,8 +436,8 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         {/* Logout */}
                         <div
                             onClick={handleLogout}
-                            className={`group flex items-center text-[0.82rem] font-medium transition-all duration-200 rounded-lg mb-1 cursor-pointer text-slate-600 hover:bg-red-50 hover:text-red-700 ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
-                            <FiLogOut className={`text-[1.1rem] min-w-[20px] transition-colors text-slate-400 group-hover:text-red-600 ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                            className={`group flex items-center text-[0.84rem] font-bold transition-all duration-200 rounded-xl mb-1 cursor-pointer text-slate-700 hover:bg-red-50 hover:text-red-700 ${sidebarCollapsed ? 'p-[10px] justify-center' : 'py-2.5 px-3.5'}`}>
+                            <FiLogOut className={`text-[1.15rem] min-w-[20px] transition-colors text-slate-500 group-hover:text-red-600 ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                             {!sidebarCollapsed && <span className="flex-1">Logout</span>}
                         </div>
                     </div>
