@@ -52,15 +52,29 @@ function fallbackCurrencyConfig() {
 async function getPlatformCurrencyConfig(db) {
   if (!db) return fallbackCurrencyConfig();
   try {
-    const doc = await db.collection('data').doc('system_settings').get();
-    const data = doc.data() || {};
-    const code = normalizeCurrencyCode(data.currency || data.defaultCurrency || process.env.DEFAULT_CURRENCY || 'INR');
+    const [sysDoc, pubDoc] = await Promise.all([
+      db.collection('data').doc('system_settings').get().catch(() => ({ exists: false, data: () => ({}) })),
+      db.collection('data').doc('public_config').get().catch(() => ({ exists: false, data: () => ({}) })),
+    ]);
+    const sysData = (sysDoc && typeof sysDoc.data === 'function') ? (sysDoc.data() || {}) : {};
+    const pubData = (pubDoc && typeof pubDoc.data === 'function') ? (pubDoc.data() || {}) : {};
+    const code = normalizeCurrencyCode(
+      sysData.currency ||
+      sysData.defaultCurrency ||
+      pubData.currency ||
+      pubData.subscriptions?.currency ||
+      pubData.currencyMeta?.code ||
+      process.env.DEFAULT_CURRENCY ||
+      process.env.CURRENCY ||
+      'INR'
+    );
+    const meta = getCurrencyMeta(code);
     return {
-      ...getCurrencyMeta(code),
+      ...meta,
       supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
-      allowMultiCurrency: Boolean(data.allowMultiCurrency),
-      source: doc.exists && data.currency ? 'system_settings' : 'default',
-      updatedAt: data.currencyUpdatedAt || null,
+      allowMultiCurrency: Boolean(sysData.allowMultiCurrency ?? pubData.allowMultiCurrency),
+      source: (sysDoc?.exists && sysData.currency) ? 'system_settings' : (pubDoc?.exists && (pubData.currency || pubData.subscriptions?.currency)) ? 'public_config' : 'default',
+      updatedAt: sysData.currencyUpdatedAt || pubData.updatedAt || null,
     };
   } catch (error) {
     return { ...fallbackCurrencyConfig(), source: 'error-fallback' };

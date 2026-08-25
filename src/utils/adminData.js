@@ -24,23 +24,47 @@ export function normalizeAdminSubscription(input = {}, index = 0, now = new Date
     };
 }
 
+const CURRENCY_SYMBOLS = {
+    INR: '₹',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    CAD: 'CA$',
+    AUD: 'A$',
+    SGD: 'S$',
+    AED: 'AED ',
+    JPY: '¥',
+};
+
 export function normalizeAdminMetrics(stats, earnings) {
     const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+    const currency = /^[A-Z]{3}$/.test(text(earnings?.currency).toUpperCase())
+        ? text(earnings.currency).toUpperCase()
+        : (/^[A-Z]{3}$/.test(text(stats?.currency).toUpperCase()) ? text(stats.currency).toUpperCase() : 'INR');
     return {
         users: finite(stats?.numberOfUsers),
         resumes: finite(stats?.numberOfResumesCreated),
         downloads: finite(stats?.numberOfResumesDownloaded),
         earnings: finite(earnings?.amount),
-        currency: /^[A-Z]{3}$/.test(text(earnings?.currency).toUpperCase()) ? text(earnings.currency).toUpperCase() : 'USD',
+        currency,
         updatedAt: toAdminDate(stats?.updatedAt || earnings?.updatedAt),
     };
 }
 
-export function formatAdminMoney(amount, currency = 'USD') {
+export function formatAdminMoney(amount, currency = 'INR') {
     if (!Number.isFinite(amount)) return 'Unavailable';
+    const cleanCurrency = (/^[A-Z]{3}$/.test(String(currency || '').trim().toUpperCase()))
+        ? String(currency).trim().toUpperCase()
+        : 'INR';
+    const symbol = CURRENCY_SYMBOLS[cleanCurrency] || (cleanCurrency === 'INR' ? '₹' : (cleanCurrency === 'EUR' ? '€' : (cleanCurrency === 'GBP' ? '£' : '$')));
     try {
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount);
+        const num = Number(amount);
+        const formatted = num.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        return `${symbol}${formatted}`;
     } catch {
-        return `${currency} ${amount.toFixed(2)}`;
+        return `${symbol}${amount.toFixed(2)}`;
     }
 }

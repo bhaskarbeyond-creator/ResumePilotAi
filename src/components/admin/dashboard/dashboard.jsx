@@ -34,11 +34,31 @@ const Dashboard = () => {
   const healthScore = center?.healthScore ?? null;
   const riskScore = center?.riskScore ?? null;
 
+  const currencyCode = center?.kpis?.currency || 'INR';
+  const currencySymbol = center?.kpis?.currencySymbol || (
+    currencyCode === 'INR' ? '₹' :
+    currencyCode === 'EUR' ? '€' :
+    currencyCode === 'GBP' ? '£' :
+    currencyCode === 'CAD' ? 'CA$' :
+    currencyCode === 'AUD' ? 'A$' :
+    currencyCode === 'JPY' ? '¥' :
+    currencyCode === 'AED' ? 'AED ' :
+    '$'
+  );
+
   const cards = [
     {
       label: 'Recorded Platform Earnings',
-      value: center ? formatAdminMoney(center.kpis?.totalEarnings, center.kpis?.currency) : '—',
-      icon: <FaDollarSign className="h-5 w-5 text-emerald-600" />,
+      value: center ? formatAdminMoney(center.kpis?.totalEarnings, currencyCode) : '—',
+      icon: (
+        <span
+          data-testid="currency-symbol-icon"
+          className="font-black text-base text-emerald-600 flex items-center justify-center h-5 w-5 leading-none select-none font-sans"
+          title={`System Currency: ${currencyCode}`}
+        >
+          {currencySymbol.trim()}
+        </span>
+      ),
       badgeBg: 'bg-emerald-50 border-emerald-100',
       sub: 'Verified transactional gross revenue',
     },

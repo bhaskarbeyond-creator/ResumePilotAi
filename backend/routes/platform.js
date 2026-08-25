@@ -17,6 +17,7 @@ const {
 } = require('../services/platformHealth');
 const { getActiveEngine } = require('../database/engineManager');
 const { getPool } = require('../database/mysql');
+const { getPlatformCurrencyConfig, normalizeCurrencyCode, formatCurrencyAmount } = require('../services/platformCurrency');
 
 const router = express.Router();
 
@@ -413,13 +414,16 @@ router.get('/overview', async (req, res) => {
       tenantCounts = { total, active, suspended, source: 'SAMPLED_MAX_500' };
     }
 
+    const platformCurrency = await getPlatformCurrencyConfig(db);
+
     return res.json({
       kpis: {
         totalUsers: statsData ? (statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? null) : null,
         resumesCreated: statsData ? (statsData.resumes ?? statsData.numberOfResumesCreated ?? null) : null,
         totalDownloads: statsData ? (statsData.downloads ?? statsData.numberOfResumesDownloaded ?? null) : null,
         totalEarningsCents: earningsData ? (earningsData.total ?? earningsData.amount ?? null) : null,
-        currency: earningsData?.currency || null,
+        currency: earningsData?.currency || platformCurrency.code || 'INR',
+        currencySymbol: platformCurrency.symbol || '₹',
         tenants: tenantCounts,
       },
       sources: { stats: statsData ? 'AVAILABLE' : 'UNAVAILABLE', earnings: earningsData ? 'AVAILABLE' : 'UNAVAILABLE', tenants: tenantCounts ? 'AVAILABLE' : 'UNAVAILABLE' },
@@ -687,6 +691,7 @@ router.post('/maintenance', requireRecentAdminAuthentication, async (req, res) =
 router.get('/command-center', async (req, res) => {
   const db = req.app?.get('db');
   const tenantService = req.app?.get('tenantService');
+  const platformCurrency = await getPlatformCurrencyConfig(db);
   const health = await buildHealthPayload(req);
   const sources = { health: 'ok' };
   const recommendations = [];
@@ -758,7 +763,7 @@ router.get('/command-center', async (req, res) => {
 
       earningsData = {
         amount: Math.max(baseEarnings, Number(earningsRows[0]?.total || 0)),
-        currency: 'USD'
+        currency: statsRows[0]?.currency || platformCurrency.code || 'INR'
       };
 
       const [auditRows] = await pool.query('SELECT * FROM database_switch_audit ORDER BY created_at DESC LIMIT 8');
@@ -972,7 +977,8 @@ router.get('/command-center', async (req, res) => {
       resumesCreated: statsData.numberOfResumesCreated ?? statsData.resumes ?? 0,
       totalDownloads: statsData.numberOfResumesDownloaded ?? statsData.downloads ?? 0,
       totalEarnings: earningsData.amount ?? earningsData.total ?? 0,
-      currency: earningsData.currency || 'USD',
+      currency: earningsData.currency || platformCurrency.code || 'INR',
+      currencySymbol: platformCurrency.symbol || (platformCurrency.code === 'INR' ? '₹' : (platformCurrency.code === 'EUR' ? '€' : (platformCurrency.code === 'GBP' ? '£' : '$'))),
       tenants: {
         total: tenantTotalAgg.ok ? tenantTotalAgg.value : isMySQL ? 0 : tenantsResult.ok ? tenants.length : null,
         active: activeTenantAgg.ok ? activeTenantAgg.value : isMySQL ? 0 : tenantsResult.ok ? tenants.filter(t => t.lifecycleState === 'ACTIVE').length : null,
