@@ -1,0 +1,108 @@
+const mysql = require('mysql2/promise');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+const sslConfig = process.env.DB_SSL === 'true' || process.env.MYSQL_SSL === 'true'
+    ? { rejectUnauthorized: false }
+    : undefined;
+
+const poolConfig = {
+    host: process.env.DB_HOST || process.env.MYSQL_HOST || '127.0.0.1',
+    port: Number(process.env.DB_PORT || process.env.MYSQL_PORT || 3306),
+    user: process.env.DB_USER || process.env.MYSQL_USER || 'root',
+    password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : (process.env.MYSQL_PASSWORD || ''),
+    database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'ai_resume_builder',
+    waitForConnections: true,
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 15),
+    queueLimit: 0,
+    charset: 'utf8mb4',
+    ssl: sslConfig,
+    multipleStatements: true,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+};
+
+let pool = null;
+
+function getPool() {
+    if (!pool) {
+        pool = mysql.createPool(poolConfig);
+    }
+    return pool;
+}
+
+/**
+ * Tests live MySQL/MariaDB connectivity.
+ * @returns {Promise<{connected: boolean, latencyMs: number, version?: string, error?: string}>}
+ */
+async function testConnection() {
+    const start = Date.now();
+    try {
+        if (!process.env.DB_USER && process.env.NODE_ENV === 'production') {
+            return {
+                connected: false,
+                latencyMs: 0,
+                error: 'MySQL credentials not configured in backend/.env (DB_NAME, DB_USER, DB_PASSWORD missing)',
+                code: 'CREDENTIALS_MISSING',
+                host: poolConfig.host,
+                database: poolConfig.database,
+            };
+        }
+        const p = getPool();
+        const [rows] = await p.query('SELECT 1 AS alive, VERSION() AS version');
+        const latencyMs = Date.now() - start;
+        return {
+            connected: true,
+            latencyMs,
+            version: rows[0]?.version || 'Unknown',
+            host: poolConfig.host,
+            database: poolConfig.database,
+        };
+    } catch (err) {
+        return {
+            connected: false,
+            latencyMs: Date.now() - start,
+            error: err.message,
+            code: err.code || 'CONNECTION_FAILED',
+            host: poolConfig.host,
+            database: poolConfig.database,
+        };
+    }
+}
+
+/**
+ * Executes schema.sql to ensure all tables and indexes exist.
+ * Safe and idempotent (uses CREATE TABLE IF NOT EXISTS).
+ */
+async function initializeSchema() {
+    try {
+        if (!process.env.DB_USER && process.env.NODE_ENV === 'production') {
+            return {
+                success: false,
+                error: 'MySQL credentials not configured in backend/.env. Please configure DB_NAME, DB_USER, and DB_PASSWORD first.',
+            };
+        }
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        if (!fs.existsSync(schemaPath)) {
+            throw new Error(`Schema file not found at ${schemaPath}`);
+        }
+        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+        const p = getPool();
+        await p.query(schemaSql);
+        console.log('[MySQL] Schema successfully initialized / verified.');
+        return { success: true };
+    } catch (err) {
+        console.error('[MySQL] Schema initialization error:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+module.exports = {
+    getPool,
+    pool: getPool(),
+    testConnection,
+    initializeSchema,
+    poolConfig,
+};

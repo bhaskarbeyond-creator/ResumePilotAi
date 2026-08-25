@@ -24,8 +24,8 @@ execSync('ssh -o BatchMode=yes airesume "mkdir -p backups && tar -czf backups/pr
 console.log('Remote backup complete.');
 
 console.log('\n=== Step 2: Deploying Backend Files ===');
-execSync('tar -czf backend-bundle.tar.gz -C backend COMMIT_SHA index.js package.json routes services security enterprise', { stdio: 'inherit' });
-execSync('ssh -o BatchMode=yes airesume "mkdir -p backend/enterprise"', { stdio: 'inherit' });
+execSync('tar -czf backend-bundle.tar.gz -C backend COMMIT_SHA index.js package.json routes services security enterprise database repositories', { stdio: 'inherit' });
+execSync('ssh -o BatchMode=yes airesume "mkdir -p backend/enterprise backend/database backend/repositories"', { stdio: 'inherit' });
 execSync('scp -o BatchMode=yes backend-bundle.tar.gz airesume:backend-bundle.tar.gz', { stdio: 'inherit' });
 execSync('ssh -o BatchMode=yes airesume "tar -xzf backend-bundle.tar.gz -C backend && rm backend-bundle.tar.gz"', { stdio: 'inherit' });
 if (fs.existsSync('backend-bundle.tar.gz')) fs.unlinkSync('backend-bundle.tar.gz');

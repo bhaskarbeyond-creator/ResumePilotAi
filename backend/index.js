@@ -29,6 +29,15 @@ const { adminAuditRouter } = require('./routes/adminAudit');
 const { platformRouter } = require('./routes/platform');
 const { adminUsersRouter, adminUserProjection } = require('./routes/adminUsers');
 const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
+const { resumesRouter } = require('./routes/resumes');
+const { portfoliosRouter } = require('./routes/portfolios');
+const { coversRouter } = require('./routes/covers');
+const { jobsDataRouter } = require('./routes/jobsData');
+const { blogDataRouter } = require('./routes/blogData');
+const { cmsPagesRouter } = require('./routes/cmsPages');
+const { notificationsDataRouter } = require('./routes/notificationsData');
+const { usersDataRouter } = require('./routes/usersData');
+const { databaseAdminRouter } = require('./routes/databaseAdmin');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -279,6 +288,17 @@ app.use('/api', (req, res, next) => {
     if (req.serviceContext || req.pendingSupportGrantId) return next();
     return enforceApiPolicy(req, res, next);
 });
+
+// Mount Data Abstraction Layer APIs
+app.use('/api/resumes', resumesRouter);
+app.use('/api/portfolios', portfoliosRouter);
+app.use('/api/covers', coversRouter);
+app.use('/api/jobs-data', jobsDataRouter);
+app.use('/api/blog-data', blogDataRouter);
+app.use('/api/cms-pages', cmsPagesRouter);
+app.use('/api/notifications-data', notificationsDataRouter);
+app.use('/api/users-data', usersDataRouter);
+app.use('/api/admin/database-settings', databaseAdminRouter);
 
 // During enterprise rollout, reject tenant/workspace headers on legacy routes rather
 // than silently ignoring them. A client must use a tenant-aware /api/enterprise path

@@ -1,0 +1,474 @@
+const admin = require('../services/firebaseAdmin');
+
+class FirestoreRepository {
+    constructor(db) {
+        this.db = db;
+    }
+
+    _ensureDb() {
+        if (!this.db) {
+            try {
+                this.db = admin.firestore();
+            } catch (e) {
+                throw new Error('Firestore database instance is unavailable.');
+            }
+        }
+        return this.db;
+    }
+
+    // ==========================================
+    // 1. RESUMES
+    // ==========================================
+    async getResumes(userId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).collection('resumes').get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getResume(userId, resumeId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).collection('resumes').doc(resumeId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async saveResume(userId, resumeId, data, { expectedRevision = null } = {}) {
+        const db = this._ensureDb();
+        const ref = db.collection('users').doc(userId).collection('resumes').doc(resumeId);
+        
+        let result = null;
+        await db.runTransaction(async tx => {
+            const snap = await tx.get(ref);
+            const existing = snap.exists ? snap.data() : {};
+            const currentRev = Number(existing.revision) || 0;
+            
+            if (expectedRevision !== null && currentRev !== Number(expectedRevision)) {
+                const conflict = new Error('Resume conflict: document updated in another session');
+                conflict.code = 'RESUME_CONFLICT';
+                conflict.remoteRevision = currentRev;
+                throw conflict;
+            }
+
+            const nextRev = currentRev + 1;
+            const now = admin.firestore.FieldValue.serverTimestamp();
+            const payload = {
+                ...data,
+                revision: nextRev,
+                created_at: existing.created_at || now,
+                updatedAt: now,
+            };
+
+            tx.set(ref, payload, { merge: true });
+            result = { id: resumeId, revision: nextRev, ...payload };
+        });
+
+        return result;
+    }
+
+    async deleteResume(userId, resumeId) {
+        const db = this._ensureDb();
+        const batch = db.batch();
+        batch.delete(db.collection('users').doc(userId).collection('resumes').doc(resumeId));
+        batch.delete(db.collection('pb').doc(resumeId));
+        batch.delete(db.collection('users').doc(userId).collection('favourites').doc(resumeId));
+        await batch.commit();
+        return true;
+    }
+
+    async publishResume(userId, resumeId, data, { expectedRevision = null, expectedPublicationRevision = null } = {}) {
+        const db = this._ensureDb();
+        const ownerRef = db.collection('users').doc(userId).collection('resumes').doc(resumeId);
+        const pbRef = db.collection('pb').doc(resumeId);
+        
+        let result = null;
+        await db.runTransaction(async tx => {
+            const [ownerSnap, pbSnap] = await Promise.all([tx.get(ownerRef), tx.get(pbRef)]);
+            if (!ownerSnap.exists) throw new Error('Resume not found');
+            
+            const sourceRev = Number(ownerSnap.data()?.revision || 0);
+            const pubRev = Number(pbSnap.data()?.publicationRevision || 0);
+            
+            if (expectedRevision !== null && sourceRev !== Number(expectedRevision)) {
+                const err = new Error('Resume modified before publication');
+                err.code = 'RESUME_CONFLICT';
+                throw err;
+            }
+            if (expectedPublicationRevision !== null && pubRev !== Number(expectedPublicationRevision)) {
+                const err = new Error('Publication link modified in another session');
+                err.code = 'RESUME_PUBLICATION_CONFLICT';
+                throw err;
+            }
+
+            const nextPubRev = pubRev + 1;
+            const payload = {
+                id: resumeId,
+                ownerUid: userId,
+                isPublished: true,
+                publicationMode: 'explicit',
+                object: typeof data === 'string' ? data : JSON.stringify(data || ownerSnap.data()),
+                sourceRevision: sourceRev,
+                publicationRevision: nextPubRev,
+                publishedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            };
+
+            tx.set(pbRef, payload);
+            result = { resumeId, isPublished: true, sourceRevision: sourceRev, publicationRevision: nextPubRev };
+        });
+
+        return result;
+    }
+
+    async unpublishResume(userId, resumeId, { expectedPublicationRevision = null } = {}) {
+        const db = this._ensureDb();
+        const ref = db.collection('pb').doc(resumeId);
+        let pubRev = 0;
+        await db.runTransaction(async tx => {
+            const snap = await tx.get(ref);
+            if (!snap.exists) return;
+            if (snap.data()?.ownerUid !== userId) throw new Error('Access denied');
+            const current = Number(snap.data()?.publicationRevision || 0);
+            if (expectedPublicationRevision !== null && current !== Number(expectedPublicationRevision)) {
+                const err = new Error('Publication link modified in another session');
+                err.code = 'RESUME_PUBLICATION_CONFLICT';
+                throw err;
+            }
+            pubRev = current + 1;
+            tx.set(ref, {
+                isPublished: false,
+                publicationRevision: pubRev,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        });
+        return { isPublished: false, publicationRevision: pubRev };
+    }
+
+    async getPublicResume(resumeId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('pb').doc(resumeId).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        return {
+            id: snap.id,
+            ownerUid: data.ownerUid,
+            isPublished: data.isPublished === true,
+            publicationMode: data.publicationMode,
+            data: typeof data.object === 'string' ? JSON.parse(data.object) : data.object,
+            sourceRevision: data.sourceRevision,
+            publicationRevision: data.publicationRevision,
+            publishedAt: data.publishedAt?.toDate?.() || data.publishedAt,
+        };
+    }
+
+    async getResumePublication(userId, resumeId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('pb').doc(resumeId).get();
+        if (!snap.exists || snap.data()?.ownerUid !== userId) return { isPublished: false };
+        const data = snap.data();
+        return {
+            isPublished: data.isPublished === true && data.publicationMode === 'explicit',
+            publicationRevision: Number(data.publicationRevision || 0),
+            sourceRevision: Number(data.sourceRevision || 0),
+        };
+    }
+
+    // ==========================================
+    // 2. USERS
+    // ==========================================
+    async getUser(userId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async getUserByEmail(email) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').where('email', '==', String(email).trim().toLowerCase()).limit(1).get();
+        return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+    }
+
+    async getUsers(options = {}) {
+        const db = this._ensureDb();
+        let query = db.collection('users');
+        if (options.limit) query = query.limit(Number(options.limit));
+        const snap = await query.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveUser(userId, userData) {
+        const db = this._ensureDb();
+        const ref = db.collection('users').doc(userId);
+        const payload = {
+            ...userData,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await ref.set(payload, { merge: true });
+        return { id: userId, ...payload };
+    }
+
+    async deleteUser(userId) {
+        const db = this._ensureDb();
+        await db.collection('users').doc(userId).delete();
+        return true;
+    }
+
+    // ==========================================
+    // 3. PORTFOLIOS
+    // ==========================================
+    async getPortfolios(userId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).collection('portfolios').get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getPortfolio(userId, portfolioId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).collection('portfolios').doc(portfolioId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async savePortfolio(userId, portfolioId, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('users').doc(userId).collection('portfolios').doc(portfolioId);
+        const payload = {
+            ...data,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await ref.set(payload, { merge: true });
+        return { id: portfolioId, ...payload };
+    }
+
+    async deletePortfolio(userId, portfolioId) {
+        const db = this._ensureDb();
+        await db.collection('users').doc(userId).collection('portfolios').doc(portfolioId).delete();
+        return true;
+    }
+
+    // ==========================================
+    // 4. COVER LETTERS
+    // ==========================================
+    async getCovers(userId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).collection('covers').get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getCover(userId, coverId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('users').doc(userId).collection('covers').doc(coverId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async saveCover(userId, coverId, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('users').doc(userId).collection('covers').doc(coverId);
+        const payload = {
+            ...data,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await ref.set(payload, { merge: true });
+        return { id: coverId, ...payload };
+    }
+
+    async deleteCover(userId, coverId) {
+        const db = this._ensureDb();
+        await db.collection('users').doc(userId).collection('covers').doc(coverId).delete();
+        return true;
+    }
+
+    // ==========================================
+    // 5. JOBS & APPLICATIONS
+    // ==========================================
+    async getJobs(filters = {}) {
+        const db = this._ensureDb();
+        let q = db.collection('jobs');
+        if (filters.status) q = q.where('status', '==', filters.status);
+        if (filters.employerId) q = q.where('employerId', '==', filters.employerId);
+        if (filters.limit) q = q.limit(Number(filters.limit));
+        const snap = await q.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getJob(jobId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('jobs').doc(jobId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async saveJob(jobId, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('jobs').doc(jobId);
+        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        await ref.set(payload, { merge: true });
+        return { id: jobId, ...payload };
+    }
+
+    async deleteJob(jobId) {
+        const db = this._ensureDb();
+        await db.collection('jobs').doc(jobId).delete();
+        return true;
+    }
+
+    async getApplications(filters = {}) {
+        const db = this._ensureDb();
+        let q = db.collection('applications');
+        if (filters.jobId) q = q.where('jobId', '==', filters.jobId);
+        if (filters.applicantId) q = q.where('applicantId', '==', filters.applicantId);
+        if (filters.employerId) q = q.where('employerId', '==', filters.employerId);
+        const snap = await q.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveApplication(appId, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('applications').doc(appId);
+        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        await ref.set(payload, { merge: true });
+        return { id: appId, ...payload };
+    }
+
+    // ==========================================
+    // 6. BLOG
+    // ==========================================
+    async getBlogPosts(options = {}) {
+        const db = this._ensureDb();
+        let q = db.collection('blog');
+        if (options.publishedOnly) q = q.where('published', '==', true);
+        if (options.limit) q = q.limit(Number(options.limit));
+        const snap = await q.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getBlogPostBySlug(slug) {
+        const db = this._ensureDb();
+        const snap = await db.collection('blog').where('slug', '==', slug).limit(1).get();
+        return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+    }
+
+    async saveBlogPost(id, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('blog').doc(id);
+        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        await ref.set(payload, { merge: true });
+        return { id, ...payload };
+    }
+
+    async deleteBlogPost(id) {
+        const db = this._ensureDb();
+        await db.collection('blog').doc(id).delete();
+        return true;
+    }
+
+    // ==========================================
+    // 7. CUSTOM PAGES, TRUSTED BY, REVIEWS
+    // ==========================================
+    async getCustomPages(options = {}) {
+        const db = this._ensureDb();
+        let q = db.collection('custom_pages');
+        if (options.publishedOnly) q = q.where('published', '==', true);
+        const snap = await q.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getCustomPageBySlug(slug) {
+        const db = this._ensureDb();
+        const snap = await db.collection('custom_pages').where('slug', '==', slug).limit(1).get();
+        return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
+    }
+
+    async saveCustomPage(id, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('custom_pages').doc(id);
+        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        await ref.set(payload, { merge: true });
+        return { id, ...payload };
+    }
+
+    async deleteCustomPage(id) {
+        const db = this._ensureDb();
+        await db.collection('custom_pages').doc(id).delete();
+        return true;
+    }
+
+    async getTrustedBy() {
+        const db = this._ensureDb();
+        const snap = await db.collection('trusted_by').get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveTrustedBy(id, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('trusted_by').doc(id);
+        await ref.set(data, { merge: true });
+        return { id, ...data };
+    }
+
+    async deleteTrustedBy(id) {
+        const db = this._ensureDb();
+        await db.collection('trusted_by').doc(id).delete();
+        return true;
+    }
+
+    // ==========================================
+    // 8. NOTIFICATIONS & CONTACT
+    // ==========================================
+    async getNotifications(userId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('notifications').doc(userId).collection('userNotifications').get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveNotification(userId, notifId, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('notifications').doc(userId).collection('userNotifications').doc(notifId);
+        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        await ref.set(payload, { merge: true });
+        return { id: notifId, ...payload };
+    }
+
+    async saveContactMessage(msgId, data) {
+        const db = this._ensureDb();
+        const ref = db.collection('contact').doc(msgId);
+        const payload = { ...data, createdAt: admin.firestore.FieldValue.serverTimestamp() };
+        await ref.set(payload, { merge: true });
+        return { id: msgId, ...payload };
+    }
+
+    async getContactMessages() {
+        const db = this._ensureDb();
+        const snap = await db.collection('contact').get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    // ==========================================
+    // 9. SYSTEM SETTINGS & STATS
+    // ==========================================
+    async getSetting(category) {
+        const db = this._ensureDb();
+        const snap = await db.collection('settings').doc(category).get();
+        return snap.exists ? snap.data() : null;
+    }
+
+    async saveSetting(category, data, revision = 1) {
+        const db = this._ensureDb();
+        const ref = db.collection('settings').doc(category);
+        await ref.set({ ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        return { category, data, revision };
+    }
+
+    async getStats() {
+        const db = this._ensureDb();
+        const snap = await db.collection('data').doc('stats').get();
+        return snap.exists ? snap.data() : {};
+    }
+
+    async incrementStat(statKey, delta = 1) {
+        const db = this._ensureDb();
+        const ref = db.collection('data').doc('stats');
+        await ref.set({
+            [statKey]: admin.firestore.FieldValue.increment(delta)
+        }, { merge: true });
+        return true;
+    }
+}
+
+module.exports = FirestoreRepository;

@@ -36,7 +36,7 @@ def main():
         os.remove(backend_tar)
     print(f"Creating backend tarball: {backend_tar}")
     with tarfile.open(backend_tar, "w:gz") as tar:
-        for item in ['index.js', 'routes', 'services', 'security', 'enterprise', 'package.json']:
+        for item in ['index.js', 'routes', 'services', 'security', 'enterprise', 'database', 'repositories', 'package.json']:
             item_path = os.path.join(backend_dir, item)
             if os.path.exists(item_path):
                 tar.add(item_path, arcname=item)

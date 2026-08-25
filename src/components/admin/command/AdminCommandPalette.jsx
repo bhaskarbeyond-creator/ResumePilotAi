@@ -5,7 +5,7 @@ import {
   FiActivity, FiFileText, FiLayers, FiMail, FiBriefcase, FiX,
   FiCommand, FiRefreshCw, FiZap, FiLock
 } from 'react-icons/fi';
-import { FaRobot, FaCreditCard, FaEnvelope, FaGlobeAsia, FaReceipt } from 'react-icons/fa';
+import { FaRobot, FaCreditCard, FaEnvelope, FaGlobeAsia, FaReceipt, FaDatabase, FaFire } from 'react-icons/fa';
 import { searchPlatform } from '../../../services/platformApi';
 
 const COMMAND_ITEMS = [
@@ -30,6 +30,8 @@ const COMMAND_ITEMS = [
   { id: 'nav-operators', label: 'Platform Operators', category: 'Navigation', icon: FiLock, path: '/adm/operators' },
 
   // Settings Tabs
+  { id: 'set-database', label: 'Dual Database Engine (Firestore & MySQL / MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSettings' },
+  { id: 'set-firebase', label: 'Firebase Cloud Settings', category: 'Settings', icon: FaFire, path: '/adm/settings?tab=firebaseSettings' },
   { id: 'set-ai', label: 'AI Models & Provider Settings', category: 'Settings', icon: FaRobot, path: '/adm/settings?tab=aiSettings' },
   { id: 'set-smtp', label: 'Email & SMTP Configuration', category: 'Settings', icon: FaEnvelope, path: '/adm/settings?tab=emailSettings' },
   { id: 'set-pay', label: 'Payment Gateways & Subscriptions', category: 'Settings', icon: FaCreditCard, path: '/adm/settings?tab=subscriptionsSettings' },

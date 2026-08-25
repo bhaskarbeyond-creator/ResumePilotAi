@@ -12,7 +12,7 @@ import {
     FaMapMarkerAlt, FaPaintBrush, FaFileCode, FaShieldAlt, FaHeartbeat,
     FaFire, FaFacebook, FaCloud, FaLinkedin, FaStamp, FaCode,
     FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes, FaReceipt,
-    FaServer,
+    FaServer, FaDatabase
 } from 'react-icons/fa';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
@@ -62,6 +62,7 @@ const SETTINGS_GROUPS = [
         { key: 'geoSeoSettings', label: 'Indian Geo-SEO', icon: FaGlobeAsia },
         { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', icon: FaBrain },
         { key: 'firebaseSettings', label: 'Firebase Cloud', icon: FaFire },
+        { key: 'databaseSettings', label: 'Dual Database Engine', icon: FaDatabase },
         { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', icon: FaFacebook },
         { key: 'emailSettings', label: 'Email & SMTP', icon: FaEnvelope },
     ]},

@@ -17,6 +17,7 @@ import TemplateManagerSettings from './TemplateManagerSettings';
 import SecurityLimitsSettings from './SecurityLimitsSettings';
 import SystemHealthSettings from './SystemHealthSettings';
 import FirebaseSettings from './FirebaseSettings';
+import DatabaseSettings from './DatabaseSettings';
 import FacebookAuthSettings from './FacebookAuthSettings';
 import StorageSettings from './StorageSettings';
 import SocialAuthSettings from './SocialAuthSettings';
@@ -40,6 +41,7 @@ const ALL_SETTINGS = [
     { key: 'geoSeoSettings', label: 'Indian Geo-SEO', group: 'General', description: 'Google India SEO & Geo tags' },
     { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', group: 'General', description: 'ChatGPT, Perplexity & llms.txt' },
     { key: 'firebaseSettings', label: 'Firebase', group: 'General', description: 'Firestore & Auth Keys' },
+    { key: 'databaseSettings', label: 'Dual Database Engine', group: 'General', description: 'Switch between Firestore & MySQL / MariaDB' },
     { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', group: 'General', description: 'Facebook, LinkedIn & GitHub OAuth' },
     { key: 'emailSettings', label: 'Email & SMTP', group: 'General', description: 'Outbound SMTP, Inbound IMAP & Dynamic Templates' },
     { key: 'storageSettings', label: 'Cloud Storage', group: 'AI & Services', description: 'S3 & Cloudinary CDN' },
@@ -102,6 +104,7 @@ class SettingsContent extends Component {
                     {step === 'geoSeoSettings' && <GeoSeoSettings />}
                     {step === 'llmGeoSettings' && <LlmGeoSettings />}
                     {step === 'firebaseSettings' && <FirebaseSettings />}
+                    {step === 'databaseSettings' && <DatabaseSettings />}
                     {step === 'facebookAuthSettings' && <FacebookAuthSettings />}
                     {step === 'socialAuthSettings' && <SocialAuthSettings />}
                     {step === 'emailSettings' && <EmailSmtpSettings />}
