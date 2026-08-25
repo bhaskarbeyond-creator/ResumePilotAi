@@ -1,8 +1,8 @@
 # ResumePilot AI — Final UAT Readiness Matrix
 
-**Release Commit SHA:** `d0161a6c9440dd4eb9e8dfdcd23a551f73e09c7f`  
+**Release Commit SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `d0161a6c9440dd4eb9e8dfdcd23a551f73e09c7f`  
+**Live Deployed SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
 **Certification Standard:** 100% Verified Empirical Coverage  
 **Status:** **ALL 20 UAT CRITICAL PATHS VERIFIED (20/20 PASS)**
 

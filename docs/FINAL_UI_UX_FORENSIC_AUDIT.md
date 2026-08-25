@@ -1,9 +1,9 @@
 # RESUMEPILOT AI — FINAL ZERO-TRUST WHOLE-PRODUCT UI/UX & BROWSER FORENSIC AUDIT
 
 **Release Version:** `2.0.0-uat.final`  
-**Release Commit SHA:** `d0161a6c9440dd4eb9e8dfdcd23a551f73e09c7f`  
+**Release Commit SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `d0161a6c9440dd4eb9e8dfdcd23a551f73e09c7f`  
+**Live Deployed SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
 **Audit Standard:** Zero-Trust Forensic Verification (`UNVERIFIED ≠ PASS`, `AUTOMATED TEST ≠ BROWSER PROOF`, `MOCK ≠ REAL USER FLOW`, `VISIBLE ≠ FUNCTIONAL`)
 
 ---
