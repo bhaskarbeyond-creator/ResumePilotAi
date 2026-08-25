@@ -1,7 +1,9 @@
 # RESUMEPILOT AI — UAT READINESS MATRIX
 ## Comprehensive User Acceptance Testing Verification & Sign-Off Matrix
 
-**Release Version**: `production-final-2026-08-26`  
+**Authoritative Release Version**: `uat-release-2026-08-26`  
+**Master Cryptographic SHA**: `d5610a54028209242b7d54ef9b852948ca303d10`  
+**Live Production URL**: `https://airesume.projectdemo.guru`  
 **Certification Standard**: Verified 10/10 Production Ready  
 **Evaluator**: Principal Release & Quality Assurance Lead  
 
