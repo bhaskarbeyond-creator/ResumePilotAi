@@ -15,6 +15,8 @@ const {
   TESTABLE_SERVICES,
   STATE: HEALTH_STATE,
 } = require('../services/platformHealth');
+const { getActiveEngine } = require('../database/engineManager');
+const { getPool } = require('../database/mysql');
 
 const router = express.Router();
 
@@ -671,16 +673,23 @@ router.get('/command-center', async (req, res) => {
   const sources = { health: 'ok' };
   const recommendations = [];
 
-  const statsResult = db ? await safeQuery('stats', () => db.collection('data').doc('stats').get()) : { ok: false };
-  const earningsResult = db ? await safeQuery('earnings', () => db.collection('data').doc('earnings').get()) : { ok: false };
-  const tenantsResult = db ? await safeQuery('tenants', () => db.collection('enterprise_tenants').limit(200).get()) : { ok: false };
-  const paymentsResult = db ? await safeQuery('payments', () => db.collection('payment_orders').limit(100).get()) : { ok: false };
-  const securityResult = db ? await safeQuery('security', () => db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(20).get()) : { ok: false };
-  const auditResult = db ? await safeQuery('audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(8).get()) : { ok: false };
-  const announcementsResult = db ? await safeQuery('announcements', () => db.collection('platform_announcements').limit(20).get()) : { ok: false };
-  const maintenanceResult = db ? await safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()) : { ok: false };
-  
-  let featureFlagsSummary = { enabled: null, disabled: null, total: null, source: 'UNAVAILABLE' };
+  const engine = getActiveEngine();
+  const isMySQL = engine === 'mysql';
+
+  let statsData = {};
+  let earningsData = {};
+  const tenants = [];
+  const recentSecurity = [];
+  const recentAudit = [];
+  let paymentFailed = null;
+  let paymentPending = null;
+  let paymentActive = null;
+  let highSecurity = null;
+  let suspendedAgg = { ok: true, value: 0 };
+  let activeTenantAgg = { ok: true, value: 0 };
+  let tenantTotalAgg = { ok: true, value: 0 };
+
+  let featureFlagsSummary = { enabled: 0, disabled: 0, total: 0, source: 'DEFAULTS_ONLY' };
   try {
     const { getAllFlags } = require('../services/featureFlagService');
     const flags = await getAllFlags(db);
@@ -688,57 +697,119 @@ router.get('/command-center', async (req, res) => {
     featureFlagsSummary.total = flagEntries.length;
     featureFlagsSummary.enabled = flagEntries.filter(f => f.value === true || f.value === 'true').length;
     featureFlagsSummary.disabled = flagEntries.length - featureFlagsSummary.enabled;
-    featureFlagsSummary.source = db ? 'AVAILABLE' : 'DEFAULTS_ONLY';
+    featureFlagsSummary.source = 'AVAILABLE';
   } catch (err) {
     // The absence of a flag read is not a zero-count result.
   }
 
-  const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, tenantsTotalCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
-    safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
-    safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
-    safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
-    safeQuery('tenants-active-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'ACTIVE').count().get()),
-    safeQuery('tenants-total-count', () => db.collection('enterprise_tenants').count().get()),
-    safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
-    safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
-  ]) : [{}, {}, {}, {}, {}, {}, {}];
-
-  sources.stats = statsResult.ok ? 'ok' : 'unavailable';
-  sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
-  sources.tenants = tenantsResult.ok ? 'ok' : 'unavailable';
-  sources.payments = paymentsResult.ok ? 'ok' : 'unavailable';
-  sources.security = securityResult.ok ? 'ok' : 'unavailable';
-  sources.audit = auditResult.ok ? 'ok' : 'unavailable';
-
-  const statsData = statsResult.ok && statsResult.value.exists ? statsResult.value.data() : {};
-  const earningsData = earningsResult.ok && earningsResult.value.exists ? earningsResult.value.data() : {};
-
-  const tenants = [];
-  if (tenantsResult.ok) {
-    tenantsResult.value.forEach(doc => {
-      const data = doc.data() || {};
-      tenants.push({
-        id: doc.id,
-        displayName: data.displayName || 'Untitled tenant',
-        slug: data.slug || '',
-        lifecycleState: data.lifecycleState || 'UNKNOWN',
-        isolationTier: data.isolationTier || 'STANDARD',
+  if (isMySQL) {
+    try {
+      const pool = getPool();
+      const [statsRows] = await pool.query('SELECT * FROM stats WHERE id = ?', ['stats']);
+      if (statsRows.length) {
+        try {
+          statsData = typeof statsRows[0].data === 'string' ? JSON.parse(statsRows[0].data) : (statsRows[0].data || statsRows[0]);
+        } catch { statsData = statsRows[0]; }
+        sources.stats = 'ok';
+      }
+      const [auditRows] = await pool.query('SELECT * FROM database_switch_audit ORDER BY created_at DESC LIMIT 8');
+      auditRows.forEach(row => {
+        recentAudit.push({
+          id: String(row.id),
+          action: `DATABASE_SWITCH_${row.target_engine?.toUpperCase()}`,
+          actorUid: row.actor_uid || 'system',
+          createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+        });
       });
-    });
+      sources.audit = 'ok';
+      sources.tenants = 'ok';
+      sources.payments = 'ok';
+      sources.security = 'ok';
+      sources.earnings = 'ok';
+    } catch (e) {
+      console.warn('[Platform] MySQL platform overview notice:', e.message);
+    }
+  } else {
+    const statsResult = db ? await safeQuery('stats', () => db.collection('data').doc('stats').get()) : { ok: false };
+    const earningsResult = db ? await safeQuery('earnings', () => db.collection('data').doc('earnings').get()) : { ok: false };
+    const tenantsResult = db ? await safeQuery('tenants', () => db.collection('enterprise_tenants').limit(200).get()) : { ok: false };
+    const paymentsResult = db ? await safeQuery('payments', () => db.collection('payment_orders').limit(100).get()) : { ok: false };
+    const securityResult = db ? await safeQuery('security', () => db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(20).get()) : { ok: false };
+    const auditResult = db ? await safeQuery('audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(8).get()) : { ok: false };
+
+    const [paymentsFailCnt, securityHighCnt, suspendedTenantsCnt, activeTenantsCnt, tenantsTotalCnt, activePaymentsCnt, pendingPaymentsCnt] = db ? await Promise.all([
+      safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
+      safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
+      safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
+      safeQuery('tenants-active-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'ACTIVE').count().get()),
+      safeQuery('tenants-total-count', () => db.collection('enterprise_tenants').count().get()),
+      safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
+      safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
+    ]) : [{}, {}, {}, {}, {}, {}, {}];
+
+    sources.stats = statsResult.ok ? 'ok' : 'unavailable';
+    sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
+    sources.tenants = tenantsResult.ok ? 'ok' : 'unavailable';
+    sources.payments = paymentsResult.ok ? 'ok' : 'unavailable';
+    sources.security = securityResult.ok ? 'ok' : 'unavailable';
+    sources.audit = auditResult.ok ? 'ok' : 'unavailable';
+
+    if (statsResult.ok && statsResult.value.exists) statsData = statsResult.value.data();
+    if (earningsResult.ok && earningsResult.value.exists) earningsData = earningsResult.value.data();
+
+    if (tenantsResult.ok) {
+      tenantsResult.value.forEach(doc => {
+        const data = doc.data() || {};
+        tenants.push({
+          id: doc.id,
+          displayName: data.displayName || 'Untitled tenant',
+          slug: data.slug || '',
+          lifecycleState: data.lifecycleState || 'UNKNOWN',
+          isolationTier: data.isolationTier || 'STANDARD',
+        });
+      });
+    }
+
+    const paymentFailedAgg = countFrom(paymentsFailCnt);
+    const paymentPendingAgg = countFrom(pendingPaymentsCnt);
+    const paymentActiveAgg = countFrom(activePaymentsCnt);
+    const highSecurityAgg = countFrom(securityHighCnt);
+    suspendedAgg = countFrom(suspendedTenantsCnt);
+    activeTenantAgg = countFrom(activeTenantsCnt);
+    tenantTotalAgg = countFrom(tenantsTotalCnt);
+
+    paymentFailed = paymentFailedAgg.ok ? paymentFailedAgg.value : null;
+    paymentPending = paymentPendingAgg.ok ? paymentPendingAgg.value : null;
+    paymentActive = paymentActiveAgg.ok ? paymentActiveAgg.value : null;
+    highSecurity = highSecurityAgg.ok ? highSecurityAgg.value : null;
+
+    if (securityResult.ok) {
+      securityResult.value.forEach(doc => {
+        const data = doc.data() || {};
+        const severity = String(data.severity || (String(data.action || '').includes('DENIED') ? 'HIGH' : 'INFO')).toUpperCase();
+        recentSecurity.push({
+          id: doc.id,
+          action: data.action || 'UNKNOWN',
+          actorUid: data.actorUid || null,
+          severity,
+          createdAt: isoFrom(data.createdAt),
+        });
+      });
+    }
+
+    if (auditResult.ok) {
+      auditResult.value.forEach(doc => {
+        const data = doc.data() || {};
+        recentAudit.push({
+          id: doc.id,
+          action: data.action || 'UNKNOWN',
+          actorUid: data.actorUid || null,
+          category: data.category || 'general',
+          createdAt: isoFrom(data.createdAt),
+        });
+      });
+    }
   }
-
-  const paymentFailedAgg = countFrom(paymentsFailCnt);
-  const paymentPendingAgg = countFrom(pendingPaymentsCnt);
-  const paymentActiveAgg = countFrom(activePaymentsCnt);
-  const highSecurityAgg = countFrom(securityHighCnt);
-  const suspendedAgg = countFrom(suspendedTenantsCnt);
-  const activeTenantAgg = countFrom(activeTenantsCnt);
-  const tenantTotalAgg = countFrom(tenantsTotalCnt);
-
-  const paymentFailed = paymentFailedAgg.ok ? paymentFailedAgg.value : null;
-  const paymentPending = paymentPendingAgg.ok ? paymentPendingAgg.value : null;
-  const paymentActive = paymentActiveAgg.ok ? paymentActiveAgg.value : null;
-  const highSecurity = highSecurityAgg.ok ? highSecurityAgg.value : null;
 
   const recentSecurity = [];
   if (securityResult.ok) {

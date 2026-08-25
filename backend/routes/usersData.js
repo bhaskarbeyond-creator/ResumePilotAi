@@ -1,5 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { requireAuth } = require('../security/auth');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -12,7 +13,7 @@ router.use((req, res, next) => {
 });
 
 // GET /api/users-data/profile - Current user profile
-router.get('/profile', async (req, res) => {
+router.get('/profile', requireAuth, async (req, res) => {
     try {
         const user = await req.repository.getUser(req.user.uid);
         return res.json({ success: true, user });
@@ -22,7 +23,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // POST /api/users-data/profile - Update current user profile
-router.post('/profile', express.json({ limit: '2mb' }), async (req, res) => {
+router.post('/profile', requireAuth, express.json({ limit: '2mb' }), async (req, res) => {
     try {
         const saved = await req.repository.saveUser(req.user.uid, req.body);
         return res.json({ success: true, user: saved });
