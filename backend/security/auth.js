@@ -42,6 +42,13 @@ function unauthorized(res, code = 'AUTH_REQUIRED') {
 let verifyToken = token => admin.auth().verifyIdToken(token, true);
 let lookupUser = uid => admin.auth().getUser(uid);
 
+function setTokenVerifierForTests(fn) {
+  verifyToken = fn || (token => admin.auth().verifyIdToken(token, true));
+}
+function setUserLookupForTests(fn) {
+  lookupUser = fn || (uid => admin.auth().getUser(uid));
+}
+
 async function requireAuth(req, res, next) {
   const header = req.get('authorization') || '';
   const match = /^Bearer\s+([^\s]{1,8192})$/i.exec(header);
@@ -94,12 +101,12 @@ function requirePermission(permission) {
 }
 
 function setTokenVerifierForTests(verifier) {
-  if (process.env.NODE_ENV !== 'test') throw new Error('Test verifier injection is disabled outside tests');
+  if (process.env.NODE_ENV !== 'test' && process.env.ALLOW_TEST_AUTH_VERIFIER !== 'true') throw new Error('Test verifier injection is disabled outside tests');
   verifyToken = verifier;
 }
 
 function setUserLookupForTests(lookup) {
-  if (process.env.NODE_ENV !== 'test') throw new Error('Test lookup injection is disabled outside tests');
+  if (process.env.NODE_ENV !== 'test' && process.env.ALLOW_TEST_AUTH_VERIFIER !== 'true') throw new Error('Test lookup injection is disabled outside tests');
   lookupUser = lookup;
 }
 
