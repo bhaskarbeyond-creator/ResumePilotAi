@@ -1,5 +1,7 @@
 # Intelligent Bidirectional Synchronization & Outbox Engine
 
+> **Live enablement status (2026-08-25):** the reverse outbox, MySQL lease reclaim, and switch mutex are implemented and verified by automated tests in this repository, but the live production process is still running the pre-fix baseline `f72e13b` (verified via `/api/healthz`) and its environment lacks the worker flags (`NOTIFICATION_OUTBOX_WORKER_ENABLED`, `ENTERPRISE_OUTBOX_WORKER_ENABLED`) — see `docs/FINAL_PRODUCTION_GAP_REGISTER.md` (G-27…G-30) and the closure runbook in `docs/FINAL_PRODUCTION_CERTIFICATION.md` §8.
+
 ## 1. Outbox Pattern
 For writes originating in MySQL mode, mutations insert a replication event directly into the `sync_outbox` table in the **same database transaction** before commit:
 ```sql
