@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch } from './client.js';
 
 export async function getCustomPages(options = {}) {
     const params = new URLSearchParams(options).toString();

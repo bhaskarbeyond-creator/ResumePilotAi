@@ -66,4 +66,70 @@ describe('Database Engine Switching Safety Test Suite', () => {
         assert.equal(res.engine, current);
         assert.equal(res.unchanged, true);
     });
+
+    it('6. Concurrent switch requests are serialized by the switch mutex', async () => {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        const { execFileSync } = await import('node:child_process');
+        const statePath = path.join(process.cwd(), 'backend', 'database', 'engine_state.json');
+        const snapshot = fs.existsSync(statePath) ? fs.readFileSync(statePath, 'utf8') : null;
+
+        // Isolated child process: DB_ENGINE=mysql makes 'mysql' the current
+        // engine, so the switch target is 'firestore', whose connectivity can
+        // be satisfied (and deliberately slowed) by an injected mock db.
+        const childScript = `
+            const { switchActiveEngine, getActiveEngine } = require(${JSON.stringify(path.join(process.cwd(), 'backend', 'database', 'engineManager.js'))});
+            (async () => {
+                const slowDb = {
+                    collection: () => ({ limit: () => ({ get: async () => {
+                        await new Promise(resolve => setTimeout(resolve, 250));
+                        return { docs: [] };
+                    } }) }),
+                };
+                const first = switchActiveEngine('firestore', 'TEST_ADMIN_1', slowDb);
+                await new Promise(resolve => setTimeout(resolve, 50));
+                let concurrentError = null;
+                try { await switchActiveEngine('firestore', 'TEST_ADMIN_2', slowDb); }
+                catch (err) { concurrentError = { status: err.status, message: err.message }; }
+                const completed = await first;
+                console.log(JSON.stringify({
+                    firstSwitch: { success: completed.success, engine: completed.engine },
+                    concurrentError,
+                    finalEngine: getActiveEngine(),
+                }));
+            })().catch(err => { console.error(err); process.exit(1); });
+        `;
+        let output;
+        try {
+            output = execFileSync(process.execPath, ['-e', childScript], {
+                env: { ...process.env, DB_ENGINE: 'mysql' },
+                encoding: 'utf8',
+            });
+        } finally {
+            // Restore any persisted state so the test leaves no residue.
+            if (snapshot === null) fs.rmSync(statePath, { force: true });
+            else fs.writeFileSync(statePath, snapshot, 'utf8');
+        }
+        const report = JSON.parse(output.trim().split('\n').pop());
+        assert.equal(report.firstSwitch.success, true, 'the in-flight switch completes');
+        assert.equal(report.finalEngine, 'firestore');
+        assert.ok(report.concurrentError, 'a concurrent switch must be rejected while one is in flight');
+        assert.equal(report.concurrentError.status, 409);
+        assert.match(report.concurrentError.message, /already in progress/i);
+    });
+
+    it('7. getEngineStateConsistency reports runtime state and divergence flags', async () => {
+        const { getEngineStateConsistency } = await import('../backend/database/engineManager.js');
+        const report = await getEngineStateConsistency();
+        assert.ok(['firestore', 'mysql'].includes(report.runtimeEngine));
+        assert.equal(typeof report.databaseReachable, 'boolean');
+        // With no MySQL server in the test environment the table read fails;
+        // divergence must then be explicitly false (unknown, not claimed).
+        if (!report.databaseReachable) {
+            assert.equal(report.diverged, false);
+            assert.ok(report.databaseError);
+        } else {
+            assert.equal(typeof report.diverged, 'boolean');
+        }
+    });
 });

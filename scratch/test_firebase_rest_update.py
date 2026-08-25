@@ -2,7 +2,7 @@ import requests
 
 apiKey = "YOUR_FIREBASE_WEB_API_KEY"
 email = "bhaskar.beyond@gmail.com"
-newPassword = "Bhaskar@002!"
+newPassword = "REDACTED_LEAKED_PASSWORD_ROTATED"
 
 # 1. Sign in to get idToken
 url1 = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}"

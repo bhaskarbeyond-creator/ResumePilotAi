@@ -369,6 +369,30 @@ class MemoryFirestore {
     return new HarnessDocumentReference(this, path);
   }
 
+  /**
+   * Mirrors the Admin SDK Firestore.recursiveDelete(ref): removes the document
+   * at ref.path plus every document in any nested subcollection beneath it.
+   * Returns the number of documents removed; idempotent like the real API.
+   */
+  async recursiveDelete(ref) {
+    if (this.failWrites) {
+      const error = new Error('14 UNAVAILABLE: simulated Firestore outage');
+      error.code = 14;
+      throw error;
+    }
+    this.recursiveDeleteCalls = (this.recursiveDeleteCalls || 0) + 1;
+    this.recursiveDeleteTargets = this.recursiveDeleteTargets || [];
+    this.recursiveDeleteTargets.push(ref.path);
+    let removed = 0;
+    for (const path of [...this.documents.keys()]) {
+      if (path === ref.path || path.startsWith(`${ref.path}/`)) {
+        this.documents.delete(path);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
   /** WriteBatch: staged writes committed atomically. */
   batch() {
     const store = this;

@@ -10,7 +10,7 @@ async def main():
         
         response = await page.request.post(
             "https://airesume.projectdemo.guru/api/auth/set-user-password",
-            data={"email": "bhaskar.beyond@gmail.com", "newPassword": "Bhaskar@002!"},
+            data={"email": "bhaskar.beyond@gmail.com", "newPassword": "REDACTED_LEAKED_PASSWORD_ROTATED"},
             headers={"Content-Type": "application/json"}
         )
 

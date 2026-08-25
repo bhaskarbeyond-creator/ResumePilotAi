@@ -282,6 +282,9 @@ service cloud.firestore {
     match /enterprise_principal_tenants/{id} { allow read, write: if false; }
     match /enterprise_data_plane_probes/{id} { allow read, write: if false; }
     match /security_audit_logs/{id} { allow read, write: if false; }
+    // Durable reverse-replication outbox (Firestore → MySQL standby) is
+    // server-only; clients must never read or enqueue sync events.
+    match /sync_outbox_fs/{id} { allow read, write: if false; }
 
     // Reset/verification tokens, provider secrets, audit logs and webhook ledgers are server-only.
     match /{document=**} { allow read, write: if false; }

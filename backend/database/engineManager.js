@@ -6,6 +6,11 @@ const STATE_FILE_PATH = path.join(__dirname, 'engine_state.json');
 
 // In-memory runtime state
 let currentEngine = null;
+// In-process switch mutex: concurrent switch requests must serialize, never
+// interleave their connectivity checks, state writes, and audit entries.
+// (PM2 runs a single backend instance; a multi-instance deployment would need
+// the database_engine_state switch lock as the cross-process mutex.)
+let switchInProgress = false;
 
 /**
  * Resolves the initial active database engine.
@@ -126,6 +131,20 @@ async function switchActiveEngine(newEngine, switchedBy = 'SUPER_ADMIN', firesto
         throw new Error(`Invalid database engine '${target}'. Allowed values: 'firestore', 'mysql'.`);
     }
 
+    if (switchInProgress) {
+        const err = new Error('A database engine switch is already in progress; retry when it completes.');
+        err.status = 409;
+        throw err;
+    }
+    switchInProgress = true;
+    try {
+        return await performEngineSwitch(target, switchedBy, firestoreDb);
+    } finally {
+        switchInProgress = false;
+    }
+}
+
+async function performEngineSwitch(target, switchedBy, firestoreDb) {
     const previousEngine = getActiveEngine();
     if (previousEngine === target) {
         return {
@@ -171,6 +190,30 @@ async function switchActiveEngine(newEngine, switchedBy = 'SUPER_ADMIN', firesto
     } catch (err) {
         console.error('[EngineManager] Failed to persist state file:', err.message);
         throw new Error(`Failed to persist engine switch: ${err.message}`);
+    }
+
+    // 2b. Mirror the authoritative runtime state into the
+    // database_engine_state control table so operators, verification scripts,
+    // and any future multi-instance deployment observe one consistent engine
+    // state instead of a split brain between the state file and the database.
+    try {
+        const pool = getPool();
+        await pool.query(
+            `INSERT INTO database_engine_state (id, active_engine, standby_engine, sync_mode, last_switched_by, switch_in_progress, switch_lock_expires_at)
+             VALUES ('active_engine', ?, ?, 'ACTIVE_PASSIVE', ?, FALSE, 0)
+             ON DUPLICATE KEY UPDATE
+               active_engine = VALUES(active_engine),
+               standby_engine = VALUES(standby_engine),
+               last_switched_by = VALUES(last_switched_by),
+               switch_in_progress = FALSE,
+               switch_lock_expires_at = 0`,
+            [target, target === 'mysql' ? 'firestore' : 'mysql', String(switchedBy).slice(0, 128)]
+        );
+    } catch (err) {
+        // The state file remains the authoritative runtime source; a stale DB
+        // mirror is surfaced by getEngineStateConsistency() rather than
+        // silently diverging.
+        console.warn('[EngineManager] Could not mirror engine state into database_engine_state:', err.message);
     }
 
     // 3. Log audit entry
@@ -250,9 +293,36 @@ async function getSwitchAuditLogs() {
     }
 }
 
+/**
+ * Reconciles the authoritative runtime engine state (engine_state.json) with
+ * the database_engine_state control table. Divergence means a switch occurred
+ * while MySQL was unreachable (the file is authoritative), or the table was
+ * modified out-of-band — either way operators must be able to see it.
+ */
+async function getEngineStateConsistency() {
+    const fileEngine = getActiveEngine();
+    let dbEngine = null;
+    let dbError = null;
+    try {
+        const pool = getPool();
+        const [rows] = await pool.query("SELECT active_engine FROM database_engine_state WHERE id = 'active_engine'");
+        dbEngine = rows[0]?.active_engine || null;
+    } catch (e) {
+        dbError = e.message;
+    }
+    return {
+        runtimeEngine: fileEngine,
+        databaseEngineState: dbEngine,
+        databaseReachable: dbError === null,
+        databaseError: dbError,
+        diverged: dbError === null && dbEngine !== null && dbEngine !== fileEngine,
+    };
+}
+
 module.exports = {
     getActiveEngine,
     testEngineConnectivity,
     switchActiveEngine,
     getSwitchAuditLogs,
+    getEngineStateConsistency,
 };

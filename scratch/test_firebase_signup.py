@@ -15,7 +15,7 @@ async def main():
             async () => {
                 if (!window.fire || !window.fire.auth) return "window.fire auth not defined";
                 try {
-                    const res = await window.fire.auth().createUserWithEmailAndPassword('bhaskar.beyond@gmail.com', 'Bhaskar@002!');
+                    const res = await window.fire.auth().createUserWithEmailAndPassword('bhaskar.beyond@gmail.com', 'REDACTED_LEAKED_PASSWORD_ROTATED');
                     return { success: true, uid: res.user.uid, email: res.user.email };
                 } catch (err) {
                     return { success: false, code: err.code, message: err.message };

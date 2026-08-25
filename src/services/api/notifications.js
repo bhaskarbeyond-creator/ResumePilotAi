@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch } from './client.js';
 
 export async function getNotifications() {
     const data = await apiFetch('/api/notifications-data');

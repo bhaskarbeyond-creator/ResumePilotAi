@@ -15,8 +15,8 @@ async def main():
         inputs = await page.query_selector_all("input[type='password']")
         if len(inputs) >= 2:
             print("Filling passwords...")
-            await inputs[0].fill("Bhaskar@002!")
-            await inputs[1].fill("Bhaskar@002!")
+            await inputs[0].fill("REDACTED_LEAKED_PASSWORD_ROTATED")
+            await inputs[1].fill("REDACTED_LEAKED_PASSWORD_ROTATED")
 
             submit_btn = await page.query_selector("button[type='submit']")
             if submit_btn:

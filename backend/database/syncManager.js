@@ -297,8 +297,8 @@ async function replicateToFirestore(adminFirestore, event) {
 /**
  * Replicates an event from Firestore change capture to MySQL with monotonic versioning protection.
  */
-async function replicateToMySQL(event) {
-    const pool = getPool();
+async function replicateToMySQL(event, poolOverride = null) {
+    const pool = poolOverride || getPool();
     const { entity_type, entity_id, operation, payload, version } = event;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
     const incomingVersion = Number(version || data.revision || 1);
@@ -369,15 +369,55 @@ async function replicateToMySQL(event) {
                 [entity_id, data.email || `${entity_id}@example.com`, data.displayName || '', data.role || 'USER', data.membership || 'Basic', JSON.stringify(data)]
             );
         }
+    } else if (entity_type === 'portfolios') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM portfolios WHERE id = ?', [entity_id]);
+        } else {
+            const userId = data.user_id || data.userId;
+            if (!userId) throw new Error(`Missing user_id for portfolio replication: ${entity_id}`);
+            await pool.query(
+                `INSERT INTO portfolios (id, user_id, title, theme, is_published, data)
+                 VALUES (?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE title=VALUES(title), theme=VALUES(theme), is_published=VALUES(is_published), data=VALUES(data), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, userId, String(data.title || 'Untitled Portfolio').slice(0, 160), String(data.theme || 'modern').slice(0, 50), data.isPublished === true ? 1 : 0, JSON.stringify(data)]
+            );
+        }
+    } else if (entity_type === 'covers') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM covers WHERE id = ?', [entity_id]);
+        } else {
+            const userId = data.user_id || data.userId;
+            if (!userId) throw new Error(`Missing user_id for cover replication: ${entity_id}`);
+            await pool.query(
+                `INSERT INTO covers (id, user_id, title, template, data)
+                 VALUES (?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE title=VALUES(title), template=VALUES(template), data=VALUES(data), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, userId, String(data.title || 'Untitled Cover Letter').slice(0, 160), String(data.template || 'Cover1').slice(0, 50), JSON.stringify(data)]
+            );
+        }
     }
 }
 
 /**
  * Processes a batch of pending synchronization events from the outbox.
+ * An optional pool override exists purely for test injection; production
+ * callers always use the shared pool.
  */
-async function processSyncQueue(batchSize = 25, adminFirestore = null) {
-    const pool = getPool();
+async function processSyncQueue(batchSize = 25, adminFirestore = null, poolOverride = null) {
+    const pool = poolOverride || getPool();
     const activeEngine = getActiveEngine();
+
+    // Lease reclaim: a worker crash mid-event leaves rows stuck in PROCESSING,
+    // which the queue selector below never picks up again. Any PROCESSING row
+    // whose lease (updated_at) is older than 120 seconds belongs to a dead or
+    // wedged worker and is returned to RETRYING so no event is silently lost.
+    try {
+        await pool.query(`
+            UPDATE sync_outbox
+            SET status = 'RETRYING', last_error = 'reclaimed stale PROCESSING lease'
+            WHERE status = 'PROCESSING' AND updated_at < (NOW() - INTERVAL 120 SECOND)
+        `);
+    } catch (_) { /* reclaim is best-effort; the selector still works */ }
 
     const [events] = await pool.query(`
         SELECT * FROM sync_outbox
@@ -438,6 +478,105 @@ async function processSyncQueue(batchSize = 25, adminFirestore = null) {
 }
 
 /**
+ * Drains the durable Firestore reverse-outbox (Firestore → MySQL standby).
+ *
+ * Repository-mediated writes in Firestore-active mode commit an event document
+ * to `sync_outbox_fs` atomically with the data. This processor claims events
+ * with a compare-and-set status transition (PENDING → PROCESSING), applies
+ * them to MySQL with the monotonic revision guard, and moves them to SYNCED.
+ * Failures retry with exponential backoff and dead-letter after 5 attempts —
+ * an event is never silently dropped, and events survive worker crashes
+ * because their status lives in Firestore next to the data.
+ */
+async function processFirestoreOutbox(adminFirestore, batchSize = 25, poolOverride = null) {
+    if (!adminFirestore) {
+        return { processed: 0, failed: 0, deadLettered: 0, skipped: 'NO_FIRESTORE' };
+    }
+    const pool = poolOverride || getPool();
+    // Real Admin SDK Firestore instances do not expose FieldValue/Timestamp;
+    // only the module namespace does (the test harness exposes them on the
+    // instance). Resolve instance-first, module-fallback so both work.
+    const firebaseAdminWrapper = require('../services/firebaseAdmin');
+    const FieldValueCtor = adminFirestore.FieldValue || firebaseAdminWrapper.firestore.FieldValue;
+    const TimestampCtor = adminFirestore.Timestamp || firebaseAdminWrapper.firestore.Timestamp;
+
+    const snap = await adminFirestore.collection('sync_outbox_fs')
+        .where('status', 'in', ['PENDING', 'RETRYING', 'PROCESSING'])
+        .orderBy('createdAt', 'asc')
+        .limit(Math.max(1, Math.min(Number(batchSize) || 25, 100)))
+        .get();
+
+    let processed = 0;
+    let failed = 0;
+    let deadLettered = 0;
+    const now = Date.now();
+
+    for (const doc of snap.docs) {
+        const data = doc.data() || {};
+        // Claim the event atomically so concurrent workers cannot double-apply.
+        // PROCESSING events are only re-claimable once their lease is stale,
+        // which recovers events a crashed worker left mid-flight.
+        let claimed = false;
+        await adminFirestore.runTransaction(async tx => {
+            const fresh = await tx.get(doc.ref);
+            const current = fresh.data() || {};
+            const status = String(current.status || 'PENDING').toUpperCase();
+            if (!['PENDING', 'RETRYING', 'PROCESSING'].includes(status)) return;
+            const claimedAtMillis = Number(current.claimedAt?.toMillis?.() ?? 0);
+            if (status === 'PROCESSING') {
+                const leaseIsFresh = claimedAtMillis > 0 && (now - claimedAtMillis) <= 120_000;
+                if (leaseIsFresh) return;
+            }
+            const nextAttemptAtMillis = Number(current.nextAttemptAt?.toMillis?.() ?? 0);
+            if (status !== 'PROCESSING' && Number.isFinite(nextAttemptAtMillis) && nextAttemptAtMillis > now && Number(current.attemptCount || 0) > 0) return;
+            tx.set(doc.ref, {
+                status: 'PROCESSING',
+                attemptCount: Number(current.attemptCount || 0) + 1,
+                claimedAt: FieldValueCtor.serverTimestamp(),
+                updatedAt: FieldValueCtor.serverTimestamp(),
+            }, { merge: true });
+            claimed = true;
+        }).catch(() => {});
+        if (!claimed) continue;
+
+        const event = {
+            entity_type: data.entityType,
+            entity_id: data.entityId,
+            operation: data.operation,
+            payload: typeof data.payload === 'string' ? data.payload : JSON.stringify(data.payload || {}),
+            version: data.version,
+        };
+        const attempts = Number(data.attemptCount || 0) + 1;
+
+        try {
+            await replicateToMySQL(event, pool);
+            await doc.ref.set({
+                status: 'SYNCED',
+                processedAt: FieldValueCtor.serverTimestamp(),
+                lastError: null,
+                updatedAt: FieldValueCtor.serverTimestamp(),
+            }, { merge: true });
+            processed += 1;
+        } catch (err) {
+            const isDeadLetter = attempts >= 5;
+            const backoffMs = Math.min(300000, 1000 * Math.pow(2, attempts));
+            const nextAttemptAt = TimestampCtor.fromMillis(Date.now() + backoffMs);
+            await doc.ref.set({
+                status: isDeadLetter ? 'DEAD_LETTER' : 'RETRYING',
+                attemptCount: attempts,
+                lastError: String(err.message || err).slice(0, 500),
+                nextAttemptAt,
+                updatedAt: FieldValueCtor.serverTimestamp(),
+            }, { merge: true }).catch(() => {});
+            if (isDeadLetter) deadLettered += 1;
+            else failed += 1;
+        }
+    }
+
+    return { processed, failed, deadLettered };
+}
+
+/**
  * Starts the Autonomous Continuous Background Sync Worker.
  * Polls for outbox events, replicates them automatically, and publishes real-time heartbeats.
  */
@@ -456,14 +595,20 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
         try {
             await updateWorkerHeartbeat('RUNNING');
             const result = await processSyncQueue(25, adminFirestore);
-            
-            if (result.processed > 0 || result.failed > 0) {
+            // Drain the Firestore reverse-outbox (Firestore → MySQL standby)
+            // with the same heartbeat cadence as the MySQL → Firestore queue.
+            const reverse = await processFirestoreOutbox(adminFirestore, 25).catch(err => {
+                console.warn('[SyncWorker] Reverse outbox drain failed:', err.message);
+                return { processed: 0, failed: 0, deadLettered: 0 };
+            });
+
+            if (result.processed > 0 || result.failed > 0 || reverse.processed > 0 || reverse.deadLettered > 0) {
                 await updateWorkerHeartbeat('RUNNING', {
                     lastSyncCompletedAt: true,
-                    lastSuccessfulEventAt: result.processed > 0,
-                    lastFailedEventAt: result.failed > 0,
-                    consecutiveFailures: result.failed > 0 ? undefined : 0,
-                    processedCount: result.processed
+                    lastSuccessfulEventAt: (result.processed > 0 || reverse.processed > 0),
+                    lastFailedEventAt: (result.failed > 0 || reverse.failed > 0 || reverse.deadLettered > 0),
+                    consecutiveFailures: (result.failed > 0 || reverse.failed > 0) ? undefined : 0,
+                    processedCount: result.processed + reverse.processed
                 });
             }
         } catch (err) {
@@ -512,14 +657,44 @@ async function flushAndVerifyBeforeSwitch(adminFirestore = null) {
             if (res.processed === 0 && res.failed > 0) break; // Avoid infinite loop on persistent failure
         }
 
+        // 1b. Drain the Firestore reverse-outbox so the MySQL standby is fully
+        // caught up before it can be promoted to the active engine.
+        let reverseRemaining = 1;
+        let reverseIterations = 0;
+        while (reverseRemaining > 0 && reverseIterations < 10 && adminFirestore) {
+            reverseIterations += 1;
+            const reverse = await processFirestoreOutbox(adminFirestore, 100).catch(() => ({ processed: 0, failed: 0, deadLettered: 0 }));
+            let reversePending = 0;
+            try {
+                const reverseSnap = await adminFirestore.collection('sync_outbox_fs')
+                    .where('status', 'in', ['PENDING', 'RETRYING', 'PROCESSING']).get();
+                reversePending = reverseSnap.docs.length;
+            } catch (_) { /* counted as unknown below */ }
+            reverseRemaining = reverse.processed > 0 ? reversePending : 0;
+            if (reverse.processed === 0 && (reverse.failed > 0 || reverse.deadLettered > 0)) break;
+        }
+
         // 2. Check for unresolved conflicts or dead letters
         const [conflictRows] = await pool.query("SELECT COUNT(*) as c FROM sync_conflicts WHERE resolution = 'PENDING'");
         const [deadLetterRows] = await pool.query("SELECT COUNT(*) as c FROM sync_outbox WHERE status = 'DEAD_LETTER'");
         const [pendingRows] = await pool.query("SELECT COUNT(*) as c FROM sync_outbox WHERE status IN ('PENDING', 'PROCESSING', 'RETRYING')");
 
+        let reverseDeadLetters = 0;
+        let reversePending = 0;
+        if (adminFirestore) {
+            try {
+                const [deadSnap, pendingSnap] = await Promise.all([
+                    adminFirestore.collection('sync_outbox_fs').where('status', '==', 'DEAD_LETTER').get(),
+                    adminFirestore.collection('sync_outbox_fs').where('status', 'in', ['PENDING', 'RETRYING', 'PROCESSING']).get(),
+                ]);
+                reverseDeadLetters = deadSnap.docs.length;
+                reversePending = pendingSnap.docs.length;
+            } catch (_) { /* Firestore unavailable: parity gate below already fails the switch */ }
+        }
+
         const activeConflicts = conflictRows[0]?.c || 0;
-        const deadLetters = deadLetterRows[0]?.c || 0;
-        const pendingEvents = pendingRows[0]?.c || 0;
+        const deadLetters = (deadLetterRows[0]?.c || 0) + reverseDeadLetters;
+        const pendingEvents = (pendingRows[0]?.c || 0) + reversePending;
 
         // 3. Quick entity count parity calculation
         let parityPercentage = 100;
@@ -576,6 +751,7 @@ module.exports = {
     replicateToFirestore,
     replicateToMySQL,
     processSyncQueue,
+    processFirestoreOutbox,
     startBackgroundSyncWorker,
     stopBackgroundSyncWorker,
     flushAndVerifyBeforeSwitch

@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch } from './client.js';
 
 export async function getCurrentUserProfile() {
     const data = await apiFetch('/api/users-data/profile');

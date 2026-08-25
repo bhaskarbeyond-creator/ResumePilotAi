@@ -617,40 +617,90 @@ class TenantService {
     if (!this.registry.purgeTenantRecords) {
       throw new Error("Registry does not support purging");
     }
-    
-    // We get all tenants, then filter for DELETING and older than grace period
-    const allTenants = await this.registry.listAllTenants({ limit: 500 });
-    const now = Date.now();
+
+    // Firestore stores timestamps as Timestamp objects whose valueOf() returns
+    // the object itself, so new Date(timestamp) is NaN. Convert defensively:
+    // real SDK Timestamps, harness timestamps, Dates, ISO strings, epoch millis.
+    const toEpochMillis = (value) => {
+      if (!value) return 0;
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      if (typeof value.toMillis === 'function') {
+        const millis = value.toMillis();
+        return Number.isFinite(millis) ? millis : 0;
+      }
+      if (typeof value.toDate === 'function') {
+        const date = value.toDate();
+        const millis = date instanceof Date ? date.getTime() : Number(new Date(date).getTime());
+        return Number.isFinite(millis) ? millis : 0;
+      }
+      if (typeof value._seconds === 'number') {
+        const millis = value._seconds * 1000 + Math.floor(Number(value._nanoseconds || 0) / 1e6);
+        return Number.isFinite(millis) ? millis : 0;
+      }
+      if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : 0;
+      const parsed = new Date(value).getTime();
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const days = Math.max(0, Number(gracePeriodDays) || 0);
     const msInDay = 24 * 60 * 60 * 1000;
-    const gracePeriodMs = gracePeriodDays * msInDay;
-    
+    const gracePeriodMs = days * msInDay;
+    const now = Date.now();
+
+    // Complete view of every DELETING tenant. listAllTenants orders by
+    // createdAt desc with a 500 cap, which can permanently hide old tenants
+    // from garbage collection; the lifecycle query cannot.
+    let candidates;
+    if (typeof this.registry.listTenantsByLifecycleState === 'function') {
+      candidates = await this.registry.listTenantsByLifecycleState('DELETING');
+    } else {
+      candidates = (await this.registry.listAllTenants({ limit: 500 }))
+        .filter(tenant => tenant.lifecycleState === 'DELETING');
+    }
+
     let purgedCount = 0;
-    
-    for (const tenant of allTenants) {
-      if (tenant.lifecycleState === 'DELETING') {
-        const updatedAtStr = tenant.updatedAt || tenant.createdAt;
-        const updatedAt = updatedAtStr ? new Date(updatedAtStr).getTime() : 0;
-        
-        if (now - updatedAt > gracePeriodMs) {
-          // Hard delete the tenant via the registry
-          await this.registry.purgeTenantRecords(tenant.id);
-          
-          if (this.db && this.admin?.firestore?.FieldValue) {
-            await this.db.collection('security_audit_logs').doc().set({
-              action: 'PLATFORM_TENANT_HARD_DELETED',
-              actorRole: 'SYSTEM_DAEMON',
-              tenantId: tenant.id,
-              requestId: requestId || null,
-              timestamp: this.admin.firestore.FieldValue.serverTimestamp(),
-              metadata: { gracePeriodDays }
-            });
-          }
-          purgedCount++;
+    const failures = [];
+
+    for (const tenant of candidates) {
+      if (tenant.lifecycleState !== 'DELETING') continue;
+      const updatedAt = toEpochMillis(tenant.updatedAt) || toEpochMillis(tenant.createdAt);
+      if (now - updatedAt <= gracePeriodMs) continue;
+
+      // Each tenant purge is isolated: one failing tenant must never prevent
+      // the others from being reclaimed. Failed tenants stay in DELETING and
+      // are retried on the next collection run (purge is idempotent).
+      try {
+        await this.registry.purgeTenantRecords(tenant.id);
+        purgedCount += 1;
+      } catch (error) {
+        failures.push({ tenantId: tenant.id, error: String(error?.message || error).slice(0, 300) });
+        continue;
+      }
+
+      if (this.db && this.admin?.firestore?.FieldValue) {
+        try {
+          await this.db.collection('security_audit_logs').doc().set({
+            action: 'PLATFORM_TENANT_HARD_DELETED',
+            actorRole: 'SYSTEM_DAEMON',
+            tenantId: tenant.id,
+            requestId: requestId || null,
+            createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
+            metadata: { gracePeriodDays: days }
+          });
+        } catch (auditError) {
+          // The purge already committed; audit bookkeeping is best-effort and
+          // must never mark a successfully deleted tenant as failed.
+          console.warn('[TenantService] Hard-delete audit write failed:', auditError?.message || auditError);
         }
       }
     }
-    
-    return { purgedCount };
+
+    if (failures.length) {
+      console.warn(`[TenantService] Tenant garbage collection: ${purgedCount} purged, ${failures.length} failed:`,
+        JSON.stringify(failures));
+    }
+
+    return { purgedCount, considered: candidates.length, failures };
   }
 
   async setTenantLifecycleAsPlatform({ user, tenantId, nextState, requestId }) {
@@ -1167,7 +1217,10 @@ class TenantService {
 
         return [...repoResources, ...memberResumes];
       } catch (err) {
-        // Fallback gracefully to repository resources
+        // Member-resume aggregation is an additive view; the authorized
+        // repository listing below remains the source of truth. The failure
+        // is logged rather than swallowed so aggregation outages are visible.
+        console.warn('[TenantService] Member resume aggregation failed:', err?.message || err);
       }
     }
 

@@ -258,6 +258,9 @@ function personalTenantName(profile = {}) {
   return name ? `${name}'s Personal Workspace` : 'Personal Workspace';
 }
 
+// Firestore WriteBatch hard limit is 500 operations per commit; stay below it.
+const PURGE_BATCH_LIMIT = 450;
+
 class FirestoreTenantRegistry {
   constructor({ db, admin }) {
     this.db = db;
@@ -386,43 +389,62 @@ class FirestoreTenantRegistry {
   async purgeTenantRecords(tenantId) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
-    
+
+    // Deletion order is retry-safe by construction:
+    //   1. the tenant data partition (tenants/{tenantId} + all subcollections)
+    //      is recursively deleted FIRST;
+    //   2. only afterwards are the control-plane records removed.
+    // If step 1 succeeds and step 2 fails, the tenant document still exists in
+    // DELETING state, so the garbage collector retries the (idempotent) purge
+    // on its next run. The reverse order could leave an orphaned tenant data
+    // partition that no worker would ever revisit — a silent partial delete.
+    if (typeof this.db.recursiveDelete !== 'function') {
+      // Fail closed: silently skipping partition deletion would leave tenant
+      // business data behind while reporting the tenant as hard-deleted.
+      throw Object.assign(
+        new Error('Recursive tenant partition deletion is unavailable in this Firestore runtime'),
+        { code: 'TENANT_PURGE_UNAVAILABLE', status: 503 },
+      );
+    }
+    await this.db.recursiveDelete(this.db.collection('tenants').doc(tenantId));
+
+    // Collect every control-plane document that belongs to this tenant.
+    const refsToDelete = [];
     const collectionsToQuery = [
       'enterprise_workspaces',
       'enterprise_memberships',
       'enterprise_workspace_memberships',
       'enterprise_teams',
       'enterprise_team_members',
-      'enterprise_outbox'
+      'enterprise_outbox',
     ];
-    
-    const batch = this.db.batch();
-    
-    // 1. Delete associated queryable collections
     for (const col of collectionsToQuery) {
       const snap = await this.db.collection(col).where('tenantId', '==', tenantId).get();
-      snap.docs.forEach(doc => batch.delete(doc.ref));
+      snap.docs.forEach(doc => refsToDelete.push(doc.ref));
     }
-    
-    // 2. Delete the slug map 
-    // We have to query it because the document ID is the slug itself, but the field is tenantId
+    // The slug map is keyed by slug, not tenant id, so it must be queried.
     const slugsSnap = await this.db.collection('enterprise_tenant_slugs').where('tenantId', '==', tenantId).get();
-    slugsSnap.docs.forEach(doc => batch.delete(doc.ref));
-    
-    // 3. Delete configurations
-    batch.delete(this.db.collection('enterprise_tenant_configurations').doc(tenantId));
-    
-    // 4. Delete the main tenant document
-    batch.delete(this.db.collection('enterprise_tenants').doc(tenantId));
-    
-    await batch.commit();
-    
-    // 5. Recursively delete the entire tenant data partition (resources, audit, AI usage)
-    if (typeof this.db.recursiveDelete === 'function') {
-      const tenantPartitionRef = this.db.collection('tenants').doc(tenantId);
-      await this.db.recursiveDelete(tenantPartitionRef);
+    slugsSnap.docs.forEach(doc => refsToDelete.push(doc.ref));
+    // Personal-tenant identity map: purging a personal tenant must also remove
+    // the principal → tenant mapping, otherwise the principal resolves to a
+    // deleted tenant forever and can never obtain a fresh personal workspace.
+    const identitySnap = await this.db.collection('enterprise_principal_tenants').where('personalTenantId', '==', tenantId).get();
+    identitySnap.docs.forEach(doc => refsToDelete.push(doc.ref));
+    // Tenant configuration partition.
+    refsToDelete.push(this.db.collection('enterprise_tenant_configurations').doc(tenantId));
+    // The tenant document itself is deleted last.
+    refsToDelete.push(this.db.collection('enterprise_tenants').doc(tenantId));
+
+    // Commit in chunked batches: a single WriteBatch throws once it exceeds 500
+    // operations, which would make large tenants permanently unpurgeable.
+    for (let offset = 0; offset < refsToDelete.length; offset += PURGE_BATCH_LIMIT) {
+      const batch = this.db.batch();
+      for (const ref of refsToDelete.slice(offset, offset + PURGE_BATCH_LIMIT)) {
+        batch.delete(ref);
+      }
+      await batch.commit();
     }
-    
+
     return true;
   }
 
@@ -477,6 +499,26 @@ class FirestoreTenantRegistry {
       console.warn('[Enterprise] Failed to query enterprise_tenants from Firestore:', err.message);
       return [];
     }
+  }
+
+  async listTenantsByLifecycleState(lifecycleState, { limit = 500 } = {}) {
+    this.assertAvailable();
+    const state = String(lifecycleState || '').toUpperCase();
+    if (!TENANT_LIFECYCLE_STATES.includes(state)) {
+      throw Object.assign(new Error('Tenant lifecycle state is invalid'), { code: 'INVALID_TENANT_LIFECYCLE', status: 400 });
+    }
+    // Complete, unbounded-by-recency view of every tenant in a given state.
+    // listAllTenants orders by createdAt desc with a hard cap, which can hide
+    // old tenants from garbage collection; this query cannot.
+    const bounded = Math.max(1, Math.min(Number(limit) || 500, 1000));
+    const snapshot = await this.db.collection('enterprise_tenants').where('lifecycleState', '==', state).limit(bounded).get();
+    return snapshot.docs.map(document => {
+      try {
+        return validateTenantRecord({ ...document.data(), id: document.id });
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
   }
 
   async getMembership(tenantId, principalId) {
@@ -1066,7 +1108,7 @@ class InMemoryTenantRegistry {
   
   async purgeTenantRecords(tenantId) {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
-    
+
     for (const [key, val] of this.workspaces.entries()) {
       if (val.tenantId === tenantId) this.workspaces.delete(key);
     }
@@ -1081,6 +1123,13 @@ class InMemoryTenantRegistry {
     }
     for (const [key, val] of this.teamMembers.entries()) {
       if (val.tenantId === tenantId) this.teamMembers.delete(key);
+    }
+    // Configuration and identity-map cleanup keep this registry consistent
+    // with the Firestore registry purge contract: no orphaned configuration
+    // documents and no principal left pointing at a deleted personal tenant.
+    this.configurations.delete(tenantId);
+    for (const [principalId, mapping] of this.personal.entries()) {
+      if (mapping?.tenantId === tenantId) this.personal.delete(principalId);
     }
     this.tenants.delete(tenantId);
     return true;
@@ -1110,6 +1159,21 @@ class InMemoryTenantRegistry {
     const bounded = Math.max(1, Math.min(Number(limit) || 100, 500));
     return [...this.tenants.values()]
       .sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')))
+      .slice(0, bounded)
+      .map(tenant => {
+        try { return validateTenantRecord(tenant); } catch { return null; }
+      })
+      .filter(Boolean);
+  }
+
+  async listTenantsByLifecycleState(lifecycleState, { limit = 500 } = {}) {
+    const state = String(lifecycleState || '').toUpperCase();
+    if (!TENANT_LIFECYCLE_STATES.includes(state)) {
+      throw Object.assign(new Error('Tenant lifecycle state is invalid'), { code: 'INVALID_TENANT_LIFECYCLE', status: 400 });
+    }
+    const bounded = Math.max(1, Math.min(Number(limit) || 500, 1000));
+    return [...this.tenants.values()]
+      .filter(tenant => String(tenant.lifecycleState || '').toUpperCase() === state)
       .slice(0, bounded)
       .map(tenant => {
         try { return validateTenantRecord(tenant); } catch { return null; }
