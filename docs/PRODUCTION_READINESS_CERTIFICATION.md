@@ -1,8 +1,7 @@
 # RESUMEPILOT AI — PRODUCTION READINESS & UAT CERTIFICATION
 ## Authoritative Principal Engineering Sign-Off Ledger
 
-**Authoritative Release Version**: `uat-release-2026-08-26`  
-**Master Cryptographic SHA**: `b60da885f8162a461495b908d2f4368e110259e9`  
+**Authoritative Release Tag**: `uat-release-2026-08-26`  
 **Live Production URL**: `https://airesume.projectdemo.guru`  
 **Evaluation Standard**: Strict 10/10 Production Ready Baseline  
 **Sign-Off Verdict**: **🟢 CERTIFIED PRODUCTION READY — READY FOR FORMAL UAT**  

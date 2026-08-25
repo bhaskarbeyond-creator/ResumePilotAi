@@ -3,7 +3,6 @@
 
 **Target Live URL**: `https://airesume.projectdemo.guru`  
 **Authoritative Release Tag**: `uat-release-2026-08-26`  
-**Master Cryptographic SHA**: `d5610a54028209242b7d54ef9b852948ca303d10`  
 **Audience**: UAT Test Engineers, Business Stakeholders & SRE Release Team  
 
 ---
