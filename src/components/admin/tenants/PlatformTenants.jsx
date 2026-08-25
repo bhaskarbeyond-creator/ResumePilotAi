@@ -15,6 +15,115 @@ import {
 
 
 
+// Curated Presets for Enterprise Agreements
+const PLAN_PRESETS = [
+  'Enterprise Standard',
+  'Enterprise Growth',
+  'Enterprise Scale',
+  'Enterprise Global Unlimited',
+  'Enterprise Custom SLA',
+  'Custom Plan...'
+];
+
+const SEAT_PRESETS = [
+  { label: '10 Seats (Starter Pilot)', value: 10 },
+  { label: '25 Seats (Team Tier)', value: 25 },
+  { label: '50 Seats (Standard Enterprise)', value: 50 },
+  { label: '100 Seats (Business Tier)', value: 100 },
+  { label: '250 Seats (Scale Tier)', value: 250 },
+  { label: '500 Seats (Enterprise Tier)', value: 500 },
+  { label: '1,000 Seats (Global Tier)', value: 1000 },
+  { label: 'Custom Seat Limit...', value: 'custom' }
+];
+
+const CURRENCY_OPTIONS = [
+  { code: 'INR', label: 'INR (₹) - Indian Rupee', symbol: '₹' },
+  { code: 'USD', label: 'USD ($) - US Dollar', symbol: '$' },
+  { code: 'EUR', label: 'EUR (€) - Euro', symbol: '€' },
+  { code: 'GBP', label: 'GBP (£) - British Pound', symbol: '£' },
+  { code: 'AUD', label: 'AUD ($) - Australian Dollar', symbol: '$' },
+  { code: 'CAD', label: 'CAD ($) - Canadian Dollar', symbol: '$' },
+  { code: 'AED', label: 'AED (د.إ) - UAE Dirham', symbol: 'د.إ' },
+  { code: 'SGD', label: 'SGD ($) - Singapore Dollar', symbol: '$' }
+];
+
+const DAILY_LIMIT_PRESETS = [
+  { label: '1,000 requests / day (Basic Pilot)', value: 1000 },
+  { label: '2,500 requests / day (Standard Tier)', value: 2500 },
+  { label: '5,000 requests / day (Enterprise Default)', value: 5000 },
+  { label: '10,000 requests / day (High Concurrency)', value: 10000 },
+  { label: '25,000 requests / day (Heavy Production)', value: 25000 },
+  { label: '50,000 requests / day (Uncapped Burst)', value: 50000 },
+  { label: 'Custom Daily Quota...', value: 'custom' }
+];
+
+const LLM_MODEL_OPTIONS = [
+  { id: 'meta/llama-3.2-11b-vision-instruct', label: 'NVIDIA NIM: Llama 3.2 11B Vision (Fast Default)', provider: 'NVIDIA' },
+  { id: 'nvidia/nemotron-mini-4b-instruct', label: 'NVIDIA NIM: Nemotron Mini 4B (Ultra Reliable)', provider: 'NVIDIA' },
+  { id: 'gemini-1.5-flash', label: 'Google Gemini: Gemini 1.5 Flash (High Concurrency)', provider: 'Gemini' },
+  { id: 'gemini-1.5-pro', label: 'Google Gemini: Gemini 1.5 Pro (Deep Reasoning)', provider: 'Gemini' },
+  { id: 'gpt-4o-mini', label: 'OpenAI: GPT-4o Mini (Cost Effective)', provider: 'OpenAI' },
+  { id: 'gpt-4o', label: 'OpenAI: GPT-4o (Flagship Model)', provider: 'OpenAI' },
+  { id: 'llama-3.3-70b-versatile', label: 'Groq Cloud: Llama 3.3 70B Versatile (Ultra Low Latency)', provider: 'Groq' },
+  { id: 'deepseek/deepseek-chat', label: 'DeepSeek: DeepSeek-V3 Chat', provider: 'DeepSeek' },
+  { id: 'meta-llama/llama-3.2-3b-instruct', label: 'OpenRouter: Llama 3.2 3B Instruct', provider: 'OpenRouter' },
+  { id: 'custom', label: 'Custom Model ID...', provider: 'Custom' }
+];
+
+const PROVIDER_PRESET_MODELS = {
+  nvidia: [
+    { id: 'meta/llama-3.2-11b-vision-instruct', label: 'Llama 3.2 11B Vision (Primary Default)' },
+    { id: 'nvidia/nemotron-mini-4b-instruct', label: 'Nemotron Mini 4B (Ultra Reliable)' },
+    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'Llama 3.1 Nemotron 70B' }
+  ],
+  gemini: [
+    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Default)' },
+    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+    { id: 'gemini-2.0-flash-exp', label: 'Gemini 2.0 Flash' }
+  ],
+  openai: [
+    { id: 'gpt-4o-mini', label: 'GPT-4o Mini (Default)' },
+    { id: 'gpt-4o', label: 'GPT-4o Flagship' },
+    { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' }
+  ],
+  groq: [
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile (Default)' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' }
+  ],
+  openrouter: [
+    { id: 'meta-llama/llama-3.2-3b-instruct', label: 'Llama 3.2 3B Instruct (Default)' },
+    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' }
+  ],
+  deepseek: [
+    { id: 'deepseek/deepseek-chat', label: 'DeepSeek-V3 Chat (Default)' },
+    { id: 'deepseek/deepseek-reasoner', label: 'DeepSeek-R1 Reasoner' }
+  ]
+};
+
+const DECOMMISSION_REASONS = [
+  'Contract Terminated / Expired',
+  'Non-Payment / Billing Arrears',
+  'Customer Voluntary Account Closure',
+  'Security / Policy Violation',
+  'Platform Migration Completed',
+  'Test Organization Cleanup',
+  'Other Justification (Custom text)'
+];
+
+const ISOLATION_TIER_OPTIONS = [
+  { id: 'STANDARD', label: 'STANDARD - Shared Multi-Tenant Isolation' },
+  { id: 'ENTERPRISE', label: 'ENTERPRISE - Dedicated Tenant Space' },
+  { id: 'REGULATED', label: 'REGULATED - Isolated Compliance & VPC' }
+];
+
+const REGION_OPTIONS = [
+  { id: 'default', label: 'default (Global Edge / us-central1)' },
+  { id: 'asia-south1', label: 'asia-south1 (Mumbai / India)' },
+  { id: 'europe-west1', label: 'europe-west1 (Frankfurt / EU GDPR)' },
+  { id: 'us-east1', label: 'us-east1 (N. Virginia / US East)' },
+  { id: 'ap-southeast1', label: 'ap-southeast1 (Singapore / APAC)' }
+];
+
 export default function PlatformTenants() {
   const { isSuperAdmin } = useAdminSession();
   const [tenants, setTenants] = useState([]);
@@ -33,9 +142,14 @@ export default function PlatformTenants() {
   const [detailError, setDetailError] = useState(null);
   const [detailRefresh, setDetailRefresh] = useState(0);
   const [decommissionReason, setDecommissionReason] = useState('');
+  const [decommissionReasonCategory, setDecommissionReasonCategory] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
   const [activeModalTab, setActiveModalTab] = useState('overview');
   const [copiedId, setCopiedId] = useState(false);
+
+  // Filters
+  const [memberRoleFilter, setMemberRoleFilter] = useState('all');
+  const [aiProviderFilter, setAiProviderFilter] = useState('all');
 
   // Provisioning Modal State
   const [showProvisionModal, setShowProvisionModal] = useState(false);
@@ -44,6 +158,7 @@ export default function PlatformTenants() {
   const [editingTenantName, setEditingTenantName] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [isolationTier, setIsolationTier] = useState('STANDARD');
+  const [provisioningRegion, setProvisioningRegion] = useState('default');
   const [provisioning, setProvisioning] = useState(false);
 
   // Member Management State
@@ -54,9 +169,13 @@ export default function PlatformTenants() {
 
   // Custom Agreement & AI Policy State
   const [policyDailyLimit, setPolicyDailyLimit] = useState(5000);
+  const [selectedDailyLimitOption, setSelectedDailyLimitOption] = useState(5000);
   const [policyPrimaryModel, setPolicyPrimaryModel] = useState('meta/llama-3.2-11b-vision-instruct');
+  const [selectedModelOption, setSelectedModelOption] = useState('meta/llama-3.2-11b-vision-instruct');
   const [policyPlan, setPolicyPlan] = useState('Enterprise Standard');
+  const [selectedPlanOption, setSelectedPlanOption] = useState('Enterprise Standard');
   const [policySeats, setPolicySeats] = useState(50);
+  const [selectedSeatOption, setSelectedSeatOption] = useState(50);
   const [policyCurrency, setPolicyCurrency] = useState('INR');
   const [policyBillingStatus, setPolicyBillingStatus] = useState('ACTIVE');
   const [showDedicatedKeys, setShowDedicatedKeys] = useState(true);
@@ -69,6 +188,7 @@ export default function PlatformTenants() {
   const [testingKey, setTestingKey] = useState({});
   const [testResults, setTestResults] = useState({});
   const [savingPolicy, setSavingPolicy] = useState(false);
+
 
 
 
@@ -290,16 +410,37 @@ export default function PlatformTenants() {
 
   useEffect(() => {
     if (selectedTenant) {
-      setPolicyDailyLimit(selectedTenant.aiPolicy?.dailyLimit || 5000);
-      setPolicyPrimaryModel(selectedTenant.aiPolicy?.primaryModel || 'meta/llama-3.2-11b-vision-instruct');
-      setPolicyPlan(selectedTenant.plan || 'Enterprise Standard');
-      setPolicySeats(selectedTenant.seatLimit || 50);
-      setPolicyCurrency(selectedTenant.currency || 'INR');
+      const plan = selectedTenant.plan || 'Enterprise Standard';
+      setPolicyPlan(plan);
+      setSelectedPlanOption(PLAN_PRESETS.includes(plan) ? plan : 'Custom Plan...');
+
+      const seats = selectedTenant.seatLimit || 50;
+      setPolicySeats(seats);
+      const isPresetSeat = SEAT_PRESETS.some(s => s.value === seats);
+      setSelectedSeatOption(isPresetSeat ? seats : 'custom');
+
+      const currency = selectedTenant.currency || 'INR';
+      setPolicyCurrency(currency);
+
+      const dailyLimit = selectedTenant.aiPolicy?.dailyLimit || 5000;
+      setPolicyDailyLimit(dailyLimit);
+      const isPresetDailyLimit = DAILY_LIMIT_PRESETS.some(d => d.value === dailyLimit);
+      setSelectedDailyLimitOption(isPresetDailyLimit ? dailyLimit : 'custom');
+
+      const primaryModel = selectedTenant.aiPolicy?.primaryModel || 'meta/llama-3.2-11b-vision-instruct';
+      setPolicyPrimaryModel(primaryModel);
+      const isPresetModel = LLM_MODEL_OPTIONS.some(m => m.id === primaryModel);
+      setSelectedModelOption(isPresetModel ? primaryModel : 'custom');
+
       setPolicyBillingStatus(selectedTenant.billingStatus || 'ACTIVE');
       setEditingTenantName(selectedTenant.displayName || '');
       setActiveModalTab('overview');
+      setMemberRoleFilter('all');
+      setAiProviderFilter('all');
+      setDecommissionReasonCategory('');
     }
   }, [selectedTenant]);
+
 
   const handleCopyId = (text) => {
     if (!text) return;
@@ -770,7 +911,7 @@ export default function PlatformTenants() {
                   type="text"
                   required
                   placeholder="e.g. Acme Corporation"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-indigo-500 font-medium"
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
                 />
@@ -783,7 +924,7 @@ export default function PlatformTenants() {
                   required
                   pattern="[a-z0-9][a-z0-9-]*[a-z0-9]|[a-z0-9]"
                   placeholder="e.g. acme-corp"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-indigo-500 font-mono"
                   value={slug}
                   onChange={e => setSlug(e.target.value)}
                 />
@@ -795,11 +936,24 @@ export default function PlatformTenants() {
                 <select
                   value={isolationTier}
                   onChange={e => setIsolationTier(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:bg-white focus:outline-hidden focus:border-indigo-500"
                 >
-                  <option value="STANDARD">Standard</option>
-                  <option value="ENTERPRISE">Enterprise</option>
-                  <option value="REGULATED">Regulated</option>
+                  {ISOLATION_TIER_OPTIONS.map(tier => (
+                    <option key={tier.id} value={tier.id}>{tier.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Hosting Region</label>
+                <select
+                  value={provisioningRegion}
+                  onChange={e => setProvisioningRegion(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-700 focus:bg-white focus:outline-hidden focus:border-indigo-500"
+                >
+                  {REGION_OPTIONS.map(reg => (
+                    <option key={reg.id} value={reg.id}>{reg.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -808,14 +962,14 @@ export default function PlatformTenants() {
                   type="button"
                   onClick={() => setShowProvisionModal(false)}
                   disabled={provisioning}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={provisioning}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {provisioning ? 'Provisioning…' : 'Create Organization'}
                 </button>
@@ -876,7 +1030,7 @@ export default function PlatformTenants() {
                 <button
                   type="button"
                   onClick={() => setSelectedTenant(null)}
-                  className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+                  className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition cursor-pointer"
                   aria-label="Close modal"
                 >
                   <FiX className="h-5 w-5" />
@@ -966,7 +1120,7 @@ export default function PlatformTenants() {
                       <FiAlertTriangle className="text-red-600 shrink-0" />
                       <span>{actionError}</span>
                     </div>
-                    <button type="button" onClick={() => setActionError('')} className="text-red-500 hover:text-red-700 font-bold ml-2">Dismiss</button>
+                    <button type="button" onClick={() => setActionError('')} className="text-red-500 hover:text-red-700 font-bold ml-2 cursor-pointer">Dismiss</button>
                   </div>
                 )}
                 {notification && (
@@ -975,7 +1129,7 @@ export default function PlatformTenants() {
                       <FiCheck className="text-emerald-600 shrink-0" />
                       <span>{notification}</span>
                     </div>
-                    <button type="button" onClick={() => setNotification('')} className="text-emerald-500 hover:text-emerald-700 font-bold ml-2">Dismiss</button>
+                    <button type="button" onClick={() => setNotification('')} className="text-emerald-500 hover:text-emerald-700 font-bold ml-2 cursor-pointer">Dismiss</button>
                   </div>
                 )}
 
@@ -991,7 +1145,7 @@ export default function PlatformTenants() {
                   {detailError && (
                     <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-xs text-red-800 flex items-center justify-between" role="alert">
                       <span>{detailError}</span>
-                      <button type="button" className="font-bold underline" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button>
+                      <button type="button" className="font-bold underline cursor-pointer" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button>
                     </div>
                   )}
 
@@ -1025,7 +1179,7 @@ export default function PlatformTenants() {
                         </div>
                       )}
 
-                      {/* Attributes Grid */}
+                      {/* Attributes Grid with Dropdown Overviews */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Slug / Namespace</p>
@@ -1033,7 +1187,10 @@ export default function PlatformTenants() {
                         </div>
                         <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Lifecycle State</p>
-                          <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.lifecycleState}</p>
+                          <p className="text-xs font-bold text-slate-900 mt-1 flex items-center gap-1.5">
+                            <span className={`h-2 w-2 rounded-full ${selectedTenant.lifecycleState === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                            {selectedTenant.lifecycleState}
+                          </p>
                         </div>
                         <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
                           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Isolation Tier</p>
@@ -1052,7 +1209,7 @@ export default function PlatformTenants() {
                             <div key={key} className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3.5">
                               <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{key.replaceAll('_', ' ')}</p>
                               <p className="mt-1 text-sm font-extrabold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p>
-                              <p className="text-[10px] text-slate-400 mt-0.5">{item?.source || 'unknown'}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{item?.source || 'measured'}</p>
                             </div>
                           ))}
                         </div>
@@ -1064,7 +1221,7 @@ export default function PlatformTenants() {
                   {activeModalTab === 'members' && (
                     <div className="space-y-4 animate-fade-in">
                       <div className="rounded-2xl border border-slate-200/80 p-5 bg-white space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                           <div>
                             <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
                               <FiUser className="text-indigo-600" /> Users &amp; Memberships
@@ -1073,15 +1230,32 @@ export default function PlatformTenants() {
                               {selectedDetail?.users?.source || 'measured'} · {selectedDetail?.memberships?.items?.length ?? (selectedDetail?.users?.items?.length || 0)} registered members
                             </p>
                           </div>
-                          {isSuperAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => setShowAddMember(prev => !prev)}
-                              className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-                            >
-                              <FiUserPlus /> Add Member
-                            </button>
-                          )}
+                          <div className="flex items-center gap-2.5">
+                            {/* Role Filter Dropdown */}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-bold text-slate-500">Role:</span>
+                              <select
+                                value={memberRoleFilter}
+                                onChange={e => setMemberRoleFilter(e.target.value)}
+                                className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                              >
+                                <option value="all">All Roles ({(selectedDetail?.users?.items || []).length})</option>
+                                <option value="OWNER">Owners Only</option>
+                                <option value="ADMIN">Admins Only</option>
+                                <option value="MEMBER">Members Only</option>
+                              </select>
+                            </div>
+
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAddMember(prev => !prev)}
+                                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                              >
+                                <FiUserPlus /> {showAddMember ? 'Cancel' : 'Add Member'}
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {/* Add Member Form */}
@@ -1100,11 +1274,11 @@ export default function PlatformTenants() {
                               <select
                                 value={memberRole}
                                 onChange={e => setMemberRole(e.target.value)}
-                                className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
+                                className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
                               >
-                                <option value="MEMBER">Member</option>
-                                <option value="ADMIN">Admin</option>
-                                <option value="OWNER">Owner</option>
+                                <option value="MEMBER">MEMBER (Standard Workspace Access)</option>
+                                <option value="ADMIN">ADMIN (Organization Administration)</option>
+                                <option value="OWNER">OWNER (Full Tenant Ownership &amp; Billing)</option>
                               </select>
                               <button
                                 type="submit"
@@ -1117,11 +1291,19 @@ export default function PlatformTenants() {
                           </form>
                         )}
 
+                        {/* Filtered Members Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-                          {(selectedDetail?.users?.items || []).length === 0 ? (
-                            <p className="col-span-2 text-xs text-slate-400 italic py-4 text-center">No assigned members in this organization.</p>
-                          ) : (
-                            (selectedDetail?.users?.items || []).map(user => (
+                          {(() => {
+                            const allMembers = selectedDetail?.users?.items || [];
+                            const filtered = memberRoleFilter === 'all'
+                              ? allMembers
+                              : allMembers.filter(u => (u.roles || []).includes(memberRoleFilter) || u.role === memberRoleFilter);
+
+                            if (filtered.length === 0) {
+                              return <p className="col-span-2 text-xs text-slate-400 italic py-4 text-center">No members match the selected role filter.</p>;
+                            }
+
+                            return filtered.map(user => (
                               <div key={user.id} className="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
                                 <div className="truncate">
                                   <span className="font-bold text-slate-900">{user.email || user.id}</span>
@@ -1139,8 +1321,8 @@ export default function PlatformTenants() {
                                   </button>
                                 )}
                               </div>
-                            ))
-                          )}
+                            ));
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -1163,42 +1345,77 @@ export default function PlatformTenants() {
                                 </span>
                               </h4>
                               <p className="text-[11px] text-slate-500 mt-0.5">
-                                Configure contracted commercial tier, seat limits, currency, and daily AI quotas.
+                                Configure contracted commercial tier, seat limits, currency, and daily AI quotas with preset dropdowns.
                               </p>
                             </div>
                           </div>
                         </div>
 
                         <form onSubmit={handleSaveAgreementPolicy} className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {/* Commercial Plan */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            {/* Commercial Plan Dropdown */}
                             <div>
-                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Plan</label>
-                              <input
-                                type="text"
-                                required
-                                value={policyPlan}
-                                onChange={e => setPolicyPlan(e.target.value)}
-                                placeholder="e.g. Enterprise Custom SLA"
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                              />
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Plan Tier</label>
+                              <select
+                                value={selectedPlanOption}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setSelectedPlanOption(val);
+                                  if (val !== 'Custom Plan...') {
+                                    setPolicyPlan(val);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                              >
+                                {PLAN_PRESETS.map(p => (
+                                  <option key={p} value={p}>{p}</option>
+                                ))}
+                              </select>
+                              {selectedPlanOption === 'Custom Plan...' && (
+                                <input
+                                  type="text"
+                                  required
+                                  value={policyPlan}
+                                  onChange={e => setPolicyPlan(e.target.value)}
+                                  placeholder="Type custom plan name..."
+                                  className="mt-1.5 w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500 animate-fade-in"
+                                />
+                              )}
                             </div>
 
-                            {/* Contracted Seats */}
+                            {/* Contracted Seats Limit Dropdown */}
                             <div>
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Seats Limit</label>
-                              <input
-                                type="number"
-                                min={1}
-                                max={50000}
-                                required
-                                value={policySeats}
-                                onChange={e => setPolicySeats(Number(e.target.value))}
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                              />
+                              <select
+                                value={selectedSeatOption}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setSelectedSeatOption(val === 'custom' ? 'custom' : Number(val));
+                                  if (val !== 'custom') {
+                                    setPolicySeats(Number(val));
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                              >
+                                {SEAT_PRESETS.map(s => (
+                                  <option key={s.value} value={s.value}>{s.label}</option>
+                                ))}
+                              </select>
+                              {selectedSeatOption === 'custom' && (
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={50000}
+                                  required
+                                  value={policySeats}
+                                  onChange={e => setPolicySeats(Number(e.target.value))}
+                                  placeholder="Enter custom seat capacity"
+                                  className="mt-1.5 w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500 animate-fade-in"
+                                />
+                              )}
                             </div>
 
-                            {/* Billing Currency */}
+                            {/* Billing Currency Dropdown */}
                             <div>
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">Contract Currency</label>
                               <select
@@ -1206,40 +1423,74 @@ export default function PlatformTenants() {
                                 onChange={e => setPolicyCurrency(e.target.value)}
                                 className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
                               >
-                                <option value="INR">INR (₹)</option>
-                                <option value="USD">USD ($)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="GBP">GBP (£)</option>
+                                {CURRENCY_OPTIONS.map(c => (
+                                  <option key={c.code} value={c.code}>{c.label}</option>
+                                ))}
                               </select>
                             </div>
 
-                            {/* Daily AI Operations Quota */}
+                            {/* Daily AI Operations Quota Dropdown */}
                             <div>
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">Daily AI Operations Quota</label>
-                              <input
-                                type="number"
-                                min={10}
-                                max={500000}
-                                required
-                                value={policyDailyLimit}
-                                onChange={e => setPolicyDailyLimit(Number(e.target.value))}
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                              />
+                              <select
+                                value={selectedDailyLimitOption}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setSelectedDailyLimitOption(val === 'custom' ? 'custom' : Number(val));
+                                  if (val !== 'custom') {
+                                    setPolicyDailyLimit(Number(val));
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                              >
+                                {DAILY_LIMIT_PRESETS.map(d => (
+                                  <option key={d.value} value={d.value}>{d.label}</option>
+                                ))}
+                              </select>
+                              {selectedDailyLimitOption === 'custom' && (
+                                <input
+                                  type="number"
+                                  min={10}
+                                  max={500000}
+                                  required
+                                  value={policyDailyLimit}
+                                  onChange={e => setPolicyDailyLimit(Number(e.target.value))}
+                                  placeholder="Enter custom daily limit"
+                                  className="mt-1.5 w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500 animate-fade-in"
+                                />
+                              )}
                               <p className="text-[10px] text-slate-400 mt-0.5">Enforced atomically across all tenant members.</p>
                             </div>
 
-                            {/* Primary LLM Model */}
+                            {/* Primary LLM Model Routing Dropdown */}
                             <div className="lg:col-span-2">
                               <label className="block text-[11px] font-bold text-slate-700 mb-1">Primary LLM Model Routing</label>
-                              <input
-                                type="text"
-                                required
-                                value={policyPrimaryModel}
-                                onChange={e => setPolicyPrimaryModel(e.target.value)}
-                                placeholder="e.g. meta/llama-3.2-11b-vision-instruct"
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <p className="text-[10px] text-slate-400 mt-0.5">Active default: meta/llama-3.2-11b-vision-instruct</p>
+                              <select
+                                value={selectedModelOption}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setSelectedModelOption(val);
+                                  if (val !== 'custom') {
+                                    setPolicyPrimaryModel(val);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500 font-mono"
+                              >
+                                {LLM_MODEL_OPTIONS.map(m => (
+                                  <option key={m.id} value={m.id}>{m.label}</option>
+                                ))}
+                              </select>
+                              {selectedModelOption === 'custom' && (
+                                <input
+                                  type="text"
+                                  required
+                                  value={policyPrimaryModel}
+                                  onChange={e => setPolicyPrimaryModel(e.target.value)}
+                                  placeholder="e.g. meta/llama-3.2-11b-vision-instruct"
+                                  className="mt-1.5 w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500 animate-fade-in"
+                                />
+                              )}
+                              <p className="text-[10px] text-slate-400 mt-0.5">Active routing target: <span className="font-mono font-bold text-indigo-700">{policyPrimaryModel}</span></p>
                             </div>
                           </div>
 
@@ -1261,7 +1512,7 @@ export default function PlatformTenants() {
                   {activeModalTab === 'ai' && (
                     <div className="space-y-4 animate-fade-in">
                       <div className="rounded-2xl border border-indigo-100 bg-linear-to-br from-indigo-50/30 via-slate-50 to-white p-5 space-y-4 shadow-xs">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100/60 pb-3">
                           <div className="flex items-center gap-2.5">
                             <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
                               <FiCpu className="h-4 w-4" />
@@ -1274,217 +1525,247 @@ export default function PlatformTenants() {
                                 </span>
                               </h4>
                               <p className="text-[11px] text-slate-500 mt-0.5">
-                                Configure tenant-specific API keys for any of the 6 supported base AI providers. Operations are billed directly to the customer's account.
+                                Configure dedicated API keys for any of the 6 supported base AI providers.
                               </p>
                             </div>
+                          </div>
+
+                          {/* Provider Filter Dropdown */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[11px] font-bold text-slate-500">Filter Provider:</span>
+                            <select
+                              value={aiProviderFilter}
+                              onChange={e => setAiProviderFilter(e.target.value)}
+                              className="px-2.5 py-1.5 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                            >
+                              <option value="all">All 6 AI Providers</option>
+                              <option value="nvidia">NVIDIA NIM</option>
+                              <option value="gemini">Google Gemini</option>
+                              <option value="openai">OpenAI</option>
+                              <option value="groq">Groq Cloud</option>
+                              <option value="openrouter">OpenRouter</option>
+                              <option value="deepseek">DeepSeek</option>
+                            </select>
                           </div>
                         </div>
 
                         <div className="p-4 bg-white border border-indigo-100 rounded-xl space-y-4 shadow-xs">
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                             {/* 1. NVIDIA NIM */}
-                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span> NVIDIA NIM
-                                </span>
-                                {selectedTenant.aiPolicy?.customProviderKeys?.nvidia && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active</span>
-                                )}
-                              </div>
-                              <input
-                                type="password"
-                                value={nvidiaCustomKey}
-                                onChange={e => setNvidiaCustomKey(e.target.value)}
-                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Dedicated Active)' : 'nvapi-...'}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <div className="flex items-center justify-between pt-0.5">
-                                <button
-                                  type="button"
-                                  disabled={testingKey.nvidia}
-                                  onClick={() => handleTestTenantKey('nvidia', nvidiaCustomKey)}
-                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {testingKey.nvidia ? 'Testing…' : '⚡ Test Connection'}
-                                </button>
-                                {testResults.nvidia && (
-                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.nvidia.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {testResults.nvidia.message}
+                            {(aiProviderFilter === 'all' || aiProviderFilter === 'nvidia') && (
+                              <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span> NVIDIA NIM
                                   </span>
-                                )}
+                                  {selectedTenant.aiPolicy?.customProviderKeys?.nvidia && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active</span>
+                                  )}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={nvidiaCustomKey}
+                                  onChange={e => setNvidiaCustomKey(e.target.value)}
+                                  placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Dedicated Active)' : 'nvapi-...'}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                />
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <button
+                                    type="button"
+                                    disabled={testingKey.nvidia}
+                                    onClick={() => handleTestTenantKey('nvidia', nvidiaCustomKey)}
+                                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {testingKey.nvidia ? 'Testing…' : '⚡ Test Connection'}
+                                  </button>
+                                  {testResults.nvidia && (
+                                    <span className={`text-[10px] font-bold truncate max-w-[140px] ${testResults.nvidia.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                      {testResults.nvidia.message}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* 2. Google Gemini */}
-                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                  <span className="h-2 w-2 rounded-full bg-blue-500"></span> Google Gemini
-                                </span>
-                                {selectedTenant.aiPolicy?.customProviderKeys?.gemini && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active</span>
-                                )}
-                              </div>
-                              <input
-                                type="password"
-                                value={geminiCustomKey}
-                                onChange={e => setGeminiCustomKey(e.target.value)}
-                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Dedicated Active)' : 'AIza...'}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <div className="flex items-center justify-between pt-0.5">
-                                <button
-                                  type="button"
-                                  disabled={testingKey.gemini}
-                                  onClick={() => handleTestTenantKey('gemini', geminiCustomKey)}
-                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {testingKey.gemini ? 'Testing…' : '⚡ Test Connection'}
-                                </button>
-                                {testResults.gemini && (
-                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.gemini.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {testResults.gemini.message}
+                            {(aiProviderFilter === 'all' || aiProviderFilter === 'gemini') && (
+                              <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-blue-500"></span> Google Gemini
                                   </span>
-                                )}
+                                  {selectedTenant.aiPolicy?.customProviderKeys?.gemini && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active</span>
+                                  )}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={geminiCustomKey}
+                                  onChange={e => setGeminiCustomKey(e.target.value)}
+                                  placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Dedicated Active)' : 'AIza...'}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                />
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <button
+                                    type="button"
+                                    disabled={testingKey.gemini}
+                                    onClick={() => handleTestTenantKey('gemini', geminiCustomKey)}
+                                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {testingKey.gemini ? 'Testing…' : '⚡ Test Connection'}
+                                  </button>
+                                  {testResults.gemini && (
+                                    <span className={`text-[10px] font-bold truncate max-w-[140px] ${testResults.gemini.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                      {testResults.gemini.message}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* 3. OpenAI */}
-                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                  <span className="h-2 w-2 rounded-full bg-teal-500"></span> OpenAI
-                                </span>
-                                {selectedTenant.aiPolicy?.customProviderKeys?.openai && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active</span>
-                                )}
-                              </div>
-                              <input
-                                type="password"
-                                value={openaiCustomKey}
-                                onChange={e => setOpenaiCustomKey(e.target.value)}
-                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Dedicated Active)' : 'sk-...'}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <div className="flex items-center justify-between pt-0.5">
-                                <button
-                                  type="button"
-                                  disabled={testingKey.openai}
-                                  onClick={() => handleTestTenantKey('openai', openaiCustomKey)}
-                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {testingKey.openai ? 'Testing…' : '⚡ Test Connection'}
-                                </button>
-                                {testResults.openai && (
-                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openai.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {testResults.openai.message}
+                            {(aiProviderFilter === 'all' || aiProviderFilter === 'openai') && (
+                              <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-teal-500"></span> OpenAI
                                   </span>
-                                )}
+                                  {selectedTenant.aiPolicy?.customProviderKeys?.openai && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active</span>
+                                  )}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={openaiCustomKey}
+                                  onChange={e => setOpenaiCustomKey(e.target.value)}
+                                  placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Dedicated Active)' : 'sk-...'}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                />
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <button
+                                    type="button"
+                                    disabled={testingKey.openai}
+                                    onClick={() => handleTestTenantKey('openai', openaiCustomKey)}
+                                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {testingKey.openai ? 'Testing…' : '⚡ Test Connection'}
+                                  </button>
+                                  {testResults.openai && (
+                                    <span className={`text-[10px] font-bold truncate max-w-[140px] ${testResults.openai.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                      {testResults.openai.message}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* 4. Groq Cloud */}
-                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                  <span className="h-2 w-2 rounded-full bg-orange-500"></span> Groq Cloud
-                                </span>
-                                {selectedTenant.aiPolicy?.customProviderKeys?.groq && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active</span>
-                                )}
-                              </div>
-                              <input
-                                type="password"
-                                value={groqCustomKey}
-                                onChange={e => setGroqCustomKey(e.target.value)}
-                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.groq ? '•••••••• (Dedicated Active)' : 'gsk_...'}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <div className="flex items-center justify-between pt-0.5">
-                                <button
-                                  type="button"
-                                  disabled={testingKey.groq}
-                                  onClick={() => handleTestTenantKey('groq', groqCustomKey)}
-                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {testingKey.groq ? 'Testing…' : '⚡ Test Connection'}
-                                </button>
-                                {testResults.groq && (
-                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.groq.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {testResults.groq.message}
+                            {(aiProviderFilter === 'all' || aiProviderFilter === 'groq') && (
+                              <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-orange-500"></span> Groq Cloud
                                   </span>
-                                )}
+                                  {selectedTenant.aiPolicy?.customProviderKeys?.groq && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active</span>
+                                  )}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={groqCustomKey}
+                                  onChange={e => setGroqCustomKey(e.target.value)}
+                                  placeholder={selectedTenant.aiPolicy?.customProviderKeys?.groq ? '•••••••• (Dedicated Active)' : 'gsk_...'}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                />
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <button
+                                    type="button"
+                                    disabled={testingKey.groq}
+                                    onClick={() => handleTestTenantKey('groq', groqCustomKey)}
+                                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {testingKey.groq ? 'Testing…' : '⚡ Test Connection'}
+                                  </button>
+                                  {testResults.groq && (
+                                    <span className={`text-[10px] font-bold truncate max-w-[140px] ${testResults.groq.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                      {testResults.groq.message}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* 5. OpenRouter */}
-                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                  <span className="h-2 w-2 rounded-full bg-violet-500"></span> OpenRouter
-                                </span>
-                                {selectedTenant.aiPolicy?.customProviderKeys?.openrouter && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active</span>
-                                )}
-                              </div>
-                              <input
-                                type="password"
-                                value={openrouterCustomKey}
-                                onChange={e => setOpenrouterCustomKey(e.target.value)}
-                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openrouter ? '•••••••• (Dedicated Active)' : 'sk-or-v1-...'}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <div className="flex items-center justify-between pt-0.5">
-                                <button
-                                  type="button"
-                                  disabled={testingKey.openrouter}
-                                  onClick={() => handleTestTenantKey('openrouter', openrouterCustomKey)}
-                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {testingKey.openrouter ? 'Testing…' : '⚡ Test Connection'}
-                                </button>
-                                {testResults.openrouter && (
-                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openrouter.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {testResults.openrouter.message}
+                            {(aiProviderFilter === 'all' || aiProviderFilter === 'openrouter') && (
+                              <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-violet-500"></span> OpenRouter
                                   </span>
-                                )}
+                                  {selectedTenant.aiPolicy?.customProviderKeys?.openrouter && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active</span>
+                                  )}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={openrouterCustomKey}
+                                  onChange={e => setOpenrouterCustomKey(e.target.value)}
+                                  placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openrouter ? '•••••••• (Dedicated Active)' : 'sk-or-v1-...'}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                />
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <button
+                                    type="button"
+                                    disabled={testingKey.openrouter}
+                                    onClick={() => handleTestTenantKey('openrouter', openrouterCustomKey)}
+                                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {testingKey.openrouter ? 'Testing…' : '⚡ Test Connection'}
+                                  </button>
+                                  {testResults.openrouter && (
+                                    <span className={`text-[10px] font-bold truncate max-w-[140px] ${testResults.openrouter.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                      {testResults.openrouter.message}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* 6. DeepSeek */}
-                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                  <span className="h-2 w-2 rounded-full bg-cyan-500"></span> DeepSeek
-                                </span>
-                                {selectedTenant.aiPolicy?.customProviderKeys?.deepseek && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active</span>
-                                )}
-                              </div>
-                              <input
-                                type="password"
-                                value={deepseekCustomKey}
-                                onChange={e => setDeepseekCustomKey(e.target.value)}
-                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.deepseek ? '•••••••• (Dedicated Active)' : 'sk-...'}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                              />
-                              <div className="flex items-center justify-between pt-0.5">
-                                <button
-                                  type="button"
-                                  disabled={testingKey.deepseek}
-                                  onClick={() => handleTestTenantKey('deepseek', deepseekCustomKey)}
-                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                >
-                                  {testingKey.deepseek ? 'Testing…' : '⚡ Test Connection'}
-                                </button>
-                                {testResults.deepseek && (
-                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.deepseek.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                    {testResults.deepseek.message}
+                            {(aiProviderFilter === 'all' || aiProviderFilter === 'deepseek') && (
+                              <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-cyan-500"></span> DeepSeek
                                   </span>
-                                )}
+                                  {selectedTenant.aiPolicy?.customProviderKeys?.deepseek && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active</span>
+                                  )}
+                                </div>
+                                <input
+                                  type="password"
+                                  value={deepseekCustomKey}
+                                  onChange={e => setDeepseekCustomKey(e.target.value)}
+                                  placeholder={selectedTenant.aiPolicy?.customProviderKeys?.deepseek ? '•••••••• (Dedicated Active)' : 'sk-...'}
+                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                                />
+                                <div className="flex items-center justify-between pt-0.5">
+                                  <button
+                                    type="button"
+                                    disabled={testingKey.deepseek}
+                                    onClick={() => handleTestTenantKey('deepseek', deepseekCustomKey)}
+                                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    {testingKey.deepseek ? 'Testing…' : '⚡ Test Connection'}
+                                  </button>
+                                  {testResults.deepseek && (
+                                    <span className={`text-[10px] font-bold truncate max-w-[140px] ${testResults.deepseek.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                      {testResults.deepseek.message}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
 
                           <div className="flex justify-end pt-2 border-t border-slate-100">
@@ -1576,7 +1857,7 @@ export default function PlatformTenants() {
                   {activeModalTab === 'danger' && (
                     <div className="space-y-4 animate-fade-in">
                       {isSuperAdmin && selectedTenant.lifecycleState !== 'DELETING' && selectedTenant.lifecycleState !== 'DELETED' ? (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 text-xs space-y-3">
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 text-xs space-y-3.5">
                           <div className="flex items-center gap-2 text-rose-900 font-extrabold text-sm">
                             <FiShieldOff className="text-rose-600" /> Organization Decommissioning Zone
                           </div>
@@ -1584,13 +1865,39 @@ export default function PlatformTenants() {
                             Uses the authoritative Enterprise lifecycle state machine to transition this organization to <strong>DELETING</strong>. 
                             Data will enter the enterprise retention grace period before hard deletion.
                           </p>
-                          <textarea
-                            className="w-full rounded-xl border border-rose-200 bg-white p-3 text-xs font-medium focus:outline-hidden focus:border-rose-500"
-                            rows={2}
-                            placeholder="Required decommission justification reason (minimum 8 characters)"
-                            value={decommissionReason}
-                            onChange={e => setDecommissionReason(e.target.value)}
-                          />
+
+                          {/* Standard Decommission Category Dropdown */}
+                          <div>
+                            <label className="block text-[11px] font-bold text-rose-900 mb-1">Standard Justification Reason</label>
+                            <select
+                              value={decommissionReasonCategory}
+                              onChange={e => {
+                                const val = e.target.value;
+                                setDecommissionReasonCategory(val);
+                                if (val && val !== 'Other Justification (Custom text)') {
+                                  setDecommissionReason(val);
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-rose-500"
+                            >
+                              <option value="">-- Select a standardized justification reason --</option>
+                              {DECOMMISSION_REASONS.map(r => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-rose-900 mb-1">Decommission Reason / Audit Remarks</label>
+                            <textarea
+                              className="w-full rounded-xl border border-rose-200 bg-white p-3 text-xs font-medium focus:outline-hidden focus:border-rose-500"
+                              rows={2}
+                              placeholder="Required decommission justification reason (minimum 8 characters)"
+                              value={decommissionReason}
+                              onChange={e => setDecommissionReason(e.target.value)}
+                            />
+                          </div>
+
                           <div className="flex justify-end">
                             <button
                               type="button"
@@ -1613,6 +1920,7 @@ export default function PlatformTenants() {
           </div>
         </div>
       )}
+
       {/* Confirmation Modal */}
       {confirmAction && (
         <div
