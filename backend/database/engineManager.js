@@ -16,8 +16,8 @@ let switchInProgress = false;
  * Resolves the initial active database engine.
  * Precedence:
  * 1. engine_state.json (Super Admin persistent runtime choice)
- * 2. process.env.DB_ENGINE ('firestore' or 'mysql')
- * 3. Default fallback: 'firestore'
+ * 2. process.env.DB_ENGINE ('mysql' or 'firestore')
+ * 3. Default fallback: 'mysql' (Authoritative Enterprise Primary)
  */
 function getActiveEngine() {
     if (currentEngine) {
@@ -36,8 +36,8 @@ function getActiveEngine() {
         console.warn('[EngineManager] Could not read engine_state.json:', e.message);
     }
 
-    const envEngine = String(process.env.DB_ENGINE || 'firestore').trim().toLowerCase();
-    currentEngine = (envEngine === 'mysql') ? 'mysql' : 'firestore';
+    const envEngine = String(process.env.DB_ENGINE || 'mysql').trim().toLowerCase();
+    currentEngine = (envEngine === 'firestore') ? 'firestore' : 'mysql';
     return currentEngine;
 }
 

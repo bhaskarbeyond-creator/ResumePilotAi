@@ -1,6 +1,6 @@
 {
   "engine": "firestore",
-  "switchedBy": "SUPER_ADMIN",
-  "switchedAt": "2026-08-25T10:00:00.000Z",
+  "switchedBy": "TEST_ADMIN",
+  "switchedAt": "2026-08-25T18:54:44.002Z",
   "previousEngine": "mysql"
 }
