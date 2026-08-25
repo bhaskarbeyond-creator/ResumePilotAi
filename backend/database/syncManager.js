@@ -713,7 +713,6 @@ async function processFirestoreOutbox(adminFirestore, batchSize = 25, poolOverri
 
     const snap = await adminFirestore.collection('sync_outbox_fs')
         .where('status', 'in', ['PENDING', 'RETRYING', 'PROCESSING'])
-        .orderBy('createdAt', 'asc')
         .limit(Math.max(1, Math.min(Number(batchSize) || 25, 100)))
         .get();
 
@@ -722,7 +721,14 @@ async function processFirestoreOutbox(adminFirestore, batchSize = 25, poolOverri
     let deadLettered = 0;
     const now = Date.now();
 
-    for (const doc of snap.docs) {
+    // Sort docs in memory by createdAt ascending so older events apply first
+    const sortedDocs = [...snap.docs].sort((a, b) => {
+        const aTime = a.data()?.createdAt?.toMillis?.() || (a.data()?.createdAt ? new Date(a.data().createdAt).getTime() : 0);
+        const bTime = b.data()?.createdAt?.toMillis?.() || (b.data()?.createdAt ? new Date(b.data().createdAt).getTime() : 0);
+        return aTime - bTime;
+    });
+
+    for (const doc of sortedDocs) {
         const data = doc.data() || {};
         // Claim the event atomically so concurrent workers cannot double-apply.
         // PROCESSING events are only re-claimable once their lease is stale,
