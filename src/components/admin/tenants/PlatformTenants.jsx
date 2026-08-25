@@ -9,8 +9,10 @@ import { testAdminAiProvider } from '../../../services/adminAiSettings';
 import {
   FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
   FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus,
-  FiTrash2, FiUser, FiCpu, FiDollarSign, FiSave, FiLayers
+  FiTrash2, FiUser, FiCpu, FiDollarSign, FiSave, FiLayers,
+  FiCopy, FiShield, FiLock, FiUnlock, FiActivity, FiKey
 } from 'react-icons/fi';
+
 
 
 export default function PlatformTenants() {
@@ -32,6 +34,8 @@ export default function PlatformTenants() {
   const [detailRefresh, setDetailRefresh] = useState(0);
   const [decommissionReason, setDecommissionReason] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
+  const [activeModalTab, setActiveModalTab] = useState('overview');
+  const [copiedId, setCopiedId] = useState(false);
 
   // Provisioning Modal State
   const [showProvisionModal, setShowProvisionModal] = useState(false);
@@ -55,7 +59,7 @@ export default function PlatformTenants() {
   const [policySeats, setPolicySeats] = useState(50);
   const [policyCurrency, setPolicyCurrency] = useState('INR');
   const [policyBillingStatus, setPolicyBillingStatus] = useState('ACTIVE');
-  const [showDedicatedKeys, setShowDedicatedKeys] = useState(false);
+  const [showDedicatedKeys, setShowDedicatedKeys] = useState(true);
   const [nvidiaCustomKey, setNvidiaCustomKey] = useState('');
   const [geminiCustomKey, setGeminiCustomKey] = useState('');
   const [openaiCustomKey, setOpenaiCustomKey] = useState('');
@@ -65,6 +69,7 @@ export default function PlatformTenants() {
   const [testingKey, setTestingKey] = useState({});
   const [testResults, setTestResults] = useState({});
   const [savingPolicy, setSavingPolicy] = useState(false);
+
 
 
   const fetchTenants = useCallback(async () => {
@@ -291,8 +296,20 @@ export default function PlatformTenants() {
       setPolicySeats(selectedTenant.seatLimit || 50);
       setPolicyCurrency(selectedTenant.currency || 'INR');
       setPolicyBillingStatus(selectedTenant.billingStatus || 'ACTIVE');
+      setEditingTenantName(selectedTenant.displayName || '');
+      setActiveModalTab('overview');
     }
   }, [selectedTenant]);
+
+  const handleCopyId = (text) => {
+    if (!text) return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    }
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
 
   const handleTestTenantKey = async (provider, rawKey) => {
     const key = rawKey.trim();
@@ -812,31 +829,47 @@ export default function PlatformTenants() {
       {selectedTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" onClick={() => setSelectedTenant(null)}>
           <div
-            className="w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+            className="w-full max-w-5xl h-[86vh] max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="Tenant detail"
           >
-            {/* Header Gradient Banner */}
-            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white flex items-center justify-between shrink-0">
+            {/* Header Dark Banner matching User 360 */}
+            <div className="bg-slate-950 px-6 py-4 text-white flex items-center justify-between shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-xl text-indigo-300 shrink-0">
-                  <FiServer />
+                <div className="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-md shrink-0">
+                  {selectedTenant.displayName?.charAt(0)?.toUpperCase() || 'T'}
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-base font-extrabold text-white truncate">{selectedTenant.displayName}</h3>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                      selectedTenant.lifecycleState === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                      selectedTenant.lifecycleState === 'ACTIVE'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     }`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${selectedTenant.lifecycleState === 'ACTIVE' ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
                       {selectedTenant.lifecycleState}
                     </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
                       {selectedTenant.isolationTier}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5 truncate select-all">{selectedTenant.id}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-400 font-mono">
+                    <span className="truncate">{selectedTenant.slug}</span>
+                    <span>•</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyId(selectedTenant.id)}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-900 hover:bg-slate-800 text-[11px] text-slate-300 border border-slate-800 transition cursor-pointer"
+                      title="Copy Organization ID"
+                    >
+                      <span className="truncate max-w-[140px] sm:max-w-[200px]">{selectedTenant.id}</span>
+                      <FiCopy className="h-3 w-3 shrink-0" />
+                    </button>
+                    {copiedId && <span className="text-[10px] text-emerald-400 font-sans font-bold">Copied!</span>}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -851,596 +884,731 @@ export default function PlatformTenants() {
               </div>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Rename Strip for SuperAdmin */}
-              {isSuperAdmin && (
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">Organization Display Name</p>
-                    <p className="text-[11px] text-slate-500">Update the public display name of this enterprise tenant.</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="platform-tenant-name"
-                      value={editingTenantName}
-                      onChange={event => setEditingTenantName(event.target.value)}
-                      className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-indigo-500 min-w-[200px]"
-                      maxLength={120}
-                    />
+            {/* Workspace Body: Split-Panel Layout */}
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left Rail Navigation Sidebar */}
+              <div className="w-64 shrink-0 bg-slate-50/90 border-r border-slate-200/80 p-3 space-y-1.5 overflow-y-auto flex flex-col justify-between">
+                <div className="space-y-1">
+                  <p className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Tenant 360 Workspace</p>
+                  {[
+                    { id: 'overview', label: 'Topology & Overview', desc: 'Slug, tier, region & status', icon: <FiServer /> },
+                    { id: 'members', label: 'Users & Memberships', count: (selectedDetail?.users?.items || []).length || selectedDetail?.overview?.users?.value || 0, desc: 'Team access & roles', icon: <FiUser /> },
+                    { id: 'commercials', label: 'Commercials & SLA', desc: 'Contracted plan & SLA', icon: <FiDollarSign /> },
+                    { id: 'ai', label: 'AI Quotas & BYOK Keys', desc: '6 Base LLMs & testing', icon: <FiCpu /> },
+                    { id: 'usage', label: 'Usage & Telemetry', desc: 'Requests, quota & audit', icon: <FiLayers /> },
+                    { id: 'danger', label: 'Decommission Zone', desc: 'Lifecycle & retirement', icon: <FiShieldOff /> },
+                  ].map(tab => (
                     <button
+                      key={tab.id}
                       type="button"
-                      onClick={handleRename}
-                      disabled={renaming}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50"
+                      onClick={() => setActiveModalTab(tab.id)}
+                      className={`w-full text-left px-3 py-2.5 rounded-2xl transition flex items-start gap-3 cursor-pointer ${
+                        activeModalTab === tab.id
+                          ? 'bg-white text-indigo-700 font-extrabold shadow-xs border border-slate-200/80'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 border border-transparent'
+                      }`}
                     >
-                      {renaming ? 'Saving…' : 'Rename'}
+                      <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                        activeModalTab === tab.id ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-200/70 text-slate-500'
+                      }`}>
+                        {tab.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold truncate">{tab.label}</p>
+                          {tab.count !== undefined && (
+                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                              activeModalTab === tab.id ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+                            }`}>
+                              {tab.count}
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[10px] mt-0.5 truncate ${activeModalTab === tab.id ? 'text-indigo-600/80' : 'text-slate-400'}`}>
+                          {tab.desc}
+                        </p>
+                      </div>
                     </button>
-                  </div>
+                  ))}
                 </div>
-              )}
 
-              {/* Attributes Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Slug / Namespace</p>
-                  <p className="text-xs font-mono font-bold text-slate-900 mt-1 truncate">{selectedTenant.slug}</p>
-                </div>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Lifecycle State</p>
-                  <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.lifecycleState}</p>
-                </div>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Isolation Tier</p>
-                  <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.isolationTier}</p>
-                </div>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Hosting Region</p>
-                  <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.region || 'default'}</p>
+                {/* Quick Actions Panel in Sidebar */}
+                <div className="p-3 bg-white rounded-2xl border border-slate-200/80 space-y-2 mt-2">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Quick Actions</p>
+                  <button
+                    type="button"
+                    onClick={() => handleStateToggle(selectedTenant, selectedTenant.lifecycleState === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')}
+                    disabled={busyTenant === selectedTenant.id}
+                    className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer ${
+                      selectedTenant.lifecycleState === 'ACTIVE'
+                        ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                  >
+                    {selectedTenant.lifecycleState === 'ACTIVE' ? <><FiLock /> Suspend</> : <><FiUnlock /> Reactivate</>}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab('overview')}
+                    className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer"
+                  >
+                    <FiServer /> Rename / Edit
+                  </button>
                 </div>
               </div>
 
-              {detailLoading && (
-                <div className="p-8 rounded-2xl border border-slate-200 bg-slate-50 text-center space-y-2" role="status">
-                  <FiRefreshCw className="h-6 w-6 animate-spin text-indigo-600 mx-auto" />
-                  <p className="text-xs font-bold text-slate-600">Loading tenant telemetry, users, usage metrics and audit trail…</p>
-                </div>
-              )}
-
-              {detailError && (
-                <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-xs text-red-800 flex items-center justify-between" role="alert">
-                  <span>{detailError}</span>
-                  <button type="button" className="font-bold underline" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button>
-                </div>
-              )}
-
-              {selectedDetail && (
-                <div className="space-y-6" data-testid="tenant-detail-sections">
-                  {/* Overview Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {Object.entries(selectedDetail.overview || {}).map(([key, item]) => (
-                      <div key={key} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5">
-                        <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{key.replaceAll('_', ' ')}</p>
-                        <p className="mt-1 text-sm font-extrabold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{item?.source || 'unknown'}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Users & Memberships Card */}
-                  <div className="rounded-2xl border border-slate-200 p-5 bg-white space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                          <FiUser className="text-indigo-600" /> Users &amp; Memberships
-                        </h4>
-                        <p className="mt-0.5 text-[11px] text-slate-500">
-                          {selectedDetail.users?.source || 'unknown'} · {selectedDetail.memberships?.items?.length ?? (selectedDetail.users?.items?.length || 0)} registered members
-                        </p>
-                      </div>
-                      {isSuperAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAddMember(prev => !prev)}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition"
-                        >
-                          <FiUserPlus /> Add Member
-                        </button>
-                      )}
+              {/* Right Main Content Area */}
+              <div className="flex-1 flex flex-col overflow-hidden bg-white">
+                {/* Alert Notifications */}
+                {actionError && (
+                  <div className="m-4 mb-0 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center justify-between" role="alert">
+                    <div className="flex items-center gap-2 font-medium">
+                      <FiAlertTriangle className="text-red-600 shrink-0" />
+                      <span>{actionError}</span>
                     </div>
-
-                    {/* Add Member Form */}
-                    {showAddMember && (
-                      <form onSubmit={handleAddMember} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-fade-in">
-                        <p className="text-xs font-bold text-slate-900">Add User to Organization</p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <input
-                            type="email"
-                            required
-                            placeholder="User email address"
-                            value={memberEmail}
-                            onChange={e => setMemberEmail(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:border-indigo-500 font-medium"
-                          />
-                          <select
-                            value={memberRole}
-                            onChange={e => setMemberRole(e.target.value)}
-                            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
-                          >
-                            <option value="MEMBER">Member</option>
-                            <option value="ADMIN">Admin</option>
-                            <option value="OWNER">Owner</option>
-                          </select>
-                          <button
-                            type="submit"
-                            disabled={memberBusy}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition disabled:opacity-50 shadow-xs"
-                          >
-                            {memberBusy ? 'Adding…' : 'Add Member'}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-52 overflow-y-auto">
-                      {(selectedDetail.users?.items || []).length === 0 ? (
-                        <p className="col-span-2 text-xs text-slate-400 italic py-4 text-center">No assigned members in this organization.</p>
-                      ) : (
-                        (selectedDetail.users?.items || []).map(user => (
-                          <div key={user.id} className="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
-                            <div className="truncate">
-                              <span className="font-bold text-slate-900">{user.email || user.id}</span>
-                              <span className="ml-2 px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800">{user.roles?.join(', ') || user.role || 'MEMBER'}</span>
-                            </div>
-                            {isSuperAdmin && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveMember(user.id, user.email || user.id)}
-                                disabled={memberBusy}
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                title="Remove member from tenant"
-                              >
-                                <FiTrash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
+                    <button type="button" onClick={() => setActionError('')} className="text-red-500 hover:text-red-700 font-bold ml-2">Dismiss</button>
                   </div>
+                )}
+                {notification && (
+                  <div className="m-4 mb-0 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between" role="status">
+                    <div className="flex items-center gap-2 font-medium">
+                      <FiCheck className="text-emerald-600 shrink-0" />
+                      <span>{notification}</span>
+                    </div>
+                    <button type="button" onClick={() => setNotification('')} className="text-emerald-500 hover:text-emerald-700 font-bold ml-2">Dismiss</button>
+                  </div>
+                )}
 
-                  {/* Custom Commercial Agreement & AI Token Governance Card */}
-                  {isSuperAdmin && (
-                    <div className="rounded-2xl border border-indigo-100 bg-linear-to-br from-indigo-50/40 via-slate-50 to-white p-5 space-y-4 shadow-xs">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
-                            <FiCpu className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                              Custom Commercial Agreement &amp; AI Token Governance
-                              <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800 uppercase tracking-wider">
-                                Custom SLA
-                              </span>
-                            </h4>
-                            <p className="text-[11px] text-slate-500 mt-0.5">
-                              Configure contracted plan, seat capacity, daily AI request quotas, and primary LLM model.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <form onSubmit={handleSaveAgreementPolicy} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {/* Commercial Plan */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Plan</label>
-                            <input
-                              type="text"
-                              required
-                              value={policyPlan}
-                              onChange={e => setPolicyPlan(e.target.value)}
-                              placeholder="e.g. Enterprise Custom SLA"
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                            />
-                          </div>
-
-                          {/* Contracted Seats */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Seats Limit</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={50000}
-                              required
-                              value={policySeats}
-                              onChange={e => setPolicySeats(Number(e.target.value))}
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                            />
-                          </div>
-
-                          {/* Billing Currency */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Contract Currency</label>
-                            <select
-                              value={policyCurrency}
-                              onChange={e => setPolicyCurrency(e.target.value)}
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
-                            >
-                              <option value="INR">INR (₹)</option>
-                              <option value="USD">USD ($)</option>
-                              <option value="EUR">EUR (€)</option>
-                              <option value="GBP">GBP (£)</option>
-                            </select>
-                          </div>
-
-                          {/* Daily AI Operations Quota */}
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Daily AI Operations Quota</label>
-                            <input
-                              type="number"
-                              min={10}
-                              max={500000}
-                              required
-                              value={policyDailyLimit}
-                              onChange={e => setPolicyDailyLimit(Number(e.target.value))}
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                            />
-                            <p className="text-[10px] text-slate-400 mt-0.5">Enforced atomically across all tenant members.</p>
-                          </div>
-
-                          {/* Primary LLM Model */}
-                          <div className="lg:col-span-2">
-                            <label className="block text-[11px] font-bold text-slate-700 mb-1">Primary LLM Model Routing</label>
-                            <input
-                              type="text"
-                              required
-                              value={policyPrimaryModel}
-                              onChange={e => setPolicyPrimaryModel(e.target.value)}
-                              placeholder="e.g. meta/llama-3.2-11b-vision-instruct"
-                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                            />
-                            <p className="text-[10px] text-slate-400 mt-0.5">Active default: meta/llama-3.2-11b-vision-instruct</p>
-                          </div>
-                        </div>
-
-                        {/* Dedicated BYOK API Keys Section */}
-                        <div className="pt-2 border-t border-indigo-100/60">
-                          <button
-                            type="button"
-                            onClick={() => setShowDedicatedKeys(prev => !prev)}
-                            className="flex items-center justify-between w-full text-left py-1 text-xs font-bold text-indigo-900 hover:text-indigo-700 cursor-pointer"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <span>🔑</span> Dedicated Tenant AI Keys (BYOK — Bring Your Own Key)
-                            </span>
-                            <span className="text-[11px] text-indigo-600 font-semibold">
-                              {showDedicatedKeys ? '▲ Hide Dedicated Keys' : '▼ Configure Dedicated Keys (Optional)'}
-                            </span>
-                          </button>
-                          
-                          {showDedicatedKeys && (
-                            <div className="mt-2.5 p-4 bg-white border border-indigo-100 rounded-xl space-y-4 animate-fade-in shadow-xs">
-                              <p className="text-[11px] text-slate-600 leading-relaxed">
-                                Enter dedicated API keys for this tenant across any of the 6 supported base AI providers. When configured, AI operations from this organization are routed exclusively through these credentials and billed to the tenant's own provider account. You can test each provider's connection latency and validity prior to saving.
-                              </p>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                                {/* 1. NVIDIA NIM */}
-                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                      <span className="h-2 w-2 rounded-full bg-emerald-500"></span> NVIDIA NIM
-                                    </span>
-                                    {selectedTenant.aiPolicy?.customProviderKeys?.nvidia && (
-                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active</span>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="password"
-                                    value={nvidiaCustomKey}
-                                    onChange={e => setNvidiaCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Dedicated Active)' : 'nvapi-...'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                                  />
-                                  <div className="flex items-center justify-between pt-0.5">
-                                    <button
-                                      type="button"
-                                      disabled={testingKey.nvidia}
-                                      onClick={() => handleTestTenantKey('nvidia', nvidiaCustomKey)}
-                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      {testingKey.nvidia ? 'Testing…' : '⚡ Test Connection'}
-                                    </button>
-                                    {testResults.nvidia && (
-                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.nvidia.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {testResults.nvidia.message}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 2. Google Gemini */}
-                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                      <span className="h-2 w-2 rounded-full bg-blue-500"></span> Google Gemini
-                                    </span>
-                                    {selectedTenant.aiPolicy?.customProviderKeys?.gemini && (
-                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active</span>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="password"
-                                    value={geminiCustomKey}
-                                    onChange={e => setGeminiCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Dedicated Active)' : 'AIza...'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                                  />
-                                  <div className="flex items-center justify-between pt-0.5">
-                                    <button
-                                      type="button"
-                                      disabled={testingKey.gemini}
-                                      onClick={() => handleTestTenantKey('gemini', geminiCustomKey)}
-                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      {testingKey.gemini ? 'Testing…' : '⚡ Test Connection'}
-                                    </button>
-                                    {testResults.gemini && (
-                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.gemini.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {testResults.gemini.message}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 3. OpenAI */}
-                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                      <span className="h-2 w-2 rounded-full bg-teal-500"></span> OpenAI
-                                    </span>
-                                    {selectedTenant.aiPolicy?.customProviderKeys?.openai && (
-                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active</span>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="password"
-                                    value={openaiCustomKey}
-                                    onChange={e => setOpenaiCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Dedicated Active)' : 'sk-...'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                                  />
-                                  <div className="flex items-center justify-between pt-0.5">
-                                    <button
-                                      type="button"
-                                      disabled={testingKey.openai}
-                                      onClick={() => handleTestTenantKey('openai', openaiCustomKey)}
-                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      {testingKey.openai ? 'Testing…' : '⚡ Test Connection'}
-                                    </button>
-                                    {testResults.openai && (
-                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openai.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {testResults.openai.message}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 4. Groq Cloud */}
-                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                      <span className="h-2 w-2 rounded-full bg-orange-500"></span> Groq Cloud
-                                    </span>
-                                    {selectedTenant.aiPolicy?.customProviderKeys?.groq && (
-                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active</span>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="password"
-                                    value={groqCustomKey}
-                                    onChange={e => setGroqCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.groq ? '•••••••• (Dedicated Active)' : 'gsk_...'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                                  />
-                                  <div className="flex items-center justify-between pt-0.5">
-                                    <button
-                                      type="button"
-                                      disabled={testingKey.groq}
-                                      onClick={() => handleTestTenantKey('groq', groqCustomKey)}
-                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      {testingKey.groq ? 'Testing…' : '⚡ Test Connection'}
-                                    </button>
-                                    {testResults.groq && (
-                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.groq.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {testResults.groq.message}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 5. OpenRouter */}
-                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                      <span className="h-2 w-2 rounded-full bg-violet-500"></span> OpenRouter
-                                    </span>
-                                    {selectedTenant.aiPolicy?.customProviderKeys?.openrouter && (
-                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active</span>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="password"
-                                    value={openrouterCustomKey}
-                                    onChange={e => setOpenrouterCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openrouter ? '•••••••• (Dedicated Active)' : 'sk-or-v1-...'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                                  />
-                                  <div className="flex items-center justify-between pt-0.5">
-                                    <button
-                                      type="button"
-                                      disabled={testingKey.openrouter}
-                                      onClick={() => handleTestTenantKey('openrouter', openrouterCustomKey)}
-                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      {testingKey.openrouter ? 'Testing…' : '⚡ Test Connection'}
-                                    </button>
-                                    {testResults.openrouter && (
-                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openrouter.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {testResults.openrouter.message}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* 6. DeepSeek */}
-                                <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                      <span className="h-2 w-2 rounded-full bg-cyan-500"></span> DeepSeek
-                                    </span>
-                                    {selectedTenant.aiPolicy?.customProviderKeys?.deepseek && (
-                                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active</span>
-                                    )}
-                                  </div>
-                                  <input
-                                    type="password"
-                                    value={deepseekCustomKey}
-                                    onChange={e => setDeepseekCustomKey(e.target.value)}
-                                    placeholder={selectedTenant.aiPolicy?.customProviderKeys?.deepseek ? '•••••••• (Dedicated Active)' : 'sk-...'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-                                  />
-                                  <div className="flex items-center justify-between pt-0.5">
-                                    <button
-                                      type="button"
-                                      disabled={testingKey.deepseek}
-                                      onClick={() => handleTestTenantKey('deepseek', deepseekCustomKey)}
-                                      className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      {testingKey.deepseek ? 'Testing…' : '⚡ Test Connection'}
-                                    </button>
-                                    {testResults.deepseek && (
-                                      <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.deepseek.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {testResults.deepseek.message}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                        </div>
-
-                        <div className="flex justify-end pt-1">
-                          <button
-                            type="submit"
-                            disabled={savingPolicy}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 shadow-xs cursor-pointer"
-                          >
-                            <FiSave /> {savingPolicy ? 'Saving Agreement…' : 'Save Agreement & AI Policy'}
-                          </button>
-                        </div>
-
-                      </form>
+                {/* Scrollable Content Body */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                  {detailLoading && (
+                    <div className="p-12 rounded-2xl border border-slate-200 bg-slate-50 text-center space-y-2" role="status">
+                      <FiRefreshCw className="h-7 w-7 animate-spin text-indigo-600 mx-auto" />
+                      <p className="text-xs font-bold text-slate-600">Loading complete Tenant 360 telemetry…</p>
                     </div>
                   )}
 
-                  {/* 2-Column Telemetry & Security Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Usage */}
-                    <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 space-y-2">
-                      <h4 className="text-xs font-extrabold text-slate-900">Usage &amp; Quotas</h4>
-                      <p className="text-[11px] text-slate-500">Source: {selectedDetail.usage?.source || 'unknown'}</p>
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                          <p className="text-[10px] font-black text-slate-400 uppercase">Requests</p>
-                          <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.usage?.requests ?? 'Unavailable'}</p>
-                        </div>
-                        <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                          <p className="text-[10px] font-black text-slate-400 uppercase">Tokens</p>
-                          <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.usage?.inputTokens === null ? 'Unavailable' : `${(selectedDetail.usage?.inputTokens || 0) + (selectedDetail.usage?.outputTokens || 0)}`}</p>
-                        </div>
-                      </div>
+                  {detailError && (
+                    <div className="p-4 rounded-2xl border border-red-200 bg-red-50 text-xs text-red-800 flex items-center justify-between" role="alert">
+                      <span>{detailError}</span>
+                      <button type="button" className="font-bold underline" onClick={() => setDetailRefresh(value => value + 1)}>Retry</button>
                     </div>
+                  )}
 
-                    {/* Security & M2M */}
-                    <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 space-y-2">
-                      <h4 className="text-xs font-extrabold text-slate-900">Security &amp; M2M</h4>
-                      <p className="text-[11px] text-slate-500">Security: {selectedDetail.security?.source || 'unknown'} · M2M: {selectedDetail.m2m?.source || 'unknown'}</p>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase">Service Accounts</p>
-                        <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.m2m?.accounts?.length ?? 'Unavailable'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Audit & Activity */}
-                  <div className="rounded-2xl border border-slate-200 p-4 bg-white space-y-2">
-                    <h4 className="text-xs font-extrabold text-slate-900">Recent Audit &amp; Activity Stream</h4>
-                    <p className="text-[11px] text-slate-500">Source: {selectedDetail.audit?.source || 'unknown'}</p>
-                    <div className="space-y-1.5 pt-1 max-h-36 overflow-y-auto">
-                      {(selectedDetail.activity?.events || []).length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-2">No recent audit events recorded for this organization.</p>
-                      ) : (
-                        (selectedDetail.activity?.events || []).slice(0, 5).map(event => (
-                          <div key={event.id} className="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100 text-xs">
-                            <span className="font-bold text-slate-800">{event.action}</span>
-                            <span className="text-[11px] text-slate-400">{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : 'time unavailable'}</span>
+                  {/* TAB 1: OVERVIEW & TOPOLOGY */}
+                  {activeModalTab === 'overview' && (
+                    <div className="space-y-4 animate-fade-in">
+                      {/* Rename Strip */}
+                      {isSuperAdmin && (
+                        <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">Organization Display Name</p>
+                            <p className="text-[11px] text-slate-500">Update the public display name of this enterprise tenant.</p>
                           </div>
-                        ))
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="platform-tenant-name"
+                              value={editingTenantName}
+                              onChange={event => setEditingTenantName(event.target.value)}
+                              className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-indigo-500 min-w-[200px]"
+                              maxLength={120}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleRename}
+                              disabled={renaming}
+                              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 shadow-xs cursor-pointer"
+                            >
+                              {renaming ? 'Saving…' : 'Rename'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Attributes Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Slug / Namespace</p>
+                          <p className="text-xs font-mono font-bold text-slate-900 mt-1 truncate">{selectedTenant.slug}</p>
+                        </div>
+                        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Lifecycle State</p>
+                          <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.lifecycleState}</p>
+                        </div>
+                        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Isolation Tier</p>
+                          <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.isolationTier}</p>
+                        </div>
+                        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Hosting Region</p>
+                          <p className="text-xs font-bold text-slate-900 mt-1">{selectedTenant.region || 'default'}</p>
+                        </div>
+                      </div>
+
+                      {/* Telemetry Metrics Grid */}
+                      {selectedDetail && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {Object.entries(selectedDetail.overview || {}).map(([key, item]) => (
+                            <div key={key} className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3.5">
+                              <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">{key.replaceAll('_', ' ')}</p>
+                              <p className="mt-1 text-sm font-extrabold text-slate-900">{item?.value === null || item?.value === undefined ? 'Unavailable' : item.value}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{item?.source || 'unknown'}</p>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* Quick Link Pills */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=audit&tenant=${encodeURIComponent(selectedTenant.id)}`}>
-                  Tenant Audit Trail →
-                </a>
-                <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>
-                  Usage Analytics →
-                </a>
-                <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href="/adm/security">
-                  Security Events →
-                </a>
+                  {/* TAB 2: USERS & MEMBERSHIPS */}
+                  {activeModalTab === 'members' && (
+                    <div className="space-y-4 animate-fade-in">
+                      <div className="rounded-2xl border border-slate-200/80 p-5 bg-white space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                              <FiUser className="text-indigo-600" /> Users &amp; Memberships
+                            </h4>
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {selectedDetail?.users?.source || 'measured'} · {selectedDetail?.memberships?.items?.length ?? (selectedDetail?.users?.items?.length || 0)} registered members
+                            </p>
+                          </div>
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddMember(prev => !prev)}
+                              className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                              <FiUserPlus /> Add Member
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Add Member Form */}
+                        {showAddMember && (
+                          <form onSubmit={handleAddMember} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-fade-in">
+                            <p className="text-xs font-bold text-slate-900">Add User to Organization</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="email"
+                                required
+                                placeholder="User email address"
+                                value={memberEmail}
+                                onChange={e => setMemberEmail(e.target.value)}
+                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:border-indigo-500 font-medium"
+                              />
+                              <select
+                                value={memberRole}
+                                onChange={e => setMemberRole(e.target.value)}
+                                className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700"
+                              >
+                                <option value="MEMBER">Member</option>
+                                <option value="ADMIN">Admin</option>
+                                <option value="OWNER">Owner</option>
+                              </select>
+                              <button
+                                type="submit"
+                                disabled={memberBusy}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition disabled:opacity-50 shadow-xs cursor-pointer"
+                              >
+                                {memberBusy ? 'Adding…' : 'Add Member'}
+                              </button>
+                            </div>
+                          </form>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto">
+                          {(selectedDetail?.users?.items || []).length === 0 ? (
+                            <p className="col-span-2 text-xs text-slate-400 italic py-4 text-center">No assigned members in this organization.</p>
+                          ) : (
+                            (selectedDetail?.users?.items || []).map(user => (
+                              <div key={user.id} className="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
+                                <div className="truncate">
+                                  <span className="font-bold text-slate-900">{user.email || user.id}</span>
+                                  <span className="ml-2 px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800">{user.roles?.join(', ') || user.role || 'MEMBER'}</span>
+                                </div>
+                                {isSuperAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveMember(user.id, user.email || user.id)}
+                                    disabled={memberBusy}
+                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                                    title="Remove member from tenant"
+                                  >
+                                    <FiTrash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: COMMERCIALS & SLA AGREEMENT */}
+                  {activeModalTab === 'commercials' && (
+                    <div className="space-y-4 animate-fade-in">
+                      <div className="rounded-2xl border border-indigo-100 bg-linear-to-br from-indigo-50/40 via-slate-50 to-white p-5 space-y-4 shadow-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                              <FiDollarSign className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                                Custom Commercial Agreement &amp; SLA
+                                <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800 uppercase tracking-wider">
+                                  Custom SLA
+                                </span>
+                              </h4>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                Configure contracted commercial tier, seat limits, currency, and daily AI quotas.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <form onSubmit={handleSaveAgreementPolicy} className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {/* Commercial Plan */}
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Plan</label>
+                              <input
+                                type="text"
+                                required
+                                value={policyPlan}
+                                onChange={e => setPolicyPlan(e.target.value)}
+                                placeholder="e.g. Enterprise Custom SLA"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                              />
+                            </div>
+
+                            {/* Contracted Seats */}
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Contracted Seats Limit</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={50000}
+                                required
+                                value={policySeats}
+                                onChange={e => setPolicySeats(Number(e.target.value))}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                              />
+                            </div>
+
+                            {/* Billing Currency */}
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Contract Currency</label>
+                              <select
+                                value={policyCurrency}
+                                onChange={e => setPolicyCurrency(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                              >
+                                <option value="INR">INR (₹)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                              </select>
+                            </div>
+
+                            {/* Daily AI Operations Quota */}
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Daily AI Operations Quota</label>
+                              <input
+                                type="number"
+                                min={10}
+                                max={500000}
+                                required
+                                value={policyDailyLimit}
+                                onChange={e => setPolicyDailyLimit(Number(e.target.value))}
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <p className="text-[10px] text-slate-400 mt-0.5">Enforced atomically across all tenant members.</p>
+                            </div>
+
+                            {/* Primary LLM Model */}
+                            <div className="lg:col-span-2">
+                              <label className="block text-[11px] font-bold text-slate-700 mb-1">Primary LLM Model Routing</label>
+                              <input
+                                type="text"
+                                required
+                                value={policyPrimaryModel}
+                                onChange={e => setPolicyPrimaryModel(e.target.value)}
+                                placeholder="e.g. meta/llama-3.2-11b-vision-instruct"
+                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <p className="text-[10px] text-slate-400 mt-0.5">Active default: meta/llama-3.2-11b-vision-instruct</p>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="submit"
+                              disabled={savingPolicy}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 shadow-xs cursor-pointer"
+                            >
+                              <FiSave /> {savingPolicy ? 'Saving Agreement…' : 'Save Agreement & SLA'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 4: AI QUOTAS & BYOK KEYS */}
+                  {activeModalTab === 'ai' && (
+                    <div className="space-y-4 animate-fade-in">
+                      <div className="rounded-2xl border border-indigo-100 bg-linear-to-br from-indigo-50/30 via-slate-50 to-white p-5 space-y-4 shadow-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                              <FiCpu className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                                Dedicated Tenant AI Keys (BYOK — Bring Your Own Key)
+                                <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-800 uppercase tracking-wider">
+                                  Isolated Billing
+                                </span>
+                              </h4>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                Configure tenant-specific API keys for any of the 6 supported base AI providers. Operations are billed directly to the customer's account.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-white border border-indigo-100 rounded-xl space-y-4 shadow-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            {/* 1. NVIDIA NIM */}
+                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span> NVIDIA NIM
+                                </span>
+                                {selectedTenant.aiPolicy?.customProviderKeys?.nvidia && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">Active</span>
+                                )}
+                              </div>
+                              <input
+                                type="password"
+                                value={nvidiaCustomKey}
+                                onChange={e => setNvidiaCustomKey(e.target.value)}
+                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Dedicated Active)' : 'nvapi-...'}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <div className="flex items-center justify-between pt-0.5">
+                                <button
+                                  type="button"
+                                  disabled={testingKey.nvidia}
+                                  onClick={() => handleTestTenantKey('nvidia', nvidiaCustomKey)}
+                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {testingKey.nvidia ? 'Testing…' : '⚡ Test Connection'}
+                                </button>
+                                {testResults.nvidia && (
+                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.nvidia.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {testResults.nvidia.message}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 2. Google Gemini */}
+                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-blue-500"></span> Google Gemini
+                                </span>
+                                {selectedTenant.aiPolicy?.customProviderKeys?.gemini && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded-md">Active</span>
+                                )}
+                              </div>
+                              <input
+                                type="password"
+                                value={geminiCustomKey}
+                                onChange={e => setGeminiCustomKey(e.target.value)}
+                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Dedicated Active)' : 'AIza...'}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <div className="flex items-center justify-between pt-0.5">
+                                <button
+                                  type="button"
+                                  disabled={testingKey.gemini}
+                                  onClick={() => handleTestTenantKey('gemini', geminiCustomKey)}
+                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {testingKey.gemini ? 'Testing…' : '⚡ Test Connection'}
+                                </button>
+                                {testResults.gemini && (
+                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.gemini.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {testResults.gemini.message}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 3. OpenAI */}
+                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-teal-500"></span> OpenAI
+                                </span>
+                                {selectedTenant.aiPolicy?.customProviderKeys?.openai && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-teal-100 text-teal-800 rounded-md">Active</span>
+                                )}
+                              </div>
+                              <input
+                                type="password"
+                                value={openaiCustomKey}
+                                onChange={e => setOpenaiCustomKey(e.target.value)}
+                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Dedicated Active)' : 'sk-...'}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <div className="flex items-center justify-between pt-0.5">
+                                <button
+                                  type="button"
+                                  disabled={testingKey.openai}
+                                  onClick={() => handleTestTenantKey('openai', openaiCustomKey)}
+                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {testingKey.openai ? 'Testing…' : '⚡ Test Connection'}
+                                </button>
+                                {testResults.openai && (
+                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openai.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {testResults.openai.message}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 4. Groq Cloud */}
+                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-orange-500"></span> Groq Cloud
+                                </span>
+                                {selectedTenant.aiPolicy?.customProviderKeys?.groq && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-md">Active</span>
+                                )}
+                              </div>
+                              <input
+                                type="password"
+                                value={groqCustomKey}
+                                onChange={e => setGroqCustomKey(e.target.value)}
+                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.groq ? '•••••••• (Dedicated Active)' : 'gsk_...'}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <div className="flex items-center justify-between pt-0.5">
+                                <button
+                                  type="button"
+                                  disabled={testingKey.groq}
+                                  onClick={() => handleTestTenantKey('groq', groqCustomKey)}
+                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {testingKey.groq ? 'Testing…' : '⚡ Test Connection'}
+                                </button>
+                                {testResults.groq && (
+                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.groq.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {testResults.groq.message}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 5. OpenRouter */}
+                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-violet-500"></span> OpenRouter
+                                </span>
+                                {selectedTenant.aiPolicy?.customProviderKeys?.openrouter && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-violet-100 text-violet-800 rounded-md">Active</span>
+                                )}
+                              </div>
+                              <input
+                                type="password"
+                                value={openrouterCustomKey}
+                                onChange={e => setOpenrouterCustomKey(e.target.value)}
+                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openrouter ? '•••••••• (Dedicated Active)' : 'sk-or-v1-...'}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <div className="flex items-center justify-between pt-0.5">
+                                <button
+                                  type="button"
+                                  disabled={testingKey.openrouter}
+                                  onClick={() => handleTestTenantKey('openrouter', openrouterCustomKey)}
+                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {testingKey.openrouter ? 'Testing…' : '⚡ Test Connection'}
+                                </button>
+                                {testResults.openrouter && (
+                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.openrouter.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {testResults.openrouter.message}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* 6. DeepSeek */}
+                            <div className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <span className="h-2 w-2 rounded-full bg-cyan-500"></span> DeepSeek
+                                </span>
+                                {selectedTenant.aiPolicy?.customProviderKeys?.deepseek && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-cyan-100 text-cyan-800 rounded-md">Active</span>
+                                )}
+                              </div>
+                              <input
+                                type="password"
+                                value={deepseekCustomKey}
+                                onChange={e => setDeepseekCustomKey(e.target.value)}
+                                placeholder={selectedTenant.aiPolicy?.customProviderKeys?.deepseek ? '•••••••• (Dedicated Active)' : 'sk-...'}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-hidden focus:border-indigo-500"
+                              />
+                              <div className="flex items-center justify-between pt-0.5">
+                                <button
+                                  type="button"
+                                  disabled={testingKey.deepseek}
+                                  onClick={() => handleTestTenantKey('deepseek', deepseekCustomKey)}
+                                  className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-md transition cursor-pointer disabled:opacity-50"
+                                >
+                                  {testingKey.deepseek ? 'Testing…' : '⚡ Test Connection'}
+                                </button>
+                                {testResults.deepseek && (
+                                  <span className={`text-[10px] font-bold truncate max-w-[150px] ${testResults.deepseek.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                    {testResults.deepseek.message}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end pt-2 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={handleSaveAgreementPolicy}
+                              disabled={savingPolicy}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50 shadow-xs cursor-pointer"
+                            >
+                              <FiSave /> {savingPolicy ? 'Saving Keys…' : 'Save Dedicated Keys'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 5: USAGE & TELEMETRY */}
+                  {activeModalTab === 'usage' && (
+                    <div className="space-y-4 animate-fade-in">
+                      {selectedDetail ? (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Usage */}
+                            <div className="rounded-2xl border border-slate-200/80 p-4 bg-slate-50/50 space-y-2">
+                              <h4 className="text-xs font-extrabold text-slate-900">Usage &amp; Quotas</h4>
+                              <p className="text-[11px] text-slate-500">Source: {selectedDetail.usage?.source || 'measured'}</p>
+                              <div className="grid grid-cols-2 gap-2 pt-1">
+                                <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                                  <p className="text-[10px] font-black text-slate-400 uppercase">Requests</p>
+                                  <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.usage?.requests ?? 'Unavailable'}</p>
+                                </div>
+                                <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                                  <p className="text-[10px] font-black text-slate-400 uppercase">Tokens</p>
+                                  <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.usage?.inputTokens === null ? 'Unavailable' : `${(selectedDetail.usage?.inputTokens || 0) + (selectedDetail.usage?.outputTokens || 0)}`}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Security & M2M */}
+                            <div className="rounded-2xl border border-slate-200/80 p-4 bg-slate-50/50 space-y-2">
+                              <h4 className="text-xs font-extrabold text-slate-900">Security &amp; M2M</h4>
+                              <p className="text-[11px] text-slate-500">Security: {selectedDetail.security?.source || 'measured'} · M2M: {selectedDetail.m2m?.source || 'measured'}</p>
+                              <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                                <p className="text-[10px] font-black text-slate-400 uppercase">Service Accounts</p>
+                                <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDetail.m2m?.accounts?.length ?? 'Unavailable'}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Audit & Activity */}
+                          <div className="rounded-2xl border border-slate-200/80 p-4 bg-white space-y-2">
+                            <h4 className="text-xs font-extrabold text-slate-900">Recent Audit &amp; Activity Stream</h4>
+                            <p className="text-[11px] text-slate-500">Source: {selectedDetail.audit?.source || 'measured'}</p>
+                            <div className="space-y-1.5 pt-1 max-h-48 overflow-y-auto">
+                              {(selectedDetail.activity?.events || []).length === 0 ? (
+                                <p className="text-xs text-slate-400 italic py-2">No recent audit events recorded for this organization.</p>
+                              ) : (
+                                (selectedDetail.activity?.events || []).slice(0, 5).map(event => (
+                                  <div key={event.id} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                    <span className="font-bold text-slate-800">{event.action}</span>
+                                    <span className="text-[11px] text-slate-400">{event.occurredAt ? new Date(event.occurredAt).toLocaleString() : 'time unavailable'}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Quick Link Pills */}
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                            <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=audit&tenant=${encodeURIComponent(selectedTenant.id)}`}>
+                              Tenant Audit Trail →
+                            </a>
+                            <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href={`/enterprise?tab=usage&tenant=${encodeURIComponent(selectedTenant.id)}`}>
+                              Usage Analytics →
+                            </a>
+                            <a className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition" href="/adm/security">
+                              Security Events →
+                            </a>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic py-4 text-center">Telemetry details loading…</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 6: DECOMMISSION & DANGER ZONE */}
+                  {activeModalTab === 'danger' && (
+                    <div className="space-y-4 animate-fade-in">
+                      {isSuperAdmin && selectedTenant.lifecycleState !== 'DELETING' && selectedTenant.lifecycleState !== 'DELETED' ? (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 text-xs space-y-3">
+                          <div className="flex items-center gap-2 text-rose-900 font-extrabold text-sm">
+                            <FiShieldOff className="text-rose-600" /> Organization Decommissioning Zone
+                          </div>
+                          <p className="text-rose-800 leading-relaxed">
+                            Uses the authoritative Enterprise lifecycle state machine to transition this organization to <strong>DELETING</strong>. 
+                            Data will enter the enterprise retention grace period before hard deletion.
+                          </p>
+                          <textarea
+                            className="w-full rounded-xl border border-rose-200 bg-white p-3 text-xs font-medium focus:outline-hidden focus:border-rose-500"
+                            rows={2}
+                            placeholder="Required decommission justification reason (minimum 8 characters)"
+                            value={decommissionReason}
+                            onChange={e => setDecommissionReason(e.target.value)}
+                          />
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDecommission(selectedTenant)}
+                              disabled={busyTenant === `${selectedTenant.id}:DELETING`}
+                              className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-xs disabled:opacity-50 cursor-pointer"
+                            >
+                              {busyTenant === `${selectedTenant.id}:DELETING` ? 'Decommissioning…' : 'Decommission Organization'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500 italic py-4 text-center">This tenant is already decommissioned or deleting.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-
-              {/* SuperAdmin Decommission Zone */}
-              {isSuperAdmin && selectedTenant.lifecycleState !== 'DELETING' && selectedTenant.lifecycleState !== 'DELETED' && (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 text-xs space-y-3">
-                  <div className="flex items-center gap-2 text-rose-900 font-extrabold text-sm">
-                    <FiShieldOff className="text-rose-600" /> Organization Decommissioning Zone
-                  </div>
-                  <p className="text-rose-800 leading-relaxed">
-                    Uses the authoritative Enterprise lifecycle state machine to transition this organization to <strong>DELETING</strong>. 
-                    Data will enter the enterprise retention grace period before hard deletion.
-                  </p>
-                  <textarea
-                    className="w-full rounded-xl border border-rose-200 bg-white p-3 text-xs font-medium focus:outline-hidden focus:border-rose-500"
-                    rows={2}
-                    placeholder="Required decommission justification reason (minimum 8 characters)"
-                    value={decommissionReason}
-                    onChange={e => setDecommissionReason(e.target.value)}
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleDecommission(selectedTenant)}
-                      disabled={busyTenant === `${selectedTenant.id}:DELETING`}
-                      className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition shadow-xs disabled:opacity-50"
-                    >
-                      {busyTenant === `${selectedTenant.id}:DELETING` ? 'Decommissioning…' : 'Decommission Organization'}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
