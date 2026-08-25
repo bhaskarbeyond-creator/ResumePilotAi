@@ -281,13 +281,27 @@ async function logSwitchAudit({ switchedBy, fromEngine, toEngine, status, errorM
  * Returns recent database switch audit logs.
  */
 async function getSwitchAuditLogs() {
-    const logs = [];
     try {
         const pool = getPool();
         const [rows] = await pool.query(
             'SELECT * FROM database_switch_audit ORDER BY created_at DESC LIMIT 20'
         );
-        return rows;
+        return rows.map(r => {
+            let createdAt = null;
+            if (r.created_at) {
+                const parsed = new Date(r.created_at);
+                if (!isNaN(parsed.getTime())) createdAt = parsed.toISOString();
+            }
+            return {
+                id: r.id,
+                switchedBy: r.switched_by || r.switchedBy || 'system',
+                fromEngine: r.from_engine || r.fromEngine || 'unknown',
+                toEngine: r.to_engine || r.toEngine || 'unknown',
+                status: r.status || 'SUCCESS',
+                errorMessage: r.error_message || r.errorMessage || null,
+                createdAt: createdAt || new Date().toISOString(),
+            };
+        });
     } catch (e) {
         return [];
     }

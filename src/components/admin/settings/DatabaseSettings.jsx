@@ -275,7 +275,7 @@ const DatabaseSettings = () => {
                         </div>
                     </div>
 
-                    {syncHealth.lastSuccessfulSyncAt && (
+                    {syncHealth.lastSuccessfulSyncAt && !isNaN(new Date(syncHealth.lastSuccessfulSyncAt).getTime()) && (
                         <div className="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800/60">
                             <span>Last Successful Event: <strong className="text-slate-300">{new Date(syncHealth.lastSuccessfulSyncAt).toLocaleString()}</strong></span>
                             <span>Standby Engine: <strong className="text-slate-300 uppercase">{syncHealth.standbyEngine}</strong></span>
@@ -528,20 +528,33 @@ const DatabaseSettings = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {recentAudits.map((a, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50">
-                                        <td className="py-2 text-slate-600">{new Date(a.createdAt).toLocaleString()}</td>
-                                        <td className="py-2 font-mono text-slate-800">{a.switchedBy}</td>
-                                        <td className="py-2 font-bold">{a.fromEngine?.toUpperCase()} ➔ {a.toEngine?.toUpperCase()}</td>
-                                        <td className="py-2">
-                                            <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                                                a.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                                            }`}>
-                                                {a.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {recentAudits.map((a, idx) => {
+                                    const rawDate = a.createdAt || a.created_at || a.timestamp;
+                                    let dateDisplay = '—';
+                                    if (rawDate) {
+                                        const d = new Date(rawDate);
+                                        if (!isNaN(d.getTime())) dateDisplay = d.toLocaleString();
+                                    }
+                                    const initiator = a.switchedBy || a.switched_by || 'system';
+                                    const from = (a.fromEngine || a.from_engine || '—').toUpperCase();
+                                    const to = (a.toEngine || a.to_engine || '—').toUpperCase();
+                                    const status = a.status || 'SUCCESS';
+
+                                    return (
+                                        <tr key={idx} className="hover:bg-slate-50">
+                                            <td className="py-2 text-slate-600 font-mono text-[11px]">{dateDisplay}</td>
+                                            <td className="py-2 font-mono text-slate-800">{initiator}</td>
+                                            <td className="py-2 font-bold">{from} ➔ {to}</td>
+                                            <td className="py-2">
+                                                <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                                    status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                    {status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
