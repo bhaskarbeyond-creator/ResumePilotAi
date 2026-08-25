@@ -420,14 +420,19 @@ class FirestoreTenantRegistry {
     // Platform-level registry view. Caller authorization is enforced by the
     // service layer; the registry itself never decides who may call it.
     const bounded = Math.max(1, Math.min(Number(limit) || 100, 500));
-    const snapshot = await this.db.collection('enterprise_tenants').orderBy('createdAt', 'desc').limit(bounded).get();
-    return snapshot.docs.map(document => {
-      try {
-        return validateTenantRecord({ ...document.data(), id: document.id });
-      } catch {
-        return null;
-      }
-    }).filter(Boolean);
+    try {
+      const snapshot = await this.db.collection('enterprise_tenants').orderBy('createdAt', 'desc').limit(bounded).get();
+      return snapshot.docs.map(document => {
+        try {
+          return validateTenantRecord({ ...document.data(), id: document.id });
+        } catch {
+          return null;
+        }
+      }).filter(Boolean);
+    } catch (err) {
+      console.warn('[Enterprise] Failed to query enterprise_tenants from Firestore:', err.message);
+      return [];
+    }
   }
 
   async getMembership(tenantId, principalId) {

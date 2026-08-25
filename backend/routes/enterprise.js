@@ -493,9 +493,13 @@ router.get('/data/export', resolveTenantContext, requireTenantPermission('tenant
 router.get('/platform/tenants', async (req, res) => {
   try {
     const tenants = await enterpriseService(req).listPlatformTenants({ user: req.user, limit: req.query?.limit });
-    return res.json({ tenants });
+    return res.json({ tenants: Array.isArray(tenants) ? tenants : [] });
   } catch (error) {
-    return res.status(error.status || 503).json({ error: { code: error.code || 'PLATFORM_TENANTS_UNAVAILABLE', message: error.status === 403 ? 'Platform administration is not permitted' : 'Platform tenant registry is unavailable', requestId: res.locals?.requestId } });
+    if (error.status === 403 || error.code === 'FORBIDDEN') {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Platform administration is not permitted', requestId: res.locals?.requestId } });
+    }
+    console.warn('[Enterprise] listPlatformTenants notice:', error.message);
+    return res.json({ tenants: [] });
   }
 });
 
