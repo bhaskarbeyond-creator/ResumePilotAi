@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getFrontendStats, setFrontendStats } from '../../../firestore/dbOperations';
 import { FiSave, FiRefreshCw, FiEye } from 'react-icons/fi';
+import PagesSettings from '../settings/pagesSettings';
 
 const LandingPages = () => {
     const [activeTab, setActiveTab] = useState('jobs');
@@ -103,6 +104,16 @@ const LandingPages = () => {
                         }`}
                     >
                         Jobs Landing Page
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('cms')}
+                        className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'cms'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                    >
+                        Custom CMS Pages
                     </button>
                 </nav>
             </div>
@@ -242,6 +253,11 @@ const LandingPages = () => {
                 </div>
             )}
 
+            {/* Custom CMS Pages Tab */}
+            {activeTab === 'cms' && (
+                <PagesSettings />
+            )}
+
             {/* Message Display */}
             {message && (
                 <div role={message.includes('Error') ? 'alert' : 'status'} aria-live="polite" className={`mt-4 p-4 rounded-md ${
@@ -252,35 +268,37 @@ const LandingPages = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-                <button
-                    onClick={handlePreview}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    <FiEye className="w-4 h-4" />
-                    Preview Landing Page
-                </button>
-                
-                <div className="flex gap-3">
+            {activeTab !== 'cms' && (
+                <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
                     <button
-                        onClick={fetchStats}
-                        disabled={loading}
-                        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        onClick={handlePreview}
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <FiEye className="w-4 h-4" />
+                        Preview Landing Page
                     </button>
                     
-                    <button
-                        onClick={() => setConfirmSave(true)}
-                        disabled={saving}
-                        className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                        <FiSave className="w-4 h-4" />
-                        {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={fetchStats}
+                            disabled={loading}
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                            <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </button>
+                        
+                        <button
+                            onClick={() => setConfirmSave(true)}
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                            <FiSave className="w-4 h-4" />
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

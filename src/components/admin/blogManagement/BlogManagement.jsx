@@ -384,14 +384,23 @@ const BlogManagement = () => {
                     <p className="text-gray-600">Review and manage blog posts</p>
                 </div>
                 
-                <button
-                    onClick={loadData}
-                    disabled={loading}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                >
-                    <FiRefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={loadData}
+                        disabled={loading}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        <FiRefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
+                    <Link
+                        to="/blog-editor"
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 text-sm font-medium transition-colors"
+                    >
+                        <FiEdit3 className="w-4 h-4 mr-2" />
+                        Write New Blog Post
+                    </Link>
+                </div>
             </div>
 
             {/* Notification */}
@@ -684,17 +693,15 @@ const BlogManagement = () => {
                                                         </button>
                                                     )}
                                                     
-                                                    {/* The author editor can only load the signed-in user's own drafts. */}
-                                                    {post.authorUid === fire.auth().currentUser?.uid && ['draft', 'pending', 'rejected'].includes(post.status) && (
-                                                        <Link
-                                                            to={`/blog-editor/${post.id}`}
-                                                            className="inline-flex items-center p-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-                                                            aria-label="Edit your post"
-                                                            title="Edit your post"
-                                                        >
-                                                            <FiEdit3 className="w-4 h-4" />
-                                                        </Link>
-                                                    )}
+                                                    {/* Super Admins and Admins can edit any post */}
+                                                    <Link
+                                                        to={`/blog-editor/${post.id}`}
+                                                        className="inline-flex items-center p-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                                                        aria-label="Edit post"
+                                                        title="Edit post"
+                                                    >
+                                                        <FiEdit3 className="w-4 h-4" />
+                                                    </Link>
 
                                                     {/* Status action buttons for pending posts */}
                                                     {post.status === 'pending' && (

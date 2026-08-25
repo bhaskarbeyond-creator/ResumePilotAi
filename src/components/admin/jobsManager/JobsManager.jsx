@@ -23,7 +23,9 @@ import {
     FaPlay,
     FaArchive,
     FaStar,
+    FaPlus,
 } from 'react-icons/fa';
+import CreateJobModal from '../../JobsListings/CreateJobModal';
 
 class JobsManager extends Component {
     constructor(props) {
@@ -47,6 +49,7 @@ class JobsManager extends Component {
             },
             jobsPerPage: 10,
             pendingAction: null,
+            isCreateModalOpen: false,
         };
         this.loadRequest = 0;
     }
@@ -238,6 +241,15 @@ class JobsManager extends Component {
         this.setState({ successMessage: '', errorMessage: '' });
     };
 
+    toggleCreateModal = () => {
+        this.setState(prevState => ({ isCreateModalOpen: !prevState.isCreateModalOpen }));
+    };
+
+    handleJobCreated = () => {
+        this.setState({ successMessage: 'Job posted successfully!' });
+        this.loadJobs(1);
+    };
+
     getStatusBadge = (status) => {
         const statusConfig = {
             active: { color: 'bg-green-100 text-green-800', icon: FaCheck, label: 'Active' },
@@ -330,7 +342,16 @@ class JobsManager extends Component {
                                 )}
                             </div>
                         </div>
-                        <div className="text-xs text-slate-400 font-mono">{new Date().toLocaleDateString()}</div>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={this.toggleCreateModal}
+                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
+                            >
+                                <FaPlus className="w-3 h-3 mr-2" />
+                                Post New Job
+                            </button>
+                            <div className="text-xs text-slate-400 font-mono">{new Date().toLocaleDateString()}</div>
+                        </div>
                     </div>
                 </div>
 
@@ -578,6 +599,12 @@ class JobsManager extends Component {
                         </button>
                     </div>
                 )}
+
+                <CreateJobModal
+                    isOpen={this.state.isCreateModalOpen}
+                    onClose={this.toggleCreateModal}
+                    onJobCreated={this.handleJobCreated}
+                />
             </div>
         );
     }

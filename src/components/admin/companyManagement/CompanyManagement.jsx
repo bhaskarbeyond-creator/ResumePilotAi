@@ -25,7 +25,9 @@ import {
     FaCheckCircle,
     FaTimesCircle,
     FaStar,
+    FaPlus,
 } from 'react-icons/fa';
+import AddCompanyModal from '../../Dashboard/EmployerDashboard/AddCompanyModal';
 
 class CompanyManagement extends Component {
     constructor(props) {
@@ -42,6 +44,7 @@ class CompanyManagement extends Component {
             searchTerm: '',
             pendingAction: null,
             rejectionReason: '',
+            isAddModalOpen: false,
         };
     }
 
@@ -185,6 +188,19 @@ class CompanyManagement extends Component {
         else await this.handleToggleFeatured(pending.company);
     };
 
+    toggleAddModal = () => {
+        this.setState(prevState => ({ isAddModalOpen: !prevState.isAddModalOpen }));
+    };
+
+    handleShowToast = (type, message) => {
+        if (type === 'success') {
+            this.setState({ successMessage: message });
+            this.loadCompanies();
+        } else {
+            this.setState({ errorMessage: message });
+        }
+    };
+
     toggleExpandRow = (companyId) => {
         this.setState((prevState) => ({
             expandedRow: prevState.expandedRow === companyId ? null : companyId,
@@ -326,7 +342,16 @@ class CompanyManagement extends Component {
                                 )}
                             </div>
                         </div>
-                        <div className="text-xs text-slate-400 font-mono">{new Date().toLocaleDateString()}</div>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={this.toggleAddModal}
+                                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
+                            >
+                                <FaPlus className="w-3 h-3 mr-2" />
+                                Register Company
+                            </button>
+                            <div className="text-xs text-slate-400 font-mono">{new Date().toLocaleDateString()}</div>
+                        </div>
                     </div>
                 </div>
 
@@ -612,6 +637,13 @@ class CompanyManagement extends Component {
                         </div>
                     </div>
                 )}
+                
+                <AddCompanyModal
+                    isOpen={this.state.isAddModalOpen}
+                    onClose={this.toggleAddModal}
+                    showToast={this.handleShowToast}
+                    t={(k) => k}
+                />
             </div>
         );
     }
