@@ -1112,7 +1112,7 @@ export default function PlatformTenants() {
                   <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Quick Actions</p>
                   <button
                     type="button"
-                    onClick={() => handleStateToggle(selectedTenant, selectedTenant.lifecycleState === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')}
+                    onClick={() => handleLifecycle(selectedTenant, selectedTenant.lifecycleState === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')}
                     disabled={busyTenant === selectedTenant.id}
                     className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs cursor-pointer ${
                       selectedTenant.lifecycleState === 'ACTIVE'

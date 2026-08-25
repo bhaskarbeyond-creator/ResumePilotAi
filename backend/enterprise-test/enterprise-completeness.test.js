@@ -475,9 +475,12 @@ test('applyTenantAiPolicy enforces the model allowlist and primary model', () =>
   const configuration = {
     primary: 'nvidia',
     providers: {
-      nvidia: { enabled: true, model: 'meta/llama-3.2-11b-vision-instruct' },
-      gemini: { enabled: true, model: 'gemini-2.0-flash' },
-      openai: { enabled: true, model: 'gpt-4o-mini' },
+      // Keys are present exactly as loadProviderConfiguration() produces in
+      // production: a provider without an effective key is disabled (fail
+      // closed) and can never become the tenant primary.
+      nvidia: { enabled: true, key: 'nvapi-fixture', model: 'meta/llama-3.2-11b-vision-instruct' },
+      gemini: { enabled: true, key: 'gemini-fixture', model: 'gemini-2.0-flash' },
+      openai: { enabled: true, key: 'sk-fixture', model: 'gpt-4o-mini' },
     },
   };
   const context = { policyVersion: 3, dataPlane: {} };

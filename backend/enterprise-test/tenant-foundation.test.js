@@ -242,10 +242,16 @@ test('tenant AI policy rejects client-controlled authority and prevents cross-te
   assert.throws(() => buildTenantAiOperation({ context: a, operation: 'generate-summary', payload: { occupation: 'Engineer' }, sourceResources: [{ id: 'r1', revision: 1, tenantId: b.tenantId, workspaceId: b.workspaceId }] }), error => error.code === 'TENANT_AI_SOURCE_DENIED');
   const operation = buildTenantAiOperation({ context: a, operation: 'generate-summary', payload: { occupation: 'Engineer' }, sourceResources: [{ id: 'r1', revision: 1, tenantId: a.tenantId, workspaceId: a.workspaceId }] });
   assert.match(operation.cacheKey, new RegExp(`tenant:${a.tenantId}`));
-  const config = applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true }, openai: { enabled: true } } }, a, { allowedProviders: ['openai'], version: 4 });
+  const config = applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true, key: 'gemini-fixture' }, openai: { enabled: true, key: 'sk-fixture' } } }, a, { allowedProviders: ['openai'], version: 4 });
   assert.equal(config.providers.gemini.enabled, false);
   assert.equal(config.primary, 'openai');
-  assert.throws(() => applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true } } }, a, { allowedProviders: [] }), error => error.code === 'TENANT_AI_PROVIDER_UNAVAILABLE');
+  assert.throws(() => applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true, key: 'gemini-fixture' } } }, a, { allowedProviders: [] }), error => error.code === 'TENANT_AI_PROVIDER_UNAVAILABLE');
+  // Regression: a provider without an effective key is disabled (fail closed),
+  // because loadProviderConfiguration() only marks keyless providers disabled.
+  const keyless = applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true }, openai: { enabled: true, key: 'sk-fixture' } } }, a, { allowedProviders: ['gemini', 'openai'] });
+  assert.equal(keyless.providers.gemini.enabled, false, 'keyless provider is disabled');
+  assert.equal(keyless.primary, 'openai', 'primary falls through to a keyed provider');
+  assert.throws(() => applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true } } }, a, { allowedProviders: ['gemini'] }), error => error.code === 'TENANT_AI_PROVIDER_UNAVAILABLE');
 });
 
 test('tenant repository enforces tenant partitioning and workspace scope in queries', async () => {

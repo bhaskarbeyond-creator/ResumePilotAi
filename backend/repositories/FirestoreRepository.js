@@ -1,4 +1,6 @@
 const admin = require('../services/firebaseAdmin');
+const crypto = require('crypto');
+const { calculateContentHash } = require('../database/syncManager');
 
 class FirestoreRepository {
     constructor(db) {
@@ -14,6 +16,34 @@ class FirestoreRepository {
             }
         }
         return this.db;
+    }
+
+    /**
+     * Durable reverse-replication event (Firestore → MySQL standby).
+     *
+     * Every repository-mediated write appends an event document to the
+     * `sync_outbox_fs` collection in the SAME transaction/batch as the data
+     * write, so the standby database can never miss a committed change. The
+     * background sync worker drains these events into MySQL with retry and
+     * dead-letter handling; events survive process crashes because they are
+     * committed alongside the data.
+     */
+    _buildReverseSyncEvent({ entityType, entityId, operation, payload, version }) {
+        const plainPayload = JSON.parse(JSON.stringify(payload || {}));
+        return {
+            id: `evf_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+            entityType,
+            entityId: String(entityId),
+            operation: operation === 'DELETE' ? 'DELETE' : 'UPSERT',
+            payload: plainPayload,
+            version: Number(version || 1),
+            contentHash: calculateContentHash(entityType, plainPayload),
+            status: 'PENDING',
+            attemptCount: 0,
+            sourceEngine: 'firestore',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
     }
 
     // ==========================================
@@ -34,13 +64,13 @@ class FirestoreRepository {
     async saveResume(userId, resumeId, data, { expectedRevision = null } = {}) {
         const db = this._ensureDb();
         const ref = db.collection('users').doc(userId).collection('resumes').doc(resumeId);
-        
+
         let result = null;
         await db.runTransaction(async tx => {
             const snap = await tx.get(ref);
             const existing = snap.exists ? snap.data() : {};
             const currentRev = Number(existing.revision) || 0;
-            
+
             if (expectedRevision !== null && currentRev !== Number(expectedRevision)) {
                 const conflict = new Error('Resume conflict: document updated in another session');
                 conflict.code = 'RESUME_CONFLICT';
@@ -58,6 +88,17 @@ class FirestoreRepository {
             };
 
             tx.set(ref, payload, { merge: true });
+            // Reverse-replication event committed atomically with the data.
+            tx.set(
+                db.collection('sync_outbox_fs').doc(),
+                this._buildReverseSyncEvent({
+                    entityType: 'resumes',
+                    entityId: resumeId,
+                    operation: 'UPSERT',
+                    payload: { ...data, id: resumeId, user_id: userId, revision: nextRev },
+                    version: nextRev,
+                }),
+            );
             result = { id: resumeId, revision: nextRev, ...payload };
         });
 
@@ -70,6 +111,16 @@ class FirestoreRepository {
         batch.delete(db.collection('users').doc(userId).collection('resumes').doc(resumeId));
         batch.delete(db.collection('pb').doc(resumeId));
         batch.delete(db.collection('users').doc(userId).collection('favourites').doc(resumeId));
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'resumes',
+                entityId: resumeId,
+                operation: 'DELETE',
+                payload: { id: resumeId, user_id: userId },
+                version: 1,
+            }),
+        );
         await batch.commit();
         return true;
     }
@@ -201,13 +252,37 @@ class FirestoreRepository {
             ...userData,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
-        await ref.set(payload, { merge: true });
+        const batch = db.batch();
+        batch.set(ref, payload, { merge: true });
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'users',
+                entityId: userId,
+                operation: 'UPSERT',
+                payload: { ...userData, id: userId },
+                version: 1,
+            }),
+        );
+        await batch.commit();
         return { id: userId, ...payload };
     }
 
     async deleteUser(userId) {
         const db = this._ensureDb();
-        await db.collection('users').doc(userId).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('users').doc(userId));
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'users',
+                entityId: userId,
+                operation: 'DELETE',
+                payload: { id: userId },
+                version: 1,
+            }),
+        );
+        await batch.commit();
         return true;
     }
 
@@ -233,13 +308,37 @@ class FirestoreRepository {
             ...data,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
-        await ref.set(payload, { merge: true });
+        const batch = db.batch();
+        batch.set(ref, payload, { merge: true });
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'portfolios',
+                entityId: portfolioId,
+                operation: 'UPSERT',
+                payload: { ...data, id: portfolioId, user_id: userId },
+                version: 1,
+            }),
+        );
+        await batch.commit();
         return { id: portfolioId, ...payload };
     }
 
     async deletePortfolio(userId, portfolioId) {
         const db = this._ensureDb();
-        await db.collection('users').doc(userId).collection('portfolios').doc(portfolioId).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('users').doc(userId).collection('portfolios').doc(portfolioId));
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'portfolios',
+                entityId: portfolioId,
+                operation: 'DELETE',
+                payload: { id: portfolioId, user_id: userId },
+                version: 1,
+            }),
+        );
+        await batch.commit();
         return true;
     }
 
@@ -265,13 +364,37 @@ class FirestoreRepository {
             ...data,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
-        await ref.set(payload, { merge: true });
+        const batch = db.batch();
+        batch.set(ref, payload, { merge: true });
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'covers',
+                entityId: coverId,
+                operation: 'UPSERT',
+                payload: { ...data, id: coverId, user_id: userId },
+                version: 1,
+            }),
+        );
+        await batch.commit();
         return { id: coverId, ...payload };
     }
 
     async deleteCover(userId, coverId) {
         const db = this._ensureDb();
-        await db.collection('users').doc(userId).collection('covers').doc(coverId).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('users').doc(userId).collection('covers').doc(coverId));
+        batch.set(
+            db.collection('sync_outbox_fs').doc(),
+            this._buildReverseSyncEvent({
+                entityType: 'covers',
+                entityId: coverId,
+                operation: 'DELETE',
+                payload: { id: coverId, user_id: userId },
+                version: 1,
+            }),
+        );
+        await batch.commit();
         return true;
     }
 

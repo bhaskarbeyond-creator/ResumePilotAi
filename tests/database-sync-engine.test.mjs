@@ -1,9 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { 
-    calculateContentHash, 
-    enqueueOutboxEvent, 
-    getSyncHealthStatus 
+import {
+    calculateContentHash,
+    enqueueOutboxEvent,
+    getSyncHealthStatus,
+    processSyncQueue
 } from '../backend/database/syncManager.js';
 
 describe('Intelligent Synchronization & Outbox Engine Test Suite', () => {
@@ -79,5 +80,64 @@ describe('Intelligent Synchronization & Outbox Engine Test Suite', () => {
         assert.equal(health.syncMode, 'ACTIVE_PASSIVE');
         assert.equal(typeof health.isHealthy, 'boolean');
         assert.equal(typeof health.pendingCount, 'number');
+    });
+
+    it('5. processSyncQueue reclaims stale PROCESSING leases before selecting events', async () => {
+        const executed = [];
+        // Fake pool: records every statement; returns one stale PROCESSING row
+        // that the reclaim must flip back to RETRYING before selection.
+        const fakePool = {
+            query: async (sql, params) => {
+                executed.push(String(sql).replace(/\s+/g, ' ').trim());
+                if (sql.includes("UPDATE sync_outbox") && sql.includes("stale PROCESSING lease")) {
+                    return [{ affectedRows: 1 }];
+                }
+                if (sql.includes("SELECT * FROM sync_outbox")) {
+                    return [[{ id: 'ev_stuck', status: 'RETRYING', retry_count: 0, max_retries: 5, source_engine: 'mysql', entity_type: 'resumes', entity_id: 'res_1', operation: 'UPSERT', payload: JSON.stringify({ user_id: 'u1', revision: 1 }), version: 1 }]];
+                }
+                if (sql.includes("SET status = 'SYNCED'")) {
+                    return [{ affectedRows: 1 }];
+                }
+                return [[]];
+            }
+        };
+        const fakeFirestore = {
+            collection: () => ({ doc: makeFakeDoc }),
+        };
+        function makeFakeDoc() {
+            return {
+                get: async () => ({ exists: false }),
+                set: async () => ({}),
+                delete: async () => ({}),
+                collection: () => ({ doc: makeFakeDoc }),
+            };
+        }
+        const result = await processSyncQueue(10, fakeFirestore, fakePool);
+        const reclaim = executed.find(s => s.includes('stale PROCESSING lease'));
+        assert.ok(reclaim, 'a stale-lease reclaim statement must run before event selection');
+        assert.ok(reclaim.includes("INTERVAL 120 SECOND"), 'reclaim threshold is bounded');
+        assert.ok(executed.indexOf(reclaim) < executed.findIndex(s => s.includes('SELECT * FROM sync_outbox')), 'reclaim runs before selection');
+        assert.equal(result.processed, 1, 'the reclaimed event is processed');
+    });
+
+    it('6. processSyncQueue retries and dead-letters failing events with backoff', async () => {
+        const fakePool = {
+            query: async (sql) => {
+                if (sql.includes("SELECT * FROM sync_outbox")) {
+                    return [[{ id: 'ev_bad', status: 'PENDING', retry_count: 4, max_retries: 5, source_engine: 'mysql', entity_type: 'resumes', entity_id: 'res_1', operation: 'UPSERT', payload: JSON.stringify({ revision: 1 }), version: 1 }]];
+                }
+                if (sql.includes("SET status = 'DEAD_LETTER'")) {
+                    return [{ affectedRows: 1 }];
+                }
+                if (sql.includes("SET status = 'RETRYING'")) {
+                    return [{ affectedRows: 1 }];
+                }
+                return [[]];
+            },
+        };
+        // Firestore without user_id → replicateToFirestore throws (missing user_id).
+        const result = await processSyncQueue(10, { collection: () => ({ doc: () => ({ get: async () => ({ exists: false }), set: async () => ({}), delete: async () => ({}) }) }) }, fakePool);
+        assert.equal(result.processed, 0);
+        assert.equal(result.deadLettered, 1, 'an event at max retries transitions to DEAD_LETTER');
     });
 });

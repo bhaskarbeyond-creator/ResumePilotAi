@@ -3652,6 +3652,7 @@ app.get('/readyz', (req, res) => {
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
             notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
+            tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'MANUAL_SCRIPT_ONLY',
             pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
         },
     });
@@ -3676,6 +3677,7 @@ app.get('/api/readyz', (req, res) => {
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
             notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
+            tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'MANUAL_SCRIPT_ONLY',
             pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
         },
     });
@@ -3796,6 +3798,43 @@ if (require.main === module) {
         const enterpriseTimer = setInterval(runEnterpriseOutbox, intervalMs);
         enterpriseTimer.unref?.();
         setTimeout(runEnterpriseOutbox, 7_000).unref?.();
+    }
+
+    // Tenant hard-deletion garbage collector. Tenants decommissioned by a
+    // platform administrator transition to DELETING; after the configured
+    // grace period this worker reclaims every tenant partition, control-plane
+    // record, and configuration document. Without this worker, DELETING
+    // tenants are only reclaimed when an operator remembers to run
+    // scripts/tenant-garbage-collector.mjs manually.
+    if (process.env.TENANT_GC_WORKER_ENABLED === 'true' && db && admin) {
+        const intervalMs = Math.max(60_000, Math.min(Number(process.env.TENANT_GC_INTERVAL_MS) || 3_600_000, 86_400_000));
+        const gracePeriodDays = Math.max(0, Number(process.env.TENANT_GC_GRACE_PERIOD_DAYS ?? 7));
+        let gcRunning = false;
+        const runTenantGc = async () => {
+            if (gcRunning) return;
+            gcRunning = true;
+            try {
+                const tenantService = app.get('tenantService');
+                if (!tenantService?.executeTenantGarbageCollection) {
+                    console.error('[Tenant GC worker] Tenant service does not support garbage collection; worker idle.');
+                    return;
+                }
+                const result = await tenantService.executeTenantGarbageCollection({
+                    gracePeriodDays,
+                    requestId: `tenant-gc-${process.pid}-${Date.now()}`,
+                });
+                if (result.purgedCount > 0 || (result.failures && result.failures.length > 0)) {
+                    console.info(`[Tenant GC worker] Purged ${result.purgedCount} tenant(s); ${result.failures?.length || 0} failure(s).`);
+                }
+            } catch (error) {
+                console.error('[Tenant GC worker]', error?.message || error);
+            } finally {
+                gcRunning = false;
+            }
+        };
+        const gcTimer = setInterval(runTenantGc, intervalMs);
+        gcTimer.unref?.();
+        setTimeout(runTenantGc, 30_000).unref?.();
     }
 
     // Listen HTTP/HTTPS port safely

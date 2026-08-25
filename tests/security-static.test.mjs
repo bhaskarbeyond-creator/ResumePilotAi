@@ -54,6 +54,27 @@ test('tracked files contain no recognizable private credentials', () => {
     const scrubbed = placeholders.reduce((text, placeholder) => text.replace(new RegExp(placeholder, 'g'), ''), content);
     if (patterns.some(pattern => pattern.test(scrubbed))) findings.push(file);
     if (file !== '.env.example' && /\bpassword\s*=\s*['"][^'"]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
+    // Object-literal and JSON forms of the same leak (password: 'literal').
+    // Test fixtures intentionally use fake credentials; everything else must
+    // read credentials from the environment.
+    const isTestFixture = /^(?:backend\/(?:test|enterprise-test)\/|tests\/)/.test(file);
+    if (!isTestFixture && /\bpassword\s*:\s*['"][^'"{]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
+  }
+  assert.deepEqual(findings, []);
+});
+
+test('the leaked production database credential is absent from tracked files', () => {
+  // A production MySQL password was previously committed as a fallback in
+  // scripts/live-firestore-to-mysql-sync.mjs and in scratch automation. The
+  // value must remain rotated-out and never reintroduced in any form.
+  const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root }).toString().split('\0').filter(Boolean);
+  const findings = [];
+  for (const file of tracked) {
+    if (file === 'tests/security-static.test.mjs') continue; // this sentinel's own source
+    if (/\.(?:png|jpe?g|gif|pdf|ttf|woff2?|ico|zip)$/i.test(file)) continue;
+    let content;
+    try { content = read(file); } catch (_) { continue; }
+    if (content.includes('Bhaskar@002')) findings.push(file);
   }
   assert.deepEqual(findings, []);
 });

@@ -1792,6 +1792,54 @@ router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication,
   }
 });
 
+router.post('/tenants/garbage-collect', requireRecentAdminAuthentication, async (req, res) => {
+  const tenantService = req.app?.get('tenantService');
+  const db = req.app?.get('db');
+  const admin = req.app?.get('firebaseAdmin');
+  if (!tenantService?.executeTenantGarbageCollection) {
+    return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant garbage collection is unavailable' } });
+  }
+  // Grace period is validated server-side; the interactive control plane may
+  // only shorten the reclaim window within a bounded, safe range (0-90 days).
+  const gracePeriodDays = Math.max(0, Math.min(Number(req.body?.gracePeriodDays ?? 7), 90));
+  if (!Number.isFinite(gracePeriodDays)) {
+    return res.status(400).json({ error: { code: 'INVALID_GRACE_PERIOD', message: 'gracePeriodDays must be a number between 0 and 90' } });
+  }
+  const requestId = res.locals?.requestId || null;
+  try {
+    const result = await tenantService.executeTenantGarbageCollection({ gracePeriodDays, requestId });
+    if (db && admin?.firestore?.FieldValue) {
+      await recordAdminAuditLog(db, admin, {
+        actorUid: req.user?.uid,
+        actorEmail: req.user?.email,
+        actorRole: 'SUPER_ADMIN',
+        action: 'TENANT_GARBAGE_COLLECTION_EXECUTED',
+        category: 'enterprise.tenancy',
+        severity: 'HIGH',
+        outcome: (result.failures?.length || 0) > 0 ? 'PARTIAL' : 'SUCCESS',
+        method: 'POST',
+        pathname: req.originalUrl,
+        statusCode: 200,
+        metadata: {
+          gracePeriodDays,
+          purgedCount: result.purgedCount,
+          considered: result.considered ?? null,
+          failures: (result.failures || []).slice(0, 20),
+        },
+      }).catch(() => { /* purge result already committed; audit is best-effort */ });
+    }
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return res.status(error.status || 503).json({
+      error: {
+        code: error.code || 'TENANT_GARBAGE_COLLECTION_FAILED',
+        message: 'Tenant garbage collection could not be executed',
+        requestId,
+      },
+    });
+  }
+});
+
 /* ------------------------------------------------------------------
  * Feature Flags — SUPER_ADMIN only
  * ------------------------------------------------------------------ */

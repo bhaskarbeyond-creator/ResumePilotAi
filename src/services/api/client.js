@@ -1,10 +1,21 @@
-import fire from '../../conf/fire';
-
 /**
  * Standard API client helper that attaches Firebase Auth bearer token to requests.
  */
+
+// Firebase is imported lazily so this module stays loadable in plain Node
+// (tests, SSR probes) where import.meta.env does not exist. In the browser
+// the dynamic import resolves immediately from the module cache.
+let fireModulePromise = null;
+async function getFire() {
+    if (!fireModulePromise) {
+        fireModulePromise = import('../../conf/fire.js').catch(() => null);
+    }
+    return fireModulePromise;
+}
+
 export async function apiFetch(url, options = {}) {
-    const user = fire.auth().currentUser;
+    const fire = await getFire();
+    const user = fire?.auth?.().currentUser;
     let headers = {
         'Content-Type': 'application/json',
         ...(options.headers || {})

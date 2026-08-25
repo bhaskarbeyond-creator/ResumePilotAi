@@ -157,12 +157,33 @@ const BuildResume = () => {
         };
         window.addEventListener('systemSettingsUpdated', handleSettingsUpdated);
 
-        getSystemSettings().then((settings) => {
-            syncSettings(settings, { allowMissingDefault: true });
-        }).catch(() => {});
+        // Server-confirmed live subscription on the public_config document:
+        // the module flags change only when Firestore itself (not a cached
+        // snapshot) confirms the value, and a listener error fails closed.
+        let unsubscribePublicConfig = () => {};
+        try {
+            unsubscribePublicConfig = fire.firestore()
+                .collection('data')
+                .doc('public_config')
+                .onSnapshot(
+                    { includeMetadataChanges: true },
+                    (snapshot) => {
+                        const settings = settingsFromSnapshot(snapshot);
+                        if (settings._settingsSource !== 'remote') return;
+                        syncSettings(settings, { allowMissingDefault: false });
+                    },
+                    () => {
+                        setIsImportEnabled(false);
+                        setIsAtsEnabled(false);
+                    },
+                );
+        } catch {
+            setIsAtsEnabled(false);
+        }
 
         return () => {
             window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
+            unsubscribePublicConfig();
         };
     }, [location.search]);
 

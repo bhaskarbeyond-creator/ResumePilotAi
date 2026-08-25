@@ -35,12 +35,22 @@ const firestoreDb = admin.firestore();
 console.log('✓ Connected to Google Cloud Firestore');
 
 // 2. Initialize MySQL Pool on Hostinger
+// Credentials MUST come from the environment. A hardcoded fallback password
+// committed to the repository is a leaked production credential — the value
+// that used to sit here has been removed and must be rotated on the host.
+const requiredEnv = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missingEnv = requiredEnv.filter(name => !process.env[name]);
+if (missingEnv.length) {
+    console.error(`✗ Missing required environment variables: ${missingEnv.join(', ')}`);
+    console.error('  Set them in backend/.env (see .env.example). Never hardcode credentials.');
+    process.exit(1);
+}
 const poolConfig = {
-    host: process.env.DB_HOST || '127.0.0.1',
+    host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'u727965524_airesume',
-    password: process.env.DB_PASSWORD || 'Bhaskar@002!',
-    database: process.env.DB_NAME || 'u727965524_airesume',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     charset: 'utf8mb4',

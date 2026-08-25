@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch } from './client.js';
 
 export async function getJobs(params = {}) {
     const query = new URLSearchParams(params).toString();

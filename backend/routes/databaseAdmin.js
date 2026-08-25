@@ -1,5 +1,5 @@
 const express = require('express');
-const { getActiveEngine, testEngineConnectivity, switchActiveEngine, getSwitchAuditLogs } = require('../database/engineManager');
+const { getActiveEngine, testEngineConnectivity, switchActiveEngine, getSwitchAuditLogs, getEngineStateConsistency } = require('../database/engineManager');
 const { initializeSchema, getPool } = require('../database/mysql');
 const { 
     getSyncHealthStatus, 
@@ -23,11 +23,12 @@ router.get('/', async (req, res) => {
         const activeEngine = getActiveEngine();
 
         // Perform parallel connectivity & sync health checks
-        const [firestoreStatus, mysqlStatus, syncHealth, recentAudits] = await Promise.all([
+        const [firestoreStatus, mysqlStatus, syncHealth, recentAudits, engineStateConsistency] = await Promise.all([
             testEngineConnectivity('firestore', firestoreDb),
             testEngineConnectivity('mysql', firestoreDb),
             getSyncHealthStatus(),
             getSwitchAuditLogs(),
+            getEngineStateConsistency(),
         ]);
 
         return res.json({
@@ -38,6 +39,7 @@ router.get('/', async (req, res) => {
                 firestore: firestoreStatus,
                 mysql: mysqlStatus,
             },
+            engineStateConsistency,
             syncHealth,
             recentAudits,
             timestamp: new Date().toISOString(),
@@ -197,7 +199,7 @@ router.post('/retry-dead-letter', async (req, res) => {
     try {
         const pool = getPool();
         const [result] = await pool.query('UPDATE sync_outbox SET status = "PENDING", retry_count = 0 WHERE status = "DEAD_LETTER"');
-        return res.json({ success: true, re夏のQueued: result.affectedRows });
+        return res.json({ success: true, requeued: result.affectedRows });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }

@@ -40,6 +40,11 @@ module.exports = {
         TENANT_ARTIFACT_SIGNING_SECRET: 'REPLACE_WITH_openssl_rand_base64_32',
         ENTERPRISE_OUTBOX_WORKER_ENABLED: 'true',
         ENTERPRISE_OUTBOX_INTERVAL_MS: '15000',
+        // Tenant hard-deletion garbage collector: reclaims DELETING tenants
+        // after the grace period (7 days) without manual script execution.
+        TENANT_GC_WORKER_ENABLED: 'true',
+        TENANT_GC_INTERVAL_MS: '3600000',
+        TENANT_GC_GRACE_PERIOD_DAYS: '7',
         ENTERPRISE_STORAGE_PROVIDER: 'firebase-storage',
         // ---- Notifications / CMS (existing product workers) ----
         NOTIFICATION_OUTBOX_WORKER_ENABLED: 'true',

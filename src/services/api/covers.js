@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch } from './client.js';
 
 export async function getCovers() {
     const data = await apiFetch('/api/covers');
