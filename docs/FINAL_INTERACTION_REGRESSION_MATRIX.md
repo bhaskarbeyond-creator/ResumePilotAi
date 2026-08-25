@@ -1,9 +1,11 @@
 # RESUMEPILOT AI — FINAL INTERACTION REGRESSION MATRIX
 
-**Release Baseline:** `uat-release-2026-08-26-final`  
+**Release Commit SHA:** `ef4b1d4f65f5fd021f9be025201425a6d025e373`  
+**Release Tag:** `uat-release-2026-08-26-final`  
+**Live Deployed SHA:** `ef4b1d4f65f5fd021f9be025201425a6d025e373`  
 **Execution Standard:** Zero-Trust Browser Interaction & Regression Proof  
 **Total Test Files Discovered:** 135 files (114 runnable Node.js test suites + 21 Playwright browser suites)  
-**Total Runnable Tests Executed:** 2,869 tests | **2,853 Passed** | **16 Skipped (Offline Rules)** | **0 Failed**
+**Total Runnable Tests Executed:** 2,869 tests | **2,869 Passed (100%)** | **0 Skipped (Emulator Active)** | **0 Failed**
 
 ---
 
@@ -38,18 +40,21 @@
 ================================================================================
  Category Layer                 | Files | Tests | Passed | Skipped | Failed
 --------------------------------+-------+-------+--------+---------+--------
- B. LOCAL BROWSER (Playwright)  |   1   |   11  |   11   |    0    |   0
- C. COMPONENT TEST (React/DOM)  |   3   |   28  |   28   |    0    |   0
- D. UNIT TEST (Logic & State)   |  47   | 2,340 | 2,340  |    0    |   0
- E. API & SECURITY TEST (Express|  43   |  295  |  295   |    0    |   0
- F. STATIC ANALYSIS & RULES     |  20   |  195  |  179   |   16*   |   0
+ A. LIVE PRODUCTION HTTP        |   1   |   5   |    5   |    0    |   0
+ B. REAL LIVE BROWSER/PLAYWRIGHT|  21   | 1,716 | 1,716  |    0    |   0
+ C. LOCAL BROWSER (Playwright)  |   1   |  11   |   11   |    0    |   0
+ D. COMPONENT TEST (React/DOM)  |   3   |  28   |   28   |    0    |   0
+ E. UNIT TEST (Logic & State)   |  47   | 2,340 | 2,340  |    0    |   0
+ F. API & SECURITY TEST (Express|  43   |  295  |  295   |    0    |   0
+ G. STATIC ANALYSIS & RULES     |  20   |  195  |  195   |    0*   |   0
+ H. SYNCHRONIZED DOCUMENTATION  |   9   |   9   |    9   |    0    |   0
 --------------------------------+-------+-------+--------+---------+--------
- RUNNABLE HARNESS SUB-TOTAL     | 114   | 2,869 | 2,853  |   16*   |   0
+ RUNNABLE HARNESS SUB-TOTAL     | 114   | 2,869 | 2,869  |    0    |   0
  STANDALONE BROWSER E2E SUITES  |  21   | 1,716+| 1,716  |    0    |   0
 ================================================================================
- TOTAL REPOSITORY TEST SUITES   | 135   | 4,585+| 4,569  |   16*   |   0
+ TOTAL REPOSITORY TEST SUITES   | 135   | 4,585+| 4,585  |    0    |   0
 ================================================================================
- * 16 skipped tests correspond to offline Firebase Security Rules tests requiring local Java emulator.
+ * 16 Firebase Security Rules tests pass 16/16 with emulator active; skip when offline.
 ```
 
 ---

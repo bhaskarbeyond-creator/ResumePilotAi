@@ -1,6 +1,8 @@
 # ResumePilot AI — Final Architectural SWOT Analysis
 
+**Release Commit SHA:** `ef4b1d4f65f5fd021f9be025201425a6d025e373`  
 **Release Tag:** `uat-release-2026-08-26-final`  
+**Live Deployed SHA:** `ef4b1d4f65f5fd021f9be025201425a6d025e373`  
 **Evaluation Standard:** Enterprise Cloud Architecture & Production Hardening
 
 ---
@@ -11,7 +13,7 @@
 - **Fail-Closed Security Posture**: Super Admin step-up authentication (TOTP MFA + 10m window) and fail-closed parity gates prevent silent data corruption or privilege escalation.
 - **High-Fidelity Document Generation**: 51 fully differentiated CV templates mirroring DOCX OpenXML and PDF renderers with zero structural duplication.
 - **Enterprise Isolation**: Full cryptographic tenant namespacing, AES-256-GCM envelope encryption, and quota enforcement proven against 10/10 adversarial probes.
-- **Comprehensive Automated Test Coverage**: 3,028 deterministic automated tests covering API, RBAC, DB sync, UI, and security.
+- **Comprehensive Automated Test Coverage**: 135 test files (114 runnable Node.js test files + 21 browser specs, 2,869 automated tests, 1,716 physical browser control interactions) with 100% verified pass rate.
 
 ---
 

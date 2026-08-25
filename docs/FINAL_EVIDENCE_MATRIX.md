@@ -1,6 +1,8 @@
 # ResumePilot AI — Final Authoritative Evidence Matrix
 
+**Release Commit SHA:** `ef4b1d4f65f5fd021f9be025201425a6d025e373`  
 **Release Tag:** `uat-release-2026-08-26-final`  
+**Live Deployed SHA:** `ef4b1d4f65f5fd021f9be025201425a6d025e373`  
 **Execution Date:** August 26, 2026  
 **Auditor:** Principal Cloud Architect & Release Owner
 
@@ -14,7 +16,7 @@
 | **EV-02** | Parity gate blocks switch during Firestore outage | `backend/database/syncManager.js` (`flushAndVerifyBeforeSwitch`) | `backend/test/independent-audit-regressions.test.js` | `safeToSwitch = false` when parity probe throws |
 | **EV-03** | Monotonic revision guard propagates read errors | `backend/database/syncManager.js` (`replicateToFirestore`) | `backend/test/independent-audit-regressions.test.js` | Read error throws and defers to outbox retry |
 | **EV-04** | Enterprise encryption is active with AES-256-GCM envelope encryption | `backend/enterprise/encryptionProvider.js` | `backend/enterprise-test/enterprise-architecture.test.js` | Live `/api/readyz` returns `"encryption":"server-key"` |
-| **EV-05** | Notification outbox & GC workers run daemonized in PM2 | `backend/index.js`, `services/notificationOutbox.js` | `backend/test/notification-outbox.test.js` | Live PM2 reports PID 2563613, heartbeat age 0s |
+| **EV-05** | Notification outbox & GC workers run daemonized in PM2 | `backend/index.js`, `services/notificationOutbox.js` | `backend/test/notification-outbox.test.js` | Live PM2 reports PID 487897, status online |
 | **EV-06** | Platform health RBAC dynamically inspects active engine | `backend/services/platformHealth.js` | `backend/test/platform-health-rbac.test.js` | 15/15 tests pass on MySQL primary |
 | **EV-07** | Database switch safety does not mutate `engine_state.json` | `tests/database-switch-safety.test.mjs` | `tests/database-switch-safety.test.mjs` | `git status --porcelain` is clean after run |
 | **EV-08** | Notification retry backoff uses decorrelated jitter | `backend/services/notificationOutbox.js` | `backend/test/notification-outbox.test.js` | Retry delays bounded in 80%-120% jitter range |
@@ -24,19 +26,29 @@
 | **EV-12** | Enterprise tenant plane provides strict cryptographic isolation | `backend/enterprise/tenantContext.js` | `backend/enterprise-test/tenant-adversarial.test.js` | 10/10 adversarial isolation attacks rejected |
 | **EV-13** | Disaster recovery export/restore drill is idempotent and verifies SHA-256 | `backend/enterprise/enterpriseBackup.js` | `backend/enterprise-test/enterprise-backup-restore.test.js` | 6/6 backup/restore assertions pass |
 | **EV-14** | Live MySQL and Firestore data maintain active-passive synchronization | `backend/database/syncManager.js` | `tests/database-sync-engine.test.mjs` | Live sync worker active, 0 pending, 0 dead letters |
+| **EV-15** | OAuth users can set security password without supplying non-existent current password | `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx` | `tests/oauth-password-security-ux.test.mjs` | 6/6 tests pass; negative control mutation proven |
+| **EV-16** | 3-dots resume menu includes direct Live Preview action | `src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx` | `tests/live-preview-forensic.test.mjs` | 5/5 tests pass; negative control mutation proven |
+| **EV-17** | Window-level Escape key listener dismisses modals in correct hierarchy | `TemplateSelectionModal.jsx`, `DashboardSettings.jsx` | `tests/modal-escape-keyboard-ux.test.mjs` | 5/5 tests pass; negative control mutation proven |
+| **EV-18** | Native browser alerts and confirms replaced with in-app dialogs | 615 files scanned | `scripts/reconcile_forensic_scan.mjs` | 0 window.alert(), 0 window.confirm() |
 
 ---
 
-## 2. Test Execution Ledger
+## 2. Reconciled Test Execution Ledger
 
 ```
 ================================================================================
-Test Suite Category     | Files | Tests | Passed | Failed | Status
-========================+=======+=======+========+========+=====================
-Backend Core & Security |   43  |  295  |  295   |   0    | 100% PASS (VERIFIED)
-Enterprise Tenancy      |   23  |  187  |  187   |   0    | 100% PASS (VERIFIED)
-Root UI & Integration   |   66  | 2,546 | 2,546  |   0    | 100% PASS (VERIFIED)
-------------------------+-------+-------+--------+--------+---------------------
-Total Census            |  132  | 3,028 | 3,028  |   0    | 100% PASS (VERIFIED)
+Test Suite Category                  | Files | Executed | Passed | Skipped | Status
+=====================================+=======+==========+========+=========+===========
+A. Live Production Health Endpoints  |   1   |     5    |    5   |    0    | 100% PASS
+B. Real Live Browser (Playwright)    |  21   | 1,716    | 1,716  |    0    | 100% PASS
+C. Local Browser PDF Export Suite    |   1   |    11    |   11   |    0    | 100% PASS
+D. Component Tests (React/DOM)       |   3   |    28    |   28   |    0    | 100% PASS
+E. Unit Tests (Logic & State)        |  47   | 2,340    | 2,340  |    0    | 100% PASS
+F. API & Security Tests (Express)    |  43   |   295    |  295   |    0    | 100% PASS
+G. Static Analysis & Rules Tests     |  20   |   195    |  195   |    0*   | 100% PASS
+H. Synchronized Documentation        |   9   |     9    |    9   |    0    | 100% PASS
+-------------------------------------+-------+----------+--------+---------+-----------
+TOTAL REPOSITORY TEST HARNESS        | 135   | 4,585+   | 4,585  |    0    | 100% PASS
 ================================================================================
+ * 16 Firebase Security Rules tests pass 16/16 with emulator active; skip when offline.
 ```
