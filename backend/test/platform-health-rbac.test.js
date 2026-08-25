@@ -99,14 +99,35 @@ test('the provider test rejects unauthenticated callers', async () => {
  * ------------------------------------------------------------------ */
 
 test('SUPER_ADMIN may read every operational-status surface', async () => {
+  // The health engine models exactly one active primary data plane: 'database'
+  // when MySQL is active, 'firestore' when Firestore is active. Asserting a
+  // hardcoded 'firestore' surface therefore fails on a MySQL-primary release.
+  // Enumerate the services the snapshot actually publishes instead — this is
+  // strictly stronger than a fixed list and stays correct across engine
+  // switches.
   for (const path of [
     '/api/platform/operational-status',
     '/api/platform/operational-status/api-matrix',
-    '/api/platform/operational-status/firestore',
     '/api/platform/health-indicator',
   ]) {
     const res = await as('get', path, 'super-admin');
     assert.equal(res.status, 200, `${path} must be readable by SUPER_ADMIN, got ${res.status}`);
+  }
+
+  const snapshot = await as('get', '/api/platform/operational-status', 'super-admin');
+  const serviceIds = (snapshot.body?.services || []).map(item => item.id);
+  assert.ok(serviceIds.length > 0, 'the health snapshot must publish monitored services');
+
+  const primaryEngine = require('../database/engineManager').getActiveEngine();
+  const expectedPrimary = primaryEngine === 'mysql' ? 'database' : 'firestore';
+  assert.ok(
+    serviceIds.includes(expectedPrimary),
+    `the snapshot must publish the active primary "${expectedPrimary}" (engine=${primaryEngine}); got ${serviceIds.join(', ')}`,
+  );
+
+  for (const serviceId of serviceIds) {
+    const res = await as('get', `/api/platform/operational-status/${serviceId}`, 'super-admin');
+    assert.equal(res.status, 200, `SUPER_ADMIN must be able to read /operational-status/${serviceId}, got ${res.status}`);
   }
 });
 

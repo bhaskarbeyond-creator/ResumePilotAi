@@ -9,7 +9,7 @@ const {
     pruneSyncedOutboxEvents,
     pruneFirestoreOutboxEvents
 } = require('../database/syncManager');
-const { requireSuperAdmin, requirePermission } = require('../security/auth');
+const { requireSuperAdmin, requirePermission, requireRecentAdminAuthentication } = require('../security/auth');
 
 const router = express.Router();
 
@@ -73,7 +73,7 @@ router.get('/sync-status', async (req, res) => {
  * POST /api/admin/database-settings/sync-now
  * Manually flushes and processes pending outbox synchronization items.
  */
-router.post('/sync-now', async (req, res) => {
+router.post('/sync-now', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const firestoreDb = req.app.get('db');
         const result = await processSyncQueue(50, firestoreDb);
@@ -88,7 +88,7 @@ router.post('/sync-now', async (req, res) => {
  * POST /api/admin/database-settings/prune-outbox
  * Safely prunes completed SYNCED outbox records older than retentionDays.
  */
-router.post('/prune-outbox', async (req, res) => {
+router.post('/prune-outbox', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const retentionDays = Number(req.body.retentionDays) || 7;
         const firestoreDb = req.app.get('db');
@@ -175,7 +175,7 @@ router.get('/dead-letter', async (req, res) => {
  * POST /api/admin/database-settings/retry-dead-letter
  * Resets dead-letter records to PENDING.
  */
-router.post('/retry-dead-letter', async (req, res) => {
+router.post('/retry-dead-letter', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const pool = getPool();
         const [result] = await pool.query('UPDATE sync_outbox SET status = "PENDING", retry_count = 0 WHERE status = "DEAD_LETTER"');
@@ -214,7 +214,7 @@ router.post('/test-connection', async (req, res) => {
  * POST /api/admin/database-settings/initialize-schema
  * Initializes or verifies the MySQL database schema.
  */
-router.post('/initialize-schema', async (req, res) => {
+router.post('/initialize-schema', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const result = await initializeSchema();
         if (!result.success) {
@@ -230,7 +230,7 @@ router.post('/initialize-schema', async (req, res) => {
  * POST /api/admin/database-settings
  * Atomically switches the database engine after pre-switch sync flush and validation.
  */
-router.post('/', async (req, res) => {
+router.post('/', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const targetEngine = String(req.body.engine || '').trim().toLowerCase();
         const force = req.body.force === true;
