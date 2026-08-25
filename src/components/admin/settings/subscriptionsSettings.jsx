@@ -9,6 +9,7 @@ class SubscriptionSetting extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            pricingMatrix: { INR: { monthly: 199, quartarly: 399, yearly: 499 }, USD: { monthly: 19, quartarly: 49, yearly: 179 }, EUR: { monthly: 19, quartarly: 49, yearly: 179 }, GBP: { monthly: 15, quartarly: 39, yearly: 149 } },
             websiteTitle: '',
             checkedSubscriptions: true,
             checkedOnlyPP: false,
@@ -125,6 +126,7 @@ class SubscriptionSetting extends Component {
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubscriptionToggleChange = this.handleSubscriptionToggleChange.bind(this);
+        this.handleMatrixChange = this.handleMatrixChange.bind(this);
         this.handlePPCheckedChange = this.handlePPCheckedChange.bind(this);
         this.handleRazorpayToggle = this.handleRazorpayToggle.bind(this);
         this.handleStripeToggle = this.handleStripeToggle.bind(this);
@@ -168,6 +170,7 @@ class SubscriptionSetting extends Component {
                     yearlyPrice: data.yearlyPrice !== undefined ? data.yearlyPrice : 499,
                     checkedOnlyPP: data.onlyPP === undefined ? false : data.onlyPP,
                     currency: data.currency || 'INR',
+                    pricingMatrix: data.pricingMatrix || { INR: { monthly: 199, quartarly: 399, yearly: 499 }, USD: { monthly: 19, quartarly: 49, yearly: 179 }, EUR: { monthly: 19, quartarly: 49, yearly: 179 }, GBP: { monthly: 15, quartarly: 39, yearly: 149 } },
                     checkedRazorpayUPI: data.razorpayUPI !== undefined ? data.razorpayUPI : true,
                     checkedStripe: data.stripeEnabled !== undefined ? data.stripeEnabled : true,
                     checkedPayPal: data.paypalEnabled !== undefined ? data.paypalEnabled : true,
@@ -1250,6 +1253,19 @@ class SubscriptionSetting extends Component {
             default:
                 break;
         }
+    }
+
+    
+    handleMatrixChange(currency, planType, value) {
+        this.setState(prevState => ({
+            pricingMatrix: {
+                ...prevState.pricingMatrix,
+                [currency]: {
+                    ...prevState.pricingMatrix[currency],
+                    [planType]: value
+                }
+            }
+        }));
     }
 
     handleSubscriptionToggleChange() {
@@ -3599,78 +3615,44 @@ class SubscriptionSetting extends Component {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {/* Monthly Price */}
+                            
+                            <div className="overflow-x-auto border border-slate-200 rounded-xl mb-4">
+                                  <table className="w-full text-left text-sm text-slate-600">
+                                      <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-extrabold text-slate-700">
+                                          <tr>
+                                              <th className="px-4 py-3">Currency</th>
+                                              <th className="px-4 py-3">Monthly</th>
+                                              <th className="px-4 py-3">Quarterly</th>
+                                              <th className="px-4 py-3">Yearly</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody>
+                                          {['INR', 'USD', 'EUR', 'GBP'].map(curr => (
+                                              <tr key={curr} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                                  <td className="px-4 py-3 font-bold text-slate-900">{curr}</td>
+                                                  <td className="px-4 py-2">
+                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.monthly || ''} onChange={(e) => this.handleMatrixChange(curr, 'monthly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="199" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
+                                                  </td>
+                                                  <td className="px-4 py-2">
+                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.quartarly || ''} onChange={(e) => this.handleMatrixChange(curr, 'quartarly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="399" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
+                                                  </td>
+                                                  <td className="px-4 py-2">
+                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.yearly || ''} onChange={(e) => this.handleMatrixChange(curr, 'yearly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="499" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
+                                                  </td>
+                                              </tr>
+                                          ))}
+                                      </tbody>
+                                  </table>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="relative">
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Monthly Plan ({currencySymbol})</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="1"
-                                            min="0"
-                                            value={this.state.monthlyPrice || ''}
-                                            onChange={(event) => this.handleChange(event, 'monthly')}
-                                            disabled={!this.state.checkedSubscriptions}
-                                            placeholder="199"
-                                            className="w-full pl-8 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900"
-                                        />
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">
-                                            {currencySymbol}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 mt-1">Per month rate</p>
-                                </div>
-
-                                {/* Quarterly Price */}
-                                <div className="relative">
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Quarterly Plan ({currencySymbol})</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="1"
-                                            min="0"
-                                            value={this.state.quartarlyPrice || ''}
-                                            onChange={(event) => this.handleChange(event, 'quartarly')}
-                                            disabled={!this.state.checkedSubscriptions}
-                                            placeholder="399"
-                                            className="w-full pl-8 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900"
-                                        />
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">
-                                            {currencySymbol}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 mt-1">Per 3 months rate</p>
-                                </div>
-
-                                {/* Yearly Price */}
-                                <div className="relative">
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Yearly Plan ({currencySymbol})</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            step="1"
-                                            min="0"
-                                            value={this.state.yearlyPrice || ''}
-                                            onChange={(event) => this.handleChange(event, 'yearly')}
-                                            disabled={!this.state.checkedSubscriptions}
-                                            placeholder="499"
-                                            className="w-full pl-8 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900"
-                                        />
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">
-                                            {currencySymbol}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 mt-1">Per year rate</p>
-                                </div>
-
-                                {/* Currency */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">System Currency</label>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Primary Platform Currency</label>
                                     <select
                                         value={this.state.currency}
                                         onChange={(event) => this.handleChange(event, 'currency')}
                                         disabled={!this.state.checkedSubscriptions}
-                                        className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900"
+                                        className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900 appearance-none"
                                     >
                                         <option value="INR">🇮🇳 INR (₹ - Indian Rupee)</option>
                                         <option value="USD">💵 USD ($ - US Dollar)</option>

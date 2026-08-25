@@ -1955,6 +1955,7 @@ export async function setSubscriptionsData(state, month, quartarly, yearly, only
         onlyPP: onlyPP,
         currency: currency,
         razorpayUPI: razorpayUPI,
+        pricingMatrix: options.pricingMatrix || undefined,
         stripeEnabled: options.stripeEnabled !== undefined ? options.stripeEnabled : true,
         paypalEnabled: options.paypalEnabled !== undefined ? options.paypalEnabled : true,
         razorpayEnabled: options.razorpayEnabled !== undefined ? options.razorpayEnabled : true,

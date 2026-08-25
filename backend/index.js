@@ -354,24 +354,48 @@ app.use('/api/messages', messagingAccountLimiter);
 app.use(['/api/admin', '/api/email/admin'], requirePermission('system.config.write'));
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET || 'missing');
-// Server-owned catalog. Amounts are smallest currency units and never derive from a browser request.
-const PLAN_CATALOG = Object.freeze({
-    monthly: { amount: 1999, currency: 'usd', months: 1 },
-    halfYear: { amount: 9999, currency: 'usd', months: 6 },
-    yearly: { amount: 17999, currency: 'usd', months: 12 }
-});
-// India gateway catalog. Values are subunits (paise) and are never accepted from clients.
-const INDIA_PLAN_CATALOG = Object.freeze({
-    // Current advertised prices include the configured 18% GST.
-    monthly: { amount: 23482, currency: 'INR', months: 1 },
-    halfYear: { amount: 47082, currency: 'INR', months: 6 },
-    yearly: { amount: 58882, currency: 'INR', months: 12 }
-});
-function providerPlan(planId, provider) {
-    const catalog = provider === 'stripe' ? PLAN_CATALOG : INDIA_PLAN_CATALOG;
-    const plan = catalog[planId];
-    if (!plan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
-    return plan;
+async function getDynamicPlan(db, planId) {
+    const defaultPricing = {
+        monthly: { amount: 1999, currency: 'USD', months: 1 },
+        halfYear: { amount: 9999, currency: 'USD', months: 6 },
+        yearly: { amount: 17999, currency: 'USD', months: 12 }
+    };
+    const fallback = defaultPricing[planId];
+    if (!fallback) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
+    if (!db) return fallback;
+    try {
+        const publicDoc = await db.collection('data').doc('public_config').get();
+        const publicConfig = publicDoc.data() || {};
+        const billing = publicConfig.subscriptions || {};
+        
+        // Also check system_settings for primary platform currency
+        const sysDoc = await db.collection('data').doc('system_settings').get();
+        const sys = sysDoc.data() || {};
+        
+        let currency = String(billing.currency || sys.currency || 'INR').toUpperCase();
+        
+        // Check for multi-currency matrix
+        if (billing.pricingMatrix && billing.pricingMatrix[currency]) {
+            const matrix = billing.pricingMatrix[currency];
+            const amount = Number(matrix[planId]);
+            if (Number.isFinite(amount) && amount >= 0) {
+                const multiplier = ['JPY'].includes(currency) ? 1 : 100;
+                return { amount: Math.round(amount * multiplier), currency, months: fallback.months };
+            }
+        }
+        
+        // Fallback to legacy single-currency flat pricing if matrix is missing for this currency
+        let baseAmount = planId === 'monthly' ? billing.monthlyPrice : 
+                        (planId === 'yearly' ? billing.yearlyPrice : 
+                        (planId === 'halfYear' ? billing.quartarlyPrice : null));
+        if (baseAmount !== null && baseAmount !== undefined) {
+             const multiplier = ['JPY'].includes(currency) ? 1 : 100;
+             return { amount: Math.round(Number(baseAmount) * multiplier), currency, months: fallback.months };
+        }
+        return fallback;
+    } catch (err) {
+        return fallback;
+    }
 }
 
 async function applyServerCoupon({ uid, orderId, plan, couponCode }) {
@@ -464,11 +488,11 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
         if (!['PAYMENT_CREATED', 'PENDING_PAYMENT', 'PROVIDER_CONFIRMED'].includes(order.status)) {
             throw Object.assign(new Error('INVALID_ORDER_STATE'), { status: 409 });
         }
-        const plan = providerPlan(order.planId, order.provider);
+        const months = order.planId === 'yearly' ? 12 : (order.planId === 'halfYear' ? 6 : 1);
         const userRef = db.collection('users').doc(order.uid);
         const userSnap = await tx.get(userRef);
         if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
-        const membershipEnds = calculateMembershipEnd(userSnap.data().membershipEnds, plan.months);
+        const membershipEnds = calculateMembershipEnd(userSnap.data().membershipEnds, months);
         tx.update(userRef, {
             membership: 'Premium', membershipEnds, paymentStatus: 'ACTIVE',
             lastPaymentGateway: gatewayLabel, lastPaymentOrderId: orderRef.id, cancellationRequested: false,
@@ -485,7 +509,7 @@ async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) 
     return activatedOrder;
 }
 async function createProviderOrderRecord({ uid, planId, provider, couponCode }) {
-    const basePlan = providerPlan(planId, provider);
+    const basePlan = await getDynamicPlan(db, planId);
     if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
     const ref = db.collection('payment_orders').doc();
     const plan = await applyServerCoupon({ uid, orderId: ref.id, plan: basePlan, couponCode });
@@ -498,7 +522,7 @@ async function createProviderOrderRecord({ uid, planId, provider, couponCode }) 
     return { ref, plan };
 }
 async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode }) {
-    const basePlan = PLAN_CATALOG[planId];
+    const basePlan = await getDynamicPlan(db, planId);
     if (!basePlan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
     if (!db || !admin) { const err = new Error('PAYMENT_SERVICE_UNAVAILABLE'); err.status = 503; throw err; }
     if (!process.env.STRIPE_SECRET) { const err = new Error('PAYMENT_PROVIDER_UNAVAILABLE'); err.status = 503; throw err; }
@@ -2646,6 +2670,7 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
     };
     const publicSettings = {
         state: Object.hasOwn(input, 'state') ? input.state !== false : currentPublic.state !== false,
+        pricingMatrix: input.pricingMatrix || currentPublic.pricingMatrix || null,
         monthlyPrice: numberInRange(valueOrCurrent('monthlyPrice', 199), 0, 1_000_000, 199),
         quartarlyPrice: numberInRange(valueOrCurrent('quartarlyPrice', 399), 0, 1_000_000, 399),
         yearlyPrice: numberInRange(valueOrCurrent('yearlyPrice', 499), 0, 1_000_000, 499),
