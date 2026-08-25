@@ -296,8 +296,84 @@ async function replicateToFirestore(adminFirestore, event) {
         } else {
             await ref.set(data, { merge: true });
         }
+    } else if (entity_type === 'jobs') {
+        const ref = adminFirestore.collection('jobs').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'applications') {
+        const ref = adminFirestore.collection('applications').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'companies') {
+        const ref = adminFirestore.collection('companies').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'blog') {
+        const ref = adminFirestore.collection('blog').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'custom_pages') {
+        const ref = adminFirestore.collection('custom_pages').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'trusted_by') {
+        const ref = adminFirestore.collection('trusted_by').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'reviews') {
+        const ref = adminFirestore.collection('reviews').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'contact_messages') {
+        const ref = adminFirestore.collection('contact').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'coupons') {
+        const ref = adminFirestore.collection('coupons').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
+    } else if (entity_type === 'stats') {
+        const ref = adminFirestore.collection('data').doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
     } else {
-        throw new Error(`Unsupported entity type for Firestore replication: ${entity_type}`);
+        // Fallback: Store into collection named after entity_type
+        const ref = adminFirestore.collection(entity_type).doc(entity_id);
+        if (operation === 'DELETE') {
+            await ref.delete();
+        } else {
+            await ref.set(data, { merge: true });
+        }
     }
 }
 
@@ -411,6 +487,115 @@ async function replicateToMySQL(event, poolOverride = null) {
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                  ON DUPLICATE KEY UPDATE status=VALUES(status), amount=VALUES(amount), currency=VALUES(currency), provider_payment_id=VALUES(provider_payment_id), updated_at=CURRENT_TIMESTAMP`,
                 [entity_id, data.uid || data.userId || 'user-1', data.planId || data.plan_id || 'monthly', data.provider || 'razorpay', Number(data.amount || 0), Number(data.originalAmount || data.amount || 0), data.currency || 'INR', data.status || 'PAYMENT_CREATED', data.providerPaymentId || null, data.providerOrderId || null]
+            );
+        }
+    } else if (entity_type === 'jobs') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM jobs WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO jobs (id, employer_id, company_name, title, description, requirements, location, job_type, workplace_type, salary_min, salary_max, salary_currency, experience_level, skills, status, featured)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description), status=VALUES(status), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.employer_id || data.employerId || data.userId || 'admin', data.company_name || data.companyName || '', data.title || 'Untitled Job', data.description || '', JSON.stringify(data.requirements || []), data.location || '', data.job_type || data.jobType || 'Full-time', data.workplace_type || data.workplaceType || 'Remote', Number(data.salary_min || data.salaryMin || 0), Number(data.salary_max || data.salaryMax || 0), data.salary_currency || data.salaryCurrency || 'INR', data.experience_level || data.experienceLevel || '', JSON.stringify(data.skills || []), data.status || 'OPEN', data.featured === true ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'applications') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM applications WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO applications (id, job_id, employer_id, applicant_id, applicant_name, applicant_email, applicant_phone, resume_id, resume_url, cover_letter, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE status=VALUES(status), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.job_id || data.jobId || '', data.employer_id || data.employerId || '', data.applicant_id || data.applicantId || '', data.applicant_name || data.applicantName || '', data.applicant_email || data.applicantEmail || '', data.applicant_phone || data.applicantPhone || '', data.resume_id || data.resumeId || null, data.resume_url || data.resumeUrl || null, data.cover_letter || data.coverLetter || '', data.status || 'PENDING']
+            );
+        }
+    } else if (entity_type === 'companies') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM companies WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO companies (id, owner_id, name, logo, website, description, industry, size, location, verified)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE name=VALUES(name), logo=VALUES(logo), website=VALUES(website), description=VALUES(description), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.owner_id || data.ownerId || data.userId || '', data.name || '', data.logo || null, data.website || null, data.description || '', data.industry || '', data.size || '', data.location || '', data.verified === true ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'blog') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM blog WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO blog (id, title, slug, content, excerpt, cover_image, author, author_id, category, tags, published)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), published=VALUES(published), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.title || '', data.slug || entity_id, data.content || '', data.excerpt || '', data.cover_image || data.coverImage || null, data.author || 'Admin', data.author_id || data.authorId || null, data.category || 'General', JSON.stringify(data.tags || []), data.published === true ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'custom_pages') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM custom_pages WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO custom_pages (id, title, slug, content, published, nav_order, show_in_nav, show_in_footer)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), published=VALUES(published), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.title || '', data.slug || entity_id, data.content || '', data.published !== false ? 1 : 0, Number(data.nav_order || data.navOrder || 0), data.show_in_nav || data.showInNav ? 1 : 0, data.show_in_footer || data.showInFooter ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'trusted_by') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM trusted_by WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO trusted_by (id, name, logo_url, website_url, display_order, active)
+                 VALUES (?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE name=VALUES(name), logo_url=VALUES(logo_url), active=VALUES(active), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.name || '', data.logo_url || data.logoUrl || '', data.website_url || data.websiteUrl || null, Number(data.display_order || data.displayOrder || 0), data.active !== false ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'reviews') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM reviews WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO reviews (id, name, role, company, avatar, content, rating, featured, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE content=VALUES(content), rating=VALUES(rating), status=VALUES(status), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.name || 'Anonymous', data.role || '', data.company || '', data.avatar || null, data.content || '', Number(data.rating || 5), data.featured === true ? 1 : 0, data.status || 'APPROVED']
+            );
+        }
+    } else if (entity_type === 'contact_messages') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM contact_messages WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO contact_messages (id, name, email, message, website, status, is_read)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE status=VALUES(status), is_read=VALUES(is_read), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.name || '', data.email || '', data.message || '', data.website || null, data.status || 'UNREAD', data.is_read || data.isRead ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'coupons') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM coupons WHERE code = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO coupons (code, discount, description, active, expiry_date, max_uses, used_count, single_use_per_user)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE discount=VALUES(discount), description=VALUES(description), active=VALUES(active), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, Number(data.discount || 10), data.description || '', data.active !== false ? 1 : 0, data.expiry_date || data.expiryDate || null, Number(data.max_uses || data.maxUses || 0), Number(data.used_count || data.usedCount || 0), data.single_use_per_user || data.singleUsePerUser ? 1 : 0]
+            );
+        }
+    } else if (entity_type === 'stats') {
+        if (operation === 'DELETE') {
+            await pool.query('DELETE FROM stats WHERE id = ?', [entity_id]);
+        } else {
+            await pool.query(
+                `INSERT INTO stats (id, data) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE data=VALUES(data), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, JSON.stringify(data)]
             );
         }
     }

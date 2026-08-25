@@ -3851,6 +3851,14 @@ if (require.main === module) {
         setTimeout(runTenantGc, 30_000).unref?.();
     }
 
+    // Autonomous Continuous Intelligent Sync Worker (Firestore <-> MySQL bidirectional daemon)
+    try {
+        const { startBackgroundSyncWorker } = require('./database/syncManager');
+        startBackgroundSyncWorker(db, 5000);
+    } catch (syncWorkerErr) {
+        console.warn('[SyncWorker] Could not start sync worker:', syncWorkerErr.message);
+    }
+
     // Listen HTTP/HTTPS port safely
     const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
     const certPath = '/etc/letsencrypt/live/' + websiteName + '/fullchain.pem';
