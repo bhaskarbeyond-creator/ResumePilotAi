@@ -787,6 +787,176 @@ async function processFirestoreOutbox(adminFirestore, batchSize = 25, poolOverri
     return { processed, failed, deadLettered };
 }
 
+let workerTickCounter = 0;
+
+/**
+ * Prunes completed outbox events older than the configured retention period.
+ * Strict safety rules:
+ * - ONLY deletes events with status = 'SYNCED'
+ * - ONLY deletes events where processed_at is older than retentionDays
+ * - Never deletes PENDING, PROCESSING, RETRYING, DEAD_LETTER, or CONFLICT events
+ * - Bounded by batch limit to prevent database locks
+ */
+async function pruneSyncedOutboxEvents(retentionDays = 7, maxBatch = 1000, poolOverride = null) {
+    const pool = poolOverride || getPool();
+    const days = Math.max(1, Number(retentionDays) || 7);
+    const limit = Math.max(10, Math.min(Number(maxBatch) || 1000, 5000));
+
+    try {
+        const [result] = await pool.query(`
+            DELETE FROM sync_outbox
+            WHERE status = 'SYNCED'
+              AND processed_at < (NOW() - INTERVAL ? DAY)
+            LIMIT ?
+        `, [days, limit]);
+
+        const prunedCount = result?.affectedRows || 0;
+        if (prunedCount > 0) {
+            console.log(`[SyncWorker] 🧹 Pruned ${prunedCount} completed outbox events older than ${days} days.`);
+        }
+        return {
+            prunedCount,
+            retentionDays: days,
+            timestamp: new Date().toISOString()
+        };
+    } catch (err) {
+        return {
+            prunedCount: 0,
+            retentionDays: days,
+            error: err.message,
+            timestamp: new Date().toISOString()
+        };
+    }
+}
+
+/**
+ * Prunes completed Firestore reverse-outbox events older than retentionDays.
+ */
+async function pruneFirestoreOutboxEvents(adminFirestore, retentionDays = 7, maxBatch = 500) {
+    if (!adminFirestore) return { prunedCount: 0, skipped: 'NO_FIRESTORE' };
+    const days = Math.max(1, Number(retentionDays) || 7);
+    const cutoffDate = new Date(Date.now() - (days * 24 * 60 * 60 * 1000));
+
+    try {
+        const firebaseAdminWrapper = require('../services/firebaseAdmin');
+        const TimestampCtor = adminFirestore.Timestamp || firebaseAdminWrapper.firestore.Timestamp;
+        const cutoffTimestamp = TimestampCtor.fromDate(cutoffDate);
+
+        const snap = await adminFirestore.collection('sync_outbox_fs')
+            .where('status', '==', 'SYNCED')
+            .where('processedAt', '<', cutoffTimestamp)
+            .limit(maxBatch)
+            .get();
+
+        if (snap.empty) {
+            return { prunedCount: 0, retentionDays: days };
+        }
+
+        const batch = adminFirestore.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        console.log(`[SyncWorker] 🧹 Pruned ${snap.docs.length} completed Firestore reverse-outbox events.`);
+        return { prunedCount: snap.docs.length, retentionDays: days };
+    } catch (err) {
+        return { prunedCount: 0, error: err.message };
+    }
+}
+
+/**
+ * Computes deep continuous parity between MySQL and Firestore across all canonical entity types.
+ * Produces structured evidence without mutating any data.
+ */
+async function computeContinuousParity(adminFirestore, poolOverride = null) {
+    const pool = poolOverride || getPool();
+    const activeEngine = getActiveEngine();
+    const standbyEngine = activeEngine === 'mysql' ? 'firestore' : 'mysql';
+
+    if (!adminFirestore) {
+        return {
+            status: 'UNAVAILABLE',
+            activeEngine,
+            standbyEngine,
+            overallParityPercentage: 100,
+            entities: {},
+            reason: 'Firestore instance not connected for deep parity check'
+        };
+    }
+
+    const entityChecks = [
+        { type: 'users', sql: 'SELECT COUNT(*) as c FROM users', fsCollection: 'users' },
+        { type: 'resumes', sql: 'SELECT COUNT(*) as c FROM resumes', fsCollectionGroup: 'resumes' },
+        { type: 'portfolios', sql: 'SELECT COUNT(*) as c FROM portfolios', fsCollectionGroup: 'portfolios' },
+        { type: 'covers', sql: 'SELECT COUNT(*) as c FROM covers', fsCollectionGroup: 'covers' },
+        { type: 'jobs', sql: 'SELECT COUNT(*) as c FROM jobs', fsCollection: 'jobs' },
+        { type: 'applications', sql: 'SELECT COUNT(*) as c FROM applications', fsCollection: 'applications' },
+        { type: 'companies', sql: 'SELECT COUNT(*) as c FROM companies', fsCollection: 'companies' },
+        { type: 'blog', sql: 'SELECT COUNT(*) as c FROM blog', fsCollection: 'blog' },
+        { type: 'custom_pages', sql: 'SELECT COUNT(*) as c FROM custom_pages', fsCollection: 'custom_pages' },
+        { type: 'trusted_by', sql: 'SELECT COUNT(*) as c FROM trusted_by', fsCollection: 'trusted_by' },
+        { type: 'reviews', sql: 'SELECT COUNT(*) as c FROM reviews', fsCollection: 'reviews' },
+        { type: 'contact_messages', sql: 'SELECT COUNT(*) as c FROM contact_messages', fsCollection: 'contact' },
+        { type: 'coupons', sql: 'SELECT COUNT(*) as c FROM coupons', fsCollection: 'coupons' }
+    ];
+
+    const entities = {};
+    let totalExpected = 0;
+    let totalDivergence = 0;
+
+    for (const check of entityChecks) {
+        try {
+            const [myResult] = await pool.query(check.sql);
+            const myCount = Number(myResult[0]?.c || 0);
+
+            let fsCount = 0;
+            if (check.fsCollectionGroup && typeof adminFirestore.collectionGroup === 'function') {
+                const snap = await adminFirestore.collectionGroup(check.fsCollectionGroup).get();
+                fsCount = snap.docs.length;
+            } else {
+                const snap = await adminFirestore.collection(check.fsCollection).get();
+                fsCount = snap.docs.length;
+            }
+
+            const diff = Math.abs(myCount - fsCount);
+            const maxVal = Math.max(myCount, fsCount, 1);
+            const parityPct = diff === 0 ? 100 : Math.max(0, Math.round(100 - (diff / maxVal) * 100));
+
+            entities[check.type] = {
+                mysqlCount: myCount,
+                firestoreCount: fsCount,
+                difference: diff,
+                parityPercentage: parityPct,
+                isSynchronized: diff === 0
+            };
+
+            totalExpected += Math.max(myCount, fsCount);
+            totalDivergence += diff;
+        } catch (err) {
+            entities[check.type] = {
+                mysqlCount: -1,
+                firestoreCount: -1,
+                difference: -1,
+                parityPercentage: 0,
+                isSynchronized: false,
+                error: err.message
+            };
+        }
+    }
+
+    const overallParity = totalExpected === 0 ? 100 : Math.max(0, Math.round(100 - (totalDivergence / Math.max(totalExpected, 1)) * 100));
+
+    return {
+        status: overallParity === 100 ? 'OPTIMAL' : (overallParity >= 95 ? 'HEALTHY' : 'DIVERGENT'),
+        activeEngine,
+        standbyEngine,
+        overallParityPercentage: overallParity,
+        totalCheckedEntities: Object.keys(entities).length,
+        divergentEntitiesCount: Object.values(entities).filter(e => !e.isSynchronized).length,
+        entities,
+        checkedAt: new Date().toISOString()
+    };
+}
+
 /**
  * Starts the Autonomous Continuous Background Sync Worker.
  * Polls for outbox events, replicates them automatically, and publishes real-time heartbeats.
@@ -802,6 +972,7 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
     backgroundWorkerTimer = setInterval(async () => {
         if (isWorkerProcessing) return;
         isWorkerProcessing = true;
+        workerTickCounter++;
 
         try {
             await updateWorkerHeartbeat('RUNNING');
@@ -812,6 +983,14 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
                 console.warn('[SyncWorker] Reverse outbox drain failed:', err.message);
                 return { processed: 0, failed: 0, deadLettered: 0 };
             });
+
+            // Periodic Outbox Pruning (runs safely every ~1 hour / 1200 ticks)
+            if (workerTickCounter % 1200 === 0) {
+                pruneSyncedOutboxEvents(7, 1000).catch(() => {});
+                if (adminFirestore) {
+                    pruneFirestoreOutboxEvents(adminFirestore, 7, 500).catch(() => {});
+                }
+            }
 
             if (result.processed > 0 || result.failed > 0 || reverse.processed > 0 || reverse.deadLettered > 0) {
                 await updateWorkerHeartbeat('RUNNING', {
@@ -965,5 +1144,8 @@ module.exports = {
     processFirestoreOutbox,
     startBackgroundSyncWorker,
     stopBackgroundSyncWorker,
-    flushAndVerifyBeforeSwitch
+    flushAndVerifyBeforeSwitch,
+    pruneSyncedOutboxEvents,
+    pruneFirestoreOutboxEvents,
+    computeContinuousParity
 };

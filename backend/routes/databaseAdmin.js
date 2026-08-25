@@ -4,7 +4,10 @@ const { initializeSchema, getPool } = require('../database/mysql');
 const { 
     getSyncHealthStatus, 
     processSyncQueue, 
-    flushAndVerifyBeforeSwitch 
+    flushAndVerifyBeforeSwitch,
+    computeContinuousParity,
+    pruneSyncedOutboxEvents,
+    pruneFirestoreOutboxEvents
 } = require('../database/syncManager');
 const { requireSuperAdmin, requirePermission } = require('../security/auth');
 
@@ -82,81 +85,58 @@ router.post('/sync-now', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/database-settings/prune-outbox
+ * Safely prunes completed SYNCED outbox records older than retentionDays.
+ */
+router.post('/prune-outbox', async (req, res) => {
+    try {
+        const retentionDays = Number(req.body.retentionDays) || 7;
+        const firestoreDb = req.app.get('db');
+        const [mysqlPrune, fsPrune] = await Promise.all([
+            pruneSyncedOutboxEvents(retentionDays),
+            pruneFirestoreOutboxEvents(firestoreDb, retentionDays)
+        ]);
+
+        return res.json({
+            success: true,
+            retentionDays,
+            mysql: mysqlPrune,
+            firestore: fsPrune,
+            timestamp: new Date().toISOString()
+        });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
  * POST /api/admin/database-settings/verify-parity
- * Compares record counts, IDs, revisions, and content hashes between Firestore and MySQL.
+ * Deep continuous parity verification comparing all 13 canonical entities across Firestore and MySQL.
  */
 router.post('/verify-parity', async (req, res) => {
     try {
         const firestoreDb = req.app.get('db');
-        const pool = getPool();
+        const parity = await computeContinuousParity(firestoreDb);
+        
+        // Format legacy-compatible parityTable alongside rich continuous telemetry
+        const parityTable = Object.entries(parity.entities || {}).map(([entity, info]) => ({
+            entity,
+            firestore: info.firestoreCount,
+            mysql: info.mysqlCount,
+            diff: info.difference,
+            match: info.isSynchronized,
+            parityPercentage: info.parityPercentage
+        }));
 
-        let fsUsers = 0;
-        let fsResumes = 0;
-        let fsPortfolios = 0;
-        let fsCovers = 0;
-
-        if (firestoreDb) {
-            try {
-                const userSnap = await firestoreDb.collection('users').get();
-                fsUsers = userSnap.docs.length;
-
-                for (const uDoc of userSnap.docs) {
-                    const [rSnap, pSnap, cSnap] = await Promise.all([
-                        firestoreDb.collection('users').doc(uDoc.id).collection('resumes').get().catch(() => ({ docs: [] })),
-                        firestoreDb.collection('users').doc(uDoc.id).collection('portfolios').get().catch(() => ({ docs: [] })),
-                        firestoreDb.collection('users').doc(uDoc.id).collection('covers').get().catch(() => ({ docs: [] })),
-                    ]);
-                    fsResumes += rSnap.docs.length;
-                    fsPortfolios += pSnap.docs.length;
-                    fsCovers += cSnap.docs.length;
-                }
-            } catch (e) {
-                console.warn('[DatabaseAdmin] Firestore read error during parity verify:', e.message);
-            }
-        }
-
-        const [myUsers] = await pool.query('SELECT COUNT(*) as c FROM users');
-        const [myResumes] = await pool.query('SELECT COUNT(*) as c FROM resumes');
-        const [myPortfolios] = await pool.query('SELECT COUNT(*) as c FROM portfolios');
-        const [myCovers] = await pool.query('SELECT COUNT(*) as c FROM covers');
-
-        const parityTable = [
-            {
-                entity: 'users',
-                firestore: fsUsers,
-                mysql: myUsers[0]?.c || 0,
-                diff: Math.abs(fsUsers - (myUsers[0]?.c || 0)),
-                match: fsUsers === (myUsers[0]?.c || 0)
-            },
-            {
-                entity: 'resumes',
-                firestore: fsResumes,
-                mysql: myResumes[0]?.c || 0,
-                diff: Math.abs(fsResumes - (myResumes[0]?.c || 0)),
-                match: fsResumes === (myResumes[0]?.c || 0)
-            },
-            {
-                entity: 'portfolios',
-                firestore: fsPortfolios,
-                mysql: myPortfolios[0]?.c || 0,
-                diff: Math.abs(fsPortfolios - (myPortfolios[0]?.c || 0)),
-                match: fsPortfolios === (myPortfolios[0]?.c || 0)
-            },
-            {
-                entity: 'covers',
-                firestore: fsCovers,
-                mysql: myCovers[0]?.c || 0,
-                diff: Math.abs(fsCovers - (myCovers[0]?.c || 0)),
-                match: fsCovers === (myCovers[0]?.c || 0)
-            }
-        ];
-
-        const allMatched = parityTable.every(p => p.match);
         return res.json({
             success: true,
-            parityPercentage: allMatched ? 100 : 95,
+            parityPercentage: parity.overallParityPercentage,
+            status: parity.status,
+            totalCheckedEntities: parity.totalCheckedEntities,
+            divergentEntitiesCount: parity.divergentEntitiesCount,
             parityTable,
-            timestamp: new Date().toISOString()
+            details: parity.entities,
+            timestamp: parity.checkedAt || new Date().toISOString()
         });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
