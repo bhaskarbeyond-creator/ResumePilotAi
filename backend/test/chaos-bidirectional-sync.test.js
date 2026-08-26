@@ -133,10 +133,11 @@ describe('Chaos Engineering & Bidirectional Sync Resilience Suite', () => {
 
     let mockFirestore;
 
-    before(() => {
+    before(async () => {
         pool = getPool();
         repo = new MySQLRepository();
         mockFirestore = createMockFirestore();
+        await pool.query("DELETE FROM sync_outbox");
     });
 
     test('1. Normal Operation: MariaDB CRUD synchronizes to Firestore standby', async () => {
