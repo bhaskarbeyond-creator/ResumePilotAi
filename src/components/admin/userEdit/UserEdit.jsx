@@ -5,6 +5,7 @@ import fire from '../../../conf/fire';
 import { useLocation } from 'react-router-dom';
 import { useAdminSession } from '../AdminContext';
 import { FaUser, FaEnvelope, FaCrown, FaCalendar, FaSave, FaCheck, FaTimes, FaUserEdit, FaSpinner, FaInfoCircle, FaShieldAlt, FaBan, FaLock } from 'react-icons/fa';
+import { parseSafeDate } from '../../../utils/subscriptionUtils';
 
 class UserEdit extends Component {
     constructor(props) {
@@ -104,8 +105,8 @@ class UserEdit extends Component {
                     if (data) {
                         let subEnd = this.state.subscriptionEnd;
                         if (data.membershipEnds) {
-                            const parsedEnd = data.membershipEnds?.toDate?.() || new Date(data.membershipEnds?.seconds ? data.membershipEnds.seconds * 1000 : data.membershipEnds);
-                            if (Number.isFinite(parsedEnd.getTime())) subEnd = this.formatDate(parsedEnd);
+                            const parsedEnd = parseSafeDate(data.membershipEnds);
+                            if (parsedEnd) subEnd = this.formatDate(parsedEnd);
                         }
                         this.setState({
                             email: data.email || this.state.email,
@@ -370,7 +371,9 @@ class UserEdit extends Component {
                                 >
                                     <option value="">Select subscription plan</option>
                                     <option value="Basic">Basic Plan</option>
+                                    <option value="Pro">Pro Plan</option>
                                     <option value="Premium">Premium Plan</option>
+                                    <option value="Enterprise">Enterprise Plan</option>
                                 </select>
                                 <FaCrown className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                             </div>

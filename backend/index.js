@@ -18,7 +18,10 @@ const { loadProviderConfiguration, generateWithProviders } = require('./services
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
-const { resolveEffectiveEntitlement } = require('./security/entitlements');
+const { resolveEffectiveEntitlement, isPaidMembershipTier } = require('./security/entitlements');
+const { toCanonicalDate } = require('./database/canonical');
+const { isMembershipActive, toCanonicalUser } = require('./database/domain');
+const databaseAuthority = require('./database/authority');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
@@ -276,7 +279,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/healthz', '/readyz', '/health', '/service-availability', '/platform/version', '/platform/public-config',
+    '/healthz', '/readyz', '/health', '/health/databases', '/service-availability', '/platform/version', '/platform/public-config',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange',
@@ -1246,9 +1249,13 @@ app.post('/api/check', async (req, res) => {
         if (!user) {
             return res.json({ status: 'false', membershipEnds: null });
         }
-        const expiry = user.membershipEnds?.toDate?.() || new Date(user.membershipEnds || 0);
-        const entitled = user.membership === 'Premium' && ['ACTIVE', 'ADMIN_GRANTED'].includes(user.paymentStatus) && expiry > new Date();
-        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? (expiry.toISOString ? expiry.toISOString() : new Date(expiry).toISOString()) : null });
+        const canonical = toCanonicalUser(user);
+        const entitled = isMembershipActive(canonical) || (
+            isPaidMembershipTier(canonical.membership)
+            && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(canonical.paymentStatus || '').toUpperCase())
+            && (!canonical.membershipEnds || new Date(canonical.membershipEnds) > new Date())
+        );
+        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? (canonical.membershipEnds || null) : null });
     } catch (error) {
         console.error('[Entitlement check]', error.message);
         return res.status(500).json({ status: 'false', error: 'Entitlement check failed' });
@@ -1834,10 +1841,12 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         }
 
         const owner = (await repo.getUser(ownerUid).catch(() => null)) || {};
-        const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
-        const entitled = owner.membership === 'Premium'
-            && ['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus)
-            && membershipEnd > new Date();
+        const ownerCanonical = toCanonicalUser(owner);
+        const entitled = isMembershipActive(ownerCanonical) || (
+            isPaidMembershipTier(ownerCanonical.membership)
+            && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(ownerCanonical.paymentStatus || '').toUpperCase())
+            && (!ownerCanonical.membershipEnds || new Date(ownerCanonical.membershipEnds) > new Date())
+        );
         if (!entitled) {
             return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
         }
@@ -3735,17 +3744,52 @@ try {
   }
 } catch (_) {}
 
+function databaseHealthPayload() {
+    const status = databaseAuthority.getStatus();
+    return {
+        mariadb: {
+            healthy: status.health.mysql.healthy,
+            lastError: status.health.mysql.lastError,
+            latencyMs: status.health.mysql.latencyMs,
+        },
+        firestore: {
+            healthy: status.health.firestore.healthy,
+            lastError: status.health.firestore.lastError,
+            latencyMs: status.health.firestore.latencyMs,
+        },
+        authority: {
+            mode: status.mode,
+            configuredPrimary: status.configuredPrimary,
+            operationalWriteEngine: status.operationalWriteEngine,
+            canAcceptWrites: status.canAcceptWrites,
+        },
+        sync: {
+            // Worker health is reported independently by /api/admin/database-settings.
+            note: 'See getSyncHealthStatus for outbox/reconciliation depth.',
+        },
+    };
+}
+
 app.get('/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha });
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha, databases: databaseHealthPayload() });
 });
 app.get('/api/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha });
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha, databases: databaseHealthPayload() });
 });
 app.get('/api/health', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString() });
+    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), databases: databaseHealthPayload() });
+});
+app.get('/api/health/databases', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+        const snapshot = await databaseAuthority.refresh(req.app.get('db') || db);
+        return res.json({ success: true, ...snapshot });
+    } catch (error) {
+        return res.status(503).json({ success: false, error: { code: 'HEALTH_PROBE_FAILED', message: 'Database health could not be determined', requestId: res.locals.requestId } });
+    }
 });
 
 function computeReadyzPayload(req) {

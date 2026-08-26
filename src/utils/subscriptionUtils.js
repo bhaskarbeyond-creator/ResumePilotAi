@@ -24,42 +24,83 @@ export const isGlobalSubscriptionDisabled = (subscriptionsStatus) => {
 };
 
 /**
- * Safely parses any date representation (Firestore Timestamp, ISO string, epoch ms, Date object, {seconds}).
- * Returns null if invalid or absent.
+ * Convert any supported date representation to epoch milliseconds, or null.
+ * Handles Firestore Timestamp, Date, ISO/RFC strings, unix seconds, unix ms,
+ * {seconds,nanoseconds}, {_seconds,_nanoseconds}, null, undefined, invalid.
+ * Never throws.
  */
-export const parseSafeDate = (val) => {
-    if (!val) return null;
-    if (typeof val?.toDate === 'function') {
-        try {
-            return val.toDate();
-        } catch {
-            return null;
-        }
-    }
-    if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-    if (typeof val === 'number') {
-        const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d;
-    }
-    if (typeof val === 'string') {
-        const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d;
-    }
-    if (val.seconds !== undefined) {
-        const d = new Date(val.seconds * 1000);
-        return isNaN(d.getTime()) ? null : d;
-    }
-    if (val._seconds !== undefined) {
-        const d = new Date(val._seconds * 1000);
-        return isNaN(d.getTime()) ? null : d;
-    }
+export const toEpochMs = (val) => {
+    if (val === null || val === undefined || val === '' || val === false) return null;
     try {
-        const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d;
+        if (typeof val?.toDate === 'function') {
+            const d = val.toDate();
+            const ms = d instanceof Date ? d.getTime() : NaN;
+            return Number.isFinite(ms) ? ms : null;
+        }
+        if (typeof val?.toMillis === 'function') {
+            const ms = Number(val.toMillis());
+            return Number.isFinite(ms) ? ms : null;
+        }
+        if (val instanceof Date) {
+            const ms = val.getTime();
+            return Number.isFinite(ms) ? ms : null;
+        }
+        if (typeof val === 'number') {
+            if (!Number.isFinite(val) || val === 0) return null;
+            if (Math.abs(val) >= 1e12) return Math.trunc(val);
+            if (Math.abs(val) >= 1e9) return Math.trunc(val * 1000);
+            return Math.trunc(val);
+        }
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (!trimmed || trimmed === '0' || trimmed === 'null') return null;
+            if (/^-?\d+(\.\d+)?$/.test(trimmed)) return toEpochMs(Number(trimmed));
+            const parsed = Date.parse(trimmed);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+        if (typeof val === 'object') {
+            const seconds = val.seconds ?? val._seconds;
+            const nanos = val.nanoseconds ?? val._nanoseconds ?? 0;
+            if (seconds !== undefined && seconds !== null) {
+                const sec = Number(seconds);
+                if (!Number.isFinite(sec)) return null;
+                return sec * 1000 + Math.trunc((Number(nanos) || 0) / 1e6);
+            }
+        }
     } catch {
         return null;
     }
+    return null;
 };
+
+/**
+ * Safely parses any date representation into a JavaScript Date, or null.
+ */
+export const parseSafeDate = (val) => {
+    const ms = toEpochMs(val);
+    if (ms === null) return null;
+    const d = new Date(ms);
+    return Number.isFinite(d.getTime()) ? d : null;
+};
+
+/** Canonical ISO-8601 UTC string, or null. */
+export const toCanonicalDate = (val) => {
+    const d = parseSafeDate(val);
+    return d ? d.toISOString() : null;
+};
+
+/** Locale-formatted date that never throws. */
+export const formatSafeDate = (val, locales = 'en-US', options = undefined) => {
+    const d = parseSafeDate(val);
+    if (!d) return '';
+    try {
+        return d.toLocaleDateString(locales, options);
+    } catch {
+        return d.toISOString();
+    }
+};
+
+export const PAID_MEMBERSHIP_TIERS = ['Premium', 'Pro', 'Enterprise'];
 
 /**
  * Checks if a user has an active Premium or Enterprise membership.

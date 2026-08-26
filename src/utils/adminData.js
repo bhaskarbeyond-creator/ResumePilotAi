@@ -1,9 +1,10 @@
+import { parseSafeDate } from './subscriptionUtils.js';
+
 const text = (value, fallback = '') => String(value ?? fallback).replace(/\p{Cc}/gu, ' ').trim();
 
 export function toAdminDate(value) {
-    const candidate = value?.toDate?.() || value;
-    const date = candidate instanceof Date ? candidate : new Date(candidate || 0);
-    return Number.isFinite(date.getTime()) && date.getTime() > 0 ? date : null;
+    const date = parseSafeDate(value);
+    return date && date.getTime() > 0 ? date : null;
 }
 
 export function normalizeAdminSubscription(input = {}, index = 0, now = new Date()) {

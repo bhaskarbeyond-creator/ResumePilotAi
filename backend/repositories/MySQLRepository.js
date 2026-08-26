@@ -333,7 +333,15 @@ class MySQLRepository {
             country: userData.country || null,
             website: userData.website || null,
             membership: userData.membership || 'Basic',
-            membershipEnds: userData.membershipEnds || null,
+            membershipEnds: (function canonicalizeMembershipEnds(value) {
+                if (!value) return null;
+                if (typeof value === 'string') return value;
+                if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
+                if (typeof value.toISOString === 'function') {
+                    try { return value.toISOString(); } catch { return String(value); }
+                }
+                return String(value);
+            })(userData.membershipEnds),
             paymentStatus: userData.paymentStatus || 'INACTIVE',
             lastPaymentGateway: userData.lastPaymentGateway || null,
             lastPaymentOrderId: userData.lastPaymentOrderId || null,

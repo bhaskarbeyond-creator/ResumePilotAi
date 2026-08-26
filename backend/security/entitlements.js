@@ -1,5 +1,8 @@
 'use strict';
 
+const { toCanonicalDateObject, isPaidMembershipTier, toCanonicalMembership } = require('../database/canonical');
+const { isMembershipActive } = require('../database/domain');
+
 /**
  * Unified Entitlement & Plan Harmonization Engine
  * 
@@ -57,13 +60,20 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
   const activeTenantMembership = resolveActiveTenantMembership(userData);
   const isEnterprise = Boolean(activeTenantMembership || tenantData);
   
-  // B2C Consumer Subscription Check
-  const membership = String(userData?.membership || 'Basic');
-  const isPremiumB2C = membership.toUpperCase() === 'PREMIUM';
-  const membershipEnd = userData?.membershipEnds?.toDate?.() || new Date(userData?.membershipEnds || 0);
-  const isB2CSubActive = isPremiumB2C && 
-    ['ACTIVE', 'ADMIN_GRANTED'].includes(userData?.paymentStatus) && 
-    (Number.isFinite(membershipEnd.getTime()) && membershipEnd > new Date());
+  // B2C Consumer Subscription Check — Premium, Pro, and Enterprise (string
+  // membership on the user record) are paid tiers. Dates are canonicalized so
+  // Firestore Timestamps, ISO strings, and epoch values all work.
+  const membership = toCanonicalMembership(userData?.membership || 'Basic');
+  const isPremiumB2C = isPaidMembershipTier(membership);
+  const membershipEnd = toCanonicalDateObject(userData?.membershipEnds);
+  const paymentOk = ['ACTIVE', 'ADMIN_GRANTED', 'PAID', 'SUCCESS', 'COMPLETED', 'CANCELLED', 'CANCELED'].includes(
+    String(userData?.paymentStatus || '').toUpperCase()
+  ) || !userData?.paymentStatus;
+  const isB2CSubActive = isMembershipActive({
+    membership,
+    paymentStatus: userData?.paymentStatus,
+    membershipEnds: userData?.membershipEnds,
+  }) || (isPremiumB2C && paymentOk && membershipEnd && membershipEnd > new Date());
 
   // Determine Effective Capability Tier
   let effectiveTier = 'Basic';
@@ -92,7 +102,7 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
     allowsAllTemplates = true;
     removesWatermark = true;
   } else if (isB2CSubActive || (isPremiumB2C && !userData.membershipEnds)) {
-    effectiveTier = 'Premium';
+    effectiveTier = membership === 'Enterprise' ? 'Enterprise' : (membership === 'Pro' ? 'Premium' : 'Premium');
     dailyLimit = Number(quotaConfig?.premiumDailyLimit || process.env.AI_PREMIUM_DAILY_LIMIT || 100);
     allowsDocxExport = true;
     allowsAllTemplates = true;
@@ -126,4 +136,5 @@ module.exports = {
   isUserAdmin,
   resolveActiveTenantMembership,
   resolveEffectiveEntitlement,
+  isPaidMembershipTier,
 };

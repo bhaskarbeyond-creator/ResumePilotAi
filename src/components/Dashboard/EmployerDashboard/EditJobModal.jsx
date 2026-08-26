@@ -78,17 +78,20 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
 
     const formatDateForInput = (date) => {
         if (!date) return '';
-        
         let dateObj;
         if (date.toDate && typeof date.toDate === 'function') {
-            dateObj = date.toDate();
+            try { dateObj = date.toDate(); } catch { return ''; }
         } else if (date instanceof Date) {
             dateObj = date;
         } else {
             dateObj = new Date(date);
         }
-        
-        return dateObj.toISOString().split('T')[0];
+        if (!dateObj || Number.isNaN(dateObj.getTime())) return '';
+        try {
+            return dateObj.toISOString().split('T')[0];
+        } catch {
+            return '';
+        }
     };
 
     const handleInputChange = (field, value) => {

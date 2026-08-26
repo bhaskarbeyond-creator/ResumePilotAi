@@ -9,6 +9,7 @@ import Checkout from './Checkout';
 import { getSubscriptionStatus, getCoupons, getUserTransactions, updateUserAutoRenew, cancelUserSubscription, getSystemSettings, getWebsiteData } from '../../../firestore/dbOperations';
 import { useServiceAvailability, resolveUsable } from '../../../hooks/useServiceAvailability';
 import { getUserMembership } from '../../../firestore/paidOperations';
+import { parseSafeDate, formatSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
 import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
@@ -162,31 +163,21 @@ const PlansPage = (props) => {
                         let isExpired = false;
                         const membershipEndsRaw = data.membershipEnds;
                         if (membershipEndsRaw) {
-                            try {
-                                const expiryDate = membershipEndsRaw.toDate
-                                    ? membershipEndsRaw.toDate()
-                                    : new Date(membershipEndsRaw);
-                                if (!isNaN(expiryDate.getTime())) {
-                                    setMembershipExpiryDate(expiryDate);
-                                    isExpired = expiryDate < new Date();
-                                    // Always set the formatted date — used to show expiry or "Expired on" label
-                                    setMembershipExpiry(
-                                        expiryDate.toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                        })
-                                    );
-                                }
-                            } catch (err) {
-                                console.error('Error parsing membershipEnds:', err);
+                            const expiryDate = parseSafeDate(membershipEndsRaw);
+                            if (expiryDate) {
+                                setMembershipExpiryDate(expiryDate);
+                                isExpired = expiryDate < new Date();
+                                setMembershipExpiry(
+                                    expiryDate.toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })
+                                );
                             }
                         }
 
-                        const isPremium =
-                            rawMembership === 'Premium' ||
-                            rawMembership.toLowerCase().includes('premium') ||
-                            rawMembership.toLowerCase().includes('pro');
+                        const isPremium = isUserPremium(rawMembership, isExpired ? new Date(0) : membershipEndsRaw);
 
                         if (isPremium && !isExpired) {
                             resolvedTier = 'Premium Pro';
@@ -419,9 +410,9 @@ const PlansPage = (props) => {
         const invoiceNo = txn.invoiceNumber || `${invoicePrefix}/${financialYear}/${String(txn.id || Date.now()).slice(-6)}`;
 
         // Dates & Payment Details
-        const formattedDate = txn.created_at?.toDate
-            ? txn.created_at.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : (txn.createdDateString || txn.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+        const formattedDate = formatSafeDate(txn.created_at || txn.createdAt || txn.date, 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            || txn.createdDateString
+            || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const paymentMethod = txn.paymentType || txn.paymentMethod || txn.paimentType || 'Razorpay / Digital Payment';
 
         // Tax Math & Intra/Inter State Breakdown

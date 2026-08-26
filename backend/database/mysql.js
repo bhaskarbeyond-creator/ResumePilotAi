@@ -22,6 +22,7 @@ const poolConfig = {
     multipleStatements: true,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 8000),
 };
 
 let pool = null;
@@ -99,10 +100,37 @@ async function initializeSchema() {
     }
 }
 
+/**
+ * Additive, idempotent schema extensions for existing deployments whose
+ * tables were created before revision/tombstone/idempotency columns existed.
+ * MariaDB supports ADD COLUMN IF NOT EXISTS.
+ */
+async function ensureExtendedSchema(poolOverride = null) {
+    const p = poolOverride || getPool();
+    const statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL",
+        "ALTER TABLE resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL",
+        "ALTER TABLE sync_outbox ADD COLUMN IF NOT EXISTS mutation_id VARCHAR(64) NULL",
+        "ALTER TABLE sync_outbox ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64) NULL",
+    ];
+    for (const sql of statements) {
+        try {
+            await p.query(sql);
+        } catch (err) {
+            // Unknown table / older MariaDB without IF NOT EXISTS — non-fatal.
+            if (!/unknown table|duplicate column|check that column/i.test(String(err.message || ''))) {
+                console.warn('[MySQL] Schema extension notice:', err.message);
+            }
+        }
+    }
+}
+
 module.exports = {
     getPool,
     pool: getPool(),
     testConnection,
     initializeSchema,
+    ensureExtendedSchema,
     poolConfig,
 };

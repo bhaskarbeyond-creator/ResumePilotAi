@@ -599,4 +599,40 @@ CREATE TABLE IF NOT EXISTS security_audit_logs (
     INDEX idx_sec_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 31. Tombstones: deletions must propagate and must never be resurrected by a stale upsert.
+CREATE TABLE IF NOT EXISTS sync_tombstones (
+    entity_type VARCHAR(64) NOT NULL,
+    entity_id VARCHAR(128) NOT NULL,
+    version INT NOT NULL DEFAULT 1,
+    mutation_id VARCHAR(64) NOT NULL,
+    source_engine VARCHAR(32) NOT NULL,
+    deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (entity_type, entity_id),
+    INDEX idx_tombstone_mutation (mutation_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 32. Processed mutation ledger (idempotency). The same mutation_id may be delivered many times.
+CREATE TABLE IF NOT EXISTS processed_mutations (
+    mutation_id VARCHAR(64) NOT NULL PRIMARY KEY,
+    entity_type VARCHAR(64) NOT NULL,
+    entity_id VARCHAR(128) NOT NULL,
+    operation VARCHAR(32) NOT NULL,
+    source_engine VARCHAR(32) NOT NULL,
+    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_processed_entity (entity_type, entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 33. Durable failover / recovery event log (never a silent overwrite).
+CREATE TABLE IF NOT EXISTS failover_events (
+    id VARCHAR(64) NOT NULL PRIMARY KEY,
+    event_type VARCHAR(32) NOT NULL, -- FAILOVER, RECONCILING, RECOVERED, CONFLICT
+    from_engine VARCHAR(32),
+    to_engine VARCHAR(32),
+    mode VARCHAR(32),
+    reason TEXT,
+    payload JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_failover_time (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

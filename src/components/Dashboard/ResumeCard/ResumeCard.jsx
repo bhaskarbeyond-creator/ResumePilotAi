@@ -15,6 +15,7 @@ import { BsFillShareFill } from 'react-icons/bs';
 import { MdModeEdit } from 'react-icons/md';
 import { AiTwotoneDelete } from 'react-icons/ai';
 import { withTranslation } from 'react-i18next';
+import { parseSafeDate } from '../../../utils/subscriptionUtils';
 import { ShareModalClass } from '../ShareModal/ShareModal';
 
 class ResumeCard extends Component {
@@ -158,10 +159,7 @@ class ResumeCard extends Component {
                     </div>
                     <div className="dashboard-resume-card-footer">
                         <div className="dashboard-resume-card-footer-date">
-                            {(this.props.document.item?.created_at?.toDate
-                                ? this.props.document.item.created_at.toDate()
-                                : new Date(this.props.document.item?.created_at || Date.now())
-                            ).toLocaleString('en-US', {
+                            {(parseSafeDate(this.props.document.item?.created_at || this.props.document.item?.createdAt) || new Date()).toLocaleString('en-US', {
                                 month: 'long',
                                 day: 'numeric',
                                 year: 'numeric',
@@ -212,10 +210,7 @@ class ResumeCard extends Component {
 
                     <div className="dashboard-resume-card-footer">
                         <div className="dashboard-resume-card-footer-date">
-                            {(this.props.document.item?.created_at?.toDate
-                                ? this.props.document.item.created_at.toDate()
-                                : new Date(this.props.document.item?.created_at || Date.now())
-                            ).toLocaleString('en-US', {
+                            {(parseSafeDate(this.props.document.item?.created_at || this.props.document.item?.createdAt) || new Date()).toLocaleString('en-US', {
                                 month: 'long',
                                 day: 'numeric',
                                 year: 'numeric',

@@ -1,6 +1,8 @@
 const crypto = require('crypto');
 const { getPool } = require('./mysql');
 const { getActiveEngine } = require('./engineManager');
+const { createMutationId, toCanonicalDate, toCanonicalMembership, toCanonicalPaymentStatus } = require('./canonical');
+const { recordTombstone, isTombstoned, rememberMutation } = require('./tombstones');
 
 let backgroundWorkerTimer = null;
 let isWorkerProcessing = false;
@@ -53,7 +55,7 @@ async function enqueueOutboxEvent(connection, {
     version = 1,
     sourceEngine = 'mysql'
 }) {
-    const eventId = `ev_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const eventId = createMutationId('ev');
     const hash = calculateContentHash(entityType, payload);
     const conn = connection || getPool();
 
@@ -241,6 +243,18 @@ async function replicateToFirestore(adminFirestore, event) {
     const { entity_type, entity_id, operation, payload, version } = event;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
     const incomingVersion = Number(version || data.revision || 1);
+    const mutationId = event.id || event.mutation_id || data.mutationId;
+
+    if (operation === 'DELETE') {
+        try { await recordTombstone(getPool(), { entityType: entity_type, entityId: entity_id, version: incomingVersion, mutationId, sourceEngine: 'mysql' }); } catch (_) {}
+    } else {
+        try {
+            if (await isTombstoned(getPool(), entity_type, entity_id, incomingVersion)) {
+                console.log(`[SyncWorker] Tombstone guard: refusing to recreate ${entity_type}/${entity_id}`);
+                return;
+            }
+        } catch (_) {}
+    }
 
     if (entity_type === 'resumes') {
         const userId = data.user_id || data.userId;
@@ -420,6 +434,14 @@ async function replicateToMySQL(event, poolOverride = null) {
     const { entity_type, entity_id, operation, payload, version } = event;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
     const incomingVersion = Number(version || data.revision || 1);
+    const mutationId = event.id || event.mutation_id || data.mutationId;
+
+    if (operation === 'DELETE') {
+        await recordTombstone(pool, { entityType: entity_type, entityId: entity_id, version: incomingVersion, mutationId, sourceEngine: 'firestore' });
+    } else if (await isTombstoned(pool, entity_type, entity_id, incomingVersion)) {
+        console.log(`[SyncWorker] Tombstone guard: refusing to recreate ${entity_type}/${entity_id} in MariaDB`);
+        return;
+    }
 
     if (entity_type === 'resumes') {
         if (operation === 'DELETE') {
@@ -1271,5 +1293,8 @@ module.exports = {
     pruneFirestoreOutboxEvents,
     computeContinuousParity,
     classifySyncError,
-    setRegisteredFirestore
+    setRegisteredFirestore,
+    recordTombstone,
+    isTombstoned,
+    rememberMutation,
 };

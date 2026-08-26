@@ -17,6 +17,7 @@ import { inferCountryFromCity } from '../../../utils/locationHelper';
 import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
+import { formatSafeDate } from '../../../utils/subscriptionUtils';
 
 const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
 
@@ -304,9 +305,7 @@ function DashboardSettings(props) {
                     const txns = await getUserTransactions(currentUser.uid);
                     setUserTransactions(txns);
                     const totpInfo = await getUserTotpStatus(currentUser.uid);
-                    if (totpInfo) setTotpStatus(totpInfo);
-
-                    if (!sessionStorage.getItem('audit_logged_' + currentUser.uid)) {
+                    if (totpInfo) setTotpStatus(totpId_' + currentUser.uid)) {
                         await recordUserLoginEvent(currentUser.uid);
                         sessionStorage.setItem('audit_logged_' + currentUser.uid, 'true');
                     }
@@ -433,11 +432,7 @@ function DashboardSettings(props) {
             `;
         }
 
-        const formattedDate = txn.created_at?.toDate
-            ? txn.created_at.toDate().toLocaleDateString()
-            : txn.date
-            ? new Date(txn.date).toLocaleDateString()
-            : new Date().toLocaleDateString();
+        const formattedDate = formatSafeDate(txn.created_at || txn.createdAt || txn.date) || new Date().toLocaleDateString();
 
         const invoiceHtml = `
             <!DOCTYPE html>
@@ -3081,6 +3076,15 @@ function DashboardSettings(props) {
         {/* Native In-Dashboard Subscription Plans & Checkout Modal Popup */}
         <SubscriptionModal
             isOpen={isSubscriptionModalOpen}
+            onClose={() => setIsSubscriptionModalOpen(false)}
+            user={fire.auth().currentUser}
+        />
+        </>
+    );
+}
+
+export default DashboardSettings;
+nModalOpen}
             onClose={() => setIsSubscriptionModalOpen(false)}
             user={fire.auth().currentUser}
         />
