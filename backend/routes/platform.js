@@ -452,40 +452,55 @@ router.post('/operational-status/refresh', requirePermission('system.config.writ
 
 router.get('/overview', async (req, res) => {
   const db = req.app?.get('db');
-  if (!db) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable', requestId: res.locals?.requestId } });
-  }
+  const repo = getRepository(db);
 
   try {
-    const [statsDoc, earningsDoc, tenantsSnap] = await Promise.allSettled([
-      db.collection('data').doc('stats').get(),
-      db.collection('data').doc('earnings').get(),
-      db.collection('enterprise_tenants').limit(500).get(),
-    ]);
-
-    const statsData = statsDoc.status === 'fulfilled' && statsDoc.value.exists ? statsDoc.value.data() : null;
-    const earningsData = earningsDoc.status === 'fulfilled' && earningsDoc.value.exists ? earningsDoc.value.data() : null;
-
+    let statsData = null;
+    let earningsData = null;
     let tenantCounts = null;
-    if (tenantsSnap.status === 'fulfilled' && tenantsSnap.value) {
-      let total = 0; let active = 0; let suspended = 0;
-      tenantsSnap.value.forEach(doc => {
-        total += 1;
-        const data = doc.data() || {};
-        if (data.lifecycleState === 'ACTIVE') active += 1;
-        else if (data.lifecycleState === 'SUSPENDED') suspended += 1;
-      });
-      tenantCounts = { total, active, suspended, source: 'SAMPLED_MAX_500' };
+
+    // 1. Fetch from repository / MySQL primary
+    try {
+      statsData = await repo.getStats();
+    } catch (_) {}
+
+    // 2. If stats are empty and Firestore is available, try fallback
+    if ((!statsData || !Object.keys(statsData).length) && db) {
+      try {
+        const statsDoc = await db.collection('data').doc('stats').get().catch(() => null);
+        if (statsDoc?.exists) statsData = statsDoc.data();
+      } catch (_) {}
     }
 
-    const platformCurrency = await getPlatformCurrencyConfig(db);
+    if (db) {
+      try {
+        const earningsDoc = await db.collection('data').doc('earnings').get().catch(() => null);
+        if (earningsDoc?.exists) earningsData = earningsDoc.data();
+      } catch (_) {}
+      
+      try {
+        const tenantsSnap = await db.collection('enterprise_tenants').limit(500).get().catch(() => null);
+        if (tenantsSnap && !tenantsSnap.empty) {
+          let total = 0; let active = 0; let suspended = 0;
+          tenantsSnap.forEach(doc => {
+            total += 1;
+            const data = doc.data() || {};
+            if (data.lifecycleState === 'ACTIVE') active += 1;
+            else if (data.lifecycleState === 'SUSPENDED') suspended += 1;
+          });
+          tenantCounts = { total, active, suspended, source: 'SAMPLED_MAX_500' };
+        }
+      } catch (_) {}
+    }
+
+    const platformCurrency = await getPlatformCurrencyConfig(db).catch(() => ({ code: 'INR', symbol: '₹' }));
 
     return res.json({
       kpis: {
-        totalUsers: statsData ? Math.max(0, statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? 0) : null,
-        resumesCreated: statsData ? Math.max(0, statsData.resumes ?? statsData.numberOfResumesCreated ?? 0) : null,
-        totalDownloads: statsData ? Math.max(0, statsData.downloads ?? statsData.numberOfResumesDownloaded ?? 0) : null,
-        totalEarningsCents: earningsData ? (earningsData.total ?? earningsData.amount ?? null) : null,
+        totalUsers: statsData ? Math.max(0, statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? 0) : 0,
+        resumesCreated: statsData ? Math.max(0, statsData.resumes ?? statsData.numberOfResumesCreated ?? 0) : 0,
+        totalDownloads: statsData ? Math.max(0, statsData.downloads ?? statsData.numberOfResumesDownloaded ?? 0) : 0,
+        totalEarningsCents: earningsData ? (earningsData.total ?? earningsData.amount ?? 0) : 0,
         currency: platformCurrency.code || 'INR',
         currencySymbol: platformCurrency.symbol || '₹',
         tenants: tenantCounts,

@@ -362,17 +362,16 @@ async function getDynamicPlan(db, planId) {
     };
     const fallback = defaultPricing[planId];
     if (!fallback) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
-    if (!db) return fallback;
     try {
-        const publicDoc = await db.collection('data').doc('public_config').get();
-        const publicConfig = publicDoc.data() || {};
-        const billing = publicConfig.subscriptions || {};
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(db);
+        const [publicConfig, sys] = await Promise.all([
+            repo.getSetting('public_config').catch(() => null),
+            repo.getSetting('system_settings').catch(() => null),
+        ]);
+        const billing = publicConfig?.subscriptions || {};
         
-        // Also check system_settings for primary platform currency
-        const sysDoc = await db.collection('data').doc('system_settings').get();
-        const sys = sysDoc.data() || {};
-        
-        let currency = String(billing.currency || sys.currency || 'INR').toUpperCase();
+        let currency = String(billing.currency || sys?.currency || 'INR').toUpperCase();
         
         // Check for multi-currency matrix
         if (billing.pricingMatrix && billing.pricingMatrix[currency]) {
@@ -1210,20 +1209,28 @@ app.post('/api/phonepe/status', async (req, res) => {
 });
 
 app.post('/api/subscription/preferences', async (req, res) => {
-    if (!db) return res.status(503).json({ success: false, error: 'Subscription service unavailable.' });
-    const updates = {};
-    if (typeof req.body.autoRenew === 'boolean') updates.autoRenew = req.body.autoRenew;
-    if (req.body.cancel === true) {
-        updates.autoRenew = false;
-        updates.cancellationRequested = true;
-        updates.cancellationReason = String(req.body.reason || 'User requested cancellation').trim().slice(0, 500);
-        updates.cancellationDate = admin.firestore.FieldValue.serverTimestamp();
+    try {
+        const updates = {};
+        if (typeof req.body.autoRenew === 'boolean') updates.autoRenew = req.body.autoRenew;
+        if (req.body.cancel === true) {
+            updates.autoRenew = false;
+            updates.cancellationRequested = true;
+            updates.cancellationReason = String(req.body.reason || 'User requested cancellation').trim().slice(0, 500);
+            updates.cancellationDate = new Date().toISOString();
+        }
+        if (!Object.keys(updates).length) return res.status(400).json({ success: false, error: 'No supported preference supplied.' });
+        
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        await repo.saveUser(req.user.uid, updates);
+
+        return res.json({ success: true, message: req.body.cancel === true
+            ? 'Cancellation request recorded. Access remains active through the paid term.'
+            : `Auto-renew ${updates.autoRenew ? 'enabled' : 'disabled'}.` });
+    } catch (err) {
+        console.error('[Subscription preferences]', err.message);
+        return res.status(500).json({ success: false, error: 'Failed to update subscription preferences' });
     }
-    if (!Object.keys(updates).length) return res.status(400).json({ success: false, error: 'No supported preference supplied.' });
-    await db.collection('users').doc(req.user.uid).set(updates, { merge: true });
-    return res.json({ success: true, message: req.body.cancel === true
-        ? 'Cancellation request recorded. Access remains active through the paid term.'
-        : `Auto-renew ${updates.autoRenew ? 'enabled' : 'disabled'}.` });
 });
 
 app.post('/api/check', async (req, res) => {
@@ -1232,16 +1239,19 @@ app.post('/api/check', async (req, res) => {
     if (legacyClientFields.some(f => Object.hasOwn(req.body || {}, f))) {
         return res.status(503).json({ status: 'false', error: 'Client-supplied entitlement context is not accepted' });
     }
-    if (!db) return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
     try {
-        const userSnap = await db.collection('users').doc(req.user.uid).get();
-        const user = userSnap.data() || {};
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const user = await repo.getUser(req.user.uid);
+        if (!user) {
+            return res.json({ status: 'false', membershipEnds: null });
+        }
         const expiry = user.membershipEnds?.toDate?.() || new Date(user.membershipEnds || 0);
         const entitled = user.membership === 'Premium' && ['ACTIVE', 'ADMIN_GRANTED'].includes(user.paymentStatus) && expiry > new Date();
-        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? expiry.toISOString() : null });
+        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? (expiry.toISOString ? expiry.toISOString() : new Date(expiry).toISOString()) : null });
     } catch (error) {
         console.error('[Entitlement check]', error.message);
-        return res.status(503).json({ status: 'false', error: 'Entitlement service unavailable' });
+        return res.status(500).json({ status: 'false', error: 'Entitlement check failed' });
     }
 });
 
@@ -1705,13 +1715,20 @@ app.post('/api/contact', async (req, res) => {
         || name.length < 2 || name.length > 100 || message.length < 10 || message.length > 5000) {
         return res.status(400).json({ success: false, error: 'Valid name, email, and message are required.' });
     }
-    if (!db || !admin) return res.status(503).json({ success: false, error: 'Contact service unavailable.' });
-    await db.collection('contact').add({
-        email, name, message, status: 'new',
-        userAgent: String(req.get('user-agent') || '').slice(0, 300),
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    return res.status(202).json({ success: true, message: 'Message accepted.' });
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const msgId = `contact_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        await repo.saveContactMessage(msgId, {
+            email, name, message, status: 'new',
+            ip: String(req.ip || req.connection?.remoteAddress || '').slice(0, 45),
+            userAgent: String(req.get('user-agent') || '').slice(0, 300),
+        });
+        return res.status(202).json({ success: true, message: 'Message accepted.' });
+    } catch (err) {
+        console.error('[Contact message error]', err.message);
+        return res.status(500).json({ success: false, error: 'Failed to submit contact message.' });
+    }
 });
 
 // Redeems a single-use render token for the resume payload. The token itself is the
@@ -1759,8 +1776,8 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) {
             return res.status(400).json({ error: 'Invalid export request' });
         }
-        const requestDb = req.app.get('db');
-        if (!requestDb) return res.status(503).json({ error: 'Export authorization unavailable' });
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
 
         let stored;
         let ownerUid;
@@ -1768,35 +1785,55 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         // '/api/public-export'. Matching the suffix keeps the public branch correct
         // regardless of whether the route is reached directly or through a mount.
         if (req.path.endsWith('/public-export')) {
-            const publishedSnap = await requestDb.collection('pb').doc(resumeId).get();
-            const published = publishedSnap.data();
-            if (!publishedSnap.exists || published?.isPublished !== true || published?.publicationMode !== 'explicit') return res.status(404).json({ error: 'Resume not found' });
-            ownerUid = published.ownerUid;
-            try { stored = JSON.parse(published.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
+            const pubResume = await repo.getPublicResume(resumeId).catch(() => null);
+            if (pubResume && pubResume.isPublished === true && pubResume.publicationMode === 'explicit') {
+                ownerUid = pubResume.ownerUid;
+                try {
+                    stored = typeof pubResume.object === 'string' ? JSON.parse(pubResume.object) : pubResume.object;
+                } catch {
+                    return res.status(422).json({ error: 'Resume data is invalid' });
+                }
+            } else if (requestDb) {
+                const publishedSnap = await requestDb.collection('pb').doc(resumeId).get().catch(() => null);
+                const published = publishedSnap?.data?.();
+                if (!publishedSnap || !publishedSnap.exists || published?.isPublished !== true || published?.publicationMode !== 'explicit') return res.status(404).json({ error: 'Resume not found' });
+                ownerUid = published.ownerUid;
+                try { stored = JSON.parse(published.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
+            } else {
+                return res.status(404).json({ error: 'Resume not found' });
+            }
         } else {
             ownerUid = req.user?.uid;
             // Cover-letter documents live in the owner-scoped 'covers' collection; CV drafts
             // live in 'resumes'. Both are owner-scoped, so ownership is enforced by the path.
             const ownerCollection = resumeName.startsWith('Cover') ? 'covers' : 'resumes';
-            let privateSnap = await requestDb.collection('users').doc(ownerUid).collection(ownerCollection).doc(resumeId).get();
-            if (!privateSnap.exists && ownerCollection === 'covers') {
-                // Historical cover documents were saved into the resumes collection.
-                privateSnap = await requestDb.collection('users').doc(ownerUid).collection('resumes').doc(resumeId).get();
+            let draft = ownerCollection === 'covers' ? await repo.getCover(ownerUid, resumeId).catch(() => null) : await repo.getResume(ownerUid, resumeId).catch(() => null);
+            if (!draft && ownerCollection === 'covers') {
+                draft = await repo.getResume(ownerUid, resumeId).catch(() => null);
             }
-            if (privateSnap.exists) {
-                stored = { ...privateSnap.data() };
+            if (draft) {
+                stored = { ...draft };
                 for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
+            } else if (requestDb) {
+                let privateSnap = await requestDb.collection('users').doc(ownerUid).collection(ownerCollection).doc(resumeId).get().catch(() => null);
+                if ((!privateSnap || !privateSnap.exists) && ownerCollection === 'covers') {
+                    privateSnap = await requestDb.collection('users').doc(ownerUid).collection('resumes').doc(resumeId).get().catch(() => null);
+                }
+                if (privateSnap && privateSnap.exists) {
+                    stored = { ...privateSnap.data() };
+                    for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
+                } else {
+                    const legacySnap = await requestDb.collection('pb').doc(resumeId).get().catch(() => null);
+                    const legacy = legacySnap?.data?.();
+                    if (!legacySnap || !legacySnap.exists || legacy?.ownerUid !== ownerUid) return res.status(404).json({ error: 'Resume not found' });
+                    try { stored = JSON.parse(legacy.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
+                }
             } else {
-                // Migration fallback for resumes created before owner-scoped canonical drafts.
-                const legacySnap = await requestDb.collection('pb').doc(resumeId).get();
-                const legacy = legacySnap.data();
-                if (!legacySnap.exists || legacy?.ownerUid !== ownerUid) return res.status(404).json({ error: 'Resume not found' });
-                try { stored = JSON.parse(legacy.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
+                return res.status(404).json({ error: 'Resume not found' });
             }
         }
 
-        const ownerSnap = await requestDb.collection('users').doc(ownerUid).get();
-        const owner = ownerSnap.data() || {};
+        const owner = (await repo.getUser(ownerUid).catch(() => null)) || {};
         const membershipEnd = owner.membershipEnds?.toDate?.() || new Date(owner.membershipEnds || 0);
         const entitled = owner.membership === 'Premium'
             && ['ACTIVE', 'ADMIN_GRANTED'].includes(owner.paymentStatus)
@@ -1811,8 +1848,8 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         // settings; this process always renders against its deployment origin.
         let exportPreferences = { renderTimeout: 60_000, paperFormat: 'A4' };
         try {
-            const preferencesSnapshot = await requestDb.collection('data').doc('public_config').get();
-            const configured = preferencesSnapshot.data()?.exportPdf || {};
+            const preferences = (await repo.getSetting('public_config').catch(() => null)) || {};
+            const configured = preferences.exportPdf || {};
             const timeout = Number(configured.renderTimeout);
             if (Number.isFinite(timeout)) exportPreferences.renderTimeout = Math.max(5_000, Math.min(Math.floor(timeout), 120_000));
             if (['A4', 'Letter', 'Legal'].includes(configured.paperFormat)) exportPreferences.paperFormat = configured.paperFormat;
@@ -3515,22 +3552,28 @@ app.post('/api/invoice', (req, res) => {
 // Item 41 & 42: PDF Job Queue & DOCX (Word) Document Export Engine Endpoint
 app.post('/api/export-docx', async (req, res) => {
     const { resumeName, resumeId } = req.body;
-    const requestDb = req.app.get('db');
-    if (!requestDb || !/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
+    if (!/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
     const requestedTemplate = String(resumeName || req.body.template || '').trim();
     if (requestedTemplate && !EXPORTABLE_TEMPLATE.test(requestedTemplate)) {
         return res.status(400).json({ error: 'Invalid export request' });
     }
-    // Cover-letter documents live in the owner-scoped 'covers' collection. Both lookups
-    // are owner-scoped, so ownership remains enforced by the document path.
+    const { getRepository } = require('./repositories');
+    const repo = getRepository(req.app.get('db') || db);
     const docId = String(resumeId);
-    let resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(docId).get();
-    if (!resumeSnap.exists) {
-        resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('covers').doc(docId).get();
+    let stored = await repo.getResume(req.user.uid, docId).catch(() => null);
+    if (!stored) {
+        stored = await repo.getCover(req.user.uid, docId).catch(() => null);
     }
-    if (!resumeSnap.exists) return res.status(404).json({ error: 'Resume not found' });
-    const ownerSnap = await requestDb.collection('users').doc(req.user.uid).get();
-    const owner = ownerSnap.data() || {};
+    if (!stored && req.app.get('db')) {
+        const requestDb = req.app.get('db');
+        let resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(docId).get().catch(() => null);
+        if (!resumeSnap?.exists) {
+            resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('covers').doc(docId).get().catch(() => null);
+        }
+        if (resumeSnap?.exists) stored = resumeSnap.data();
+    }
+    if (!stored) return res.status(404).json({ error: 'Resume not found' });
+    const owner = (await repo.getUser(req.user.uid).catch(() => null)) || {};
     const entitlement = resolveEffectiveEntitlement(owner, { userClaims: req.user || {} });
     if (!entitlement.allowsDocxExport) {
         return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription or enterprise plan is required for DOCX export', requestId: res.locals.requestId } });

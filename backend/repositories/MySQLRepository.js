@@ -1041,19 +1041,174 @@ class MySQLRepository {
     async getUserPaymentOrders(userId) {
         const pool = this._getPool();
         const [rows] = await pool.query(
-            'SELECT * FROM payment_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
-            [userId]
+            'SELECT * FROM payment_orders WHERE uid = ? OR user_id = ? ORDER BY created_at DESC LIMIT 50',
+            [userId, userId]
         );
         return rows.map(r => ({
-            id: r.id || r.order_id,
-            orderId: r.order_id || r.id,
-            planId: r.plan_id || 'monthly',
+            id: r.id,
+            orderId: r.id,
+            uid: r.uid,
+            planId: r.plan_id,
+            provider: r.provider,
             amount: r.amount,
-            currency: r.currency || 'INR',
-            status: r.status || 'COMPLETED',
-            paymentType: r.gateway || r.provider || 'Gateway',
+            originalAmount: r.original_amount,
+            currency: r.currency,
+            couponCode: r.coupon_code,
+            couponDiscount: r.coupon_discount,
+            status: r.status,
+            membershipEnds: r.membership_ends,
+            providerPaymentId: r.provider_payment_id,
+            providerClientSecret: r.provider_client_secret,
             createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
         }));
+    }
+
+    async getPaymentOrder(orderId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query('SELECT * FROM payment_orders WHERE id = ? LIMIT 1', [orderId]);
+        if (!rows.length) return null;
+        const r = rows[0];
+        return {
+            id: r.id,
+            uid: r.uid,
+            planId: r.plan_id,
+            provider: r.provider,
+            amount: r.amount,
+            originalAmount: r.original_amount,
+            currency: r.currency,
+            couponCode: r.coupon_code,
+            couponDiscount: r.coupon_discount,
+            singleUsePerUser: r.single_use_per_user === 1,
+            status: r.status,
+            membershipEnds: r.membership_ends,
+            providerPaymentId: r.provider_payment_id,
+            providerOrderId: r.provider_order_id,
+            providerPaymentIntentId: r.provider_payment_intent_id,
+            providerClientSecret: r.provider_client_secret,
+            failureCode: r.failure_code,
+            activatedAt: r.activated_at,
+            reversedAt: r.reversed_at,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+        };
+    }
+
+    async savePaymentOrder(orderId, data) {
+        const pool = this._getPool();
+        const values = {
+            id: orderId,
+            uid: data.uid,
+            plan_id: data.planId || data.plan_id || 'monthly',
+            provider: data.provider || 'stripe',
+            amount: Number(data.amount || 0),
+            original_amount: Number(data.originalAmount || data.original_amount || data.amount || 0),
+            currency: data.currency || 'INR',
+            coupon_code: data.couponCode || data.coupon_code || null,
+            coupon_discount: Number(data.couponDiscount || data.coupon_discount || 0),
+            single_use_per_user: data.singleUsePerUser ? 1 : 0,
+            status: data.status || 'PENDING_PAYMENT',
+            membership_ends: data.membershipEnds ? (data.membershipEnds.toISOString ? data.membershipEnds.toISOString() : String(data.membershipEnds)) : null,
+            provider_payment_id: data.providerPaymentId || data.provider_payment_id || null,
+            provider_order_id: data.providerOrderId || data.provider_order_id || null,
+            provider_payment_intent_id: data.providerPaymentIntentId || data.provider_payment_intent_id || null,
+            provider_client_secret: data.providerClientSecret || data.provider_client_secret || null,
+            failure_code: data.failureCode || data.failure_code || null,
+        };
+        const keys = Object.keys(values);
+        const placeholders = keys.map(() => '?').join(', ');
+        const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+
+        await pool.query(
+            `INSERT INTO payment_orders (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
+            Object.values(values)
+        );
+        return { id: orderId, ...data };
+    }
+
+    async getCoupon(code) {
+        const pool = this._getPool();
+        const [rows] = await pool.query('SELECT * FROM coupons WHERE code = ? LIMIT 1', [String(code).toUpperCase()]);
+        if (!rows.length) return null;
+        const r = rows[0];
+        return {
+            code: r.code,
+            discount: r.discount,
+            description: r.description,
+            active: r.active === 1,
+            expiryDate: r.expiry_date,
+            maxUses: r.max_uses,
+            usedCount: r.used_count,
+            singleUsePerUser: r.single_use_per_user === 1,
+            revision: r.revision,
+        };
+    }
+
+    async saveCoupon(code, data) {
+        const pool = this._getPool();
+        const cCode = String(code).toUpperCase();
+        const values = {
+            code: cCode,
+            discount: Number(data.discount || 10),
+            description: data.description || '',
+            active: data.active !== false ? 1 : 0,
+            expiry_date: data.expiryDate || null,
+            max_uses: Number(data.maxUses || 0),
+            used_count: Number(data.usedCount || 0),
+            single_use_per_user: data.singleUsePerUser ? 1 : 0,
+            revision: Number(data.revision || 1),
+        };
+        const keys = Object.keys(values);
+        const placeholders = keys.map(() => '?').join(', ');
+        const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+
+        await pool.query(
+            `INSERT INTO coupons (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
+            Object.values(values)
+        );
+        return { code: cCode, ...data };
+    }
+
+    async getCouponRedemption(redemptionId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query('SELECT * FROM coupon_redemptions WHERE id = ? LIMIT 1', [redemptionId]);
+        if (!rows.length) return null;
+        const r = rows[0];
+        return {
+            id: r.id,
+            uid: r.uid,
+            couponCode: r.coupon_code,
+            orderId: r.order_id,
+            status: r.status,
+            expiresAt: r.expires_at,
+            usedAt: r.used_at,
+        };
+    }
+
+    async saveCouponRedemption(redemptionId, data) {
+        const pool = this._getPool();
+        const values = {
+            id: redemptionId,
+            uid: data.uid,
+            coupon_code: data.couponCode || data.coupon_code,
+            order_id: data.orderId || data.order_id,
+            status: data.status || 'RESERVED',
+            expires_at: data.expiresAt || data.expires_at || null,
+        };
+        const keys = Object.keys(values);
+        const placeholders = keys.map(() => '?').join(', ');
+        const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+
+        await pool.query(
+            `INSERT INTO coupon_redemptions (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
+            Object.values(values)
+        );
+        return { id: redemptionId, ...data };
+    }
+
+    async deleteCouponRedemption(redemptionId) {
+        const pool = this._getPool();
+        await pool.query('DELETE FROM coupon_redemptions WHERE id = ?', [redemptionId]);
+        return true;
     }
 }
 
