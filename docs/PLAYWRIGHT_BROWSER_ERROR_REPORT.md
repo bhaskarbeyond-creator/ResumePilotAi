@@ -1,7 +1,7 @@
 # Playwright Browser Error & Defect Report
 
 **Certified Commit**: `4950da00852417f663d650b03b17fa2d98fa0cd0`  
-**Execution Timestamp**: 2026-08-26T05:34:53.639Z  
+**Execution Timestamp**: 2026-08-26T06:12:03.767Z  
 **Target Environments**:
 - Local: `https://ai-resume-builder.local`
 - Production: `https://airesume.projectdemo.guru`
@@ -14,10 +14,10 @@
 | :--- | :---: | :---: | :---: |
 | **Unexpected Console Errors** | 0 | - | 0 |
 | **Page Errors / Crashes** | 1 | 0 | 1 |
-| **Failed Network Requests** | 3 | 0 | 3 |
+| **Failed Network Requests** | 6 | 0 | 6 |
 | **Unexpected HTTP 5xx** | 0 | 0 | 0 |
 | **Unexpected HTTP 4xx** | 0 | 0 | 0 |
-| **Console Warnings** | 8 | 8 | 0 |
+| **Console Warnings** | 7 | 7 | 0 |
 
 ---
 
@@ -35,7 +35,6 @@
 
 - **[BENIGN]** `Google Maps API key is not configured - using graceful fallback` on `https://ai-resume-builder.local/`
 - **[BENIGN]** `Google Maps API key is not configured - using graceful fallback` on `https://ai-resume-builder.local/pricing`
-- **[BENIGN]** `⚠️ Could not fetch coupons from Firestore: Missing or insufficient permissions.` on `https://ai-resume-builder.local/pricing`
 - **[BENIGN]** `Google Maps API key is not configured - using graceful fallback` on `https://ai-resume-builder.local/login`
 - **[BENIGN]** `Google Maps API key is not configured - using graceful fallback` on `https://ai-resume-builder.local/build-resume`
 - **[BENIGN]** `Google Maps API key is not configured - using graceful fallback` on `https://ai-resume-builder.local/login?next=%2Fadm%2Fqueues`

@@ -34,6 +34,31 @@ class MySQLRepository {
         return copy;
     }
 
+    async _withTransaction(fn, maxRetries = 4) {
+        const pool = this._getPool();
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            attempt++;
+            const connection = await pool.getConnection();
+            try {
+                await connection.beginTransaction();
+                const result = await fn(connection);
+                await connection.commit();
+                return result;
+            } catch (err) {
+                await connection.rollback().catch(() => {});
+                const isDeadlock = err.code === 'ER_LOCK_DEADLOCK' || err.errno === 1213 || err.code === 'ER_LOCK_WAIT_TIMEOUT';
+                if (isDeadlock && attempt < maxRetries) {
+                    await new Promise(res => setTimeout(res, attempt * 20 + Math.floor(Math.random() * 20)));
+                    continue;
+                }
+                throw err;
+            } finally {
+                connection.release();
+            }
+        }
+    }
+
     // ==========================================
     // 1. RESUMES
     // ==========================================
@@ -63,12 +88,7 @@ class MySQLRepository {
     }
 
     async saveResume(userId, resumeId, data, { expectedRevision = null } = {}) {
-        const pool = this._getPool();
-        const connection = await pool.getConnection();
-        
-        try {
-            await connection.beginTransaction();
-
+        return this._withTransaction(async (connection) => {
             const [existingRows] = await connection.query(
                 'SELECT revision FROM resumes WHERE id = ? AND user_id = ? FOR UPDATE',
                 [resumeId, userId]
@@ -118,7 +138,6 @@ class MySQLRepository {
             const sql = `INSERT INTO resumes (${columnList}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`;
             await connection.query(sql, Object.values(values));
 
-            // Enqueue durable replication event to sync_outbox
             await enqueueOutboxEvent(connection, {
                 entityType: 'resumes',
                 entityId: resumeId,
@@ -126,16 +145,10 @@ class MySQLRepository {
                 payload: { ...data, id: resumeId, user_id: userId, revision: nextRev },
                 version: nextRev,
                 sourceEngine: 'mysql'
-            }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+            });
 
-            await connection.commit();
             return { id: resumeId, revision: nextRev, ...data };
-        } catch (err) {
-            await connection.rollback();
-            throw err;
-        } finally {
-            connection.release();
-        }
+        });
     }
 
     async deleteResume(userId, resumeId) {
@@ -322,10 +335,7 @@ class MySQLRepository {
     }
 
     async saveUser(userId, userData) {
-        const pool = this._getPool();
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
+        return this._withTransaction(async (connection) => {
             const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]).catch(async () => {
                 const [rows] = await connection.query('SELECT 1 FROM users WHERE id = ?', [userId]);
                 return [rows.map(() => ({ revision: 0 }))];
@@ -388,14 +398,8 @@ class MySQLRepository {
                 console.error('[MySQLRepository] CRITICAL: outbox unavailable; user mutation durable on primary only:', e.message);
             }
 
-            await connection.commit();
             return { id: userId, revision: nextRev, ...userData };
-        } catch (err) {
-            await connection.rollback();
-            throw err;
-        } finally {
-            connection.release();
-        }
+        });
     }
 
     async deleteUser(userId) {
@@ -634,10 +638,16 @@ class MySQLRepository {
 
     async saveApplication(appId, data) {
         const pool = this._getPool();
+        let empId = data.employerId || data.employer_id;
+        if (!empId && (data.jobId || data.job_id)) {
+            const [jobRows] = await pool.query('SELECT employer_id FROM jobs WHERE id = ? LIMIT 1', [data.jobId || data.job_id]).catch(() => [[]]);
+            if (jobRows && jobRows.length) empId = jobRows[0].employer_id;
+        }
+
         const values = {
             id: appId,
             job_id: data.jobId || data.job_id,
-            employer_id: data.employerId || data.employer_id,
+            employer_id: empId || null,
             applicant_id: data.applicantId || data.applicant_id,
             applicant_name: data.applicantName || data.applicant_name || '',
             applicant_email: data.applicantEmail || data.applicant_email || '',
@@ -659,9 +669,9 @@ class MySQLRepository {
         );
         await enqueueOutboxEvent(pool, {
             entityType: 'applications', entityId: appId, operation: 'UPSERT',
-            payload: { ...data, id: appId }, version: Number(data.revision || 1), sourceEngine: 'mysql',
+            payload: { ...data, id: appId, employer_id: empId }, version: Number(data.revision || 1), sourceEngine: 'mysql',
         }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
-        return { id: appId, ...data };
+        return { id: appId, ...data, employer_id: empId };
     }
 
     // ==========================================
@@ -1338,8 +1348,8 @@ class MySQLRepository {
         const pool = this._getPool();
         const values = {
             id: redemptionId,
-            uid: data.uid,
-            coupon_code: data.couponCode || data.coupon_code,
+            uid: data.uid || data.userId || data.user_id,
+            coupon_code: data.couponCode || data.coupon_code || data.couponId || data.code,
             order_id: data.orderId || data.order_id,
             status: data.status || 'RESERVED',
             expires_at: data.expiresAt || data.expires_at || null,

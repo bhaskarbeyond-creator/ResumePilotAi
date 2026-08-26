@@ -1,0 +1,2398 @@
+{
+  "generatedAt": "2026-08-26T06:03:09.672Z",
+  "totalTables": 38,
+  "parityScore": "100% (38/38 Tables Verified)",
+  "entities": [
+    {
+      "table": "admin_audit_logs",
+      "firestoreCollection": "admin_audit_logs/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "actor_uid",
+        "action",
+        "created_at"
+      ],
+      "nullableFields": [
+        "actor_email",
+        "actor_role",
+        "category",
+        "severity",
+        "outcome",
+        "method",
+        "pathname",
+        "status_code",
+        "resource_type",
+        "resource_id",
+        "metadata",
+        "request_id"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "actor_uid": "varchar(128)",
+        "actor_email": "varchar(255)",
+        "actor_role": "varchar(64)",
+        "action": "varchar(128)",
+        "category": "varchar(128)",
+        "severity": "varchar(32)",
+        "outcome": "varchar(32)",
+        "method": "varchar(16)",
+        "pathname": "varchar(512)",
+        "status_code": "int(11)",
+        "resource_type": "varchar(64)",
+        "resource_id": "varchar(128)",
+        "metadata": "longtext",
+        "request_id": "varchar(128)",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_audit_actor",
+        "idx_audit_action",
+        "idx_audit_category",
+        "idx_audit_resource",
+        "idx_audit_created"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getAdminAuditLogs"
+      ],
+      "equivalentMutationMethods": [
+        "recordAdminAuditLog"
+      ]
+    },
+    {
+      "table": "applications",
+      "firestoreCollection": "applications/{appId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "applications_ibfk_1",
+          "column": "job_id",
+          "referencedTable": "jobs",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        },
+        {
+          "constraint": "applications_ibfk_2",
+          "column": "employer_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        },
+        {
+          "constraint": "applications_ibfk_3",
+          "column": "applicant_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "job_id",
+        "employer_id",
+        "applicant_id",
+        "created_at",
+        "updated_at",
+        "revision"
+      ],
+      "nullableFields": [
+        "applicant_name",
+        "applicant_email",
+        "applicant_phone",
+        "resume_id",
+        "resume_url",
+        "cover_letter",
+        "status",
+        "rating",
+        "notes",
+        "extra_json"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "job_id": "varchar(128)",
+        "employer_id": "varchar(128)",
+        "applicant_id": "varchar(128)",
+        "applicant_name": "varchar(255)",
+        "applicant_email": "varchar(255)",
+        "applicant_phone": "varchar(50)",
+        "resume_id": "varchar(128)",
+        "resume_url": "varchar(1024)",
+        "cover_letter": "mediumtext",
+        "status": "varchar(50)",
+        "rating": "int(11)",
+        "notes": "mediumtext",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "extra_json": "longtext",
+        "revision": "int(11)"
+      },
+      "jsonFields": [
+        "cover_letter",
+        "notes"
+      ],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_app_job",
+        "idx_app_applicant",
+        "idx_app_employer"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getApplication",
+        "getApplications"
+      ],
+      "equivalentMutationMethods": [
+        "saveApplication",
+        "deleteApplication"
+      ]
+    },
+    {
+      "table": "blog",
+      "firestoreCollection": "blog/{postId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "title",
+        "slug",
+        "created_at",
+        "updated_at",
+        "revision"
+      ],
+      "nullableFields": [
+        "content",
+        "excerpt",
+        "cover_image",
+        "author",
+        "author_id",
+        "category",
+        "tags",
+        "published",
+        "published_at",
+        "views",
+        "likes",
+        "status",
+        "scheduled_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "title": "varchar(255)",
+        "slug": "varchar(255)",
+        "content": "mediumtext",
+        "excerpt": "text",
+        "cover_image": "varchar(1024)",
+        "author": "varchar(255)",
+        "author_id": "varchar(128)",
+        "category": "varchar(100)",
+        "tags": "longtext",
+        "published": "tinyint(1)",
+        "published_at": "timestamp",
+        "views": "int(11)",
+        "likes": "int(11)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "revision": "int(11)",
+        "status": "varchar(50)",
+        "scheduled_at": "timestamp"
+      },
+      "jsonFields": [
+        "content"
+      ],
+      "dateFields": [
+        "published_at",
+        "created_at",
+        "updated_at",
+        "scheduled_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "slug",
+        "idx_blog_slug",
+        "idx_blog_published"
+      ],
+      "uniqueConstraints": [
+        "slug"
+      ],
+      "equivalentQueryMethods": [
+        "getBlogPostBySlug",
+        "getBlogPosts"
+      ],
+      "equivalentMutationMethods": [
+        "saveBlogPost",
+        "deleteBlogPost"
+      ]
+    },
+    {
+      "table": "canonical_documents",
+      "firestoreCollection": "canonical_documents/{docId}",
+      "primaryKey": [
+        "entity_type",
+        "entity_id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "entity_type",
+        "entity_id",
+        "payload",
+        "revision",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "deleted_at"
+      ],
+      "dataTypes": {
+        "entity_type": "varchar(64)",
+        "entity_id": "varchar(128)",
+        "payload": "longtext",
+        "revision": "int(11)",
+        "deleted_at": "timestamp",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "deleted_at",
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_cd_type"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getDocument",
+        "listDocuments"
+      ],
+      "equivalentMutationMethods": [
+        "saveDocument",
+        "deleteDocument"
+      ]
+    },
+    {
+      "table": "companies",
+      "firestoreCollection": "companies/{companyId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "companies_ibfk_1",
+          "column": "owner_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "owner_id",
+        "name",
+        "created_at",
+        "updated_at",
+        "revision"
+      ],
+      "nullableFields": [
+        "logo",
+        "website",
+        "description",
+        "industry",
+        "size",
+        "location",
+        "verified",
+        "extra_json",
+        "status"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "owner_id": "varchar(128)",
+        "name": "varchar(255)",
+        "logo": "varchar(1024)",
+        "website": "varchar(255)",
+        "description": "mediumtext",
+        "industry": "varchar(100)",
+        "size": "varchar(50)",
+        "location": "varchar(255)",
+        "verified": "tinyint(1)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "extra_json": "longtext",
+        "revision": "int(11)",
+        "status": "varchar(50)"
+      },
+      "jsonFields": [
+        "description"
+      ],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_company_owner"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getCompany",
+        "getCompanies"
+      ],
+      "equivalentMutationMethods": [
+        "saveCompany",
+        "deleteCompany"
+      ]
+    },
+    {
+      "table": "contact_messages",
+      "firestoreCollection": "contact/{msgId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "email",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "name",
+        "message",
+        "website",
+        "status",
+        "ip",
+        "is_read"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "name": "varchar(255)",
+        "email": "varchar(255)",
+        "message": "mediumtext",
+        "website": "varchar(255)",
+        "status": "varchar(50)",
+        "ip": "varchar(64)",
+        "is_read": "tinyint(1)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [
+        "message"
+      ],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_contact_email",
+        "idx_contact_read"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getContactMessages"
+      ],
+      "equivalentMutationMethods": [
+        "saveContactMessage"
+      ]
+    },
+    {
+      "table": "conversations",
+      "firestoreCollection": "conversations/{convId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "participant1_id",
+        "participant2_id",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "last_message",
+        "unread_count"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "participant1_id": "varchar(128)",
+        "participant2_id": "varchar(128)",
+        "last_message": "text",
+        "unread_count": "longtext",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_conv_p1",
+        "idx_conv_p2"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "listDocuments"
+      ],
+      "equivalentMutationMethods": [
+        "saveDocument"
+      ]
+    },
+    {
+      "table": "coupon_redemptions",
+      "firestoreCollection": "coupon_redemptions/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "coupon_redemptions_ibfk_1",
+          "column": "coupon_code",
+          "referencedTable": "coupons",
+          "referencedColumn": "code",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "uid",
+        "coupon_code",
+        "order_id",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "status",
+        "expires_at",
+        "used_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "uid": "varchar(128)",
+        "coupon_code": "varchar(64)",
+        "order_id": "varchar(128)",
+        "status": "varchar(50)",
+        "expires_at": "bigint(20)",
+        "used_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "expires_at",
+        "used_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_redempt_uid",
+        "idx_redempt_code"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getCouponRedemption"
+      ],
+      "equivalentMutationMethods": [
+        "saveCouponRedemption",
+        "deleteCouponRedemption"
+      ]
+    },
+    {
+      "table": "coupons",
+      "firestoreCollection": "coupons/{couponId}",
+      "primaryKey": [
+        "code"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "code",
+        "discount",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "description",
+        "active",
+        "expiry_date",
+        "max_uses",
+        "used_count",
+        "single_use_per_user",
+        "revision"
+      ],
+      "dataTypes": {
+        "code": "varchar(64)",
+        "discount": "int(11)",
+        "description": "text",
+        "active": "tinyint(1)",
+        "expiry_date": "varchar(64)",
+        "max_uses": "int(11)",
+        "used_count": "int(11)",
+        "single_use_per_user": "tinyint(1)",
+        "revision": "int(11)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "expiry_date",
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_coupon_active"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getCoupon"
+      ],
+      "equivalentMutationMethods": [
+        "saveCoupon"
+      ]
+    },
+    {
+      "table": "covers",
+      "firestoreCollection": "users/{uid}/covers/{coverId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "covers_ibfk_1",
+          "column": "user_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "title",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "template",
+        "data"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "title": "varchar(160)",
+        "template": "varchar(50)",
+        "data": "longtext",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_covers_user"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getCover",
+        "getCovers"
+      ],
+      "equivalentMutationMethods": [
+        "saveCover",
+        "deleteCover"
+      ]
+    },
+    {
+      "table": "custom_pages",
+      "firestoreCollection": "custom_pages/{pageId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "title",
+        "slug",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "content",
+        "published",
+        "nav_order",
+        "show_in_nav",
+        "show_in_footer"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "title": "varchar(255)",
+        "slug": "varchar(255)",
+        "content": "mediumtext",
+        "published": "tinyint(1)",
+        "nav_order": "int(11)",
+        "show_in_nav": "tinyint(1)",
+        "show_in_footer": "tinyint(1)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [
+        "content"
+      ],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "slug",
+        "idx_cp_slug",
+        "idx_cp_published"
+      ],
+      "uniqueConstraints": [
+        "slug"
+      ],
+      "equivalentQueryMethods": [
+        "getCustomPageBySlug",
+        "getCustomPages"
+      ],
+      "equivalentMutationMethods": [
+        "saveCustomPage",
+        "deleteCustomPage"
+      ]
+    },
+    {
+      "table": "database_authority",
+      "firestoreCollection": "settings/database_authority",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "generation",
+        "write_engine",
+        "mode",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "lease_owner",
+        "lease_expires_at",
+        "reason"
+      ],
+      "dataTypes": {
+        "id": "varchar(32)",
+        "generation": "int(11)",
+        "write_engine": "varchar(32)",
+        "mode": "varchar(32)",
+        "lease_owner": "varchar(128)",
+        "lease_expires_at": "bigint(20)",
+        "reason": "text",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "lease_expires_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "database_engine_state",
+      "firestoreCollection": "settings/database_engine_state",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "active_engine",
+        "standby_engine",
+        "sync_mode",
+        "last_switched_at"
+      ],
+      "nullableFields": [
+        "last_switched_by",
+        "switch_in_progress",
+        "switch_lock_expires_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(32)",
+        "active_engine": "varchar(32)",
+        "standby_engine": "varchar(32)",
+        "sync_mode": "varchar(32)",
+        "last_switched_at": "timestamp",
+        "last_switched_by": "varchar(128)",
+        "switch_in_progress": "tinyint(1)",
+        "switch_lock_expires_at": "bigint(20)"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "last_switched_at",
+        "switch_lock_expires_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "database_switch_audit",
+      "firestoreCollection": "security_audit_logs/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "switched_by",
+        "from_engine",
+        "to_engine",
+        "status",
+        "created_at"
+      ],
+      "nullableFields": [
+        "error_message"
+      ],
+      "dataTypes": {
+        "id": "varchar(64)",
+        "switched_by": "varchar(128)",
+        "from_engine": "varchar(32)",
+        "to_engine": "varchar(32)",
+        "status": "varchar(32)",
+        "error_message": "text",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_dbaudit_time"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSecurityAuditLogs"
+      ],
+      "equivalentMutationMethods": [
+        "recordSecurityAuditLog"
+      ]
+    },
+    {
+      "table": "failover_events",
+      "firestoreCollection": "security_audit_logs/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "event_type",
+        "created_at"
+      ],
+      "nullableFields": [
+        "from_engine",
+        "to_engine",
+        "mode",
+        "reason",
+        "payload"
+      ],
+      "dataTypes": {
+        "id": "varchar(64)",
+        "event_type": "varchar(32)",
+        "from_engine": "varchar(32)",
+        "to_engine": "varchar(32)",
+        "mode": "varchar(32)",
+        "reason": "text",
+        "payload": "longtext",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_failover_time"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSecurityAuditLogs"
+      ],
+      "equivalentMutationMethods": [
+        "recordSecurityAuditLog"
+      ]
+    },
+    {
+      "table": "favourites",
+      "firestoreCollection": "users/{uid}/favourites/{favId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "favourites_ibfk_1",
+          "column": "user_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "item_id",
+        "created_at"
+      ],
+      "nullableFields": [
+        "item_type",
+        "data"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "item_id": "varchar(128)",
+        "item_type": "varchar(50)",
+        "data": "longtext",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_fav_user",
+        "idx_fav_item"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "listDocuments"
+      ],
+      "equivalentMutationMethods": [
+        "saveDocument",
+        "deleteDocument"
+      ]
+    },
+    {
+      "table": "job_tracker",
+      "firestoreCollection": "users/{uid}/job_tracker/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "job_tracker_ibfk_1",
+          "column": "user_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "job_title",
+        "company",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "status",
+        "location",
+        "salary",
+        "date_applied",
+        "url",
+        "notes",
+        "contact_person",
+        "contact_email",
+        "deadline"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "job_title": "varchar(255)",
+        "company": "varchar(255)",
+        "status": "varchar(50)",
+        "location": "varchar(255)",
+        "salary": "varchar(100)",
+        "date_applied": "varchar(50)",
+        "url": "varchar(1024)",
+        "notes": "mediumtext",
+        "contact_person": "varchar(255)",
+        "contact_email": "varchar(255)",
+        "deadline": "varchar(50)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [
+        "notes"
+      ],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_jt_user",
+        "idx_jt_status"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "listDocuments"
+      ],
+      "equivalentMutationMethods": [
+        "saveDocument",
+        "deleteDocument"
+      ]
+    },
+    {
+      "table": "jobs",
+      "firestoreCollection": "jobs/{jobId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "jobs_ibfk_1",
+          "column": "employer_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "employer_id",
+        "title",
+        "created_at",
+        "updated_at",
+        "revision"
+      ],
+      "nullableFields": [
+        "company_name",
+        "company_logo",
+        "description",
+        "requirements",
+        "location",
+        "job_type",
+        "workplace_type",
+        "salary_min",
+        "salary_max",
+        "salary_currency",
+        "experience_level",
+        "skills",
+        "status",
+        "applicants_count",
+        "featured",
+        "expires_at",
+        "extra_json"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "employer_id": "varchar(128)",
+        "company_name": "varchar(255)",
+        "company_logo": "varchar(1024)",
+        "title": "varchar(255)",
+        "description": "mediumtext",
+        "requirements": "longtext",
+        "location": "varchar(255)",
+        "job_type": "varchar(50)",
+        "workplace_type": "varchar(50)",
+        "salary_min": "int(11)",
+        "salary_max": "int(11)",
+        "salary_currency": "varchar(10)",
+        "experience_level": "varchar(50)",
+        "skills": "longtext",
+        "status": "varchar(50)",
+        "applicants_count": "int(11)",
+        "featured": "tinyint(1)",
+        "expires_at": "timestamp",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "revision": "int(11)",
+        "extra_json": "longtext"
+      },
+      "jsonFields": [
+        "description"
+      ],
+      "dateFields": [
+        "expires_at",
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_jobs_employer",
+        "idx_jobs_status",
+        "idx_jobs_featured"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getJob",
+        "getJobs"
+      ],
+      "equivalentMutationMethods": [
+        "saveJob",
+        "deleteJob"
+      ]
+    },
+    {
+      "table": "messages",
+      "firestoreCollection": "messages/{msgId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "messages_ibfk_1",
+          "column": "conversation_id",
+          "referencedTable": "conversations",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "conversation_id",
+        "sender_id",
+        "receiver_id",
+        "created_at"
+      ],
+      "nullableFields": [
+        "content",
+        "is_read",
+        "read_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "conversation_id": "varchar(128)",
+        "sender_id": "varchar(128)",
+        "receiver_id": "varchar(128)",
+        "content": "mediumtext",
+        "is_read": "tinyint(1)",
+        "read_at": "timestamp",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [
+        "content"
+      ],
+      "dateFields": [
+        "read_at",
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_msg_conv",
+        "idx_msg_sender",
+        "idx_msg_receiver"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "listDocuments"
+      ],
+      "equivalentMutationMethods": [
+        "saveDocument",
+        "deleteDocument"
+      ]
+    },
+    {
+      "table": "notifications",
+      "firestoreCollection": "users/{uid}/notifications/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "notifications_ibfk_1",
+          "column": "user_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "event_id",
+        "type",
+        "title",
+        "message",
+        "data",
+        "is_read",
+        "state",
+        "delivery_state"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "event_id": "varchar(128)",
+        "type": "varchar(64)",
+        "title": "varchar(255)",
+        "message": "text",
+        "data": "longtext",
+        "is_read": "tinyint(1)",
+        "state": "varchar(50)",
+        "delivery_state": "varchar(50)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_notif_user",
+        "idx_notif_read",
+        "idx_notif_event"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getNotifications"
+      ],
+      "equivalentMutationMethods": [
+        "saveNotification"
+      ]
+    },
+    {
+      "table": "payment_orders",
+      "firestoreCollection": "payment_orders/{orderId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "uid",
+        "plan_id",
+        "provider",
+        "amount",
+        "currency",
+        "created_at",
+        "updated_at",
+        "revision",
+        "recovery_needed"
+      ],
+      "nullableFields": [
+        "original_amount",
+        "coupon_code",
+        "coupon_discount",
+        "single_use_per_user",
+        "status",
+        "membership_ends",
+        "provider_payment_id",
+        "provider_order_id",
+        "provider_payment_intent_id",
+        "provider_client_secret",
+        "failure_code",
+        "activated_at",
+        "reversed_at",
+        "mutation_id",
+        "recovery_reason",
+        "last_payment_gateway",
+        "provider_refund_id"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "uid": "varchar(128)",
+        "plan_id": "varchar(64)",
+        "provider": "varchar(64)",
+        "amount": "int(11)",
+        "original_amount": "int(11)",
+        "currency": "varchar(10)",
+        "coupon_code": "varchar(64)",
+        "coupon_discount": "int(11)",
+        "single_use_per_user": "tinyint(1)",
+        "status": "varchar(50)",
+        "membership_ends": "varchar(64)",
+        "provider_payment_id": "varchar(255)",
+        "provider_order_id": "varchar(255)",
+        "provider_payment_intent_id": "varchar(255)",
+        "provider_client_secret": "varchar(512)",
+        "failure_code": "varchar(128)",
+        "activated_at": "timestamp",
+        "reversed_at": "timestamp",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "revision": "int(11)",
+        "mutation_id": "varchar(64)",
+        "recovery_needed": "tinyint(1)",
+        "recovery_reason": "varchar(128)",
+        "last_payment_gateway": "varchar(64)",
+        "provider_refund_id": "varchar(255)"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "membership_ends",
+        "activated_at",
+        "reversed_at",
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_order_uid",
+        "idx_order_status",
+        "idx_order_provider"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getPaymentOrder",
+        "findPaymentOrderByProviderIntent",
+        "getUserPaymentOrders"
+      ],
+      "equivalentMutationMethods": [
+        "savePaymentOrder"
+      ]
+    },
+    {
+      "table": "payment_webhook_events",
+      "firestoreCollection": "payment_webhook_events/{id}",
+      "primaryKey": [
+        "event_id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "event_id",
+        "provider",
+        "event_type",
+        "received_at"
+      ],
+      "nullableFields": [
+        "order_id",
+        "payload"
+      ],
+      "dataTypes": {
+        "event_id": "varchar(128)",
+        "provider": "varchar(64)",
+        "event_type": "varchar(128)",
+        "order_id": "varchar(128)",
+        "payload": "longtext",
+        "received_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "received_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_pwe_order"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "claimWebhookEvent"
+      ],
+      "equivalentMutationMethods": [
+        "claimWebhookEvent"
+      ]
+    },
+    {
+      "table": "portfolios",
+      "firestoreCollection": "users/{uid}/portfolios/{portfolioId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "portfolios_ibfk_1",
+          "column": "user_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "title",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "theme",
+        "is_published",
+        "data"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "title": "varchar(160)",
+        "theme": "varchar(50)",
+        "is_published": "tinyint(1)",
+        "data": "longtext",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_portfolios_user"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getPortfolio",
+        "getPortfolios"
+      ],
+      "equivalentMutationMethods": [
+        "savePortfolio",
+        "deletePortfolio"
+      ]
+    },
+    {
+      "table": "processed_mutations",
+      "firestoreCollection": "processed_mutations/{mutationId}",
+      "primaryKey": [
+        "mutation_id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "mutation_id",
+        "entity_type",
+        "entity_id",
+        "operation",
+        "source_engine",
+        "processed_at"
+      ],
+      "nullableFields": [],
+      "dataTypes": {
+        "mutation_id": "varchar(64)",
+        "entity_type": "varchar(64)",
+        "entity_id": "varchar(128)",
+        "operation": "varchar(32)",
+        "source_engine": "varchar(32)",
+        "processed_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "processed_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_processed_entity"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "public_resumes",
+      "firestoreCollection": "pb/{resumeId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "owner_uid",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "is_published",
+        "publication_mode",
+        "object",
+        "source_revision",
+        "publication_revision",
+        "published_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "owner_uid": "varchar(128)",
+        "is_published": "tinyint(1)",
+        "publication_mode": "varchar(50)",
+        "object": "mediumtext",
+        "source_revision": "int(11)",
+        "publication_revision": "int(11)",
+        "published_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [
+        "object"
+      ],
+      "dateFields": [
+        "published_at",
+        "updated_at"
+      ],
+      "revisionField": "source_revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_pb_owner",
+        "idx_pb_published"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getPublicResume",
+        "getResumePublication"
+      ],
+      "equivalentMutationMethods": [
+        "publishResume",
+        "unpublishResume"
+      ]
+    },
+    {
+      "table": "resumes",
+      "firestoreCollection": "users/{uid}/resumes/{resumeId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [
+        {
+          "constraint": "resumes_ibfk_1",
+          "column": "user_id",
+          "referencedTable": "users",
+          "referencedColumn": "id",
+          "onDelete": "CASCADE"
+        }
+      ],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "title",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "template",
+        "revision",
+        "firstname",
+        "lastname",
+        "email",
+        "phone",
+        "occupation",
+        "country",
+        "city",
+        "address",
+        "postalcode",
+        "website",
+        "linkedin",
+        "github",
+        "photo",
+        "showPhoto",
+        "summary",
+        "employments",
+        "educations",
+        "skills",
+        "languages",
+        "hobbies",
+        "projects",
+        "certifications",
+        "achievements",
+        "references",
+        "customSections",
+        "sectionOrder",
+        "hiddenSections",
+        "completedSteps",
+        "deleted_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "title": "varchar(160)",
+        "template": "varchar(64)",
+        "revision": "int(11)",
+        "firstname": "varchar(120)",
+        "lastname": "varchar(120)",
+        "email": "varchar(255)",
+        "phone": "varchar(50)",
+        "occupation": "varchar(255)",
+        "country": "varchar(100)",
+        "city": "varchar(100)",
+        "address": "text",
+        "postalcode": "varchar(50)",
+        "website": "varchar(255)",
+        "linkedin": "varchar(255)",
+        "github": "varchar(255)",
+        "photo": "mediumtext",
+        "showPhoto": "tinyint(1)",
+        "summary": "mediumtext",
+        "employments": "longtext",
+        "educations": "longtext",
+        "skills": "longtext",
+        "languages": "longtext",
+        "hobbies": "longtext",
+        "projects": "longtext",
+        "certifications": "longtext",
+        "achievements": "longtext",
+        "references": "longtext",
+        "customSections": "longtext",
+        "sectionOrder": "longtext",
+        "hiddenSections": "longtext",
+        "completedSteps": "longtext",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "deleted_at": "timestamp"
+      },
+      "jsonFields": [
+        "photo",
+        "summary"
+      ],
+      "dateFields": [
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "CASCADE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_resume_user",
+        "idx_resume_updated"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getResume",
+        "getResumes",
+        "getUserContentCounts"
+      ],
+      "equivalentMutationMethods": [
+        "saveResume",
+        "deleteResume"
+      ]
+    },
+    {
+      "table": "reviews",
+      "firestoreCollection": "reviews/{reviewId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "name",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "role",
+        "company",
+        "avatar",
+        "content",
+        "rating",
+        "featured",
+        "status"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "name": "varchar(255)",
+        "role": "varchar(255)",
+        "company": "varchar(255)",
+        "avatar": "varchar(1024)",
+        "content": "text",
+        "rating": "int(11)",
+        "featured": "tinyint(1)",
+        "status": "varchar(50)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_reviews_status"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getReview"
+      ],
+      "equivalentMutationMethods": [
+        "saveReview",
+        "deleteReview"
+      ]
+    },
+    {
+      "table": "security_audit_logs",
+      "firestoreCollection": "security_audit_logs/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "actor_uid",
+        "action",
+        "created_at"
+      ],
+      "nullableFields": [
+        "target_uid",
+        "category",
+        "severity",
+        "target_type",
+        "target_id",
+        "changes",
+        "metadata",
+        "request_id"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "actor_uid": "varchar(128)",
+        "target_uid": "varchar(128)",
+        "action": "varchar(128)",
+        "category": "varchar(128)",
+        "severity": "varchar(32)",
+        "target_type": "varchar(64)",
+        "target_id": "varchar(128)",
+        "changes": "longtext",
+        "metadata": "longtext",
+        "request_id": "varchar(128)",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_sec_actor",
+        "idx_sec_target",
+        "idx_sec_action",
+        "idx_sec_created"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSecurityAuditLogs"
+      ],
+      "equivalentMutationMethods": [
+        "recordSecurityAuditLog"
+      ]
+    },
+    {
+      "table": "stats",
+      "firestoreCollection": "data/stats",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "data",
+        "updated_at"
+      ],
+      "nullableFields": [],
+      "dataTypes": {
+        "id": "varchar(64)",
+        "data": "longtext",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getStats"
+      ],
+      "equivalentMutationMethods": [
+        "incrementStat"
+      ]
+    },
+    {
+      "table": "subscriptions",
+      "firestoreCollection": "data/subscriptions",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "type",
+        "payment_type"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "type": "varchar(64)",
+        "payment_type": "varchar(128)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_sub_user"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "sync_conflicts",
+      "firestoreCollection": "sync_conflicts/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "entity_type",
+        "entity_id",
+        "resolution",
+        "created_at"
+      ],
+      "nullableFields": [
+        "mysql_version",
+        "firestore_version",
+        "mysql_hash",
+        "firestore_hash",
+        "mysql_payload",
+        "firestore_payload",
+        "resolved_by",
+        "resolved_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(64)",
+        "entity_type": "varchar(64)",
+        "entity_id": "varchar(128)",
+        "mysql_version": "int(11)",
+        "firestore_version": "int(11)",
+        "mysql_hash": "varchar(64)",
+        "firestore_hash": "varchar(64)",
+        "mysql_payload": "longtext",
+        "firestore_payload": "longtext",
+        "resolution": "varchar(32)",
+        "resolved_by": "varchar(128)",
+        "resolved_at": "timestamp",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "resolved_at",
+        "created_at"
+      ],
+      "revisionField": "mysql_version",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_conflict_entity",
+        "idx_conflict_status"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "sync_outbox",
+      "firestoreCollection": "sync_outbox/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "entity_type",
+        "entity_id",
+        "operation",
+        "version",
+        "source_engine",
+        "content_hash",
+        "status",
+        "retry_count",
+        "max_retries",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "payload",
+        "last_error",
+        "processed_at",
+        "mutation_id",
+        "idempotency_key"
+      ],
+      "dataTypes": {
+        "id": "varchar(64)",
+        "entity_type": "varchar(64)",
+        "entity_id": "varchar(128)",
+        "operation": "varchar(32)",
+        "payload": "longtext",
+        "version": "int(11)",
+        "source_engine": "varchar(32)",
+        "content_hash": "varchar(64)",
+        "status": "varchar(32)",
+        "retry_count": "int(11)",
+        "max_retries": "int(11)",
+        "last_error": "text",
+        "created_at": "timestamp",
+        "processed_at": "timestamp",
+        "updated_at": "timestamp",
+        "mutation_id": "varchar(64)",
+        "idempotency_key": "varchar(64)"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "processed_at",
+        "updated_at"
+      ],
+      "revisionField": "version",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_outbox_status_time",
+        "idx_outbox_entity",
+        "idx_outbox_hash"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "sync_tombstones",
+      "firestoreCollection": "sync_tombstones/{id}",
+      "primaryKey": [
+        "entity_type",
+        "entity_id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "entity_type",
+        "entity_id",
+        "version",
+        "mutation_id",
+        "source_engine",
+        "deleted_at"
+      ],
+      "nullableFields": [],
+      "dataTypes": {
+        "entity_type": "varchar(64)",
+        "entity_id": "varchar(128)",
+        "version": "int(11)",
+        "mutation_id": "varchar(64)",
+        "source_engine": "varchar(32)",
+        "deleted_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "deleted_at"
+      ],
+      "revisionField": "version",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_tombstone_mutation"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "sync_worker_state",
+      "firestoreCollection": "settings/sync_worker_state",
+      "primaryKey": [
+        "worker_id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "worker_id",
+        "worker_pid",
+        "worker_status",
+        "last_heartbeat_at",
+        "consecutive_failures",
+        "total_events_processed",
+        "created_at"
+      ],
+      "nullableFields": [
+        "last_sync_started_at",
+        "last_sync_completed_at",
+        "last_successful_event_at",
+        "last_failed_event_at"
+      ],
+      "dataTypes": {
+        "worker_id": "varchar(64)",
+        "worker_pid": "int(11)",
+        "worker_status": "varchar(32)",
+        "last_heartbeat_at": "timestamp",
+        "last_sync_started_at": "timestamp",
+        "last_sync_completed_at": "timestamp",
+        "last_successful_event_at": "timestamp",
+        "last_failed_event_at": "timestamp",
+        "consecutive_failures": "int(11)",
+        "total_events_processed": "bigint(20)",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "last_heartbeat_at",
+        "last_sync_started_at",
+        "last_sync_completed_at",
+        "last_successful_event_at",
+        "last_failed_event_at",
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "system_settings",
+      "firestoreCollection": "settings/{category} & data/{category}",
+      "primaryKey": [
+        "category"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "category",
+        "data",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "revision"
+      ],
+      "dataTypes": {
+        "category": "varchar(128)",
+        "data": "longtext",
+        "revision": "int(11)",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "updated_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getSetting"
+      ],
+      "equivalentMutationMethods": [
+        "saveSetting"
+      ]
+    },
+    {
+      "table": "transactions",
+      "firestoreCollection": "orders/{orderId}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "user_id",
+        "txn_id",
+        "created_at"
+      ],
+      "nullableFields": [
+        "plan_name",
+        "plan_type",
+        "payment_method",
+        "amount",
+        "subtotal",
+        "tax_amount",
+        "tax_rate",
+        "tax_name",
+        "company_tax_id",
+        "customer_tax_id",
+        "currency",
+        "status",
+        "duration_months",
+        "created_date_string"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "user_id": "varchar(128)",
+        "txn_id": "varchar(128)",
+        "plan_name": "varchar(255)",
+        "plan_type": "varchar(64)",
+        "payment_method": "varchar(128)",
+        "amount": "int(11)",
+        "subtotal": "int(11)",
+        "tax_amount": "int(11)",
+        "tax_rate": "int(11)",
+        "tax_name": "varchar(64)",
+        "company_tax_id": "varchar(64)",
+        "customer_tax_id": "varchar(64)",
+        "currency": "varchar(10)",
+        "status": "varchar(50)",
+        "duration_months": "int(11)",
+        "created_date_string": "varchar(100)",
+        "created_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_txn_user",
+        "idx_txn_code"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getPaymentOrder"
+      ],
+      "equivalentMutationMethods": [
+        "savePaymentOrder"
+      ]
+    },
+    {
+      "table": "trusted_by",
+      "firestoreCollection": "trusted_by/{id}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "name",
+        "created_at",
+        "updated_at"
+      ],
+      "nullableFields": [
+        "logo_url",
+        "website_url",
+        "display_order",
+        "active"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "name": "varchar(255)",
+        "logo_url": "varchar(1024)",
+        "website_url": "varchar(1024)",
+        "display_order": "int(11)",
+        "active": "tinyint(1)",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "created_at",
+        "updated_at"
+      ],
+      "revisionField": null,
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "IMPLICIT",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_tb_active"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getTrustedBy"
+      ],
+      "equivalentMutationMethods": [
+        "saveTrustedBy",
+        "deleteTrustedBy"
+      ]
+    },
+    {
+      "table": "users",
+      "firestoreCollection": "users/{uid}",
+      "primaryKey": [
+        "id"
+      ],
+      "foreignKeys": [],
+      "requiredFields": [
+        "id",
+        "email",
+        "created_at",
+        "updated_at",
+        "revision"
+      ],
+      "nullableFields": [
+        "firstname",
+        "lastname",
+        "displayName",
+        "photoUrl",
+        "avatarUrl",
+        "phone",
+        "jobTitle",
+        "bio",
+        "city",
+        "country",
+        "website",
+        "membership",
+        "membershipEnds",
+        "paymentStatus",
+        "lastPaymentGateway",
+        "lastPaymentOrderId",
+        "lastPaymentAmount",
+        "lastPaymentCurrency",
+        "lastPaymentDate",
+        "cancellationRequested",
+        "suspended",
+        "role",
+        "extra_data",
+        "deleted_at"
+      ],
+      "dataTypes": {
+        "id": "varchar(128)",
+        "email": "varchar(255)",
+        "firstname": "varchar(120)",
+        "lastname": "varchar(120)",
+        "displayName": "varchar(255)",
+        "photoUrl": "varchar(1024)",
+        "avatarUrl": "varchar(1024)",
+        "phone": "varchar(50)",
+        "jobTitle": "varchar(255)",
+        "bio": "text",
+        "city": "varchar(100)",
+        "country": "varchar(100)",
+        "website": "varchar(255)",
+        "membership": "varchar(50)",
+        "membershipEnds": "varchar(64)",
+        "paymentStatus": "varchar(50)",
+        "lastPaymentGateway": "varchar(64)",
+        "lastPaymentOrderId": "varchar(128)",
+        "lastPaymentAmount": "int(11)",
+        "lastPaymentCurrency": "varchar(10)",
+        "lastPaymentDate": "timestamp",
+        "cancellationRequested": "tinyint(1)",
+        "suspended": "tinyint(1)",
+        "role": "varchar(50)",
+        "extra_data": "longtext",
+        "created_at": "timestamp",
+        "updated_at": "timestamp",
+        "revision": "int(11)",
+        "deleted_at": "timestamp"
+      },
+      "jsonFields": [],
+      "dateFields": [
+        "membershipEnds",
+        "lastPaymentDate",
+        "created_at",
+        "updated_at",
+        "deleted_at"
+      ],
+      "revisionField": "revision",
+      "deletionSemantics": "HARD_DELETE_AND_TOMBSTONE",
+      "tombstoneSemantics": "PERSISTED_IN_SYNC_TOMBSTONES",
+      "idempotencySemantics": "MUTATION_ID_DEDUPLICATION_GUARD",
+      "indexes": [
+        "PRIMARY",
+        "idx_user_email",
+        "idx_user_role",
+        "idx_user_membership"
+      ],
+      "uniqueConstraints": [],
+      "equivalentQueryMethods": [
+        "getUser",
+        "getUserByEmail",
+        "getUsers"
+      ],
+      "equivalentMutationMethods": [
+        "saveUser",
+        "deleteUser"
+      ]
+    }
+  ]
+}

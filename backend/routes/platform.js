@@ -1347,21 +1347,23 @@ router.get('/security-events', async (req, res) => {
   if (pool) {
     try {
       const [rows] = await pool.query(
-        "SELECT id, action, actor_uid, actor_email, target_uid, category, severity, pathname, request_id, created_at FROM security_audit_logs ORDER BY created_at DESC LIMIT ?",
+        "SELECT id, action, actor_uid, target_uid, category, severity, metadata, request_id, created_at FROM security_audit_logs ORDER BY created_at DESC LIMIT ?",
         [limit]
       );
       if (Array.isArray(rows)) {
         rows.forEach(r => {
           seenIds.add(r.id);
+          let meta = {};
+          try { meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : (r.metadata || {}); } catch { meta = {}; }
           events.push({
             id: r.id,
             action: r.action || 'UNKNOWN',
             actorUid: r.actor_uid || null,
-            actorEmail: r.actor_email || null,
+            actorEmail: meta.actorEmail || meta.actor_email || null,
             targetUid: r.target_uid || null,
             category: r.category || null,
             severity: r.severity || 'INFO',
-            pathname: r.pathname || null,
+            pathname: meta.pathname || null,
             requestId: r.request_id || null,
             createdAt: isoFrom(r.created_at),
           });
