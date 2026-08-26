@@ -491,7 +491,8 @@ class FirestoreRepository {
         const db = this._ensureDb();
         const ref = db.collection('blog').doc(id);
         const revision = Number(data.revision || 1);
-        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const serverTs = (this.db?.FieldValue || admin.firestore?.FieldValue)?.serverTimestamp ? (this.db?.FieldValue || admin.firestore?.FieldValue).serverTimestamp() : new Date().toISOString();
+        const payload = { ...data, revision, updatedAt: serverTs };
         const batch = db.batch();
         batch.set(ref, payload, { merge: true });
         // CMS historically wrote `blog_posts`; keep both documents in sync so
@@ -617,7 +618,8 @@ class FirestoreRepository {
     async saveContactMessage(msgId, data) {
         const db = this._ensureDb();
         const ref = db.collection('contact').doc(msgId);
-        const payload = { ...data, createdAt: admin.firestore.FieldValue.serverTimestamp() };
+        const serverTs = (this.db?.FieldValue || admin.firestore?.FieldValue)?.serverTimestamp ? (this.db?.FieldValue || admin.firestore?.FieldValue).serverTimestamp() : new Date().toISOString();
+        const payload = { ...data, createdAt: serverTs };
         await ref.set(payload, { merge: true });
         return { id: msgId, ...payload };
     }
