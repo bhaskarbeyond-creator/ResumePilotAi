@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { FaBuilding, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobe, FaLinkedin, FaFileAlt, FaSpinner, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 
-const EmployerApplicationForm = ({ onSubmit, isSubmitting, showSuccess }) => {
+const EmployerApplicationForm = ({ onSubmit, _isSubmitting, showSuccess }) => {
     const [formData, setFormData] = useState({
         contactPersonName: '',
         contactPersonTitle: '',

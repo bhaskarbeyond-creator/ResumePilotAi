@@ -10,19 +10,7 @@
  * - Zero Empty Space: Items fill Page 1 cleanly; multi-page overflow activates only when Page 1 capacity is genuinely reached.
  */
 
-import {
-  hasMeaningfulText,
-  filterMeaningfulEmployments,
-  filterMeaningfulEducations,
-  filterMeaningfulSkills,
-  filterMeaningfulProjects,
-  filterMeaningfulCertifications,
-  filterMeaningfulAchievements,
-  filterMeaningfulReferences,
-  filterMeaningfulLanguages,
-  filterMeaningfulHobbies,
-  filterMeaningfulCustomSections,
-} from './utils/contentSanitizer.js';
+import { hasMeaningfulText, filterMeaningfulEmployments, filterMeaningfulEducations, filterMeaningfulSkills, filterMeaningfulProjects, filterMeaningfulCertifications, filterMeaningfulAchievements, filterMeaningfulReferences, filterMeaningfulLanguages, filterMeaningfulHobbies, filterMeaningfulCustomSections } from './utils/contentSanitizer.js';
 
 const LINE_HEIGHT_PX = 15;
 

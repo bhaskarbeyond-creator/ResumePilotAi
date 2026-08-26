@@ -79,7 +79,7 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
             error = t('HeadingStep.errors.required', { field: name.charAt(0).toUpperCase() + name.slice(1) });
         } else if (name === 'email' && value && !/\S+@\S+\.\S+/.test(value)) {
             error = t('HeadingStep.errors.invalidEmail');
-        } else if (name === 'phone' && value && !/^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-\(\)]/g, ''))) {
+        } else if (name === 'phone' && value && !/^[+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-()]/g, ''))) {
             error = t('HeadingStep.errors.invalidPhone');
         }
 
@@ -129,6 +129,7 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
     const requiredFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];

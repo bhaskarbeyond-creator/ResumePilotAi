@@ -3,22 +3,7 @@ import React, { Component } from 'react';
 import './Cv46.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaUserTie,
-    FaCheck,
-    FaCircle,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaUserTie, FaCheck, FaCircle } from 'react-icons/fa';
 
 class Cv46 extends Component {
     constructor(props) {
@@ -243,4 +228,5 @@ class Cv46 extends Component {
     }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(Cv46);

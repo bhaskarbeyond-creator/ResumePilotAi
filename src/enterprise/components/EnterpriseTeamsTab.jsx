@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  FiUsers, FiPlus, FiMoreVertical, FiCheck, FiX, FiRefreshCw, FiArchive, FiEdit2, FiRotateCcw, FiUserPlus, FiSearch, FiAward, FiTrash2
-} from 'react-icons/fi';
+import { FiUsers, FiPlus, FiMoreVertical, FiCheck, FiX, FiRefreshCw, FiArchive, FiEdit2, FiRotateCcw, FiUserPlus, FiSearch, FiAward, FiTrash2 } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
@@ -20,7 +18,7 @@ function TeamMembersDrawer({ team, onClose }) {
   const [selectedPrincipal, setSelectedPrincipal] = useState('');
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
-  const [confirmConfig, setConfirmConfig] = useState(null);
+  const [_confirmConfig, setConfirmConfig] = useState(null);
 
   const members = useMemo(() => (Array.isArray(membersState.data?.members) ? membersState.data.members : []), [membersState]);
   const candidates = useMemo(() => {

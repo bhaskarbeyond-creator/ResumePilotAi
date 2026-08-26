@@ -70,7 +70,7 @@ export const saveQuotaLimits = (limits) => request('/api/admin/ai/quota-limits',
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(limits),
 }, 'Unable to save AI quota limits.');
-export const resetQuota = ({ uid, all } = {}) => request('/api/admin/ai/reset-quota', {
+export const resetQuota = ({ uid, _all } = {}) => request('/api/admin/ai/reset-quota', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(uid ? { uid } : { all: true }),
 }, 'Unable to reset AI quota.');

@@ -277,7 +277,7 @@ const NavbarCategory = {
             template: {
                 type: 'custom',
                 label: 'Template Style',
-                render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={navbarTemplateOptions} category="Navbar" />,
+                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={navbarTemplateOptions} category="Navbar" />,
             },
         };
 

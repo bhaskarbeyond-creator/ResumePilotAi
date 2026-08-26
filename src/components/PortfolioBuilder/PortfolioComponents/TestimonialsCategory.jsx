@@ -28,7 +28,7 @@ const TestimonialsCategory = {
         template: {
             type: 'custom',
             label: 'Template',
-            render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={testimonialsTemplateOptions} category="Testimonials" />,
+            render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={testimonialsTemplateOptions} category="Testimonials" />,
         },
         title: { type: 'text', label: 'Section Title' },
         subtitle: { type: 'text', label: 'Subtitle' },

@@ -18,7 +18,7 @@ const { getPool } = require('../database/mysql');
 const {
     enqueueOutboxEvent,
     processSyncQueue,
-    processFirestoreOutbox,
+    _processFirestoreOutbox,
     replicateToFirestore,
     replicateToMySQL,
     getSyncHealthStatus,

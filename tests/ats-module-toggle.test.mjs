@@ -2,16 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import {
-  buildModuleSettingsPatch,
-  evaluateAtsVisibilityMatrix,
-  isAtsScoreModuleEnabled,
-  isFallbackSettings,
-  mergeSettingsCategory,
-  resolveAtsScoreVisibility,
-  resolveEnabledFlag,
-  settingsFromSnapshot,
-} from '../src/utils/moduleFlags.js';
+import { buildModuleSettingsPatch, evaluateAtsVisibilityMatrix, isAtsScoreModuleEnabled, isFallbackSettings, mergeSettingsCategory, resolveAtsScoreVisibility, resolveEnabledFlag, settingsFromSnapshot } from '../src/utils/moduleFlags.js';
 
 const require = createRequire(import.meta.url);
 const { mergeAdminSettingCategory } = require('../backend/services/adminSettingsMerge.js');
@@ -249,7 +240,7 @@ test('Cover Letter module nav is hidden when enableCoverLetterModule is off', ()
   const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
   assert.match(profile, /enableCoverLetterModule/);
   assert.match(profile, /modulesConfig\.enableCoverLetterModule &&/);
-  assert.match(profile, /to=\"\/dashboard\/cover-letters\"/);
+  assert.match(profile, /to="\/dashboard\/cover-letters"/);
   const homepage = fs.readFileSync('src/components/Dashboard/DashboardHomepage/DashboardHomepage.jsx', 'utf8');
   assert.match(homepage, /enableCoverLetterModule/);
   assert.match(homepage, /this\.state\.enableCoverLetterModule &&/);
@@ -262,7 +253,7 @@ test('Portfolios & Web CV module toggle is off by default and controllable via a
   const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
   assert.match(profile, /enablePortfolioModule:\s*false/);
   assert.match(profile, /modulesConfig\.enablePortfolioModule &&/);
-  assert.match(profile, /to=\"\/dashboard\/portfolios\"/);
+  assert.match(profile, /to="\/dashboard\/portfolios"/);
   const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
   assert.match(dbOps, /enablePortfolioModule:\s*false/);
 });
@@ -274,7 +265,7 @@ test('Messages & Chat module toggle is off by default and controllable via admin
   const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
   assert.match(profile, /enableMessagesModule:\s*false/);
   assert.match(profile, /modulesConfig\.enableMessagesModule &&/);
-  assert.match(profile, /to=\"\/dashboard\/messages\"/);
+  assert.match(profile, /to="\/dashboard\/messages"/);
   const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
   assert.match(dbOps, /enableMessagesModule:\s*false/);
 });
@@ -286,7 +277,7 @@ test('Job Tracker module toggle is off by default and controllable via admin Add
   const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
   assert.match(profile, /enableJobTrackerModule:\s*false/);
   assert.match(profile, /modulesConfig\.enableJobTrackerModule &&/);
-  assert.match(profile, /to=\"\/dashboard\/job-tracker\"/);
+  assert.match(profile, /to="\/dashboard\/job-tracker"/);
   const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
   assert.match(dbOps, /enableJobTrackerModule:\s*false/);
 });
@@ -298,7 +289,7 @@ test('My Applications module toggle is off by default and controllable via admin
   const profile = fs.readFileSync('src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx', 'utf8');
   assert.match(profile, /enableAppliedJobsModule:\s*false/);
   assert.match(profile, /modulesConfig\.enableAppliedJobsModule &&/);
-  assert.match(profile, /to=\"\/dashboard\/applied-jobs\"/);
+  assert.match(profile, /to="\/dashboard\/applied-jobs"/);
   const dbOps = fs.readFileSync('src/firestore/dbOperations.js', 'utf8');
   assert.match(dbOps, /enableAppliedJobsModule:\s*false/);
 });

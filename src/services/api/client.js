@@ -34,7 +34,7 @@ export async function apiFetch(url, options = {}) {
     let data = null;
     try {
         data = await response.json();
-    } catch (e) {
+    } catch (_e) {
         data = {};
     }
 

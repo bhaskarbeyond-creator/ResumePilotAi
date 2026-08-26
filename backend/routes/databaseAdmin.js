@@ -9,7 +9,7 @@ const {
     pruneSyncedOutboxEvents,
     pruneFirestoreOutboxEvents
 } = require('../database/syncManager');
-const { requireSuperAdmin, requirePermission, requireRecentAdminAuthentication } = require('../security/auth');
+const { requirePermission, requireRecentAdminAuthentication } = require('../security/auth');
 
 const router = express.Router();
 

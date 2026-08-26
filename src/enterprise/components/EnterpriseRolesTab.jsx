@@ -1,9 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  FiCheck, FiX, FiPlus, FiEdit2, FiTrash2, FiUsers, FiShield,
-  FiLock, FiSliders, FiFileText, FiZap, FiCreditCard, FiSearch,
-  FiInfo, FiLayers, FiCheckSquare, FiSquare, FiExternalLink
-} from 'react-icons/fi';
+import { FiCheck, FiX, FiPlus, FiEdit2, FiTrash2, FiUsers, FiShield, FiLock, FiSliders, FiFileText, FiZap, FiCreditCard, FiSearch, FiInfo, FiLayers, FiCheckSquare, FiSquare, FiExternalLink } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
 
@@ -143,7 +139,7 @@ function roleLabel(role) {
   return ROLE_THEMES[role]?.label || role;
 }
 
-function roleSummary(role) {
+function _roleSummary(role) {
   return ROLE_THEMES[role]?.summary || 'Enterprise role definition';
 }
 
@@ -454,7 +450,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
                 scope: 'Custom Tenant Role',
               };
               const Icon = meta.icon;
-              const isOwner = role.id === 'TENANT_OWNER';
+              role.id === 'TENANT_OWNER';
               const isSelected = highlightedRoleId === role.id;
               const memberCount = memberCountByRole[role.id] || 0;
               const permCount = role.permissions.includes('*') ? 24 : role.permissions.length;
@@ -604,7 +600,7 @@ export default function EnterpriseRolesTab({ onNavigate = null }) {
                   <th style={{ minWidth: '300px' }}>Resource Capability</th>
                   {roleEntries.map(role => {
                     const isSelected = highlightedRoleId === role.id;
-                    const meta = ROLE_THEMES[role.id];
+                    ROLE_THEMES[role.id];
                     return (
                       <th
                         key={role.id}

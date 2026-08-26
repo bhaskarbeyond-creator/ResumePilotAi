@@ -18,7 +18,7 @@ const {
 const { getActiveEngine } = require('../database/engineManager');
 const { getPool } = require('../database/mysql');
 const { getRepository } = require('../repositories');
-const { getPlatformCurrencyConfig, normalizeCurrencyCode, formatCurrencyAmount } = require('../services/platformCurrency');
+const { getPlatformCurrencyConfig, _normalizeCurrencyCode } = require('../services/platformCurrency');
 
 const router = express.Router();
 
@@ -281,7 +281,7 @@ router.get('/public-config', async (req, res) => {
       });
     }
     return res.json(defaults);
-  } catch (err) {
+  } catch (_err) {
     return res.json(defaults);
   }
 });
@@ -747,7 +747,7 @@ router.post('/queues/retry', requireRecentAdminAuthentication, async (req, res) 
     } catch (_) {}
 
     return res.json({ success: true, retriedCount });
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ error: { code: 'RETRY_FAILED', message: 'Queue retry could not be completed', requestId: res.locals?.requestId } });
   }
 });
@@ -802,7 +802,7 @@ router.post('/queues/purge', requireRecentAdminAuthentication, async (req, res) 
     } catch (_) {}
 
     return res.json({ success: true, purgedCount });
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ error: { code: 'PURGE_FAILED', message: 'Queue purge could not be completed', requestId: res.locals?.requestId } });
   }
 });
@@ -980,7 +980,7 @@ router.get('/command-center', async (req, res) => {
     featureFlagsSummary.enabled = flagEntries.filter(f => f.value === true || f.value === 'true').length;
     featureFlagsSummary.disabled = flagEntries.length - featureFlagsSummary.enabled;
     featureFlagsSummary.source = 'AVAILABLE';
-  } catch (err) {
+  } catch (_err) {
     // The absence of a flag read is not a zero-count result.
   }
 
@@ -2001,7 +2001,7 @@ router.get('/enterprise-queue', async (req, res) => {
       queue,
       note: 'Global Enterprise durable-outbox posture. Tenant job replay remains in /enterprise.',
     });
-  } catch (error) {
+  } catch (_error) {
     return res.json({
       queue: {
         totalEnqueued: 0,
@@ -2405,7 +2405,7 @@ router.get('/feature-flags', requireSuperAdmin, async (req, res) => {
     const db = req.app.get('db');
     const flags = await getAllFlags(db);
     return res.json({ flags });
-  } catch (error) {
+  } catch (_error) {
     return res.status(503).json({ error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Could not load feature flags' } });
   }
 });

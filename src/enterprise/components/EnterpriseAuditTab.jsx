@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FiSearch, FiDownload, FiEye, FiX, FiChevronRight, FiLink, FiCheck, FiUser, FiCpu, FiShield
-} from 'react-icons/fi';
+import { FiSearch, FiDownload, FiEye, FiX, FiChevronRight, FiLink, FiCheck, FiUser, FiCpu, FiShield } from 'react-icons/fi';
 import fire from '../../conf/fire';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';

@@ -1,26 +1,8 @@
 import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-    FaTimes,
-    FaUser,
-    FaEnvelope,
-    FaPhone,
-    FaLinkedin,
-    FaGithub,
-    FaFileUpload,
-    FaBuilding,
-    FaPaperPlane,
-    FaCheckCircle,
-    FaExclamationTriangle,
-    FaBriefcase,
-    FaFile,
-    FaEye,
-    FaArrowLeft,
-    FaExpand,
-    FaChevronRight,
-} from 'react-icons/fa';
+import { AnimatePresence } from 'framer-motion';
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight } from 'react-icons/fa';
 import { FiBold, FiItalic, FiUnderline, FiList, FiHash } from 'react-icons/fi';
 import { AuthContext } from '../../main';
 import { getResumes, submitJobApplication } from '../../firestore/dbOperations';
@@ -37,9 +19,9 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $getSelection, $isRangeSelection } from 'lexical';
+import { $getSelection, $isRangeSelection } from 'lexical';
 import { FORMAT_TEXT_COMMAND } from 'lexical';
-import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
+import { $generateHtmlFromNodes } from '@lexical/html';
 
 // Lexical theme for cover letter editor
 const coverLetterTheme = {
@@ -158,7 +140,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     const closeTimer = useRef(null);
 
     // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
+    const [_currentPage, setCurrentPage] = useState(1);
     const [isPaginating, setIsPaginating] = useState(false);
     const [pagination, setPagination] = useState({
         totalItems: 0,

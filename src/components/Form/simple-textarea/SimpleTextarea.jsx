@@ -1,27 +1,5 @@
 import React, { Component } from "react";
-import {
-  FiArrowLeft,
-  FiUser,
-  FiBriefcase,
-  FiAward,
-  FiTarget,
-  FiChevronRight,
-  FiX,
-  FiRefreshCw,
-  FiZap,
-  FiCheck,
-  FiBold,
-  FiItalic,
-  FiUnderline,
-  FiList,
-  FiHash,
-  FiChevronLeft,
-  FiMinus,
-  FiCornerDownLeft,
-  FiChevronDown,
-  FiEdit3,
-} from "react-icons/fi";
-import config from "../../../conf/configuration";
+import { FiArrowLeft, FiUser, FiBriefcase, FiAward, FiTarget, FiChevronRight, FiX, FiRefreshCw, FiZap, FiCheck, FiBold, FiItalic, FiUnderline, FiList, FiHash, FiChevronLeft, FiMinus, FiCornerDownLeft, FiChevronDown, FiEdit3 } from "react-icons/fi";
 import { generateUserAiContent } from "../../../services/aiService";
 import "./LexicalStyles.css";
 
@@ -34,17 +12,7 @@ import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
-import {
-  ListItemNode,
-  ListNode,
-  $isListNode,
-  $isListItemNode,
-  INSERT_UNORDERED_LIST_COMMAND,
-  INSERT_ORDERED_LIST_COMMAND,
-  REMOVE_LIST_COMMAND,
-  $createListItemNode,
-  $createListNode,
-} from "@lexical/list";
+import { ListItemNode, ListNode, $isListNode, $isListItemNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND, $createListItemNode, $createListNode } from "@lexical/list";
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
@@ -52,26 +20,8 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { TRANSFORMERS } from "@lexical/markdown";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $getRoot,
-  $getSelection,
-  $isRangeSelection,
-  $createParagraphNode,
-  $createTextNode,
-  createEditor,
-} from "lexical";
-import {
-  $getSelectionStyleValueForProperty,
-  $patchStyleText,
-} from "@lexical/selection";
-import {
-  FORMAT_TEXT_COMMAND,
-  FORMAT_ELEMENT_COMMAND,
-  KEY_ENTER_COMMAND,
-  COMMAND_PRIORITY_LOW,
-  INDENT_CONTENT_COMMAND,
-  OUTDENT_CONTENT_COMMAND,
-} from "lexical";
+import { $getRoot, $getSelection, $isRangeSelection, $createParagraphNode, $createTextNode } from "lexical";
+import { FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, KEY_ENTER_COMMAND, COMMAND_PRIORITY_LOW, INDENT_CONTENT_COMMAND, OUTDENT_CONTENT_COMMAND } from "lexical";
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
 import { $getNearestNodeOfType } from "@lexical/utils";
 import { useEffect, useCallback, useState, useRef } from "react";
@@ -821,17 +771,14 @@ class SimpleTextarea extends Component {
 
     // Get current text and HTML content from editor
     let currentText = "";
-    let currentHtml = "";
     if (this.editorInstance) {
       this.editorInstance.getEditorState().read(() => {
         const root = $getRoot();
         currentText = root.getTextContent();
-        currentHtml = $generateHtmlFromNodes(this.editorInstance, null);
       });
     } else {
       // Fallback to editorValue if editor instance is not available
       currentText = this.state.editorValue;
-      currentHtml = this.state.editorValue;
     }
 
     // Check if the text is empty or only contains whitespace
@@ -1496,7 +1443,6 @@ class SimpleTextarea extends Component {
       aiHelperOpen,
       currentStep,
       aiAnswers,
-      generatedSummary,
       isGenerating,
     } = this.state;
 
@@ -1752,7 +1698,7 @@ class SimpleTextarea extends Component {
     this.grammarController = null;
     summaryController?.abort();
     grammarController?.abort();
-    document.removeEventListener("mouseover", (event) => {});
+    document.removeEventListener("mouseover", (_event) => {});
   }
 
   convertParagraphToPhrases(paragraph) {

@@ -31,14 +31,14 @@ class Login extends Component {
         try {
             const raw = localStorage.getItem('system_settings');
             if (raw) cachedSettings = JSON.parse(raw);
-        } catch (e) {}
+        } catch (_e) {}
 
         const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(cachedSettings);
 
         let savedEmail = '';
         try {
             savedEmail = localStorage.getItem('remember_email') || '';
-        } catch (e) {}
+        } catch (_e) {}
 
         this.state = {
             email: savedEmail,
@@ -85,7 +85,7 @@ class Login extends Component {
             this.setState({ oauthError: message });
             const cleaned = stripOAuthRedirectError(search);
             window.history.replaceState({}, '', `${window.location.pathname}${cleaned}${window.location.hash}`);
-        } catch (e) {}
+        } catch (_e) {}
     }
 
     componentWillUnmount() {
@@ -102,7 +102,7 @@ class Login extends Component {
             getSystemSettings().then(settings => {
                 try {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
-                } catch (e) {}
+                } catch (_e) {}
 
                 const configured = resolveOAuthSettings(settings);
 
@@ -148,9 +148,9 @@ class Login extends Component {
         const executeLogin = () => {
             return fire.auth().signInWithEmailAndPassword(email, password).then(async (u) => {
                 if (this.state.rememberMe) {
-                    try { localStorage.setItem('remember_email', email); } catch(e) {}
+                    try { localStorage.setItem('remember_email', email); } catch(_e) {}
                 } else {
-                    try { localStorage.removeItem('remember_email'); } catch(e) {}
+                    try { localStorage.removeItem('remember_email'); } catch(_e) {}
                 }
                 if (this.props.throwSuccess) {
                     this.props.throwSuccess(`Welcome back, ${u.user.displayName || email.split('@')[0]}!`);
@@ -204,7 +204,7 @@ class Login extends Component {
                 if (this.props.closeModal) this.props.closeModal();
                 this._handleRedirect(credential.user.uid);
             }, 500);
-        } catch (error) {
+        } catch (_error) {
             this.setState({ isSubmitting: false, mfaCode: '' });
             if (this.props.throwError) this.props.throwError('Invalid or expired authenticator code. Please try again.');
         }
@@ -265,7 +265,7 @@ class Login extends Component {
             } else {
                 window.location.href = '/dashboard';
             }
-        } catch (err) {
+        } catch (_err) {
             try {
                 const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
                 const targetPath = getPostLoginRedirectPath(window.location.search);

@@ -13,14 +13,7 @@ import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { 
-    createBlogPost,
-    updateBlogPost,
-    listBlogCategories,
-    getUserBlogPosts,
-    getBlogPostByIdForAuthor,
-    deleteBlogPost
-} from '../../../firestore/dbOperations';
+import { createBlogPost, updateBlogPost, listBlogCategories, getUserBlogPosts, getBlogPostByIdForAuthor, deleteBlogPost } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
@@ -29,36 +22,7 @@ import BlogPreviewModal from '../../admin/blogManagement/BlogPreviewModal';
 import fire from '../../../conf/fire';
 import { sanitizeBlogHtml, sanitizeImageUrl, sanitizePlainText, sanitizeUrl } from '../../../utils/sanitizeHtml';
 import './TiptapEditor.css';
-import { 
-    FiSave, 
-    FiEye, 
-    FiArrowLeft,
-    FiTrash2,
-    FiAlertCircle,
-    FiCheck,
-    FiX,
-    FiImage,
-    FiTag,
-    FiFileText,
-    FiBold,
-    FiItalic,
-    FiList,
-    FiCode,
-    FiLink,
-    FiType,
-    FiUnderline,
-    FiAlignLeft,
-    FiAlignCenter,
-    FiAlignRight,
-    FiAlignJustify,
-    FiGrid,
-    FiPlusCircle,
-    FiMinus,
-    FiEdit2,
-    FiRotateCcw,
-    FiRotateCw,
-    FiShield
-} from 'react-icons/fi';
+import { FiSave, FiEye, FiArrowLeft, FiTrash2, FiAlertCircle, FiCheck, FiX, FiImage, FiTag, FiFileText, FiBold, FiItalic, FiList, FiCode, FiLink, FiType, FiUnderline, FiAlignLeft, FiAlignCenter, FiAlignRight, FiAlignJustify, FiGrid, FiPlusCircle, FiMinus, FiEdit2, FiRotateCcw, FiRotateCw, FiShield } from 'react-icons/fi';
 
 const BlogEditor = () => {
     const { postId } = useParams();
@@ -168,6 +132,7 @@ const BlogEditor = () => {
         }
         
         initializeEditor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, postId]);
 
     useEffect(() => {

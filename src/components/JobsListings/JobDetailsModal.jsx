@@ -1,59 +1,14 @@
 import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
-import {
-    FaTimes,
-    FaBriefcase,
-    FaMapMarkerAlt,
-    FaClock,
-    FaDollarSign,
-    FaUser,
-    FaBuilding,
-    FaGraduationCap,
-    FaCalendarAlt,
-    FaBookmark,
-    FaShare,
-    FaFlag,
-    FaExternalLinkAlt,
-    FaStar,
-    FaStarHalfAlt,
-    FaRegStar,
-    FaLinkedin,
-    FaTwitter,
-    FaFacebook,
-    FaEnvelope,
-    FaPhone,
-    FaExclamationTriangle,
-    FaChevronUp,
-    FaExpand,
-    FaCompress,
-    FaDownload,
-    FaPrint,
-    FaHeart,
-    FaGift,
-    FaThumbsUp,
-    FaThumbsDown,
-    FaComment,
-    FaBolt,
-    FaChartLine,
-    FaShieldAlt,
-    FaGlobe,
-    FaLaptop,
-    FaCoffee,
-    FaMedkit,
-    FaPlane,
-    FaHome,
-    FaCar,
-    FaUtensils,
-    FaDumbbell,
-    FaChild,
-} from 'react-icons/fa';
+import { FaTimes, FaBriefcase, FaMapMarkerAlt, FaClock, FaDollarSign, FaUser, FaBuilding, FaGraduationCap, FaCalendarAlt, FaBookmark, FaShare, FaFlag, FaExternalLinkAlt, FaStar, FaStarHalfAlt, FaRegStar, FaLinkedin, FaTwitter, FaFacebook, FaEnvelope, FaPhone, FaExclamationTriangle, FaChevronUp, FaExpand, FaCompress, FaDownload, FaPrint, FaHeart, FaGift, FaThumbsUp, FaThumbsDown, FaComment, FaBolt, FaChartLine, FaShieldAlt, FaGlobe, FaLaptop, FaCoffee, FaMedkit, FaPlane, FaHome, FaCar, FaUtensils, FaDumbbell, FaChild } from 'react-icons/fa';
 
-const JobDetailsModal = ({ job, isOpen, onClose, isSaved, onToggleSaved, onApplyNow, t }) => {
+// eslint-disable-next-line react-refresh/only-export-components
+const JobDetailsModal = ({ job, isOpen, onClose, _isSaved, _onToggleSaved, onApplyNow, t }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [isExpanded, setIsExpanded] = useState(false);
-    const [applicationStep, setApplicationStep] = useState(0);
+    const [_applicationStep] = useState(0);
 
     // Prevent background scrolling when modal is open without body manipulation
     useEffect(() => {
@@ -69,7 +24,7 @@ const JobDetailsModal = ({ job, isOpen, onClose, isSaved, onToggleSaved, onApply
             document.documentElement.style.overflow = 'unset';
         };
     }, [isOpen]);
-    const [expandedSections, setExpandedSections] = useState({
+    const [_expandedSections, setExpandedSections] = useState({
         responsibilities: true,
         requirements: true,
         benefits: false,
@@ -154,14 +109,14 @@ const JobDetailsModal = ({ job, isOpen, onClose, isSaved, onToggleSaved, onApply
         similarJobs: [], // This would be populated with actual similar jobs
     };
 
-    const toggleSection = (section) => {
+    (section) => {;
         setExpandedSections((prev) => ({
             ...prev,
             [section]: !prev[section],
         }));
     };
 
-    const renderStarRating = (rating) => {
+    (rating) => {;
         const stars = [];
         const fullStars = Math.floor(rating);
         const hasHalfStar = rating % 1 !== 0;
@@ -463,4 +418,5 @@ const JobDetailsModal = ({ job, isOpen, onClose, isSaved, onToggleSaved, onApply
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(JobDetailsModal);

@@ -1,39 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { withTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
-import {
-    FaBriefcase,
-    FaSearch,
-    FaFilter,
-    FaCalendar,
-    FaMapMarkerAlt,
-    FaDollarSign,
-    FaEye,
-    FaClock,
-    FaCheckCircle,
-    FaTimesCircle,
-    FaHourglass,
-    FaInfoCircle,
-    FaSortAmountDown,
-    FaBuilding,
-    FaPlus,
-    FaEdit,
-    FaTrash,
-    FaUsers,
-    FaChartBar,
-    FaFileAlt,
-    FaExclamationTriangle,
-    FaChevronDown,
-    FaChevronUp,
-} from 'react-icons/fa';
+import { FaBriefcase, FaSearch, FaFilter, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaEye, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaSortAmountDown, FaBuilding, FaPlus, FaEdit, FaTrash, FaUsers, FaChartBar, FaFileAlt, FaExclamationTriangle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
-import { formatSafeDate, parseSafeDate } from '../../../utils/subscriptionUtils.js';
+import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
 import JobApplicationsModal from './JobApplicationsModal';
 import AddCompanyModal from './AddCompanyModal';
 import EditJobModal from './EditJobModal';
 
-const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
+// eslint-disable-next-line react-refresh/only-export-components
+const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
     const user = useContext(AuthContext);
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
@@ -43,7 +19,7 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState(null);
     const [applications, setApplications] = useState([]);
-    const [loadingApplications, setLoadingApplications] = useState(false);
+    const [_loadingApplications, setLoadingApplications] = useState(false);
     const [expandedJob, setExpandedJob] = useState(null);
     const [showApplicationsModal, setShowApplicationsModal] = useState(false);
     const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
@@ -54,10 +30,12 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
 
     useEffect(() => {
         loadJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         filterAndSortJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobs, searchTerm, statusFilter, sortBy]);
 
     const loadJobs = async () => {
@@ -305,7 +283,7 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
         );
     };
 
-    const getApplicationStatusBadge = (status) => {
+    (status) => {;
         const statusConfig = {
             pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: FaClock, label: 'Pending' },
             interview: { bg: 'bg-blue-100', text: 'text-blue-700', icon: FaUsers, label: 'Interview' },
@@ -719,4 +697,5 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(EmployerDashboard);

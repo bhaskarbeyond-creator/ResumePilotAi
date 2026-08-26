@@ -9,7 +9,7 @@ import SmartLanguages from './components/SmartLanguages';
 import SmartFlowRenderer from './components/SmartFlowRenderer';
 import './smartEngine.css';
 
-export default function SmartResumeComposer({ templateId = 'Cv1', language = 'en', values = {} }) {
+export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'en', values = {} }) {
   const theme = getThemePreset(templateId);
   const partitionResult = partitionResumeContent(values, theme);
   const totalPages = partitionResult.totalPages || 1;

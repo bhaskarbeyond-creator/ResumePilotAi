@@ -31,7 +31,7 @@ function repoFor(firestoreDb, repo) {
 }
 
 async function casWrite({
-    repo, get, save, id, expectedRevision, patch, createIfMissing = false,
+    _repo, get, save, id, expectedRevision, patch, createIfMissing = false,
 }) {
     const current = await get(id);
     if (!current && !createIfMissing) throw fail('NOT_FOUND', 404, 'Record not found.');

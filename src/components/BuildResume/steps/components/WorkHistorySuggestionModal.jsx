@@ -150,6 +150,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
                 'We’ll then generate impactful, human‑sounding bullet points.'
             ]);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, selectedEmployment]);
 
     useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
@@ -163,7 +164,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
     };
 
     const toggleBulletSelection = (bulletText) => {
-        const cleanedText = bulletText.replace(/^[•\-\*]\s*/, '').trim();
+        const cleanedText = bulletText.replace(/^[•\-*]\s*/, '').trim();
         if (selectedBullets.includes(cleanedText)) {
             setSelectedBullets(selectedBullets.filter((b) => b !== cleanedText));
         } else {
@@ -172,7 +173,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
     };
 
     const handleCopyBullet = (bulletText, index) => {
-        const cleanedText = bulletText.replace(/^[•\-\*]\s*/, '').trim();
+        const cleanedText = bulletText.replace(/^[•\-*]\s*/, '').trim();
         navigator.clipboard.writeText(`• ${cleanedText}`);
         setCopiedIndex(index);
         setTimeout(() => setCopiedIndex(null), 2000);
@@ -298,7 +299,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
 
                             {suggestions.map((suggestion, index) => {
                                 const isBlock = suggestion.includes('\n');
-                                const cleanedText = suggestion.replace(/^[•\-\*]\s*/, '').trim();
+                                const cleanedText = suggestion.replace(/^[•\-*]\s*/, '').trim();
                                 const isSelected = selectedBullets.includes(cleanedText);
 
                                 return (

@@ -1,16 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard,
-  FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw,
-  FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign,
-  FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff
-} from 'react-icons/fi';
-import {
-  getUser360, assignUserTenant, removeUserTenant,
-  updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota,
-  sendUserPasswordReset, verifyUserEmail, revokeUserSessions,
-  unenrollUserMfa, exportUserData
-} from '../../../services/platformApi';
+import { FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard, FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw, FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign, FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff } from 'react-icons/fi';
+import { getUser360, assignUserTenant, removeUserTenant, updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, unenrollUserMfa, exportUserData } from '../../../services/platformApi';
 
 import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';

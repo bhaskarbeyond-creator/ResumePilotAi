@@ -1,13 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import { createServer } from 'vite';
-import {
-  createSuperAdminFixtureBackend,
-  installAuthenticatedSession,
-  installSuperAdminSession,
-  seedSuperAdminState,
-  viteFixtureDefines,
-} from './helpers/superadmin-fixture.mjs';
+import { createSuperAdminFixtureBackend, installAuthenticatedSession, installSuperAdminSession, seedSuperAdminState, viteFixtureDefines } from './helpers/superadmin-fixture.mjs';
 
 test.describe.configure({ mode: 'serial' });
 

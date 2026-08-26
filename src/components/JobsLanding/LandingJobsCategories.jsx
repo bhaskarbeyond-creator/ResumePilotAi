@@ -1,25 +1,7 @@
 import React from 'react';
 import { withTranslation } from 'react-i18next';
-import { 
-    FiCode, 
-    FiTrendingUp, 
-    FiPenTool, 
-    FiUsers, 
-    FiDollarSign, 
-    FiHeart, 
-    FiTool, 
-    FiBookOpen,
-    FiArrowRight,
-    FiStar
-} from 'react-icons/fi';
-import { 
-    BiBuilding, 
-    BiChart, 
-    BiShield, 
-    BiCog,
-    BiMicrophone,
-    BiCamera
-} from 'react-icons/bi';
+import { FiCode, FiTrendingUp, FiPenTool, FiUsers, FiDollarSign, FiHeart, FiTool, FiBookOpen, FiArrowRight, FiStar } from 'react-icons/fi';
+import { BiBuilding, BiChart, BiShield, BiCog, BiMicrophone, BiCamera } from 'react-icons/bi';
 
 // Job categories data
 const jobCategories = [

@@ -116,6 +116,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [employments]);
 
     // Auto-expand only the first card when there's only one employment
@@ -123,6 +124,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
         if (employments.length === 1) {
             setExpandedCards(new Set([employments[0].id]));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [employments.length]);
 
     return (

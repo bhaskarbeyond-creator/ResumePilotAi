@@ -1,10 +1,5 @@
 import QRCode from 'qrcode';
-import {
-    getAuth,
-    multiFactor,
-    TotpMultiFactorGenerator,
-    getMultiFactorResolver,
-} from 'firebase/auth';
+import { getAuth, multiFactor, TotpMultiFactorGenerator, getMultiFactorResolver } from 'firebase/auth';
 import fire from '../conf/fire';
 
 const modularAuth = () => getAuth(fire._delegate);

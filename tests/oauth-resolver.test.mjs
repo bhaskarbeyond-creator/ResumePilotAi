@@ -11,13 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  OAUTH_STATE,
-  resolveOAuthStates,
-  resolveOAuthSettings,
-  applyOAuthAvailability,
-  describeOAuthAvailability,
-} from '../src/utils/oauthResolver.js';
+import { OAUTH_STATE, resolveOAuthStates, resolveOAuthSettings, applyOAuthAvailability, describeOAuthAvailability } from '../src/utils/oauthResolver.js';
 
 const FLAGS = ['enableGoogle', 'enableFacebook', 'enableLinkedIn', 'enableGitHub'];
 

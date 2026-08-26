@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FaBrain, FaRegFileAlt, FaGraduationCap, FaTools, FaBriefcase } from 'react-icons/fa';
 import { BsCheckCircleFill, BsArrowLeft, BsArrowRight, BsX, BsStars, BsInfoCircle, BsLightning } from 'react-icons/bs';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useLottie } from 'lottie-react';
 import { useTranslation } from 'react-i18next';
 import aiGeneratingAnimation from '../../../assets/animations/Ai-Generating.json';
@@ -47,7 +47,7 @@ const LottieAnimation = () => {
     return <div className="w-24 h-24 mx-auto">{View}</div>;
 };
 
-const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInputs, goThirdStep, setAIGeneratedContent, existingData = {} }) => {
+const AIGenerationModal = ({ closeModal, currentStep, handleStep, _t, handleInputs, goThirdStep, _setAIGeneratedContent, existingData = {} }) => {
     const { i18n } = useTranslation();
     console.log(existingData);
     // Initialize experience level based on existingData or default to mid-level
@@ -131,6 +131,7 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
                 if (interval) clearInterval(interval);
             };
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentStep, generationProgress, generatedData, generationError]);
 
     // Function to generate AI data using the backend API
@@ -760,6 +761,7 @@ const AIGenerationModal = ({ closeModal, currentStep, handleStep, t, handleInput
             requestControllerRef.current = null;
             controller?.abort();
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

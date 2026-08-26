@@ -4,6 +4,7 @@ import { enterpriseFetch } from './enterpriseApi';
 
 const EnterpriseTenantContext = createContext(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const enterpriseFeatureEnabled = () => {
   // Check build-time env var or dynamic window override
   if (typeof window !== 'undefined' && window.__ENTERPRISE_ENABLED__ !== undefined) {
@@ -40,7 +41,7 @@ export function EnterpriseTenantProvider({ children }) {
   const enabled = serverEnabled === true;
   const [state, setState] = useState({ loading: Boolean(user?.uid), error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
 
-  const load = useCallback(async ({ tenantId = '', workspaceId = '', forceRefresh = false } = {}) => {
+  const load = useCallback(async ({ tenantId = '', workspaceId = '', _forceRefresh = false } = {}) => {
     if (!user?.uid) {
       setServerEnabled(null);
       setState({ loading: false, error: null, serverDisabled: false, tenants: [], workspaces: [], context: null, tenant: null, workspace: null, platformAdmin: false });
@@ -125,6 +126,7 @@ export function EnterpriseTenantProvider({ children }) {
   return <EnterpriseTenantContext.Provider value={value}>{children}</EnterpriseTenantContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useEnterpriseTenant() {
   const context = useContext(EnterpriseTenantContext);
   if (!context) throw new Error('EnterpriseTenantProvider is required');

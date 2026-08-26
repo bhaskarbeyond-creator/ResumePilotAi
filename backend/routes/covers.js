@@ -6,7 +6,7 @@ router.use((req, res, next) => {
     try {
         req.repository = getRepository(req.app.get('db'));
         next();
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     try {
         const covers = await req.repository.getCovers(req.user.uid);
         return res.json({ success: true, covers });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch cover letters' });
     }
 });
@@ -27,7 +27,7 @@ router.get('/:id', async (req, res) => {
         const cover = await req.repository.getCover(req.user.uid, req.params.id);
         if (!cover) return res.status(404).json({ success: false, error: 'Cover letter not found' });
         return res.json({ success: true, cover });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch cover letter' });
     }
 });
@@ -37,7 +37,7 @@ router.post('/:id', express.json({ limit: '5mb' }), async (req, res) => {
     try {
         const saved = await req.repository.saveCover(req.user.uid, req.params.id, req.body);
         return res.json({ success: true, cover: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save cover letter' });
     }
 });
@@ -47,7 +47,7 @@ router.delete('/:id', async (req, res) => {
     try {
         await req.repository.deleteCover(req.user.uid, req.params.id);
         return res.json({ success: true });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to delete cover letter' });
     }
 });

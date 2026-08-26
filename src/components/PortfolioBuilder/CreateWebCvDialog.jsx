@@ -70,6 +70,7 @@ export default function CreateWebCvDialog({ open, resumes, loading, onUseResume,
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function previewResumeLabel(resume) {
     const data = normalizePortfolioData(resume?.data || resume);
     return data.heading.fullName || 'Resume';

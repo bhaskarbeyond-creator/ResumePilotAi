@@ -469,7 +469,7 @@ export async function getAllSubscriptions() {
     }
 }
 
-export async function checkIfAdmin(uid) {
+export async function checkIfAdmin(_uid) {
     const authUser = fire.auth().currentUser;
     if (!authUser) return false;
     try {
@@ -917,8 +917,6 @@ export async function checkIsEmployer(userId) {
 
 // Submit employer application
 export async function submitEmployerApplication(userId, applicationData) {
-    const db = fire.firestore();
-
     // Validate inputs
     if (!userId) {
         return { success: false, error: 'User ID is required' };
@@ -1180,7 +1178,7 @@ export async function getFeaturedCompanies(limit = 8) {
                 .orderBy('featuredAt', 'desc')
                 .limit(limit)
                 .get();
-        } catch (indexError) {
+        } catch (_indexError) {
             // Fallback: query without orderBy if composite index doesn't exist
             snapshot = await db.collection('companies')
                 .where('status', '==', 'approved')
@@ -1915,7 +1913,7 @@ export async function getWebsiteData() {
     try {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('website_meta_cache') : null;
         if (raw) localCache = JSON.parse(raw);
-    } catch (e) {}
+    } catch (_e) {}
 
     const res = await safeDbOperation(async () => {
         const db = fire.firestore();
@@ -2060,7 +2058,7 @@ export async function grantProSubscriptionAdmin(userId, _planType = 'yearly', du
 }
 
 // get Subscription data
-function redactSubscriptionSecrets(value = {}) {
+export function redactSubscriptionSecrets(value = {}) {
     const clean = { ...value };
     for (const key of ['razorpayKeySecret','stripeSecretKey','paypalClientSecret','paytmMerchantKey','phonepeSaltKey']) delete clean[key];
     return clean;
@@ -3641,10 +3639,9 @@ export async function addSkills(userId, resumeId, skillsToAdd) {
         db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('skills').doc(value).delete();
     });
     // Adding the new employments
-    var res;
     for (let index = 0; index < skillsToAdd.length; index++) {
         const skillRef = db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('skills');
-        res = await skillRef.add({
+        await skillRef.add({
             id: skillsToAdd[index].id,
             date: skillsToAdd[index].date,
             name: skillsToAdd[index].name,
@@ -3673,10 +3670,9 @@ export async function addLanguages(userId, resumeId, languagesToAdd) {
         db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('languages').doc(value).delete();
     });
     // Adding the new employments
-    var res;
     for (let index = 0; index < languagesToAdd.length; index++) {
         const skillRef = db.collection('users').doc(userId).collection('resumes').doc(resumeId).collection('languages');
-        res = await skillRef.add({
+        await skillRef.add({
             id: languagesToAdd[index].id,
             name: languagesToAdd[index].name,
             date: languagesToAdd[index].date,
@@ -3792,10 +3788,9 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
 
     const db = fire.firestore();
     const user = db.collection('users').doc(userId).collection('resumes').doc(resumeId);
-    var res;
     switch (propertyName) {
         case 'firstname':
-            res = await user.set(
+            await user.set(
                 {
                     firstname: value,
                 },
@@ -3803,7 +3798,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'pbId':
-            res = await user.set(
+            await user.set(
                 {
                     pbId: value,
                 },
@@ -3812,7 +3807,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             break;
 
         case 'lastname':
-            res = await user.set(
+            await user.set(
                 {
                     lastname: value,
                 },
@@ -3820,7 +3815,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'summary':
-            res = await user.set(
+            await user.set(
                 {
                     summary: value,
                 },
@@ -3828,7 +3823,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'email':
-            res = await user.set(
+            await user.set(
                 {
                     email: value,
                 },
@@ -3836,7 +3831,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'template':
-            res = await user.set(
+            await user.set(
                 {
                     template: value,
 
@@ -3846,7 +3841,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'title':
-            res = await user.set(
+            await user.set(
                 {
                     title: value,
                 },
@@ -3854,7 +3849,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'phone':
-            res = await user.set(
+            await user.set(
                 {
                     phone: value,
                 },
@@ -3862,7 +3857,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'occupation':
-            res = await user.set(
+            await user.set(
                 {
                     occupation: value,
                 },
@@ -3870,7 +3865,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'country':
-            res = await user.set(
+            await user.set(
                 {
                     country: value,
                 },
@@ -3878,7 +3873,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'city':
-            res = await user.set(
+            await user.set(
                 {
                     city: value,
                 },
@@ -3886,7 +3881,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'address':
-            res = await user.set(
+            await user.set(
                 {
                     address: value,
                 },
@@ -3894,7 +3889,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'postalcode':
-            res = await user.set(
+            await user.set(
                 {
                     postalcode: value,
                 },
@@ -3902,7 +3897,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'dateofbirth':
-            res = await user.set(
+            await user.set(
                 {
                     dateofbirth: value,
                 },
@@ -3910,7 +3905,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'drivinglicense':
-            res = await user.set(
+            await user.set(
                 {
                     drivinglicense: value,
                 },
@@ -3918,7 +3913,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'nationality':
-            res = await user.set(
+            await user.set(
                 {
                     nationality: value,
                 },
@@ -3926,7 +3921,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'languages':
-            res = await user.set(
+            await user.set(
                 {
                     languages: value,
                 },
@@ -3934,7 +3929,7 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
             );
             break;
         case 'skills':
-            res = await user.set(
+            await user.set(
                 {
                     skills: value,
                 },
@@ -3946,15 +3941,6 @@ export async function setResumePropertyPerUser(userId, resumeId, propertyName, v
     }
 }
 /// Function to generate an id of a given length
-function makeid(length) {
-    var result = '';
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for (var i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-}
 
 export async function getResumesOfUser(u) {
     const db = fire.firestore();
@@ -4510,7 +4496,7 @@ export function getConversations(userId, callback) {
                     }
 
                     return conversation;
-                } catch (error) {
+                } catch (_error) {
                     // Gracefully handle the error for a single conversation
                     const conversationSnapshot = await db.ref(`conversations/${conversationId}`).get();
                     if (conversationSnapshot.exists()) {
@@ -5320,7 +5306,7 @@ export async function getPublicPortfolios(limit = 10, theme = null) {
                     return tB - tA;
                 });
                 return portfolios.slice(0, limit);
-            } catch (fallbackError) {
+            } catch (_fallbackError) {
                 return [];
             }
         }
@@ -5630,7 +5616,7 @@ export async function getSystemSettings() {
         }, false);
 
         return result || { ...getFallback(), _settingsSource: fallbackSource };
-    } catch (err) {
+    } catch (_err) {
         return { ...getFallback(), _settingsSource: fallbackSource };
     }
 }

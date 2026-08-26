@@ -3,7 +3,7 @@ import SimpleInput from '../../Form/simple-input/SimpleInput';
 import SimpleTextarea from '../../Form/simple-textarea/SimpleTextarea';
 
 import './ActionCoverFilling.scss';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { BiPlus, BiTrash } from 'react-icons/bi';
 import { FiX, FiType, FiList, FiGrid } from 'react-icons/fi';
 

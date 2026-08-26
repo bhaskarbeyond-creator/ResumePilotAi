@@ -7,7 +7,6 @@
  */
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -189,7 +188,7 @@ export async function setupFirebaseIntercepts(page) {
 }
 
 // ── Page factory with role setup ──
-export async function createAuthenticatedPage(browser, role, viteBase) {
+export async function createAuthenticatedPage(browser, role, _viteBase) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const authScript = getAuthInitScript(role);
   if (authScript) {

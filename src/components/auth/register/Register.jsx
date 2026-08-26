@@ -31,7 +31,7 @@ class Register extends Component {
         try {
             const raw = localStorage.getItem('system_settings');
             if (raw) cachedSettings = JSON.parse(raw);
-        } catch (e) {}
+        } catch (_e) {}
 
         const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(cachedSettings);
 
@@ -73,7 +73,7 @@ class Register extends Component {
             this.setState({ oauthError: message });
             const cleaned = stripOAuthRedirectError(search);
             window.history.replaceState({}, '', `${window.location.pathname}${cleaned}${window.location.hash}`);
-        } catch (e) {}
+        } catch (_e) {}
     }
 
     componentDidMount() {
@@ -84,7 +84,7 @@ class Register extends Component {
             getSystemSettings().then((settings) => {
                 try {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
-                } catch (e) {}
+                } catch (_e) {}
 
                 const configured = resolveOAuthSettings(settings);
 
@@ -128,7 +128,7 @@ class Register extends Component {
             } else {
                 window.location.href = '/dashboard';
             }
-        } catch (err) {
+        } catch (_err) {
             try {
                 const { getPostLoginRedirectPath, clearPostLoginRedirectPath, isSafeInternalPath } = await import('../../../utils/safeInternalPath');
                 const targetPath = getPostLoginRedirectPath(window.location.search);
@@ -325,7 +325,7 @@ class Register extends Component {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, userName })
-                    }).then(res => res.json()).then(data => {
+                    }).then(res => res.json()).then(_data => {
                     }).catch(e => console.warn('[Register] Verification email notice:', e.message));
                 }
             } catch (verifyErr) {

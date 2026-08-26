@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import express from 'express';
 import { chromium } from 'playwright';
-import { toValidatedPdfBlob, pdfFileName, isPdfBuffer, readExportErrorMessage } from '../src/utils/pdfDownload.js';
+import { toValidatedPdfBlob, pdfFileName } from '../src/utils/pdfDownload.js';
 
 function parsePdfStructure(buffer) {
   const str = buffer.toString('latin1');

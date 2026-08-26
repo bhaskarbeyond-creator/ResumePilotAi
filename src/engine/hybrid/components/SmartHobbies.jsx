@@ -2,7 +2,7 @@ import React from 'react';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { filterMeaningfulHobbies, hasMeaningfulText } from '../utils/contentSanitizer';
 
-export default function SmartHobbies({ hobbies = [], theme = {}, title = 'Hobbies & Interests' }) {
+export default function SmartHobbies({ hobbies = [], _theme = {}, title = 'Hobbies & Interests' }) {
   const validHobbies = filterMeaningfulHobbies(hobbies);
   if (!validHobbies.length) return null;
 

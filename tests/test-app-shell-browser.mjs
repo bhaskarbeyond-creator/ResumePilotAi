@@ -43,7 +43,7 @@ async function runBrowserShellAudit() {
 
             const shellMetrics = await page.evaluate(() => {
                 const wrappers = document.querySelectorAll('.dashboardWrapper');
-                const sidebars = document.querySelectorAll('nav[aria-label="Main Navigation"], aside, .dashboardWrapper > div:first-child');
+                document.querySelectorAll('nav[aria-label="Main Navigation"], aside, .dashboardWrapper > div:first-child');
                 const contentWrappers = document.querySelectorAll('.dashboardContentWrapper');
                 return {
                     wrapperCount: wrappers.length,

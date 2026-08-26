@@ -1,24 +1,6 @@
 import React, { Component } from 'react';
 import './Cv40.scss';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaQuoteLeft,
-    FaLeaf,
-    FaCircle,
-    FaRegCircle,
-    FaEllipsisH,
-    FaUserTie,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaQuoteLeft, FaLeaf, FaCircle, FaRegCircle, FaEllipsisH, FaUserTie } from 'react-icons/fa';
 
 class Cv40Export extends Component {
     constructor(props) {

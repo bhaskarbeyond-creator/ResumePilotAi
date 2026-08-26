@@ -72,7 +72,7 @@ const Skills3 = {
             { name: 'AWS', level: 78, category: 'devops', icon: '☁️' },
         ],
     },
-    render: ({ title, subtitle, backgroundColor, accentColor, skills }) => {
+    render: ({ title, subtitle, _backgroundColor, accentColor, skills }) => {
         const colors = {
             cyan: { primary: 'from-cyan-400 to-blue-500', text: 'text-cyan-400', border: 'border-cyan-400/30' },
             purple: { primary: 'from-purple-400 to-violet-500', text: 'text-purple-400', border: 'border-purple-400/30' },

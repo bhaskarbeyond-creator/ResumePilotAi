@@ -134,7 +134,7 @@ async function runAdversarialQASuite() {
         const fullUrl = `${LOCAL_BASE_URL}${route.path}`;
         const t0 = performance.now();
         try {
-          const response = await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
           const t1 = performance.now();
           const latency = t1 - t0;
 

@@ -1,19 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-    FiHome, FiGrid, FiSettings, FiUsers, FiFileText,
-    FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase,
-    FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit,
-    FiActivity, FiLock, FiTool, FiAlertTriangle, FiType, FiExternalLink,
-} from 'react-icons/fi';
-import {
-    FaRegBuilding, FaCog, FaCreditCard, FaShareAlt, FaChartLine,
-    FaFile, FaBullhorn, FaRobot, FaEnvelope, FaFilePdf, FaSearch as FaSearchIcon,
-    FaMapMarkerAlt, FaPaintBrush, FaFileCode, FaShieldAlt, FaHeartbeat,
-    FaFire, FaFacebook, FaCloud, FaLinkedin, FaStamp, FaCode,
-    FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes, FaReceipt,
-    FaServer, FaDatabase
-} from 'react-icons/fa';
+import { FiHome, FiGrid, FiSettings, FiUsers, FiFileText, FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase, FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit, FiActivity, FiLock, FiTool, FiAlertTriangle, FiType, FiExternalLink } from 'react-icons/fi';
+import { FaRegBuilding, FaCog, FaCreditCard, FaShareAlt, FaChartLine, FaFile, FaBullhorn, FaRobot, FaEnvelope, FaFilePdf, FaSearch as FaSearchIcon, FaMapMarkerAlt, FaPaintBrush, FaFileCode, FaShieldAlt, FaHeartbeat, FaFire, FaFacebook, FaCloud, FaLinkedin, FaStamp, FaCode, FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes, FaReceipt, FaServer, FaDatabase } from 'react-icons/fa';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
 import fire from '../../../conf/fire';

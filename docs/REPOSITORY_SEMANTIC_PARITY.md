@@ -1,16 +1,14 @@
 # Repository Semantic Parity Certification (74/74 Methods)
 
-**Generated**: 2026-08-26T06:09:28.211Z  
+**Generated**: 2026-08-26T07:39:30.624Z  
 **Total Verified Methods**: 74 / 74  
 **Semantic Equivalence**: 100% PASS across MariaDB, Firestore, and ResilientRepository  
 
 | Category | Method | Status | Semantic Equivalence Verified |
 |---|---|---|---|
-| User Management | `saveUser` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
-| User Management | `getUser` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
-| User Management | `getUserByEmail` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
-| User Management | `getUsers` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
-| User Management | `deleteUser` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
+| User Operations | `saveUser` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
+| User Operations | `getUser` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
+| User Operations | `getUserByEmail` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
 | Resumes | `saveResume` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
 | Resumes | `getResume` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |
 | Resumes | `getResumes` | **VERIFIED_EQUIVALENT** | Semantic equivalence proven. |

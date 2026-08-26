@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FiPlay, FiCheck, FiRefreshCw, FiLock, FiCpu
-} from 'react-icons/fi';
+import { FiPlay, FiCheck, FiRefreshCw, FiLock, FiCpu } from 'react-icons/fi';
 import { useTenantApi } from '../useTenantApi';
 import { enterpriseFetch } from '../enterpriseApi';
 import HelpTooltip from './HelpTooltip';

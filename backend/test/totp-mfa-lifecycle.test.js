@@ -77,7 +77,7 @@ function buildMockDb() {
   const users = new Map([
     ['users/target-user', { uid: 'target-user', email: 'target@example.com', status: 'ACTIVE', role: 'USER' }],
   ]);
-  const tenants = new Map([
+  const _tenants = new Map([
     ['enterprise_tenants/acme', { id: 'acme', displayName: 'Acme Corp', lifecycleState: 'ACTIVE' }],
   ]);
 
@@ -104,7 +104,7 @@ function buildMockDb() {
         };
       }
       return {
-        doc: (id) => ({
+        doc: (_id) => ({
           get: async () => ({ exists: false, data: () => null }),
           set: async () => {},
         }),

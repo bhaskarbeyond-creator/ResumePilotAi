@@ -172,7 +172,7 @@ export function getTemplateColors(colors, index = 0, fallbackPrimary = '#1E40AF'
 /**
  * Helper to safely return photo URL or null
  */
-export function getAvatarUrl(photo, firstname, lastname) {
+export function getAvatarUrl(photo, _firstname, _lastname) {
     if (photo && typeof photo === 'string' && photo.trim()) {
         return photo;
     }

@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FiUsers, FiUserPlus, FiSearch, FiShield, FiCheck, FiX, FiTrash2, FiEye, FiDownload,
-  FiMail, FiRefreshCw, FiActivity, FiShieldOff
-} from 'react-icons/fi';
+import { FiUsers, FiUserPlus, FiSearch, FiShield, FiCheck, FiX, FiTrash2, FiEye, FiDownload, FiMail, FiRefreshCw, FiActivity, FiShieldOff } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
 import EnterpriseConfirmModal from './EnterpriseConfirmModal';
-import { ROLE_HIERARCHY, ALL_STANDARD_ROLES, formatRoleLabel, formatMemberIdentity, getRoleLevel } from '../enterpriseHelpers';
+import { ROLE_HIERARCHY, ALL_STANDARD_ROLES, formatRoleLabel, getRoleLevel } from '../enterpriseHelpers';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { ROLE_HIERARCHY, formatRoleLabel };
 
 const STATUS_FILTERS = ['ALL', 'ACTIVE', 'SUSPENDED', 'INVITED'];
@@ -854,7 +852,7 @@ export default function EnterpriseUsersTab({ currentPrincipalId, currentUser = n
                     >
                       {roleOptions.map(role => {
                         const lvl = getRoleLevel(role);
-                        const isCurrentRole = (detailMember.roles || []).includes(role);
+                        (detailMember.roles || []).includes(role);
                         const curLvl = getRoleLevel(detailMember.roles?.[0]);
                         const direction = lvl > curLvl ? '⬆ Upgrade to' : (lvl < curLvl ? '⬇ Downgrade to' : 'Current:');
                         const isCustom = role.startsWith('CUSTOM_');

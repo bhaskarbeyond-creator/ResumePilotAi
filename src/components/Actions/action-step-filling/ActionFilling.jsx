@@ -3,7 +3,6 @@ import React, { Component } from 'react';
 import './ActionFilling.scss';
 import { Analytics } from '../../Analytics';
 // Configuration data
-import conf from '../../../conf/configuration';
 // Components Needed
 import LanguagePicker from '../../Form/language-picker/LanguagePicker';
 import ProgressBar from '../../Form/progress-bar/ProgressBar';
@@ -95,7 +94,7 @@ class ActionFilling extends Component {
         }
         if (pos !== null) {
             var tempArray = this.state.employments;
-            var sliced = tempArray.splice(pos, 1);
+            tempArray.splice(pos, 1);
             this.setState({ employments: tempArray });
         }
     }
@@ -109,7 +108,7 @@ class ActionFilling extends Component {
         }
         if (pos !== null) {
             var tempArray = this.state.educations;
-            var sliced = tempArray.splice(pos, 1);
+            tempArray.splice(pos, 1);
             this.setState({ educations: tempArray });
         }
     }
@@ -123,7 +122,7 @@ class ActionFilling extends Component {
         }
         if (pos !== null) {
             var tempArray = this.state.languages;
-            var sliced = tempArray.splice(pos, 1);
+            tempArray.splice(pos, 1);
             this.setState({ languages: tempArray });
         }
     }
@@ -137,7 +136,7 @@ class ActionFilling extends Component {
         }
         if (pos !== null) {
             var tempArray = this.state.skills;
-            var sliced = tempArray.splice(pos, 1);
+            tempArray.splice(pos, 1);
             this.setState({ skills: tempArray });
         }
     }
@@ -258,7 +257,7 @@ class ActionFilling extends Component {
     //  Employment History
     employmentHistory() {
         let jobs = [];
-        this.state.employments.map((value, index) => {
+        this.state.employments.map((value, _index) => {
             jobs.push(value);
         });
         return jobs;
@@ -268,7 +267,7 @@ class ActionFilling extends Component {
         // Giving a random id to give it to the DOM as a key y be identified , NOTE : this id is not accessable from child
         let randomId = Math.floor(Math.random() * 9000);
         // This id is  accesable from child and we can use it as a reference to edit the employment
-        let employmentId = Math.floor(Math.random() * 200);
+        Math.floor(Math.random() * 200);
         this.setState({
             employments: this.state.employments.concat([
                 <Employment removeEmploymentJsx={this.removeEmploymentJsx} removeEmployment={this.props.removeEmployment} handleInputs={this.props.handleInputs} id={randomId} key={randomId} />,
@@ -278,7 +277,7 @@ class ActionFilling extends Component {
     //  Education History
     educationHistory() {
         let educations = [];
-        this.state.educations.map((value, index) => {
+        this.state.educations.map((value, _index) => {
             educations.push(value);
         });
         return educations;
@@ -316,7 +315,7 @@ class ActionFilling extends Component {
         });
     }
     // Handling Component Delete
-    handleComponentDelete(inputType, id) {
+    handleComponentDelete(inputType, _id) {
         switch (inputType) {
             case 'Skills':
                 this.setState({
@@ -330,7 +329,7 @@ class ActionFilling extends Component {
     //  Listing all skills History
     skillsAdded() {
         let skills = [];
-        this.state.skills.map((value, index) => {
+        this.state.skills.map((value, _index) => {
             skills.push(value);
         });
         return skills;
@@ -354,7 +353,7 @@ class ActionFilling extends Component {
     //  Languages Added
     languagesAdded() {
         let languages = [];
-        this.state.languages.map((value, index) => {
+        this.state.languages.map((value, _index) => {
             languages.push(value);
         });
         return languages;
@@ -544,7 +543,7 @@ class ActionFilling extends Component {
                     let tempEmployments = [...this.props.values.employments].sort((a, b) => a.date - b.date);
                     console.log(`Creating ${tempEmployments.length} employment components`);
 
-                    tempEmployments.forEach((value, index) => {
+                    tempEmployments.forEach((value, _index) => {
                         if (value != null) {
                             console.log(`Creating employment component for:`, value);
                             jobs.push(

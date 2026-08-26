@@ -27,7 +27,7 @@ const app = require('../index');
 
 function buildMockDb() {
     return {
-        collection(name) {
+        collection(_name) {
             return {
                 doc() {
                     return {
@@ -91,5 +91,5 @@ after(async () => {
     try {
         const { getPool } = require('../database/mysql');
         await getPool().end();
-    } catch (e) {}
+    } catch (_e) {}
 });

@@ -2,12 +2,11 @@ process.env.NODE_ENV = 'test';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const request = require('supertest');
 const { requireAuth, setTokenVerifierForTests, setUserLookupForTests } = require('../security/auth');
 
 test('Email Verification & AI Access Lifecycle Suite', async (t) => {
   await t.test('1. Valid verified token produces emailVerified: true immediately', async () => {
-    setTokenVerifierForTests(async token => ({
+    setTokenVerifierForTests(async _token => ({
       uid: 'user-verified-1',
       email: 'user@example.com',
       email_verified: true,
@@ -26,7 +25,7 @@ test('Email Verification & AI Access Lifecycle Suite', async (t) => {
   });
 
   await t.test('2. Unverified token without live backend verification remains emailVerified: false', async () => {
-    setTokenVerifierForTests(async token => ({
+    setTokenVerifierForTests(async _token => ({
       uid: 'user-unverified-1',
       email: 'unverified@example.com',
       email_verified: false,
@@ -44,7 +43,7 @@ test('Email Verification & AI Access Lifecycle Suite', async (t) => {
   });
 
   await t.test('3. Stale JWT (email_verified=false) automatically recovers when live Firebase user is verified', async () => {
-    setTokenVerifierForTests(async token => ({
+    setTokenVerifierForTests(async _token => ({
       uid: 'user-stale-jwt-1',
       email: 'stale@example.com',
       email_verified: false,

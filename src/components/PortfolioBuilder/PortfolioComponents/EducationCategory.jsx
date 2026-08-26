@@ -28,7 +28,7 @@ const EducationCategory = {
         template: {
             type: 'custom',
             label: 'Template',
-            render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={educationTemplateOptions} category="Education" />,
+            render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={educationTemplateOptions} category="Education" />,
         },
         title: { type: 'text', label: 'Section Title' },
         subtitle: { type: 'text', label: 'Subtitle' },

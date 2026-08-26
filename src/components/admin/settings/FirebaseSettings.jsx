@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
-import {
-    FaFire, FaCheck, FaTimes, FaSpinner, FaKey, FaLock,
-    FaEye, FaEyeSlash, FaShieldAlt, FaServer, FaCloudUploadAlt,
-    FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaInfoCircle,
-    FaPaste, FaChevronDown, FaChevronUp, FaEdit, FaSyncAlt, FaTrash
-} from 'react-icons/fa';
+import { FaFire, FaCheck, FaTimes, FaSpinner, FaKey, FaLock, FaEye, FaEyeSlash, FaShieldAlt, FaServer, FaCloudUploadAlt, FaExclamationTriangle, FaCheckCircle, FaTimesCircle, FaInfoCircle, FaPaste, FaChevronDown, FaChevronUp, FaEdit, FaSyncAlt, FaTrash } from 'react-icons/fa';
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 const SaBadge = ({ status }) => {
@@ -224,7 +219,7 @@ const FirebaseSettings = () => {
         setSaJsonError('');
         setSaStatusMsg(null);
         // Restore fields to current saInfo values
-        setSaFields(prev => ({
+        setSaFields(_prev => ({
             projectId: saInfo.projectId,
             clientEmail: saInfo.clientEmail,
             privateKey: '',

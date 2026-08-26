@@ -57,17 +57,17 @@ class MockHealthyMySQLRepository {
     return this.users[uid];
   }
 
-  async getUserContentCounts(uid) {
+  async getUserContentCounts(_uid) {
     return { resumeCount: 5, portfolioCount: 2, coverCount: 3 };
   }
 
-  async getUserPaymentOrders(uid) {
+  async getUserPaymentOrders(_uid) {
     return [
       { id: 'ord_1', planId: 'yearly', amount: 499, currency: 'USD', status: 'COMPLETED', createdAt: '2026-01-01T00:00:00.000Z' }
     ];
   }
 
-  async getAdminAuditLogs(options = {}) {
+  async getAdminAuditLogs(_options = {}) {
     return this.auditLogs;
   }
 

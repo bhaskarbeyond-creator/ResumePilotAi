@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
 import { useAdminSession } from '../AdminContext';
-import {
-  FiActivity, FiRefreshCw, FiAlertTriangle, FiCheckCircle,
-  FiRotateCw, FiClock, FiMail, FiLayers, FiAlertCircle
-} from 'react-icons/fi';
+import { FiActivity, FiRefreshCw, FiAlertTriangle, FiCheckCircle, FiRotateCw, FiClock, FiMail, FiLayers, FiAlertCircle } from 'react-icons/fi';
 
 export default function PlatformQueues() {
   const { isSuperAdmin } = useAdminSession();

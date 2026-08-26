@@ -76,7 +76,7 @@ async function getUserAiEntitlement(db, uid) {
       customOverride: userData.aiQuotaOverride || null,
       lastResetAt: userData.aiQuotaLastResetAt || null,
     };
-  } catch (error) {
+  } catch (_error) {
     return { uid, dailyLimit: 10, effectiveLimit: 10, usedToday: 0, remainingToday: 10, plan: 'Basic', customOverride: null };
   }
 }
@@ -175,7 +175,7 @@ async function removeUserAiQuotaOverride({ db, admin, uid, actorUid, requestId }
   return getUserAiEntitlement(db, uid);
 }
 
-async function resetUserAiQuota({ db, admin, uid, actorUid, requestId }) {
+async function resetUserAiQuota({ db, _admin, uid, actorUid, requestId }) {
   const today = dayKey();
   const repo = getRepository(db);
 
@@ -212,7 +212,7 @@ async function resetUserAiQuota({ db, admin, uid, actorUid, requestId }) {
   return getUserAiEntitlement(db, uid);
 }
 
-async function getGlobalAiDashboardData(db) {
+async function getGlobalAiDashboardData(_db) {
   const today = dayKey();
   return {
     todayDate: today,

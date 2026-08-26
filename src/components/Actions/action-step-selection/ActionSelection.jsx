@@ -1,6 +1,4 @@
 import React, { Component } from 'react';
-import conf from '../../../conf/configuration';
-import logo from '../../../assets/logo/logo.png';
 import { Analytics } from '../../Analytics';
 import { Link } from 'react-router-dom';
 import { withTranslation } from 'react-i18next';
@@ -287,7 +285,6 @@ class ActionSelection extends Component {
     }
 
     getCategories() {
-        const { currentStep } = this.props;
         const templates = this.getTemplates();
 
         // Get all unique categories from templates
@@ -631,7 +628,7 @@ class ActionSelection extends Component {
     }
 
     renderHeading() {
-        const { t, currentStep } = this.props;
+        const { currentStep } = this.props;
 
         if (currentStep === 'Template Selection') {
             return (
@@ -659,8 +656,7 @@ class ActionSelection extends Component {
     }
 
     render() {
-        const { t } = this.props;
-        const { selectedCategory, viewMode, selectedTemplate, searchTerm, currentPage, templatesPerPage, isLoading, showFilters, sortBy } = this.state;
+        const { selectedCategory, viewMode, selectedTemplate, searchTerm, currentPage, templatesPerPage, isLoading, sortBy } = this.state;
 
         const filteredTemplates = this.getFilteredTemplates();
         const categories = this.getCategories();

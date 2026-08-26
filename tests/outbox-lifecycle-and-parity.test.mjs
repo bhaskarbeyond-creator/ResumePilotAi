@@ -1,11 +1,6 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { 
-    pruneSyncedOutboxEvents, 
-    pruneFirestoreOutboxEvents, 
-    computeContinuousParity,
-    enqueueOutboxEvent
-} from '../backend/database/syncManager.js';
+import { pruneSyncedOutboxEvents, pruneFirestoreOutboxEvents, computeContinuousParity } from '../backend/database/syncManager.js';
 
 describe('🛡️ Outbox Lifecycle Management & Continuous Parity Auditor Test Suite', () => {
 
@@ -60,9 +55,9 @@ describe('🛡️ Outbox Lifecycle Management & Continuous Parity Auditor Test S
             collection: (colName) => {
                 assert.equal(colName, 'sync_outbox_fs');
                 return {
-                    where: (field, op, val) => ({
-                        where: (f2, op2, v2) => ({
-                            limit: (lim) => ({
+                    where: (_field, _op, _val) => ({
+                        where: (_f2, _op2, _v2) => ({
+                            limit: (_lim) => ({
                                 get: async () => ({
                                     empty: false,
                                     docs: mockDocs
@@ -87,16 +82,16 @@ describe('🛡️ Outbox Lifecycle Management & Continuous Parity Auditor Test S
 
     it('4. computeContinuousParity checks all 13 canonical entities and reports 100% when counts match', async () => {
         const mockPool = {
-            query: async (sql) => {
+            query: async (_sql) => {
                 return [[{ c: 10 }], []]; // Return mysql2 [rows, fields] tuple
             }
         };
 
         const mockFirestore = {
-            collection: (colName) => ({
+            collection: (_colName) => ({
                 get: async () => ({ docs: new Array(10).fill({}) }) // Return 10 docs
             }),
-            collectionGroup: (groupName) => ({
+            collectionGroup: (_groupName) => ({
                 get: async () => ({ docs: new Array(10).fill({}) }) // Return 10 docs
             })
         };
@@ -123,7 +118,7 @@ describe('🛡️ Outbox Lifecycle Management & Continuous Parity Auditor Test S
         };
 
         const mockFirestore = {
-            collection: (colName) => ({
+            collection: (_colName) => ({
                 get: async () => ({ docs: new Array(10).fill({}) })
             }),
             collectionGroup: (groupName) => ({

@@ -47,7 +47,7 @@ const SuccessEmailView = () => {
 
 class Toasts extends Component {
     render() {
-        const deleteOptions = {
+        const _deleteOptions = {
             loop: true,
             autoplay: true,
             animationData: deleteAnimation,
@@ -55,7 +55,7 @@ class Toasts extends Component {
                 preserveAspectRatio: 'xMidYMid slice',
             },
         };
-        const errorOptions = {
+        const _errorOptions = {
             loop: true,
             autoplay: true,
             animationData: errorAnimation,
@@ -63,7 +63,7 @@ class Toasts extends Component {
                 preserveAspectRatio: 'xMidYMid slice',
             },
         };
-        const downloadOptions = {
+        const _downloadOptions = {
             loop: true,
             autoplay: true,
             animationData: downloadAnimation,

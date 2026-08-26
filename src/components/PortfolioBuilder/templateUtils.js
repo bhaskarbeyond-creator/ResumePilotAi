@@ -14,7 +14,7 @@ export const SecurityUtils = {
         // For CSS classes, we need to be more permissive to allow Tailwind classes
         // Allow alphanumeric, hyphens, underscores, spaces, slashes, brackets, and periods
         const sanitized = className
-            .replace(/[^a-zA-Z0-9\s\-_\/\[\]\.\:]/g, '')
+            .replace(/[^a-zA-Z0-9\s\-_/[].:]/g, '')
             .trim()
             .slice(0, 500); // Increased limit for complex Tailwind classes
 

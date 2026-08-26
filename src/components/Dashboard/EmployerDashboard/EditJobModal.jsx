@@ -1,22 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
-import {
-    FaBriefcase,
-    FaMapMarkerAlt,
-    FaDollarSign,
-    FaFileAlt,
-    FaSave,
-    FaTimes,
-    FaPlus,
-    FaTrash,
-    FaSpinner,
-    FaExclamationTriangle,
-} from 'react-icons/fa';
+import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../../main';
 import { updateJobPosting, getApprovedEmployerCompanies } from '../../../firestore/dbOperations';
 import CustomLocationAutocomplete from '../../JobsListings/CustomLocationAutocomplete';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
     const user = useContext(AuthContext);
 
@@ -61,6 +51,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
             });
             loadCompanies();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [job, isOpen]);
 
     // Prevent background scrolling when modal is open
@@ -705,4 +696,5 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(EditJobModal);

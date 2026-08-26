@@ -15,7 +15,7 @@ import jcbLogo from "../../../assets/payment/JCB_logo.svg";
 const HomepageFooter = () => {
   const { t } = useTranslation('common');
   const [pages, setPages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
 useEffect(() => {
   getPages()

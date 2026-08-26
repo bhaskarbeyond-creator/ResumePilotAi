@@ -7,7 +7,7 @@ import { generateUserAiContent } from '../../../services/aiService';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 
 const SummaryStep = ({ resumeData, updateResumeData }) => {
-    const { t, i18n } = useTranslation('common');
+    const { t } = useTranslation('common');
     const [summary, setSummary] = useState(resumeData.summary || '');
 
     useEffect(() => {
@@ -95,7 +95,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                     const descLines = latestJob.description.split('\n');
                     const firstLine = descLines.find((line) => line.trim().length > 0);
                     if (firstLine) {
-                        achievement = firstLine.replace(/^[•\-\*]\s*/, '').trim();
+                        achievement = firstLine.replace(/^[•\-*]\s*/, '').trim();
                     }
                 }
             }
@@ -192,6 +192,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [summary]);
 
     // Update character count when summary changes from AI generation

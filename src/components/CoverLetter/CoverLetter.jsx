@@ -4,7 +4,7 @@ import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob, getSystemSettings } from '../../firestore/dbOperations';
-import { resolveAtsScoreVisibility, settingsFromSnapshot } from '../../utils/moduleFlags';
+import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
 import TemplateRenderer from '../TemplateRenderer';
@@ -198,7 +198,7 @@ class CoverLetter extends Component {
     };
 
     getDefaultLetterBody = () => {
-        const candidateName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
+        `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
         const role = this.state.jobTitle || 'the open position';
         const company = this.state.companyName || 'your organization';
         const skills = this.state.userSkills || 'relevant professional experience and technical leadership';
@@ -279,7 +279,7 @@ class CoverLetter extends Component {
                                 }
                             }
                         }
-                    } catch (e) {}
+                    } catch (_e) {}
                 }
             }
 
@@ -809,7 +809,6 @@ class CoverLetter extends Component {
                 </div>
             );
         }
-        const { t } = this.props;
         const candidateFullName = `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim();
         const activeTemplate = COVER_TEMPLATES.find(tpl => tpl.id === (this.state.templateId || 'Cover1')) || COVER_TEMPLATES[0];
         const effectiveBody = this.state.letterBody || this.getDefaultLetterBody();

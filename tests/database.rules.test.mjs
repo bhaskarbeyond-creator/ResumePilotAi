@@ -1,10 +1,6 @@
 import fs from 'node:fs';
 import { after, before, test } from 'node:test';
-import {
-  initializeTestEnvironment,
-  assertFails,
-  assertSucceeds,
-} from '@firebase/rules-unit-testing';
+import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { ref, get, set, update } from 'firebase/database';
 
 let env;
@@ -26,7 +22,7 @@ before(async () => {
         'conversation-participants/lookuphash': 'conversation-1'
       });
     });
-  } catch (err) {
+  } catch (_err) {
     console.warn('[Database Rules Test] Realtime Database Emulator offline — skipping emulator rule tests.');
   }
 });

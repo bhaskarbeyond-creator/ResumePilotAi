@@ -126,7 +126,7 @@ async function run12ModulesAudit() {
       results['1. Overview'] = { status: 'FAIL', ctxStatus: ctxRes.status, dpStatus: dpRes.status, qStatus: qRes.status };
     }
 
-    const tenantId = ctxRes.body?.context?.tenantId;
+    ctxRes.body?.context?.tenantId;
     const workspaceId = ctxRes.body?.context?.workspaceId;
 
     // -------------------------------------------------------------

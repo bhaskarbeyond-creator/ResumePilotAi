@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { FaTimes, FaBuilding, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaExclamationCircle, FaImage } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
 import { createCompany } from '../../../firestore/dbOperations';
@@ -7,6 +7,7 @@ import { AuthContext } from '../../../main';
 import LocationAutocomplete from '../../JobsListings/LocationAutocomplete';
 import { sanitizeImageUrl, sanitizeUrl } from '../../../utils/sanitizeHtml';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
     const user = useContext(AuthContext);
     
@@ -563,4 +564,5 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(AddCompanyModal);

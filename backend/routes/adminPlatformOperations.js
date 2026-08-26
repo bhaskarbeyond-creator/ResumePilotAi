@@ -2,7 +2,7 @@
 
 const express = require('express');
 const admin = require('../services/firebaseAdmin');
-const { requireAuth, requirePermission, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin } = require('../security/auth');
+const { requireAuth, requirePermission, requireSuperAdmin, requireRecentAdminAuthentication } = require('../security/auth');
 const { getPlatformCurrencyConfig, setPlatformCurrencyConfig, normalizeCurrencyCode, formatCurrencyAmount } = require('../services/platformCurrency');
 const { getGlobalAiDashboardData } = require('../services/adminAiEntitlement');
 const { getPool } = require('../database/mysql');
@@ -54,7 +54,7 @@ router.put('/platform/currency', requireAuth, requireRecentAdminAuthentication, 
 router.get('/subscriptions', requirePermission('payments.read'), async (req, res) => {
   const db = req.app.get('db');
   const pool = getPool();
-  const statusFilter = String(req.query?.status || 'all').toLowerCase();
+  String(req.query?.status || 'all').toLowerCase();
   const limit = Math.min(Math.max(Number(req.query?.limit) || 50, 1), 200);
 
   try {
@@ -316,7 +316,7 @@ router.patch('/platform/tenants/:tenantId/commercials', requireRecentAdminAuthen
 router.patch('/platform/tenants/:tenantId/ai-policy', requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
   const tenantId = String(req.params.tenantId || '').trim();
   const db = req.app.get('db');
-  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+  req.app.get('firebaseAdmin') || admin;
   const { dailyLimit, allowedProviders, allowedModels, primaryModel, customProviderKeys } = req.body || {};
 
   if (!db) return res.status(503).json({ success: false, code: 'DATABASE_UNAVAILABLE', error: 'Database unavailable' });

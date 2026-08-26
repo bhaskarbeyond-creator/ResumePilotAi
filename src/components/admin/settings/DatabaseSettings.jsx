@@ -1,20 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-    getDatabaseSettings,
-    switchDatabaseEngine,
-    testDatabaseConnection,
-    initializeMySqlSchema,
-    triggerSyncNow,
-    verifyDatabaseParity,
-    retryDeadLetters
-} from '../../../services/api/databaseAdmin';
-import {
-    FaDatabase, FaFire, FaServer, FaCheckCircle, FaTimesCircle,
-    FaExclamationTriangle, FaSpinner, FaSyncAlt, FaShieldAlt,
-    FaInfoCircle, FaBolt, FaHistory, FaCheck, FaExclamationCircle,
-    FaExchangeAlt, FaLayerGroup, FaCheckDouble, FaTimes, FaCopy,
-    FaEye, FaArrowRight, FaUserShield, FaClock
-} from 'react-icons/fa';
+import { getDatabaseSettings, switchDatabaseEngine, testDatabaseConnection, initializeMySqlSchema, triggerSyncNow, verifyDatabaseParity } from '../../../services/api/databaseAdmin';
+import { FaDatabase, FaFire, FaServer, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaSpinner, FaSyncAlt, FaShieldAlt, FaInfoCircle, FaBolt, FaHistory, FaCheck, FaExclamationCircle, FaExchangeAlt, FaLayerGroup, FaCheckDouble, FaTimes, FaCopy, FaEye, FaArrowRight, FaUserShield, FaClock } from 'react-icons/fa';
 
 const DatabaseSettings = () => {
     const [loading, setLoading] = useState(true);
@@ -26,7 +12,7 @@ const DatabaseSettings = () => {
     // Testing & action states
     const [testingEngine, setTestingEngine] = useState(null);
     const [switching, setSwitching] = useState(false);
-    const [initializingSchema, setInitializingSchema] = useState(false);
+    const [_initializingSchema, setInitializingSchema] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [verifyingParity, setVerifyingParity] = useState(false);
     const [parityResult, setParityResult] = useState(null);
@@ -106,7 +92,7 @@ const DatabaseSettings = () => {
         }
     };
 
-    const handleInitializeSchema = async () => {
+    async () => {;
         setInitializingSchema(true);
         setStatusMessage(null);
         setErrorMessage(null);

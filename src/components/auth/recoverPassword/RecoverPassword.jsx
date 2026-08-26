@@ -16,7 +16,7 @@ class RecoverPassword extends Component {
     handleInputs(title, value) {
         switch (title) {
             case "Email":
-                this.setState((prevState, props) => ({
+                this.setState((_prevState, _props) => ({
                     email: value
                 }));
                 break;

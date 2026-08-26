@@ -403,7 +403,7 @@ const AboutCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={aboutTemplateOptions} category="About" />,
+                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={aboutTemplateOptions} category="About" />,
             },
         };
 

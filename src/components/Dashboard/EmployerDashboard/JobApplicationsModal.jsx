@@ -1,33 +1,15 @@
 import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { withTranslation } from 'react-i18next';
 import './JobApplicationsModal.css';
 import SendMessageDialog from './SendMessageDialog';
 import { updateApplicationStatusWithMessage } from '../../../firestore/dbOperations';
 import RejectionReasonModal from './RejectionReasonModal';
-import {
-    FaTimes,
-    FaUser,
-    FaEnvelope,
-    FaCalendar,
-    FaFileAlt,
-    FaDownload,
-    FaCheckCircle,
-    FaTimesCircle,
-    FaUsers,
-    FaClock,
-    FaEye,
-    FaChevronDown,
-    FaChevronUp,
-    FaSearch,
-    FaFilter,
-    FaExpand,
-    FaCompress,
-    FaCommentAlt,
-} from 'react-icons/fa';
+import { FaTimes, FaUser, FaEnvelope, FaCalendar, FaFileAlt, FaDownload, FaCheckCircle, FaTimesCircle, FaUsers, FaClock, FaEye, FaChevronDown, FaChevronUp, FaSearch, FaFilter, FaExpand, FaCompress, FaCommentAlt } from 'react-icons/fa';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const JobApplicationsModal = ({ isOpen, onClose, job, applications, onUpdateStatus, showToast, t }) => {
     const [filteredApplications, setFilteredApplications] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -40,6 +22,7 @@ const JobApplicationsModal = ({ isOpen, onClose, job, applications, onUpdateStat
         if (applications) {
             filterApplications();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [applications, searchTerm, statusFilter]);
 
     const filterApplications = () => {
@@ -438,4 +421,5 @@ const [selectedApplication, setSelectedApplication] = useState(null);
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(JobApplicationsModal);

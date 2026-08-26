@@ -23,7 +23,7 @@ class MySQLRepository {
                 if (typeof copy[field] === 'string') {
                     try {
                         copy[field] = JSON.parse(copy[field]);
-                    } catch (e) {
+                    } catch (_e) {
                         copy[field] = Array.isArray(copy[field]) ? [] : {};
                     }
                 }
@@ -264,7 +264,7 @@ class MySQLRepository {
         if (!rows.length) return null;
         const r = rows[0];
         let parsed = null;
-        try { parsed = JSON.parse(r.object); } catch (e) { parsed = {}; }
+        try { parsed = JSON.parse(r.object); } catch (_e) { parsed = {}; }
         return {
             id: r.id,
             ownerUid: r.owner_uid,
@@ -299,7 +299,7 @@ class MySQLRepository {
         const r = rows[0];
         let extra = {};
         if (r.extra_data) {
-            try { extra = typeof r.extra_data === 'string' ? JSON.parse(r.extra_data) : r.extra_data; } catch (e) {}
+            try { extra = typeof r.extra_data === 'string' ? JSON.parse(r.extra_data) : r.extra_data; } catch (_e) {}
         }
         return {
             ...r,
@@ -918,7 +918,7 @@ class MySQLRepository {
         let data = {};
         try {
             data = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
-        } catch (e) {}
+        } catch (_e) {}
         return data;
     }
 
@@ -940,7 +940,7 @@ class MySQLRepository {
         if (!rows.length) return {};
         try {
             return typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
-        } catch (e) {
+        } catch (_e) {
             return {};
         }
     }

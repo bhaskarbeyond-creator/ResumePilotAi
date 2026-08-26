@@ -869,7 +869,7 @@ class FirestoreTenantRegistry {
     return validateMembership(membership, principalId);
   }
 
-  async assertNotLastOwner(tenantId, principalId, nextRoles, nextStatus) {
+  async assertNotLastOwner(tenantId, principalId, nextRoles, _nextStatus) {
     if (nextRoles && nextRoles.includes('TENANT_OWNER')) return;
     const memberships = await this.listTenantMemberships(tenantId);
     const owners = memberships.filter(member => Array.isArray(member.roles) && member.roles.includes('TENANT_OWNER') && String(member.status || '').toUpperCase() === 'ACTIVE');
@@ -1444,7 +1444,7 @@ class InMemoryTenantRegistry {
     return validateMembership(membership, principalId);
   }
 
-  async assertNotLastOwner(tenantId, principalId, nextRoles, nextStatus) {
+  async assertNotLastOwner(tenantId, principalId, nextRoles, _nextStatus) {
     if (nextRoles && nextRoles.includes('TENANT_OWNER')) return;
     const memberships = await this.listTenantMemberships(tenantId);
     const owners = memberships.filter(member => Array.isArray(member.roles) && member.roles.includes('TENANT_OWNER') && String(member.status || '').toUpperCase() === 'ACTIVE');

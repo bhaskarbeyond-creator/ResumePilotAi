@@ -3,7 +3,7 @@ import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
 import { filterMeaningfulProjects } from '../utils/contentSanitizer';
 
-export default function SmartProjects({ projects = [], theme = {}, title = 'Projects' }) {
+export default function SmartProjects({ projects = [], _theme = {}, title = 'Projects' }) {
   const validProjects = filterMeaningfulProjects(projects);
   if (!validProjects.length) return null;
 

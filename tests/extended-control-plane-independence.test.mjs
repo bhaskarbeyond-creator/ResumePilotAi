@@ -4,7 +4,6 @@ import { getPool } from '../backend/database/mysql.js';
 import FirestoreRepository from '../backend/repositories/FirestoreRepository.js';
 import MySQLRepository from '../backend/repositories/MySQLRepository.js';
 import { replicateToMySQL } from '../backend/database/syncManager.js';
-import { recordTombstone, isTombstoned } from '../backend/database/tombstones.js';
 
 describe('P0 — Extended Control-Plane & Data-Plane Independence Proof', () => {
   let pool;

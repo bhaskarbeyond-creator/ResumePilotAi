@@ -1,30 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {
-  DIFFICULTIES,
-  DURATION_PRESETS,
-  EXPERIENCE_LEVELS,
-  INTERVIEW_MODES,
-  INTERVIEW_TYPES,
-  PALETTE_META,
-  appendHistory,
-  buildInterviewReport,
-  clearOwnerSession,
-  formatClock,
-  historyStorageKey,
-  paletteStatus,
-  readHistory,
-  readOwnerSession,
-  recentInterviewQuestions,
-  remainingFromDeadline,
-  resolveDurationSeconds,
-  sanitizeJobDescription,
-  sanitizeResumeFacts,
-  scoreTrend,
-  sessionStorageKey,
-  writeOwnerSession,
-} from '../src/utils/interviewCoach.js';
+import { DIFFICULTIES, DURATION_PRESETS, EXPERIENCE_LEVELS, INTERVIEW_MODES, INTERVIEW_TYPES, PALETTE_META, appendHistory, buildInterviewReport, clearOwnerSession, formatClock, historyStorageKey, paletteStatus, readHistory, readOwnerSession, recentInterviewQuestions, remainingFromDeadline, resolveDurationSeconds, sanitizeJobDescription, sanitizeResumeFacts, scoreTrend, sessionStorageKey, writeOwnerSession } from '../src/utils/interviewCoach.js';
 
 test('duration presets and custom minutes resolve before the exam starts with bounds', () => {
   // Standard presets

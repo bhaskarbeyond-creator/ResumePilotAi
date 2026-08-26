@@ -105,6 +105,7 @@ const AutocompleteInputField = ({
         return () => {
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [safeValue]);
 
     useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);

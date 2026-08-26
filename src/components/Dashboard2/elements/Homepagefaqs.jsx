@@ -1,19 +1,4 @@
-import { 
-  FaSearch, 
-  FaChevronDown, 
-  FaThumbsUp, 
-  FaThumbsDown, 
-  FaBookOpen, 
-  FaLightbulb,
-  FaSmile,
-  FaCog,
-  FaUserShield,
-  FaHeart,
-  FaRocket,
-  FaStar,
-  FaFilter,
-  FaTimes
-} from 'react-icons/fa';
+import { FaSearch, FaChevronDown, FaThumbsUp, FaThumbsDown, FaBookOpen, FaLightbulb, FaSmile, FaCog, FaUserShield, FaHeart, FaRocket, FaStar, FaFilter, FaTimes } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

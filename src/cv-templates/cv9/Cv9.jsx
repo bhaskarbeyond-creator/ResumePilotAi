@@ -100,7 +100,7 @@ class Cv9 extends Component {
     render() {
         const { t } = this.props;
         const primaryColor = this.getPrimaryColor();
-        const secondaryColor = this.getSecondaryColor();
+        this.getSecondaryColor();
 
         return (
             <div id="resumen" className="cv9-board">

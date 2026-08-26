@@ -5,7 +5,7 @@ import { useAdminSession } from '../AdminContext';
 
 export default function PlatformCurrencySettings() {
   const { isSuperAdmin } = useAdminSession();
-  const [currencyConfig, setCurrencyConfig] = useState(null);
+  const [_currencyConfig, setCurrencyConfig] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
   const [allowMultiCurrency, setAllowMultiCurrency] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,7 +61,7 @@ export default function PlatformCurrencySettings() {
     }
   };
 
-  const sampleAmount = 1499.00;
+  1499.00;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 space-y-5 animate-fade-in text-xs">

@@ -1,24 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
-import { 
-    getBlogSettings, 
-    updateBlogSettings, 
-    listBlogCategories, 
-    createBlogCategory, 
-    updateBlogCategory, 
-    deleteBlogCategory 
-} from '../../../firestore/dbOperations';
-import { 
-    FiSave, 
-    FiPlus, 
-    FiEdit3, 
-    FiTrash2, 
-    FiCheck, 
-    FiX,
-    FiSettings,
-    FiTag,
-    FiBookOpen
-} from 'react-icons/fi';
+import { getBlogSettings, updateBlogSettings, listBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCategory } from '../../../firestore/dbOperations';
+import { FiSave, FiPlus, FiEdit3, FiTrash2, FiCheck, FiX, FiSettings, FiTag, FiBookOpen } from 'react-icons/fi';
 
 const BlogSettings = () => {
     const { confirm, confirmationDialog } = useConfirmDialog();
@@ -51,6 +34,7 @@ const BlogSettings = () => {
 
     useEffect(() => {
         loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadData = async () => {

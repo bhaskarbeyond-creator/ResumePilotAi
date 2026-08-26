@@ -3,7 +3,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const admin = require('../services/firebaseAdmin');
-const { isSuperAdmin, permissionsFor } = require('../security/auth');
+const { permissionsFor } = require('../security/auth');
 const { getUserAiEntitlement, setUserAiQuotaOverride, removeUserAiQuotaOverride, resetUserAiQuota } = require('../services/adminAiEntitlement');
 const { normalizeCurrencyCode } = require('../services/platformCurrency');
 const { recordAdminAuditLog } = require('../security/adminAudit');
@@ -16,7 +16,7 @@ router.use((req, res, next) => {
   try {
     req.repository = req.repository || getRepository(req.app.get('db'));
     next();
-  } catch (err) {
+  } catch (_err) {
     return res.status(500).json({ error: 'Database layer unavailable' });
   }
 });
@@ -454,7 +454,7 @@ router.get('/:uid', async (req, res) => {
     }
 
     return res.json({ success: true, user: adminUserProjection(identity, profile, uid) });
-  } catch (error) {
+  } catch (_error) {
     return res.status(500).json({ success: false, code: 'USER_LOAD_FAILED', error: 'Unable to load user.', requestId: res.locals.requestId });
   }
 });

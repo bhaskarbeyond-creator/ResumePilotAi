@@ -3,7 +3,7 @@ import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
 import { filterMeaningfulAchievements } from '../utils/contentSanitizer';
 
-export default function SmartAchievements({ achievements = [], theme = {}, title = 'Key Achievements' }) {
+export default function SmartAchievements({ achievements = [], _theme = {}, title = 'Key Achievements' }) {
   const validAchievements = filterMeaningfulAchievements(achievements);
   if (!validAchievements.length) return null;
 

@@ -3,12 +3,7 @@ import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import { CardElement } from '@stripe/react-stripe-js';
 import CheckImage from '../../../assets/check.png';
-import {
-    FaLock, FaShieldAlt, FaCheckCircle, FaArrowRight, FaArrowLeft,
-    FaCreditCard, FaPaypal, FaGlobe, FaCertificate, FaCrown, FaCheck,
-    FaStar, FaBolt, FaRocket, FaGem, FaInfinity, FaHeadset, FaDownload,
-    FaFileAlt, FaMagic, FaChevronRight, FaMapMarkerAlt, FaEnvelope
-} from 'react-icons/fa';
+import { FaLock, FaShieldAlt, FaCheckCircle, FaArrowRight, FaArrowLeft, FaCreditCard, FaPaypal, FaGlobe, FaCertificate, FaCrown, FaCheck, FaStar, FaBolt, FaRocket, FaGem, FaInfinity, FaHeadset, FaDownload, FaFileAlt, FaMagic, FaChevronRight, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
 // Payment method logos
 import VisaLogo from '../../../assets/payment/Visa_Inc._logo.svg';
 import MastercardLogo from '../../../assets/payment/Mastercard-logo.svg';
@@ -39,7 +34,7 @@ const View = () => {
 };
 
 // PayPal Button Component
-const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPlan, couponCode }) => {
+const PayPalButtonWrapper = ({ _amount, _currency, onSuccess, onError, selectedPlan, couponCode }) => {
     const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
     const paymentOrderIdRef = React.useRef(null);
 
@@ -52,7 +47,7 @@ const PayPalButtonWrapper = ({ amount, currency, onSuccess, onError, selectedPla
 
     const onApprove = (data, actions) => actions.order.capture().then((details) => onSuccess({ ...details, paymentOrderId: paymentOrderIdRef.current }));
     const onErrorHandler = (err) => onError(err);
-    const onCancel = (data) => {};
+    const onCancel = (_data) => {};
 
     if (isPending) {
         return (
@@ -199,7 +194,7 @@ class Checkout extends Component {
                         .catch((err) => this.showToast('error', 'PhonePe verification failed: ' + (err.response?.data?.error || err.message)));
                 }
             }
-        } catch (e) { /* sessionStorage may be unavailable */ }
+        } catch (_e) { /* sessionStorage may be unavailable */ }
     }
 
     componentWillUnmount() {
@@ -607,13 +602,13 @@ class Checkout extends Component {
                     amount: txnData.amount,
                 },
                 handler: {
-                    notifyMerchant: (eventName, data) => {
+                    notifyMerchant: (eventName, _data) => {
                         if (eventName === 'SESSION_EXPIRED') {
                             this.showToast('warning', 'Paytm session expired. Please go back and try again.');
                             this.setState({ isLoading: false });
                         }
                     },
-                    transactionStatus: async (data) => {
+                    transactionStatus: async (_data) => {
                         try {
                             const verification = await axios.post(`${apiBase}/api/paytm/verify-transaction`, {
                                 orderId: txnData.orderId,
@@ -679,7 +674,7 @@ class Checkout extends Component {
                     currency: this.props.currencyCode || 'INR',
                     customerTaxId: this.state.customerTaxId || ''
                 }));
-            } catch (e) { /* sessionStorage may be unavailable in some environments */ }
+            } catch (_e) { /* sessionStorage may be unavailable in some environments */ }
 
             // Redirect to PhonePe-hosted payment page
             window.location.href = ppData.redirectUrl;
@@ -735,7 +730,6 @@ class Checkout extends Component {
     }
 
     renderOrderSummary(price, planTitle) {
-        const { t } = this.props;
         const tax = this.getTaxCalculations(price);
         return (
             <div className="bg-white rounded-3xl border border-slate-200 shadow-lg overflow-hidden sticky top-6">
@@ -798,7 +792,7 @@ class Checkout extends Component {
                         { icon: FaDownload, text: 'PDF, Word DocX & Portfolio Links', color: 'text-indigo-600' },
                         { icon: FaRocket, text: 'ATS Keyword Optimization Engine', color: 'text-blue-600' },
                         { icon: FaHeadset, text: '24/7 VIP Priority Support', color: 'text-emerald-600' },
-                    ].map(({ icon: Icon, text, color }, i) => (
+                    ].map(({ icon: _Icon, text, color }, i) => (
                         <div key={i} className="flex items-center gap-2.5 text-xs text-slate-600">
                             <div className={`w-5 h-5 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 ${color}`}>
                                 <Icon className="w-2.5 h-2.5" />
@@ -854,7 +848,6 @@ class Checkout extends Component {
     }
 
     render() {
-        const { t } = this.props;
         const isEmbedded = this.props.embedded === true;
         const price = this.getPrice();
         const planTitle = this.getPlanLabel();
@@ -868,8 +861,7 @@ class Checkout extends Component {
     }
 
     renderStandalone(price, planTitle) {
-        const { t } = this.props;
-        const tax = this.getTaxCalculations(price);
+        this.getTaxCalculations(price);
         const { step, isLoading, paymentMethod } = this.state;
 
         const steps = [
@@ -1723,7 +1715,7 @@ class Checkout extends Component {
                                                 { icon: FaHeadset, text: '24/7 Priority VIP Support' },
                                                 { icon: FaFileAlt, text: '51+ Premium ATS Resume Templates' },
                                                 { icon: FaInfinity, text: 'Unlimited Cloud Sync & Resume Storage' },
-                                            ].map(({ icon: Icon, text }, i) => (
+                                            ].map(({ icon: _Icon, text }, i) => (
                                                 <div key={i} className="flex items-center gap-3 text-xs text-slate-200">
                                                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
                                                         <Icon className="w-3 h-3 text-indigo-300" />
@@ -1783,10 +1775,9 @@ class Checkout extends Component {
     // ─────────────────────────────────────────────────────────────────────────
     // EMBEDDED MODE: clean inline layout inside Plans.jsx card container
     // ─────────────────────────────────────────────────────────────────────────
-    renderEmbedded(price, planTitle) {
-        const { t } = this.props;
+    renderEmbedded(price, _planTitle) {
         const { step, isLoading, paymentMethod } = this.state;
-        const tax = this.getTaxCalculations(price);
+        this.getTaxCalculations(price);
 
         const steps = [
             { label: 'Billing Info', icon: FaGlobe },
@@ -2323,7 +2314,7 @@ class Checkout extends Component {
                                     { icon: FaDownload, text: 'PDF, Word DocX & Portfolio Links' },
                                     { icon: FaRocket, text: 'ATS Smart Keyword Optimization' },
                                     { icon: FaHeadset, text: '24/7 Priority VIP Support' },
-                                ].map(({ icon: Icon, text }, i) => (
+                                ].map(({ icon: _Icon, text }, i) => (
                                     <div key={i} className="flex items-center gap-2.5 text-xs text-slate-200">
                                         <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
                                             <Icon className="w-2.5 h-2.5 text-indigo-300" />

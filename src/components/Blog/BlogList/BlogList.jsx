@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { 
-    listBlogPosts, 
-    listBlogCategories, 
-    getBlogSettings 
-} from '../../../firestore/dbOperations';
+import { listBlogPosts, listBlogCategories, getBlogSettings } from '../../../firestore/dbOperations';
 import BlogCard from '../components/BlogCard';
 import CategoryFilter from '../components/CategoryFilter';
 import Spinner from '../../Spinner/Spinner';
@@ -53,6 +49,7 @@ const BlogList = () => {
 
     useEffect(() => {
         fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedCategory, currentPage]);
 
     useEffect(() => {

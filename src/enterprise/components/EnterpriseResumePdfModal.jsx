@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  FiX, FiPrinter, FiDownload, FiZoomIn, FiZoomOut,
-  FiMaximize2, FiStar, FiFileText, FiCheck, FiLayers, FiExternalLink
-} from 'react-icons/fi';
+import { FiX, FiPrinter, FiDownload, FiZoomIn, FiZoomOut, FiMaximize2, FiStar, FiFileText, FiCheck, FiLayers, FiExternalLink } from 'react-icons/fi';
 import TemplateRenderer from '../../components/TemplateRenderer';
 import { executeDocxDownload } from '../../utils/docxDownload';
 import fire from '../../conf/fire';
@@ -32,6 +29,7 @@ const TEMPLATE_NAMES = {
   Cv51: 'Europass Modern Official'
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function normalizeResumeValues(resource) {
   if (!resource) return {};
   const p = resource.payload || resource;

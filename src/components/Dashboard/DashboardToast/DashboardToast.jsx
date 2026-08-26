@@ -5,7 +5,7 @@ import './DashboardToast.scss';
 import { IoMdCheckmark } from 'react-icons/io';
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 import { HiOutlineExclamation } from 'react-icons/hi';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 class DashboardToast extends Component {
     constructor(props) {
         super(props);

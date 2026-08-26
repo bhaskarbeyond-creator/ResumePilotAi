@@ -19,12 +19,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { createServer } from 'vite';
-import {
-  createEnterpriseFixtureBackend,
-  installAuthenticatedSession,
-  seedEnterpriseState,
-  viteFixtureDefines,
-} from './helpers/enterprise-fixture.mjs';
+import { createEnterpriseFixtureBackend, installAuthenticatedSession, seedEnterpriseState, viteFixtureDefines } from './helpers/enterprise-fixture.mjs';
 
 test.describe.configure({ mode: 'serial' });
 

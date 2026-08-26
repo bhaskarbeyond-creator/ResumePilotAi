@@ -114,7 +114,7 @@ const Projects4 = {
             },
         ],
     },
-    render: ({ title, subtitle, email, backgroundColor, terminalTheme, projects }) => {
+    render: ({ title, subtitle, email, _backgroundColor, terminalTheme, projects }) => {
         const terminalThemes = {
             matrix: {
                 primary: 'text-green-400',

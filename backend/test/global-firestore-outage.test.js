@@ -21,7 +21,6 @@ const express = require(path.resolve(__dirname, '../node_modules/express'));
 
 const { getPool } = require('../database/mysql');
 const MySQLRepository = require('../repositories/MySQLRepository');
-const { getRepository } = require('../repositories');
 
 const { resumesRouter } = require('../routes/resumes');
 const { coversRouter } = require('../routes/covers');
@@ -39,7 +38,6 @@ const { setTokenVerifierForTests, setUserLookupForTests } = require('../security
 
 describe('Whole-Application Global Firestore Outage Isolation Test Suite', () => {
     let app;
-    let pool;
     let repo;
     const testAdminUid = `admin_outage_${Date.now()}`;
     const testUserUid = `user_outage_${Date.now()}`;
@@ -76,7 +74,7 @@ describe('Whole-Application Global Firestore Outage Isolation Test Suite', () =>
                         });
                         throw err;
                     },
-                    set: async (data, opts) => {
+                    set: async (_data, _opts) => {
                         const start = Date.now();
                         const err = new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.');
                         err.code = 8;
@@ -106,8 +104,8 @@ describe('Whole-Application Global Firestore Outage Isolation Test Suite', () =>
                         });
                         throw err;
                     },
-                    collection: (subCol) => ({
-                        doc: (subDocId) => ({
+                    collection: (_subCol) => ({
+                        doc: (_subDocId) => ({
                             get: async () => {
                                 const err = new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.');
                                 err.code = 8;
@@ -170,7 +168,7 @@ describe('Whole-Application Global Firestore Outage Isolation Test Suite', () =>
     };
 
     before(async () => {
-        pool = getPool();
+        getPool();
         repo = new MySQLRepository();
 
         // Inject test token verifier
@@ -291,7 +289,7 @@ describe('Whole-Application Global Firestore Outage Isolation Test Suite', () =>
         });
     });
 
-    const recordTestResult = (route, method, statusCode, durationMs, payload = null) => {
+    const recordTestResult = (route, method, statusCode, durationMs, _payload = null) => {
         routeEvidence.push({
             route,
             method,

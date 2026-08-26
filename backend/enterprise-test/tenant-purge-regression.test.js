@@ -227,7 +227,7 @@ test('a tenant with more than 500 control-plane documents is purged in chunked b
 // ─── 6. Identity map: purging a personal tenant must not brick its owner ────
 
 test('purging a personal tenant removes the identity map so the owner can obtain a fresh workspace', async () => {
-  const { db, admin, registry } = buildRegistry();
+  const { db, registry } = buildRegistry();
   const identityDocId = 'a'.repeat(64);
   await db.collection('enterprise_principal_tenants').doc(identityDocId).set({ principalId: OWNER_A, personalTenantId: TENANT_A, defaultWorkspaceId: 'ws-x' });
   await seedTenant(db, { tenantId: TENANT_A, ownerId: OWNER_A, lifecycleState: 'DELETING', updatedAt: daysAgo(30) });
@@ -244,7 +244,7 @@ test('purging a personal tenant removes the identity map so the owner can obtain
 // ─── 7. Idempotency ────────────────────────────────────────────────────────
 
 test('purge is idempotent: a second purge of the same tenant succeeds', async () => {
-  const { db, admin, registry } = buildRegistry();
+  const { db, registry } = buildRegistry();
   await seedTenant(db, { tenantId: TENANT_A, ownerId: OWNER_A, lifecycleState: 'DELETING', updatedAt: daysAgo(30) });
   await registry.purgeTenantRecords(TENANT_A);
   await assert.doesNotReject(() => registry.purgeTenantRecords(TENANT_A));

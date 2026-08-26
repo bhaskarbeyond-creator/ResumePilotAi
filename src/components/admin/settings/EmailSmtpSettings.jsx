@@ -4,11 +4,7 @@ import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { useAdminSession } from '../AdminContext';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import config from '../../../conf/configuration';
-import { 
-    FaEnvelope, FaCheck, FaTimes, FaSpinner, FaPaperPlane, 
-    FaEye, FaEyeSlash, FaServer, FaCode, FaSlidersH, FaFileInvoice, FaUserPlus, 
-    FaKey, FaExclamationTriangle, FaInbox, FaHistory, FaShieldAlt, FaRedo, FaSearch, FaCheckCircle, FaExclamationCircle, FaBriefcase, FaDesktop, FaMobileAlt, FaFilter
-} from 'react-icons/fa';
+import { FaEnvelope, FaCheck, FaTimes, FaSpinner, FaPaperPlane, FaEye, FaEyeSlash, FaServer, FaCode, FaSlidersH, FaFileInvoice, FaUserPlus, FaKey, FaExclamationTriangle, FaInbox, FaHistory, FaShieldAlt, FaRedo, FaSearch, FaCheckCircle, FaExclamationCircle, FaBriefcase, FaDesktop, FaMobileAlt, FaFilter } from 'react-icons/fa';
 
 /**
  * Colour vocabulary for DNS results, matching the Platform Health palette:
@@ -100,7 +96,7 @@ const EmailSmtpSettings = () => {
     const [selectedTemplate, setSelectedTemplate] = useState('tax_invoice');
     const [testRecipientEmail, setTestRecipientEmail] = useState('');
     const [customSubject, setCustomSubject] = useState('');
-    const [customTemplateHtml, setCustomTemplateHtml] = useState('');
+    const [_customTemplateHtml] = useState('');
 
     // UX Enhancement State: Preview Modal & Grid Filtering
     const [previewModalKey, setPreviewModalKey] = useState(null); // template key or null
@@ -1303,7 +1299,7 @@ const EmailSmtpSettings = () => {
                     {/* 20 Template Cards Grid with Explicit View & Edit Actions */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
                         {Object.entries(TEMPLATE_SPECS)
-                            .filter(([key, spec]) => {
+                            .filter(([_key, spec]) => {
                                 const matchesCategory = templateCategoryFilter === 'all' || spec.category === templateCategoryFilter;
                                 const matchesSearch = !templateSearchQuery || 
                                     spec.name.toLowerCase().includes(templateSearchQuery.toLowerCase()) || 

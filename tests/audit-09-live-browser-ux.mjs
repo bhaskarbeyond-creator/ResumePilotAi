@@ -57,7 +57,7 @@ async function runLiveBrowserUxAudit() {
       // 4. Test Command Palette shortcut (Ctrl+K)
       await page.keyboard.press('Control+KeyK');
       await page.waitForTimeout(400);
-      const paletteVisible = await page.$('.command-palette, [role="dialog"], input[placeholder*="Search"]');
+      await page.$('.command-palette, [role="dialog"], input[placeholder*="Search"]');
 
       // Dismiss palette if open
       await page.keyboard.press('Escape');

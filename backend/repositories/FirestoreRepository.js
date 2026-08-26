@@ -11,7 +11,7 @@ class FirestoreRepository {
         if (!this.db) {
             try {
                 this.db = admin.firestore();
-            } catch (e) {
+            } catch (_e) {
                 throw new Error('Firestore database instance is unavailable.');
             }
         }

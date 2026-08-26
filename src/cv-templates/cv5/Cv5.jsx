@@ -6,7 +6,7 @@ import Phone from '../../assets/cv2-assets/phone-call.png';
 import Email from '../../assets/cv2-assets/envelope.png';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { getContrastTextColor, formatLocation, formatDateRange, getAvatarUrl } from '../templateUtils';
+import { getContrastTextColor, formatLocation, formatDateRange } from '../templateUtils';
 
 class Cv5 extends Component {
     constructor(props) {

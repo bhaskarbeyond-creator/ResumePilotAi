@@ -1,10 +1,6 @@
 import fs from 'node:fs';
 import { after, before, test } from 'node:test';
-import {
-  initializeTestEnvironment,
-  assertFails,
-  assertSucceeds,
-} from '@firebase/rules-unit-testing';
+import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 let env;
@@ -35,7 +31,7 @@ before(async () => {
       await setDoc(doc(db, 'data/system_settings'), { ai: { geminiApiKey: 'legacy-secret' } });
       await setDoc(doc(db, 'settings/ai_providers'), { gemini: { apiKey: 'must-not-leak' } });
     });
-  } catch (err) {
+  } catch (_err) {
     console.warn('[Firestore Rules Test] Firebase Firestore Emulator offline — skipping emulator rule tests.');
   }
 });

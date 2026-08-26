@@ -3,24 +3,7 @@ import React, { Component } from 'react';
 import './Cv37.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaQuoteLeft,
-    FaRegLightbulb,
-    FaCheck,
-    FaUser,
-    FaStar,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaQuoteLeft, FaRegLightbulb, FaCheck, FaUser, FaStar } from 'react-icons/fa';
 
 class Cv37 extends Component {
     constructor(props) {

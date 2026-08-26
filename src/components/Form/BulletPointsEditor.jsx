@@ -38,14 +38,14 @@ function parseBullets(val) {
         const liMatches = str.match(/<li[^>]*>(.*?)<\/li>/gi);
         if (liMatches && liMatches.length > 0) {
             const items = liMatches
-                .map((li) => li.replace(/<[^>]*>/g, '').replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+                .map((li) => li.replace(/<[^>]*>/g, '').replace(/^[\s•\d.*)-]+/, '').trim())
                 .filter(Boolean);
             if (items.length > 0) return items;
         }
         const pMatches = str.match(/<p[^>]*>(.*?)<\/p>/gi);
         if (pMatches && pMatches.length > 0) {
             const items = pMatches
-                .map((p) => p.replace(/<[^>]*>/g, '').replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+                .map((p) => p.replace(/<[^>]*>/g, '').replace(/^[\s•\d.*)-]+/, '').trim())
                 .filter(Boolean);
             if (items.length > 0) return items;
         }
@@ -55,7 +55,7 @@ function parseBullets(val) {
     const cleanStr = str.replace(/<[^>]*>/g, '');
     const lines = cleanStr
         .split(/\r?\n/)
-        .map((line) => line.replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+        .map((line) => line.replace(/^[\s•\d.*)-]+/, '').trim())
         .filter(Boolean);
 
     return lines.length > 0 ? lines : [''];
@@ -108,6 +108,7 @@ const BulletPointsEditor = ({
             setLocalBullets(parsed.length > 0 ? parsed : ['']);
             lastEmittedValueRef.current = serializeBullets(parsed);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value]);
 
     useEffect(() => () => {
@@ -134,7 +135,7 @@ const BulletPointsEditor = ({
         if (newText.includes('\n')) {
             const pastedLines = newText
                 .split(/\r?\n/)
-                .map((l) => l.replace(/^[\s•\-\*\d\.\)\s]+/, '').trim())
+                .map((l) => l.replace(/^[\s•\d.*)-]+/, '').trim())
                 .filter(Boolean);
 
             if (pastedLines.length > 1) {
@@ -318,7 +319,7 @@ const BulletPointsEditor = ({
 
     // Calculate quality rating for each bullet point based on metrics & action verbs
     const getBulletQuality = (text) => {
-        const clean = String(text || '').replace(/^[\s•\-\*\d\.\)\s]+/, '').trim();
+        const clean = String(text || '').replace(/^[\s•\d.*)-]+/, '').trim();
         const charCount = clean.length;
 
         if (!clean || charCount < 15) {
@@ -415,6 +416,7 @@ const BulletPointsEditor = ({
             else red++;
         });
         return { total: valid.length, green, amber, red };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [localBullets]);
 
     return (

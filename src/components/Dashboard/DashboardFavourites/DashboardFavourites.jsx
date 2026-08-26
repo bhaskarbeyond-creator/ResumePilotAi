@@ -2,7 +2,7 @@ import React from 'react';
 import './DashboardFavourites.scss';
 import { AiFillDelete } from 'react-icons/ai';
 import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { getCoverById, getFavourites, getResumeById } from '../../../firestore/dbOperations';
 import { AiFillStar } from 'react-icons/ai';
 import { FaTrash } from 'react-icons/fa';
@@ -12,7 +12,7 @@ import fire from '../../../conf/fire';
 import { AiOutlineExclamationCircle } from 'react-icons/ai';
 function DashboardFavourites(props) {
     // ids
-    const [favourites, setFavourites] = React.useState([]);
+    const [_favourites, setFavourites] = React.useState([]);
     // favourites content
     const [favouritesContent, setFavouritesContent] = React.useState([]);
 
@@ -47,6 +47,7 @@ function DashboardFavourites(props) {
             active = false;
             document.removeEventListener('click', handleClickOutside);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.isFavoritesShowed]);
 
     // handle click outside of modal to close it
@@ -158,7 +159,7 @@ function DashboardFavourites(props) {
                         </div>
                         <div className="dashboard-favourites-modal-footer">
                             <button
-                                onClick={(event) => {
+                                onClick={(_event) => {
                                     props.showFavorites();
                                 }}>
                                 {t('dashNew.close')}

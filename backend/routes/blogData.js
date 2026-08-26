@@ -6,7 +6,7 @@ router.use((req, res, next) => {
     try {
         req.repository = getRepository(req.app.get('db'));
         next();
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
             limit: req.query.limit,
         });
         return res.json({ success: true, posts });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch blog posts' });
     }
 });
@@ -30,7 +30,7 @@ router.get('/slug/:slug', async (req, res) => {
         const post = await req.repository.getBlogPostBySlug(req.params.slug);
         if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
         return res.json({ success: true, post });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch blog post' });
     }
 });
@@ -40,7 +40,7 @@ router.post('/:id', async (req, res) => {
     try {
         const saved = await req.repository.saveBlogPost(req.params.id, req.body);
         return res.json({ success: true, post: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save blog post' });
     }
 });
@@ -50,7 +50,7 @@ router.delete('/:id', async (req, res) => {
     try {
         await req.repository.deleteBlogPost(req.params.id);
         return res.json({ success: true });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to delete blog post' });
     }
 });

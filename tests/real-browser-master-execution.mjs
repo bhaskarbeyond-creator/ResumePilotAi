@@ -11,7 +11,6 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
-import crypto from 'node:crypto';
 
 const API_KEY = process.env.VITE_FIREBASE_KEY || (() => { try { const c = fs.readFileSync('.env', 'utf8'); const m = c.match(/VITE_FIREBASE_KEY=([^\r\n]+)/); return m ? m[1].trim() : 'demo-key'; } catch { return 'demo-key'; } })();
 

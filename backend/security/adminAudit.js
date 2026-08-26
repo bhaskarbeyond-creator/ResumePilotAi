@@ -183,7 +183,7 @@ async function recordAdminAuditLog(arg1, arg2, arg3) {
     }
 
     return docData;
-  } catch (err) {
+  } catch (_err) {
     return null;
   }
 }

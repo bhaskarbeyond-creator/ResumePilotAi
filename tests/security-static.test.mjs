@@ -171,7 +171,7 @@ test('browser code has no email, hostname, UID-pattern, or Firestore-field admin
     'src/components/initailisation/initialisationSetup/initialisationSetup.jsx',
     'src/utils/adminSetup.js'
   ].map(read).join('\n');
-  assert.doesNotMatch(sensitiveFiles, /email\s*===?\s*(?:conf|config)\.adminEmail|admin@admin\.com|admin_test_uid|UID_TEST_|uid\.includes\(['\"]admin/i);
+  assert.doesNotMatch(sensitiveFiles, /email\s*===?\s*(?:conf|config)\.adminEmail|admin@admin\.com|admin_test_uid|UID_TEST_|uid\.includes\(['"]admin/i);
   assert.doesNotMatch(read('src/components/initailisation/initialisationSetup/initialisationSetup.jsx'), /createUserWithEmailAndPassword|setA\s*\(/);
   assert.match(read('src/firestore/dbOperations.js'), /getIdTokenResult/);
 });
@@ -193,12 +193,12 @@ test('static entry point has an enforcing CSP without inline-script escape hatch
   const html = read('index.html');
   const apache = read('public/.htaccess');
   assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)[^>]*>/i);
-  const csp = apache.match(/Content-Security-Policy \"([^\"]+)/)?.[1] || '';
+  const csp = apache.match(/Content-Security-Policy "([^"]+)/)?.[1] || '';
   assert.match(csp, /default-src 'self'/);
   assert.match(csp, /object-src 'none'/);
   assert.match(csp, /frame-ancestors 'none'/);
   assert.doesNotMatch(csp, /script-src[^;]*(?:'unsafe-inline'|'unsafe-eval')/);
-  assert.match(apache, /Referrer-Policy \"no-referrer\"/);
+  assert.match(apache, /Referrer-Policy "no-referrer"/);
 });
 
 test('Firestore deploy config includes both deny-by-default stores', () => {

@@ -20,8 +20,6 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
-import path from 'node:path';
-import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import { RealBrowserEvidenceEngine, sha256 } from './helpers/real-evidence-engine.mjs';
 
@@ -511,7 +509,7 @@ async function main() {
               actualResult = `Element rendered with bounding box (${ctrl.boundingBox.width}x${ctrl.boundingBox.height})`;
             }
 
-            const record = engine.recordExecution({
+            engine.recordExecution({
               controlId: ctrl.controlId,
               stableKey: ctrl.stableKey,
               route: ctrl.route,
@@ -547,6 +545,8 @@ async function main() {
         await page.close();
       }
     }
+
+    console.log(`\n  Summary: ${passedExecutions} controls passed, ${failedExecutions} failed`);
 
     // ── 5. Responsive Viewport Execution Matrix ──
     console.log('\n── Multi-Viewport Responsive Physical Validation (10 Viewports) ──');

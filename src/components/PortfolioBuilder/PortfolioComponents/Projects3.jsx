@@ -115,7 +115,7 @@ const Projects3 = {
         ],
         email: 'alex.cybersec@example.com',
     },
-    render: ({ title, subtitle, backgroundColor, accentColor, projects, email }) => {
+    render: ({ title, subtitle, _backgroundColor, accentColor, projects, email }) => {
         const accentColors = {
             cyan: {
                 primary: 'from-cyan-400 to-blue-500',

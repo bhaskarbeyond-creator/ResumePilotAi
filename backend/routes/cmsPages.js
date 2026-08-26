@@ -6,7 +6,7 @@ router.use((req, res, next) => {
     try {
         req.repository = getRepository(req.app.get('db'));
         next();
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
             publishedOnly: req.query.publishedOnly === 'true'
         });
         return res.json({ success: true, pages });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch pages' });
     }
 });
@@ -29,7 +29,7 @@ router.get('/slug/:slug', async (req, res) => {
         const page = await req.repository.getCustomPageBySlug(req.params.slug);
         if (!page) return res.status(404).json({ success: false, error: 'Page not found' });
         return res.json({ success: true, page });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch page' });
     }
 });
@@ -39,7 +39,7 @@ router.post('/:id', async (req, res) => {
     try {
         const saved = await req.repository.saveCustomPage(req.params.id, req.body);
         return res.json({ success: true, page: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save page' });
     }
 });
@@ -49,7 +49,7 @@ router.delete('/:id', async (req, res) => {
     try {
         await req.repository.deleteCustomPage(req.params.id);
         return res.json({ success: true });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to delete page' });
     }
 });
@@ -59,7 +59,7 @@ router.get('/trusted-by/list', async (req, res) => {
     try {
         const list = await req.repository.getTrustedBy();
         return res.json({ success: true, trustedBy: list });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch trusted by' });
     }
 });

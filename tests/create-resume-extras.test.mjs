@@ -4,15 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import JSZip from 'jszip';
 import { normalizeResumeData, moveResumeItem, duplicateResumeItem } from '../src/utils/resumeData.js';
-import {
-  filterMeaningfulAchievements,
-  filterMeaningfulReferences,
-  filterMeaningfulCustomSections,
-  filterMeaningfulProjects,
-  filterMeaningfulCertifications,
-  filterMeaningfulSkills,
-  hasMeaningfulText,
-} from '../src/engine/hybrid/utils/contentSanitizer.js';
+import { filterMeaningfulAchievements, filterMeaningfulReferences, filterMeaningfulCustomSections, filterMeaningfulProjects, filterMeaningfulCertifications, filterMeaningfulSkills, hasMeaningfulText } from '../src/engine/hybrid/utils/contentSanitizer.js';
 import { partitionResumeContent } from '../src/engine/hybrid/smartPartitioner.js';
 import docxPkg from '../backend/services/docxExport.js';
 

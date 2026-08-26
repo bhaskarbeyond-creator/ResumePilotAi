@@ -60,7 +60,7 @@ async function getAdminEmail(db) {
                 return cfg.smtp.adminEmail;
             }
         }
-    } catch (e) {
+    } catch (_e) {
         // Non-fatal — proceed to fallback checks
     }
 

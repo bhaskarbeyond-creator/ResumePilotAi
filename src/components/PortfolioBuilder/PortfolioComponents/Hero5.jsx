@@ -137,7 +137,7 @@ const Hero5 = {
                         {Array.from({ length: 50 }).map((_, i) => (
                             <div key={i} className={`${theme.primary} animate-pulse`} style={{ animationDelay: `${i * 0.1}s` }}>
                                 {Array.from({ length: 100 })
-                                    .map((_, j) => (Math.random() > 0.5 ? '1' : '0'))
+                                    .map((_, _j) => (Math.random() > 0.5 ? '1' : '0'))
                                     .join('')}
                             </div>
                         ))}

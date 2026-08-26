@@ -42,7 +42,7 @@ class ResumeCard extends Component {
         }
 
         checkIfInFavourites(fire.auth().currentUser?.uid, this.props.document.id)
-            .then((res) => {})
+            .then((_res) => {})
             .catch((err) => {
                 console.log(err);
             });
@@ -62,7 +62,7 @@ class ResumeCard extends Component {
         try {
             await publishResume(userId, this.props.document.id, normalizeResumeData(this.props.document.item || this.props.document), { expectedRevision: this.props.document.revision ?? this.props.document.item?.revision ?? null });
             this.setState({ shareModal: true });
-        } catch (error) {
+        } catch (_error) {
             this.props.showToast?.('error', 'Sharing failed', 'Resume could not be published.');
         }
     };

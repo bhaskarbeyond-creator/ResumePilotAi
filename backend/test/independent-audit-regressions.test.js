@@ -17,7 +17,6 @@
 
 process.env.NODE_ENV = 'test';
 
-const path = require('path');
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');

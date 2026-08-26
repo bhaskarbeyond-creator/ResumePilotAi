@@ -3,7 +3,7 @@ import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { formatRichText } from '../utils/formatText';
 import { hasMeaningfulText } from '../utils/contentSanitizer';
 
-export default function SmartCustomSection({ section, items = [], theme = {}, title = 'Additional Information' }) {
+export default function SmartCustomSection({ section, items = [], _theme = {}, title = 'Additional Information' }) {
   const heading = title || section?.title || 'Additional Information';
   const sourceItems = Array.isArray(items) && items.length
     ? items

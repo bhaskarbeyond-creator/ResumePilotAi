@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import "./ResumesSelector.scss";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { GrClose } from "react-icons/gr";
 import { BiSearchAlt } from "react-icons/bi";
 // Resume Templates
@@ -73,7 +73,7 @@ const RESUME_PREVIEWS = {
 
 const ResumesSelector = (props) => {
   const modalRef = useRef(null);
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [searchTerm] = React.useState("");
   const [selectedTemplate, setSelectedTemplate] = React.useState("");
 
   const handleResumeClick = (template) => {
@@ -95,6 +95,7 @@ const ResumesSelector = (props) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.handleTemplateShow]);
 
   // One card per registered template, named and categorised from the render

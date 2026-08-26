@@ -2,15 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  normalizeTemplateData,
-  validateTemplateData,
-  formatDateRange,
-  formatLanguages,
-  formatLocation,
-  getContrastTextColor,
-  getTemplateDirection,
-} from '../src/cv-templates/templateUtils.js';
+import { normalizeTemplateData, validateTemplateData, formatDateRange, formatLanguages, formatLocation, getContrastTextColor, getTemplateDirection } from '../src/cv-templates/templateUtils.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 

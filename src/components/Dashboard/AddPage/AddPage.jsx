@@ -28,12 +28,12 @@ class AddPage extends Component {
         this.setState({ text: value })
     }
     addPageHandler() {
-        addPages(this.state.pageName, this.state.text).then(value => {
+        addPages(this.state.pageName, this.state.text).then(_value => {
             window.location = "/dashboard"
         })
     }
     removePageHandler(name) {
-        removePageByName(name).then(value => {
+        removePageByName(name).then(_value => {
             window.location = "/dashboard"
         });
     }

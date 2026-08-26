@@ -1,22 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-    buildInterviewPrompt,
-    generateDefaultInterview,
-    dedupeQuestions,
-    questionKey,
-    interviewDifficultyDistribution,
-    cleanInterviewMetadataArtifacts,
-    isGenericQuestion,
-    extractCandidateProfile,
-    extractJobRequirements,
-    buildContextualBlueprint,
-} from '../routes/ai.js';
-import {
-    cleanInterviewMetadataArtifacts as frontendCleaner,
-    normalizeQuestions,
-    sanitizeJobDescription,
-} from '../../src/utils/interviewCoach.js';
+import { buildInterviewPrompt, generateDefaultInterview, cleanInterviewMetadataArtifacts, isGenericQuestion, extractCandidateProfile, extractJobRequirements, buildContextualBlueprint } from '../routes/ai.js';
+import { cleanInterviewMetadataArtifacts as frontendCleaner, normalizeQuestions } from '../../src/utils/interviewCoach.js';
 
 test('1. cleanInterviewMetadataArtifacts strips all forms of leaked metadata, UI headers, and robotic preambles', () => {
     const leakCases = [

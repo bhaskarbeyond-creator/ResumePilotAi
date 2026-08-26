@@ -10,7 +10,7 @@ process.on('message', async (msg) => {
     const expiresAt = now + (leaseDurationMs || 5000);
 
     try {
-      const [res] = await pool.query(
+      const [_res] = await pool.query(
         `INSERT INTO database_authority (id, generation, write_engine, mode, lease_owner, lease_expires_at)
          VALUES ('primary_authority', ?, 'mysql', 'NORMAL', ?, ?)
          ON DUPLICATE KEY UPDATE 

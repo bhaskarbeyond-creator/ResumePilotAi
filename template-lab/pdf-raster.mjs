@@ -6,7 +6,6 @@
  * Usage: node template-lab/pdf-raster.mjs <pdf-file> [...more] [--scale 1.4]
  */
 import { chromium } from '../backend/node_modules/playwright/index.mjs';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

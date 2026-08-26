@@ -29,7 +29,7 @@ import axios from 'axios';
 import download from 'downloadjs';
 import config from '../../conf/configuration';
 import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../firestore/dbOperations';
-import { resolveAtsScoreVisibility, settingsFromSnapshot } from '../../utils/moduleFlags';
+import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
@@ -44,7 +44,7 @@ import Toasts from '../Toasts/Toats';
 
 // Import animation library for toast animations
 import { evaluateDownloadAccess, parseSafeDate } from '../../utils/subscriptionUtils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 // Import user membership functions
 import { getUserMembership } from '../../firestore/paidOperations';
@@ -565,6 +565,7 @@ const BuildResume = () => {
             i18n.changeLanguage(savedLanguage);
         }
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Get default colors for each template based on their actual defaults
@@ -897,7 +898,7 @@ const BuildResume = () => {
     };
 
     // Export resume in standardized JSON Resume format (jsonresume.org)
-    const handleExportJsonResume = () => {
+    () => {;
         const data = previewData;
         const jsonResumeSchema = {
             $schema: "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",

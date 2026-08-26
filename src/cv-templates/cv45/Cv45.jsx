@@ -3,23 +3,7 @@ import React, { Component } from 'react';
 import './Cv45.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaUser,
-    FaStar,
-    FaRegStar,
-    FaAward,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaUser, FaStar, FaRegStar, FaAward } from 'react-icons/fa';
 
 class Cv45 extends Component {
     constructor(props) {

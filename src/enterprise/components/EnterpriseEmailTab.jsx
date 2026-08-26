@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FiMail, FiSend, FiEye, FiCheck, FiRefreshCw, FiLock, FiSliders,
-  FiUserPlus, FiShield, FiAlertTriangle, FiFileText, FiExternalLink
-} from 'react-icons/fi';
-import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
+import { FiMail, FiSend, FiEye, FiCheck, FiRefreshCw, FiLock, FiSliders, FiUserPlus, FiShield, FiAlertTriangle, FiFileText, FiExternalLink } from 'react-icons/fi';
+import { useTenantApi, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';
 
@@ -193,7 +190,7 @@ function EmailCardPreview({ rawBody, templateId, onNavigateTab }) {
         }
 
         if (isBulletList) {
-          const items = p.split('\n').map(item => item.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
+          const items = p.split('\n').map(item => item.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
           return (
             <ul key={idx} style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '0.86rem', color: '#475569', lineHeight: 1.6 }}>
               {items.map((item, itemIdx) => (

@@ -77,7 +77,7 @@ const Skills4 = {
         activePRs: '12',
         codeReviews: '450+',
     },
-    render: ({ title, subtitle, backgroundColor, terminalTheme, skills, totalCommits, activePRs, codeReviews }) => {
+    render: ({ title, subtitle, _backgroundColor, terminalTheme, skills, _totalCommits, _activePRs, _codeReviews }) => {
         const themes = {
             matrix: { primary: 'text-green-400', accent: 'from-green-400 to-emerald-500', border: 'border-green-400/30', prompt: '$' },
             hacker: { primary: 'text-amber-400', accent: 'from-amber-400 to-orange-500', border: 'border-amber-400/30', prompt: '>' },

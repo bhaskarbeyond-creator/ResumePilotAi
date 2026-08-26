@@ -988,7 +988,7 @@ class SubscriptionSetting extends Component {
         writeSanitizedPrintDocument(printWindow, html);
         try {
             printWindow.focus();
-        } catch (e) {}
+        } catch (_e) {}
         setTimeout(() => {
             try {
                 printWindow.print();
@@ -1775,7 +1775,7 @@ class SubscriptionSetting extends Component {
     }
 
     render() {
-        const currencySymbol = this.state.currency === 'INR' ? '₹' : this.state.currency === 'USD' ? '$' : this.state.currency === 'EUR' ? '€' : '£';
+        this.state.currency === 'INR' ? '₹' : this.state.currency === 'USD' ? '$' : this.state.currency === 'EUR' ? '€' : '£';
 
         return (
             <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6">

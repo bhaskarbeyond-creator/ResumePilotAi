@@ -36,8 +36,8 @@ const NavbarDarkCyberSec = {
     render: function NavbarDarkCyberSecurityRender({ logoText, logoImage, menuItems, securityLevel, encryptionStyle }) {
         const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
         const [encryptedText, setEncryptedText] = useState('');
-        const [authStatus, setAuthStatus] = useState('authenticated');
-        const [threatLevel, setThreatLevel] = useState(0);
+        const [authStatus] = useState('authenticated');
+        const [_threatLevel, setThreatLevel] = useState(0);
         const menuList = menuItems.split('\n').filter((item) => item.trim());
 
         // Encryption text animation

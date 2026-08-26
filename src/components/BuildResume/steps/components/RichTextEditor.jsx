@@ -11,17 +11,7 @@ import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
-import {
-    ListItemNode,
-    ListNode,
-    $isListNode,
-    $isListItemNode,
-    INSERT_UNORDERED_LIST_COMMAND,
-    INSERT_ORDERED_LIST_COMMAND,
-    REMOVE_LIST_COMMAND,
-    $createListItemNode,
-    $createListNode,
-} from '@lexical/list';
+import { ListItemNode, ListNode, $isListNode, $isListItemNode, INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND, $createListItemNode, $createListNode } from '@lexical/list';
 import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
@@ -181,7 +171,7 @@ function ExternalUpdatePlugin({ value }) {
 
     // Listen for editor changes to update our tracking
     useEffect(() => {
-        const removeUpdateListener = editor.registerUpdateListener(({ editorState, dirtyElements, dirtyLeaves }) => {
+        const removeUpdateListener = editor.registerUpdateListener(({ _editorState, _dirtyElements, _dirtyLeaves }) => {
             if (isUpdatingRef.current) return;
             
             // Mark that we're in a user-initiated change
@@ -584,7 +574,7 @@ function ToolbarPlugin() {
     );
 }
 
-const RichTextEditor = ({ value = '', onChange, placeholder = 'Enter your text...', rows = 4, className = '' }) => {
+const RichTextEditor = ({ value = '', onChange, placeholder = 'Enter your text...', _rows = 4, className = '' }) => {
     // Remove the problematic editor re-creation logic
     const lastValueRef = React.useRef(value);
 

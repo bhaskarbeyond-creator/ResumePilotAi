@@ -4,7 +4,7 @@ import { BiCheckCircle, BiBuilding } from 'react-icons/bi';
 import { withTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../main';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import CustomLocationAutocomplete from '../JobsListings/CustomLocationAutocomplete';
 import { getFrontendStats } from '../../firestore/dbOperations';
 
@@ -64,6 +64,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                 clearTimeout(timeoutRef.current);
             }
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [displayText, isTyping, currentSentenceIndex]);
 
     useEffect(() => {

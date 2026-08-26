@@ -25,12 +25,12 @@ class AddAds extends Component {
         })
     }
     addNewAdd() {
-        addAds(this.state.currentLink, this.state.currentBanner, this.state.destinationLink).then(value => {
+        addAds(this.state.currentLink, this.state.currentBanner, this.state.destinationLink).then(_value => {
             window.location.reload()
         })
     }
     removeAd(id) {
-        removeAd(id).then(value => {
+        removeAd(id).then(_value => {
             window.location.reload()
         });
     }

@@ -3,11 +3,7 @@ import { createServer } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import {
-  PORTFOLIO_TEMPLATE_IDS,
-  convertResumeToPortfolio,
-  createRichPortfolioFixture,
-} from '../src/utils/portfolioData.js';
+import { PORTFOLIO_TEMPLATE_IDS, createRichPortfolioFixture } from '../src/utils/portfolioData.js';
 
 const VIEWPORTS = [
   { name: 'mobile-375', width: 375, height: 667 },
@@ -18,7 +14,7 @@ const VIEWPORTS = [
   { name: 'ultrawide-1920', width: 1920, height: 1080 },
 ];
 
-function createLargePortfolioFixture() {
+function _createLargePortfolioFixture() {
   const base = createRichPortfolioFixture();
   // Add 10 experiences
   base.experiences = Array.from({ length: 10 }).map((_, i) => ({

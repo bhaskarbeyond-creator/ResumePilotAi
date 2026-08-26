@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const { chromium } = require('playwright');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const EmailNotifier = require('./services/emailNotifier');
-const { queueEmailInTransaction, processOutboxOnce } = require('./services/notificationOutbox');
+const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
@@ -33,7 +33,7 @@ const { enterpriseFeatureEnabled } = require('./enterprise/featureFlags');
 const { createAdminAuditMiddleware } = require('./security/adminAudit');
 const { adminAuditRouter } = require('./routes/adminAudit');
 const { platformRouter } = require('./routes/platform');
-const { adminUsersRouter, adminUserProjection } = require('./routes/adminUsers');
+const { adminUsersRouter } = require('./routes/adminUsers');
 const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperations');
 const { resumesRouter } = require('./routes/resumes');
 const { portfoliosRouter } = require('./routes/portfolios');
@@ -48,7 +48,7 @@ const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission, permissionsFor, requireSuperAdmin, requireRecentAdminAuthentication, isSuperAdmin } = require('./security/auth');
+const { requireAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, isSuperAdmin } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -59,9 +59,9 @@ const {
     validateRazorpayPayment,
     validatePaytmPayment,
     validatePhonePePayment,
-    isDuplicateProviderEventError,
-    shouldReverseEntitlement,
-    calculateMembershipEnd,
+    _isDuplicateProviderEventError,
+    _shouldReverseEntitlement,
+    _calculateMembershipEnd,
 } = require('./security/payments');
 const {
     hashOpaque,
@@ -188,7 +188,7 @@ const initSystemFonts = () => {
                 console.log('[Fonts] Auto-synced template font files to Linux system font cache.');
                 try {
                     require('child_process').execSync(`fc-cache -f "${targetDir}"`, { stdio: 'ignore' });
-                } catch (e) {}
+                } catch (_e) {}
             }
         }
     } catch (err) {
@@ -400,16 +400,16 @@ async function getDynamicPlan(db, planId) {
              return { amount: Math.round(Number(baseAmount) * multiplier), currency, months: fallback.months };
         }
         return fallback;
-    } catch (err) {
+    } catch (_err) {
         return fallback;
     }
 }
 
-async function applyServerCoupon({ uid, orderId, plan, couponCode }) {
+async function _applyServerCoupon({ uid, orderId, plan, couponCode }) {
     return paymentActivation.applyServerCoupon({ uid, orderId, plan, couponCode, firestoreDb: db });
 }
 
-async function releaseCouponReservation(order) {
+async function _releaseCouponReservation(order) {
     return paymentActivation.releaseCouponReservation(order, db);
 }
 
@@ -420,7 +420,7 @@ async function releaseCouponForRef(ref) {
     if (order) await paymentActivation.releaseCouponReservation({ ...order, id: orderId }, db);
 }
 
-async function consumeCouponRedemption(orderId, order) {
+async function _consumeCouponRedemption(orderId, order) {
     return paymentActivation.consumeCouponRedemption(orderId, order, db);
 }
 
@@ -1798,7 +1798,7 @@ app.get('/api/admin/ai-settings', async (req, res) => {
     }
 });
 
-async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requestId = null } = {}) {
+async function publishDueBlogPosts(requestDb, { _actorUid = 'cms-scheduler', _requestId = null } = {}) {
     const { getRepository } = require('./repositories');
     const repo = getRepository(requestDb || db);
     const now = Date.now();
@@ -2845,7 +2845,7 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
                 } else {
                     return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_AUTHENTICATION_FAILED', error: `PhonePe rejected the configured credentials (HTTP ${ppRes.status}).` });
                 }
-            } catch (ppErr) {
+            } catch (_ppErr) {
                 return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_UNAVAILABLE', error: 'PhonePe could not be reached.' });
             }
         }
@@ -2876,7 +2876,7 @@ async function loadTwilioRuntimeConfig(database) {
     const legacySid = String(legacy.accountSid || '').trim();
     const legacyToken = String(legacy.authToken || '').trim();
     const canonicalComplete = Boolean(canonicalSid && canonicalToken);
-    const legacyComplete = Boolean(legacySid && legacyToken);
+    Boolean(legacySid && legacyToken);
     const storedSid = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalSid : legacySid;
     const storedToken = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalToken : legacyToken;
     const useEnvironment = Boolean(envSid && envToken);
@@ -2908,7 +2908,7 @@ app.get('/api/admin/twilio-settings', async (req, res) => {
             },
             revision: config.revision,
         });
-    } catch (error) {
+    } catch (_error) {
         return res.status(503).json({ success: false, error: 'SMS configuration is unavailable.' });
     }
 });
@@ -3567,7 +3567,7 @@ app.get('/api/health/databases', async (req, res) => {
     try {
         const snapshot = await databaseAuthority.refresh(req.app.get('db') || db);
         return res.json({ success: true, ...snapshot });
-    } catch (error) {
+    } catch (_error) {
         return res.status(503).json({ success: false, error: { code: 'HEALTH_PROBE_FAILED', message: 'Database health could not be determined', requestId: res.locals.requestId } });
     }
 });
@@ -4098,7 +4098,7 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
         });
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ success: true, message: 'Email address verified successfully.' });
-    } catch (error) {
+    } catch (_error) {
         try {
             const snap = await tokenRef.get();
             if (snap.exists && snap.data().leaseId === leaseId) {
@@ -4374,7 +4374,7 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
     }
 });
 
-function firestoreTimeMillis(value) {
+function _firestoreTimeMillis(value) {
     const date = value?.toDate?.() || (value ? new Date(value) : null);
     return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
@@ -4764,7 +4764,7 @@ async function deleteApplicationNotifications(database, applicationIds) {
 async function removeDeletedUserFromRealtimeMessaging(uid, identityAdmin = admin) {
     if (!identityAdmin?.database) throw new Error('Realtime Database is unavailable');
     let realtime;
-    try { realtime = identityAdmin.database(); } catch (e) { return; }
+    try { realtime = identityAdmin.database(); } catch (_e) { return; }
     const indexSnapshot = await realtime.ref(`user-conversations/${uid}`).get();
     const conversationIds = Object.keys(indexSnapshot.val() || {});
     for (const conversationId of conversationIds) {
@@ -4980,7 +4980,7 @@ app.post('/api/auth/set-user-password', async (req, res) => {
         });
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ success: true, message: 'Password updated successfully.' });
-    } catch (err) {
+    } catch (_err) {
         // Release a lease only when this request owns it; do not make an already-used token reusable.
         try { const snap = await ref.get(); if (snap.exists && snap.data().leaseId === leaseId) await ref.update({ leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() }); } catch (_) {}
         return res.status(400).json({ success: false, error: 'Invalid or expired password reset link.' });

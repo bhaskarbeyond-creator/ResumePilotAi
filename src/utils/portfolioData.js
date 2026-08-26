@@ -1,9 +1,5 @@
 import { normalizeResumeData, resumeHasMeaningfulData } from './resumeData.js';
-import {
-    sanitizePortfolioImageUrl,
-    sanitizePortfolioText,
-    sanitizePortfolioUrl,
-} from '../components/PortfolioBuilder/portfolioSanitization.js';
+import { sanitizePortfolioImageUrl, sanitizePortfolioText, sanitizePortfolioUrl } from '../components/PortfolioBuilder/portfolioSanitization.js';
 
 export const PORTFOLIO_TEMPLATE_IDS = Object.freeze(['modernMinimal', 'executive', 'creativeDark', 'premiumTech']);
 export const DEFAULT_PORTFOLIO_TEMPLATE = 'modernMinimal';

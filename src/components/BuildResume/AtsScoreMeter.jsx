@@ -1,18 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-    MdCheckCircle,
-    MdExpandLess,
-    MdExpandMore,
-    MdSpeed,
-    MdWarning,
-} from 'react-icons/md';
-import {
-    calculateAtsScore,
-    readStoredJobDescription,
-    writeStoredJobDescription,
-} from '../../utils/atsScore';
+import { MdCheckCircle, MdExpandLess, MdExpandMore, MdSpeed, MdWarning } from 'react-icons/md';
+import { calculateAtsScore, readStoredJobDescription, writeStoredJobDescription } from '../../utils/atsScore';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { calculateAtsScore } from '../../utils/atsScore';
 
 const STATUS_THEME = {

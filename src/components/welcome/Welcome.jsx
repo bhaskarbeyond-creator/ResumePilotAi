@@ -24,7 +24,7 @@ import { parseSafeDate } from '../../utils/subscriptionUtils';
 // Initialisation Component
 import InitialisationWrapper from '../initailisation/initialisationWrapper/initialisationWrapper';
 /// Animation Library
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import i18n from '../../i18n';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { Link } from 'react-router-dom';
@@ -330,7 +330,7 @@ class Welcome extends Component {
     }
 
     // Setting the current step
-    setCurrentStep(step, isLoginModalShowed) {
+    setCurrentStep(_step, _isLoginModalShowed) {
         this.setState({
             currentStep: this.steps[0],
             stepIndex: 0,
@@ -678,7 +678,7 @@ class Welcome extends Component {
     }
 
     // Handle component deletion
-    handleDelete(inputType, id) {
+    handleDelete(inputType, _id) {
         switch (inputType) {
             case 'Skills':
                 this.setState({ skills: [] });
@@ -1252,7 +1252,7 @@ class Welcome extends Component {
 
     // Toggle template selector
     handleTemplateShow() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             isSelectTemplateShowed: !prevState.isSelectTemplateShowed,
         }));
     }
@@ -1281,7 +1281,7 @@ class Welcome extends Component {
             },
         };
 
-        const loaderOptions = {
+        const _loaderOptions = {
             loop: true,
             autoplay: true,
             animationData: LoaderAnimation,

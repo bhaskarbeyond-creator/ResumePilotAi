@@ -5,7 +5,7 @@ import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import europassLogo from '../../assets/europass.png';
 import { FiMapPin, FiPhone, FiMail, FiGlobe, FiMessageCircle } from 'react-icons/fi';
-import { FaLocationDot,FaPhone  } from 'react-icons/fa6';
+import { FaLocationDot, FaPhone } from 'react-icons/fa6';
 import { IoMail } from "react-icons/io5";
 
 class Cv51 extends Component {
@@ -254,8 +254,7 @@ class Cv51 extends Component {
     }
 
     render() {
-        const { t } = this.props;
-        const primaryColor = this.getPrimaryColor();
+        this.getPrimaryColor();
         // Personal details render only for fields the user actually supplied —
         // placeholder sample values must never leak into a real resume.
         const personalDetails = [

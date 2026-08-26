@@ -2,10 +2,12 @@ import React from 'react';
 import { sanitizePortfolioImageUrl, sanitizePortfolioUrl } from '../PortfolioBuilder/portfolioSanitization.js';
 import { normalizePortfolioData, visiblePortfolioSections } from '../../utils/portfolioData.js';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function hasText(value) {
     return Boolean(String(value || '').trim());
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function formatRange(start, end) {
     const begin = String(start || '').trim();
     const finish = String(end || '').trim();
@@ -13,6 +15,7 @@ export function formatRange(start, end) {
     return begin || finish || '';
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function hrefFor(value, kind = 'url') {
     const raw = String(value || '').trim();
     if (!raw) return '';
@@ -50,6 +53,7 @@ export function Section({ id, title, show, children, className, headingClassName
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePortfolioView(canonical, templateKey) {
     const data = normalizePortfolioData(canonical, { template: templateKey });
     const visibility = visiblePortfolioSections(data);

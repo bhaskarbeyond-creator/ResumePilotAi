@@ -37,6 +37,7 @@ export default function EnterpriseConfirmModal({
     if (!isOpen) return;
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, busy, onClose]);
 
   if (!isOpen) return null;

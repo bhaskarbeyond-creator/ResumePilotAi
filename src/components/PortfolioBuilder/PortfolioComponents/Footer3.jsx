@@ -51,7 +51,7 @@ const Footer3 = {
         backgroundColor: 'bg-black',
         accentColor: 'cyan',
     },
-    render: ({ companyName, description, tagline, email, phone, address, socialLinks, quickLinks, backgroundColor, accentColor }) => {
+    render: ({ companyName, description, tagline, email, phone, address, socialLinks, quickLinks, _backgroundColor, accentColor }) => {
         const accentColors = {
             cyan: {
                 primary: 'from-cyan-400 to-blue-500',

@@ -8,12 +8,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const assert = require('node:assert/strict');
 const { getPool } = require('../database/mysql');
 const MySQLRepository = require('../repositories/MySQLRepository');
 const {
     classifySyncError,
-    replicateToFirestore,
+    _replicateToFirestore,
     replicateToMySQL,
     processSyncQueue
 } = require('../database/syncManager');
@@ -36,8 +35,8 @@ async function runNegativeControlMutations() {
 
     // Failing Firestore mock
     const deadFirestore = {
-        collection: (col) => ({
-            doc: (docId) => ({
+        collection: (_col) => ({
+            doc: (_docId) => ({
                 get: async () => {
                     const err = new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.');
                     err.code = 8;

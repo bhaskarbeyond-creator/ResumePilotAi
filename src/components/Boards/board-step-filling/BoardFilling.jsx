@@ -3,21 +3,9 @@ import React, { Component } from 'react';
 import Canvas from '../canvas/Canvas';
 // Toasts
 import Toasts from '../../Toasts/Toats';
-import {
-    setResumePropertyPerUser,
-    addEmployments,
-    addEducations,
-    IncrementDownloads,
-    addSkills,
-    addLanguages,
-    setJsonPb,
-    getResumeById,
-    addCoverLetter,
-    addOneToNumberOfDocumentsGenerated,
-    addOneToNumberOfDocumentsDownloaded,
-} from '../../../firestore/dbOperations';
+import { setResumePropertyPerUser, addEmployments, addEducations, IncrementDownloads, addSkills, addLanguages, setJsonPb, getResumeById, addCoverLetter, addOneToNumberOfDocumentsGenerated, addOneToNumberOfDocumentsDownloaded } from '../../../firestore/dbOperations';
 // Animation Library
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 
 import axios from 'axios';
@@ -75,31 +63,31 @@ class BoardFilling extends Component {
     }
 
     setToFirstPage() {
-        this.setState((prevState, props) => ({
+        this.setState((_prevState, _props) => ({
             currentPage: 1,
         }));
     }
 
     addPage() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             page: prevState.page + 1,
         }));
     }
 
     removePage() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             page: prevState.page - 1,
         }));
     }
 
     nextPage() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             currentPage: prevState.currentPage + 1,
         }));
     }
 
     previousPage() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             currentPage: prevState.currentPage - 1,
         }));
     }
@@ -214,31 +202,31 @@ class BoardFilling extends Component {
     ShowToast(type) {
         if (type === 'Download') {
             setTimeout(() => {
-                this.setState((prevState, props) => ({
+                this.setState((prevState, _props) => ({
                     isDownloadToastVisible: !prevState.isDownloadToastVisible,
                 }));
             }, 8000);
-            this.setState((prevState, props) => ({
+            this.setState((prevState, _props) => ({
                 isDownloadToastVisible: !prevState.isDownloadToastVisible,
             }));
         }
         if (type === 'Success') {
             setTimeout(() => {
-                this.setState((prevState, props) => ({
+                this.setState((prevState, _props) => ({
                     isSuccessToastVisible: !prevState.isSuccessToastVisible,
                 }));
             }, 8000);
-            this.setState((prevState, props) => ({
+            this.setState((prevState, _props) => ({
                 isSuccessToastVisible: !prevState.isSuccessToastVisible,
             }));
         }
         if (type === 'Upgrade') {
             setTimeout(() => {
-                this.setState((prevState, props) => ({
+                this.setState((prevState, _props) => ({
                     isUpgradeToastVisible: !prevState.isUpgradeToastVisible,
                 }));
             }, 8000);
-            this.setState((prevState, props) => ({
+            this.setState((prevState, _props) => ({
                 isUpgradeToastVisible: !prevState.isUpgradeToastVisible,
             }));
         }
@@ -301,7 +289,6 @@ class BoardFilling extends Component {
                 }, 3000);
             }, 1500);
         } else {
-            var numberOfInputs = 0;
             this.setState({ isSaving: true });
             if (!localStorage.getItem('currentResumeItem')) {
                 this.currentResume = {};

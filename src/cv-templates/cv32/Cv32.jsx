@@ -3,21 +3,7 @@ import React, { Component } from 'react';
 import './Cv32.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserTie,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaBuilding,
-    FaUniversity,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserTie, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaBuilding, FaUniversity } from 'react-icons/fa';
 
 class Cv32 extends Component {
     constructor(props) {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { filterMeaningfulReferences } from '../utils/contentSanitizer';
 
-export default function SmartReferences({ references = [], theme = {}, title = 'References' }) {
+export default function SmartReferences({ references = [], _theme = {}, title = 'References' }) {
   const validRefs = filterMeaningfulReferences(references);
   if (!validRefs.length) return null;
 

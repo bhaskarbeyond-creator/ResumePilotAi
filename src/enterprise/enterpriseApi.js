@@ -35,7 +35,7 @@ export async function enterpriseFetch(path, { method = 'GET', tenantId = '', wor
             reqHeaders['Authorization'] = `Bearer ${token}`;
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Proceed; backend will respond with 401 if auth is strictly required
       }
 

@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveEffectiveEntitlement, isUserAdmin } = require('../security/entitlements');
+const { resolveEffectiveEntitlement } = require('../security/entitlements');
 
 test('Unified Entitlements Matrix: Admin user receives full administrative entitlement and 10,000/day quota', () => {
   const adminUser = {

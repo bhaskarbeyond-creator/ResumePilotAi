@@ -1,9 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { 
-  FiShield, FiRefreshCw, FiAlertTriangle, FiCheck, FiUserCheck, FiUsers, 
-  FiLock, FiKey, FiCopy, FiSearch, FiSliders, FiLogOut, FiUserX, 
-  FiInfo, FiExternalLink, FiX, FiCheckCircle, FiActivity, FiEye
-} from 'react-icons/fi';
+import { FiShield, FiRefreshCw, FiAlertTriangle, FiCheck, FiUserCheck, FiUsers, FiLock, FiKey, FiCopy, FiSearch, FiSliders, FiLogOut, FiUserX, FiInfo, FiExternalLink, FiX, FiCheckCircle, FiActivity, FiEye } from 'react-icons/fi';
 import { useAdminSession } from '../AdminContext';
 import { getOperators, searchPlatform, setOperatorRole, revokeOperatorSessions } from '../../../services/platformApi';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
@@ -50,7 +46,7 @@ export default function PlatformOperators() {
   const { confirm, confirmationDialog } = useConfirmDialog();
   
   const [operators, setOperators] = useState([]);
-  const [note, setNote] = useState('');
+  const [_note, setNote] = useState('');
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(true);

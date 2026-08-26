@@ -202,7 +202,7 @@ async function verifyTenantRestored({ db, admin, snapshot }) {
   // Partition tree + control docs may legitimately gain audit/migration
   // documents after restore; the check requires the restored set to be present
   // byte-for-byte rather than forbidding later writes.
-  const restoredPaths = new Set(snapshot.documents.map(document => document.path));
+  new Set(snapshot.documents.map(document => document.path));
   const freshByPath = new Map(fresh.documents.map(document => [document.path, document.data]));
   const missing = [];
   const mismatched = [];

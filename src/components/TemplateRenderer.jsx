@@ -1,5 +1,4 @@
-import React, { Suspense, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { Suspense, useEffect } from 'react';
 import { getTemplateComponent, isKnownTemplate } from '../utils/templateRegistry';
 import SmartResumeComposer from '../engine/hybrid/SmartResumeComposer';
 

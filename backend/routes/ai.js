@@ -609,7 +609,7 @@ function extractJobRequirements(jobDescription, occupation = '') {
 }
 
 // Build internal contextual interview blueprint
-function buildContextualBlueprint({ occupation, interviewType, experienceLevel, difficulty, candidateProfile, jdRequirements, questionCount }) {
+function buildContextualBlueprint({ _occupation, _interviewType, experienceLevel, difficulty, candidateProfile, jdRequirements, questionCount }) {
     const jdText = (jdRequirements?.cleanRequirements || '').toLowerCase();
     const intersectingSkills = (candidateProfile?.skills || []).filter(skill => 
         jdText.includes(skill.toLowerCase())

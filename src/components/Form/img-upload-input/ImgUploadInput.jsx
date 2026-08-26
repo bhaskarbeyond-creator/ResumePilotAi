@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import manPicture from '../../../assets/young.png';
 // import ImageUploader from "react-images-upload";
 
 class ImgUploadInput extends Component {
@@ -104,7 +103,7 @@ class ImgUploadInput extends Component {
                 const img = await this.resizeImage(event.target.result);
                 this.setState({ picture: img, isLoading: false });
                 this.props.handleInputs(this.props.name, img);
-            } catch (err) {
+            } catch (_err) {
                 this.setState({
                     isLoading: false,
                     error: 'Error processing image',
@@ -167,7 +166,7 @@ class ImgUploadInput extends Component {
                     const img = await this.resizeImage(event.target.result);
                     this.setState({ picture: img, isLoading: false });
                     this.props.handleInputs(this.props.name, img);
-                } catch (err) {
+                } catch (_err) {
                     this.setState({
                         isLoading: false,
                         error: 'Error processing image',

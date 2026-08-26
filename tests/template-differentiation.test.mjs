@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import fs from 'node:fs';
 
 const CV_IDS = Array.from({ length: 51 }, (_, i) => `Cv${i + 1}`);
 

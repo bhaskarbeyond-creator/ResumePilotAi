@@ -5,11 +5,10 @@ import { getPool } from '../backend/database/mysql.js';
 
 describe('Real End-to-End Business Workflows & Data Integrity', () => {
   let repo;
-  let pool;
 
   before(() => {
     repo = getRepository();
-    pool = getPool();
+    getPool();
   });
 
   it('1. Consumer & Resume Lifecycle: Create, Edit, Duplicate, Delete Isolation', async () => {

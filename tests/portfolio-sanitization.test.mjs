@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  normalizePublishedPortfolio,
-  sanitizePortfolioImageUrl,
-  sanitizePortfolioText,
-  sanitizePortfolioUrl,
-} from '../src/components/PortfolioBuilder/portfolioSanitization.js';
+import { normalizePublishedPortfolio, sanitizePortfolioImageUrl, sanitizePortfolioText, sanitizePortfolioUrl } from '../src/components/PortfolioBuilder/portfolioSanitization.js';
 
 test('portfolio links preserve useful destinations and reject executable or ambiguous URLs', () => {
   assert.equal(sanitizePortfolioUrl('https://example.com/work?q=résumé'), 'https://example.com/work?q=r%C3%A9sum%C3%A9');

@@ -1,26 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-    SESSION_SCHEMA_VERSION,
-    appendHistory,
-    buildStarMarkdown,
-    clearAllHistory,
-    copyTextToClipboard,
-    consumesArrowKeys,
-    downloadTextFile,
-    isTextEntryTarget,
-    normalizeQuestions,
-    optionIndexFromKey,
-    purgeStaleOwnerSession,
-    readHistory,
-    readOwnerSession,
-    removeHistoryEntry,
-    resolveStorageConflict,
-    sessionStorageKey,
-    timerAnnouncement,
-    validateInterviewPayload,
-    writeOwnerSession,
-} from '../src/utils/interviewCoach.js';
+import { SESSION_SCHEMA_VERSION, appendHistory, buildStarMarkdown, clearAllHistory, copyTextToClipboard, consumesArrowKeys, downloadTextFile, isTextEntryTarget, normalizeQuestions, optionIndexFromKey, purgeStaleOwnerSession, readHistory, readOwnerSession, removeHistoryEntry, resolveStorageConflict, sessionStorageKey, timerAnnouncement, validateInterviewPayload, writeOwnerSession } from '../src/utils/interviewCoach.js';
 
 function installMockStorage() {
     const mockStorage = new Map();

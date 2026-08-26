@@ -81,7 +81,7 @@ test('feature flags: getFlagValue priority resolution (Firestore > Env > Default
 
 test('feature flags: getAllFlags returns structured metadata and effective source', async () => {
   const mockDb = {
-    doc(path) {
+    doc(_path) {
       return {
         async get() {
           return {
@@ -199,7 +199,7 @@ test('feature flags: enterpriseFeatureEnabled and enterpriseFeatureEnabledAsync 
   assert.equal(enterpriseFeatureEnabled({}), false);
 
   const mockDb = {
-    doc(path) {
+    doc(_path) {
       return {
         async get() {
           return {

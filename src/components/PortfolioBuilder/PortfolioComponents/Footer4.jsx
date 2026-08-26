@@ -50,7 +50,7 @@ const Footer4 = {
         backgroundColor: 'bg-black',
         terminalTheme: 'matrix',
     },
-    render: ({ companyName, description, tagline, email, phone, address, socialLinks, quickLinks, backgroundColor, terminalTheme }) => {
+    render: ({ companyName, description, tagline, email, phone, address, socialLinks, quickLinks, _backgroundColor, terminalTheme }) => {
         const terminalThemes = {
             matrix: {
                 primary: 'text-green-400',

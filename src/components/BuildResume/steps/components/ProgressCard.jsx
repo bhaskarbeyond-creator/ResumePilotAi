@@ -6,13 +6,13 @@ const ProgressCard = ({
     value,
     maxValue,
     progressText,
-    colorScheme = 'blue', // blue, emerald, amber, red
+    _colorScheme = 'blue', // blue, emerald, amber, red
     className = '',
 }) => {
     const { t } = useTranslation('common');
     const percentage = Math.min(100, (value / maxValue) * 100);
 
-    const colorSchemes = {
+    const _colorSchemes = {
         blue: {
             bg: 'bg-blue-50',
             border: 'border-blue-200',
@@ -43,7 +43,6 @@ const ProgressCard = ({
         },
     };
 
-    const colors = colorSchemes[colorScheme];
 
     return (
         <div className={`bg-white rounded-lg border border-slate-200 p-4 ${className}`}>

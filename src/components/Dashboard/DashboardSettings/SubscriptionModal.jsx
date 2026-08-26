@@ -92,7 +92,7 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
     if (!isOpen) return null;
 
     // Pricing calculation based on duration & pricing config
-    const getBaseMonthlyRate = () => {
+    () => {;
         if (selectedDuration === '1') return subscriptionConfig.monthlyPrice;
         if (selectedDuration === '6') return Math.round(subscriptionConfig.quartarlyPrice / 6 * 10) / 10;
         return Math.round(subscriptionConfig.yearlyPrice / 12 * 10) / 10;

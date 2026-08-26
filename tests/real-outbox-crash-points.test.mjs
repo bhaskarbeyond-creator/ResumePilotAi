@@ -1,7 +1,7 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { getPool } from '../backend/database/mysql.js';
-import { enqueueOutboxEvent, getSyncHealthStatus } from '../backend/database/syncManager.js';
+import { enqueueOutboxEvent } from '../backend/database/syncManager.js';
 import { rememberMutation } from '../backend/database/tombstones.js';
 
 describe('Real Outbox Crash Injection Points A–E', () => {

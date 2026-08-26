@@ -42,7 +42,7 @@ export const describeOAuthRedirectError = (search, provider) => {
     const params = new URLSearchParams(search);
     code = params.get('error') || '';
     redirectProvider = redirectProvider || params.get('provider') || '';
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 
@@ -66,7 +66,7 @@ export const stripOAuthRedirectError = (search = '') => {
     params.delete('provider');
     const rest = params.toString();
     return rest ? `?${rest}` : '';
-  } catch (error) {
+  } catch (_error) {
     return '';
   }
 };

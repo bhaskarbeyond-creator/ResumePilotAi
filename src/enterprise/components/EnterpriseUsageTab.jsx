@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FiBarChart2, FiZap, FiActivity, FiAlertTriangle, FiCheckCircle, FiCpu, FiHash, FiUser
-} from 'react-icons/fi';
+import { FiBarChart2, FiZap, FiActivity, FiAlertTriangle, FiCheckCircle, FiCpu, FiHash, FiUser } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';

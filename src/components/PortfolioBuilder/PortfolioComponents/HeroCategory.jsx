@@ -291,7 +291,7 @@ const HeroCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={heroTemplateOptions} category="Hero" />,
+                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={heroTemplateOptions} category="Hero" />,
             },
         };
 

@@ -1,17 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
 import { useAdminSession } from '../AdminContext';
-import {
-  decommissionTenant, getTenantDetail, renameTenant,
-  addTenantMember, removeTenantMember, updateTenantCommercials, updateTenantAiPolicy
-} from '../../../services/platformApi';
+import { decommissionTenant, getTenantDetail, renameTenant, addTenantMember, removeTenantMember, updateTenantCommercials, updateTenantAiPolicy } from '../../../services/platformApi';
 import { testAdminAiProvider } from '../../../services/adminAiSettings';
-import {
-  FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff,
-  FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus,
-  FiTrash2, FiUser, FiCpu, FiDollarSign, FiSave, FiLayers,
-  FiCopy, FiShield, FiLock, FiUnlock, FiActivity, FiKey
-} from 'react-icons/fi';
+import { FiServer, FiRefreshCw, FiPlus, FiSearch, FiShieldOff, FiPlay, FiCheck, FiAlertTriangle, FiX, FiEye, FiUserPlus, FiTrash2, FiUser, FiCpu, FiDollarSign, FiSave, FiLayers, FiCopy, FiShield, FiLock, FiUnlock, FiActivity, FiKey } from 'react-icons/fi';
 
 
 
@@ -199,7 +191,7 @@ export default function PlatformTenants() {
   const [selectedSeatOption, setSelectedSeatOption] = useState(50);
   const [policyCurrency, setPolicyCurrency] = useState('INR');
   const [policyBillingStatus, setPolicyBillingStatus] = useState('ACTIVE');
-  const [showDedicatedKeys, setShowDedicatedKeys] = useState(true);
+  const [_showDedicatedKeys] = useState(true);
   const [nvidiaCustomKey, setNvidiaCustomKey] = useState('');
   const [geminiCustomKey, setGeminiCustomKey] = useState('');
   const [openaiCustomKey, setOpenaiCustomKey] = useState('');

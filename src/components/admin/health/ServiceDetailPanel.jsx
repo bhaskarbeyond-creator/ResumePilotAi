@@ -1,15 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FiX, FiPlay, FiAlertTriangle, FiCheckCircle, FiExternalLink } from 'react-icons/fi';
-import {
-  describeState,
-  describePosture,
-  formatCheckedAt,
-  formatMetric,
-  humanizeMetricKey,
-  CONFIGURATION_LABEL,
-  GROUP_LABEL,
-} from '../../../utils/healthPresentation';
+import { describeState, describePosture, formatCheckedAt, formatMetric, humanizeMetricKey, CONFIGURATION_LABEL, GROUP_LABEL } from '../../../utils/healthPresentation';
 
 function Field({ label, children }) {
   return (

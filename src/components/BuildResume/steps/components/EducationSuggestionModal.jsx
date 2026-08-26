@@ -79,6 +79,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
             setSelectedBullets([]);
             generateAiSuggestions();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, selectedEducation]);
 
     useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
@@ -87,7 +88,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
     }, [isOpen]);
 
     const toggleBulletSelection = (bulletText) => {
-        const cleanedText = bulletText.replace(/^[•\-\*]\s*/, '').trim();
+        const cleanedText = bulletText.replace(/^[•\-*]\s*/, '').trim();
         if (selectedBullets.includes(cleanedText)) {
             setSelectedBullets(selectedBullets.filter((b) => b !== cleanedText));
         } else {
@@ -96,7 +97,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
     };
 
     const handleCopyBullet = (bulletText, index) => {
-        const cleanedText = bulletText.replace(/^[•\-\*]\s*/, '').trim();
+        const cleanedText = bulletText.replace(/^[•\-*]\s*/, '').trim();
         navigator.clipboard.writeText(`• ${cleanedText}`);
         setCopiedIndex(index);
         setTimeout(() => setCopiedIndex(null), 2000);
@@ -201,7 +202,7 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
 
                             {suggestions.map((suggestion, index) => {
                                 const isBlock = suggestion.includes('\n');
-                                const cleanedText = suggestion.replace(/^[•\-\*]\s*/, '').trim();
+                                const cleanedText = suggestion.replace(/^[•\-*]\s*/, '').trim();
                                 const isSelected = selectedBullets.includes(cleanedText);
 
                                 return (

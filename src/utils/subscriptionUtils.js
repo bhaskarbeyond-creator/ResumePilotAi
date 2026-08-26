@@ -131,7 +131,7 @@ export const isUserPremium = (membership, membershipEnds) => {
  * Evaluates whether a download/export action should be allowed for a user.
  * Returns { allowed: boolean, reason: 'FREE_MODE' | 'PREMIUM_USER' | 'LOGIN_REQUIRED' | 'PREMIUM_REQUIRED' }
  */
-export const evaluateDownloadAccess = ({ user, membership, membershipEnds, subscriptionsStatus, isStatusLoaded }) => {
+export const evaluateDownloadAccess = ({ user, membership, membershipEnds, subscriptionsStatus, _isStatusLoaded }) => {
     // 1. If global subscriptions are disabled, allow free download for everyone
     if (isGlobalSubscriptionDisabled(subscriptionsStatus)) {
         return { allowed: true, reason: 'FREE_MODE' };

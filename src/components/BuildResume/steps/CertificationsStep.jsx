@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-    MdDelete,
-    MdKeyboardArrowDown,
-    MdAdd,
-    MdCheck,
-    MdAutoAwesome,
-    MdLightbulb,
-    MdVerified,
-    MdWorkspacePremium,
-} from 'react-icons/md';
+import { MdDelete, MdKeyboardArrowDown, MdAdd, MdCheck, MdAutoAwesome, MdLightbulb, MdVerified, MdWorkspacePremium } from 'react-icons/md';
 import InputField from './components/InputField';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 import { generateUserAiContent } from '../../../services/aiService';

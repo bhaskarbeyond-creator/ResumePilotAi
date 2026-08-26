@@ -1,20 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {
-  ATS_QUALITY_MAX,
-  ATS_WEIGHTS,
-  calculateAtsScore,
-  composeDisplayedScore,
-  extractJdKeywords,
-  matchJobDescription,
-  expandKeywordVariants,
-  detectNonEnglish,
-  analyzeStuffing,
-  extractBullets,
-  extractMetrics,
-  leadingActionVerb,
-} from '../src/utils/atsScore.js';
+import { ATS_QUALITY_MAX, ATS_WEIGHTS, calculateAtsScore, composeDisplayedScore, extractJdKeywords, matchJobDescription, expandKeywordVariants, detectNonEnglish, analyzeStuffing, extractBullets, extractMetrics, leadingActionVerb } from '../src/utils/atsScore.js';
 
 const TARGET_JD = `
 We are hiring a Senior Software Engineer to own product delivery.

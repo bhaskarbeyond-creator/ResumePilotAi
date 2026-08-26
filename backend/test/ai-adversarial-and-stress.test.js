@@ -9,7 +9,7 @@ const {
   buildLegacyPrompt,
   loadProviderConfiguration,
   generateWithProviders,
-  clearProviderConfigurationCache,
+  _clearProviderConfigurationCache,
   PROVIDERS
 } = require('../services/aiRuntime');
 const {

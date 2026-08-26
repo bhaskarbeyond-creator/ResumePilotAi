@@ -1,6 +1,5 @@
-import { test, describe, before, after } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,17 +11,17 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const {
     calculateContentHash,
-    enqueueOutboxEvent,
+    _enqueueOutboxEvent,
     processSyncQueue,
     replicateToFirestore,
-    replicateToMySQL,
-    flushAndVerifyBeforeSwitch
+    _replicateToMySQL,
+    _flushAndVerifyBeforeSwitch
 } = await import('../backend/database/syncManager.js');
 
 const {
     getActiveEngine,
     switchActiveEngine,
-    getEngineStateConsistency
+    _getEngineStateConsistency
 } = await import('../backend/database/engineManager.js');
 
 describe('🔥 Comprehensive Dual-Database & Sync Engine Edge Cases Matrix', () => {
@@ -232,7 +231,7 @@ describe('🔥 Comprehensive Dual-Database & Sync Engine Edge Cases Matrix', () 
     // ──────────────────────────────────────────────────────────────────────────
     test('Edge Case 7: Pre-switch validation blocks switch if unresolved conflicts or pending outbox exists', async () => {
         // Mock pool with pending items
-        const mockBlockedPool = {
+        const _mockBlockedPool = {
             query: async (sql) => {
                 if (sql.includes('sync_conflicts')) return [[{ c: 2 }]]; // 2 active conflicts
                 if (sql.includes('DEAD_LETTER')) return [[{ c: 0 }]];

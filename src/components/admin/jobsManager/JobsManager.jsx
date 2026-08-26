@@ -1,30 +1,6 @@
 import React, { Component } from 'react';
 import { getAllJobs, updateJobStatus, deleteJobByAdmin, toggleJobFeatured } from '../../../firestore/dbOperations';
-import {
-    FaBriefcase,
-    FaBuilding,
-    FaCalendar,
-    FaCheck,
-    FaTimes,
-    FaEye,
-    FaChevronDown,
-    FaChevronUp,
-    FaClock,
-    FaInbox,
-    FaSearch,
-    FaFilter,
-    FaMapMarkerAlt,
-    FaDollarSign,
-    FaUsers,
-    FaExclamationTriangle,
-    FaTrash,
-    FaEdit,
-    FaPause,
-    FaPlay,
-    FaArchive,
-    FaStar,
-    FaPlus,
-} from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaCalendar, FaCheck, FaTimes, FaEye, FaChevronDown, FaChevronUp, FaClock, FaInbox, FaSearch, FaFilter, FaMapMarkerAlt, FaDollarSign, FaUsers, FaExclamationTriangle, FaTrash, FaEdit, FaPause, FaPlay, FaArchive, FaStar, FaPlus } from 'react-icons/fa';
 import CreateJobModal from '../../JobsListings/CreateJobModal';
 
 class JobsManager extends Component {
@@ -291,7 +267,7 @@ class JobsManager extends Component {
 
     render() {
         const { loading, expandedRow, processingAction, successMessage, errorMessage, currentPage, pagination } = this.state;
-        const jobCount = this.state.jobs.length;
+        this.state.jobs.length;
         const totalJobs = pagination.totalItems;
 
         if (loading) {

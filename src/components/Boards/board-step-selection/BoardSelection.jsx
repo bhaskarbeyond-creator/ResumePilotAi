@@ -3,7 +3,6 @@ import "./BoardSelection.scss";
 import { CSSTransition } from "react-transition-group";
 import { withTranslation } from "react-i18next";
 import { FiSearch, FiStar, FiFilter, FiArrowLeft, FiArrowRight, FiEye } from "react-icons/fi";
-import { motion } from "framer-motion";
 import Cv1Image from "../../../assets/1.JPG";
 import Cv2Image from "../../../assets/resumesNew/Cv2.JPG";
 import Cv6Image from "../../../assets/6.JPG";

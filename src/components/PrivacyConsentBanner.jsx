@@ -6,6 +6,7 @@ import { getAnalyticsConsent, setAnalyticsConsent } from '../utils/privacyConsen
 
 export const OPEN_PRIVACY_CHOICES_EVENT = 'resumepilot:open-privacy-choices';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function openPrivacyChoicesModal() {
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(OPEN_PRIVACY_CHOICES_EVENT));

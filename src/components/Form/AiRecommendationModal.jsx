@@ -7,7 +7,7 @@ import { FaCheck, FaTimes, FaMagic, FaFire, FaPlus } from 'react-icons/fa';
  * Allows candidates to review, check/uncheck, and approve only the items they actually possess.
  * Mobile Optimized: Fits inside mobile viewports without trimming top header or bottom actions.
  */
-export function AiRecommendationModal({ isOpen, onClose, title, type, items = [], onApply }) {
+export function AiRecommendationModal({ isOpen, onClose, title, _type, items = [], onApply }) {
     const [selectedIds, setSelectedIds] = useState(new Set());
 
     useEffect(() => {

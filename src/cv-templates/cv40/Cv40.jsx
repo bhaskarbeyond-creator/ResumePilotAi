@@ -3,25 +3,7 @@ import React, { Component } from 'react';
 import './Cv40.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaQuoteLeft,
-    FaLeaf,
-    FaCircle,
-    FaRegCircle,
-    FaEllipsisH,
-    FaUserTie,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaQuoteLeft, FaLeaf, FaCircle, FaRegCircle, FaEllipsisH, FaUserTie } from 'react-icons/fa';
 
 class Cv40 extends Component {
     constructor(props) {

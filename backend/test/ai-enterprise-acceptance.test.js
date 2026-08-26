@@ -4,15 +4,15 @@ const express = require('express');
 const supertest = require('supertest');
 const {
   generateWithProviders,
-  extractJson,
+  _extractJson,
   loadProviderConfiguration,
-  clearProviderConfigurationCache,
+  _clearProviderConfigurationCache,
   PROVIDERS
 } = require('../services/aiRuntime');
 const {
   loadAiAdminSettings,
   saveAiAdminSettings,
-  testAiProvider
+  _testAiProvider
 } = require('../services/aiAdmin');
 const { requireAuth, setTokenVerifierForTests } = require('../security/auth');
 const { enforceApiPolicy } = require('../security/policy');
@@ -194,7 +194,7 @@ test('Acceptance Gate 2: Concurrent Admin settings update + User AI generation r
   const app = createMockApp(db);
 
   // Trigger 10 simultaneous user AI requests while admin updates settings simultaneously
-  const mockFetch = async (url) => {
+  async (url) => {;
     await new Promise(r => setTimeout(r, 15));
     if (url.includes('nvidia.com')) {
       return {

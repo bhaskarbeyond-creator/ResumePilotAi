@@ -102,7 +102,7 @@ const Experience3 = {
             },
         ],
     },
-    render: ({ title, subtitle, backgroundColor, accentColor, experiences }) => {
+    render: ({ title, subtitle, _backgroundColor, accentColor, experiences }) => {
         const accentColors = {
             cyan: {
                 primary: 'from-cyan-400 to-blue-500',

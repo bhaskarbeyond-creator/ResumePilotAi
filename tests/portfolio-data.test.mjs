@@ -1,21 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  PORTFOLIO_TEMPLATE_IDS,
-  assertNoSilentDataLoss,
-  buildPortfolioDocument,
-  collectPortfolioFieldMatrix,
-  convertResumeToPortfolio,
-  createLargePortfolioFixture,
-  extractCanonicalFromPuck,
-  isLikelyPlaceholderPersona,
-  normalizePortfolioData,
-  portfolioHasContent,
-  resolvePortfolioTemplate,
-  sanitizeCanonicalPortfolio,
-  switchPortfolioTemplate,
-  visiblePortfolioSections,
-} from '../src/utils/portfolioData.js';
+import { PORTFOLIO_TEMPLATE_IDS, assertNoSilentDataLoss, buildPortfolioDocument, collectPortfolioFieldMatrix, convertResumeToPortfolio, createLargePortfolioFixture, extractCanonicalFromPuck, isLikelyPlaceholderPersona, normalizePortfolioData, portfolioHasContent, resolvePortfolioTemplate, sanitizeCanonicalPortfolio, switchPortfolioTemplate, visiblePortfolioSections } from '../src/utils/portfolioData.js';
 import { normalizePublishedPortfolio } from '../src/components/PortfolioBuilder/portfolioSanitization.js';
 
 const MASTER_RESUME = {

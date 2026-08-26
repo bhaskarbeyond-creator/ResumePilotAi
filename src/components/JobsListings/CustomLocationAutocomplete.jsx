@@ -73,6 +73,7 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
         debounceTimer.current = setTimeout(() => {
             searchPlaces(input);
         }, 300); // 300ms debounce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const searchPlaces = async (input) => {

@@ -32,7 +32,7 @@ test('mail settings projection is allowlisted and exposes only credential state'
 
 test('mail runtime validation rejects plaintext transport, malformed hosts and invalid toggles', () => {
   assert.throws(() => normalizedMailSection('smtp', { ...smtpInput, encryption: 'none' }), /Encrypted smtp transport is required/);
-  assert.throws(() => normalizedMailSection('smtp', { ...smtpInput, host: 'https:\/\/smtp.example.com' }), /Invalid smtp host/);
+  assert.throws(() => normalizedMailSection('smtp', { ...smtpInput, host: 'https://smtp.example.com' }), /Invalid smtp host/);
   assert.throws(() => normalizeTemplateToggles({ welcome: 'true' }), /Invalid email template setting/);
   assert.deepEqual(normalizeTemplateToggles({ welcome: true, security_alert: false }), { welcome: true, security_alert: false });
 });

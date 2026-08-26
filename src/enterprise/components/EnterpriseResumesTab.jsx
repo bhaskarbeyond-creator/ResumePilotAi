@@ -1,15 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  FiFileText, FiPlus, FiEdit3, FiCopy, FiTrash2, FiSearch, FiCheck,
-  FiEye, FiDownload, FiStar, FiUser, FiBriefcase, FiAward, FiLayers,
-  FiX, FiExternalLink, FiSliders, FiCheckCircle, FiChevronDown, FiChevronRight,
-  FiUsers, FiMaximize2, FiPrinter
-} from 'react-icons/fi';
+import { FiFileText, FiPlus, FiEdit3, FiCopy, FiTrash2, FiSearch, FiCheck, FiEye, FiDownload, FiStar, FiUser, FiBriefcase, FiAward, FiLayers, FiX, FiExternalLink, FiSliders, FiCheckCircle, FiChevronDown, FiChevronRight, FiUsers, FiMaximize2, FiPrinter } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
 import EnterpriseConfirmModal from './EnterpriseConfirmModal';
-import EnterpriseResumePdfModal, { normalizeResumeValues } from './EnterpriseResumePdfModal';
+import EnterpriseResumePdfModal, {  } from './EnterpriseResumePdfModal';
 
 function getCandidateName(resource) {
   return resource?.candidateName ||
@@ -63,7 +58,7 @@ function formatRelativeTime(dateStr) {
 }
 
 export default function EnterpriseResumesTab() {
-  const navigate = useNavigate();
+  useNavigate();
   const { request, hasPermission, workspace, tenant } = useTenantApi();
   const [resumesState, refreshResumes] = useAsyncResource(
     () => request('/api/enterprise/resources?resourceType=resume'),

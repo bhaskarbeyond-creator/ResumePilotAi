@@ -1,15 +1,5 @@
 import React from 'react';
-import {
-    ContactList,
-    EmptyWebCv,
-    NavLinks,
-    Portrait,
-    SafeLink,
-    Section,
-    SkipLink,
-    formatRange,
-    usePortfolioView,
-} from './shared.jsx';
+import { ContactList, EmptyWebCv, NavLinks, Portrait, SafeLink, Section, SkipLink, formatRange, usePortfolioView } from './shared.jsx';
 
 export default function CreativeDark({ canonical }) {
     const { data, visibility, name, location } = usePortfolioView(canonical, 'creativeDark');

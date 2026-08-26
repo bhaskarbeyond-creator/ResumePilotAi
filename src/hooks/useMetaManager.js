@@ -15,6 +15,7 @@ const useMetaManager = ({
     language = 'en'
 }) => {
     // Language mapping for full names to codes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const languageMap = {
         'Danish': 'da',
         'Swedish': 'sv', 

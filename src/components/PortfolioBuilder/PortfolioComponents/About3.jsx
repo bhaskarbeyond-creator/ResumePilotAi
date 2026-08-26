@@ -81,7 +81,7 @@ const About3 = {
         projectsCompleted: '100+',
         clientsSatisfied: '50+',
     },
-    render: ({ title, content, resumeUrl, backgroundColor, accentColor, skills, yearsExperience, projectsCompleted, clientsSatisfied }) => {
+    render: ({ title, content, resumeUrl, _backgroundColor, accentColor, skills, yearsExperience, projectsCompleted, clientsSatisfied }) => {
         const accentColors = {
             cyan: {
                 primary: 'from-cyan-400 to-blue-500',

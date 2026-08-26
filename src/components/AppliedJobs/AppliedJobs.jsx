@@ -1,26 +1,13 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import {
-    FaBriefcase,
-    FaSearch,
-    FaCalendar,
-    FaMapMarkerAlt,
-    FaDollarSign,
-    FaClock,
-    FaCheckCircle,
-    FaTimesCircle,
-    FaHourglass,
-    FaInfoCircle,
-    FaBuilding,
-    FaChevronDown,
-    FaChevronUp,
-} from 'react-icons/fa';
+import { FaBriefcase, FaSearch, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaBuilding, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { AuthContext } from '../../main';
 import { getUserJobApplications } from '../../firestore/dbOperations';
 
 
+// eslint-disable-next-line react-refresh/only-export-components
 const AppliedJobs = ({ showToast, t }) => {
     const user = useContext(AuthContext);
     const [appliedJobs, setAppliedJobs] = useState([]);
@@ -488,4 +475,5 @@ const AppliedJobs = ({ showToast, t }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(AppliedJobs);

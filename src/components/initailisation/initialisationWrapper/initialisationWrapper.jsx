@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './initialisationWrapper.scss'
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence } from "framer-motion"
 import InstallationSuccess from '../installationSuccess/installationSuccess'
 import InitialisationSetup from '../initialisationSetup/initialisationSetup'
 class InitialisationWrapper extends Component {
@@ -13,7 +13,7 @@ class InitialisationWrapper extends Component {
         this.nextStep= this.nextStep.bind(this);
     }
     nextStep() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             step: prevState.step + 1
         }))
     }

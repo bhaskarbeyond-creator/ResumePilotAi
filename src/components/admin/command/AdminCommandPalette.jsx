@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FiSearch, FiGrid, FiUsers, FiSettings, FiShield, FiServer,
-  FiActivity, FiFileText, FiLayers, FiMail, FiBriefcase, FiX,
-  FiCommand, FiRefreshCw, FiZap, FiLock
-} from 'react-icons/fi';
+import { FiSearch, FiGrid, FiUsers, FiSettings, FiShield, FiServer, FiActivity, FiFileText, FiLayers, FiMail, FiBriefcase, FiX, FiCommand, FiRefreshCw, FiZap, FiLock } from 'react-icons/fi';
 import { FaRobot, FaCreditCard, FaEnvelope, FaGlobeAsia, FaReceipt, FaDatabase, FaFire } from 'react-icons/fa';
 import { searchPlatform } from '../../../services/platformApi';
 

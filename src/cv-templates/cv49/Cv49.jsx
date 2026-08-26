@@ -3,24 +3,7 @@ import React, { Component } from 'react';
 import './Cv49.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaTools,
-    FaCalendarAlt,
-    FaUser,
-    FaQuoteRight,
-    FaAngleRight,
-    FaBuilding,
-    FaUniversity,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaTools, FaCalendarAlt, FaUser, FaQuoteRight, FaAngleRight, FaBuilding, FaUniversity } from 'react-icons/fa';
 
 class Cv49 extends Component {
     constructor(props) {
@@ -312,4 +295,5 @@ class Cv49 extends Component {
     }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(Cv49);

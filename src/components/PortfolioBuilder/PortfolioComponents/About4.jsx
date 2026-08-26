@@ -85,7 +85,7 @@ const About4 = {
         linesWritten: '500K+',
         coffeeConsumed: '1.2K',
     },
-    render: ({ title, content, email, backgroundColor, terminalTheme, skills, totalCommits, linesWritten, coffeeConsumed }) => {
+    render: ({ title, content, email, _backgroundColor, terminalTheme, skills, totalCommits, linesWritten, coffeeConsumed }) => {
         const themes = {
             matrix: {
                 primary: 'text-green-400',
@@ -142,7 +142,7 @@ const About4 = {
                         {Array.from({ length: 50 }).map((_, i) => (
                             <div key={i} className={`${theme.primary} animate-pulse`} style={{ animationDelay: `${i * 0.1}s` }}>
                                 {Array.from({ length: 100 })
-                                    .map((_, j) => (Math.random() > 0.5 ? '1' : '0'))
+                                    .map((_, _j) => (Math.random() > 0.5 ? '1' : '0'))
                                     .join('')}
                             </div>
                         ))}

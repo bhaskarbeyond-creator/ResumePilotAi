@@ -23,10 +23,10 @@ const {
   claimNextOutboxJob,
   completeOutboxJob,
   failOutboxJob,
-  rejectOutboxJob,
+  _rejectOutboxJob,
   replayDeadLetterJob,
-  getOutboxJobStatus,
-  listTenantJobs,
+  _getOutboxJobStatus,
+  _listTenantJobs,
 } = require('../backend/enterprise/enterpriseOutbox');
 const { createTenantJobEnvelope, validateTenantJobEnvelope } = require('../backend/enterprise/tenantJobs');
 

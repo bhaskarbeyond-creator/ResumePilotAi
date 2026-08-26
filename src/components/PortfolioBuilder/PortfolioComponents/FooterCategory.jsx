@@ -176,7 +176,7 @@ const FooterCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={footerTemplateOptions} category="Footer" />,
+                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={footerTemplateOptions} category="Footer" />,
             },
         };
 

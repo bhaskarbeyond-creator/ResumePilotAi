@@ -113,6 +113,7 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [educations]);
 
     // Auto-expand only the first card when there's only one education
@@ -120,6 +121,7 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
         if (educations.length === 1) {
             setExpandedCards(new Set([educations[0].id]));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [educations.length]);
 
     return (

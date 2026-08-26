@@ -61,7 +61,7 @@ import Cv50 from '../../assets/resumesNew/Cv50.JPG';
 import Cv51 from '../../assets/resumesNew/Cv51.JPG';
 import { getTemplateMeta } from '../../utils/templateCatalog';
 
-const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv1', onTemplateSelect, resumeData }) => {
+const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv1', onTemplateSelect, _resumeData }) => {
     const { t } = useTranslation('common');
     const [isVisible, setIsVisible] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(currentTemplate);
@@ -90,6 +90,7 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
         return () => {
             document.body.style.overflow = 'unset';
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showModal]);
 
     const handleClose = () => {
@@ -118,6 +119,7 @@ const TemplateSelectionModal = ({ showModal, setShowModal, currentTemplate = 'Cv
             document.addEventListener('keydown', handleEscapeKey);
             return () => document.removeEventListener('keydown', handleEscapeKey);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showModal, previewTemplate]);
 
     // Template data

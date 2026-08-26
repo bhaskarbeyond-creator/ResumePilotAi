@@ -154,7 +154,7 @@ router.get('/audit-logs/:id', async (req, res) => {
     }
 
     return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Audit record not found', requestId: res.locals?.requestId } });
-  } catch (error) {
+  } catch (_error) {
     return res.status(500).json({ error: { code: 'QUERY_FAILED', message: 'Failed to retrieve audit record', requestId: res.locals?.requestId } });
   }
 });

@@ -6,7 +6,7 @@ router.use((req, res, next) => {
     try {
         req.repository = getRepository(req.app.get('db'));
         next();
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
@@ -97,7 +97,7 @@ router.get('/:id/publication', async (req, res) => {
     try {
         const result = await req.repository.getResumePublication(req.user.uid, req.params.id);
         return res.json({ success: true, ...result });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to get publication status' });
     }
 });

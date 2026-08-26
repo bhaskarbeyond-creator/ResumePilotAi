@@ -1,29 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  FiStar, 
-  FiFileText, 
-  FiZap, 
-  FiTarget, 
-  FiTrendingUp, 
-  FiAward, 
-  FiUsers, 
-  FiDownload, 
-  FiEdit3, 
-  FiLayout, 
-  FiShare2, 
-  FiSmartphone, 
-  FiGlobe, 
-  FiCheckCircle,
-  FiArrowRight,
-  FiShield,
-  FiPlay,
-  FiCpu,
-  FiMonitor,
-  FiCloud,
-  FiLock,
-  FiRefreshCw,
-  FiTool
-} from 'react-icons/fi';
+import { FiStar, FiFileText, FiZap, FiTarget, FiTrendingUp, FiAward, FiUsers, FiDownload, FiEdit3, FiLayout, FiShare2, FiSmartphone, FiGlobe, FiCheckCircle, FiArrowRight, FiShield, FiPlay, FiCpu, FiMonitor, FiCloud, FiLock, FiRefreshCw, FiTool } from 'react-icons/fi';
 import { BiFile, BiPalette, BiShield } from 'react-icons/bi';
 import { useLottie } from "lottie-react";
 import { withTranslation } from 'react-i18next';
@@ -35,7 +11,7 @@ import { AuthContext } from '../../main';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 
-const Features = ({ t, goToResumeSelectionStep, goToCoverSelection }) => {
+const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
   // Get user from AuthContext
   const user = useContext(AuthContext);
   const [state, setState] = useState({

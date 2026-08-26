@@ -34,7 +34,7 @@ const TOLERANCES = {
     duplicateHamming: 40,  // below this distance two templates count as duplicates
 };
 
-function hamming(a, b) {
+function _hamming(a, b) {
     let d = 0;
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
     return d;
@@ -72,7 +72,7 @@ async function captureMetrics(browser, { vitePort, shotsPort, templateId }) {
 
     const metricPage = await browser.newPage();
     await metricPage.goto(`${viteBase}/`, { waitUntil: 'domcontentloaded' });
-    const metrics = await metricPage.evaluate(async ({ templateId, shotUrl }) => {
+    const metrics = await metricPage.evaluate(async ({ _templateId, shotUrl }) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.src = shotUrl;

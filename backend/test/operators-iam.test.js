@@ -11,7 +11,6 @@ function makeApp() {
   app.use(express.json());
 
   // Mock DB and Firebase Admin
-  const auditLogs = [];
   const usersDb = new Map([
     ['super-uid', { email: 'super@airesume.guru', role: 'SUPER_ADMIN', displayName: 'Super Operator' }],
     ['admin-uid', { email: 'admin@airesume.guru', role: 'ADMIN', displayName: 'Platform Admin' }],
@@ -19,7 +18,7 @@ function makeApp() {
   ]);
 
   const mockDb = {
-    collection(name) {
+    collection(_name) {
       return {
         doc(id) {
           return {
@@ -61,7 +60,7 @@ function makeApp() {
           const u = usersDb.get(uid);
           if (u) u.role = claims.role;
         },
-        async revokeRefreshTokens(uid) {
+        async revokeRefreshTokens(_uid) {
           // Token revoked
           return true;
         }

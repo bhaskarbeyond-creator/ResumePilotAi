@@ -119,7 +119,7 @@ async function getPlatformCurrencyConfig(db) {
         source: (sysData.currency) ? 'system_settings' : (pubData.currency || pubData.subscriptions?.currency) ? 'public_config' : 'default',
         updatedAt: sysData.currencyUpdatedAt || pubData.updatedAt || null,
       };
-    } catch (error) {
+    } catch (_error) {
       return { ...fallbackCurrencyConfig(), source: 'error-fallback' };
     }
   }

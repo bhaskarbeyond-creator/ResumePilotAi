@@ -16,12 +16,12 @@ import FirestoreRepository from '../backend/repositories/FirestoreRepository.js'
 
 import syncManagerModule from '../backend/database/syncManager.js';
 const {
-    enqueueOutboxEvent,
+    _enqueueOutboxEvent,
     processSyncQueue,
     processFirestoreOutbox,
     replicateToFirestore,
     replicateToMySQL,
-    getSyncHealthStatus,
+    _getSyncHealthStatus,
     flushAndVerifyBeforeSwitch
 } = syncManagerModule;
 
@@ -659,7 +659,7 @@ describe('Live Database Infrastructure, Failover, Reconciliation & Fencing Suite
         // Spawn 3 concurrent child worker scripts
         const workerScript = path.join(__dirname, 'helpers', 'fencing-worker-helper.mjs');
         
-        const runWorker = (workerName) => new Promise((resolve, reject) => {
+        const runWorker = (workerName) => new Promise((resolve, _reject) => {
             const child = fork(workerScript, [workerName, '10'], { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
             let stdout = '';
             let stderr = '';

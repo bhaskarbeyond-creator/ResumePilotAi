@@ -11,7 +11,7 @@ import { FaCrop, FaTimes, FaCheck, FaSearchPlus, FaSearchMinus, FaRedo } from 'r
  */
 export default function ImageCropModal({ imageSrc, onCrop, onCancel, outputSize = 400 }) {
     const canvasRef = useRef(null);
-    const containerRef = useRef(null);
+    useRef(null);
     const imgRef = useRef(null);
 
     // crop box in canvas coords
@@ -61,8 +61,8 @@ export default function ImageCropModal({ imageSrc, onCrop, onCancel, outputSize 
         ctx.clearRect(0, 0, cw, ch);
 
         // draw image (zoomed + offset)
-        const iw = imgRef.current.width * zoom * (cw / imgRef.current.width);
-        const ih = imgRef.current.height * zoom * (ch / imgRef.current.height);
+        imgRef.current.width * zoom * (cw / imgRef.current.width);
+        imgRef.current.height * zoom * (ch / imgRef.current.height);
         // base scale already baked into canvasSize; apply extra zoom around centre
         const baseW = cw, baseH = ch;
         const zoomedW = baseW * zoom;

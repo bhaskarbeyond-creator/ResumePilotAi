@@ -24,6 +24,7 @@ export default function WebCvRenderer({ canonical, templateKey, className = '' }
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getTemplateComponent(templateKey) {
     return TEMPLATES[resolvePortfolioTemplate(templateKey)] || ModernMinimal;
 }

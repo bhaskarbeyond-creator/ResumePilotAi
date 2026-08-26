@@ -1,4 +1,4 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import FirestoreRepository from '../backend/repositories/FirestoreRepository.js';
 import MySQLRepository from '../backend/repositories/MySQLRepository.js';
@@ -142,7 +142,7 @@ describe('Dual-Database Repository Parity Test Suite', () => {
     it('4. MySQLRepository contracts match FirestoreRepository exactly', () => {
         const firestoreMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(firestoreRepo))
             .filter(m => m !== 'constructor' && !m.startsWith('_'));
-        const mysqlMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(mysqlRepo))
+        const _mysqlMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(mysqlRepo))
             .filter(m => m !== 'constructor' && !m.startsWith('_'));
 
         for (const method of firestoreMethods) {

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getPool } from '../backend/database/mysql.js';
 import { getRepository } from '../backend/repositories/index.js';
-import { enqueueOutboxEvent, getSyncHealthStatus } from '../backend/database/syncManager.js';
+import { enqueueOutboxEvent } from '../backend/database/syncManager.js';
 import { recordTombstone, isTombstoned, rememberMutation } from '../backend/database/tombstones.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -66,7 +66,7 @@ describe('Master Failover, Chaos & Integrity Certification', () => {
       // Step B: Deliberate failure (invalid table)
       await conn.query('INSERT INTO non_existent_table_for_rollback_test (id) VALUES (?)', [1]);
       await conn.commit();
-    } catch (err) {
+    } catch (_err) {
       await conn.rollback();
     } finally {
       conn.release();

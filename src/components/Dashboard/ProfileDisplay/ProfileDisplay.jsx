@@ -9,7 +9,6 @@ import userPlaceholder from '../../../assets/user.png';
 import { Link, useLocation } from 'react-router-dom';
 import { checkIsEmployer, getSystemSettings } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
-import fire from '../../../conf/fire';
 import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';
@@ -187,7 +186,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
         });
     };
 
-    const toggleDarkMode = () => {
+    () => {;
         setDarkMode(!darkMode);
     };
 
@@ -265,6 +264,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             window.removeEventListener('resize', handleResize);
             document.body.classList.remove('mobile-sidebar-open');
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

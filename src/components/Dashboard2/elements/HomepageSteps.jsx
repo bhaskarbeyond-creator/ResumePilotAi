@@ -88,7 +88,7 @@ const HomepageBenefitsPolished = () => {
     ];
 
     // Get stats from translations
-    const stats = [
+    const _stats = [
         { number: t('HomepageSteps.stats.0.number'), label: t('HomepageSteps.stats.0.label'), icon: FiUsers },
         { number: t('HomepageSteps.stats.1.number'), label: t('HomepageSteps.stats.1.label'), icon: FiTarget },
         { number: t('HomepageSteps.stats.2.number'), label: t('HomepageSteps.stats.2.label'), icon: FiFileText },

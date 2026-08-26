@@ -5,21 +5,7 @@ import { getPortfolioBySlug, incrementPortfolioViews } from '../../firestore/dbO
 import { normalizePublishedPortfolio } from '../PortfolioBuilder/portfolioSanitization';
 import WebCvRenderer from '../PortfolioTemplates/WebCvRenderer';
 import { displayNameFromCanonical, normalizePortfolioData } from '../../utils/portfolioData';
-import {
-    NavbarCategory,
-    HeroCategory,
-    AboutCategory,
-    SkillsCategory,
-    ExperienceCategory,
-    EducationCategory,
-    ProjectsCategory,
-    ServicesCategory,
-    TestimonialsCategory,
-    ResumeCategory,
-    AwardsCategory,
-    ContactCategory,
-    FooterCategory,
-} from '../PortfolioBuilder/PortfolioComponents';
+import { NavbarCategory, HeroCategory, AboutCategory, SkillsCategory, ExperienceCategory, EducationCategory, ProjectsCategory, ServicesCategory, TestimonialsCategory, ResumeCategory, AwardsCategory, ContactCategory, FooterCategory } from '../PortfolioBuilder/PortfolioComponents';
 
 // Component configuration for rendering - MUST match the builder config exactly
 const config = {

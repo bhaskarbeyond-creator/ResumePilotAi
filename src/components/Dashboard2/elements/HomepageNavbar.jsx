@@ -1,32 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../../i18n';
-import { checkIfAdmin, getUserById, getSystemSettings } from '../../../firestore/dbOperations';
+import { checkIfAdmin, getSystemSettings } from '../../../firestore/dbOperations';
 import logo from '../../../assets/logo/logo.png';
-import {
-    FaEnvelope,
-    FaBars,
-    FaTimes,
-    FaChevronDown,
-    FaArrowRight,
-    FaShieldAlt,
-    FaSmile,
-    FaLifeRing,
-    FaBook,
-    FaVideo,
-    FaUsers,
-    FaGraduationCap,
-    FaNewspaper,
-    FaQuestionCircle,
-    FaExternalLinkAlt,
-    FaDownload,
-    FaHeart,
-    FaPlay,
-    FaStar,
-    FaRocket,
-    FaFileAlt,
-    FaSignOutAlt,
-} from 'react-icons/fa';
+import { FaEnvelope, FaBars, FaTimes, FaChevronDown, FaArrowRight, FaShieldAlt, FaSmile, FaLifeRing, FaBook, FaVideo, FaUsers, FaGraduationCap, FaNewspaper, FaQuestionCircle, FaExternalLinkAlt, FaDownload, FaHeart, FaPlay, FaStar, FaRocket, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
 import { FiTarget, FiTrendingUp, FiAward, FiFileText, FiZap, FiEdit3 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import HomepageLanguages from './HomepageLanguages';
@@ -34,7 +10,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
     const { t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);
     const [featuresOpen, setFeaturesOpen] = useState(false);
-    const [resourcesOpen, setResourcesOpen] = useState(false);
+    const [_resourcesOpen, setResourcesOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [activeMobileDropdown, setActiveMobileDropdown] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -78,7 +54,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                 .then((isAdminUser) => {
                     setIsAdmin(isAdminUser);
                 })
-                .catch((error) => {
+                .catch((_error) => {
                     setIsAdmin(false);
                 });
         } else {

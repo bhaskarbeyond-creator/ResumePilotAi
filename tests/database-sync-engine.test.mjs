@@ -1,11 +1,6 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-    calculateContentHash,
-    enqueueOutboxEvent,
-    getSyncHealthStatus,
-    processSyncQueue
-} from '../backend/database/syncManager.js';
+import { calculateContentHash, enqueueOutboxEvent, getSyncHealthStatus, processSyncQueue } from '../backend/database/syncManager.js';
 
 describe('Intelligent Synchronization & Outbox Engine Test Suite', () => {
 
@@ -87,7 +82,7 @@ describe('Intelligent Synchronization & Outbox Engine Test Suite', () => {
         // Fake pool: records every statement; returns one stale PROCESSING row
         // that the reclaim must flip back to RETRYING before selection.
         const fakePool = {
-            query: async (sql, params) => {
+            query: async (sql, _params) => {
                 executed.push(String(sql).replace(/\s+/g, ' ').trim());
                 if (sql.includes("UPDATE sync_outbox") && sql.includes("stale PROCESSING lease")) {
                     return [{ affectedRows: 1 }];

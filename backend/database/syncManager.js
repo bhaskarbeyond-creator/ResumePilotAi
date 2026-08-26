@@ -736,7 +736,7 @@ function classifySyncError(err) {
  */
 async function processSyncQueue(batchSize = 25, adminFirestore = null, poolOverride = null) {
     const pool = poolOverride || getPool();
-    const activeEngine = getActiveEngine();
+    getActiveEngine();
 
     // Lease reclaim: a worker crash mid-event leaves rows stuck in PROCESSING,
     // which the queue selector below never picks up again. Any PROCESSING row
@@ -1174,7 +1174,7 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
                     consecutiveFailures: (consecutiveBackoffs || 1),
                 });
             }
-        } catch (err) {
+        } catch (_err) {
             await updateWorkerHeartbeat('RUNNING', {
                 lastFailedEventAt: true,
                 consecutiveFailures: 1
@@ -1271,7 +1271,7 @@ async function flushAndVerifyBeforeSwitch(adminFirestore = null) {
             parityError = 'Firestore handle unavailable: standby parity could not be measured';
         } else {
             try {
-                const [userSnap, [myUsers], [myResumes]] = await Promise.all([
+                const [userSnap, [myUsers], [_myResumes]] = await Promise.all([
                     adminFirestore.collection('users').get(),
                     pool.query('SELECT COUNT(*) as c FROM users'),
                     pool.query('SELECT COUNT(*) as c FROM resumes')

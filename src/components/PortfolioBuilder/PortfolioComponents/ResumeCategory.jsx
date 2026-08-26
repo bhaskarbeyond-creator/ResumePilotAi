@@ -28,7 +28,7 @@ const ResumeCategory = {
         template: {
             type: 'custom',
             label: 'Template',
-            render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={resumeTemplateOptions} category="Resume" />,
+            render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={resumeTemplateOptions} category="Resume" />,
         },
         title: { type: 'text', label: 'Section Title' },
         subtitle: { type: 'text', label: 'Subtitle' },

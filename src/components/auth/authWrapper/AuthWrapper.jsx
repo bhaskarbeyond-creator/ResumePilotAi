@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './AuthWrapper.scss'
 import Login from '../login/Login'
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence } from "framer-motion"
 import Register from '../register/Register'
 import RecoverPassword from '../recoverPassword/RecoverPassword';
 import Toast from '../../Toasts/Toats';
@@ -30,13 +30,13 @@ class AuthWrapper extends Component {
         this.props.closeModal();
     }
     handleNavigationClick() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             isLoggedInShowed: prevState.isLoggedInShowed ? false : true,
             isRecoverPasswordShowed: false,
         }));
     }
     showPasswordRecovery() {
-        this.setState((prevState, props) => ({
+        this.setState((_prevState, _props) => ({
             isLoggedInShowed: false,
             isRecoverPasswordShowed: true,
         }));

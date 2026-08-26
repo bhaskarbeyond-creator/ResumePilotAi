@@ -1,4 +1,4 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { getPool } from '../backend/database/mysql.js';
 import { getRepository } from '../backend/repositories/index.js';
@@ -9,15 +9,14 @@ import { getPaymentSettingsProjection } from '../backend/services/paymentAdmin.j
 import { getUserAiEntitlement } from '../backend/services/adminAiEntitlement.js';
 
 describe('Independent Dual-Database API Audit: MariaDB vs Firestore', () => {
-  let pool;
   let mockFirestoreQuotaExhaustedDb;
 
   before(async () => {
-    pool = getPool();
+    getPool();
     // Simulate a Firestore DB where every single query throws RESOURCE_EXHAUSTED
     mockFirestoreQuotaExhaustedDb = {
-      collection: (colName) => ({
-        doc: (docId) => ({
+      collection: (_colName) => ({
+        doc: (_docId) => ({
           get: async () => {
             const err = new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.');
             err.code = 8;

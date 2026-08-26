@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  FiPlus, FiCheck, FiX, FiEdit2, FiArchive, FiRotateCcw, FiUsers, FiTrash2, FiUserPlus
-} from 'react-icons/fi';
+import { FiPlus, FiCheck, FiX, FiEdit2, FiArchive, FiRotateCcw, FiUsers, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import { useEnterpriseTenant } from '../EnterpriseContext';
 import HelpTooltip from './HelpTooltip';

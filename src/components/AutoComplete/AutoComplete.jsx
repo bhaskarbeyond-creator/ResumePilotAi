@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './AutoComplete.scss';
 
 const Autocomplete = ({ options, onChange }) => {
-  const [value, setValue] = useState('');
+  const [_value, setValue] = useState('');
   const [filteredOptions, setFilteredOptions] = useState([]);
 
 

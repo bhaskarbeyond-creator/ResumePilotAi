@@ -3,20 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../main';
 import { getPortfolioById, getResumes, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../firestore/dbOperations';
 import { normalizeResumeData } from '../../utils/resumeData';
-import {
-    PORTFOLIO_TEMPLATES,
-    PORTFOLIO_TEMPLATE_IDS,
-    buildPortfolioDocument,
-    convertResumeToPortfolio,
-    displayNameFromCanonical,
-    emptyCanonicalPortfolio,
-    extractCanonicalFromPuck,
-    normalizePortfolioData,
-    resolvePortfolioTemplate,
-    sanitizeCanonicalPortfolio,
-    switchPortfolioTemplate,
-    themeForTemplate,
-} from '../../utils/portfolioData';
+import { PORTFOLIO_TEMPLATES, PORTFOLIO_TEMPLATE_IDS, buildPortfolioDocument, convertResumeToPortfolio, displayNameFromCanonical, emptyCanonicalPortfolio, extractCanonicalFromPuck, normalizePortfolioData, resolvePortfolioTemplate, sanitizeCanonicalPortfolio, switchPortfolioTemplate, themeForTemplate } from '../../utils/portfolioData';
 import WebCvRenderer from '../PortfolioTemplates/WebCvRenderer';
 import CreateWebCvDialog from './CreateWebCvDialog';
 import Toasts from '../Toasts/Toats';
@@ -64,7 +51,7 @@ function ListEditor({ items, emptyItem, onChange, renderItem, addLabel }) {
     );
 }
 
-export default function WebCvStudio({ initialPortfolio = null, onExitAdvanced }) {
+export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }) {
     const user = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -164,6 +151,7 @@ export default function WebCvStudio({ initialPortfolio = null, onExitAdvanced })
             }
         };
         boot();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.uid]);
 
     useEffect(() => {

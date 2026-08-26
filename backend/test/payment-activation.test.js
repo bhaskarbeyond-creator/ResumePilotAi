@@ -4,7 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const paymentActivation = require('../services/paymentActivation');
 const authority = require('../database/authority');
-const fencing = require('../database/fencing');
 
 function memoryRepo() {
     const users = new Map();

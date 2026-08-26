@@ -71,6 +71,7 @@ function DashboardPagination(props) {
 
     useEffect(() => {
         findPageNumbers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.totalDocuments]);
 
     return (

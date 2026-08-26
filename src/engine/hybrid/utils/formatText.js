@@ -44,17 +44,17 @@ export function formatRichText(content = '') {
   let str = String(content).trim();
 
   // If content contains raw text bullet characters (•, -, * at line start), convert to <ul><li>
-  if (/^[•\-\*]\s+/m.test(str) && !str.includes('<ul>') && !str.includes('<li>')) {
+  if (/^[•\-*]\s+/m.test(str) && !str.includes('<ul>') && !str.includes('<li>')) {
     const lines = str.split('\n').map((l) => l.trim()).filter(Boolean);
     const listItems = lines.map((l) => {
-      const cleanLine = l.replace(/^[•\-\*]\s*/, '');
+      const cleanLine = l.replace(/^[•\-*]\s*/, '');
       return `<li>${cleanLine}</li>`;
     });
     return `<ul>${listItems.join('')}</ul>`;
   }
 
   // If a <p> tag contains raw bullet characters
-  str = str.replace(/<p>[•\-\*]\s*([^<]+)<\/p>/gi, '<li>$1</li>');
+  str = str.replace(/<p>[•\-*]\s*([^<]+)<\/p>/gi, '<li>$1</li>');
   if (str.includes('<li>') && !str.includes('<ul>')) {
     str = `<ul>${str}</ul>`;
   }

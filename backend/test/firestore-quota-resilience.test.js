@@ -3,7 +3,7 @@ const { describe, it, before } = require('node:test');
 const assert = require('assert');
 const express = require('express');
 const request = require('supertest');
-const { getRepository, getActiveEngine } = require('../repositories');
+const { getActiveEngine } = require('../repositories');
 const { resumesRouter } = require('../routes/resumes');
 const { portfoliosRouter } = require('../routes/portfolios');
 const { coversRouter } = require('../routes/covers');
@@ -11,7 +11,6 @@ const { jobsDataRouter } = require('../routes/jobsData');
 const { usersDataRouter } = require('../routes/usersData');
 const { blogDataRouter } = require('../routes/blogData');
 const { cmsPagesRouter } = require('../routes/cmsPages');
-const { setEngine } = require('../database/engineManager');
 
 describe('Firestore Quota Exhaustion & Standby Failure Resilience', () => {
     let app;
@@ -30,7 +29,7 @@ describe('Firestore Quota Exhaustion & Standby Failure Resilience', () => {
 
         // Configure test token verifier
         const { requireAuth, setTokenVerifierForTests } = require('../security/auth');
-        setTokenVerifierForTests(async token => ({
+        setTokenVerifierForTests(async _token => ({
             uid: testUid,
             email: 'resilience@example.com',
             email_verified: true,
@@ -294,7 +293,7 @@ describe('Firestore Quota Exhaustion & Standby Failure Resilience', () => {
                 throw err;
             }
         });
-        const offlineAppResumes = timeoutApp.use('/api/resumes', resumesRouter);
+        timeoutApp.use('/api/resumes', resumesRouter);
 
         const listRes = await request(timeoutApp).get('/api/resumes').expect(200);
         assert.strictEqual(listRes.body.success, true);

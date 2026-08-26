@@ -1,5 +1,5 @@
 process.env.NODE_ENV = 'test';
-const { describe, it, before, after, beforeEach, afterEach } = require('node:test');
+const { describe, it, before, after, _beforeEach } = require('node:test');
 const assert = require('assert');
 const express = require('express');
 const request = require('supertest');
@@ -9,7 +9,7 @@ const { platformRouter } = require('../routes/platform');
 const { requireAuth, setTokenVerifierForTests } = require('../security/auth');
 
 describe('Control Plane Firestore 8-State Failure & Degradation Chaos Test', () => {
-    let currentMockDb;
+    let _currentMockDb;
 
     before(() => {
         setTokenVerifierForTests(async () => ({

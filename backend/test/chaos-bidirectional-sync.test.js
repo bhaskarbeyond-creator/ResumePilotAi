@@ -13,15 +13,15 @@
  * 9. Worker Crash & Stale Lease Recovery.
  */
 
-const { test, describe, before, after } = require('node:test');
+const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
 const { getPool } = require('../database/mysql');
 const {
-    enqueueOutboxEvent,
+    _enqueueOutboxEvent,
     processSyncQueue,
-    processFirestoreOutbox,
+    _processFirestoreOutbox,
     replicateToFirestore,
-    replicateToMySQL,
+    _replicateToMySQL,
     getSyncHealthStatus
 } = require('../database/syncManager');
 const MySQLRepository = require('../repositories/MySQLRepository');

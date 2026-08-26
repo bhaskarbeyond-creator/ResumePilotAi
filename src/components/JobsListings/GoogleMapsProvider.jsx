@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const GoogleMapsContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGoogleMaps = () => {
     const context = useContext(GoogleMapsContext);
     if (!context) {
@@ -119,6 +120,7 @@ const GoogleMapsProvider = ({ children, apiKey }) => {
             // Cleanup: remove script if component unmounts
 // Keep the global Google Maps script loaded; do not remove it on unmount to avoid reloading.
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [apiKey]);
 
     const value = {

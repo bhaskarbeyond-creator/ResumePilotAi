@@ -10,7 +10,7 @@ import { FaBars, FaEnvelope, FaCheckCircle, FaTimes, FaRedo } from 'react-icons/
 
 import { getFullName, getAds } from '../../../firestore/dbOperations';
 // Animation Library
-import { motion, AnimatePresence, transform } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { trackEvent, trackUserLogin, trackEngagement } from '../../../utils/ga4';
 import signOutUser from '../../../utils/signOut';
@@ -18,7 +18,6 @@ import signOutUser from '../../../utils/signOut';
 import { getWebsiteData } from '../../../firestore/dbOperations';
 
 import DashboardToast from '../DashboardToast/DashboardToast';
-import i18n from '../../../i18n';
 
 const DashboardHomepage = lazy(() => import('../DashboardHomepage/DashboardHomepage'));
 const DashboardSettings = lazy(() => import('../DashboardSettings/DashboardSettings'));
@@ -148,13 +147,13 @@ class DashboardMain extends Component {
     }
     // Show Drop down
     dropdownHandler() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             isDropdownShowed: !prevState.isDropdownShowed,
         }));
     }
     // Handle Settings Click
     settingsClickHandler() {
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             isSettingsShowed: !prevState.isSettingsShowed,
             isAdsManagerShowed: false,
         }));
@@ -162,7 +161,7 @@ class DashboardMain extends Component {
 
     // Handle Ads Click
     handleAdsClick() {
-        this.setState((prevState, props) => ({
+        this.setState((_prevState, _props) => ({
             isSettingsShowed: false,
             activeNav: 'Ads Manager',
             isDashboardShowed: false,
@@ -171,7 +170,7 @@ class DashboardMain extends Component {
     }
     // Handle Ads Click
     handlePagesClick() {
-        this.setState((prevState, props) => ({
+        this.setState((_prevState, _props) => ({
             isSettingsShowed: false,
             activeNav: 'Pages',
             isDashboardShowed: false,
@@ -190,11 +189,11 @@ class DashboardMain extends Component {
     // Handling cover letter click to show coming soon message
     handleCoverLetter() {
         setTimeout(() => {
-            this.setState((prevStat, props) => ({
+            this.setState((prevStat, _props) => ({
                 isCommingSoonShowed: !prevStat.isCommingSoonShowed,
             }));
         }, 2000);
-        this.setState((prevStat, props) => ({
+        this.setState((prevStat, _props) => ({
             isCommingSoonShowed: !prevStat.isCommingSoonShowed,
         }));
     }
@@ -226,7 +225,7 @@ class DashboardMain extends Component {
         // Track favorites interaction
         trackEvent('show_favorites', 'Dashboard', 'Favorites section toggled');
 
-        this.setState((prevState, props) => ({
+        this.setState((prevState, _props) => ({
             isFavoritesShowed: !prevState.isFavoritesShowed,
         }));
     };
@@ -278,7 +277,6 @@ class DashboardMain extends Component {
     };
 
     render() {
-        const { t } = this.props;
         const { showVerifyBanner, verifyBannerDismissed, verifyResending, verifyResendSuccess } = this.state;
 
         // ─── Resend Branded Crypto Verification Email Handler ─────────────────
@@ -317,7 +315,7 @@ class DashboardMain extends Component {
                                 if (this._isMounted) this.setState({ showVerifyBanner: false });
                             }
                         }
-                    } catch (e) { /* non-fatal */ }
+                    } catch (_e) { /* non-fatal */ }
                     if (attempts >= 30) clearInterval(poll);
                 }, 10000);
             } catch (e) {

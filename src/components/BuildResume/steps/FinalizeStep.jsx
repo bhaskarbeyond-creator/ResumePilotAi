@@ -61,6 +61,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [resumeTitle, selectedTemplate]);
 
     const calculateCompleteness = () => {

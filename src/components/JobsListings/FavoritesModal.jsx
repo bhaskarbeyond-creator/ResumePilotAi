@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { _useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { FaHeart, FaTimes, FaBookmark, FaBriefcase, FaMapMarkerAlt, FaClock, FaExclamationTriangle } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
-import { getJobFavourites } from '../../firestore/dbOperations';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const FavoritesModal = ({ 
     isOpen, 
     onClose, 
@@ -11,7 +11,7 @@ const FavoritesModal = ({
     jobs, 
     onToggleSaved, 
     onViewDetails,
-    user,
+    _user,
     t
 }) => {
     // Prevent background scrolling when modal is open
@@ -232,4 +232,5 @@ const FavoritesModal = ({
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(FavoritesModal);

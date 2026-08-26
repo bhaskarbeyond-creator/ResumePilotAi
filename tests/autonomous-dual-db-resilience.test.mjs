@@ -2,8 +2,8 @@ import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { getPool } from '../backend/database/mysql.js';
 import { getRepository } from '../backend/repositories/index.js';
-import { replicateToMySQL, calculateContentHash } from '../backend/database/syncManager.js';
-import { rememberMutation, recordTombstone, isTombstoned } from '../backend/database/tombstones.js';
+import { replicateToMySQL } from '../backend/database/syncManager.js';
+import { recordTombstone, isTombstoned } from '../backend/database/tombstones.js';
 
 describe('Autonomous Dual-Database Resilience & Zero-Loss Convergence', () => {
   let pool;
@@ -16,7 +16,7 @@ describe('Autonomous Dual-Database Resilience & Zero-Loss Convergence', () => {
 
   it('Scenario A: MariaDB Outage Simulation -> Firestore Active -> MariaDB Recovery Drains Outbox', async () => {
     const entityId = `fs-active-doc-${Date.now()}`;
-    const mutationId = `mut-fs-${Date.now()}`;
+    `mut-fs-${Date.now()}`;
 
     // 1. Simulate write occurring in Firestore while MariaDB was offline
     const fsEvent = {

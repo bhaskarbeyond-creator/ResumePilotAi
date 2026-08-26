@@ -14,11 +14,10 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
-import crypto from 'node:crypto';
 
 const API_KEY = process.env.VITE_FIREBASE_KEY || 'demo-browser-api-key';
 
-function makeMockJwt(overrides = {}) {
+function _makeMockJwt(overrides = {}) {
   const h = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
   const c = Buffer.from(JSON.stringify({ iss: 'https://securetoken.google.com/fixture', aud: 'fixture', auth_time: now, user_id: 'test-user', sub: 'test-user', iat: now, exp: now + 3600, email: 'test@test.com', email_verified: true, firebase: { identities: { email: ['test@test.com'] }, sign_in_provider: 'password' }, ...overrides })).toString('base64url');

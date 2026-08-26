@@ -136,7 +136,7 @@ test('Email Resilience & Anti-Spam Test Suite', async (t) => {
             // Stub createTransporter to capture mail options
             const nodemailer = require('nodemailer');
             const originalCreateTransport = nodemailer.createTransport;
-            nodemailer.createTransport = (opts) => ({
+            nodemailer.createTransport = (_opts) => ({
                 sendMail: async (mo) => {
                     sentOptions = mo;
                     return { messageId: '<test-message-id@airesume.projectdemo.guru>' };

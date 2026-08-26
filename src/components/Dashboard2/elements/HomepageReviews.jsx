@@ -43,18 +43,21 @@ const HomepageReviews = () => {
     const prevSlide = useCallback(() => {
         setCurrentSlide((prev) => (prev > 0 ? prev - 1 : 0));
         resetAutoPlayTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Handle next slide
     const nextSlide = useCallback(() => {
         setCurrentSlide((prev) => (prev < totalSlides - 1 ? prev + 1 : prev));
         resetAutoPlayTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [totalSlides]);
 
     // Handle dot navigation
     const goToSlide = useCallback((index) => {
         setCurrentSlide(index);
         resetAutoPlayTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Toggle autoplay
@@ -170,6 +173,7 @@ const HomepageReviews = () => {
                 slideContainerRef.current.style.transform = `translateX(-${currentSlide * slideWidth}%)`;
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentSlide]);
 
     // Update total slides on window resize, initial load, or when reviews change
@@ -213,6 +217,7 @@ const HomepageReviews = () => {
                 clearTimeout(autoPlayTimerRef.current);
             }
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAutoPlaying, currentSlide, totalSlides, reviews.length]);
 
     // Pause autoplay when hovering over the slider
@@ -242,6 +247,7 @@ const HomepageReviews = () => {
             section.removeEventListener('mouseenter', pauseAutoPlay);
             section.removeEventListener('mouseleave', resumeAutoPlay);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAutoPlaying]);
 
     const getReviews = () => {

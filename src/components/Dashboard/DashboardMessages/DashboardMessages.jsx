@@ -15,6 +15,7 @@ function formatMessageTime(timestamp, t) {
     return date.toLocaleDateString();
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 const DashboardMessages = ({ t }) => {
     const [conversations, setConversations] = useState([]);
     const [messages, setMessages] = useState([]);
@@ -514,4 +515,5 @@ const DashboardMessages = ({ t }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(DashboardMessages);

@@ -1,15 +1,7 @@
 import React, { useState, Component } from 'react';
 import { IoClose } from 'react-icons/io5';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FaTwitter, 
-  FaLinkedin, 
-  FaFacebook, 
-  FaWhatsapp, 
-  FaEnvelope,
-  FaLink,
-  FaCheck 
-} from 'react-icons/fa';
+import { AnimatePresence } from 'framer-motion';
+import { FaTwitter, FaLinkedin, FaFacebook, FaWhatsapp, FaEnvelope, FaLink, FaCheck } from 'react-icons/fa';
 import './ShareModal.scss';
 import { useTranslation, withTranslation } from 'react-i18next';
 
@@ -53,7 +45,7 @@ class ShareModalClass extends Component {
   };
 
   render() {
-    const { isOpen, onClose, documentId, documentTitle } = this.props;
+    const { isOpen, onClose, _documentId } = this.props;
     const { t } = this.props;
     const { activeTab, copied } = this.state;
     
@@ -193,7 +185,7 @@ class ShareModalClass extends Component {
 }
 
 // Functional component version with hooks
-const ShareModal = ({ isOpen, onClose, documentId, documentTitle }) => {
+const ShareModal = ({ isOpen, onClose, documentId, _documentTitle }) => {
   const [activeTab, setActiveTab] = useState('social');
   const [copied, setCopied] = useState(false);
   const { t } = useTranslation('common');

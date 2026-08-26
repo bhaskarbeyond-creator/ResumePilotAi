@@ -15,6 +15,7 @@ import executivePreview from '../../../assets/portfolioPreview/executive.png';
 import creativeDarkPreview from '../../../assets/portfolioPreview/creative-dark.png';
 import premiumTechPreview from '../../../assets/portfolioPreview/premium-tech.png';
 
+// eslint-disable-next-line react-refresh/only-export-components
 const DashboardPortfolios = ({ t, showToast }) => {
     const [portfolios, setPortfolios] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -33,6 +34,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
 
     useEffect(() => {
         loadUserPortfolios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadUserPortfolios = async () => {
@@ -420,4 +422,5 @@ const DashboardPortfolios = ({ t, showToast }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(DashboardPortfolios);

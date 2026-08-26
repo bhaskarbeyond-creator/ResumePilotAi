@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { recordTombstone, isTombstoned, rememberMutation } = require('../database/tombstones');
-const { createMutationId, calculateContentHash } = require('../database/canonical');
+const { createMutationId } = require('../database/canonical');
 
 function memoryPool(store = { tombstones: new Map(), mutations: new Map() }) {
     return {

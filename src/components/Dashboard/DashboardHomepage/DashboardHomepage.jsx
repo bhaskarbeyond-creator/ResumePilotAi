@@ -1,15 +1,5 @@
 import React, { Component } from "react";
-import {
-  getResumes,
-  getFavourites,
-  getProfileOfUser,
-  getStatesOfUser,
-  IncrementDownloads,
-  addOneToNumberOfDocumentsDownloaded,
-  getSystemSettings,
-  getUserCoverLetters,
-  deleteCoverLetter,
-} from "../../../firestore/dbOperations";
+import { getResumes, getFavourites, getProfileOfUser, getStatesOfUser, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getSystemSettings, getUserCoverLetters, deleteCoverLetter } from "../../../firestore/dbOperations";
 import fire from '../../../conf/fire';
 import { createResumeDraft, deleteResumeDraft, publishResume, saveResumeDraft } from '../../../services/resumePersistence';
 import { normalizeResumeData } from '../../../utils/resumeData';
@@ -17,26 +7,7 @@ import LoaderAnimation from "../../../assets/animations/lottie-loader.json";
 import { withTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useLottie } from "lottie-react";
-import {
-  FaCheckCircle,
-  FaChevronRight,
-  FaPencilAlt,
-  FaEllipsisH,
-  FaEnvelope,
-  FaPlus,
-  FaBullseye,
-  FaShareAlt,
-  FaTrashAlt,
-  FaFileAlt,
-  FaClock,
-  FaDownload,
-  FaStar,
-  FaCalendarAlt,
-  FaUsers,
-  FaBars,
-  FaInbox,
-  FaEye,
-} from "react-icons/fa";
+import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye } from "react-icons/fa";
 import axios from "axios";
 import download from "downloadjs";
 import config from "../../../conf/configuration";
@@ -276,7 +247,7 @@ class DashboardHomepage extends Component {
           });
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Error handled silently
     }
   }
@@ -474,7 +445,7 @@ class DashboardHomepage extends Component {
       const created = await createResumeDraft(userId, data);
       const copy = { id: created.id, template: created.data.template, item: { ...created.data, revision: created.revision }, employments: created.data.employments, educations: created.data.educations, skills: created.data.skills, languages: created.data.languages, isNewStyle: true };
       this.setState(current => ({ fetchedDocuments: [copy, ...current.fetchedDocuments], displayDocuments: [copy, ...current.displayDocuments] }));
-    } catch (error) {
+    } catch (_error) {
       this.props.showToast?.('Resume could not be duplicated.', 'error');
     }
   }
@@ -527,7 +498,7 @@ class DashboardHomepage extends Component {
       this.setState({ isPaginating: true });
       await this.getAllDocuments();
       this.setState({ isPaginating: false });
-    } catch (error) {
+    } catch (_error) {
       // Reset deleting state on error
       this.setState({
         deleteModal: {
@@ -808,7 +779,7 @@ class DashboardHomepage extends Component {
       }));
 
       return TemplateComponent;
-    } catch (error) {
+    } catch (_error) {
       // Fallback to Cv1 if template fails to load
       if (templateName !== "Cv1") {
         return this.loadTemplate("Cv1");
@@ -831,7 +802,7 @@ class DashboardHomepage extends Component {
           language="en"
         />
       );
-    } catch (error) {
+    } catch (_error) {
       return (
         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
           <div className="text-gray-400 text-xs">Preview Error</div>

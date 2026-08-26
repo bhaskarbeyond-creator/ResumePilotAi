@@ -38,7 +38,7 @@ function visibleChildren(el) {
     return [...el.children].filter((child) => getComputedStyle(child).display !== 'none');
 }
 
-function isRowElement(el) {
+function _isRowElement(el) {
     if (!el || el.children.length < 2) return false;
     const cs = getComputedStyle(el);
     return cs.display === 'flex' && (cs.flexDirection === 'row' || cs.flexDirection === 'row-reverse');
@@ -115,7 +115,7 @@ function findColumnLayout(board) {
 
     candidates.sort((a, b) => b.height - a.height);
 
-    for (const { container, depth, height } of candidates) {
+    for (const { container, _depth, height } of candidates) {
         if (height < 150 && height < boardHeight * 0.2) continue;
         const kids = layoutKids(container);
         if (kids.length >= 2 && kids.some((el) => looksLikeSidebar(el, boardWidth))) {

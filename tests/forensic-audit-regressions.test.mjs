@@ -82,7 +82,7 @@ function stripJsComments(src) {
  */
 function unscopedSelectorParts(css) {
   const src = stripComments(css);
-  const scoped = sel => /[.#\[]/.test(sel);
+  const scoped = sel => /[.#]/.test(sel) || sel.includes('[');
   const offenders = [];
   const stack = [];
   let buf = '';

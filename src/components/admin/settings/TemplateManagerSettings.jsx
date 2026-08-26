@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
-import {
-    FaFileCode,
-    FaCheck,
-    FaTimes,
-    FaSpinner,
-    FaStar,
-    FaBan,
-    FaSearch,
-    FaUnlock,
-    FaLock,
-    FaEye,
-    FaLayerGroup,
-    FaCrown,
-    FaFileAlt,
-    FaCheckCircle,
-    FaRedo,
-    FaExpand
-} from 'react-icons/fa';
+import { FaFileCode, FaCheck, FaTimes, FaSpinner, FaStar, FaBan, FaSearch, FaUnlock, FaLock, FaEye, FaLayerGroup, FaCrown, FaFileAlt, FaCheckCircle, FaRedo, FaExpand } from 'react-icons/fa';
 
 // Import all 51 CV Template Thumbnail Images
 import Cv1Img from '../../../assets/resumesNew/Cv1.JPG';
@@ -92,7 +75,7 @@ const cvThumbnails = {
     Cv51: Cv51Img,
 };
 
-const coverThumbnails = {
+const _coverThumbnails = {
     Cover1: Cover1Img,
     Cover2: Cover2Img,
     Cover3: Cover3Img,

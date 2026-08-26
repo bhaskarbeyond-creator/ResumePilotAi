@@ -103,8 +103,8 @@ class Canvas extends Component {
   }
 
   renderResumeWithPagination() {
-    const { currentPage, pageHeight, isLoading } = this.state;
-    const { values, currentResumeName } = this.props;
+    const { currentPage, pageHeight } = this.state;
+    const { _values } = this.props;
 
     // Style for the container with controlled height and overflow
     const containerStyle = {

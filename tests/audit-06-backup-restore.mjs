@@ -116,7 +116,7 @@ async function runBackupRestoreAudit() {
       ]
     };
     // Recompute valid checksum for injected snapshot to test path-level security gate
-    const injectedVerification = verifySnapshot({ ...injectedSnapshot, manifest: [...snapshot.manifest, { collection: 'injected', count: 1 }], checksum: require('../backend/enterprise/enterpriseBackup').checksum(injectedSnapshot.documents.map(d => ({ path: d.path, data: d.data }))) });
+    verifySnapshot({ ...injectedSnapshot, manifest: [...snapshot.manifest, { collection: 'injected', count: 1 }], checksum: require('../backend/enterprise/enterpriseBackup').checksum(injectedSnapshot.documents.map(d => ({ path: d.path, data: d.data }))) });
     const injectedReport = await restoreTenantSnapshot({
       db,
       admin,

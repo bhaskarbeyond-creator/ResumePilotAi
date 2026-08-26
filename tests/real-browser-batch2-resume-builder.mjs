@@ -20,7 +20,6 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
-import crypto from 'node:crypto';
 
 const API_KEY = process.env.VITE_FIREBASE_KEY || 'demo-browser-api-key';
 
@@ -44,7 +43,7 @@ function check(controlId, label, condition, action, assertion) {
 }
 
 // Resume data mock
-const mockResume = {
+const _mockResume = {
   id: 'resume-test-1',
   firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '+1234567890',
   title: 'Senior Engineer', address: 'San Francisco, CA',

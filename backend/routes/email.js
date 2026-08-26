@@ -376,8 +376,8 @@ function htmlToPlainText(html, actionUrl = '') {
         .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n=== $1 ===\n\n')
         .replace(/<li[^>]*>(.*?)<\/li>/gi, '\n• $1')
         .replace(/<p[^>]*>(.*?)<\/p>/gi, '\n\n$1\n')
-        .replace(/<br\s*[\/]?>/gi, '\n')
-        .replace(/<hr\s*[\/]?>/gi, '\n----------------------------------------\n')
+        .replace(/<br\s*[/]?>/gi, '\n')
+        .replace(/<hr\s*[/]?>/gi, '\n----------------------------------------\n')
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/gi, ' ')
         .replace(/&amp;/gi, '&')
@@ -500,7 +500,7 @@ function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot A
         } else if (p.startsWith('Hello ') || p.startsWith('Hi ') || p.startsWith('Dear ') || p.startsWith('ATTENTION:')) {
             contentHtml += `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 16px;">${formatInlineMarkdown(p)}</h2>`;
         } else if (p.startsWith('•') || p.startsWith('-') || p.startsWith('* ')) {
-            const items = p.split('\n').map(item => item.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
+            const items = p.split('\n').map(item => item.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean);
             contentHtml += `
                 <ul style="margin: 16px 0; padding-left: 24px; font-size: 14px; color: #475569; line-height: 1.75;">
                     ${items.map(item => `<li>${formatInlineMarkdown(item)}</li>`).join('')}

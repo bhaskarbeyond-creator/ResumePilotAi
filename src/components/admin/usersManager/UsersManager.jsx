@@ -1,21 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-  FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle,
-  FiSearch, FiFilter, FiPlus, FiDownload, FiRefreshCw, FiMoreVertical,
-  FiEdit2, FiTrash2, FiLock, FiUnlock, FiBriefcase, FiCpu, FiCheck,
-  FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign, FiKey, FiCopy,
-  FiShieldOff
-} from 'react-icons/fi';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle, FiSearch, FiFilter, FiPlus, FiDownload, FiRefreshCw, FiMoreVertical, FiEdit2, FiTrash2, FiLock, FiUnlock, FiBriefcase, FiCpu, FiCheck, FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign, FiKey, FiCopy, FiShieldOff } from 'react-icons/fi';
 import fire from '../../../conf/fire';
-import {
-  getAdminUsers, getUser360, getPlatformTenants, sendUserPasswordReset,
-  verifyUserEmail, revokeUserSessions, exportUserData
-} from '../../../services/platformApi';
+import { getAdminUsers, getPlatformTenants, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, exportUserData } from '../../../services/platformApi';
 
-import {
-  setUserAdminStatus, updateUserSubscription, toggleUserSuspension,
-  deleteUserByAdmin, checkIfAdmin
-} from '../../../firestore/dbOperations';
+import { toggleUserSuspension, deleteUserByAdmin } from '../../../firestore/dbOperations';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
 import User360Drawer from './User360Drawer';
 import CreateUserModal from './CreateUserModal';

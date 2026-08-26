@@ -6,7 +6,7 @@ router.use((req, res, next) => {
     try {
         req.repository = getRepository(req.app.get('db'));
         next();
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     try {
         const notifications = await req.repository.getNotifications(req.user.uid);
         return res.json({ success: true, notifications });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch notifications' });
     }
 });
@@ -26,7 +26,7 @@ router.post('/:id', async (req, res) => {
     try {
         const saved = await req.repository.saveNotification(req.user.uid, req.params.id, req.body);
         return res.json({ success: true, notification: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save notification' });
     }
 });
@@ -36,7 +36,7 @@ router.get('/contact/list', async (req, res) => {
     try {
         const messages = await req.repository.getContactMessages();
         return res.json({ success: true, messages });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch contact messages' });
     }
 });
@@ -46,7 +46,7 @@ router.post('/contact/:id', async (req, res) => {
     try {
         const saved = await req.repository.saveContactMessage(req.params.id, req.body);
         return res.json({ success: true, message: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save contact message' });
     }
 });

@@ -2,11 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
-import { 
-    getBlogPostBySlug, 
-    listBlogPosts, 
-    listBlogCategories 
-} from '../../../firestore/dbOperations';
+import { getBlogPostBySlug, listBlogPosts, listBlogCategories } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
 import Spinner from '../../Spinner/Spinner';
 import BlogCard from '../components/BlogCard';
@@ -14,14 +10,7 @@ import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
 import fire from '../../../conf/fire';
 import './BlogContent.css';
-import { 
-    FiCalendar, 
-    FiEye, 
-    FiClock, 
-    FiArrowLeft,
-    FiShare2,
-    FiBookmark
-} from 'react-icons/fi';
+import { FiCalendar, FiEye, FiClock, FiArrowLeft, FiShare2, FiBookmark } from 'react-icons/fi';
 
 const BlogPost = () => {
     const { t } = useTranslation('common');

@@ -27,11 +27,11 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
   });
 
   // 2. Setup Controlled Multi-Tenant Organization Topology
-  const registry = new InMemoryTenantRegistry();
+  new InMemoryTenantRegistry();
 
   const tenantA_Id = crypto.randomUUID();
   const workspaceA1_Id = crypto.randomUUID();
-  const workspaceA2_Id = crypto.randomUUID();
+  crypto.randomUUID();
 
   const tenantB_Id = crypto.randomUUID();
   const workspaceB1_Id = crypto.randomUUID();
@@ -44,7 +44,7 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
   const principalA_Admin = canonicalPrincipalId(subjectA_Admin);
   const principalA_Member = canonicalPrincipalId(subjectA_Member);
   const principalB_Admin = canonicalPrincipalId(subjectB_Admin);
-  const principalB_Member = canonicalPrincipalId(subjectB_Member);
+  canonicalPrincipalId(subjectB_Member);
 
   const contextA1_Admin = freezeContext({
     requestId: 'req-pilot-a1-admin',

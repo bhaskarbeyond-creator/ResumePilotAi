@@ -6,7 +6,7 @@ import { withTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../main';
 import AuthWrapper from '../../auth/authWrapper/AuthWrapper';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 // Optimized sentences for better impact - will be loaded from translations
 const defaultSentences = [
     'Build professional resumes with AI',
@@ -16,7 +16,7 @@ const defaultSentences = [
     'Ace interviews with AI prep tools',
 ];
 
-const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, goToStepByStepBuilder, goToPortfolioBuilder }) => {
+const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, _goToStepByStepBuilder, _goToPortfolioBuilder }) => {
     const user = useContext(AuthContext);
     const navigate = useNavigate();
     const [displayText, setDisplayText] = useState('');
@@ -71,6 +71,7 @@ const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, goToStep
                 clearTimeout(timeoutRef.current);
             }
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [displayText, isTyping, currentSentenceIndex]);
 
     useEffect(() => {

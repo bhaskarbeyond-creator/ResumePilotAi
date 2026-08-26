@@ -1,19 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { partitionResumeContent } from '../src/engine/hybrid/smartPartitioner.js';
-import {
-  hasMeaningfulText,
-  filterMeaningfulEmployments,
-  filterMeaningfulEducations,
-  filterMeaningfulSkills,
-  filterMeaningfulProjects,
-  filterMeaningfulCertifications,
-  filterMeaningfulAchievements,
-  filterMeaningfulReferences,
-  filterMeaningfulLanguages,
-  filterMeaningfulHobbies,
-  filterMeaningfulCustomSections,
-} from '../src/engine/hybrid/utils/contentSanitizer.js';
+import { hasMeaningfulText, filterMeaningfulEmployments, filterMeaningfulEducations, filterMeaningfulSkills, filterMeaningfulProjects, filterMeaningfulCertifications, filterMeaningfulLanguages, filterMeaningfulHobbies } from '../src/engine/hybrid/utils/contentSanitizer.js';
 import docxPkg from '../backend/services/docxExport.js';
 const { createResumeDocx, hasMeaningfulDocxText } = docxPkg;
 import JSZip from 'jszip';

@@ -3,24 +3,7 @@ import React, { Component } from 'react';
 import './Cv48.scss';
 import { withTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaBuilding,
-    FaUniversity,
-    FaCode,
-    FaStar,
-    FaTrophy,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaBuilding, FaUniversity, FaCode, FaStar, FaTrophy } from 'react-icons/fa';
 
 class Cv48 extends Component {
     constructor(props) {
@@ -268,4 +251,5 @@ class Cv48 extends Component {
     }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default withTranslation('common')(Cv48);

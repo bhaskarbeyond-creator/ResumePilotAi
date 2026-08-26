@@ -453,7 +453,7 @@ const ExperienceCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={experienceTemplateOptions} category="Experience" />,
+                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={experienceTemplateOptions} category="Experience" />,
             },
         };
 

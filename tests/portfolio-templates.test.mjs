@@ -4,11 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { JSDOM } from 'jsdom';
-import {
-  PORTFOLIO_TEMPLATE_IDS,
-  convertResumeToPortfolio,
-  createRichPortfolioFixture,
-} from '../src/utils/portfolioData.js';
+import { PORTFOLIO_TEMPLATE_IDS, convertResumeToPortfolio, createRichPortfolioFixture } from '../src/utils/portfolioData.js';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://app.example.com/' });
 globalThis.window = dom.window;

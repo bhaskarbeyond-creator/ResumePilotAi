@@ -1,21 +1,6 @@
 import React, { Component } from 'react';
 import './Cv39.scss';
-import {
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
-    FaGlobeAmericas,
-    FaUserAlt,
-    FaLinkedin,
-    FaGithub,
-    FaBriefcase,
-    FaGraduationCap,
-    FaLaptopCode,
-    FaCalendarAlt,
-    FaQuoteLeft,
-    FaAward,
-    FaChartLine,
-} from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobeAmericas, FaUserAlt, FaLinkedin, FaGithub, FaBriefcase, FaGraduationCap, FaLaptopCode, FaCalendarAlt, FaQuoteLeft, FaAward, FaChartLine } from 'react-icons/fa';
 
 class Cv39Export extends Component {
     constructor(props) {

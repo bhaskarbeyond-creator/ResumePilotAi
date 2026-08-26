@@ -31,7 +31,7 @@ class CoversList extends Component {
         this.returnCovers = this.returnCovers.bind(this);
         this.deleteCover = this.deleteCover.bind(this);
     }
-    deleteCover(userId, coverId, indexInState) {
+    deleteCover(userId, coverId, _indexInState) {
         removeCover(userId, coverId);
         if (coverId == localStorage.getItem('currentCoverId')) {
             localStorage.removeItem('currentCoverId');

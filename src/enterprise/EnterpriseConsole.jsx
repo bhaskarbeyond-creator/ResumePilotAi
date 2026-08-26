@@ -1,10 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpCircle, FiLock,
-  FiSearch, FiSettings, FiShield, FiSliders, FiUserPlus, FiUsers, FiZap, FiMenu, FiPlus,
-  FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser, FiX
-} from 'react-icons/fi';
+import { FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpCircle, FiLock, FiSearch, FiSettings, FiShield, FiSliders, FiUserPlus, FiUsers, FiZap, FiMenu, FiPlus, FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser, FiX } from 'react-icons/fi';
 import { AuthContext } from '../main';
 import { signOutUser } from '../utils/signOut';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';

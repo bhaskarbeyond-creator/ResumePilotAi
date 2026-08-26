@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  FiHelpCircle, FiLock, FiPlus, FiTrash2, FiCheck, FiX, FiClock, FiShield
-} from 'react-icons/fi';
+import { FiHelpCircle, FiLock, FiPlus, FiTrash2, FiCheck, FiX, FiClock, FiShield } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource, DataState } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
 import EnterpriseConfirmModal from './EnterpriseConfirmModal';

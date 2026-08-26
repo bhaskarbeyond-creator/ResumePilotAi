@@ -21,7 +21,7 @@ import { formatSafeDate } from '../../../utils/subscriptionUtils';
 
 const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
 
-function DashboardSettings(props) {
+function DashboardSettings(_props) {
     const { i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
@@ -45,7 +45,7 @@ function DashboardSettings(props) {
         }
     }, [location.search]);
     const [summaryTone, setSummaryTone] = useState('executive');
-    const [skillFilter, setSkillFilter] = useState('all');
+    const [_skillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [profileSaveState, setProfileSaveState] = useState('loading');
     const [profileConflict, setProfileConflict] = useState(null);
@@ -92,7 +92,7 @@ function DashboardSettings(props) {
     const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
     const [deleteInputText, setDeleteInputText] = useState('');
     const [deletePassword, setDeletePassword] = useState('');
-    const [userTransactions, setUserTransactions] = useState([]);
+    const [_userTransactions, setUserTransactions] = useState([]);
     const [preferences, setPreferences] = useState({ language: 'en', emailNotifications: true, securityNotifications: true, productUpdates: false, profileDiscoverable: false, revision: 0 });
     const [savingPreferences, setSavingPreferences] = useState(false);
     const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
@@ -110,7 +110,7 @@ function DashboardSettings(props) {
     const [loginHistory, setLoginHistory] = useState([]);
     const userAuthProviders = (fire.auth().currentUser?.providerData || []).map(provider => provider?.providerId).filter(Boolean);
     const usesPasswordProvider = userAuthProviders.includes('password');
-    const isOAuthOnly = userAuthProviders.length > 0 && !usesPasswordProvider;
+    userAuthProviders.length > 0 && !usesPasswordProvider;
     const primaryOAuthProvider = userAuthProviders.find(p => p !== 'password') === 'google.com' ? 'Google' : (userAuthProviders.find(p => p !== 'password') || 'OAuth');
 
     // Master Profile State matching ALL Resume & Cover Letter fields
@@ -320,7 +320,7 @@ function DashboardSettings(props) {
         fetchUserAccountData();
     };
 
-    const handleDownloadInvoice = async (txn) => {
+    async (txn) => {;
         const subData = await getSubscriptionStatus();
         const metaData = await getWebsiteData();
         const siteTitle = (metaData && metaData.title ? metaData.title.split('—')[0].trim() : 'AI RESUME BUILDER').toUpperCase();
@@ -515,6 +515,7 @@ function DashboardSettings(props) {
             await Promise.all([getProfileOfUserFront(), getAccountInfoFront()]);
         });
         return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigate]);
 
     const handleInputChange = (e) => {
@@ -535,7 +536,7 @@ function DashboardSettings(props) {
         });
     };
 
-    const handleAccountInputChange = (e) => {
+    (e) => {;
         const field = e.target.name;
         const value = e.target.value;
         setAccountSettings((prev) => ({ ...prev, [field]: value }));
@@ -930,7 +931,7 @@ function DashboardSettings(props) {
         }
     };
 
-    const handleEnhanceWorkDescriptionWithAi = async (index) => {
+    async (index) => {;
         const job = (profile.workExperiences || [])[index];
         if (!job || !job.jobTitle) {
             triggerNotification('Please enter the Job Title for this position first.', 'error');
@@ -946,7 +947,7 @@ function DashboardSettings(props) {
             });
             const suggestions = data?.suggestions || data?.bullets || data?.items || data?.data?.suggestions || (Array.isArray(data) ? data : []);
             if (suggestions && suggestions.length > 0) {
-                const bulletText = suggestions.map(s => `• ${String(s).replace(/^[•\-\*]\s*/, '')}`).join('\n');
+                const bulletText = suggestions.map(s => `• ${String(s).replace(/^[•\-*]\s*/, '')}`).join('\n');
                 updateWorkExperience(index, 'description', bulletText);
                 triggerNotification('Real AI Work Experience bullet points generated!');
             } else {
@@ -1374,7 +1375,7 @@ function DashboardSettings(props) {
         return { strength: 'strong', width: 'w-full', color: 'bg-emerald-500', text: 'Strong' };
     };
 
-    const passwordStrength = getPasswordStrength(accountSettings.password);
+    getPasswordStrength(accountSettings.password);
     const candidateFullName = `${profile.firstname} ${profile.lastname}`.trim() || profile.name;
     const effectiveMembership = databaseAccountSettings.membership || 'Basic';
 
@@ -2312,7 +2313,7 @@ function DashboardSettings(props) {
                                     Step {SUB_TAB_ORDER.indexOf(profileSubTab) + 1} of {SUB_TAB_ORDER.length}
                                 </span>
                                 <div className="flex gap-1">
-                                    {SUB_TAB_ORDER.map((tab, i) => (
+                                    {SUB_TAB_ORDER.map((tab, _i) => (
                                         <button
                                             key={tab}
                                             onClick={() => setProfileSubTab(tab)}

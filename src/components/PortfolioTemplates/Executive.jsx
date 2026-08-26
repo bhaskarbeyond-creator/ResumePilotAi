@@ -1,14 +1,5 @@
 import React from 'react';
-import {
-    ContactList,
-    EmptyWebCv,
-    Portrait,
-    SafeLink,
-    Section,
-    SkipLink,
-    formatRange,
-    usePortfolioView,
-} from './shared.jsx';
+import { ContactList, EmptyWebCv, Portrait, SafeLink, Section, SkipLink, formatRange, usePortfolioView } from './shared.jsx';
 
 export default function Executive({ canonical }) {
     const { data, visibility, name, location } = usePortfolioView(canonical, 'executive');
@@ -17,7 +8,7 @@ export default function Executive({ canonical }) {
     }
 
     const expCount = data.experiences?.filter(e => e.jobTitle || e.employer).length || 0;
-    const certCount = data.certifications?.filter(c => c.title).length || 0;
+    data.certifications?.filter(c => c.title).length || 0;
 
     return (
         <div className="webcv-executive min-h-screen bg-[#F7F5F0] text-[#1E293B] selection:bg-[#0F172A] selection:text-[#C5A880]" data-webcv-template="executive">

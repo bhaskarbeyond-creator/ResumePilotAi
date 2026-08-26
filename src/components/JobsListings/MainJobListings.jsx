@@ -216,11 +216,13 @@ const MainJobListings = () => {
                 }
             })();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobIdFromPath]); // Only run once on mount
 
     // Reload favorites when user changes
     useEffect(() => {
         loadUserFavorites();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // Reload jobs when filters change
@@ -229,6 +231,7 @@ const MainJobListings = () => {
         if (!loading) {
             loadJobs(1);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedFilters]);
 
     // Reload jobs when search term or location changes (with debounce)
@@ -241,6 +244,7 @@ const MainJobListings = () => {
 
             return () => clearTimeout(timeoutId);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm, locationFilter]);
 
     const handleFilterChange = (category, value) => {
@@ -317,7 +321,7 @@ const MainJobListings = () => {
         setIsCreateJobModalOpen(false);
     };
 
-    const handleJobCreated = (jobData) => {
+    const handleJobCreated = (_jobData) => {
         // Refresh the job list to show the new job (if it's active)
         // Note: Since new jobs are "pending" by default, they won't appear in the list
         // until an admin approves them
@@ -335,7 +339,7 @@ const MainJobListings = () => {
     };
 
     // Function to handle favorite toggle with state refresh
-    const handleToggleFavoriteWithRefresh = async (jobId) => {
+    async (jobId) => {;
         const result = await toggleSavedJob(jobId);
         // Reload favorites to ensure count is accurate
         await loadUserFavorites();

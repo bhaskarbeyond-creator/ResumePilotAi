@@ -383,7 +383,7 @@ const SkillsCategory = {
             template: {
                 type: 'custom',
                 label: 'Template',
-                render: ({ name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={skillsTemplateOptions} category="Skills" />,
+                render: ({ _name, onChange, value }) => <TemplateSelector value={value} onChange={onChange} templates={skillsTemplateOptions} category="Skills" />,
             },
         };
 

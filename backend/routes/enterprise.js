@@ -34,7 +34,7 @@ router.use(async (req, res, next) => {
       return res.status(404).json({ error: { code: 'ENTERPRISE_DISABLED', message: 'Enterprise tenancy is disabled for this deployment.', configurationState: 'DISABLED', requestId: res.locals?.requestId } });
     }
     return next();
-  } catch (error) {
+  } catch (_error) {
     return res.status(503).json({ error: { code: 'ENTERPRISE_FLAG_UNAVAILABLE', message: 'Enterprise rollout state could not be determined.', configurationState: 'UNKNOWN', requestId: res.locals?.requestId } });
   }
 });

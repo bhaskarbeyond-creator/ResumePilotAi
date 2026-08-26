@@ -1,27 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    FaCubes,
-    FaDownload,
-    FaBriefcase,
-    FaGlobe,
-    FaFileAlt,
-    FaMagic,
-    FaChartLine,
-    FaShareAlt,
-    FaCheckCircle,
-    FaSave,
-    FaSpinner,
-    FaInfoCircle,
-    FaTag,
-    FaGoogle,
-    FaFacebook,
-    FaLinkedin,
-    FaGithub,
-    FaEnvelope,
-    FaShieldAlt,
-    FaComments,
-    FaClipboardList
-} from 'react-icons/fa';
+import { FaCubes, FaDownload, FaBriefcase, FaGlobe, FaFileAlt, FaMagic, FaChartLine, FaShareAlt, FaCheckCircle, FaSave, FaSpinner, FaInfoCircle, FaTag, FaGoogle, FaFacebook, FaLinkedin, FaGithub, FaEnvelope, FaShieldAlt, FaComments, FaClipboardList } from 'react-icons/fa';
 import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import { buildModuleSettingsPatch } from '../../../utils/moduleFlags';
 

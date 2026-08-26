@@ -23,6 +23,7 @@ const PortfolioGallery = () => {
 
     useEffect(() => {
         loadPortfolios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTheme]);
 
     const loadPortfolios = async () => {

@@ -45,7 +45,7 @@ function unauthorized(res, code, message) {
   return res.status(401).json({ error: { code, message, requestId: res.locals?.requestId } });
 }
 
-function forbidden(res, code, message) {
+function _forbidden(res, code, message) {
   return res.status(403).json({ error: { code, message, requestId: res.locals?.requestId } });
 }
 

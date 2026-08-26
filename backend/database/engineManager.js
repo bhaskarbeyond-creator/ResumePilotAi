@@ -265,7 +265,7 @@ async function logSwitchAudit({ switchedBy, fromEngine, toEngine, status, errorM
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [auditId, switchedBy, fromEngine, toEngine, status, errorMessage, now]
         );
-    } catch (e) {
+    } catch (_e) {
         // Safe fallback if MySQL table doesn't exist yet
     }
 
@@ -282,7 +282,7 @@ async function logSwitchAudit({ switchedBy, fromEngine, toEngine, status, errorM
                 timestamp: now.toISOString(),
             }, { merge: true });
         }
-    } catch (e) {
+    } catch (_e) {
         // Safe ignore
     }
 
@@ -314,7 +314,7 @@ async function getSwitchAuditLogs() {
                 createdAt: createdAt || new Date().toISOString(),
             };
         });
-    } catch (e) {
+    } catch (_e) {
         return [];
     }
 }

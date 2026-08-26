@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { getPool } from '../backend/database/mysql.js';
 import MySQLRepository from '../backend/repositories/MySQLRepository.js';
 import { replicateToMySQL } from '../backend/database/syncManager.js';
-import { recordTombstone, isTombstoned } from '../backend/database/tombstones.js';
 
 describe('P0 — Network Partition, Stale-Leader Fencing & Conflict Audit Test', () => {
   let pool;

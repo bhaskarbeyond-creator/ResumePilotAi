@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import fire from '../../../conf/fire';
-import {
-  FiShield, FiFilter, FiRefreshCw, FiSearch, FiCheckCircle,
-  FiAlertTriangle, FiXCircle, FiDownload, FiEye, FiClock, FiUser, FiActivity
-} from 'react-icons/fi';
+import { FiShield, FiFilter, FiRefreshCw, FiSearch, FiCheckCircle, FiAlertTriangle, FiXCircle, FiDownload, FiEye, FiClock, FiUser, FiActivity } from 'react-icons/fi';
 
 export default function AdminAuditLogs() {
   const [logs, setLogs] = useState([]);

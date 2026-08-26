@@ -7,7 +7,7 @@ const request = require('supertest');
 const { setTokenVerifierForTests } = require('../security/auth');
 const app = require('../index');
 
-function bearer(role, email = `${role.toLowerCase()}@example.com`, uid = `uid-${role.toLowerCase()}`) {
+function bearer(role, _email = `${role.toLowerCase()}@example.com`, _uid = `uid-${role.toLowerCase()}`) {
   return {
     Authorization: `Bearer mock-token-${role}`,
     'X-Request-Id': `req-${role}`,

@@ -7,6 +7,7 @@ import { enterpriseFetch } from './enterpriseApi';
  * All data is server-derived; the tenant/workspace ids are only requested context
  * and the backend re-verifies membership on every request.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTenantApi() {
   const { tenant, workspace, context } = useEnterpriseTenant();
   const tenantId = tenant?.id || '';
@@ -27,6 +28,7 @@ export function useTenantApi() {
 }
 
 /** Simple promise-state hook so every tab shares the same loading/error/data contract. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAsyncResource(loader, deps = []) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [state, setState] = useState({ loading: true, error: null, data: null });

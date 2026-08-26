@@ -105,7 +105,7 @@ class Cv8 extends Component {
     render() {
         const { t } = this.props;
         const primaryColor = this.getPrimaryColor();
-        const secondaryColor = this.getSecondaryColor();
+        this.getSecondaryColor();
 
         return (
             <div id="resumen" className="cv8-board">

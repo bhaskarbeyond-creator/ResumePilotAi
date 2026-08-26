@@ -6,7 +6,7 @@ import ImageCropModal from '../../../Dashboard/DashboardSettings/ImageCropModal'
 const PhotoUpload = ({ label, value, onChange, showPhoto = true, onToggleShowPhoto, required = false }) => {
     const { t } = useTranslation('common');
     const [isDragging, setIsDragging] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading] = useState(false);
     const [error, setError] = useState(null);
     const [cropModalSrc, setCropModalSrc] = useState(null);
     const fileInputRef = useRef(null);

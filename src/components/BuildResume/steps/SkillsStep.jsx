@@ -163,6 +163,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         }, 500);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [skills]);
 
     // Auto-expand only the first card when there's only one skill
@@ -170,6 +171,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         if (skills.length === 1) {
             setExpandedCards(new Set([skills[0].id]));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [skills.length]);
 
     const getSkillLevelText = (rating) => {

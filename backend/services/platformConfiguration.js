@@ -344,7 +344,7 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
   }
 
   const payment = docs.payment || {};
-  const publicConfig = docs.public || {};
+  docs.public || {};
   const providers = {
     razorpay: { label: 'Razorpay', paths: ['keySecret', 'keyId'], env: ['RAZORPAY_KEY_SECRET', 'RAZORPAY_KEY_ID'], ui: '/adm/settings?tab=subscriptionsSettings' },
     stripe: { label: 'Stripe', paths: ['secretKey'], env: ['STRIPE_SECRET'], ui: '/adm/settings?tab=subscriptionsSettings' },

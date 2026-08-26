@@ -60,7 +60,6 @@ async function main() {
 
             const dom = await page.evaluate(() => {
                 const pages = [...document.querySelectorAll('.smart-resume-page')];
-                const fixture = null;
                 return {
                     sheetCount: pages.length,
                     pageTexts: pages.map((p) => (p.innerText || '').replace(/\s+/g, ' ').trim()),
@@ -84,7 +83,7 @@ async function main() {
                 domSheetCount: dom.sheetCount,
                 pdfPageCount: stats.pageCount,
                 print1to1: dom.sheetCount === stats.pageCount,
-                a4DimsOk: stats.mediaBoxes.length > 0 && stats.mediaBoxes.every(([x, y, w, h]) => Math.abs(w - 594.96) < 2 && Math.abs(h - 841.92) < 2),
+                a4DimsOk: stats.mediaBoxes.length > 0 && stats.mediaBoxes.every(([_x, _y, w, h]) => Math.abs(w - 594.96) < 2 && Math.abs(h - 841.92) < 2),
                 pageRects: dom.pageRects,
                 nameOnPage1: dom.pageTexts[0].toLowerCase().includes(String(fixture.firstname || '').toLowerCase()),
                 lastEmploymentPresent: allText.includes(String(fixture.employments?.[fixture.employments.length - 1]?.employer || '').toLowerCase()),

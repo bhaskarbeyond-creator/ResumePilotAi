@@ -5,26 +5,7 @@ import { Puck } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
 import { AuthContext } from '../../main';
 import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../firestore/dbOperations';
-import {
-    NavbarCategory,
-    HeroCategory,
-    AboutCategory,
-    SkillsCategory,
-    ExperienceCategory,
-    EducationCategory,
-    ProjectsCategory,
-    ServicesCategory,
-    TestimonialsCategory,
-    ResumeCategory,
-    AwardsCategory,
-    ContactCategory,
-    FooterCategory,
-    GridLayoutCategory,
-    GridItemCategory,
-    FlexLayoutCategory,
-    FlexItemCategory,
-    LayoutCategory,
-} from './PortfolioComponents';
+import { NavbarCategory, HeroCategory, AboutCategory, SkillsCategory, ExperienceCategory, EducationCategory, ProjectsCategory, ServicesCategory, TestimonialsCategory, ResumeCategory, AwardsCategory, ContactCategory, FooterCategory, GridLayoutCategory, GridItemCategory, FlexLayoutCategory, FlexItemCategory, LayoutCategory } from './PortfolioComponents';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
 import TemplateSelector from './TemplateSelector';
 import { SecurityUtils, loadTemplate } from './templateUtils';
@@ -365,6 +346,7 @@ const PortfolioBuilder = () => {
                 setShowTemplateSelector(true);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // Check for edit parameter in URL and automatically load portfolio
@@ -417,7 +399,7 @@ const PortfolioBuilder = () => {
         return () => document.removeEventListener('keydown', closeOnEscape);
     }, [showManageModal, confirmModal.show, publishSuccessModal.show]);
 
-    const checkShowWelcomeGuide = async () => {
+    async () => {;
         try {
             // Don't show welcome guide if we're loading a portfolio from URL
             const editPortfolioId = searchParams.get('edit');
@@ -429,7 +411,7 @@ const PortfolioBuilder = () => {
             if (portfolios.length === 0 && !localStorage.getItem('portfolioBuilderWelcomeSeen')) {
                 setShowWelcomeGuide(true);
             }
-        } catch (error) {
+        } catch (_error) {
             // Silent error handling for welcome guide check
         }
     };
@@ -647,7 +629,7 @@ const PortfolioBuilder = () => {
                                 portfolioSlug: result.slug || 'my-portfolio'
                             })
                         }).catch(e => console.warn('Portfolio email notice:', e.message));
-                    } catch (e) {}
+                    } catch (_e) {}
                 }
 
                 // Show success modal instead of toast
@@ -852,7 +834,7 @@ const PortfolioBuilder = () => {
                     }
                     showToast('Delete');
                     hideConfirmModal();
-                } catch (error) {
+                } catch (_error) {
                     showToast('Error', 'Error deleting portfolio');
                     hideConfirmModal();
                 }
@@ -867,7 +849,7 @@ const PortfolioBuilder = () => {
             await updatePortfolioVisibility(user.uid, portfolioId, !currentVisibility);
             await loadUserPortfolios();
             showToast('Success');
-        } catch (error) {
+        } catch (_error) {
             showToast('Error', 'Error updating portfolio visibility');
         }
     };
@@ -942,6 +924,7 @@ const PortfolioBuilder = () => {
             currentTitle: portfolioData.root?.props?.title || 'My Portfolio',
             componentCount: portfolioData.content ? portfolioData.content.length : 0,
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [portfolioData.content?.length, portfolioData.root?.props?.title]);
 
     // Enhanced custom header actions component with better UX
@@ -1054,6 +1037,7 @@ const PortfolioBuilder = () => {
                 </>
             );
         },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [headerActionProps, currentPortfolioId, isSaving, hasUnsavedChanges, portfolioConflict]
     );
 
@@ -1135,6 +1119,7 @@ const PortfolioBuilder = () => {
         if (!hasUnsavedChanges || !currentPortfolioId || !user?.uid || isSaving || isPublishing || portfolioConflict) return undefined;
         const timer = setTimeout(() => handleSaveDraft(), 2500);
         return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasUnsavedChanges, currentPortfolioId, currentPortfolioRevision, portfolioData, user?.uid, isSaving, isPublishing, portfolioConflict]);
 
     if (user === null) {

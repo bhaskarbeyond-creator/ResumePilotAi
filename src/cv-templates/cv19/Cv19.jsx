@@ -70,7 +70,6 @@ class Cv19 extends Component {
     }
 
     returnSkills() {
-        var elements = [];
         var tempSkills = this.props.values.skills.sort(function (a, b) {
             return a.date - b.date;
         });

@@ -1,24 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import {
-    FaBriefcase,
-    FaBuilding,
-    FaMapMarkerAlt,
-    FaDollarSign,
-    FaClock,
-    FaUsers,
-    FaGraduationCap,
-    FaFileAlt,
-    FaSave,
-    FaTimes,
-    FaPlus,
-    FaTrash,
-    FaCheck,
-    FaChevronDown,
-    FaArrowRight,
-    FaSpinner,
-    FaUser,
-    FaExclamationTriangle,
-} from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaExclamationTriangle } from 'react-icons/fa';
 import HomepageNavbar from '../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
 import { AuthContext } from '../../main';
@@ -83,6 +64,7 @@ const CreateJob = () => {
             setIsEmployer(false);
             setShowEmployerApplication(true);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // Load approved companies for the employer

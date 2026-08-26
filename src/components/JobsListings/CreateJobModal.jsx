@@ -1,33 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import {
-    FaBriefcase,
-    FaBuilding,
-    FaMapMarkerAlt,
-    FaDollarSign,
-    FaClock,
-    FaUsers,
-    FaGraduationCap,
-    FaFileAlt,
-    FaSave,
-    FaTimes,
-    FaPlus,
-    FaTrash,
-    FaCheck,
-    FaChevronDown,
-    FaArrowRight,
-    FaSpinner,
-    FaUser,
-    FaImage,
-    FaExclamationTriangle,
-} from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaImage, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../main';
 import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../firestore/dbOperations';
 import EmployerApplicationForm from './EmployerApplicationForm';
 import CustomLocationAutocomplete from './CustomLocationAutocomplete';
-import countries from './countries';
 
 const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
     const user = useContext(AuthContext);
@@ -93,6 +72,7 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
             setIsEmployer(false);
             setShowEmployerApplication(true);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, user]);
 
     // Reset form when modal opens

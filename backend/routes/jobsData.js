@@ -6,7 +6,7 @@ router.use((req, res, next) => {
     try {
         req.repository = getRepository(req.app.get('db'));
         next();
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
     }
 });
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     try {
         const jobs = await req.repository.getJobs(req.query);
         return res.json({ success: true, jobs });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch jobs' });
     }
 });
@@ -27,7 +27,7 @@ router.get('/:id', async (req, res) => {
         const job = await req.repository.getJob(req.params.id);
         if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
         return res.json({ success: true, job });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch job' });
     }
 });
@@ -38,7 +38,7 @@ router.post('/:id', async (req, res) => {
         const jobData = { ...req.body, employerId: req.user.uid };
         const saved = await req.repository.saveJob(req.params.id, jobData);
         return res.json({ success: true, job: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save job' });
     }
 });
@@ -48,7 +48,7 @@ router.delete('/:id', async (req, res) => {
     try {
         await req.repository.deleteJob(req.params.id);
         return res.json({ success: true });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to delete job' });
     }
 });
@@ -58,7 +58,7 @@ router.get('/applications/list', async (req, res) => {
     try {
         const apps = await req.repository.getApplications(req.query);
         return res.json({ success: true, applications: apps });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to fetch applications' });
     }
 });
@@ -69,7 +69,7 @@ router.post('/applications/:id', async (req, res) => {
         const appData = { ...req.body, applicantId: req.user.uid };
         const saved = await req.repository.saveApplication(req.params.id, appData);
         return res.json({ success: true, application: saved });
-    } catch (err) {
+    } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to save application' });
     }
 });

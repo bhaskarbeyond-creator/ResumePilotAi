@@ -1,7 +1,7 @@
 import React from 'react';
 import { filterMeaningfulCertifications } from '../utils/contentSanitizer';
 
-export default function SmartCertifications({ certifications = [], theme = {}, title = 'Certifications' }) {
+export default function SmartCertifications({ certifications = [], _theme = {}, title = 'Certifications' }) {
   const validCerts = filterMeaningfulCertifications(certifications);
   if (!validCerts.length) return null;
 

@@ -1,8 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  FiUsers, FiSliders, FiZap, FiDatabase, FiShield, FiTrendingUp,
-  FiPlus, FiUserPlus, FiFileText, FiCheckCircle, FiAlertTriangle
-} from 'react-icons/fi';
+import { FiUsers, FiSliders, FiZap, FiDatabase, FiShield, FiTrendingUp, FiPlus, FiUserPlus, FiFileText, FiCheckCircle, FiAlertTriangle } from 'react-icons/fi';
 import { useTenantApi, useAsyncResource } from '../useTenantApi';
 import HelpTooltip from './HelpTooltip';
 
@@ -89,7 +86,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
   const sampleCount = metricsData?.sampleCount || 0;
   const requestP95 = metricsData?.p95 || 0;
   const serverErrors = metricsData?.errors?.serverErrors || 0;
-  const clientErrors = metricsData?.errors?.clientErrors || 0;
+  metricsData?.errors?.clientErrors || 0;
 
   const planeState = dataPlane?.data?.dataPlane || null;
   const planeOk = planeState?.configured === true && planeState?.durable === true;

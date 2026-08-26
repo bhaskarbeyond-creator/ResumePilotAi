@@ -6,7 +6,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from './Checkout';
-import { getSubscriptionStatus, getCoupons, getUserTransactions, updateUserAutoRenew, cancelUserSubscription, getSystemSettings, getWebsiteData } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, getCoupons, getUserTransactions, updateUserAutoRenew, cancelUserSubscription, getSystemSettings } from '../../../firestore/dbOperations';
 import { useServiceAvailability, resolveUsable } from '../../../hooks/useServiceAvailability';
 import { getUserMembership } from '../../../firestore/paidOperations';
 import { parseSafeDate, formatSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
@@ -43,7 +43,7 @@ const PlansPage = (props) => {
     const [couponError, setCouponError] = useState('');
     const [userCurrentMembership, setUserCurrentMembership] = useState('Loading Tier...');
     const [membershipExpiry, setMembershipExpiry] = useState('');
-    const [membershipExpiryDate, setMembershipExpiryDate] = useState(null);
+    const [_membershipExpiryDate, setMembershipExpiryDate] = useState(null);
     const [candidateName, setCandidateName] = useState('');
     const [userEmail, setUserEmail] = useState('');
     const [currentUserId, setCurrentUserId] = useState(null);
@@ -265,7 +265,7 @@ const PlansPage = (props) => {
     const getProRatedCredit = () => 0;
 
     // Pricing calculations for Dashboard View
-    const getBaseMonthlyRate = () => {
+    () => {;
         if (selectedDuration === '1') return subscriptionConfig.monthlyPrice;
         if (selectedDuration === '6') return Math.round(subscriptionConfig.quartarlyPrice / 6 * 10) / 10;
         return Math.round(subscriptionConfig.yearlyPrice / 12 * 10) / 10;
@@ -378,7 +378,7 @@ const PlansPage = (props) => {
         const supplierSacCode = subscriptionConfig.sacCode || '998313';
         const supplierEmail = (subscriptionConfig.supplierEmail || conf.adminEmail || 'support@' + (typeof window !== 'undefined' ? window.location.hostname : 'airesume.projectdemo.guru')).trim();
         const supplierPhone = (subscriptionConfig.supplierPhone || '').trim();
-        const supplierWebsite = typeof window !== 'undefined' ? window.location.origin : 'https://airesume.projectdemo.guru';
+        typeof window !== 'undefined' ? window.location.origin : 'https://airesume.projectdemo.guru';
         const invoicePrefix = subscriptionConfig.invoicePrefix || 'RPAI';
         const financialYear = subscriptionConfig.financialYear || '26-27';
 
@@ -792,7 +792,7 @@ const PlansPage = (props) => {
 
         writeSanitizedPrintDocument(printWindow, html);
         setTimeout(() => {
-            try { printWindow.print(); } catch (e) {}
+            try { printWindow.print(); } catch (_e) {}
         }, 400);
     };
 

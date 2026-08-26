@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -23,7 +22,7 @@ async function runSustainedMultiProcessFailoverTest() {
   const mysqlRepo = new MySQLRepository();
 
   // Shared in-process memory store accessible via IPC for multi-process verification
-  const sharedStore = new Map();
+  new Map();
   let currentActiveGeneration = 100;
   let activeLeaderId = null;
   let leaderLeaseExpiry = 0;
@@ -71,7 +70,7 @@ async function runSustainedMultiProcessFailoverTest() {
   console.log('\n2. Executing sustained multi-entity mutation stream on Firestore Standby...');
   const userUid = `sustained-user-${Date.now()}`;
   const resId = `sustained-res-${Date.now()}`;
-  const jobId = `sustained-job-${Date.now()}`;
+  `sustained-job-${Date.now()}`;
 
   // Provision user in MariaDB first so post-recovery relational FKs succeed
   await mysqlRepo.saveUser(userUid, { email: `${userUid}@sustained.local` });

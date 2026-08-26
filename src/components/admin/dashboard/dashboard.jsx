@@ -1,13 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  FaDollarSign, FaUsers, FaFileAlt, FaDownload, FaExclamationTriangle, FaSyncAlt,
-  FaShieldAlt, FaServer, FaCheckCircle, FaExclamationCircle, FaArrowRight, FaHeartbeat,
-} from 'react-icons/fa';
+import { FaDollarSign, FaUsers, FaFileAlt, FaDownload, FaExclamationTriangle, FaSyncAlt, FaShieldAlt, FaServer, FaCheckCircle, FaExclamationCircle, FaArrowRight, FaHeartbeat } from 'react-icons/fa';
 import { FiActivity, FiCpu, FiLock, FiAlertTriangle, FiLayers, FiRadio, FiCheck, FiArrowUpRight } from 'react-icons/fi';
 import { formatAdminMoney } from '../../../utils/adminData';
 import { getCommandCenter } from '../../../services/platformApi';
-import { describeOverall, formatCheckedAt, formatMetric, formatUptime } from '../../../utils/healthPresentation';
+import { formatMetric, formatUptime } from '../../../utils/healthPresentation';
 
 const Dashboard = () => {
   const [center, setCenter] = useState(null);

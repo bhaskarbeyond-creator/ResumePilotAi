@@ -145,7 +145,7 @@ export const fetchOAuthAvailability = async () => {
     const data = await response.json();
     if (!data || data.success !== true) throw new Error('Availability check returned an unusable payload');
     return { status: 'ready', auth: data.auth || {} };
-  } catch (error) {
+  } catch (_error) {
     return { status: 'unavailable', auth: {} };
   }
 };
