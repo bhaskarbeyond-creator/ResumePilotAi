@@ -135,30 +135,24 @@ const Admin = () => {
             setAuthState({ checking: false, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null });
             return;
         }
-        const allowed = await checkIfAdmin(user.uid);
         let isSuperAdminUser = false;
-        // MFA_ENROLLED and MFA_VERIFIED are different states and must never be
-        // collapsed into one flag:
-        //   mfaVerified  — this SESSION completed a second factor. Server truth is
-        //                  the verified `firebase.sign_in_second_factor` claim, and
-        //                  it is the only state the backend accepts
-        //                  (backend/security/auth.js hasSecondFactor).
-        //   mfaEnrolled  — a factor exists on the account, but this session may not
-        //                  have used it. Granting nothing.
-        // Collapsing them hid the enrollment/re-auth banner from Super Admins who
-        // had enrolled TOTP but signed in without a second factor, so every
-        // protected action failed with SUPER_ADMIN_MFA_REQUIRED and no guidance.
         let mfaVerified = false;
         let mfaEnrolled = false;
+        let token = null;
         try {
-            const token = await user.getIdTokenResult();
-            isSuperAdminUser = String(token.claims?.role || '').toUpperCase() === 'SUPER_ADMIN' || token.claims?.permissions?.includes('*');
-            mfaVerified = Boolean(token.claims?.firebase?.sign_in_second_factor || token.claims?.sign_in_second_factor);
+            token = await user.getIdTokenResult();
+            const tokenRole = String(token?.claims?.role || '').toUpperCase();
+            isSuperAdminUser = tokenRole === 'SUPER_ADMIN' || token?.claims?.permissions?.includes('*');
+            mfaVerified = Boolean(token?.claims?.firebase?.sign_in_second_factor || token?.claims?.sign_in_second_factor);
             mfaEnrolled = Array.isArray(user.multiFactor?.enrolledFactors) && user.multiFactor.enrolledFactors.length > 0;
         } catch {
             // Fail closed: an unreadable token means "not verified", never "verified".
             mfaVerified = false;
         }
+        const claimsRole = String(token?.claims?.role || '').toUpperCase();
+        const hasAdminClaim = ['ADMIN', 'SUPER_ADMIN'].includes(claimsRole) || token?.claims?.admin === true || token?.claims?.superAdmin === true || token?.claims?.permissions?.includes('*');
+        const allowed = hasAdminClaim || (await checkIfAdmin(user.uid));
+
         setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, mfaVerified, mfaEnrolled, hasMfa: mfaVerified, user });
     }), []);
 

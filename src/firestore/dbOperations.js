@@ -245,10 +245,18 @@ export async function getAllSubscriptions() {
     return data.subscriptions || [];
 }
 
-export async function checkIfAdmin(_uid) {
+export async function checkIfAdmin(uid) {
     try {
+        const currentUser = fire.auth().currentUser;
+        if (currentUser) {
+            const tokenResult = await currentUser.getIdTokenResult();
+            const tokenRole = String(tokenResult?.claims?.role || '').toUpperCase();
+            if (['ADMIN', 'SUPER_ADMIN'].includes(tokenRole) || tokenResult?.claims?.admin === true || tokenResult?.claims?.superAdmin === true || tokenResult?.claims?.permissions?.includes('*')) {
+                return true;
+            }
+        }
         const { getUserProfile } = await import('../services/api/users.js');
-        const data = await getUserProfile(_uid);
+        const data = await getUserProfile(uid);
         const role = String(data?.role || '').toUpperCase();
         return ['ADMIN', 'SUPER_ADMIN'].includes(role) || data?.isAdmin === true;
     } catch {
