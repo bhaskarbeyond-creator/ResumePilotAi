@@ -954,16 +954,14 @@ export async function submitEmployerApplication(userId, applicationData) {
     }
 
     try {
-
-        // Store the application in a separate collection for review
-        const applicationRef = db.collection('employerApplications').doc(userId);
-        await applicationRef.set({
-            userId: userId,
-            ...applicationData,
-            status: 'pending',
-            submittedAt: new Date(),
+        const { response, data: result } = await fetchAdminWithReauth('/api/employer-applications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(applicationData),
         });
-
+        if (!response.ok || !result.success) {
+            return { success: false, error: result.error || 'Unable to submit employer application.' };
+        }
         return { success: true };
     } catch (error) {
         console.error('Error submitting employer application:', error);

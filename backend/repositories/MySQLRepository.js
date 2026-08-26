@@ -1238,6 +1238,9 @@ class MySQLRepository {
             size: data.size || '',
             location: data.location || '',
             verified: data.status === 'approved' || data.verified ? 1 : 0,
+            revision: Number(data.revision || 1),
+            status: data.status || 'pending',
+            extra_json: JSON.stringify(data),
         };
         const keys = Object.keys(values);
         const placeholders = keys.map(() => '?').join(', ');
@@ -1371,6 +1374,96 @@ class MySQLRepository {
             throw err;
         }
     }
+
+    async getApplication(appId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query('SELECT * FROM applications WHERE id = ? LIMIT 1', [appId]);
+        if (!rows.length) return null;
+        const r = rows[0];
+        let extra = {};
+        try { extra = typeof r.extra_json === 'string' ? JSON.parse(r.extra_json) : (r.extra_json || {}); } catch { extra = {}; }
+        return {
+            ...extra,
+            id: r.id,
+            jobId: r.job_id,
+            employerId: r.employer_id,
+            userId: r.applicant_id,
+            applicantId: r.applicant_id,
+            applicantName: r.applicant_name,
+            applicantEmail: r.applicant_email,
+            status: r.status,
+            revision: Number(r.revision || extra.revision || 1),
+        };
+    }
+
+    async deleteApplication(appId) {
+        const pool = this._getPool();
+        await pool.query('DELETE FROM applications WHERE id = ?', [appId]);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'applications', entityId: appId, operation: 'DELETE',
+            payload: { id: appId }, version: 1, sourceEngine: 'mysql',
+        }).catch((e) => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        return true;
+    }
+
+    _parseDocumentRow(row) {
+        if (!row) return null;
+        let payload = {};
+        try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch { payload = {}; }
+        return { ...payload, id: row.entity_id, revision: Number(row.revision || payload.revision || 1) };
+    }
+
+    async getDocument(entityType, id) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT * FROM canonical_documents WHERE entity_type = ? AND entity_id = ? AND deleted_at IS NULL LIMIT 1',
+            [entityType, id]
+        );
+        return rows.length ? this._parseDocumentRow(rows[0]) : null;
+    }
+
+    async listDocuments(entityType, options = {}) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT * FROM canonical_documents WHERE entity_type = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT ?',
+            [entityType, Number(options.limit || 500)]
+        );
+        return rows.map((row) => this._parseDocumentRow(row));
+    }
+
+    async saveDocument(entityType, id, data) {
+        const pool = this._getPool();
+        const revision = Number(data.revision || 1);
+        const payload = JSON.stringify({ ...data, id, revision });
+        await pool.query(
+            `INSERT INTO canonical_documents (entity_type, entity_id, payload, revision, deleted_at, updated_at)
+             VALUES (?, ?, ?, ?, NULL, CURRENT_TIMESTAMP)
+             ON DUPLICATE KEY UPDATE payload = VALUES(payload), revision = VALUES(revision), deleted_at = NULL, updated_at = CURRENT_TIMESTAMP`,
+            [entityType, id, payload, revision]
+        );
+        await enqueueOutboxEvent(pool, {
+            entityType, entityId: id, operation: 'UPSERT',
+            payload: { ...data, id, revision }, version: revision, sourceEngine: 'mysql',
+        }).catch((e) => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        return { id, revision, ...data };
+    }
+
+    async deleteDocument(entityType, id) {
+        const pool = this._getPool();
+        await pool.query(
+            'UPDATE canonical_documents SET deleted_at = CURRENT_TIMESTAMP WHERE entity_type = ? AND entity_id = ?',
+            [entityType, id]
+        );
+        await enqueueOutboxEvent(pool, {
+            entityType, entityId: id, operation: 'DELETE',
+            payload: { id }, version: 1, sourceEngine: 'mysql',
+        }).catch((e) => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        return true;
+    }
+
+    async getReview(id) { return this.getDocument('reviews', id); }
+    async saveReview(id, data) { return this.saveDocument('reviews', id, data); }
+    async deleteReview(id) { return this.deleteDocument('reviews', id); }
 }
 
 module.exports = MySQLRepository;

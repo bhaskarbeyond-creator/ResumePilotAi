@@ -55,7 +55,7 @@ Searched: `collection(`, `doc(`, `setDoc`, `updateDoc`, `deleteDoc`, `addDoc`, `
 | Category | Count (approx) |
 | -------- | -------------: |
 | Database bypasses found (production JS, excluding tests/docs/scripts) | 56 files with Firestore or mysql access (adapters, enterprise plane, frontend cache included) |
-| Request-path business-critical bypasses remaining | 18 Super Admin / employer Firestore transaction routes in `backend/index.js` |
+| Request-path business-critical bypasses remaining | 0 of the original 18 employer/CMS/jobs/companies/applications/ads/reviews/pages/trusted-by/deletion routes. Remaining Firestore `runTransaction` usage is Super Admin settings (AI/quota/payment-settings/health) plus identity-adjacent tokens. |
 | Intentional exceptions (Auth, Realtime, OAuth TTL tokens, reset hashes, enterprise plane, email outbox, frontend cache, export render tokens) | 8 |
 | Migrated this pass (payment, webhook durable claim, refund, coupons, CMS scheduler, OAuth profile, jobs/blog reverse outbox, provider settings) | 22 functions |
 

@@ -78,12 +78,14 @@ test('generic admin settings use audited backend persistence without cross-accou
 });
 
 test('job moderation is stale-safe, audited, confirmation-gated, and preserves applications', async () => {
-  const [jobs, operations, backend, rules] = await Promise.all([
+  const [jobs, operations, index, mutations, rules] = await Promise.all([
     fs.readFile('src/components/admin/jobsManager/JobsManager.jsx', 'utf8'),
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/services/resilientMutations.js', 'utf8'),
     fs.readFile('SecurityRules.txt', 'utf8'),
   ]);
+  const backend = index + '\n' + mutations;
   assert.doesNotMatch(jobs, /window\.confirm|createNotification/);
   assert.match(jobs, /role="alertdialog"/);
   assert.match(jobs, /expectedUpdatedAt/);
@@ -91,17 +93,19 @@ test('job moderation is stale-safe, audited, confirmation-gated, and preserves a
   assert.match(operations, /\/api\/admin\/jobs\//);
   assert.match(backend, /JOB_STATUS_UPDATED/);
   assert.match(backend, /JOB_HAS_APPLICATIONS/);
-  assert.match(backend, /transaction\.get\(applicationsQuery\)/);
+  assert.match(backend, /resilientMutations\.deleteJob/);
   assert.doesNotMatch(rules.match(/match \/jobs\/\{id\}[\s\S]*?match \/jobApplications/)?.[0] || '', /allow update: if admin\(\)/);
 });
 
 test('company moderation is backend-only, stale-safe, reasoned, and confirmation-gated', async () => {
-  const [companies, operations, backend, rules] = await Promise.all([
+  const [companies, operations, indexSrc, mutationsSrc, rules] = await Promise.all([
     fs.readFile('src/components/admin/companyManagement/CompanyManagement.jsx', 'utf8'),
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/services/resilientMutations.js', 'utf8'),
     fs.readFile('SecurityRules.txt', 'utf8'),
   ]);
+  const backend = indexSrc + '\n' + mutationsSrc;
   assert.match(companies, /role="alertdialog"/);
   assert.match(companies, /A reason is required/);
   assert.match(companies, /sanitizeImageUrl/);

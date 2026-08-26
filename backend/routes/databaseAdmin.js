@@ -246,6 +246,11 @@ router.post('/', requireRecentAdminAuthentication, async (req, res) => {
         const actor = req.user?.email || req.user?.uid || 'SUPER_ADMIN';
         const switchedBy = force ? `EMERGENCY_FAILOVER(${actor})` : actor;
 
+        if (!force) {
+            const databaseAuthority = require('../database/authority');
+            databaseAuthority.assertManualSwitchAllowed();
+        }
+
         // Pre-Switch Safety & Parity Gate
         if (!force) {
             const preSwitch = await flushAndVerifyBeforeSwitch(firestoreDb);

@@ -141,6 +141,23 @@ async function ensureExtendedSchema(poolOverride = null) {
             reason TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS extra_json JSON NULL",
+        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
+        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'",
+        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS extra_json JSON NULL",
+        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS extra_json JSON NULL",
+        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
+        `CREATE TABLE IF NOT EXISTS canonical_documents (
+            entity_type VARCHAR(64) NOT NULL,
+            entity_id VARCHAR(128) NOT NULL,
+            payload JSON NOT NULL,
+            revision INT NOT NULL DEFAULT 1,
+            deleted_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (entity_type, entity_id),
+            INDEX idx_cd_type (entity_type)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     ];
     for (const sql of statements) {
         try {

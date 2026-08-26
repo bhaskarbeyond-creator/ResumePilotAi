@@ -33,6 +33,7 @@ const READ_METHODS = new Set([
     'getPaymentOrder', 'getCoupon', 'getCouponRedemption',
     'findPaymentOrderByProviderIntent',
     'getCompany', 'getCompanies',
+    'getApplication', 'getDocument', 'listDocuments', 'getReview',
 ]);
 
 const WRITE_METHODS = new Set([
@@ -50,6 +51,8 @@ const WRITE_METHODS = new Set([
     'savePaymentOrder', 'saveCoupon', 'saveCouponRedemption', 'deleteCouponRedemption',
     'saveCompany', 'deleteCompany',
     'claimWebhookEvent',
+    'deleteApplication', 'saveDocument', 'deleteDocument',
+    'saveReview', 'deleteReview',
 ]);
 
 function classifyUnavailable(err) {

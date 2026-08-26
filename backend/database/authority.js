@@ -280,6 +280,23 @@ function completeRecovery({ conflicts = 0 } = {}) {
     return getStatus();
 }
 
+function assertManualSwitchAllowed() {
+    getConfiguredPrimary();
+    if (mode === MODES.MARIADB_FAILED_OVER || mode === MODES.RECONCILING || mode === MODES.BOTH_UNAVAILABLE || mode === MODES.CONFLICT_DETECTED) {
+        const err = new Error(`Manual engine switch is blocked while authority mode is ${mode}. Wait for recovery or use an emergency force switch after inspecting fence generation.`);
+        err.code = 'MANUAL_SWITCH_BLOCKED';
+        err.status = 409;
+        err.mode = mode;
+        err.fence = fencing().currentFence();
+        alerts().emitAlert(alerts().ALERT_TYPES.SPLIT_BRAIN_PREVENTION, {
+            message: 'Rejected Super Admin engine switch during automatic failover/reconciliation',
+            mode,
+        });
+        throw err;
+    }
+    return true;
+}
+
 function canAcceptWrites() {
     if (mode === MODES.BOTH_UNAVAILABLE) return false;
     const write = getWriteEngine();
@@ -391,6 +408,7 @@ module.exports = {
     recordFailure,
     completeRecovery,
     canAcceptWrites,
+    assertManualSwitchAllowed,
     noteStaleRead,
     noteRejectedWrite,
     noteSecondaryFallback,

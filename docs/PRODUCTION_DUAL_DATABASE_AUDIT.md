@@ -233,7 +233,7 @@ node --test \
 | Testing | 9/10 | Payment, fencing, chaos invariants, CMS/jobs failover added; live mysql2 not run here |
 | Deployment safety | 9/10 | Additive schema (`IF NOT EXISTS`); no destructive migration |
 
-Payment activation, webhooks (durable claim), admin refunds, CMS scheduler, jobs/blog reverse outbox, user revision, and distributed fencing landed in this pass. Super Admin Firestore-transaction moderation UIs remain. Live engine chaos was not re-run here (no mysql2 in this sandbox). **This is not a 10/10.** Scores are evidence-based and are not rounded up.
+Payment activation, webhooks (durable claim), admin refunds, CMS scheduler, jobs/blog reverse outbox, user revision, and distributed fencing landed in this pass. Super Admin Firestore-transaction moderation UIs remain. Live engine chaos was not re-run here (no mysql2 in this sandbox). Employer/CMS/jobs/companies/applications/ads/reviews/pages/trusted-by/account-deletion request paths now use `resilientMutations` / `accountDeletion`. **This is still not 10/10:** live MariaDB and Firestore emulator were not available here; Super Admin settings still have Firestore transactions. Scores are evidence-based and are not rounded up.
 
 ---
 

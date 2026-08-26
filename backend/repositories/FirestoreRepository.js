@@ -884,6 +884,85 @@ class FirestoreRepository {
             return { duplicate: true, existing: snap.exists ? { id: snap.id, ...snap.data() } : record };
         }
     }
+
+    async getApplication(appId) {
+        const db = this._ensureDb();
+        let snap = await db.collection('applications').doc(appId).get();
+        if (!snap.exists) snap = await db.collection('jobApplications').doc(appId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async deleteApplication(appId) {
+        const db = this._ensureDb();
+        const batch = db.batch();
+        batch.delete(db.collection('applications').doc(appId));
+        batch.delete(db.collection('jobApplications').doc(appId));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'applications', entityId: appId, operation: 'DELETE',
+            payload: { id: appId }, version: 1,
+        }));
+        await batch.commit();
+        return true;
+    }
+
+    _collectionFor(entityType) {
+        const map = {
+            blog_categories: 'blog_categories',
+            ads: 'ads',
+            reviews: 'reviews',
+            employer_applications: 'employerApplications',
+            deletion_requests: 'deletion_requests',
+            custom_pages: 'pages',
+            trusted_by: 'trustedBy',
+            landing: 'data',
+            website_meta: 'data',
+        };
+        return map[entityType] || entityType;
+    }
+
+    async getDocument(entityType, id) {
+        const db = this._ensureDb();
+        const col = this._collectionFor(entityType);
+        const docId = (entityType === 'landing' && !id) ? 'frontendstats' : (entityType === 'website_meta' && !id) ? 'meta' : id;
+        const snap = await db.collection(col).doc(docId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async listDocuments(entityType, options = {}) {
+        const db = this._ensureDb();
+        const snap = await db.collection(this._collectionFor(entityType)).limit(Number(options.limit || 500)).get();
+        return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveDocument(entityType, id, data) {
+        const db = this._ensureDb();
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(db.collection(this._collectionFor(entityType)).doc(id), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType, entityId: id, operation: 'UPSERT',
+            payload: { ...data, id, revision }, version: revision,
+        }));
+        await batch.commit();
+        return { id, ...payload };
+    }
+
+    async deleteDocument(entityType, id) {
+        const db = this._ensureDb();
+        const batch = db.batch();
+        batch.delete(db.collection(this._collectionFor(entityType)).doc(id));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType, entityId: id, operation: 'DELETE',
+            payload: { id }, version: 1,
+        }));
+        await batch.commit();
+        return true;
+    }
+
+    async getReview(id) { return this.getDocument('reviews', id); }
+    async saveReview(id, data) { return this.saveDocument('reviews', id, data); }
+    async deleteReview(id) { return this.deleteDocument('reviews', id); }
 }
 
 module.exports = FirestoreRepository;
