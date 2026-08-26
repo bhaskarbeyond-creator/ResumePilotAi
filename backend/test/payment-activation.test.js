@@ -85,17 +85,19 @@ test('activateVerifiedOrder is idempotent for duplicate webhooks', async () => {
 
 test('duplicate provider event claim is a no-op', async () => {
     paymentActivation.__resetForTests();
-    const a = await paymentActivation.claimWebhookEvent({ eventId: 'evt_1', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o1' });
-    const b = await paymentActivation.claimWebhookEvent({ eventId: 'evt_1', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o1' });
+    const repo = memoryRepo();
+    const a = await paymentActivation.claimWebhookEvent({ eventId: 'evt_1', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o1', repo });
+    const b = await paymentActivation.claimWebhookEvent({ eventId: 'evt_1', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o1', repo });
     assert.equal(a.duplicate, false);
     assert.equal(b.duplicate, true);
 });
 
 test('webhook claim is released so a failed activation can retry', async () => {
     paymentActivation.__resetForTests();
-    await paymentActivation.claimWebhookEvent({ eventId: 'evt_retry', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o2' });
-    paymentActivation.releaseWebhookEvent('evt_retry');
-    const again = await paymentActivation.claimWebhookEvent({ eventId: 'evt_retry', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o2' });
+    const repo = memoryRepo();
+    await paymentActivation.claimWebhookEvent({ eventId: 'evt_retry', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o2', repo });
+    paymentActivation.releaseWebhookEvent('evt_retry', repo);
+    const again = await paymentActivation.claimWebhookEvent({ eventId: 'evt_retry', provider: 'stripe', eventType: 'payment_intent.succeeded', orderId: 'o2', repo });
     assert.equal(again.duplicate, false);
 });
 
