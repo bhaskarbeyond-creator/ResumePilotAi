@@ -115,7 +115,20 @@ async function getEmailConfig(db) {
     };
     const localConfig = readLocalConfig();
 
-    // 1. Try legacy Firestore configuration as a fallback over environment defaults.
+    // 1. Try MariaDB primary configuration
+    try {
+        const { getRepository } = require('../repositories');
+        const repo = getRepository(db);
+        if (repo && typeof repo.getSetting === 'function') {
+            const docData = await repo.getSetting('system_settings').catch(() => null);
+            if (docData?.smtp) config.smtp = mergeSection(config.smtp, docData.smtp);
+            if (docData?.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, docData.fallbackSmtp);
+            if (docData?.imap) config.imap = mergeSection(config.imap, docData.imap);
+            if (docData?.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...docData.enabledTemplates };
+        }
+    } catch (_) {}
+
+    // 1b. Try legacy Firestore configuration as a fallback over environment defaults.
     if (db) {
         try {
             const doc = await db.collection('data').doc('system_settings').get();
@@ -131,9 +144,7 @@ async function getEmailConfig(db) {
             if (doc.exists && doc.data()?.enabledTemplates) {
                 config.enabledTemplates = { ...config.enabledTemplates, ...doc.data().enabledTemplates };
             }
-        } catch (e) {
-            console.error('Error fetching Email config from DB:', e.message);
-        }
+        } catch (_) {}
     }
 
     // 2. The Admin-managed local file is authoritative on this instance. This order

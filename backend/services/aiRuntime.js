@@ -453,16 +453,37 @@ async function loadProviderConfiguration(db, environment = process.env) {
     let secrets = {};
     let publicAi = {};
     let legacyAi = {};
-    if (db) {
-        const [secretResult, publicResult, legacyResult] = await Promise.allSettled([
-            db.collection('settings').doc('ai_providers').get(),
-            db.collection('data').doc('public_config').get(),
-            db.collection('data').doc('system_settings').get(),
-        ]);
-        if (secretResult.status === 'fulfilled' && secretResult.value.exists) secrets = secretResult.value.data() || {};
-        if (publicResult.status === 'fulfilled' && publicResult.value.exists) publicAi = publicResult.value.data()?.ai || {};
-        // Read-only server migration compatibility. Legacy secrets are never returned to clients.
-        if (legacyResult.status === 'fulfilled' && legacyResult.value.exists) legacyAi = legacyResult.value.data()?.ai || {};
+
+    // 1. If db is provided with .collection (mock db or explicit handle), query db:
+    if (db && typeof db.collection === 'function') {
+        try {
+            const [secretResult, publicResult, legacyResult] = await Promise.allSettled([
+                db.collection('settings').doc('ai_providers').get(),
+                db.collection('data').doc('public_config').get(),
+                db.collection('data').doc('system_settings').get(),
+            ]);
+            if (secretResult.status === 'fulfilled' && secretResult.value.exists) secrets = secretResult.value.data() || {};
+            if (publicResult.status === 'fulfilled' && publicResult.value.exists) publicAi = publicResult.value.data()?.ai || {};
+            if (legacyResult.status === 'fulfilled' && legacyResult.value.exists) legacyAi = legacyResult.value.data()?.ai || {};
+        } catch (_) {}
+    }
+
+    // 2. Primary: MariaDB system_settings (if not loaded from explicit db or if db is null)
+    if (Object.keys(secrets).length === 0 && Object.keys(publicAi).length === 0) {
+        try {
+            const { getRepository } = require('../repositories');
+            const repo = getRepository(db);
+            if (repo && typeof repo.getSetting === 'function') {
+                const [secretSetting, pubSetting, legSetting] = await Promise.all([
+                    repo.getSetting('ai_providers').catch(() => null),
+                    repo.getSetting('public_config').catch(() => null),
+                    repo.getSetting('system_settings').catch(() => null),
+                ]);
+                if (secretSetting) secrets = secretSetting;
+                if (pubSetting?.ai) publicAi = pubSetting.ai;
+                if (legSetting?.ai) legacyAi = legSetting.ai;
+            }
+        } catch (_) {}
     }
     const effectiveAi = { ...legacyAi, ...publicAi };
     const legacySecretFields = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };

@@ -34,6 +34,12 @@ function calculateContentHash(entityType, payload) {
     return crypto.createHash('sha256').update(JSON.stringify(sortedObj)).digest('hex');
 }
 
+let registeredFirestoreInstance = null;
+
+function setRegisteredFirestore(instance) {
+    if (instance) registeredFirestoreInstance = instance;
+}
+
 /**
  * Enqueues a durable outbox event during a MySQL mutation transaction.
  * @param {object} connection - Active MySQL connection or pool
@@ -68,10 +74,10 @@ async function enqueueOutboxEvent(connection, {
     ]);
 
     // Asynchronous Instant Microtask Dispatch
-    // Eliminates the 5-second polling delay down to <50ms without adding any latency to the user's HTTP response
-    if (typeof setImmediate === 'function') {
+    // Eliminates the polling delay down to <50ms without adding any latency to the user's HTTP response
+    if (typeof setImmediate === 'function' && registeredFirestoreInstance) {
         setImmediate(() => {
-            processSyncQueue(10).catch(() => {});
+            processSyncQueue(10, registeredFirestoreInstance).catch(() => {});
         });
     }
 
@@ -631,6 +637,30 @@ async function replicateToMySQL(event, poolOverride = null) {
 }
 
 /**
+ * Classifies an error encountered during replication.
+ * Distinguishes transient infrastructure errors from permanent payload failures.
+ */
+function classifySyncError(err) {
+    if (!err) return { category: 'UNKNOWN', isTransient: false, isQuota: false };
+    const msg = String(err.message || err).toLowerCase();
+    const code = err.code || err.status;
+
+    if (code === 8 || code === '8' || code === 429 || /resource_exhausted|quota exceeded|too many requests|rate limit/i.test(msg)) {
+        return { category: 'QUOTA_EXHAUSTED', isTransient: true, isQuota: true, retryDelayMs: 30000 };
+    }
+    if (code === 14 || code === '14' || code === 503 || code === 504 || /unavailable|econnreset|etimedout|socket hang up|timeout|network/i.test(msg)) {
+        return { category: 'TRANSIENT_UNAVAILABLE', isTransient: true, isQuota: false, retryDelayMs: 5000 };
+    }
+    if (code === 7 || code === '7' || code === 403 || /permission_denied|forbidden|access denied/i.test(msg)) {
+        return { category: 'PERMISSION_DENIED', isTransient: false, isQuota: false };
+    }
+    if (code === 3 || code === '3' || code === 400 || /invalid_argument|schema|syntax/i.test(msg)) {
+        return { category: 'INVALID_DATA', isTransient: false, isQuota: false };
+    }
+    return { category: 'GENERAL_ERROR', isTransient: false, isQuota: false };
+}
+
+/**
  * Processes a batch of pending synchronization events from the outbox.
  * An optional pool override exists purely for test injection; production
  * callers always use the shared pool.
@@ -659,12 +689,13 @@ async function processSyncQueue(batchSize = 25, adminFirestore = null, poolOverr
     `, [batchSize]);
 
     if (!events.length) {
-        return { processed: 0, failed: 0, deadLettered: 0 };
+        return { processed: 0, failed: 0, deadLettered: 0, isQuota: false };
     }
 
     let processed = 0;
     let failed = 0;
     let deadLettered = 0;
+    let isQuota = false;
 
     for (const event of events) {
         await pool.query('UPDATE sync_outbox SET status = ? WHERE id = ?', ['PROCESSING', event.id]);
@@ -685,28 +716,43 @@ async function processSyncQueue(batchSize = 25, adminFirestore = null, poolOverr
             `, [event.id]);
             processed++;
         } catch (err) {
+            const classification = classifySyncError(err);
             const nextRetries = Number(event.retry_count || 0) + 1;
-            const isDeadLetter = nextRetries >= Number(event.max_retries || 5);
+            if (classification.isQuota) isQuota = true;
 
+            // Transient infrastructure errors (Quota, Unavailable, Network) must NOT dead-letter valid user updates
+            // but instead preserve the event in RETRYING state with backoff.
+            if (classification.isTransient) {
+                await pool.query(`
+                    UPDATE sync_outbox 
+                    SET status = 'RETRYING', retry_count = ?, last_error = ? 
+                    WHERE id = ?
+                `, [nextRetries, `[${classification.category}] ${err.message}`, event.id]);
+                failed++;
+                // Break batch processing early so we avoid hammering a downed or quota-limited target
+                break;
+            }
+
+            const isDeadLetter = nextRetries >= Number(event.max_retries || 5);
             if (isDeadLetter) {
                 await pool.query(`
                     UPDATE sync_outbox 
                     SET status = 'DEAD_LETTER', retry_count = ?, last_error = ? 
                     WHERE id = ?
-                `, [nextRetries, err.message, event.id]);
+                `, [nextRetries, `[${classification.category}] ${err.message}`, event.id]);
                 deadLettered++;
             } else {
                 await pool.query(`
                     UPDATE sync_outbox 
                     SET status = 'RETRYING', retry_count = ?, last_error = ? 
                     WHERE id = ?
-                `, [nextRetries, err.message, event.id]);
+                `, [nextRetries, `[${classification.category}] ${err.message}`, event.id]);
                 failed++;
             }
         }
     }
 
-    return { processed, failed, deadLettered };
+    return { processed, failed, deadLettered, isQuota };
 }
 
 /**
@@ -985,11 +1031,15 @@ async function computeContinuousParity(adminFirestore, poolOverride = null) {
     };
 }
 
+let backoffUntilMs = 0;
+let consecutiveBackoffs = 0;
+
 /**
  * Starts the Autonomous Continuous Background Sync Worker.
  * Polls for outbox events, replicates them automatically, and publishes real-time heartbeats.
  */
 function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
+    setRegisteredFirestore(adminFirestore);
     if (backgroundWorkerTimer) {
         return; // Already running
     }
@@ -1001,6 +1051,15 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
         if (isWorkerProcessing) return;
         isWorkerProcessing = true;
         workerTickCounter++;
+
+        // Backoff gate: if currently backing off due to quota or transient failure, skip polling
+        if (Date.now() < backoffUntilMs) {
+            await updateWorkerHeartbeat('BACKOFF', {
+                consecutiveFailures: consecutiveBackoffs
+            });
+            isWorkerProcessing = false;
+            return;
+        }
 
         try {
             await updateWorkerHeartbeat('RUNNING');
@@ -1022,13 +1081,28 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
                 }
             }
 
-            if (result.processed > 0 || result.failed > 0 || reverse.processed > 0 || reverse.deadLettered > 0) {
+            if (result.isQuota) {
+                consecutiveBackoffs = Math.min(6, consecutiveBackoffs + 1);
+                const jitter = Math.floor(Math.random() * 5000);
+                const delay = Math.min(60000, Math.round(5000 * Math.pow(1.8, consecutiveBackoffs))) + jitter;
+                backoffUntilMs = Date.now() + delay;
+                await updateWorkerHeartbeat('BACKOFF', {
+                    lastFailedEventAt: true,
+                    consecutiveFailures: consecutiveBackoffs
+                });
+            } else if (result.processed > 0 || reverse.processed > 0) {
+                consecutiveBackoffs = 0;
+                backoffUntilMs = 0;
                 await updateWorkerHeartbeat('RUNNING', {
                     lastSyncCompletedAt: true,
-                    lastSuccessfulEventAt: (result.processed > 0 || reverse.processed > 0),
-                    lastFailedEventAt: (result.failed > 0 || reverse.failed > 0 || reverse.deadLettered > 0),
-                    consecutiveFailures: (result.failed > 0 || reverse.failed > 0) ? undefined : 0,
+                    lastSuccessfulEventAt: true,
+                    consecutiveFailures: 0,
                     processedCount: result.processed + reverse.processed
+                });
+            } else if (result.failed > 0 || reverse.failed > 0 || reverse.deadLettered > 0) {
+                await updateWorkerHeartbeat('RUNNING', {
+                    lastFailedEventAt: true,
+                    consecutiveFailures: (consecutiveBackoffs || 1),
                 });
             }
         } catch (err) {
@@ -1195,5 +1269,7 @@ module.exports = {
     flushAndVerifyBeforeSwitch,
     pruneSyncedOutboxEvents,
     pruneFirestoreOutboxEvents,
-    computeContinuousParity
+    computeContinuousParity,
+    classifySyncError,
+    setRegisteredFirestore
 };

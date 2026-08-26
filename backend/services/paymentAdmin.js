@@ -62,21 +62,51 @@ function publicPaymentSettings(value) {
     .map(([key, item]) => [key, publicPaymentSettings(item)]));
 }
 
+const { getRepository } = require('../repositories');
+
 /**
  * Canonical, secret-free payment settings projection shared by the Admin UI and
  * the backwards-compatible `/api/admin/payment-settings` read alias.
  */
 async function getPaymentSettingsProjection(db, environment = process.env) {
-  if (!db) throw paymentError('PAYMENT_SETTINGS_UNAVAILABLE', 'Settings service unavailable.', 503);
-  const [publicDoc, secretsDoc, legacyDoc] = await Promise.all([
-    db.collection('data').doc('public_config').get(),
-    db.collection('settings').doc('payment_providers').get(),
-    db.collection('data').doc('subscriptions').get(),
-  ]);
-  const publicRoot = publicDoc.exists ? (publicDoc.data() || {}) : {};
-  const legacyConfig = legacyDoc.exists ? (legacyDoc.data() || {}) : {};
-  const publicConfig = publicPaymentSettings(publicRoot.subscriptions || legacyConfig);
-  const secrets = secretsDoc.exists ? (secretsDoc.data() || {}) : {};
+  let publicRoot = {};
+  let secrets = {};
+  let legacyConfig = {};
+
+  // 1. Primary: MariaDB system_settings
+  try {
+    const repo = getRepository(db);
+    if (repo && typeof repo.getSetting === 'function') {
+      const [pubSetting, paySetting, subSetting] = await Promise.all([
+        repo.getSetting('public_config').catch(() => null),
+        repo.getSetting('payment_providers').catch(() => null),
+        repo.getSetting('subscriptions').catch(() => null),
+      ]);
+      if (pubSetting) publicRoot = pubSetting;
+      if (paySetting) secrets = paySetting;
+      if (subSetting) legacyConfig = subSetting;
+    }
+  } catch (_) {
+    // Non-fatal, fallback to Firestore/defaults
+  }
+
+  // 2. Secondary Standby: Firestore (if MariaDB returned empty and db is available)
+  if (db && (!publicRoot || Object.keys(publicRoot).length === 0)) {
+    try {
+      const [publicDoc, secretsDoc, legacyDoc] = await Promise.allSettled([
+        db.collection('data').doc('public_config').get(),
+        db.collection('settings').doc('payment_providers').get(),
+        db.collection('data').doc('subscriptions').get(),
+      ]);
+      if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) publicRoot = publicDoc.value.data() || {};
+      if (secretsDoc.status === 'fulfilled' && secretsDoc.value.exists) secrets = secretsDoc.value.data() || {};
+      if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyConfig = legacyDoc.value.data() || {};
+    } catch (_) {
+      // Standby error is non-fatal
+    }
+  }
+
+  const publicConfig = publicPaymentSettings(publicRoot.subscriptions || legacyConfig || {});
   const providers = {
     razorpay: selectPaymentPair({ envId: environment.RAZORPAY_KEY_ID, envSecret: environment.RAZORPAY_KEY_SECRET, storedId: secrets.razorpay?.keyId || publicConfig.razorpayKeyId || legacyConfig.razorpayKeyId, storedSecret: secrets.razorpay?.keySecret || legacyConfig.razorpayKeySecret }),
     stripe: selectPaymentPair({ envSecret: environment.STRIPE_SECRET, storedSecret: secrets.stripe?.secretKey || legacyConfig.stripeSecretKey, requiresId: false }),

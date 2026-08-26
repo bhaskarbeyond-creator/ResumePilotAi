@@ -83,17 +83,45 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
   return patch;
 }
 
+const { getRepository } = require('../repositories');
+
 async function loadAiAdminSettings(db, environment = process.env) {
-  if (!db) throw errorWith('AI_SETTINGS_UNAVAILABLE', 'AI settings service is unavailable.', 503);
-  const [publicDoc, secretDoc, legacyDoc] = await Promise.all([
-    db.collection('data').doc('public_config').get(),
-    db.collection('settings').doc('ai_providers').get(),
-    db.collection('data').doc('system_settings').get(),
-  ]);
-  const stored = publicDoc.data() || {};
+  let stored = {};
+  let secrets = {};
+  let legacyAi = {};
+
+  // 1. If db is provided and has .collection (e.g. Firestore / mock store), query db:
+  if (db && typeof db.collection === 'function') {
+    try {
+      const [publicDoc, secretDoc, legacyDoc] = await Promise.allSettled([
+        db.collection('data').doc('public_config').get(),
+        db.collection('settings').doc('ai_providers').get(),
+        db.collection('data').doc('system_settings').get(),
+      ]);
+      if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) stored = publicDoc.value.data() || {};
+      if (secretDoc.status === 'fulfilled' && secretDoc.value.exists) secrets = secretDoc.value.data() || {};
+      if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyAi = legacyDoc.value.data()?.ai || {};
+    } catch (_) {}
+  }
+
+  // 2. Primary: MariaDB system_settings (if not loaded from explicit db)
+  if (Object.keys(stored).length === 0 && Object.keys(secrets).length === 0) {
+    try {
+      const repo = getRepository(db);
+      if (repo && typeof repo.getSetting === 'function') {
+        const [pubSetting, secSetting, legSetting] = await Promise.all([
+          repo.getSetting('public_config').catch(() => null),
+          repo.getSetting('ai_providers').catch(() => null),
+          repo.getSetting('system_settings').catch(() => null),
+        ]);
+        if (pubSetting) stored = pubSetting;
+        if (secSetting) secrets = secSetting;
+        if (legSetting?.ai) legacyAi = legSetting.ai;
+      }
+    } catch (_) {}
+  }
+
   const publicAi = stored.ai || {};
-  const secrets = secretDoc.data() || {};
-  const legacyAi = legacyDoc.data()?.ai || {};
   const credentialSources = Object.fromEntries(PROVIDERS.map(provider => [provider,
     environment[`${provider.toUpperCase()}_API_KEY`] ? 'environment' : secrets[provider]?.apiKey ? 'secret-store' : legacyAi[SECRET_FIELDS[provider]] ? 'legacy-server-store' : 'none'
   ]));
@@ -123,53 +151,121 @@ async function loadAiAdminSettings(db, environment = process.env) {
 }
 
 async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, actorUid, requestId }) {
-  if (!db || !admin?.firestore?.FieldValue) throw errorWith('AI_SETTINGS_UNAVAILABLE', 'AI settings service is unavailable.', 503);
   const safePublic = publicAiSettings(input);
-  const secretRef = db.collection('settings').doc('ai_providers');
-  const publicRef = db.collection('data').doc('public_config');
-  const legacyRef = db.collection('data').doc('system_settings');
-  let nextRevision;
-  await db.runTransaction(async transaction => {
-    const [secretSnapshot, publicSnapshot, legacySnapshot] = await Promise.all([
-      transaction.get(secretRef),
-      transaction.get(publicRef),
-      transaction.get(legacyRef),
+  const repo = getRepository(db);
+  let currentSecrets = {};
+  let currentPublic = {};
+  let legacyAi = {};
+
+  // 1. If db is provided with .collection (e.g. Firestore / mock store), load current state:
+  if (db && typeof db.collection === 'function') {
+    try {
+      const [secretDoc, publicDoc, legacyDoc] = await Promise.allSettled([
+        db.collection('settings').doc('ai_providers').get(),
+        db.collection('data').doc('public_config').get(),
+        db.collection('data').doc('system_settings').get(),
+      ]);
+      if (secretDoc.status === 'fulfilled' && secretDoc.value.exists) currentSecrets = secretDoc.value.data() || {};
+      if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) currentPublic = publicDoc.value.data() || {};
+      if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyAi = legacyDoc.value.data()?.ai || {};
+    } catch (_) {}
+  }
+
+  // 2. Primary: MariaDB system_settings (if not loaded from explicit db)
+  if (Object.keys(currentSecrets).length === 0 && Object.keys(currentPublic).length === 0) {
+    if (repo && typeof repo.getSetting === 'function') {
+      try {
+        const [secSetting, pubSetting, legSetting] = await Promise.all([
+          repo.getSetting('ai_providers').catch(() => null),
+          repo.getSetting('public_config').catch(() => null),
+          repo.getSetting('system_settings').catch(() => null),
+        ]);
+        if (secSetting) currentSecrets = secSetting;
+        if (pubSetting) currentPublic = pubSetting;
+        if (legSetting?.ai) legacyAi = legSetting.ai;
+      } catch (_) {}
+    }
+  }
+
+  const currentRevision = Number(currentPublic.aiRevision || currentSecrets._revision || 0);
+  if (expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
+    throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
+  }
+  const nextRevision = currentRevision + 1;
+  const providerPatch = secretPatch(input, currentSecrets, legacyAi);
+  const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
+  const envKeyNames = { gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY', groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+  
+  for (const provider of PROVIDERS) {
+    if (clearSecrets[provider] === true && String(process.env[envKeyNames[provider]] || '').trim()) {
+      throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
+    }
+    if (clearSecrets[provider] === true) {
+      delete providerPatch[provider].apiKey;
+    }
+  }
+
+  const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
+  const mergedPublic = { ...currentPublic, ai: safePublic, aiRevision: nextRevision };
+
+  // 1. Save to MariaDB Primary
+  if (repo && typeof repo.saveSetting === 'function') {
+    await Promise.all([
+      repo.saveSetting('ai_providers', mergedSecrets, nextRevision),
+      repo.saveSetting('public_config', mergedPublic, nextRevision),
     ]);
-    const currentSecrets = secretSnapshot.data() || {};
-    const legacyAi = legacySnapshot.data()?.ai || {};
-    const currentRevision = Number(publicSnapshot.data()?.aiRevision || currentSecrets._revision || 0);
-    if (Number(expectedRevision) !== currentRevision) throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
-    nextRevision = currentRevision + 1;
-    const providerPatch = secretPatch(input, currentSecrets, legacyAi);
-    const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
-    const envKeyNames = { gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY', groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
-    for (const provider of PROVIDERS) {
-      if (clearSecrets[provider] === true && String(process.env[envKeyNames[provider]] || '').trim()) {
-        throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
-      }
-      if (clearSecrets[provider] === true) {
-        // Firestore field-delete sentinels make the explicit clear durable. A
-        // missing/blank field never reaches this branch and therefore preserves
-        // the existing secret.
-        providerPatch[provider].apiKey = admin.firestore.FieldValue.delete();
-      }
+    if (typeof repo.recordAdminAuditLog === 'function') {
+      await repo.recordAdminAuditLog({
+        actorUid: actorUid || 'system',
+        action: 'AI_PROVIDER_SETTINGS_UPDATED',
+        category: 'ai_governance',
+        severity: 'MEDIUM',
+        outcome: 'SUCCESS',
+        metadata: { revision: nextRevision, changedFields: Object.keys(safePublic) },
+        requestId: requestId || null,
+      }).catch(() => {});
     }
-    transaction.set(secretRef, { ...providerPatch, _revision: nextRevision }, { merge: true });
-    if (Object.values(clearSecrets).some(value => value === true) && legacySnapshot.exists) {
-      const legacyDelete = {};
-      for (const provider of PROVIDERS) if (clearSecrets[provider] === true) legacyDelete[`ai.${SECRET_FIELDS[provider]}`] = admin.firestore.FieldValue.delete();
-      transaction.set(legacyRef, legacyDelete, { merge: true });
-    }
-    transaction.set(publicRef, { ai: safePublic, aiRevision: nextRevision }, { merge: true });
-    transaction.set(db.collection('security_audit_logs').doc(), {
-      action: 'AI_PROVIDER_SETTINGS_UPDATED',
-      actorUid: actorUid || 'system',
-      revision: nextRevision,
-      changedFields: Object.keys(safePublic),
-      requestId: requestId || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  });
+  }
+
+  // 2. Replicate to Firestore Standby / Save to db (mock or real)
+  if (db) {
+    try {
+      if (typeof db.batch === 'function') {
+        const secretRef = db.collection('settings').doc('ai_providers');
+        const publicRef = db.collection('data').doc('public_config');
+        const batch = db.batch();
+        batch.set(secretRef, mergedSecrets, { merge: true });
+        batch.set(publicRef, mergedPublic, { merge: true });
+        if (admin?.firestore?.FieldValue) {
+          batch.set(db.collection('security_audit_logs').doc(), {
+            action: 'AI_PROVIDER_SETTINGS_UPDATED',
+            actorUid: actorUid || 'system',
+            revision: nextRevision,
+            changedFields: Object.keys(safePublic),
+            requestId: requestId || null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        await batch.commit();
+      } else if (typeof db.runTransaction === 'function') {
+        await db.runTransaction(async tx => {
+          const secretRef = db.collection('settings').doc('ai_providers');
+          const publicRef = db.collection('data').doc('public_config');
+          tx.set(secretRef, mergedSecrets, { merge: true });
+          tx.set(publicRef, mergedPublic, { merge: true });
+          tx.set(db.collection('security_audit_logs').doc(), {
+            action: 'AI_PROVIDER_SETTINGS_UPDATED',
+            actorUid: actorUid || 'system',
+            revision: nextRevision,
+            changedFields: Object.keys(safePublic),
+            requestId: requestId || null,
+            createdAt: admin?.firestore?.FieldValue?.serverTimestamp ? admin.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
+          });
+        });
+      }
+    } catch (_) {}
+  }
+
   clearProviderConfigurationCache(db);
   const loaded = await loadAiAdminSettings(db);
   return { ...loaded, revision: nextRevision };

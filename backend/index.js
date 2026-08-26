@@ -2643,17 +2643,43 @@ app.post('/api/admin/ai/reset-quota', async (req, res) => {
 app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async (req, res) => {
     const requestDb = req.app.get('db');
     const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'PAYMENT_SETTINGS_UNAVAILABLE', error: 'Payment settings service unavailable.', requestId: res.locals.requestId });
+    const repo = getRepository(requestDb);
     const input = req.body || {};
     const numberInRange = (value, min, max, fallback) => {
         const parsed = Number(value);
         return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
     };
-    const paymentRef = requestDb.collection('settings').doc('payment_providers');
-    const publicRef = requestDb.collection('data').doc('public_config');
-    const [paymentSnapshot, publicSnapshot] = await Promise.all([paymentRef.get(), publicRef.get()]);
-    const currentSecrets = paymentSnapshot.data() || {};
-    const currentPublicRoot = publicSnapshot.data() || {};
+
+    let currentSecrets = {};
+    let currentPublicRoot = {};
+    let currentSysSettings = {};
+
+    // 1. Primary: Load current settings from MariaDB
+    if (repo && typeof repo.getSetting === 'function') {
+        try {
+            const [paySetting, pubSetting, sysSetting] = await Promise.all([
+                repo.getSetting('payment_providers').catch(() => null),
+                repo.getSetting('public_config').catch(() => null),
+                repo.getSetting('system_settings').catch(() => null),
+            ]);
+            if (paySetting) currentSecrets = paySetting;
+            if (pubSetting) currentPublicRoot = pubSetting;
+            if (sysSetting) currentSysSettings = sysSetting;
+        } catch (_) {}
+    }
+
+    // 2. Secondary Standby: Firestore (if MariaDB returned empty and requestDb is available)
+    if (requestDb && Object.keys(currentSecrets).length === 0 && Object.keys(currentPublicRoot).length === 0) {
+        try {
+            const [paymentSnapshot, publicSnapshot] = await Promise.allSettled([
+                requestDb.collection('settings').doc('payment_providers').get(),
+                requestDb.collection('data').doc('public_config').get(),
+            ]);
+            if (paymentSnapshot.status === 'fulfilled' && paymentSnapshot.value.exists) currentSecrets = paymentSnapshot.value.data() || {};
+            if (publicSnapshot.status === 'fulfilled' && publicSnapshot.value.exists) currentPublicRoot = publicSnapshot.value.data() || {};
+        } catch (_) {}
+    }
+
     const currentPublic = currentPublicRoot.subscriptions || {};
     const currentRevision = Number(currentSecrets._revision || currentPublicRoot._settingsRevisions?.payments || 0);
     if (input.expectedRevision !== undefined && Number(input.expectedRevision) !== currentRevision) {
@@ -2661,10 +2687,6 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
     }
     const valueOrCurrent = (key, fallback = '') => {
         if (Object.hasOwn(input, key) && input[key] !== null && input[key] !== undefined && String(input[key]).trim() !== '') return input[key];
-        // A blank field in the browser means "preserve". Treat an empty
-        // public-config value as absent as well, so a provider identifier that
-        // is stored in the server-only payment document (or deployment env)
-        // cannot be erased by an unrelated settings save.
         if (currentPublic[key] !== undefined && currentPublic[key] !== null && String(currentPublic[key]).trim() !== '') return currentPublic[key];
         return fallback;
     };
@@ -2730,20 +2752,16 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
             }
             const raw = secretValue(input[inputField], label);
             if (clear) {
-                providerSecrets[provider] = { [persistedField]: firebaseAdmin.firestore.FieldValue.delete() };
+                providerSecrets[provider] = { [persistedField]: '' };
                 submittedSecrets[provider] = '';
             } else if (raw) {
                 providerSecrets[provider] = { [persistedField]: raw };
                 submittedSecrets[provider] = raw;
             } else {
-                providerSecrets[provider] = {};
+                providerSecrets[provider] = currentSecrets[provider] ? { ...currentSecrets[provider] } : {};
                 submittedSecrets[provider] = '';
             }
         }
-        // Public identifiers are safe to persist, but blank form fields preserve
-        // the current value just like secrets. The runtime reads the same
-        // payment_providers document, so Razorpay saves and reloads use one
-        // canonical schema instead of diverging legacy paths.
         providerSecrets.paypal.clientId = publicSettings.paypalClientId;
         providerSecrets.paypal.environment = publicSettings.sandboxMode ? 'sandbox' : 'live';
         providerSecrets.razorpay.keyId = publicSettings.razorpayKeyId;
@@ -2754,30 +2772,71 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
 
         const nextRevision = currentRevision + 1;
         providerSecrets._revision = nextRevision;
-        const batch = requestDb.batch();
-        batch.set(paymentRef, providerSecrets, { merge: true });
-        batch.set(publicRef, { subscriptions: publicSettings, currency: publicSettings.currency, currencySymbol: publicSettings.currency === 'INR' ? '₹' : publicSettings.currency === 'EUR' ? '€' : publicSettings.currency === 'GBP' ? '£' : '$', _settingsRevisions: { payments: nextRevision } }, { merge: true });
-        // Keep data/system_settings.currency in sync with the subscription currency
-        // so that getPlatformCurrencyConfig (which checks system_settings first) always
-        // reflects the admin's latest currency choice.
-        const sysSettingsRef = requestDb.collection('data').doc('system_settings');
-        batch.set(sysSettingsRef, {
+
+        const mergedPublicRoot = {
+            ...currentPublicRoot,
+            subscriptions: publicSettings,
+            currency: publicSettings.currency,
+            currencySymbol: publicSettings.currency === 'INR' ? '₹' : publicSettings.currency === 'EUR' ? '€' : publicSettings.currency === 'GBP' ? '£' : '$',
+            _settingsRevisions: { ...(currentPublicRoot._settingsRevisions || {}), payments: nextRevision }
+        };
+
+        const mergedSysSettings = {
+            ...currentSysSettings,
             currency: publicSettings.currency,
             currencyMeta: {
                 code: publicSettings.currency,
                 symbol: publicSettings.currency === 'INR' ? '₹' : publicSettings.currency === 'EUR' ? '€' : publicSettings.currency === 'GBP' ? '£' : publicSettings.currency === 'CAD' ? 'CA$' : publicSettings.currency === 'AUD' ? 'A$' : publicSettings.currency === 'JPY' ? '¥' : '$',
                 name: publicSettings.currency === 'INR' ? 'Indian Rupee' : publicSettings.currency === 'EUR' ? 'Euro' : publicSettings.currency === 'GBP' ? 'British Pound' : publicSettings.currency === 'CAD' ? 'Canadian Dollar' : publicSettings.currency === 'AUD' ? 'Australian Dollar' : publicSettings.currency === 'JPY' ? 'Japanese Yen' : 'US Dollar',
             },
-            currencyUpdatedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
+            currencyUpdatedAt: new Date().toISOString(),
             currencyUpdatedBy: req.user?.uid || 'admin_console',
-        }, { merge: true });
-        batch.set(requestDb.collection('security_audit_logs').doc(), {
-            action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
-            requestId: res.locals.requestId, revision: nextRevision,
-            changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
-            createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp()
-        });
-        await batch.commit();
+        };
+
+        // 1. Primary Write: Save to MariaDB system_settings & record audit log
+        if (repo && typeof repo.saveSetting === 'function') {
+            await Promise.all([
+                repo.saveSetting('payment_providers', providerSecrets, nextRevision),
+                repo.saveSetting('public_config', mergedPublicRoot, nextRevision),
+                repo.saveSetting('system_settings', mergedSysSettings, nextRevision),
+            ]);
+            if (typeof repo.recordAdminAuditLog === 'function') {
+                await repo.recordAdminAuditLog({
+                    actorUid: req.user?.uid || 'admin_console',
+                    actorEmail: req.user?.email || null,
+                    actorRole: req.user?.role || 'ADMIN',
+                    action: 'PAYMENT_SETTINGS_UPDATED',
+                    category: 'billing.payments',
+                    severity: 'HIGH',
+                    outcome: 'SUCCESS',
+                    metadata: {
+                        revision: nextRevision,
+                        changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
+                    },
+                    requestId: res.locals?.requestId,
+                }).catch(() => {});
+            }
+        }
+
+        // 2. Secondary Standby Write: Replicate to Firestore asynchronously
+        if (requestDb && firebaseAdmin?.firestore?.FieldValue) {
+            try {
+                const paymentRef = requestDb.collection('settings').doc('payment_providers');
+                const publicRef = requestDb.collection('data').doc('public_config');
+                const sysSettingsRef = requestDb.collection('data').doc('system_settings');
+                const batch = requestDb.batch();
+                batch.set(paymentRef, providerSecrets, { merge: true });
+                batch.set(publicRef, mergedPublicRoot, { merge: true });
+                batch.set(sysSettingsRef, mergedSysSettings, { merge: true });
+                batch.set(requestDb.collection('security_audit_logs').doc(), {
+                    action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
+                    requestId: res.locals?.requestId, revision: nextRevision,
+                    changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
+                    createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp()
+                });
+                await batch.commit();
+            } catch (_) {}
+        }
 
         const configuredProviders = {};
         const maskedKeys = {};
