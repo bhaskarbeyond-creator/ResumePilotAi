@@ -223,8 +223,8 @@ async function claimWebhookEvent({ eventId, provider, eventType, orderId, repo, 
         claimedAt: new Date().toISOString(),
     };
     let r = repo || null;
-    if (!r) {
-        try { r = repoFor(firestoreDb || null, null); } catch { r = null; }
+    if (!r && firestoreDb) {
+        try { r = repoFor(firestoreDb, null); } catch { r = null; }
     }
     if (r && typeof r.claimWebhookEvent === 'function') {
         try {
@@ -242,8 +242,11 @@ async function claimWebhookEvent({ eventId, provider, eventType, orderId, repo, 
     return { duplicate: false, record };
 }
 
-function releaseWebhookEvent(eventId) {
+function releaseWebhookEvent(eventId, repo) {
     webhookLedger.delete(eventId);
+    if (repo?.webhookEvents && typeof repo.webhookEvents.delete === 'function') {
+        repo.webhookEvents.delete(eventId);
+    }
 }
 
 async function activateVerifiedOrder({

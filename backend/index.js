@@ -236,7 +236,8 @@ const allowedOrigins = new Set([
     ...(process.env.NODE_ENV === 'production' ? [] : [
         'http://localhost:5173',
         'http://localhost:3000',
-        'http://ai-resume-builder.local'
+        'http://ai-resume-builder.local',
+        'https://ai-resume-builder.local'
     ])
 ]);
 app.use(cors({
@@ -4438,6 +4439,16 @@ function validateCustomPageContent(value) {
 app.get(['/public/custom-pages.json', '/api/public/custom-pages', '/api/custom-pages.json', '/custom-pages.json'], async (req, res) => {
     const requestDb = req.app.get('db') || db;
     try {
+        const repo = getRepository(requestDb);
+        if (repo && typeof repo.getCustomPages === 'function') {
+            const pages = await repo.getCustomPages({ publishedOnly: true });
+            if (Array.isArray(pages) && pages.length > 0) {
+                res.setHeader('Cache-Control', 'no-store');
+                return res.json({ success: true, pages });
+            }
+        }
+    } catch (_) {}
+    try {
         if (requestDb) {
             const snapshot = await requestDb.collection('pages').get();
             const pages = snapshot.docs.filter(document => !document.data()?.status || document.data()?.status === 'published').map(document => ({ id: document.id, title: document.data()?.title || document.id }));
@@ -4539,6 +4550,16 @@ app.post('/api/admin/landing-content', async (req, res) => {
 
 app.get(['/public/trusted-by.json', '/api/public/trusted-by', '/api/trusted-by.json', '/trusted-by.json'], async (req, res) => {
     const requestDb = req.app.get('db') || db;
+    try {
+        const repo = getRepository(requestDb);
+        if (repo && typeof repo.getTrustedBy === 'function') {
+            const list = await repo.getTrustedBy();
+            if (Array.isArray(list) && list.length > 0) {
+                res.setHeader('Cache-Control', 'no-store');
+                return res.json({ success: true, items: list });
+            }
+        }
+    } catch (_) {}
     try {
         if (requestDb) {
             const snapshot = await requestDb.collection('trustedBy').get();

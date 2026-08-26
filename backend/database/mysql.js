@@ -28,7 +28,7 @@ const poolConfig = {
 let pool = null;
 
 function getPool() {
-    if (!pool) {
+    if (!pool || pool._closed || pool.pool?._closed) {
         pool = mysql.createPool(poolConfig);
     }
     return pool;
