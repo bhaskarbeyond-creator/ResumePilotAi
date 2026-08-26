@@ -1,8 +1,8 @@
 # ResumePilot AI — Final Authoritative Evidence Matrix
 
-**Release Commit SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
+**Release Commit SHA:** `bbe7e90b76df06ca5716563536561baaee44cb74`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
+**Live Deployed SHA:** `bbe7e90b76df06ca5716563536561baaee44cb74`  
 **Execution Date:** August 26, 2026  
 **Auditor:** Principal Cloud Architect & Release Owner
 

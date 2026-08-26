@@ -1,9 +1,9 @@
 # ResumePilot AI — Final Authoritative Production Certification
 
 **Authoritative Production Certification & System Audit Report**  
-**Release Commit SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
+**Release Commit SHA:** `bbe7e90b76df06ca5716563536561baaee44cb74`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
+**Live Deployed SHA:** `bbe7e90b76df06ca5716563536561baaee44cb74`  
 **Execution Environment:** Hostinger Cloud VPS (`https://airesume.projectdemo.guru`)  
 **Audit Standard:** Zero-Trust Technical Audit (`UNVERIFIED ≠ PASS`, `MOCK ≠ REAL USER FLOW`, `STATE FIXTURE ≠ REAL USER FLOW`)  
 **Date of Certification:** August 26, 2026  
@@ -21,7 +21,7 @@ ResumePilot AI has undergone whole-product UI/UX forensic audit, cloud reconcili
 │                                                                        │
 │   STATUS: CERTIFIED FOR IMMEDIATE USER ACCEPTANCE TESTING (UAT)        │
 │   ZERO P0 DEFECTS  |  ZERO P1 DEFECTS  |  ZERO P2/P3 BLOCKERS          │
-│   AUTHORITATIVE COMMIT SHA: 5c0546d6ab472b171d34dc12f361f42e2e070632   │
+│   AUTHORITATIVE COMMIT SHA: bbe7e90b76df06ca5716563536561baaee44cb74   │
 │   TOTAL UNIQUE TEST FILES: 139 FILES (100% DISCOVERED & ACCOUNTED)     │
 │   NODE.JS TEST EXECUTION: 3,071 / 3,071 PASSED (100% PASS RATE)        │
 │   BROWSER EXECUTION LEDGER: 1,716 CONTROLS (100% REAL DOM PASS)        │
@@ -105,7 +105,7 @@ TOTAL | COMPLETE REPOSITORY TEST UNIVERSE          |   139 | 3,071 |      3,071 
 - **Native `window.alert()`**: **0** (eliminated from entire codebase).
 - **Native `window.confirm()`**: **0** (all 5 occurrences replaced with accessible, ESC-aware in-app confirmation modals in `DashboardPortfolios.jsx`, `CompaniesManagement.jsx`, `EmployerDashboard.jsx`, `ResumesList.jsx`, and `PortfolioBuilder.jsx`).
 - **Live Health Invariant**:
-  - `GIT HEAD`: `5c0546d6ab472b171d34dc12f361f42e2e070632`
-  - `ORIGIN/MAIN`: `5c0546d6ab472b171d34dc12f361f42e2e070632`
-  - `TAG uat-release-2026-08-26-final`: `5c0546d6ab472b171d34dc12f361f42e2e070632`
-  - `LIVE /api/healthz commitSha`: `5c0546d6ab472b171d34dc12f361f42e2e070632`
+  - `GIT HEAD`: `bbe7e90b76df06ca5716563536561baaee44cb74`
+  - `ORIGIN/MAIN`: `bbe7e90b76df06ca5716563536561baaee44cb74`
+  - `TAG uat-release-2026-08-26-final`: `bbe7e90b76df06ca5716563536561baaee44cb74`
+  - `LIVE /api/healthz commitSha`: `bbe7e90b76df06ca5716563536561baaee44cb74`
