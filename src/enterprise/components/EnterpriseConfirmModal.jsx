@@ -27,13 +27,16 @@ export default function EnterpriseConfirmModal({
   onConfirm,
   onClose,
 }) {
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape' && !busy) {
+      onClose();
+    }
+  };
+
   React.useEffect(() => {
     if (!isOpen) return;
-    const handleGlobalKey = (e) => {
-      if (e.key === 'Escape' && !busy) onClose();
-    };
-    window.addEventListener('keydown', handleGlobalKey);
-    return () => window.removeEventListener('keydown', handleGlobalKey);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, busy, onClose]);
 
   if (!isOpen) return null;
