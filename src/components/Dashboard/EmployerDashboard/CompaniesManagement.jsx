@@ -208,18 +208,13 @@ const CompaniesManagement = ({ showToast, sidebarCollapsed, t }) => {
 
     const formatDate = (dateInput) => {
         if (!dateInput) return 'Date not specified';
-
         let date;
-        if (dateInput.toDate && typeof dateInput.toDate === 'function') {
-            date = dateInput.toDate();
-        } else if (dateInput instanceof Date) {
-            date = dateInput;
-        } else if (typeof dateInput === 'string') {
-            date = new Date(dateInput);
-        } else {
+        try {
+            date = dateInput.toDate && typeof dateInput.toDate === 'function' ? dateInput.toDate() : (dateInput instanceof Date ? dateInput : new Date(dateInput));
+        } catch {
             return 'Invalid date';
         }
-
+        if (!date || !Number.isFinite(date.getTime())) return 'Invalid date';
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',

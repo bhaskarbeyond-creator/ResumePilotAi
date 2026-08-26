@@ -502,11 +502,27 @@ async function replicateToMySQL(event, poolOverride = null) {
         if (operation === 'DELETE') {
             await pool.query('DELETE FROM users WHERE id = ?', [entity_id]);
         } else {
+            const incomingUserRev = Number(data.revision || incomingVersion || 1);
+            const [existingUser] = await pool.query('SELECT revision FROM users WHERE id = ?', [entity_id]).catch(() => [[]]);
+            if (existingUser.length > 0 && Number(existingUser[0].revision || 0) > incomingUserRev) {
+                console.log(`[SyncWorker] Monotonic guard: stale user version ${incomingUserRev} ignored`);
+                return;
+            }
             await pool.query(
-                `INSERT INTO users (id, email, displayName, role, membership, extra_data)
-                 VALUES (?, ?, ?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE displayName=VALUES(displayName), role=VALUES(role), membership=VALUES(membership), updated_at=CURRENT_TIMESTAMP`,
-                [entity_id, data.email || `${entity_id}@example.com`, data.displayName || '', data.role || 'USER', data.membership || 'Basic', JSON.stringify(data)]
+                `INSERT INTO users (id, email, displayName, role, membership, membershipEnds, paymentStatus, extra_data, revision)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE displayName=VALUES(displayName), role=VALUES(role), membership=VALUES(membership), membershipEnds=VALUES(membershipEnds), paymentStatus=VALUES(paymentStatus), extra_data=VALUES(extra_data), revision=VALUES(revision), updated_at=CURRENT_TIMESTAMP`,
+                [
+                    entity_id,
+                    data.email || `${entity_id}@example.com`,
+                    data.displayName || '',
+                    data.role || 'USER',
+                    toCanonicalMembership(data.membership) || data.membership || 'Basic',
+                    toCanonicalDate(data.membershipEnds || data.membership_ends),
+                    toCanonicalPaymentStatus(data.paymentStatus || data.payment_status),
+                    JSON.stringify(data),
+                    incomingUserRev,
+                ]
             );
         }
     } else if (entity_type === 'portfolios') {
@@ -540,10 +556,10 @@ async function replicateToMySQL(event, poolOverride = null) {
             await pool.query('DELETE FROM payment_orders WHERE id = ?', [entity_id]);
         } else {
             await pool.query(
-                `INSERT INTO payment_orders (id, uid, plan_id, provider, amount, original_amount, currency, status, provider_payment_id, provider_order_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE status=VALUES(status), amount=VALUES(amount), currency=VALUES(currency), provider_payment_id=VALUES(provider_payment_id), updated_at=CURRENT_TIMESTAMP`,
-                [entity_id, data.uid || data.userId || 'user-1', data.planId || data.plan_id || 'monthly', data.provider || 'razorpay', Number(data.amount || 0), Number(data.originalAmount || data.amount || 0), data.currency || 'INR', data.status || 'PAYMENT_CREATED', data.providerPaymentId || null, data.providerOrderId || null]
+                `INSERT INTO payment_orders (id, uid, plan_id, provider, amount, original_amount, currency, status, provider_payment_id, provider_order_id, membership_ends)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE status=VALUES(status), amount=VALUES(amount), currency=VALUES(currency), provider_payment_id=VALUES(provider_payment_id), membership_ends=VALUES(membership_ends), updated_at=CURRENT_TIMESTAMP`,
+                [entity_id, data.uid || data.userId || 'user-1', data.planId || data.plan_id || 'monthly', data.provider || 'razorpay', Number(data.amount || 0), Number(data.originalAmount || data.amount || 0), data.currency || 'INR', data.status || 'PAYMENT_CREATED', data.providerPaymentId || null, data.providerOrderId || null, toCanonicalDate(data.membershipEnds || data.membership_ends)]
             );
         }
     } else if (entity_type === 'jobs') {

@@ -277,7 +277,9 @@ class CompanyManagement extends Component {
 
     formatDate = (date) => {
         if (!date) return 'N/A';
-        const dateObj = date.toDate ? date.toDate() : new Date(date);
+        let dateObj;
+        try { dateObj = date.toDate ? date.toDate() : new Date(date); } catch { return 'N/A'; }
+        if (!Number.isFinite(dateObj.getTime())) return 'N/A';
         return dateObj.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',

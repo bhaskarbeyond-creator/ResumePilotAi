@@ -3,6 +3,7 @@ import { FiX, FiBell, FiCheck, FiClock, FiUser, FiBriefcase, FiMail } from 'reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { markNotificationAsRead, subscribeUnreadNotifications } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
+import { parseSafeDate } from '../../../utils/subscriptionUtils.js';
 
 const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
     const [notifications, setNotifications] = useState([]);
@@ -15,8 +16,8 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
         const userId = authUser.uid;
         return subscribeUnreadNotifications(userId, fetchedNotifications => {
             const sorted = [...fetchedNotifications].sort((a, b) => {
-                const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-                const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                const dateA = parseSafeDate(a.createdAt) || new Date(0);
+                const dateB = parseSafeDate(b.createdAt) || new Date(0);
                 return dateB - dateA;
             });
             setErrorMessage('');
@@ -153,7 +154,7 @@ const NotificationPanel = ({ isOpen, onClose, sidebarCollapsed = false }) => {
                                     // Calculate time ago
                                     const timeAgo = (date) => {
                                         const now = new Date();
-                                        const createdAt = date?.toDate ? date.toDate() : new Date(date);
+                                        const createdAt = parseSafeDate(date) || new Date(0);
                                         const diffInMs = now - createdAt;
                                         const diffInMins = Math.floor(diffInMs / (1000 * 60));
                                         const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));

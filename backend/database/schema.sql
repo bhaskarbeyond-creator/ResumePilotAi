@@ -387,6 +387,12 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     failure_code VARCHAR(128),
     activated_at TIMESTAMP NULL,
     reversed_at TIMESTAMP NULL,
+    revision INT NOT NULL DEFAULT 1,
+    mutation_id VARCHAR(64) NULL,
+    recovery_needed TINYINT(1) NOT NULL DEFAULT 0,
+    recovery_reason VARCHAR(128) NULL,
+    last_payment_gateway VARCHAR(64) NULL,
+    provider_refund_id VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_order_uid (uid),
@@ -633,6 +639,29 @@ CREATE TABLE IF NOT EXISTS failover_events (
     payload JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_failover_time (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 34. Provider webhook idempotency ledger (never process the same Stripe/PayPal event twice).
+CREATE TABLE IF NOT EXISTS payment_webhook_events (
+    event_id VARCHAR(128) NOT NULL PRIMARY KEY,
+    provider VARCHAR(64) NOT NULL,
+    event_type VARCHAR(128) NOT NULL,
+    order_id VARCHAR(128),
+    payload JSON,
+    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pwe_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 35. Distributed write-generation / fencing token (multi-instance split-brain prevention).
+CREATE TABLE IF NOT EXISTS database_authority (
+    id VARCHAR(32) NOT NULL PRIMARY KEY,
+    generation INT NOT NULL DEFAULT 1,
+    write_engine VARCHAR(32) NOT NULL DEFAULT 'mysql',
+    mode VARCHAR(32) NOT NULL DEFAULT 'NORMAL',
+    lease_owner VARCHAR(128),
+    lease_expires_at BIGINT DEFAULT 0,
+    reason TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

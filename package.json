@@ -19,7 +19,7 @@
     "test:db-parity": "node --test tests/database-parity.test.mjs tests/database-switch-safety.test.mjs tests/database-sync-engine.test.mjs tests/database-failover.test.mjs",
     "test:db-switch": "node --test tests/database-switch-safety.test.mjs",
     "test:db-sync": "node --test tests/database-sync-engine.test.mjs",
-    "test:db-failover": "node --test tests/database-failover.test.mjs tests/canonical-date-frontend.test.mjs",
+    "test:db-failover": "node --test tests/database-failover.test.mjs tests/canonical-date-frontend.test.mjs backend/test/canonical-dates.test.js backend/test/database-authority.test.js backend/test/resilient-repository.test.js backend/test/membership-lifecycle.test.js backend/test/sync-tombstone-idempotency.test.js backend/test/unified-entitlements.test.js backend/test/payment-activation.test.js backend/test/fencing-multi-instance.test.js backend/test/chaos-invariants.test.js backend/test/cms-jobs-failover.test.js",
     "audit:production": "npm audit --omit=dev --audit-level=high && npm --prefix backend audit --omit=dev --audit-level=high",
     "ci:security": "npm run lint && npm run test:security && npm run test:product && npm run build && npm run audit:production && npm run audit:all",
     "test:firebase-rules": "firebase emulators:exec --only firestore,database --project demo-resumepilot-security \"node --test tests/firestore.rules.test.mjs tests/database.rules.test.mjs\"",

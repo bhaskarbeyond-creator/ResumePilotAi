@@ -113,6 +113,34 @@ async function ensureExtendedSchema(poolOverride = null) {
         "ALTER TABLE resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL",
         "ALTER TABLE sync_outbox ADD COLUMN IF NOT EXISTS mutation_id VARCHAR(64) NULL",
         "ALTER TABLE sync_outbox ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64) NULL",
+        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
+        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS mutation_id VARCHAR(64) NULL",
+        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS recovery_needed TINYINT(1) NOT NULL DEFAULT 0",
+        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS recovery_reason VARCHAR(128) NULL",
+        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS last_payment_gateway VARCHAR(64) NULL",
+        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS provider_refund_id VARCHAR(255) NULL",
+        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
+        "ALTER TABLE blog ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
+        "ALTER TABLE blog ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft'",
+        "ALTER TABLE blog ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP NULL",
+        `CREATE TABLE IF NOT EXISTS payment_webhook_events (
+            event_id VARCHAR(128) NOT NULL PRIMARY KEY,
+            provider VARCHAR(64) NOT NULL,
+            event_type VARCHAR(128) NOT NULL,
+            order_id VARCHAR(128),
+            payload JSON,
+            received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS database_authority (
+            id VARCHAR(32) NOT NULL PRIMARY KEY,
+            generation INT NOT NULL DEFAULT 1,
+            write_engine VARCHAR(32) NOT NULL DEFAULT 'mysql',
+            mode VARCHAR(32) NOT NULL DEFAULT 'NORMAL',
+            lease_owner VARCHAR(128),
+            lease_expires_at BIGINT DEFAULT 0,
+            reason TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     ];
     for (const sql of statements) {
         try {

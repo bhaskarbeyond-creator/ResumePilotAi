@@ -105,7 +105,18 @@ function shouldReverseEntitlement(user, orderId) {
 
 function calculateMembershipEnd(existingValue, months, now = new Date()) {
   if (!Number.isInteger(months) || months < 1 || months > 600) throw new PaymentValidationError('INVALID_PLAN_DURATION');
-  const existing = existingValue?.toDate?.() || new Date(existingValue || 0);
+  let existingMs = null;
+  try {
+    const { toEpochMs } = require('../database/canonical');
+    existingMs = toEpochMs(existingValue);
+  } catch {
+    if (existingValue?.toDate) existingMs = existingValue.toDate().getTime();
+    else if (existingValue) {
+      const parsed = new Date(existingValue).getTime();
+      existingMs = Number.isFinite(parsed) ? parsed : null;
+    }
+  }
+  const existing = existingMs !== null ? new Date(existingMs) : new Date(0);
   const start = existing > now ? existing : now;
   const result = new Date(start);
   result.setMonth(result.getMonth() + months);

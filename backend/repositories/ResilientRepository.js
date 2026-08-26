@@ -15,6 +15,7 @@
 const { canonicalizeRecord, withReadMetadata } = require('../database/canonical');
 const { toCanonicalUser, toCanonicalResume } = require('../database/domain');
 const authority = require('../database/authority');
+const fencing = require('../database/fencing');
 
 const READ_METHODS = new Set([
     'getUser', 'getUserByEmail', 'getUsers',
@@ -30,6 +31,8 @@ const READ_METHODS = new Set([
     'getAdminAuditLogs', 'getSecurityAuditLogs',
     'getUserContentCounts', 'getUserPaymentOrders',
     'getPaymentOrder', 'getCoupon', 'getCouponRedemption',
+    'findPaymentOrderByProviderIntent',
+    'getCompany', 'getCompanies',
 ]);
 
 const WRITE_METHODS = new Set([
@@ -45,6 +48,8 @@ const WRITE_METHODS = new Set([
     'saveSetting', 'incrementStat',
     'recordAdminAuditLog', 'recordSecurityAuditLog',
     'savePaymentOrder', 'saveCoupon', 'saveCouponRedemption', 'deleteCouponRedemption',
+    'saveCompany', 'deleteCompany',
+    'claimWebhookEvent',
 ]);
 
 function classifyUnavailable(err) {
@@ -152,6 +157,8 @@ class ResilientRepository {
             err.status = 503;
             throw err;
         }
+        const fenceGeneration = fencing.currentGeneration();
+        fencing.assertFence(fenceGeneration);
         const preferred = authority.getWriteEngine();
         const fallback = preferred === 'mysql' ? 'firestore' : 'mysql';
         const attempts = [preferred, fallback];

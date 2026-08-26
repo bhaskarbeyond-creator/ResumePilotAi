@@ -192,7 +192,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                                 {t('DashboardPortfolios.stats.views')}: {portfolio.views || 0}
                             </span>
                             <span>
-                                {t('DashboardPortfolios.stats.updated')}: {portfolio.updatedAt ? new Date(portfolio.updatedAt?.toDate ? portfolio.updatedAt.toDate() : portfolio.updatedAt).toLocaleDateString() : 'N/A'}
+                                {t('DashboardPortfolios.stats.updated')}: {portfolio.updatedAt ? (typeof portfolio.updatedAt?.toDate === 'function' ? portfolio.updatedAt.toDate() : new Date(portfolio.updatedAt)).toLocaleDateString?.() || 'N/A' : 'N/A'}
                             </span>
                         </div>
 
@@ -263,7 +263,7 @@ const DashboardPortfolios = ({ t, showToast }) => {
                                 <span className={`px-2 py-1 text-xs font-medium rounded ${getThemeColor(portfolio.theme)}`}>{portfolio.theme}</span>
                             </div>
                             <div className="col-span-2 text-xs text-slate-500">{portfolio.views || 0}</div>
-                            <div className="col-span-2 text-xs text-slate-500">{portfolio.updatedAt ? new Date(portfolio.updatedAt?.toDate ? portfolio.updatedAt.toDate() : portfolio.updatedAt).toLocaleDateString() : 'N/A'}</div>
+                            <div className="col-span-2 text-xs text-slate-500">{portfolio.updatedAt ? (typeof portfolio.updatedAt?.toDate === 'function' ? portfolio.updatedAt.toDate() : new Date(portfolio.updatedAt)).toLocaleDateString?.() || 'N/A' : 'N/A'}</div>
                             <div className="col-span-2">
                                 <div className="flex items-center gap-2">
                                     <Link

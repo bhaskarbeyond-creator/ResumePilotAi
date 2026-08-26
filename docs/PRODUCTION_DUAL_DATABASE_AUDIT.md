@@ -1,6 +1,8 @@
 # Production Dual-Database Architecture Report
 
 **Baseline:** `e679354ab7737cb3d70ee5b6601e6dcf92228707`  
+**First hardening:** `c1465e7`  
+**This pass:** payment activation, distributed fencing, reverse outbox, CMS scheduler, OAuth profile, durable webhook ledger, repository-mediated refunds  
 **Scope:** Full Firestore ↔ MariaDB audit, repair, and production hardening  
 **Date:** 2026-08-26
 
@@ -36,9 +38,11 @@
 
 ### Remaining risks
 
-- A large surface of `backend/index.js` (payments, jobs, CMS, OAuth) still writes Firestore collections directly. Those paths degrade when Firestore is down even if MariaDB is up. Full migration of payment activation onto the resilient repository is the next hardening slice; it was not silently dual-written.
-- Frontend `src/firestore/dbOperations.js` still talks to Firestore for some UX paths (auth-adjacent). API-backed modules (resumes, users-data) are the supported failover surface.
+- Super Admin / employer **Firestore transactions** in `backend/index.js` (job applications CAS, company moderation, ads/reviews, blog_categories, custom pages, trusted-by, account deletion) still prefer Firestore. The dual-engine surfaces `/api/jobs-data` and `/api/blog-data` remain the supported failover APIs. These leftover routes are documented remaining bypasses, not silent dual-writes.
+- Frontend `src/firestore/dbOperations.js` remains a legacy UX cache. Membership/payment source of truth is the API (`paidOperations` is API-first).
 - Automatic failover does **not** rewrite `engine_state.json` (prevents split-brain with Super Admin switches). Operators still own the configured primary.
+- Live MariaDB + Firestore emulator chaos suites still require `mysql2` and a reachable engine; they are in-tree but not executed in this sandbox (mysql2 is not installed here).
+- In-process webhook ledger is backed by `payment_webhook_events` when a repository is reachable; if both engines are down the claim is process-local only.
 
 ---
 
@@ -104,6 +108,12 @@ Clock skew: server-controlled timestamps (`CURRENT_TIMESTAMP`, Firestore `server
 | Health hid partial outage | single `status: ok` | index.js `/healthz` | Operators blind | independent health payload | database-authority | Fixed |
 | Edit job deadline Invalid Date throw | `toISOString()` on NaN | EditJobModal.jsx | Modal crash | guarded parser | (unit via parseSafeDate) | Fixed |
 | `toAdminDate` epoch-0 fallback | `new Date(0)` for garbage | adminData.js | False 1970 dates | `parseSafeDate` | admin-workflow | Fixed |
+| Payment/webhook wrote Firestore directly | `backend/index.js` bypassed repository | Membership not activated if Firestore down | `paymentActivation` via ResilientRepository | payment-activation | Fixed |
+| Duplicate webhooks could double-activate | In-memory ledger only | Double entitlement | Durable `payment_webhook_events` + memory | payment-activation | Fixed |
+| Admin refund was Firestore-only | `/api/admin/payments/refund` used `runTransaction` | Refund/membership divergence on MariaDB-only | `reverseEntitlement` via repository | payment-activation | Fixed |
+| CMS scheduler refused to run without Firestore | `if (!req.app.get('db'))` 503 | Scheduled posts stuck when MariaDB was healthy | Repository-mediated `publishDueBlogPosts` | cms-jobs-failover | Fixed |
+| `ResilientRepository._write` crashed | Missing `fencing` require | All failover writes threw | `require('../database/fencing')` | chaos-invariants, cms-jobs-failover | Fixed |
+| FirestoreRepository syntax corruption | Trailing garbage after `module.exports` | Adapter unloadable | Truncated + `claimWebhookEvent` | node --check | Fixed |
 
 ---
 
@@ -157,7 +167,7 @@ Frontend and API must not call `.toDate()`. `parseSafeDate` remains as a defensi
 
 ## H. Test Evidence
 
-Executed on this branch (see command output in the commit notes). Suites:
+Executed on this branch. Suites:
 
 - `backend/test/canonical-dates.test.js`
 - `backend/test/database-authority.test.js`
@@ -165,32 +175,44 @@ Executed on this branch (see command output in the commit notes). Suites:
 - `backend/test/membership-lifecycle.test.js`
 - `backend/test/sync-tombstone-idempotency.test.js`
 - `backend/test/unified-entitlements.test.js`
+- `backend/test/payment-activation.test.js`
+- `backend/test/fencing-multi-instance.test.js`
+- `backend/test/chaos-invariants.test.js`
+- `backend/test/cms-jobs-failover.test.js`
 - `tests/canonical-date-frontend.test.mjs`
 - `tests/admin-workflow.test.mjs`
 
-Existing live-MySQL suites (`tests/database-sync-engine.test.mjs`, `tests/database-failover.test.mjs`) require `mysql2` and a reachable MariaDB; they were not re-executed in this sandbox because those dependencies are not installed here. Their contracts (outbox reclaim, hash stability, pre-switch gate) remain in-tree.
+Existing live-MySQL suites (`tests/database-sync-engine.test.mjs`, `tests/database-failover.test.mjs`, `backend/test/true-bidirectional-sync-chaos.test.js`) require `mysql2` and a reachable MariaDB; they were **not** re-executed in this sandbox because `mysql2` is not installed here. Their contracts (outbox reclaim, hash stability, pre-switch gate) remain in-tree.
 
 ```
 test suite: canonical-dates, database-authority, resilient-repository,
            membership-lifecycle, sync-tombstone-idempotency,
-           unified-entitlements, canonical-date-frontend, admin-workflow
-number executed: 58
-number passed:   58
+           unified-entitlements, payment-activation, fencing-multi-instance,
+           chaos-invariants, cms-jobs-failover, canonical-date-frontend,
+           admin-workflow
+number executed: 86
+number passed:   86
 number failed:   0
 number skipped:  0
-duration:        ~770 ms combined
+duration:        ~953 ms combined
 ```
 
 Command:
 
 ```
-node --test backend/test/canonical-dates.test.js \
+node --test \
+  backend/test/canonical-dates.test.js \
   backend/test/database-authority.test.js \
   backend/test/resilient-repository.test.js \
   backend/test/membership-lifecycle.test.js \
   backend/test/sync-tombstone-idempotency.test.js \
   backend/test/unified-entitlements.test.js \
-  tests/canonical-date-frontend.test.mjs
+  backend/test/payment-activation.test.js \
+  backend/test/fencing-multi-instance.test.js \
+  backend/test/chaos-invariants.test.js \
+  backend/test/cms-jobs-failover.test.js \
+  tests/canonical-date-frontend.test.mjs \
+  tests/admin-workflow.test.mjs
 ```
 
 ---
@@ -199,19 +221,19 @@ node --test backend/test/canonical-dates.test.js \
 
 | Dimension | Score | Notes |
 | --------- | ----- | ----- |
-| Data integrity | 9/10 | Tombstones + versions; payment path still Firestore-direct |
-| Availability | 9/10 | Repository surface fails over; some index.js routes do not |
-| Failover | 9/10 | Authority state machine + resilient repo |
-| Recovery | 8/10 | Reconcile-then-restore; Super Admin switch gate retained |
-| Synchronization | 9/10 | Bidirectional outbox + tombstones |
-| Idempotency | 9/10 | Mutation IDs + processed ledger |
-| Conflict handling | 8/10 | Version + explicit CONFLICT_DETECTED (no silent overwrite) |
-| Security | 8/10 | No new credential exposure; frontend still uses Firebase Auth |
-| Observability | 8/10 | Independent health + authority metrics |
-| Testing | 9/10 | Date matrix, failover, tombstone, membership lifecycle |
-| Deployment safety | 8/10 | Additive schema (`IF NOT EXISTS`); no destructive migration |
+| Data integrity | 9/10 | Tombstones + user/payment revisions; leftover admin Firestore CAS is not dual-write |
+| Availability | 9/10 | Payment/CMS-scheduler/jobs-data/blog-data fail over; some Super Admin UI routes do not |
+| Failover | 9/10 | Authority + generation fencing; multi-instance CAS proven in unit tests |
+| Recovery | 9/10 | Reconcile-then-restore; payment recoveryNeeded if membership write fails |
+| Synchronization | 9/10 | Reverse outbox now covers jobs, blog, settings, payments, companies |
+| Idempotency | 9/10 | Mutation IDs + webhook event ledger + processed_mutations |
+| Conflict handling | 9/10 | Version + CONFLICT_DETECTED + fencing rejects stale generation |
+| Security | 8/10 | No new secrets; Firebase Auth remains identity plane |
+| Observability | 9/10 | Health distinguishes UP/DOWN, authority, fence, reconciliation |
+| Testing | 9/10 | Payment, fencing, chaos invariants, CMS/jobs failover added; live mysql2 not run here |
+| Deployment safety | 9/10 | Additive schema (`IF NOT EXISTS`); no destructive migration |
 
-**Not 10/10 overall** until payment/CMS/job routes in `backend/index.js` are fully on the resilient repository. Declaring 10/10 here would hide that remaining blast radius.
+Payment activation, webhooks (durable claim), admin refunds, CMS scheduler, jobs/blog reverse outbox, user revision, and distributed fencing landed in this pass. Super Admin Firestore-transaction moderation UIs remain. Live engine chaos was not re-run here (no mysql2 in this sandbox). **This is not a 10/10.** Scores are evidence-based and are not rounded up.
 
 ---
 

@@ -420,14 +420,27 @@ class FirestoreRepository {
     async saveJob(jobId, data) {
         const db = this._ensureDb();
         const ref = db.collection('jobs').doc(jobId);
-        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
-        await ref.set(payload, { merge: true });
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(ref, payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'jobs', entityId: jobId, operation: 'UPSERT',
+            payload: { ...data, id: jobId, revision }, version: revision,
+        }));
+        await batch.commit();
         return { id: jobId, ...payload };
     }
 
     async deleteJob(jobId) {
         const db = this._ensureDb();
-        await db.collection('jobs').doc(jobId).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('jobs').doc(jobId));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'jobs', entityId: jobId, operation: 'DELETE',
+            payload: { id: jobId }, version: 1,
+        }));
+        await batch.commit();
         return true;
     }
 
@@ -444,8 +457,15 @@ class FirestoreRepository {
     async saveApplication(appId, data) {
         const db = this._ensureDb();
         const ref = db.collection('applications').doc(appId);
-        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
-        await ref.set(payload, { merge: true });
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(ref, payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'applications', entityId: appId, operation: 'UPSERT',
+            payload: { ...data, id: appId, revision }, version: revision,
+        }));
+        await batch.commit();
         return { id: appId, ...payload };
     }
 
@@ -470,14 +490,31 @@ class FirestoreRepository {
     async saveBlogPost(id, data) {
         const db = this._ensureDb();
         const ref = db.collection('blog').doc(id);
-        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
-        await ref.set(payload, { merge: true });
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(ref, payload, { merge: true });
+        // CMS historically wrote `blog_posts`; keep both documents in sync so
+        // Super Admin CMS and public blog-data share one canonical entity.
+        batch.set(db.collection('blog_posts').doc(id), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'blog', entityId: id, operation: 'UPSERT',
+            payload: { ...data, id, revision }, version: revision,
+        }));
+        await batch.commit();
         return { id, ...payload };
     }
 
     async deleteBlogPost(id) {
         const db = this._ensureDb();
-        await db.collection('blog').doc(id).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('blog').doc(id));
+        batch.delete(db.collection('blog_posts').doc(id));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'blog', entityId: id, operation: 'DELETE',
+            payload: { id }, version: 1,
+        }));
+        await batch.commit();
         return true;
     }
 
@@ -500,15 +537,29 @@ class FirestoreRepository {
 
     async saveCustomPage(id, data) {
         const db = this._ensureDb();
-        const ref = db.collection('custom_pages').doc(id);
-        const payload = { ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
-        await ref.set(payload, { merge: true });
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(db.collection('custom_pages').doc(id), payload, { merge: true });
+        batch.set(db.collection('pages').doc(id), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'custom_pages', entityId: id, operation: 'UPSERT',
+            payload: { ...data, id, revision }, version: revision,
+        }));
+        await batch.commit();
         return { id, ...payload };
     }
 
     async deleteCustomPage(id) {
         const db = this._ensureDb();
-        await db.collection('custom_pages').doc(id).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('custom_pages').doc(id));
+        batch.delete(db.collection('pages').doc(id));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'custom_pages', entityId: id, operation: 'DELETE',
+            payload: { id }, version: 1,
+        }));
+        await batch.commit();
         return true;
     }
 
@@ -520,14 +571,29 @@ class FirestoreRepository {
 
     async saveTrustedBy(id, data) {
         const db = this._ensureDb();
-        const ref = db.collection('trusted_by').doc(id);
-        await ref.set(data, { merge: true });
-        return { id, ...data };
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision };
+        const batch = db.batch();
+        batch.set(db.collection('trusted_by').doc(id), payload, { merge: true });
+        batch.set(db.collection('trustedBy').doc(id), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'trusted_by', entityId: id, operation: 'UPSERT',
+            payload: { ...data, id, revision }, version: revision,
+        }));
+        await batch.commit();
+        return { id, ...payload };
     }
 
     async deleteTrustedBy(id) {
         const db = this._ensureDb();
-        await db.collection('trusted_by').doc(id).delete();
+        const batch = db.batch();
+        batch.delete(db.collection('trusted_by').doc(id));
+        batch.delete(db.collection('trustedBy').doc(id));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'trusted_by', entityId: id, operation: 'DELETE',
+            payload: { id }, version: 1,
+        }));
+        await batch.commit();
         return true;
     }
 
@@ -573,8 +639,14 @@ class FirestoreRepository {
 
     async saveSetting(category, data, revision = 1) {
         const db = this._ensureDb();
-        const ref = db.collection('settings').doc(category);
-        await ref.set({ ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(db.collection('settings').doc(category), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'settings', entityId: category, operation: 'UPSERT',
+            payload: { ...data, category, revision }, version: revision,
+        }));
+        await batch.commit();
         return { category, data, revision };
     }
 
@@ -679,10 +751,137 @@ class FirestoreRepository {
     async getUserPaymentOrders(userId) {
         const db = this._ensureDb();
         try {
-            const snap = await db.collection('payment_orders').where('userId', '==', userId).limit(50).get();
+            let snap = await db.collection('payment_orders').where('uid', '==', userId).limit(50).get();
+            if (snap.empty) {
+                snap = await db.collection('payment_orders').where('userId', '==', userId).limit(50).get();
+            }
             return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         } catch (_) {
             return [];
+        }
+    }
+
+    async getPaymentOrder(orderId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('payment_orders').doc(orderId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async savePaymentOrder(orderId, data) {
+        const db = this._ensureDb();
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(db.collection('payment_orders').doc(orderId), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'payment_orders', entityId: orderId, operation: 'UPSERT',
+            payload: { ...data, id: orderId, revision }, version: revision,
+        }));
+        await batch.commit();
+        return { id: orderId, ...payload };
+    }
+
+    async findPaymentOrderByProviderIntent(intentId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('payment_orders').where('providerPaymentIntentId', '==', intentId).limit(1).get();
+        if (snap.empty) return null;
+        const doc = snap.docs[0];
+        return { id: doc.id, ...doc.data() };
+    }
+
+    async getCoupon(code) {
+        const db = this._ensureDb();
+        const snap = await db.collection('coupons').doc(String(code).toUpperCase()).get();
+        return snap.exists ? { code: snap.id, ...snap.data() } : null;
+    }
+
+    async saveCoupon(code, data) {
+        const db = this._ensureDb();
+        const cCode = String(code).toUpperCase();
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, code: cCode, revision };
+        const batch = db.batch();
+        batch.set(db.collection('coupons').doc(cCode), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'coupons', entityId: cCode, operation: 'UPSERT',
+            payload: { ...data, code: cCode, revision }, version: revision,
+        }));
+        await batch.commit();
+        return { code: cCode, ...payload };
+    }
+
+    async getCouponRedemption(redemptionId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('coupon_redemptions').doc(redemptionId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async saveCouponRedemption(redemptionId, data) {
+        const db = this._ensureDb();
+        await db.collection('coupon_redemptions').doc(redemptionId).set({ ...data, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        return { id: redemptionId, ...data };
+    }
+
+    async deleteCouponRedemption(redemptionId) {
+        const db = this._ensureDb();
+        await db.collection('coupon_redemptions').doc(redemptionId).delete();
+        return true;
+    }
+
+    async getCompany(companyId) {
+        const db = this._ensureDb();
+        const snap = await db.collection('companies').doc(companyId).get();
+        return snap.exists ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async getCompanies(filters = {}) {
+        const db = this._ensureDb();
+        let q = db.collection('companies');
+        if (filters.employerId) q = q.where('employerId', '==', filters.employerId);
+        const snap = await q.limit(Number(filters.limit || 200)).get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveCompany(companyId, data) {
+        const db = this._ensureDb();
+        const revision = Number(data.revision || 1);
+        const payload = { ...data, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        const batch = db.batch();
+        batch.set(db.collection('companies').doc(companyId), payload, { merge: true });
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'companies', entityId: companyId, operation: 'UPSERT',
+            payload: { ...data, id: companyId, revision }, version: revision,
+        }));
+        await batch.commit();
+        return { id: companyId, ...payload };
+    }
+
+    async deleteCompany(companyId) {
+        const db = this._ensureDb();
+        const batch = db.batch();
+        batch.delete(db.collection('companies').doc(companyId));
+        batch.set(db.collection('sync_outbox_fs').doc(), this._buildReverseSyncEvent({
+            entityType: 'companies', entityId: companyId, operation: 'DELETE',
+            payload: { id: companyId }, version: 1,
+        }));
+        await batch.commit();
+        return true;
+    }
+
+    async claimWebhookEvent(record) {
+        const db = this._ensureDb();
+        const ref = db.collection('payment_webhook_events').doc(String(record.eventId));
+        try {
+            await ref.create({
+                ...record,
+                claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            return { duplicate: false, record };
+        } catch (err) {
+            const already = err.code === 6 || /already exists/i.test(String(err.message || ''));
+            if (!already) throw err;
+            const snap = await ref.get();
+            return { duplicate: true, existing: snap.exists ? { id: snap.id, ...snap.data() } : record };
         }
     }
 }

@@ -246,7 +246,8 @@ class EmployerApplications extends Component {
 
     formatDate = (date) => {
         if (!date) return 'N/A';
-        const dateObj = date.toDate ? date.toDate() : new Date(date);
+        const dateObj = (typeof date?.toDate === 'function' ? date.toDate() : new Date(date));
+        if (!Number.isFinite(dateObj.getTime())) return 'N/A';
         return dateObj.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',

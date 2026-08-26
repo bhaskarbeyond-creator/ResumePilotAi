@@ -102,6 +102,13 @@ export const formatSafeDate = (val, locales = 'en-US', options = undefined) => {
 
 export const PAID_MEMBERSHIP_TIERS = ['Premium', 'Pro', 'Enterprise'];
 
+export const isPaidMembershipTier = (membership) => {
+    const upper = String(membership || '').trim().toUpperCase();
+    return upper === 'PREMIUM' || upper === 'PRO' || upper === 'ENTERPRISE'
+        || upper.includes('PREMIUM') || upper.includes('ENTERPRISE')
+        || (upper.includes('PRO') && !upper.includes('PROFILE'));
+};
+
 /**
  * Checks if a user has an active Premium or Enterprise membership.
  * Verifies both the membership string AND expiration date if present.

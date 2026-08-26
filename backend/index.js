@@ -22,6 +22,7 @@ const { resolveEffectiveEntitlement, isPaidMembershipTier } = require('./securit
 const { toCanonicalDate } = require('./database/canonical');
 const { isMembershipActive, toCanonicalUser } = require('./database/domain');
 const databaseAuthority = require('./database/authority');
+const paymentActivation = require('./services/paymentActivation');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
 const { createTenantService } = require('./enterprise/tenantService');
 const { enterpriseRouter } = require('./routes/enterprise');
@@ -401,170 +402,62 @@ async function getDynamicPlan(db, planId) {
 }
 
 async function applyServerCoupon({ uid, orderId, plan, couponCode }) {
-    const code = String(couponCode || '').trim().toUpperCase();
-    if (!code) return { ...plan, originalAmount: plan.amount, couponCode: null, couponDiscount: 0 };
-    if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !db) throw Object.assign(new Error('INVALID_COUPON'), { status: 400 });
-    const couponRef = db.collection('coupons').doc(code);
-    const redemptionId = crypto.createHash('sha256').update(`${code}:${uid}`).digest('hex');
-    const redemptionRef = db.collection('coupon_redemptions').doc(redemptionId);
-    let resolved;
-    await db.runTransaction(async tx => {
-        const couponSnap = await tx.get(couponRef);
-        if (!couponSnap.exists) throw Object.assign(new Error('INVALID_COUPON'), { status: 400 });
-        const coupon = couponSnap.data();
-        const expiry = coupon.expiryDate?.toDate?.() || new Date(coupon.expiryDate || 0);
-        const discount = Number(coupon.discount || 0);
-        if (coupon.active === false || !Number.isFinite(discount) || discount <= 0 || discount > 100
-            || (coupon.expiryDate && expiry <= new Date())
-            || (Number(coupon.maxUses || 0) > 0 && Number(coupon.usedCount || 0) >= Number(coupon.maxUses))) {
-            throw Object.assign(new Error('COUPON_UNAVAILABLE'), { status: 409 });
-        }
-        if (coupon.singleUsePerUser) {
-            const existing = await tx.get(redemptionRef);
-            const existingData = existing.data();
-            const activeReservation = existingData?.status === 'RESERVED'
-                && Number(existingData.expiresAt || 0) > Date.now()
-                && existingData.orderId !== orderId;
-            if (existingData?.status === 'USED' || activeReservation) {
-                throw Object.assign(new Error('COUPON_ALREADY_REDEEMED'), { status: 409 });
-            }
-            tx.set(redemptionRef, {
-                uid, couponCode: code, orderId, status: 'RESERVED',
-                expiresAt: Date.now() + 30 * 60 * 1000,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-        }
-        const discountedAmount = Math.max(1, Math.round(plan.amount * (100 - discount) / 100));
-        resolved = { ...plan, amount: discountedAmount, originalAmount: plan.amount, couponCode: code, couponDiscount: discount, singleUsePerUser: coupon.singleUsePerUser === true };
-    });
-    return resolved;
+    return paymentActivation.applyServerCoupon({ uid, orderId, plan, couponCode, firestoreDb: db });
 }
 
 async function releaseCouponReservation(order) {
-    if (!order?.couponCode || !order?.singleUsePerUser || !db) return;
-    const redemptionId = crypto.createHash('sha256').update(`${order.couponCode}:${order.uid}`).digest('hex');
-    const ref = db.collection('coupon_redemptions').doc(redemptionId);
-    await db.runTransaction(async tx => {
-        const snap = await tx.get(ref);
-        if (snap.exists && snap.data().status === 'RESERVED' && snap.data().orderId === order.id) tx.delete(ref);
-    }).catch(() => {});
+    return paymentActivation.releaseCouponReservation(order, db);
 }
 
 async function releaseCouponForRef(ref) {
     if (!ref) return;
-    const snapshot = await ref.get().catch(() => null);
-    if (snapshot?.exists) await releaseCouponReservation({ ...snapshot.data(), id: ref.id });
+    const orderId = ref.id;
+    const order = await paymentActivation.getOrder(orderId, db);
+    if (order) await paymentActivation.releaseCouponReservation({ ...order, id: orderId }, db);
 }
 
 async function consumeCouponRedemption(orderId, order) {
-    if (!order?.couponCode || !db) return;
-    const couponRef = db.collection('coupons').doc(order.couponCode);
-    const redemptionScope = order.singleUsePerUser ? order.uid : orderId;
-    const redemptionId = crypto.createHash('sha256').update(`${order.couponCode}:${redemptionScope}`).digest('hex');
-    const redemptionRef = db.collection('coupon_redemptions').doc(redemptionId);
-    await db.runTransaction(async tx => {
-        const couponSnap = await tx.get(couponRef);
-        if (!couponSnap.exists) return;
-        const redemption = await tx.get(redemptionRef);
-        if (redemption.data()?.status === 'USED') return;
-        tx.set(redemptionRef, {
-            uid: order.uid, couponCode: order.couponCode, orderId,
-            status: 'USED', usedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        tx.update(couponRef, { usedCount: admin.firestore.FieldValue.increment(1) });
-    });
+    return paymentActivation.consumeCouponRedemption(orderId, order, db);
 }
 
 async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) {
-    if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
-    await db.runTransaction(async tx => {
-        const orderSnap = await tx.get(orderRef);
-        if (!orderSnap.exists) throw Object.assign(new Error('ORDER_NOT_FOUND'), { status: 404 });
-        const order = orderSnap.data();
-        const paymentEventId = notificationEventId('payment_active', orderRef.id);
-        const paymentNotificationRef = db.collection('notifications').doc(order.uid).collection('userNotifications').doc(paymentEventId);
-        if (order.status === 'ACTIVE') {
-            tx.set(paymentNotificationRef, { eventId: paymentEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: { paymentOrderId: orderRef.id, planId: order.planId }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-            return;
-        }
-        if (!['PAYMENT_CREATED', 'PENDING_PAYMENT', 'PROVIDER_CONFIRMED'].includes(order.status)) {
-            throw Object.assign(new Error('INVALID_ORDER_STATE'), { status: 409 });
-        }
-        const months = order.planId === 'yearly' ? 12 : (order.planId === 'halfYear' ? 6 : 1);
-        const userRef = db.collection('users').doc(order.uid);
-        const userSnap = await tx.get(userRef);
-        if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
-        const membershipEnds = calculateMembershipEnd(userSnap.data().membershipEnds, months);
-        tx.update(userRef, {
-            membership: 'Premium', membershipEnds, paymentStatus: 'ACTIVE',
-            lastPaymentGateway: gatewayLabel, lastPaymentOrderId: orderRef.id, cancellationRequested: false,
-            lastPaymentSync: admin.firestore.FieldValue.serverTimestamp()
-        });
-        tx.update(orderRef, {
-            status: 'ACTIVE', membershipEnds, providerPaymentId: providerPaymentId || null,
-            activatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        tx.set(paymentNotificationRef, { eventId: paymentEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_active', title: 'Payment confirmed', message: 'Your payment was confirmed and premium access is active.', data: { paymentOrderId: orderRef.id, planId: order.planId }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    const orderId = typeof orderRef === 'string' ? orderRef : orderRef.id;
+    return paymentActivation.activateVerifiedOrder({
+        orderId, gatewayLabel, providerPaymentId, firestoreDb: db,
     });
-    const activatedOrder = (await orderRef.get()).data();
-    await consumeCouponRedemption(orderRef.id, activatedOrder);
-    return activatedOrder;
 }
 async function createProviderOrderRecord({ uid, planId, provider, couponCode }) {
     const basePlan = await getDynamicPlan(db, planId);
-    if (!db || !admin) throw Object.assign(new Error('PAYMENT_SERVICE_UNAVAILABLE'), { status: 503 });
-    const ref = db.collection('payment_orders').doc();
-    const plan = await applyServerCoupon({ uid, orderId: ref.id, plan: basePlan, couponCode });
-    await ref.create({
-        uid, planId, provider, amount: plan.amount, originalAmount: plan.originalAmount,
-        currency: plan.currency, couponCode: plan.couponCode, couponDiscount: plan.couponDiscount,
-        singleUsePerUser: plan.singleUsePerUser === true,
-        status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp()
+    const created = await paymentActivation.createOrder({
+        uid, planId, provider, couponCode, plan: basePlan, firestoreDb: db,
     });
-    return { ref, plan };
+    return { ref: paymentActivation.asOrderRef(created.id, db), plan: created.plan || basePlan };
 }
 async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode }) {
     const basePlan = await getDynamicPlan(db, planId);
     if (!basePlan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
-    if (!db || !admin) { const err = new Error('PAYMENT_SERVICE_UNAVAILABLE'); err.status = 503; throw err; }
     if (!process.env.STRIPE_SECRET) { const err = new Error('PAYMENT_PROVIDER_UNAVAILABLE'); err.status = 503; throw err; }
-    const deterministicId = idempotencyKey
-        ? crypto.createHash('sha256').update(`${uid}:${planId}:${String(couponCode || '').toUpperCase()}:${idempotencyKey}`).digest('hex')
-        : null;
-    const orderRef = deterministicId ? db.collection('payment_orders').doc(deterministicId) : db.collection('payment_orders').doc();
-    const plan = await applyServerCoupon({ uid, orderId: orderRef.id, plan: basePlan, couponCode });
-    try {
-        await orderRef.create({
-            uid, planId, provider: 'stripe', amount: plan.amount, originalAmount: plan.originalAmount,
-            currency: plan.currency, couponCode: plan.couponCode, couponDiscount: plan.couponDiscount,
-            singleUsePerUser: plan.singleUsePerUser === true,
-            status: 'PENDING_PAYMENT', createdAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-    } catch (error) {
-        if (error.code !== 6 && error.code !== 'already-exists') throw error;
-        const existing = await orderRef.get();
-        const order = existing.data() || {};
-        if (order.uid !== uid || order.planId !== planId || order.provider !== 'stripe') throw Object.assign(new Error('IDEMPOTENCY_CONFLICT'), { status: 409 });
-        if (order.status === 'PAYMENT_CREATED' && order.providerClientSecret) {
-            return { orderId: orderRef.id, clientSecret: order.providerClientSecret, amount: order.amount, currency: order.currency, replayed: true };
-        }
-        throw Object.assign(new Error('PAYMENT_CREATION_IN_PROGRESS'), { status: 409 });
+    const created = await paymentActivation.createOrder({
+        uid, planId, provider: 'stripe', couponCode, idempotencyKey, plan: basePlan, firestoreDb: db,
+    });
+    if (created.replayed && created.clientSecret) {
+        return { orderId: created.id, clientSecret: created.clientSecret, amount: created.amount, currency: created.currency, replayed: true };
     }
     try {
         const intent = await stripe.paymentIntents.create({
-            amount: plan.amount, currency: plan.currency,
-            metadata: { orderId: orderRef.id, uid, planId }
-        }, { idempotencyKey: `order:${orderRef.id}` });
-        await orderRef.update({
+            amount: created.amount || created.plan?.amount || basePlan.amount,
+            currency: created.currency || created.plan?.currency || basePlan.currency,
+            metadata: { orderId: created.id, uid, planId }
+        }, { idempotencyKey: `order:${created.id}` });
+        await paymentActivation.updateOrder(created.id, {
             providerPaymentIntentId: intent.id,
             providerClientSecret: intent.client_secret,
             status: 'PAYMENT_CREATED',
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        return { orderId: orderRef.id, clientSecret: intent.client_secret, amount: plan.amount, currency: plan.currency };
+        }, db);
+        return { orderId: created.id, clientSecret: intent.client_secret, amount: created.amount || created.plan?.amount || basePlan.amount, currency: created.currency || created.plan?.currency || basePlan.currency };
     } catch (err) {
-        await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-        await releaseCouponForRef(orderRef);
+        await paymentActivation.updateOrder(created.id, { status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }, db);
+        await paymentActivation.releaseCouponReservation({ ...created, id: created.id }, db);
         throw err;
     }
 }
@@ -583,11 +476,14 @@ app.post('/api/pay', async (req, res) => {
 
 // Payment status is read from a server-owned order and is bound to the verified caller.
 app.get('/api/payment-orders/:orderId', async (req, res) => {
-    if (!db || !/^[A-Za-z0-9_-]{1,128}$/.test(req.params.orderId)) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
-    const snap = await db.collection('payment_orders').doc(req.params.orderId).get();
-    if (!snap.exists || snap.data().uid !== req.user.uid) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
-    const order = snap.data();
-    return res.json({ orderId: snap.id, status: order.status, planId: order.planId, membershipEnds: order.membershipEnds || null });
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.orderId)) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
+    try {
+        const order = await paymentActivation.getOrder(req.params.orderId, req.app.get('db') || db);
+        if (!order || order.uid !== req.user.uid) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
+        return res.json({ orderId: order.id || req.params.orderId, status: order.status, planId: order.planId, membershipEnds: toCanonicalDate(order.membershipEnds) || null });
+    } catch (error) {
+        return res.status(error.status || 503).json({ error: { code: error.code || 'ORDER_UNAVAILABLE', message: 'Order could not be loaded', requestId: res.locals.requestId } });
+    }
 });
 
 // Stripe Webhook — instant subscription activation + Firestore sync
@@ -605,76 +501,50 @@ app.post('/api/stripe-webhook', async (req, res) => {
     if (event.type === 'payment_intent.succeeded') {
         const paymentData = event.data.object;
         const orderId = paymentData.metadata?.orderId;
-        if (!db || !orderId) return res.status(400).json({ error: 'Unknown payment order' });
-        const eventRef = db.collection('payment_webhook_events').doc(event.id);
-        const orderRef = db.collection('payment_orders').doc(orderId);
-        const orderSnap = await orderRef.get();
-        if (!orderSnap.exists) return res.status(400).json({ error: 'Unknown payment order' });
-        const order = orderSnap.data();
+        if (!orderId) return res.status(400).json({ error: 'Unknown payment order' });
+        const order = await paymentActivation.getOrder(orderId, db);
+        if (!order) return res.status(400).json({ error: 'Unknown payment order' });
         try {
             validateStripePaymentIntent(order, paymentData, orderId);
         } catch (_) {
             return res.status(400).json({ error: 'Payment order mismatch' });
         }
-        const userId = order.uid;
-        const plan = order.planId;
-        try {
-            // Firestore create is atomic: replayed or concurrent events cannot both claim the event id.
-            await eventRef.create({ provider: 'stripe', eventType: event.type, orderId, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
-        } catch (err) {
-            if (isDuplicateProviderEventError(err)) return res.json({ received: true, duplicate: true });
-            throw err;
-        }
+        const claimed = await paymentActivation.claimWebhookEvent({
+            eventId: event.id, provider: 'stripe', eventType: event.type, orderId,
+        });
+        if (claimed.duplicate) return res.json({ received: true, duplicate: true });
         console.log(`[Stripe Webhook] verified order ${orderId}`);
-
-        const monthsByPlan = { monthly: 1, halfYear: 6, yearly: 12 };
-        const months = monthsByPlan[plan];
-        if (!months) return res.status(400).json({ error: 'Invalid payment plan' });
         try {
-            await db.runTransaction(async tx => {
-                const currentOrder = await tx.get(orderRef);
-                if (!currentOrder.exists || currentOrder.data().status === 'ACTIVE') return;
-                const userRef = db.collection('users').doc(userId);
-                const userSnap = await tx.get(userRef);
-                if (!userSnap.exists) throw new Error('PAYMENT_USER_NOT_FOUND');
-                const expDate = calculateMembershipEnd(userSnap.data().membershipEnds, months);
-                tx.update(userRef, {
-                    membership: 'Premium', membershipEnds: expDate, autoRenew: true,
-                    paymentStatus: 'ACTIVE', lastPaymentGateway: 'Stripe', lastPaymentOrderId: orderId, cancellationRequested: false,
-                    lastWebhookSync: admin.firestore.FieldValue.serverTimestamp()
-                });
-                tx.update(orderRef, { status: 'ACTIVE', activatedAt: admin.firestore.FieldValue.serverTimestamp(), membershipEnds: expDate });
+            const activated = await paymentActivation.activateVerifiedOrder({
+                orderId, gatewayLabel: 'Stripe', providerPaymentId: paymentData.id, firestoreDb: db,
+            });
+            return res.json({
+                received: true,
+                status: 'activated',
+                userId: order.uid,
+                membership: activated.membership || 'Premium',
+                membershipEnds: toCanonicalDate(activated.membershipEnds) || activated.membershipEnds,
             });
         } catch (err) {
-            // Event claim is released on processing failure so Stripe can safely retry.
-            await eventRef.delete().catch(() => {});
+            paymentActivation.releaseWebhookEvent(event.id);
             throw err;
         }
-        const activated = (await orderRef.get()).data();
-        await consumeCouponRedemption(orderId, activated);
-        const expDate = activated.membershipEnds?.toDate?.() || new Date(activated.membershipEnds);
-        return res.json({
-            received: true,
-            status: 'activated',
-            userId,
-            membership: 'Premium',
-            membershipEnds: expDate.toISOString(),
-        });
     }
 
     if (event.type === 'payment_intent.payment_failed') {
         const payment = event.data.object;
         const orderId = payment.metadata?.orderId;
-        if (db && orderId) {
-            const orderRef = db.collection('payment_orders').doc(orderId);
-            const snap = await orderRef.get();
-            if (snap.exists && snap.data().providerPaymentIntentId === payment.id) {
-                const eventRef = db.collection('payment_webhook_events').doc(event.id);
-                try {
-                    await eventRef.create({ provider: 'stripe', eventType: event.type, orderId, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
-                    await orderRef.update({ status: 'FAILED', failureCode: payment.last_payment_error?.code || 'PAYMENT_FAILED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-                } catch (error) {
-                    if (error.code !== 6 && error.code !== 'already-exists') throw error;
+        if (orderId) {
+            const order = await paymentActivation.getOrder(orderId, db);
+            if (order && order.providerPaymentIntentId === payment.id) {
+                const claimed = await paymentActivation.claimWebhookEvent({
+                    eventId: event.id, provider: 'stripe', eventType: event.type, orderId,
+                });
+                if (!claimed.duplicate) {
+                    await paymentActivation.updateOrder(orderId, {
+                        status: 'FAILED',
+                        failureCode: payment.last_payment_error?.code || 'PAYMENT_FAILED',
+                    }, db);
                 }
             }
         }
@@ -684,31 +554,15 @@ app.post('/api/stripe-webhook', async (req, res) => {
     if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
         const providerObject = event.data.object;
         const paymentIntentId = providerObject.payment_intent;
-        if (!db || !paymentIntentId) return res.status(400).json({ error: 'Unknown payment order' });
-        const orders = await db.collection('payment_orders').where('providerPaymentIntentId', '==', paymentIntentId).limit(1).get();
-        if (orders.empty) return res.status(400).json({ error: 'Unknown payment order' });
-        const orderRef = orders.docs[0].ref;
-        const order = orders.docs[0].data();
+        if (!paymentIntentId) return res.status(400).json({ error: 'Unknown payment order' });
+        const matched = await paymentActivation.findByProviderIntent(paymentIntentId, db);
+        if (!matched) return res.status(400).json({ error: 'Unknown payment order' });
         const status = event.type === 'charge.refunded' ? 'REFUNDED' : 'CHARGEBACK';
-        const eventRef = db.collection('payment_webhook_events').doc(event.id);
-        try {
-            await eventRef.create({ provider: 'stripe', eventType: event.type, orderId: orderRef.id, receivedAt: admin.firestore.FieldValue.serverTimestamp() });
-        } catch (error) {
-            if (isDuplicateProviderEventError(error)) return res.json({ received: true, duplicate: true });
-            throw error;
-        }
-        await db.runTransaction(async tx => {
-            const userRef = db.collection('users').doc(order.uid);
-            const userSnap = await tx.get(userRef);
-            tx.update(orderRef, { status, reversedAt: admin.firestore.FieldValue.serverTimestamp() });
-            // Do not remove a later legitimate purchase when an older order is reversed.
-            if (userSnap.exists && shouldReverseEntitlement(userSnap.data(), orderRef.id)) {
-                tx.update(userRef, {
-                    membership: 'Basic', paymentStatus: status, autoRenew: false,
-                    membershipEnds: new Date(), lastPaymentSync: admin.firestore.FieldValue.serverTimestamp()
-                });
-            }
+        const claimed = await paymentActivation.claimWebhookEvent({
+            eventId: event.id, provider: 'stripe', eventType: event.type, orderId: matched.id,
         });
+        if (claimed.duplicate) return res.json({ received: true, duplicate: true });
+        await paymentActivation.reverseEntitlement({ orderId: matched.id, status, firestoreDb: db });
         return res.json({ received: true, status: status.toLowerCase() });
     }
 
@@ -748,6 +602,25 @@ function chooseCredentialPair({ environmentId, environmentSecret, storedId, stor
     return { id: '', secret: '', source: 'none' };
 }
 
+async function readPersistedPaymentProviders(database) {
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(database || db);
+        const stored = await repo.getSetting('payment_providers');
+        if (stored && typeof stored === 'object') return { providers: stored, legacy: {} };
+    } catch (_) { /* MariaDB/Firestore settings unavailable — try direct Firestore below */ }
+    if (database && typeof database.collection === 'function') {
+        try {
+            const [providerSnapshot, legacySnapshot] = await Promise.all([
+                database.collection('settings').doc('payment_providers').get(),
+                database.collection('data').doc('subscriptions').get(),
+            ]);
+            return { providers: providerSnapshot.data() || {}, legacy: legacySnapshot.data() || {} };
+        } catch (_) { /* config remains environment-only */ }
+    }
+    return { providers: {}, legacy: {} };
+}
+
 async function paypalConfig(database = db) {
     const envClientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
     const envClientSecret = String(process.env.PAYPAL_CLIENT_SECRET || '').trim();
@@ -755,13 +628,10 @@ async function paypalConfig(database = db) {
     let storedClientId = '';
     let storedClientSecret = '';
     let storedEnvironment = '';
-    if (database) {
-        const [providerSnapshot, legacySnapshot] = await Promise.all([
-            database.collection('settings').doc('payment_providers').get(),
-            database.collection('data').doc('subscriptions').get(),
-        ]);
-        const stored = providerSnapshot.data()?.paypal || {};
-        const legacy = legacySnapshot.data() || {};
+    const persistedPaypal = await readPersistedPaymentProviders(database);
+    {
+        const stored = persistedPaypal.providers.paypal || {};
+        const legacy = persistedPaypal.legacy || {};
         storedClientId = String(stored.clientId || legacy.paypalClientId || '').trim();
         storedClientSecret = String(stored.clientSecret || legacy.paypalClientSecret || '').trim();
         storedEnvironment = String(stored.environment || '').trim();
@@ -819,11 +689,10 @@ app.post('/api/paypal/verify', async (req, res) => {
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(providerOrderId) || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
             return res.status(400).json({ verified: false, error: 'Invalid order identifier' });
         }
-        const orderRef = db.collection('payment_orders').doc(paymentOrderId);
-        const internalSnap = await orderRef.get();
-        const internal = internalSnap.data();
+        const internal = await paymentActivation.getOrder(paymentOrderId, req.app.get('db') || db);
+        const orderRef = paymentActivation.asOrderRef(paymentOrderId, req.app.get('db') || db);
         try {
-            if (!internalSnap.exists) throw new Error('ORDER_NOT_FOUND');
+            if (!internal) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(internal, { uid: req.user.uid, provider: 'paypal', providerOrderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
@@ -864,12 +733,9 @@ async function getRazorpayKeys(database) {
     if (envKeyId && envKeySecret) return { keyId: envKeyId, keySecret: envKeySecret, source: 'environment' };
     if (database) {
         try {
-            const [providerSnapshot, legacySnapshot] = await Promise.all([
-                database.collection('settings').doc('payment_providers').get(),
-                database.collection('data').doc('subscriptions').get(),
-            ]);
-            const stored = providerSnapshot.data()?.razorpay || {};
-            const legacy = legacySnapshot.data() || {};
+            const persisted = await readPersistedPaymentProviders(database);
+            const stored = persisted.providers.razorpay || {};
+            const legacy = persisted.legacy || {};
             storedKeyId = String(stored.keyId || '').trim() || String(legacy.razorpayKeyId || '').trim();
             storedSecret = String(stored.keySecret || '').trim() || String(legacy.razorpayKeySecret || '').trim();
             const selected = chooseCredentialPair({ environmentId: envKeyId, environmentSecret: envKeySecret, storedId: storedKeyId, storedSecret });
@@ -929,11 +795,10 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
         if (![providerOrderId, paymentId, signature, paymentOrderId].every(value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value))) {
             return res.status(400).json({ verified: false, error: 'Invalid payment confirmation' });
         }
-        const orderRef = db.collection('payment_orders').doc(paymentOrderId);
-        const orderSnap = await orderRef.get();
-        const order = orderSnap.data();
+        const order = await paymentActivation.getOrder(paymentOrderId, req.app.get('db') || db);
+        const orderRef = paymentActivation.asOrderRef(paymentOrderId, req.app.get('db') || db);
         try {
-            if (!orderSnap.exists) throw new Error('ORDER_NOT_FOUND');
+            if (!order) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(order, { uid: req.user.uid, provider: 'razorpay', providerOrderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
@@ -978,12 +843,9 @@ async function getPaytmConfig(database = db) {
 
     if (database) {
         try {
-            const [providerSnapshot, legacySnapshot] = await Promise.all([
-                database.collection('settings').doc('payment_providers').get(),
-                database.collection('data').doc('subscriptions').get(),
-            ]);
-            const stored = providerSnapshot.data()?.paytm || {};
-            const legacy = legacySnapshot.data() || {};
+            const persisted = await readPersistedPaymentProviders(database);
+            const stored = persisted.providers.paytm || {};
+            const legacy = persisted.legacy || {};
             storedMid = String(stored.mid || legacy.paytmMid || '').trim();
             storedKey = String(stored.merchantKey || legacy.paytmMerchantKey || '').trim();
             if (stored.website || legacy.paytmWebsite) website = stored.website || legacy.paytmWebsite;
@@ -1010,12 +872,9 @@ async function getPhonePeConfig(database = db) {
 
     if (database) {
         try {
-            const [providerSnapshot, legacySnapshot] = await Promise.all([
-                database.collection('settings').doc('payment_providers').get(),
-                database.collection('data').doc('subscriptions').get(),
-            ]);
-            const stored = providerSnapshot.data()?.phonepe || {};
-            const legacy = legacySnapshot.data() || {};
+            const persisted = await readPersistedPaymentProviders(database);
+            const stored = persisted.providers.phonepe || {};
+            const legacy = persisted.legacy || {};
             storedMerchantId = String(stored.merchantId || legacy.phonepeId || '').trim();
             storedSaltKey = String(stored.saltKey || legacy.phonepeSaltKey || '').trim();
             if (stored.saltIndex || legacy.phonepeSaltIndex) saltIndex = parseInt(stored.saltIndex || legacy.phonepeSaltIndex || saltIndex, 10) || 1;
@@ -1084,11 +943,10 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
     try {
         const orderId = String(req.body.orderId || '');
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
-        const orderRef = db.collection('payment_orders').doc(orderId);
-        const snap = await orderRef.get();
-        const order = snap.data();
+        const order = await paymentActivation.getOrder(orderId, req.app.get('db') || db);
+        const orderRef = paymentActivation.asOrderRef(orderId, req.app.get('db') || db);
         try {
-            if (!snap.exists) throw new Error('ORDER_NOT_FOUND');
+            if (!order) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(order, { uid: req.user.uid, provider: 'paytm', providerOrderId: orderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
@@ -1179,11 +1037,10 @@ app.post('/api/phonepe/status', async (req, res) => {
     try {
         const orderId = String(req.body.orderId || '');
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
-        const orderRef = db.collection('payment_orders').doc(orderId);
-        const snap = await orderRef.get();
-        const order = snap.data();
+        const order = await paymentActivation.getOrder(orderId, req.app.get('db') || db);
+        const orderRef = paymentActivation.asOrderRef(orderId, req.app.get('db') || db);
         try {
-            if (!snap.exists) throw new Error('ORDER_NOT_FOUND');
+            if (!order) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(order, { uid: req.user.uid, provider: 'phonepe', providerOrderId: orderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
@@ -1785,6 +1642,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         }
         const { getRepository } = require('./repositories');
         const repo = getRepository(req.app.get('db') || db);
+        const requestDb = req.app.get('db') || db;
 
         let stored;
         let ownerUid;
@@ -2001,37 +1859,30 @@ app.get('/api/admin/ai-settings', async (req, res) => {
 });
 
 async function publishDueBlogPosts(requestDb, { actorUid = 'cms-scheduler', requestId = null } = {}) {
-    if (!requestDb || !admin) throw new Error('CMS scheduler unavailable');
-    const now = new Date();
-    const snapshot = await requestDb.collection('blog_posts')
-        .where('status', '==', 'scheduled').where('scheduledAt', '<=', now).orderBy('scheduledAt', 'asc').limit(100).get();
-    const due = snapshot.docs.filter(document => {
-        const value = document.data()?.scheduledAt;
-        const date = value?.toDate?.() || new Date(value || 0);
-        return Number.isFinite(date.getTime()) && date <= now;
-    });
-    if (!due.length) return 0;
-    return requestDb.runTransaction(async transaction => {
-        const freshSnapshots = await Promise.all(due.map(document => transaction.get(document.ref)));
-        const stillDue = freshSnapshots.filter(document => {
-            if (!document.exists || document.data()?.status !== 'scheduled') return false;
-            const value = document.data()?.scheduledAt;
-            const date = value?.toDate?.() || new Date(value || 0);
-            return Number.isFinite(date.getTime()) && date <= now;
+    const { getRepository } = require('./repositories');
+    const repo = getRepository(requestDb || db);
+    const now = Date.now();
+    const posts = await repo.getBlogPosts({ publishedOnly: false, limit: 200 }).catch(() => []);
+    let count = 0;
+    for (const post of posts) {
+        const status = String(post.status || (post.published ? 'approved' : 'draft')).toLowerCase();
+        if (status !== 'scheduled') continue;
+        let scheduledMs = null;
+        try { scheduledMs = require('./database/canonical').toEpochMs(post.scheduledAt || post.scheduled_at); }
+        catch { const d = new Date(post.scheduledAt || 0); scheduledMs = Number.isFinite(d.getTime()) ? d.getTime() : null; }
+        if (scheduledMs === null || scheduledMs > now) continue;
+        const revision = Number(post.revision || 0) + 1;
+        await repo.saveBlogPost(post.id, {
+            ...post,
+            status: 'approved',
+            published: true,
+            publishedAt: new Date().toISOString(),
+            scheduledAt: null,
+            revision,
         });
-        for (const document of stillDue) {
-            const post = document.data() || {};
-            const revision = Number(post.revision || 0) + 1;
-            transaction.update(document.ref, { status: 'approved', publishedAt: admin.firestore.FieldValue.serverTimestamp(), scheduledAt: null, revision, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-            const eventId = notificationEventId('blog_scheduled_published', document.id, String(revision));
-            transaction.set(requestDb.collection('notifications').doc(post.authorUid).collection('userNotifications').doc(eventId), { eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'blog_published', title: 'Scheduled Blog post published', message: `“${String(post.title || 'Post').slice(0, 160)}” is now public.`, data: { postId: document.id, status: 'approved', revision }, read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-        }
-        if (stillDue.length) transaction.set(requestDb.collection('security_audit_logs').doc(), {
-            action: 'CMS_SCHEDULED_POSTS_PUBLISHED', actorUid, count: stillDue.length, requestId,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        return stillDue.length;
-    });
+        count += 1;
+    }
+    return count;
 }
 
 function normalizeBlogCategoryInput(input = {}) {
@@ -2156,17 +2007,8 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
     // The datastore is the only dependency this scheduler has. Checking it up
     // front lets us report "not configured" precisely, instead of letting every
     // possible fault collapse into one opaque "unavailable" message.
-    if (!req.app.get('db')) {
-        return res.status(503).json({
-            success: false,
-            code: 'CMS_SCHEDULER_NOT_CONFIGURED',
-            configurationState: 'NOT_CONFIGURED',
-            error: 'The CMS scheduler requires Firestore, which is not configured on this deployment.',
-            remediation: 'Provide Firebase service-account credentials so the backend can reach Firestore.',
-        });
-    }
     try {
-        const published = await publishDueBlogPosts(req.app.get('db'), { actorUid: req.user.uid, requestId: res.locals.requestId });
+        const published = await publishDueBlogPosts(req.app.get('db') || db, { actorUid: req.user.uid, requestId: res.locals.requestId });
         return res.json({ success: true, published });
     } catch (error) {
         // Previously this swallowed the error entirely, leaving no way to tell a
@@ -3746,13 +3588,17 @@ try {
 
 function databaseHealthPayload() {
     const status = databaseAuthority.getStatus();
+    const mysqlState = status.health.mysql.healthy === true ? 'UP' : (status.health.mysql.healthy === false ? 'DOWN' : 'UNKNOWN');
+    const fsState = status.health.firestore.healthy === true ? 'UP' : (status.health.firestore.healthy === false ? 'DOWN' : 'UNKNOWN');
     return {
         mariadb: {
+            status: mysqlState,
             healthy: status.health.mysql.healthy,
             lastError: status.health.mysql.lastError,
             latencyMs: status.health.mysql.latencyMs,
         },
         firestore: {
+            status: fsState,
             healthy: status.health.firestore.healthy,
             lastError: status.health.firestore.lastError,
             latencyMs: status.health.firestore.latencyMs,
@@ -3761,10 +3607,13 @@ function databaseHealthPayload() {
             mode: status.mode,
             configuredPrimary: status.configuredPrimary,
             operationalWriteEngine: status.operationalWriteEngine,
+            operationalAuthority: status.operationalWriteEngine === 'mysql' ? 'MARIA' : 'FIRESTORE',
             canAcceptWrites: status.canAcceptWrites,
+            fenceGeneration: status.fence ? status.fence.generation : null,
+            reconciliation: status.mode === 'RECONCILING' ? 'RUNNING' : (status.mode === 'CONFLICT_DETECTED' ? 'CONFLICT' : 'IDLE'),
         },
         sync: {
-            // Worker health is reported independently by /api/admin/database-settings.
+            status: status.mode === 'BOTH_UNAVAILABLE' ? 'DOWN' : (status.mode === 'NORMAL' ? 'HEALTHY' : 'DEGRADED'),
             note: 'See getSyncHealthStatus for outbox/reconciliation depth.',
         },
     };
@@ -4332,30 +4181,27 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
 app.post('/api/admin/payments/refund', async (req, res) => {
     const paymentOrderId = String(req.body.paymentOrderId || '');
     const reason = String(req.body.reason || 'Customer requested refund').trim().slice(0, 500);
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId) || !db || !admin) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
         return res.status(400).json({ success: false, error: 'Valid payment order is required.' });
     }
-    const orderRef = db.collection('payment_orders').doc(paymentOrderId);
+    const requestDb = req.app.get('db') || db;
     try {
-        const snap = await orderRef.get();
-        if (!snap.exists) return res.status(404).json({ success: false, error: 'Payment order not found.' });
-        const order = snap.data();
+        const order = await paymentActivation.getOrder(paymentOrderId, requestDb);
+        if (!order) return res.status(404).json({ success: false, error: 'Payment order not found.' });
         if (order.status === 'REFUNDED') return res.json({ success: true, duplicate: true, status: 'REFUNDED' });
-        if (order.status !== 'ACTIVE') return res.status(409).json({ success: false, error: 'Only an active payment can be refunded.' });
+        if (order.status !== 'ACTIVE' && order.status !== 'REFUND_PENDING') {
+            return res.status(409).json({ success: false, error: 'Only an active payment can be refunded.' });
+        }
         if (!['stripe', 'paypal', 'razorpay'].includes(order.provider)) {
             return res.status(501).json({ success: false, error: `${order.provider} refunds require provider webhook/API validation before enablement.` });
         }
-        // Reserve before contacting the provider so concurrent administrators cannot issue
-        // duplicate refunds. Ambiguous provider timeouts remain pending for reconciliation.
-        await db.runTransaction(async tx => {
-            const current = await tx.get(orderRef);
-            if (!current.exists || current.data().status !== 'ACTIVE') throw new Error('INVALID_ORDER_STATE');
-            tx.update(orderRef, {
+        if (order.status === 'ACTIVE') {
+            await paymentActivation.updateOrder(paymentOrderId, {
                 status: 'REFUND_PENDING', refundReason: reason,
                 refundRequestedBy: req.user.uid,
-                refundRequestedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-        });
+                refundRequestedAt: new Date().toISOString(),
+            }, requestDb);
+        }
         let refundId;
         if (order.provider === 'stripe') {
             const refund = await stripe.refunds.create({ payment_intent: order.providerPaymentIntentId, reason: 'requested_by_customer' }, { idempotencyKey: `refund:${paymentOrderId}` });
@@ -4383,30 +4229,10 @@ app.post('/api/admin/payments/refund', async (req, res) => {
             if (!providerRes.ok || !refund.id) throw new Error('RAZORPAY_REFUND_FAILED');
             refundId = refund.id;
         }
-        await db.runTransaction(async tx => {
-            const current = await tx.get(orderRef);
-            if (!current.exists || !['REFUND_PENDING', 'REFUNDED'].includes(current.data().status)) throw new Error('INVALID_ORDER_STATE');
-            if (current.data().status === 'REFUNDED') return;
-            const userRef = db.collection('users').doc(order.uid);
-            const userSnap = await tx.get(userRef);
-            tx.update(orderRef, {
-                status: 'REFUNDED', providerRefundId: refundId, refundReason: reason,
-                refundedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-            if (userSnap.exists && shouldReverseEntitlement(userSnap.data(), paymentOrderId)) {
-                tx.update(userRef, { membership: 'Basic', paymentStatus: 'REFUNDED', autoRenew: false, membershipEnds: new Date() });
-            }
-            const refundEventId = notificationEventId('payment_refunded', paymentOrderId);
-            tx.set(db.collection('notifications').doc(order.uid).collection('userNotifications').doc(refundEventId), {
-                eventId: refundEventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'payment_refunded', title: 'Refund confirmed', message: 'Your payment refund was confirmed by the provider.', data: { paymentOrderId, refundId }, read: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-            tx.set(db.collection('security_audit_logs').doc(), {
-                action: 'PAYMENT_REFUNDED', actorUid: req.user.uid, targetUid: order.uid,
-                paymentOrderId, provider: order.provider, reason, requestId: res.locals.requestId,
-                createdAt: admin.firestore.FieldValue.serverTimestamp()
-            });
-        });
+        await paymentActivation.reverseEntitlement({ orderId: paymentOrderId, status: 'REFUNDED', firestoreDb: requestDb });
+        await paymentActivation.updateOrder(paymentOrderId, {
+            providerRefundId: refundId, refundReason: reason,
+        }, requestDb).catch(() => {});
         return res.json({ success: true, status: 'REFUNDED', refundId });
     } catch (error) {
         console.error('[Payment refund]', error.message);
@@ -4414,9 +4240,6 @@ app.post('/api/admin/payments/refund', async (req, res) => {
     }
 });
 
-// Read-only Admin collection APIs. They keep the browser out of Firestore for
-// moderation reads and return explicit pagination/source metadata so an empty
-// result is not confused with an unavailable collection.
 function adminIso(value) {
     if (!value) return null;
     try {
@@ -5578,19 +5401,33 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
     });
     if (!user.emailVerified) await admin.auth().updateUser(user.uid, { emailVerified: true });
     const parts = String(displayName || 'User').trim().split(/\s+/);
-    const userRef = db.collection('users').doc(user.uid);
-    const existing = await userRef.get();
-    await userRef.set({
+    const profile = {
         userId: user.uid,
         email: normalizedEmail,
         firstname: parts[0] || 'User',
         lastname: parts.slice(1).join(' '),
         displayName: String(displayName || 'User').slice(0, 100),
         ...(photoURL ? { photoURL } : {}),
-        authProviders: admin.firestore.FieldValue.arrayUnion(provider),
-        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
-        ...(!existing.exists ? { membership: 'Basic', createdAt: admin.firestore.FieldValue.serverTimestamp() } : {})
-    }, { merge: true });
+    };
+    try {
+        const { getRepository } = require('./repositories');
+        const existingProfile = await getRepository(db).getUser(user.uid);
+        await getRepository(db).saveUser(user.uid, {
+            ...profile,
+            membership: existingProfile && existingProfile.membership ? existingProfile.membership : 'Basic',
+            paymentStatus: existingProfile && existingProfile.paymentStatus ? existingProfile.paymentStatus : 'INACTIVE',
+        });
+    } catch (repoErr) {
+        console.warn('[OAuth] Resilient profile write failed, attempting identity-adjacent Firestore:', repoErr.message);
+        const userRef = db.collection('users').doc(user.uid);
+        const existing = await userRef.get();
+        await userRef.set({
+            ...profile,
+            authProviders: admin.firestore.FieldValue.arrayUnion(provider),
+            lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+            ...(!existing.exists ? { membership: 'Basic', createdAt: admin.firestore.FieldValue.serverTimestamp() } : {})
+        }, { merge: true });
+    }
     if (isNew) EmailNotifier.notifyOAuthNewUser(db, { userEmail: normalizedEmail, userName: displayName, provider }).catch(() => {});
     return user.uid;
 }

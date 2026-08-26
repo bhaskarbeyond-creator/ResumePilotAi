@@ -29,6 +29,14 @@ function engineManager() {
     return require('./engineManager');
 }
 
+function fencing() {
+    return require('./fencing');
+}
+
+function alerts() {
+    return require('./alerts');
+}
+
 const MODES = Object.freeze({
     NORMAL: 'NORMAL',
     MARIADB_DEGRADED: 'MARIADB_DEGRADED',
@@ -172,8 +180,31 @@ function maybeFailover() {
         && secondaryHealth.healthy !== false
         && operationalWriteEngine === primary
     ) {
-        operationalWriteEngine = secondary;
-        mode = primary === 'mysql' ? MODES.MARIADB_FAILED_OVER : MODES.MARIADB_FAILED_OVER;
+        const fence = fencing().bumpGeneration({
+            reason: primaryHealth.lastError || 'primary_failure_threshold',
+            writeEngine: secondary,
+            expectedGeneration: fencing().currentGeneration(),
+            mode: MODES.MARIADB_FAILED_OVER,
+        });
+        if (!fence.won && fence.operationalWriteEngine === secondary) {
+            operationalWriteEngine = secondary;
+            mode = MODES.MARIADB_FAILED_OVER;
+            alerts().emitAlert(alerts().ALERT_TYPES.SPLIT_BRAIN_PREVENTION, {
+                message: 'Failover generation already advanced by another instance; adopting existing fence',
+                generation: fence.generation,
+            });
+        } else if (!fence.won) {
+            operationalWriteEngine = fence.operationalWriteEngine || secondary;
+            mode = classifyMode();
+            alerts().emitAlert(alerts().ALERT_TYPES.SPLIT_BRAIN_PREVENTION, {
+                message: 'Refusing competing failover; another instance owns write generation',
+                generation: fence.generation,
+            });
+            return;
+        } else {
+            operationalWriteEngine = secondary;
+            mode = primary === 'mysql' ? MODES.MARIADB_FAILED_OVER : MODES.MARIADB_FAILED_OVER;
+        }
         lastFailoverAt = new Date().toISOString();
         metrics.failovers += 1;
         emit('failover', {
@@ -182,11 +213,22 @@ function maybeFailover() {
             mode,
             at: lastFailoverAt,
             reason: primaryHealth.lastError,
+            generation: fencing().currentGeneration(),
+        });
+        alerts().emitAlert(alerts().ALERT_TYPES.AUTOMATIC_FAILOVER, {
+            from: primary,
+            to: secondary,
+            reason: primaryHealth.lastError,
+            generation: fencing().currentGeneration(),
         });
         return;
     }
     if (primaryHealth.healthy === false && secondaryHealth.healthy === false) {
         mode = MODES.BOTH_UNAVAILABLE;
+        alerts().emitAlert(alerts().ALERT_TYPES.BOTH_UNAVAILABLE, {
+            mysqlError: healthCache.mysql.lastError,
+            firestoreError: healthCache.firestore.lastError,
+        });
         return;
     }
     mode = classifyMode();
@@ -218,13 +260,20 @@ function completeRecovery({ conflicts = 0 } = {}) {
     if (conflicts > 0) {
         mode = MODES.CONFLICT_DETECTED;
         emit('conflict', { conflicts, at: new Date().toISOString() });
+        alerts().emitAlert(alerts().ALERT_TYPES.CONFLICT, { conflicts });
         return getStatus();
     }
+    fencing().bumpGeneration({
+        reason: 'recovery_restore_primary',
+        writeEngine: primary,
+        expectedGeneration: fencing().currentGeneration(),
+        mode: MODES.RECOVERED,
+    });
     operationalWriteEngine = primary;
     mode = MODES.RECOVERED;
     lastRecoveryAt = new Date().toISOString();
     metrics.recoveries += 1;
-    emit('recovered', { primary, at: lastRecoveryAt });
+    emit('recovered', { primary, at: lastRecoveryAt, generation: fencing().currentGeneration() });
     setTimeout(() => {
         if (mode === MODES.RECOVERED) mode = MODES.NORMAL;
     }, 1000).unref?.();
@@ -303,6 +352,7 @@ function getStatus() {
         },
         metrics: { ...metrics },
         autoFailover: AUTO_FAILOVER,
+        fence: fencing().currentFence(),
     };
 }
 

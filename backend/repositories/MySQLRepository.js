@@ -318,57 +318,79 @@ class MySQLRepository {
 
     async saveUser(userId, userData) {
         const pool = this._getPool();
-        const values = {
-            id: userId,
-            email: userData.email || '',
-            firstname: userData.firstname || '',
-            lastname: userData.lastname || '',
-            displayName: userData.displayName || `${userData.firstname || ''} ${userData.lastname || ''}`.trim(),
-            photoUrl: userData.photoUrl || userData.avatarUrl || null,
-            avatarUrl: userData.avatarUrl || userData.photoUrl || null,
-            phone: userData.phone || null,
-            jobTitle: userData.jobTitle || null,
-            bio: userData.bio || null,
-            city: userData.city || null,
-            country: userData.country || null,
-            website: userData.website || null,
-            membership: userData.membership || 'Basic',
-            membershipEnds: (function canonicalizeMembershipEnds(value) {
-                if (!value) return null;
-                if (typeof value === 'string') return value;
-                if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
-                if (typeof value.toISOString === 'function') {
-                    try { return value.toISOString(); } catch { return String(value); }
-                }
-                return String(value);
-            })(userData.membershipEnds),
-            paymentStatus: userData.paymentStatus || 'INACTIVE',
-            lastPaymentGateway: userData.lastPaymentGateway || null,
-            lastPaymentOrderId: userData.lastPaymentOrderId || null,
-            role: userData.role || 'USER',
-            suspended: userData.suspended ? 1 : 0,
-            extra_data: JSON.stringify(userData.extra_data || {}),
-        };
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]).catch(async () => {
+                const [rows] = await connection.query('SELECT 1 FROM users WHERE id = ?', [userId]);
+                return [rows.map(() => ({ revision: 0 }))];
+            });
+            const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
+            const nextRev = Number(userData.revision || currentRev + 1);
+            const values = {
+                id: userId,
+                email: userData.email || '',
+                firstname: userData.firstname || '',
+                lastname: userData.lastname || '',
+                displayName: userData.displayName || `${userData.firstname || ''} ${userData.lastname || ''}`.trim(),
+                photoUrl: userData.photoUrl || userData.avatarUrl || null,
+                avatarUrl: userData.avatarUrl || userData.photoUrl || null,
+                phone: userData.phone || null,
+                jobTitle: userData.jobTitle || null,
+                bio: userData.bio || null,
+                city: userData.city || null,
+                country: userData.country || null,
+                website: userData.website || null,
+                membership: userData.membership || 'Basic',
+                membershipEnds: (function canonicalizeMembershipEnds(value) {
+                    if (!value) return null;
+                    if (typeof value === 'string') return value;
+                    if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
+                    if (typeof value.toISOString === 'function') {
+                        try { return value.toISOString(); } catch { return String(value); }
+                    }
+                    return String(value);
+                })(userData.membershipEnds),
+                paymentStatus: userData.paymentStatus || 'INACTIVE',
+                lastPaymentGateway: userData.lastPaymentGateway || null,
+                lastPaymentOrderId: userData.lastPaymentOrderId || null,
+                role: userData.role || 'USER',
+                suspended: userData.suspended ? 1 : 0,
+                revision: nextRev,
+                extra_data: JSON.stringify(userData.extra_data || {}),
+            };
 
-        const keys = Object.keys(values);
-        const placeholders = keys.map(() => '?').join(', ');
-        const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+            const keys = Object.keys(values);
+            const placeholders = keys.map(() => '?').join(', ');
+            const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
 
-        await pool.query(
-            `INSERT INTO users (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}`,
-            Object.values(values)
-        );
+            await connection.query(
+                `INSERT INTO users (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}`,
+                Object.values(values)
+            );
 
-        await enqueueOutboxEvent(pool, {
-            entityType: 'users',
-            entityId: userId,
-            operation: 'UPSERT',
-            payload: { ...userData, id: userId },
-            version: 1,
-            sourceEngine: 'mysql'
-        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+            try {
+                await enqueueOutboxEvent(connection, {
+                    entityType: 'users',
+                    entityId: userId,
+                    operation: 'UPSERT',
+                    payload: { ...userData, id: userId, revision: nextRev, membershipEnds: values.membershipEnds, paymentStatus: values.paymentStatus },
+                    version: nextRev,
+                    sourceEngine: 'mysql'
+                });
+            } catch (e) {
+                if (!/exist|unknown table/i.test(String(e.message || ''))) throw e;
+                console.error('[MySQLRepository] CRITICAL: outbox unavailable; user mutation durable on primary only:', e.message);
+            }
 
-        return { id: userId, ...userData };
+            await connection.commit();
+            return { id: userId, revision: nextRev, ...userData };
+        } catch (err) {
+            await connection.rollback();
+            throw err;
+        } finally {
+            connection.release();
+        }
     }
 
     async deleteUser(userId) {
@@ -571,12 +593,21 @@ class MySQLRepository {
             `INSERT INTO jobs (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
             Object.values(values)
         );
+        const revision = Number(data.revision || 1);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'jobs', entityId: jobId, operation: 'UPSERT',
+            payload: { ...data, id: jobId, revision }, version: revision, sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
         return { id: jobId, ...data };
     }
 
     async deleteJob(jobId) {
         const pool = this._getPool();
         await pool.query('DELETE FROM jobs WHERE id = ?', [jobId]);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'jobs', entityId: jobId, operation: 'DELETE',
+            payload: { id: jobId }, version: 1, sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
         return true;
     }
 
@@ -617,6 +648,10 @@ class MySQLRepository {
             `INSERT INTO applications (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
             Object.values(values)
         );
+        await enqueueOutboxEvent(pool, {
+            entityType: 'applications', entityId: appId, operation: 'UPSERT',
+            payload: { ...data, id: appId }, version: Number(data.revision || 1), sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
         return { id: appId, ...data };
     }
 
@@ -672,12 +707,21 @@ class MySQLRepository {
             `INSERT INTO blog (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
             Object.values(values)
         );
+        const revision = Number(data.revision || 1);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'blog', entityId: id, operation: 'UPSERT',
+            payload: { ...data, id, revision }, version: revision, sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
         return { id, ...data };
     }
 
     async deleteBlogPost(id) {
         const pool = this._getPool();
         await pool.query('DELETE FROM blog WHERE id = ?', [id]);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'blog', entityId: id, operation: 'DELETE',
+            payload: { id }, version: 1, sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
         return true;
     }
 
@@ -721,6 +765,10 @@ class MySQLRepository {
             `INSERT INTO custom_pages (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
             Object.values(values)
         );
+        await enqueueOutboxEvent(pool, {
+            entityType: 'custom_pages', entityId: id, operation: 'UPSERT',
+            payload: { ...data, id }, version: Number(data.revision || 1), sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
         return { id, ...data };
     }
 
@@ -1098,6 +1146,12 @@ class MySQLRepository {
             reversedAt: r.reversed_at,
             createdAt: r.created_at,
             updatedAt: r.updated_at,
+            revision: Number(r.revision || 1),
+            mutationId: r.mutation_id || null,
+            recoveryNeeded: r.recovery_needed === 1 || r.recovery_needed === true,
+            recoveryReason: r.recovery_reason || null,
+            lastPaymentGateway: r.last_payment_gateway || null,
+            providerRefundId: r.provider_refund_id || null,
         };
     }
 
@@ -1121,6 +1175,12 @@ class MySQLRepository {
             provider_payment_intent_id: data.providerPaymentIntentId || data.provider_payment_intent_id || null,
             provider_client_secret: data.providerClientSecret || data.provider_client_secret || null,
             failure_code: data.failureCode || data.failure_code || null,
+            revision: Number(data.revision || 1),
+            mutation_id: data.mutationId || data.mutation_id || null,
+            recovery_needed: data.recoveryNeeded ? 1 : 0,
+            recovery_reason: data.recoveryReason || data.recovery_reason || null,
+            last_payment_gateway: data.lastPaymentGateway || data.last_payment_gateway || null,
+            provider_refund_id: data.providerRefundId || data.provider_refund_id || null,
         };
         const keys = Object.keys(values);
         const placeholders = keys.map(() => '?').join(', ');
@@ -1130,7 +1190,77 @@ class MySQLRepository {
             `INSERT INTO payment_orders (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
             Object.values(values)
         );
-        return { id: orderId, ...data };
+        const revision = Number(data.revision || 1);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'payment_orders', entityId: orderId, operation: 'UPSERT',
+            payload: { ...data, id: orderId, revision }, version: revision, sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        return { id: orderId, revision, ...data };
+    }
+
+    async findPaymentOrderByProviderIntent(intentId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT * FROM payment_orders WHERE provider_payment_intent_id = ? LIMIT 1',
+            [intentId]
+        );
+        if (!rows.length) return null;
+        return this.getPaymentOrder(rows[0].id);
+    }
+
+    async getCompany(companyId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query('SELECT * FROM companies WHERE id = ? LIMIT 1', [companyId]);
+        return rows.length ? rows[0] : null;
+    }
+
+    async getCompanies(filters = {}) {
+        const pool = this._getPool();
+        let sql = 'SELECT * FROM companies WHERE 1=1';
+        const params = [];
+        if (filters.employerId) { sql += ' AND owner_id = ?'; params.push(filters.employerId); }
+        sql += ' ORDER BY created_at DESC';
+        if (filters.limit) { sql += ' LIMIT ?'; params.push(Number(filters.limit)); }
+        const [rows] = await pool.query(sql, params);
+        return rows;
+    }
+
+    async saveCompany(companyId, data) {
+        const pool = this._getPool();
+        const values = {
+            id: companyId,
+            owner_id: data.employerId || data.owner_id || data.ownerId || '',
+            name: data.name || '',
+            logo: data.logo || data.companyImage || null,
+            website: data.website || null,
+            description: data.description || '',
+            industry: data.industry || '',
+            size: data.size || '',
+            location: data.location || '',
+            verified: data.status === 'approved' || data.verified ? 1 : 0,
+        };
+        const keys = Object.keys(values);
+        const placeholders = keys.map(() => '?').join(', ');
+        const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+        await pool.query(
+            `INSERT INTO companies (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
+            Object.values(values)
+        );
+        await enqueueOutboxEvent(pool, {
+            entityType: 'companies', entityId: companyId, operation: 'UPSERT',
+            payload: { ...data, id: companyId }, version: Number(data.revision || 1), sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        return { id: companyId, ...data };
+    }
+
+    async deleteCompany(companyId) {
+        const pool = this._getPool();
+        await pool.query('DELETE FROM companies WHERE id = ?', [companyId]);
+        await enqueueOutboxEvent(pool, {
+            entityType: 'companies', entityId: companyId, operation: 'DELETE',
+            payload: { id: companyId }, version: 1, sourceEngine: 'mysql',
+        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        return true;
     }
 
     async getCoupon(code) {
@@ -1217,6 +1347,29 @@ class MySQLRepository {
         const pool = this._getPool();
         await pool.query('DELETE FROM coupon_redemptions WHERE id = ?', [redemptionId]);
         return true;
+    }
+
+    async claimWebhookEvent(record) {
+        const pool = this._getPool();
+        try {
+            await pool.query(
+                `INSERT INTO payment_webhook_events (event_id, provider, event_type, order_id, payload)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                    record.eventId,
+                    record.provider || '',
+                    record.eventType || '',
+                    record.orderId || null,
+                    JSON.stringify(record),
+                ]
+            );
+            return { duplicate: false, record };
+        } catch (err) {
+            if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+                return { duplicate: true, existing: record };
+            }
+            throw err;
+        }
     }
 }
 

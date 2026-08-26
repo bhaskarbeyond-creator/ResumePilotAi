@@ -41,7 +41,7 @@ export default function CreateWebCvDialog({ open, resumes, loading, onUseResume,
                             {resumes.map((resume) => {
                                 const data = normalizeResumeData(resume.data || resume.item || resume);
                                 const completeness = computeResumeCompleteness(data);
-                                const updated = resume.updatedAt ? new Date(resume.updatedAt?.toDate ? resume.updatedAt.toDate() : resume.updatedAt).toLocaleDateString() : 'Unknown';
+                                const updated = resume.updatedAt ? (() => { try { const d = typeof resume.updatedAt?.toDate === 'function' ? resume.updatedAt.toDate() : new Date(resume.updatedAt); return Number.isFinite(d.getTime()) ? d.toLocaleDateString() : 'Unknown'; } catch { return 'Unknown'; } })() : 'Unknown';
                                 return (
                                     <label key={resume.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${selectedId === resume.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200'}`}>
                                         <input type="radio" name="webcv-resume" className="mt-1" checked={selectedId === resume.id} onChange={() => setSelectedId(resume.id)} />

@@ -28,6 +28,7 @@ import {
 } from 'react-icons/fa';
 import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../firestore/dbOperations';
 import { AuthContext } from '../../../main';
+import { formatSafeDate, parseSafeDate } from '../../../utils/subscriptionUtils.js';
 import JobApplicationsModal from './JobApplicationsModal';
 import AddCompanyModal from './AddCompanyModal';
 import EditJobModal from './EditJobModal';
@@ -358,25 +359,8 @@ const EmployerDashboard = ({ showToast, sidebarCollapsed, t }) => {
     };
 
     const formatDate = (dateInput) => {
-        if (!dateInput) return 'Date not specified';
-
-        let date;
-        if (dateInput.toDate && typeof dateInput.toDate === 'function') {
-            // Firestore timestamp
-            date = dateInput.toDate();
-        } else if (dateInput instanceof Date) {
-            date = dateInput;
-        } else if (typeof dateInput === 'string') {
-            date = new Date(dateInput);
-        } else {
-            return 'Invalid date';
-        }
-
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
+        const formatted = formatSafeDate(dateInput, 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        return formatted || (dateInput ? 'Invalid date' : 'Date not specified');
     };
 
     if (loading) {
