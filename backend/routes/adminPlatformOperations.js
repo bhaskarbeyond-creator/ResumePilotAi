@@ -82,7 +82,7 @@ router.get('/subscriptions', requirePermission('payments.read'), async (req, res
         }
 
         const [orderRows] = await pool.query(
-          "SELECT id, uid, plan_id, amount, currency, status, gateway, created_at FROM payment_orders ORDER BY created_at DESC LIMIT ?",
+          "SELECT id, uid, plan_id, amount, currency, status, provider, last_payment_gateway, created_at FROM payment_orders ORDER BY created_at DESC LIMIT ?",
           [limit]
         );
         if (Array.isArray(orderRows)) {
@@ -95,7 +95,7 @@ router.get('/subscriptions', requirePermission('payments.read'), async (req, res
             currency: normalizeCurrencyCode(o.currency || 'INR'),
             formattedAmount: formatCurrencyAmount((o.amount || 0) / 100, o.currency || 'INR'),
             status: o.status || 'ACTIVE',
-            provider: o.gateway || 'Gateway',
+            provider: o.provider || o.last_payment_gateway || 'Gateway',
             createdAt: adminIso(o.created_at),
           }));
         }

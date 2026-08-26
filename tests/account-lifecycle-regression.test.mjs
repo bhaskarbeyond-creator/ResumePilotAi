@@ -22,14 +22,20 @@ test('account deletion removes deleted-user messaging without deleting participa
 });
 
 test('account export is active-UID-bound, broad, and reports partial availability truthfully', async () => {
-  const [operations, profile] = await Promise.all([
+  const [operations, backend, profile] = await Promise.all([
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('src/components/Dashboard/DashboardSettings/DashboardSettings.jsx', 'utf8'),
   ]);
-  const exported = operations.slice(operations.indexOf('export async function exportUserDataJSON'), operations.indexOf('// Firebase Identity Platform native TOTP MFA.'));
+  // Frontend: the export is assembled by the backend API for the active UID only.
+  const exported = operations.slice(operations.indexOf('export async function exportUserDataJSON'), operations.indexOf('export async function beginUserTotp2FA'));
   assert.match(exported, /uid !== authenticatedUser\.uid/);
-  for (const section of ['legacyCovers', 'jobTracker', 'loginHistory', 'nestedInvoices', 'notifications', 'employerApplication', 'messaging', 'exportWarnings']) assert.match(exported, new RegExp(section));
-  assert.match(exported, /user-conversations\/\$\{uid\}/);
+  assert.match(exported, /\/api\/account\/export/);
+  // Backend: the MySQL-assembled export covers the same broad section set.
+  const exportEndpoint = backend.slice(backend.indexOf("app.post('/api/account/export'"), backend.indexOf("app.post('/api/account/delete'"));
+  for (const section of ['resumes', 'portfolios', 'covers', 'favourites', 'jobTracker', 'transactions', 'notifications', 'applications', 'messaging', 'exportWarnings']) assert.match(exportEndpoint, new RegExp(section));
+  assert.match(exportEndpoint, /user-conversations\/\$\{uid\}/);
+  assert.match(exportEndpoint, /repo\.getUser\(uid\)/);
   assert.match(profile, /Review exportWarnings in the file/);
   assert.match(profile, /notification, and messaging data will be removed/);
 });

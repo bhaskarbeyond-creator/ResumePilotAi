@@ -568,7 +568,7 @@ function DashboardSettings(_props) {
                     const snapshot = profileSnapshot || profileRef.current;
                     const baseRevision = Number.isInteger(expectedRevision) ? expectedRevision : snapshot.revision;
                     const profileToSave = normalizeProfileForSave(snapshot);
-                    const result = await saveProfile(fire.firestore(), currentUser.uid, profileToSave, baseRevision);
+                    const result = await saveProfile(null, currentUser.uid, profileToSave, baseRevision);
                     if (!mountedRef.current) throw Object.assign(new Error('Profile save cancelled.'), { code: 'PROFILE_SAVE_CANCELLED' });
                     if (!result.success) throw Object.assign(new Error(result.error || 'Profile save failed.'), { code: result.code, remoteRevision: result.remoteRevision });
 
@@ -1354,7 +1354,7 @@ function DashboardSettings(_props) {
         if (profileConflictRef.current) { triggerNotification('Resolve the newer profile revision before replacing the avatar.', 'error'); return; }
         setProfileSaveState('saving');
         const avatarOnly = { ...profileRef.current, selectedImage: croppedDataUrl };
-        const result = await saveProfile(fire.firestore(), currentUser.uid, avatarOnly, profileRef.current.revision);
+        const result = await saveProfile(null, currentUser.uid, avatarOnly, profileRef.current.revision);
         if (!result.success) {
             setProfileSaveState(result.code === 'PROFILE_CONFLICT' ? 'conflict' : 'failed');
             if (result.code === 'PROFILE_CONFLICT') setProfileConflict({ remoteRevision: result.remoteRevision });

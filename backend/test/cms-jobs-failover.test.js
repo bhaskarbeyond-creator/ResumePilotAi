@@ -74,7 +74,7 @@ test('CMS blog post write survives Firestore outage via MariaDB', async () => {
     assert.equal(s.mysql.has('blog:post-1'), true);
 });
 
-test('job write fails over to Firestore when MariaDB is down', async () => {
+test('job write degrades with a controlled error when MariaDB is down — no Firestore failover', async () => {
     fencing.__resetForTests();
     authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: false, firestoreHealthy: true });
     authority.recordFailure('mysql', 'write', new Error('down'));
@@ -82,9 +82,11 @@ test('job write fails over to Firestore when MariaDB is down', async () => {
     const s = makeRepos();
     s.mysqlFail.value = true;
     const repo = new ResilientRepository({ mysqlRepo: s.mysqlRepo, firestoreRepo: s.firestoreRepo });
-    const saved = await repo.saveJob('job-1', { title: 'Engineer', employerId: 'emp', status: 'pending', revision: 1 });
-    assert.equal(saved.id, 'job-1');
-    assert.equal(s.firestore.has('job:job-1'), true);
+    await assert.rejects(
+        () => repo.saveJob('job-1', { title: 'Engineer', employerId: 'emp', status: 'pending', revision: 1 }),
+        error => error.code === 'SERVICE_DEGRADED' || error.code === 'DATABASE_UNAVAILABLE'
+    );
+    assert.equal(s.firestore.has('job:job-1'), false, 'Firestore must never receive the write');
 });
 
 test('custom page and company writes are repository-mediated', async () => {

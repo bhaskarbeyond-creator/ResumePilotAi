@@ -51,7 +51,7 @@ function humanizeOrgName(name, fallback = 'your enterprise workspace') {
 }
 
 async function getAdminEmail(db) {
-    // Priority 1: Unified Email Config via backend/routes/email.js (reads local JSON + Firestore data/system_settings)
+    // Priority 1: Unified Email Config via backend/routes/email.js (MySQL system_settings)
     try {
         const emailRoute = require('../routes/email');
         if (emailRoute && typeof emailRoute.getEmailConfig === 'function') {
@@ -64,26 +64,18 @@ async function getAdminEmail(db) {
         // Non-fatal — proceed to fallback checks
     }
 
-    // Priority 2: Direct Firestore fallback across all known namespaces
-    if (db) {
-        try {
-            const sysDoc = await db.collection('data').doc('system_settings').get();
-            if (sysDoc.exists) {
-                const data = sysDoc.data() || {};
-                const adminEmail = data.smtp?.adminEmail || data.adminEmail;
-                if (adminEmail && adminEmail.includes('@')) return adminEmail;
-            }
-        } catch (_) {}
-
-        try {
-            const doc = await db.collection('settings').doc('smtp').get();
-            if (doc.exists) {
-                const data = doc.data() || {};
-                const adminEmail = data.adminEmail || data.smtp?.adminEmail || data.username;
-                if (adminEmail && adminEmail.includes('@')) return adminEmail;
-            }
-        } catch (_) {}
-    }
+    // Priority 2: Authoritative MySQL settings store (never Firestore).
+    try {
+        const { getRepository } = require('../repositories');
+        const repo = getRepository(db);
+        const data = (await repo.getSetting('system_settings').catch(() => ({}))) || {};
+        const stored = data.smtp || data || {};
+        const adminEmail = stored.adminEmail || data.adminEmail;
+        if (adminEmail && String(adminEmail).includes('@')) return adminEmail;
+        const smtp = (await repo.getSetting('smtp').catch(() => ({}))) || {};
+        const smtpAdmin = smtp.adminEmail || smtp.smtp?.adminEmail || smtp.username;
+        if (smtpAdmin && String(smtpAdmin).includes('@')) return smtpAdmin;
+    } catch (_) {}
 
     // Priority 3: Environment variable fallback
     const envAdmin = process.env.ADMIN_EMAIL || process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USERNAME;

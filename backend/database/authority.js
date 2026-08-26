@@ -51,7 +51,13 @@ const MODES = Object.freeze({
 const HEALTH_TTL_MS = Number(process.env.DB_HEALTH_TTL_MS || 4000);
 const FAILURE_THRESHOLD = Number(process.env.DB_FAILOVER_FAILURE_THRESHOLD || 2);
 const RECOVERY_THRESHOLD = Number(process.env.DB_RECOVERY_SUCCESS_THRESHOLD || 2);
-const AUTO_FAILOVER = String(process.env.DB_AUTO_FAILOVER || 'true').toLowerCase() !== 'false';
+// Automatic failover is OFF by default. MySQL/MariaDB is the single authoritative
+// store; a MySQL outage degrades writes with controlled errors instead of silently
+// switching the source of truth to Firestore (dual-source problem). Firestore can
+// only become a write target when ALLOW_FIRESTORE_FAILOVER=true is set explicitly
+// by an operator who accepts the standby-write semantics.
+const AUTO_FAILOVER = String(process.env.DB_AUTO_FAILOVER || 'false').toLowerCase() !== 'false';
+const ALLOW_FIRESTORE_FAILOVER = String(process.env.ALLOW_FIRESTORE_FAILOVER || 'false').toLowerCase() === 'true';
 
 let configuredPrimary = null;
 let operationalWriteEngine = null;
@@ -94,14 +100,22 @@ function getConfiguredSecondary() {
 
 function getWriteEngine() {
     getConfiguredPrimary();
+    // Firestore can never be the write engine unless an operator explicitly
+    // enables standby failover. Default: MySQL is the only write target.
+    if (operationalWriteEngine === 'firestore' && !ALLOW_FIRESTORE_FAILOVER) {
+        operationalWriteEngine = 'mysql';
+    }
     return operationalWriteEngine;
 }
 
 function getReadOrder() {
     const primary = getConfiguredPrimary();
     const write = getWriteEngine() || primary;
-    const secondary = write === 'mysql' ? 'firestore' : 'mysql';
     if (mode === MODES.BOTH_UNAVAILABLE) return [];
+    // Synchronous reads always go to MySQL first. Firestore appears in the read
+    // order only in the explicitly-opted-in standby-failover configuration.
+    const secondary = write === 'mysql' ? 'firestore' : 'mysql';
+    if (!ALLOW_FIRESTORE_FAILOVER && secondary === 'firestore') return [write];
     if (mode === MODES.MARIADB_FAILED_OVER || mode === MODES.RECONCILING) {
         return write === 'firestore' ? ['firestore', 'mysql'] : ['mysql', 'firestore'];
     }
@@ -167,7 +181,11 @@ function emit(event, payload) {
 }
 
 function maybeFailover() {
-    if (!AUTO_FAILOVER) {
+    if (!AUTO_FAILOVER || !ALLOW_FIRESTORE_FAILOVER) {
+        // Controlled degradation: MySQL stays the only authoritative store. When
+        // MySQL is down, classifyMode reports MARIADB_DEGRADED / BOTH_UNAVAILABLE
+        // and write paths surface controlled errors instead of silently switching
+        // to Firestore.
         mode = classifyMode();
         return;
     }
@@ -302,6 +320,10 @@ function canAcceptWrites() {
     const write = getWriteEngine();
     const health = healthCache[write];
     if (health.healthy === false && health.consecutiveFailures >= FAILURE_THRESHOLD) {
+        // Without an operator-approved Firestore failover the authoritative
+        // MySQL store being down means writes cannot be accepted: no fabricated
+        // success, no silent switch to another database.
+        if (!ALLOW_FIRESTORE_FAILOVER) return false;
         const other = write === 'mysql' ? 'firestore' : 'mysql';
         if (healthCache[other].healthy === false) return false;
     }

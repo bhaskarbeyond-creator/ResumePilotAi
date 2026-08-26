@@ -147,7 +147,9 @@ class MySQLRepository {
                 sourceEngine: 'mysql'
             });
 
-            return { id: resumeId, revision: nextRev, ...data };
+            // revision must reflect the stored value; a caller-supplied stale
+            // `revision` in `data` must never mask the authoritative nextRev.
+            return { id: resumeId, ...data, revision: nextRev, user_id: userId };
         });
     }
 
@@ -156,7 +158,10 @@ class MySQLRepository {
         const [existing] = await pool.query('SELECT revision FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]).catch(() => [[]]);
         const rev = existing && existing.length ? Number(existing[0].revision || 1) : 1;
 
-        await pool.query('DELETE FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]);
+        // Owner-scoped delete: return 0 when the caller does not own the resume
+        // so the route can answer 404 instead of a fabricated success.
+        const [result] = await pool.query('DELETE FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]);
+        if (!Number(result.affectedRows || 0)) return 0;
         await pool.query('DELETE FROM public_resumes WHERE id = ? AND owner_uid = ?', [resumeId, userId]);
         await pool.query('DELETE FROM favourites WHERE item_id = ? AND user_id = ?', [resumeId, userId]);
         await recordTombstone(pool, { entityType: 'resumes', entityId: resumeId, version: rev, sourceEngine: 'mysql' });
@@ -334,15 +339,8 @@ class MySQLRepository {
         }));
     }
 
-    async saveUser(userId, userData) {
-        return this._withTransaction(async (connection) => {
-            const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]).catch(async () => {
-                const [rows] = await connection.query('SELECT 1 FROM users WHERE id = ?', [userId]);
-                return [rows.map(() => ({ revision: 0 }))];
-            });
-            const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
-            const nextRev = Number(userData.revision || currentRev + 1);
-            const knownUserCols = new Set([
+    async _upsertUser(connection, userId, userData, nextRev) {
+        const knownUserCols = new Set([
                 'id', 'email', 'firstname', 'lastname', 'displayName', 'photoUrl', 'avatarUrl',
                 'phone', 'jobTitle', 'bio', 'city', 'country', 'website', 'membership',
                 'membershipEnds', 'paymentStatus', 'lastPaymentGateway', 'lastPaymentOrderId',
@@ -410,6 +408,42 @@ class MySQLRepository {
             }
 
             return { id: userId, revision: nextRev, ...userData };
+    }
+
+    async saveUser(userId, userData) {
+        return this._withTransaction(async (connection) => {
+            const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]).catch(async () => {
+                const [rows] = await connection.query('SELECT 1 FROM users WHERE id = ?', [userId]);
+                return [rows.map(() => ({ revision: 0 }))];
+            });
+            const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
+            const nextRev = Number(userData.revision || currentRev + 1);
+            return this._upsertUser(connection, userId, userData, nextRev);
+        });
+    }
+
+    /**
+     * Optimistic-concurrency user profile save. Reads the current revision
+     * inside the transaction (FOR UPDATE) and fails with PROFILE_CONFLICT
+     * when it does not match `expectedRevision`, so two tabs/devices can
+     * never silently overwrite each other. MySQL is the authoritative store.
+     */
+    async saveUserWithRevisionGuard(userId, userData, expectedRevision = null) {
+        return this._withTransaction(async (connection) => {
+            const [existingRows] = await connection.query('SELECT revision FROM users WHERE id = ? FOR UPDATE', [userId]).catch(async () => {
+                const [rows] = await connection.query('SELECT 1 FROM users WHERE id = ?', [userId]);
+                return [rows.map(() => ({ revision: 0 }))];
+            });
+            const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
+            if (expectedRevision !== null && expectedRevision !== undefined && Number(currentRev) !== Number(expectedRevision)) {
+                const error = new Error('Profile changed in another tab or device.');
+                error.code = 'PROFILE_CONFLICT';
+                error.status = 409;
+                error.remoteRevision = currentRev;
+                throw error;
+            }
+            const nextRev = currentRev + 1;
+            return this._upsertUser(connection, userId, userData, nextRev);
         });
     }
 
@@ -585,7 +619,8 @@ class MySQLRepository {
         const pool = this._getPool();
         const [rows] = await pool.query('SELECT * FROM jobs WHERE id = ? LIMIT 1', [jobId]);
         if (!rows.length) return null;
-        return this._parseJsonRow(rows[0], ['requirements', 'skills']);
+        const row = this._parseJsonRow(rows[0], ['requirements', 'skills']);
+        return { ...row, employerId: row.employer_id, companyId: row.company_id };
     }
 
     async saveJob(jobId, data) {
@@ -714,6 +749,12 @@ class MySQLRepository {
 
     async saveBlogPost(id, data) {
         const pool = this._getPool();
+        const toMysqlDatetime = value => {
+            if (!value) return null;
+            const date = value instanceof Date ? value : new Date(value);
+            if (!Number.isFinite(date.getTime())) return null;
+            return date.toISOString().slice(0, 19).replace('T', ' ');
+        };
         const values = {
             id,
             title: data.title || 'Untitled Post',
@@ -728,6 +769,18 @@ class MySQLRepository {
             published: data.published ? 1 : 0,
             views: Number(data.views || 0),
             likes: Number(data.likes || 0),
+            // Status & scheduling must persist so the CMS scheduler can
+            // transition scheduled → approved and draft → published.
+            status: String(data.status || (data.published ? 'approved' : 'draft')).toLowerCase(),
+            // Explicit nulls must be honored (e.g. the CMS scheduler clearing
+            // scheduledAt after publishing); never fall back to a stale field.
+            scheduled_at: Object.hasOwn(data, 'scheduledAt')
+                ? toMysqlDatetime(data.scheduledAt)
+                : (Object.hasOwn(data, 'scheduled_at') ? toMysqlDatetime(data.scheduled_at) : null),
+            published_at: Object.hasOwn(data, 'publishedAt')
+                ? toMysqlDatetime(data.publishedAt)
+                : (Object.hasOwn(data, 'published_at') ? toMysqlDatetime(data.published_at) : (data.published ? toMysqlDatetime(new Date()) : null)),
+            revision: Number(data.revision || 1),
         };
         const keys = Object.keys(values);
         const placeholders = keys.map(() => '?').join(', ');
@@ -742,7 +795,7 @@ class MySQLRepository {
             entityType: 'blog', entityId: id, operation: 'UPSERT',
             payload: { ...data, id, revision }, version: revision, sourceEngine: 'mysql',
         }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
-        return { id, ...data };
+        return { id, ...data, revision };
     }
 
     async deleteBlogPost(id) {
@@ -932,6 +985,55 @@ class MySQLRepository {
             [category, dataJson, revision]
         );
         return { category, data, revision };
+    }
+
+    // ==========================================
+    // 9b. FAVOURITES (MySQL authoritative; formerly Firestore users/{uid}/favourites)
+    // ==========================================
+    async getFavourites(userId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT id, item_id, item_type, data, created_at FROM favourites WHERE user_id = ? ORDER BY created_at DESC',
+            [userId]
+        );
+        return rows.map(r => {
+            let payload = {};
+            try { payload = r.data && typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {}); } catch { /* ignore */ }
+            return {
+                id: r.id,
+                itemId: r.item_id,
+                itemType: r.item_type,
+                createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
+                ...payload,
+            };
+        });
+    }
+
+    async addFavourite(userId, itemId, itemType = 'resume', data = {}) {
+        const pool = this._getPool();
+        const id = `fav_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        await pool.query(
+            `INSERT INTO favourites (id, user_id, item_id, item_type, data)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE data = VALUES(data)`,
+            [id, userId, String(itemId), String(itemType).slice(0, 50), JSON.stringify(data || {})]
+        );
+        return { id, itemId, itemType, ...data };
+    }
+
+    async removeFavourite(userId, itemId) {
+        const pool = this._getPool();
+        await pool.query('DELETE FROM favourites WHERE user_id = ? AND item_id = ?', [userId, String(itemId)]);
+        return true;
+    }
+
+    async isFavourite(userId, itemId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT id FROM favourites WHERE user_id = ? AND item_id = ? LIMIT 1',
+            [userId, String(itemId)]
+        );
+        return rows.length > 0;
     }
 
     async getStats() {
@@ -1241,7 +1343,11 @@ class MySQLRepository {
     async getCompany(companyId) {
         const pool = this._getPool();
         const [rows] = await pool.query('SELECT * FROM companies WHERE id = ? LIMIT 1', [companyId]);
-        return rows.length ? rows[0] : null;
+        if (!rows.length) return null;
+        const row = rows[0];
+        let extra = {};
+        if (row.extra_json) { try { extra = typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : row.extra_json; } catch { /* ignore */ } }
+        return { ...row, ...extra, employerId: row.owner_id, companyName: row.name, companyWebsite: row.website };
     }
 
     async getCompanies(filters = {}) {

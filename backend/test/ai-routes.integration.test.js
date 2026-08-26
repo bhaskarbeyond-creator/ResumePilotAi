@@ -16,26 +16,24 @@ setTokenVerifierForTests(async token => {
 
 const app = require('../index');
 const usage = new Map();
-const secrets = { gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } };
-const fakeDb = {
-  collection(name) {
-    return {
-      doc(id) {
-        if (name === 'users') return { id, async get() { return { exists: true, data: () => ({ membership: 'Premium' }) }; } };
-        if (name === 'settings') return { id, async get() { return { exists: true, data: () => secrets }; } };
-        if (name === 'data') return { id, async get() { return { exists: true, data: () => ({ ai: { provider: 'gemini', enableGemini: true } }) }; } };
-        return { id, async get() { return { exists: false, data: () => usage.get(id) || {} }; } };
-      },
-    };
-  },
-  async runTransaction(callback) {
-    await callback({
-      async get(reference) { return { exists: usage.has(reference.id), data: () => usage.get(reference.id) || {} }; },
-      set(reference, value) { usage.set(reference.id, { ...(usage.get(reference.id) || {}), ...value }); },
-    });
-  },
-};
-app.set('db', fakeDb);
+// AI provider secrets are seeded in the authoritative MySQL system_settings
+// store (Firestore data plane is OFF). Seeded in a `before` hook so the
+// inserts are durable before any route is exercised.
+const { before } = require('node:test');
+const { getPool } = require('../database/mysql');
+before(async () => {
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1)",
+    [JSON.stringify({ gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } })]);
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)",
+    [JSON.stringify({ ai: { provider: 'gemini', enableGemini: true, enableFallback: true, maxTokens: 2048 } })]);
+  // Premium user so the daily AI limit is 100 (resolveEffectiveEntitlement).
+  await pool.query(
+    "INSERT INTO users (id, email, membership, paymentStatus) VALUES ('owner-1', 'owner@example.com', 'Premium', 'ACTIVE') ON DUPLICATE KEY UPDATE membership = 'Premium', paymentStatus = 'ACTIVE'"
+  );
+});
+app.set('db', null);
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 
 test.beforeEach(() => {

@@ -5,6 +5,15 @@ const express = require('express');
 const http = require('node:http');
 const { once } = require('node:events');
 const ai = require('../routes/ai');
+const { before } = require('node:test');
+const { getPool } = require('../database/mysql');
+before(async () => {
+  // Clear stale AI settings left by other suites so this file's env-key
+  // contract is deterministic.
+  await getPool().query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')").catch(() => {});
+  const runtime = require('../services/aiRuntime');
+  if (typeof runtime._clearProviderConfigurationCache === 'function') runtime._clearProviderConfigurationCache();
+});
 
 // ── Helpers: run a real Express app on an ephemeral port and POST JSON ───────
 function buildApp() {

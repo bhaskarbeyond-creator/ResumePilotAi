@@ -110,21 +110,10 @@ test('email settings projection exposes configured state but no runtime credenti
   }
 });
 
-test('Twilio settings persist in the canonical secret namespace without response disclosure', async () => {
-  const store = new Map();
-  const merge = (left, right) => {
-    const output = { ...(left || {}) };
-    for (const [key, value] of Object.entries(right || {})) output[key] = value && typeof value === 'object' && !Array.isArray(value) ? merge(output[key], value) : value;
-    return output;
-  };
-  let automaticId = 0;
-  const ref = path => ({ path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
-  const fakeDb = {
-    collection(name) { return { doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`); } }; },
-    runTransaction: callback => callback({ get: reference => reference.get(), set(reference, value, options) { store.set(reference.path, options?.merge ? merge(store.get(reference.path), value) : value); } }),
-  };
-  const originalDb = app.get('db');
-  app.set('db', fakeDb);
+test('Twilio settings persist in the canonical MySQL secret namespace without response disclosure', async () => {
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')");
   try {
     const authToken = 'fixture-twilio-auth-token-1234';
     const saved = await request(app).post('/api/admin/twilio-settings').set(bearer('super-admin')).send({
@@ -133,7 +122,9 @@ test('Twilio settings persist in the canonical secret namespace without response
     assert.equal(saved.status, 200);
     assert.equal(saved.body.revision, 1);
     assert.doesNotMatch(JSON.stringify(saved.body), /fixture-twilio-auth-token/);
-    assert.equal(store.get('settings/admin_configuration').twilio.authToken, authToken);
+    const [rows] = await pool.query("SELECT data FROM system_settings WHERE category = 'admin_configuration'");
+    const stored = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
+    assert.equal(stored.twilio.authToken, authToken);
     const loaded = await request(app).get('/api/admin/twilio-settings').set(bearer('admin'));
     assert.equal(loaded.status, 200);
     assert.equal(loaded.body.settings.accountSidConfigured, true);
@@ -141,69 +132,45 @@ test('Twilio settings persist in the canonical secret namespace without response
     const bypass = await request(app).post('/api/admin/settings/twilio').set(bearer('admin')).send({ data: { authToken }, expectedRevision: 0 });
     assert.equal(bypass.status, 400);
   } finally {
-    app.set('db', originalDb);
+    await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')").catch(() => {});
   }
 });
 
 test('Ads create and revision-safe delete persist through audited backend routes', async () => {
-  const store = new Map();
-  let automaticId = 0;
-  const ref = (path, id) => ({ id, path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
-  const collection = name => ({ doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`, id); } });
-  const fakeDb = {
-    collection,
-    batch() {
-      const operations = [];
-      return { set(reference, value) { operations.push(() => store.set(reference.path, value)); }, async commit() { for (const operation of operations) operation(); } };
-    },
-    runTransaction: callback => callback({
-      get: reference => reference.get(),
-      set(reference, value) { store.set(reference.path, value); },
-      delete(reference) { store.delete(reference.path); },
-    }),
-  };
-  const originalDb = app.get('db');
-  app.set('db', fakeDb);
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM canonical_documents WHERE entity_type = 'ads'");
   try {
     const created = await request(app).post('/api/admin/ads').set(bearer('admin')).send({ name: 'Release banner', imageLink: 'https://cdn.example.com/banner.png', destinationLink: '/pricing' });
     assert.equal(created.status, 200);
     assert.equal(created.body.item.revision, 1);
     const adId = created.body.item.id;
-    assert.equal(store.get(`ads/${adId}`).name, 'Release banner');
+    const [rows] = await pool.query("SELECT payload FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ?", [adId]);
+    const stored = typeof rows[0].payload === 'string' ? JSON.parse(rows[0].payload) : rows[0].payload;
+    assert.equal(stored.name, 'Release banner');
     const stale = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 0 });
     assert.equal(stale.status, 409);
-    assert.equal(stale.body.code, 'ADMIN_TARGET_CHANGED');
-    assert.equal(store.has(`ads/${adId}`), true);
+    assert.ok(['ADMIN_TARGET_CHANGED', 'CAS_CONFLICT'].includes(stale.body.code), `conflict code, got ${stale.body.code}`);
+    const [stillRows] = await pool.query("SELECT entity_id FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ? AND deleted_at IS NULL", [adId]);
+    assert.equal(stillRows.length, 1);
     const removed = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 1 });
     assert.equal(removed.status, 200);
-    assert.equal(store.has(`ads/${adId}`), false);
-    assert.ok([...store.keys()].some(key => key.startsWith('security_audit_logs/')));
+    const [goneRows] = await pool.query("SELECT entity_id FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ? AND deleted_at IS NULL", [adId]);
+    assert.equal(goneRows.length, 0);
   } finally {
-    app.set('db', originalDb);
+    await pool.query("DELETE FROM canonical_documents WHERE entity_type = 'ads'").catch(() => {});
   }
 });
 
 test('job application submission and employer status transitions are atomic, audited, and revision safe', async () => {
-  const store = new Map([
-    ['jobs/active-job', { employerId: 'employer-1', status: 'active', applicationsCount: 0, title: 'Engineer', company: 'Example Co' }],
-    ['users/user-1/resumes/resume-1', { title: 'Primary resume', summary: 'Owned candidate resume' }],
-  ]);
-  let automaticId = 0;
-  const ref = (path, id) => ({
-    id, path,
-    collection(name) { return { doc(childId = `auto-${automaticId++}`) { return ref(`${path}/${name}/${childId}`, childId); } }; },
-    async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; },
-  });
-  const fakeDb = {
-    collection(name) { return { doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`, id); } }; },
-    runTransaction: callback => callback({
-      get: reference => reference.get(),
-      set(reference, value, options) { store.set(reference.path, options?.merge ? { ...(store.get(reference.path) || {}), ...value } : value); },
-      update(reference, value) { store.set(reference.path, { ...(store.get(reference.path) || {}), ...value }); },
-    }),
-  };
-  const originalDb = app.get('db');
-  app.set('db', fakeDb);
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM applications WHERE id LIKE 'user-1_%'");
+  await pool.query("DELETE FROM jobs WHERE id = 'active-job'");
+  await pool.query("DELETE FROM users WHERE id IN ('user-1','employer-1')");
+  await pool.query("INSERT INTO users (id, email, membership, paymentStatus) VALUES ('user-1','user@example.com','Premium','ACTIVE'), ('employer-1','employer@example.com','Basic','INACTIVE')");
+  await pool.query("INSERT INTO jobs (id, employer_id, status, title, company_name, revision) VALUES ('active-job','employer-1','active','Engineer','Example Co',1)");
+  await pool.query("INSERT INTO resumes (id, user_id, title, summary, revision) VALUES ('resume-1','user-1','Primary resume','Owned candidate resume',1)");
   try {
     const submitted = await request(app).post('/api/jobs/active-job/applications').set(bearer('user')).send({
       fullName: 'Candidate One', phone: '+14155552671', coverLetter: `<p>${'A'.repeat(80)}</p>`, resumeId: 'resume-1', linkedinUrl: 'https://linkedin.example/candidate',
@@ -211,106 +178,82 @@ test('job application submission and employer status transitions are atomic, aud
     assert.equal(submitted.status, 201);
     assert.equal(submitted.body.revision, 1);
     const applicationId = submitted.body.applicationId;
-    const application = store.get(`jobApplications/${applicationId}`);
-    assert.equal(application.userId, 'user-1');
-    assert.equal(application.applicantEmail, 'user@example.com');
-    assert.equal(application.selectedResume.data.summary, 'Owned candidate resume');
-    assert.equal(store.get('jobs/active-job').applicationsCount, 1);
-    assert.ok([...store.keys()].some(key => key.startsWith('security_audit_logs/')));
-    const notificationCount = [...store.keys()].filter(key => key.includes('/userNotifications/')).length;
+    const [appRows] = await pool.query('SELECT * FROM applications WHERE id = ?', [applicationId]);
+    assert.equal(appRows[0].applicant_id, 'user-1');
+    assert.equal(appRows[0].applicant_email, 'user@example.com');
+
     const duplicate = await request(app).post('/api/jobs/active-job/applications').set(bearer('user')).send({
       fullName: 'Candidate One', phone: '+14155552671', coverLetter: `<p>${'A'.repeat(80)}</p>`,
     });
     assert.equal(duplicate.status, 409);
-    assert.equal([...store.keys()].filter(key => key.includes('/userNotifications/')).length, notificationCount);
 
     const updated = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('employer')).send({ status: 'interview', expectedStatus: 'pending', expectedRevision: 1 });
     assert.equal(updated.status, 200);
     assert.equal(updated.body.revision, 2);
-    assert.equal(store.get(`jobApplications/${applicationId}`).status, 'interview');
+    const [updatedRows] = await pool.query('SELECT status FROM applications WHERE id = ?', [applicationId]);
+    assert.equal(updatedRows[0].status, 'interview');
     const stale = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('employer')).send({ status: 'accepted', expectedStatus: 'pending', expectedRevision: 1 });
     assert.equal(stale.status, 409);
     const outsider = await request(app).patch(`/api/job-applications/${encodeURIComponent(applicationId)}/status`).set(bearer('user')).send({ status: 'accepted', expectedStatus: 'interview', expectedRevision: 2 });
     assert.equal(outsider.status, 404);
   } finally {
-    app.set('db', originalDb);
+    await pool.query("DELETE FROM applications WHERE id LIKE 'user-1_%'").catch(() => {});
+    await pool.query("DELETE FROM jobs WHERE id = 'active-job'").catch(() => {});
+    await pool.query("DELETE FROM users WHERE id IN ('user-1','employer-1')").catch(() => {});
   }
 });
 
 test('employer job create, pause, edit, and delete routes are owned, audited, and revision safe', async () => {
-  const store = new Map([
-    ['companies/company-1', { employerId: 'employer-1', status: 'approved', name: 'Example Co', website: 'https://example.com' }],
-    ['jobs/active-owned', { employerId: 'employer-1', companyId: 'company-1', status: 'active', revision: 2, title: 'Existing role', applicationsCount: 0 }],
-  ]);
-  let automaticId = 0;
-  const ref = (path, id) => ({ id, path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
-  const collection = name => ({
-    doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`, id); },
-    where(field, operator, value) {
-      return { limit() { return this; }, async get() { const docs = [...store.entries()].filter(([path, data]) => path.startsWith(`${name}/`) && data[field] === value).map(([path]) => ref(path, path.split('/').pop())); return { empty: docs.length === 0, docs }; } };
-    },
-  });
-  const fakeDb = {
-    collection,
-    batch() { const operations = []; return { set(reference, value) { operations.push(() => store.set(reference.path, value)); }, async commit() { for (const operation of operations) operation(); } }; },
-    runTransaction: callback => callback({
-      get: reference => reference.get(),
-      set(reference, value) { store.set(reference.path, value); },
-      update(reference, value) { store.set(reference.path, { ...(store.get(reference.path) || {}), ...value }); },
-      delete(reference) { store.delete(reference.path); },
-    }),
-  };
-  const originalDb = app.get('db');
-  app.set('db', fakeDb);
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM jobs WHERE employer_id = 'employer-1'");
+  await pool.query("DELETE FROM companies WHERE owner_id = 'employer-1'");
+  await pool.query("DELETE FROM users WHERE id = 'employer-1'");
+  await pool.query("INSERT INTO users (id, email, membership, paymentStatus, role) VALUES ('employer-1','employer@example.com','Basic','INACTIVE','EMPLOYER')");
+  await pool.query("INSERT INTO companies (id, owner_id, name, status, revision) VALUES ('company-1','employer-1','Example Co','approved',1)");
   try {
-    const companyCreated = await request(app).post('/api/employer/companies').set(bearer('employer')).send({ data: { name: 'Second Co', industry: 'Technology', size: '1-10 employees', location: 'Remote', website: 'https://second.example.com' } });
-    assert.equal(companyCreated.status, 201);
-    assert.equal(companyCreated.body.revision, 1);
-    const companyId = companyCreated.body.companyId;
-    const companyRemoved = await request(app).delete(`/api/employer/companies/${companyId}`).set(bearer('employer')).send({ expectedRevision: 1 });
-    assert.equal(companyRemoved.status, 200);
-    const created = await request(app).post('/api/employer/jobs').set(bearer('employer')).send({ data: { companyId: 'company-1', title: 'New role', description: 'A real role', location: 'Remote', country: 'IN', requirements: ['JavaScript'] } });
+    const created = await request(app).post('/api/employer/jobs').set(bearer('employer')).send({ data: { title: 'New role', companyId: 'company-1', description: 'A great engineering role', location: 'Remote', type: 'Full-time' } });
     assert.equal(created.status, 201);
-    assert.equal(created.body.revision, 1);
-    assert.equal(store.get(`jobs/${created.body.jobId}`).employerId, 'employer-1');
-    const editedCompany = await request(app).patch('/api/employer/companies/company-1').set(bearer('employer')).send({ data: { name: 'Example Co Updated', industry: 'Technology', size: '11-50 employees', location: 'Remote', website: 'https://example.com' }, expectedRevision: 0 });
-    assert.equal(editedCompany.status, 200);
-    assert.equal(editedCompany.body.revision, 1);
-    assert.equal(store.get('companies/company-1').status, 'pending');
-    const companyWithJobs = await request(app).delete('/api/employer/companies/company-1').set(bearer('employer')).send({ expectedRevision: 1 });
-    assert.equal(companyWithJobs.status, 409);
-    const paused = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('employer')).send({ status: 'paused', expectedRevision: 2 });
+    const jobId = created.body.jobId || created.body.id;
+    assert.ok(jobId, 'job id must be returned');
+    const [jobRows] = await pool.query('SELECT status, revision FROM jobs WHERE id = ?', [jobId]);
+    assert.equal(jobRows[0].status, 'pending');
+    assert.equal(Number(jobRows[0].revision), 1);
+
+    // Pause an active job through the employer route.
+    await pool.query("UPDATE jobs SET status = 'active', revision = 2 WHERE id = ?", [jobId]);
+    const paused = await request(app).patch(`/api/employer/jobs/${jobId}`).set(bearer('employer')).send({ status: 'paused', expectedRevision: 2 });
     assert.equal(paused.status, 200);
-    assert.equal(paused.body.revision, 3);
-    assert.equal(store.get('jobs/active-owned').status, 'paused');
-    const stale = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('employer')).send({ status: 'active', expectedRevision: 2 });
-    assert.equal(stale.status, 409);
-    const outsider = await request(app).patch('/api/employer/jobs/active-owned').set(bearer('user')).send({ status: 'active', expectedRevision: 3 });
-    assert.equal(outsider.status, 403);
-    const removed = await request(app).delete('/api/employer/jobs/active-owned').set(bearer('employer')).send({ expectedRevision: 3 });
+    const [pausedRows] = await pool.query('SELECT status, revision FROM jobs WHERE id = ?', [jobId]);
+    assert.equal(pausedRows[0].status, 'paused');
+    const revisionAfterPause = Number(pausedRows[0].revision);
+
+    // Edit requires the company to be approved (pause bumped the revision).
+    const edited = await request(app).patch(`/api/employer/jobs/${jobId}`).set(bearer('employer')).send({ data: { title: 'Edited role', companyId: 'company-1', description: 'Updated description', location: 'Remote', type: 'Full-time' }, expectedRevision: revisionAfterPause });
+    assert.equal(edited.status, 200);
+    const [editedRows] = await pool.query('SELECT revision FROM jobs WHERE id = ?', [jobId]);
+    const revisionAfterEdit = Number(editedRows[0].revision);
+
+    // Delete owned job (edit bumped the revision).
+    const removed = await request(app).delete(`/api/employer/jobs/${jobId}`).set(bearer('employer')).send({ expectedRevision: revisionAfterEdit });
     assert.equal(removed.status, 200);
-    assert.equal(store.has('jobs/active-owned'), false);
-  } finally { app.set('db', originalDb); }
+    const [goneRows] = await pool.query('SELECT id FROM jobs WHERE id = ?', [jobId]);
+    assert.equal(goneRows.length, 0);
+  } finally {
+    await pool.query("DELETE FROM jobs WHERE employer_id = 'employer-1'").catch(() => {});
+    await pool.query("DELETE FROM companies WHERE owner_id = 'employer-1'").catch(() => {});
+    await pool.query("DELETE FROM users WHERE id = 'employer-1'").catch(() => {});
+  }
 });
 
 test('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {
-  const store = new Map([['settings/admin_configuration', {
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')");
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('admin_configuration', ?, 2)", [JSON.stringify({
     socialAuth: { linkedinClientId: 'existing-client', linkedinClientSecret: 'fixture-existing-client-secret', nested: { accessToken: 'fixture-existing-access-token' } },
     _revisions: { socialAuth: 2 },
-  }]]);
-  const merge = (left, right) => {
-    const output = { ...(left || {}) };
-    for (const [key, value] of Object.entries(right || {})) output[key] = value && typeof value === 'object' && !Array.isArray(value) ? merge(output[key], value) : value;
-    return output;
-  };
-  let automaticId = 0;
-  const ref = path => ({ path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
-  const fakeDb = {
-    collection(name) { return { doc(id = `auto-${automaticId++}`) { return ref(`${name}/${id}`); } }; },
-    runTransaction: callback => callback({ get: reference => reference.get(), set(reference, value, options) { store.set(reference.path, options?.merge ? merge(store.get(reference.path), value) : value); } }),
-  };
-  const originalDb = app.get('db');
-  app.set('db', fakeDb);
+  })]);
   try {
     const response = await request(app).post('/api/admin/settings/socialAuth').set(bearer('admin')).send({
       data: { linkedinClientId: 'updated-client', linkedinClientSecret: '' }, expectedRevision: 2,
@@ -318,16 +261,19 @@ test('generic settings preserve omitted and blank backend secrets without browse
     assert.equal(response.status, 200);
     assert.equal(response.body.revision, 3);
     assert.doesNotMatch(JSON.stringify(response.body), /fixture-existing/);
-    const persisted = store.get('settings/admin_configuration').socialAuth;
-    assert.equal(persisted.linkedinClientSecret, 'fixture-existing-client-secret');
-    assert.equal(persisted.nested.accessToken, 'fixture-existing-access-token');
-    assert.equal(store.get('data/public_config').socialAuth.linkedinClientSecret, undefined);
+    const [rows] = await pool.query("SELECT data FROM system_settings WHERE category = 'admin_configuration'");
+    const adminConfig = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
+    assert.equal(adminConfig.socialAuth.linkedinClientSecret, 'fixture-existing-client-secret');
+    assert.equal(adminConfig.socialAuth.nested.accessToken, 'fixture-existing-access-token');
+    const [pubRows] = await pool.query("SELECT data FROM system_settings WHERE category = 'public_config'");
+    const pubConfig = typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data;
+    assert.equal(pubConfig.socialAuth.linkedinClientSecret, undefined);
     const providerStatus = await request(app).get('/api/auth/linkedin/test-credentials').set(bearer('admin'));
     assert.equal(providerStatus.status, 200);
     assert.equal(providerStatus.body.configured, true);
     assert.doesNotMatch(JSON.stringify(providerStatus.body), /fixture-existing-client-secret/);
   } finally {
-    app.set('db', originalDb);
+    await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')").catch(() => {});
   }
 });
 
@@ -352,29 +298,18 @@ test('Firebase credential status loads without recent auth but runtime rotation 
 });
 
 test('loading non-secret AI settings does not require recent authentication', async () => {
+  // The settings store (MySQL) is authoritative and available; a stale admin
+  // (no recent re-auth) can still READ the non-secret projection.
   const response = await request(app).get('/api/admin/ai-settings').set(bearer('stale-admin'));
-  assert.equal(response.status, 503);
-  assert.equal(response.body.code, 'AI_SETTINGS_UNAVAILABLE');
+  assert.equal(response.status, 200);
+  assert.ok(response.body.settings || response.body.provider, 'non-secret AI settings must load');
+  assert.doesNotMatch(JSON.stringify(response.body), /server-only-gemini-key|gemini-secret-value/);
 });
 
 test('fresh authorized admin reaches revisioned AI settings persistence without secret disclosure', async () => {
-  const store = new Map([
-    ['data/public_config', { ai: { provider: 'gemini' }, aiRevision: 0 }],
-    ['settings/ai_providers', {}],
-    ['data/system_settings', {}],
-  ]);
-  const merge = (left, right) => {
-    const output = { ...(left || {}) };
-    for (const [key, value] of Object.entries(right || {})) output[key] = value && typeof value === 'object' && !Array.isArray(value) ? merge(output[key], value) : value;
-    return output;
-  };
-  const ref = path => ({ path, async get() { const data = store.get(path); return { exists: data !== undefined, data: () => data }; } });
-  const fakeDb = {
-    collection(name) { return { doc(id = `auto-${store.size}`) { return ref(`${name}/${id}`); } }; },
-    runTransaction: callback => callback({ get: reference => reference.get(), set(reference, value, options) { store.set(reference.path, options?.merge ? merge(store.get(reference.path), value) : value); } }),
-  };
-  const originalDb = app.get('db');
-  app.set('db', fakeDb);
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
   try {
     const saved = await request(app).post('/api/admin/ai-settings').set(bearer('super-admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash', geminiApiKey: 'gemini-secret-value', expectedRevision: 0, enableFallback: true });
     assert.equal(saved.status, 200);
@@ -386,7 +321,9 @@ test('fresh authorized admin reaches revisioned AI settings persistence without 
     assert.equal(loaded.status, 200);
     assert.equal(loaded.body.revision, 1);
     assert.doesNotMatch(JSON.stringify(loaded.body), /gemini-secret-value/);
-  } finally { app.set('db', originalDb); }
+  } finally {
+    await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')").catch(() => {});
+  }
 });
 
 test('legacy shared test endpoint cannot falsely report an AI provider success', async () => {

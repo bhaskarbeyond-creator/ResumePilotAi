@@ -49,7 +49,10 @@ test('account deletion journey exports owned modules, reports retention and inva
   const [profile, operations, backend] = await Promise.all([
     read('src/components/Dashboard/DashboardSettings/DashboardSettings.jsx'), read('src/firestore/dbOperations.js'), read('backend/index.js'),
   ]);
-  assert.match(operations, /publishedPortfolios, blogPosts, jobApplications, jobs, companies/);
+  // The export is assembled server-side from MySQL for the active UID only.
+  assert.match(backend, /repo\.getResumes\(uid\)/);
+  assert.match(backend, /repo\.getPortfolios\(uid\)/);
+  assert.match(backend, /repo\.getFavourites\(uid\)/);
   assert.match(backend, /ACCOUNT_SELF_DELETION_INCOMPLETE/);
   assert.match(backend, /retainedRecordTypes/);
   assert.match(operations, /await fire\.auth\(\)\.signOut/);

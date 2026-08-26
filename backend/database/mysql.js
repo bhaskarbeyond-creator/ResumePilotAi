@@ -159,6 +159,103 @@ async function ensureExtendedSchema(poolOverride = null) {
             PRIMARY KEY (entity_type, entity_id),
             INDEX idx_cd_type (entity_type)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        // OAuth / export-token tables moved out of Firestore into MySQL.
+        `CREATE TABLE IF NOT EXISTS oauth_states (
+            state_hash VARCHAR(64) NOT NULL PRIMARY KEY,
+            provider VARCHAR(32) NOT NULL,
+            code_verifier VARCHAR(255) NOT NULL,
+            expires_at BIGINT NOT NULL,
+            used_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_oauth_states_expiry (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS oauth_exchange_codes (
+            code_hash VARCHAR(64) NOT NULL PRIMARY KEY,
+            uid VARCHAR(128) NOT NULL,
+            provider VARCHAR(32) NOT NULL,
+            expires_at BIGINT NOT NULL,
+            used_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_oauth_exchange_expiry (expires_at),
+            INDEX idx_oauth_exchange_uid (uid)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS export_render_tokens (
+            token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
+            payload JSON NOT NULL,
+            expires_at BIGINT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            consumed_at TIMESTAMP NULL,
+            INDEX idx_export_tokens_expiry (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        "ALTER TABLE favourites ADD UNIQUE KEY IF NOT EXISTS uq_fav_user_item (user_id, item_id)",
+        `CREATE TABLE IF NOT EXISTS ai_usage (
+            day_key VARCHAR(10) NOT NULL,
+            uid_hash VARCHAR(40) NOT NULL,
+            uid VARCHAR(128) NOT NULL,
+            email VARCHAR(255),
+            count INT NOT NULL DEFAULT 1,
+            limit_used INT NOT NULL DEFAULT 10,
+            last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (day_key, uid_hash),
+            INDEX idx_ai_usage_uid (uid),
+            INDEX idx_ai_usage_day (day_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
+            uid VARCHAR(128) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            expires_at BIGINT NOT NULL,
+            used_at TIMESTAMP NULL,
+            lease_id VARCHAR(64) NULL,
+            lease_expires_at BIGINT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_prt_uid (uid),
+            INDEX idx_prt_expiry (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS password_reset_state (
+            uid VARCHAR(128) NOT NULL PRIMARY KEY,
+            active_token_hash VARCHAR(64) NOT NULL,
+            expires_at BIGINT NOT NULL,
+            consumed_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS email_verification_tokens (
+            token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
+            uid VARCHAR(128) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            expires_at BIGINT NOT NULL,
+            used_at TIMESTAMP NULL,
+            lease_id VARCHAR(64) NULL,
+            lease_expires_at BIGINT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_evt_uid (uid),
+            INDEX idx_evt_expiry (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS email_verification_state (
+            uid VARCHAR(128) NOT NULL PRIMARY KEY,
+            active_token_hash VARCHAR(64) NOT NULL,
+            expires_at BIGINT NOT NULL,
+            verified_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS email_logs (
+            id VARCHAR(64) NOT NULL PRIMARY KEY,
+            recipient VARCHAR(255),
+            subject VARCHAR(255),
+            template_type VARCHAR(64) DEFAULT 'custom',
+            status VARCHAR(32) DEFAULT 'SENT',
+            html MEDIUMTEXT,
+            message_id VARCHAR(255),
+            error TEXT,
+            transport VARCHAR(64) DEFAULT 'primary_smtp',
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_email_logs_recipient (recipient),
+            INDEX idx_email_logs_sent_at (sent_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     ];
     for (const sql of statements) {
         try {

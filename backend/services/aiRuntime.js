@@ -470,8 +470,11 @@ async function loadProviderConfiguration(db, environment = process.env) {
         }
     } catch (_) {}
 
-    // 2. Standby Fallback: Firestore (if secrets or publicAi not loaded from MariaDB)
-    if (Object.keys(secrets).length === 0 && Object.keys(publicAi).length === 0 && db && typeof db.collection === 'function') {
+    // 2. Standby Fallback: Firestore ONLY when the standby data plane is
+    // explicitly enabled by an operator (FIREBASE_DATA_PLANE=on|standby).
+    const dataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
+    const standbyEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(dataPlane);
+    if (standbyEnabled && Object.keys(secrets).length === 0 && Object.keys(publicAi).length === 0 && db && typeof db.collection === 'function') {
         try {
             const [secretResult, publicResult, legacyResult] = await Promise.allSettled([
                 db.collection('settings').doc('ai_providers').get(),

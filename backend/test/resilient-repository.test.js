@@ -75,7 +75,7 @@ test('reads from MariaDB when primary is healthy', async () => {
     assert.equal(typeof user.membershipEnds?.toDate, 'undefined');
 });
 
-test('read failover: MariaDB down, Firestore serves canonical user', async () => {
+test('read fails with a controlled error when MariaDB is down — no Firestore read failover', async () => {
     authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: false, firestoreHealthy: true });
     const fsStore = new Map();
     fsStore.set('user:u2', {
@@ -88,13 +88,15 @@ test('read failover: MariaDB down, Firestore serves canonical user', async () =>
         mysqlRepo: mockRepo('mysql', { fail: true }),
         firestoreRepo: mockRepo('firestore', { store: fsStore }),
     });
-    const user = await repo.getUser('u2');
-    assert.equal(user.membership, 'Pro');
-    assert.equal(typeof user.membershipEnds, 'string');
-    assert.match(user.membershipEnds, /Z$/);
+    // MySQL is the only synchronous read path; a MySQL outage surfaces a
+    // controlled 503 — never a silent switch to Firestore data.
+    await assert.rejects(
+        () => repo.getUser('u2'),
+        error => error.code === 'DATABASE_UNAVAILABLE' || error.status === 503
+    );
 });
 
-test('writes succeed on Firestore during MariaDB outage and are not silently discarded', async () => {
+test('writes are rejected with a controlled error during MariaDB outage — no Firestore write path', async () => {
     authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: false, firestoreHealthy: true });
     authority.recordFailure('mysql', 'write', new Error('down'));
     authority.recordFailure('mysql', 'write', new Error('down'));
@@ -103,14 +105,16 @@ test('writes succeed on Firestore during MariaDB outage and are not silently dis
         mysqlRepo: mockRepo('mysql', { fail: true }),
         firestoreRepo: mockRepo('firestore', { store: fsStore }),
     });
-    const saved = await repo.saveUser('u3', {
-        email: 'u3@example.com',
-        membership: 'Premium',
-        membershipEnds: '2026-09-25T00:00:00.000Z',
-        paymentStatus: 'ACTIVE',
-    });
-    assert.equal(saved.id, 'u3');
-    assert.equal(fsStore.has('user:u3'), true);
+    await assert.rejects(
+        () => repo.saveUser('u3', {
+            email: 'u3@example.com',
+            membership: 'Premium',
+            membershipEnds: '2026-09-25T00:00:00.000Z',
+            paymentStatus: 'ACTIVE',
+        }),
+        error => error.code === 'SERVICE_DEGRADED' || error.code === 'DATABASE_UNAVAILABLE'
+    );
+    assert.equal(fsStore.has('user:u3'), false, 'Firestore must never receive the write');
 });
 
 test('both engines down: write throws SERVICE_DEGRADED and does not fake success', async () => {

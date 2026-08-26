@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const app = require('../index');
 
-function createFakeDb(records) {
+function _createFakeDb(records) {
   const audits = [];
   const notifications = [];
   const docs = new Map(Object.entries(records).map(([id, data]) => [id, {
@@ -40,24 +40,30 @@ function createFakeDb(records) {
 }
 
 test('trusted CMS scheduler atomically publishes only due scheduled revisions and is idempotent', async () => {
+  // The scheduler is repository-mediated: it reads and writes the MySQL blog
+  // table (blog status='scheduled' → 'approved'), with MySQL transactions.
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
   const now = Date.now();
-  const db = createFakeDb({
-    due: { status: 'scheduled', scheduledAt: new Date(now - 60_000), revision: 2 },
-    future: { status: 'scheduled', scheduledAt: new Date(now + 3_600_000), revision: 4 },
-  });
-  const firstCount = await app.publishDueBlogPosts(db, { actorUid: 'scheduler-test', requestId: 'request-1' });
-  assert.equal(firstCount, 1);
-  assert.equal(db.documents.get('due').data().status, 'approved');
-  assert.equal(db.documents.get('due').data().revision, 3);
-  assert.equal(db.documents.get('due').data().scheduledAt, null);
-  assert.equal(db.documents.get('future').data().status, 'scheduled');
-  assert.equal(db.audits.length, 1);
-  assert.equal(db.audits[0].count, 1);
-  assert.equal(db.notifications.length, 1);
-  assert.equal(db.notifications[0].state, 'NOTIFICATION_CREATED');
+  await pool.query("DELETE FROM blog WHERE id IN ('due','future','notdue')");
+  await pool.query("INSERT INTO blog (id, title, slug, status, scheduled_at, revision) VALUES ('due','Due Post','due-post','scheduled', FROM_UNIXTIME(?), 2)", [Math.floor((now - 60_000) / 1000)]);
+  await pool.query("INSERT INTO blog (id, title, slug, status, scheduled_at, revision) VALUES ('future','Future Post','future-post','scheduled', FROM_UNIXTIME(?), 4)", [Math.floor((now + 3_600_000) / 1000)]);
+  await pool.query("INSERT INTO blog (id, title, slug, status, scheduled_at, revision) VALUES ('notdue','Draft Post','notdue-post','draft', NULL, 1)");
 
-  const secondCount = await app.publishDueBlogPosts(db, { actorUid: 'scheduler-test', requestId: 'request-2' });
+  const firstCount = await app.publishDueBlogPosts(null, { actorUid: 'scheduler-test', requestId: 'request-1' });
+  assert.equal(firstCount, 1);
+  const [dueRows] = await pool.query("SELECT status, revision, scheduled_at FROM blog WHERE id = 'due'");
+  assert.equal(dueRows[0].status, 'approved');
+  assert.equal(Number(dueRows[0].revision), 3);
+  assert.equal(dueRows[0].scheduled_at, null);
+  const [futureRows] = await pool.query("SELECT status FROM blog WHERE id = 'future'");
+  assert.equal(futureRows[0].status, 'scheduled');
+  const [notdueRows] = await pool.query("SELECT status FROM blog WHERE id = 'notdue'");
+  assert.equal(notdueRows[0].status, 'draft');
+
+  // Idempotency: a second run publishes nothing new.
+  const secondCount = await app.publishDueBlogPosts(null, { actorUid: 'scheduler-test', requestId: 'request-2' });
   assert.equal(secondCount, 0);
-  assert.equal(db.audits.length, 1);
-  assert.equal(db.notifications.length, 1);
+  const [dueRows2] = await pool.query("SELECT revision FROM blog WHERE id = 'due'");
+  assert.equal(Number(dueRows2[0].revision), 3);
 });

@@ -36,7 +36,7 @@ function paymentCredentialStatus({ keyId = '', secret = '', envKeyId = '', envSe
   const effectiveSecret = String(envSecret || secret || '').trim();
   return {
     configured: Boolean(effectiveId && effectiveSecret),
-    source: envSecret || envKeyId ? 'environment' : effectiveSecret || effectiveId ? 'firestore' : 'none',
+    source: envSecret || envKeyId ? 'environment' : effectiveSecret || effectiveId ? 'mysql' : 'none',
     masked: maskWriteOnlySecret(effectiveSecret),
   };
 }
@@ -47,9 +47,9 @@ function selectPaymentPair({ envId = '', envSecret = '', storedId = '', storedSe
   const persistedId = String(storedId || '').trim();
   const persistedSecret = String(storedSecret || '').trim();
   if ((!requiresId || environmentId) && environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment' };
-  if ((!requiresId || persistedId) && persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore' };
+  if ((!requiresId || persistedId) && persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'mysql' };
   if (environmentId || environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment-partial' };
-  if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore-partial' };
+  if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'mysql-partial' };
   return { id: '', secret: '', source: 'none' };
 }
 
@@ -90,8 +90,11 @@ async function getPaymentSettingsProjection(db, environment = process.env) {
     // Non-fatal, fallback to Firestore/defaults
   }
 
-  // 2. Secondary Standby: Firestore (if MariaDB returned empty and db is available)
-  if (db && (!publicRoot || Object.keys(publicRoot).length === 0)) {
+  // 2. Secondary Standby: Firestore ONLY when the standby data plane is
+  // explicitly enabled by an operator. Default OFF: MySQL is the only store.
+  const dataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
+  const standbyEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(dataPlane);
+  if (standbyEnabled && db && (!publicRoot || Object.keys(publicRoot).length === 0)) {
     try {
       const [publicDoc, secretsDoc, legacyDoc] = await Promise.allSettled([
         db.collection('data').doc('public_config').get(),
@@ -116,7 +119,7 @@ async function getPaymentSettingsProjection(db, environment = process.env) {
   };
   const configuredProviders = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, Boolean(pair.secret && (provider === 'stripe' || pair.id))]));
   const maskedKeys = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, maskWriteOnlySecret(pair.secret)]));
-  const credentialSources = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, pair.source === 'environment' ? 'env' : pair.source === 'firestore' ? 'firestore' : pair.source]));
+  const credentialSources = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, pair.source === 'environment' ? 'env' : pair.source === 'mysql' ? 'mysql' : pair.source]));
   return {
     settings: publicConfig,
     publicKeys: {

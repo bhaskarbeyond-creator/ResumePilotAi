@@ -13,6 +13,10 @@
  * 9. Worker Crash & Stale Lease Recovery.
  */
 
+// Standby replication is the subject under test: the operator has
+// explicitly enabled the Firestore standby data plane for this suite.
+process.env.FIREBASE_DATA_PLANE = 'on';
+
 const { test, describe, before } = require('node:test');
 const assert = require('node:assert/strict');
 const { getPool } = require('../database/mysql');

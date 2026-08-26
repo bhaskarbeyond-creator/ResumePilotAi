@@ -77,7 +77,10 @@ test('OAuth Admin tests use recent-auth retry and runtime reads canonical secret
   ]);
   assert.match(view, /fetchAdminWithReauth\(`\/api\/auth\/\$\{provider\}\/test-credentials`\)/);
   assert.doesNotMatch(view, /credentials detected in environment/);
-  assert.match(backend, /adminConfiguration\.data\(\)\?\.socialAuth/);
+  // OAuth provider credentials are read from the MySQL system_settings store.
+  assert.match(backend, /getSocialAuthCredentials/);
+  assert.match(backend, /system_settings/);
+  assert.match(backend, /legacyPrefix.*ClientId/);
   assert.match(policy, /'\/auth\/linkedin\/test-credentials'/);
   assert.match(policy, /'\/auth\/github\/test-credentials'/);
 });
@@ -136,9 +139,11 @@ test('Twilio settings use a secret-free revisioned backend route and runtime nam
   assert.match(view, /accountSidConfigured/);
   assert.match(view, /expectedRevision: revision/);
   assert.doesNotMatch(view, /saveSystemSettings\('twilio'/);
-  assert.match(operations, /fetchAdminWithReauth\('\/api\/send-sms'/);
+  assert.match(operations, /'\/api\/send-sms'/);
   assert.match(backend, /TWILIO_SETTINGS_UPDATED/);
   assert.match(backend, /loadTwilioRuntimeConfig/);
+  // Twilio runtime config is MySQL-backed (system_settings), never Firestore.
+  assert.match(backend, /repo\.getSetting\('admin_configuration'\)/);
   const genericCategories = backend.match(/const GENERIC_ADMIN_SETTING_CATEGORIES[\s\S]*?\]\);/)?.[0] || '';
   assert.doesNotMatch(genericCategories, /'twilio'/);
 });

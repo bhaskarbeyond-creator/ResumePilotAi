@@ -72,48 +72,70 @@ function dayKey(now = new Date()) {
 }
 
 /**
- * Durable daily AI quota. The transaction prevents concurrent requests bypassing the
- * counter. A request is charged before provider invocation (including provider errors).
+ * Durable daily AI quota — MySQL authoritative.
+ * The MySQL row lock (SELECT ... FOR UPDATE) prevents concurrent requests
+ * bypassing the counter. A request is charged before provider invocation
+ * (including provider errors). Firestore is never consulted on this path;
+ * when the standby data plane is explicitly enabled, the count is mirrored
+ * asynchronously (best-effort, non-blocking).
  */
 async function enforceDailyAiQuota(req, res, next) {
   const db = req.app.get('db');
-  if (!db) {
-    return res.status(503).json({ error: { code: 'AI_QUOTA_UNAVAILABLE', message: 'AI service is temporarily unavailable', requestId: res.locals.requestId } });
-  }
   try {
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
-    const ref = db.collection('ai_usage').doc(`${dayKey()}_${uidHash}`);
-    const [userSnap, quotaSnap] = await Promise.all([
-      db.collection('users').doc(req.user.uid).get(),
-      db.collection('settings').doc('ai_quota').get(),
-    ]);
-    const userData = userSnap.data() || {};
-    const quotaConfig = quotaSnap.data() || {};
-    const entitlement = resolveEffectiveEntitlement(userData, {
-      userClaims: req.user || {},
-      tenantData: req.tenantContext?.tenant || null,
-      quotaConfig,
-    });
-    const limit = entitlement.dailyLimit;
+    const day = dayKey();
+    const pool = require('../database/mysql').getPool();
+    const conn = await pool.getConnection();
+    let limit = Number(process.env.AI_BASIC_DAILY_LIMIT || 10);
     let count = 0;
-    await db.runTransaction(async tx => {
-      const snap = await tx.get(ref);
-      count = Number(snap.data()?.count || 0) + 1;
+    try {
+      await conn.beginTransaction();
+      const [userRows] = await conn.query('SELECT * FROM users WHERE id = ? LIMIT 1', [req.user.uid]).catch(() => [[]]);
+      const userData = userRows[0] || {};
+      const [quotaRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1").catch(() => [[]]);
+      let quotaConfig = {};
+      try { quotaConfig = quotaRows[0] ? (typeof quotaRows[0].data === 'string' ? JSON.parse(quotaRows[0].data) : quotaRows[0].data) : {}; } catch { /* ignore */ }
+      const entitlement = resolveEffectiveEntitlement(userData, {
+        userClaims: req.user || {},
+        tenantData: req.tenantContext?.tenant || null,
+        quotaConfig,
+      });
+      limit = entitlement.dailyLimit;
+      const [rows] = await conn.query(
+        'SELECT count FROM ai_usage WHERE day_key = ? AND uid_hash = ? FOR UPDATE',
+        [day, uidHash]
+      );
+      count = rows.length ? Number(rows[0].count || 0) + 1 : 1;
       if (count > limit) {
         const error = new Error('AI_DAILY_QUOTA_EXCEEDED');
         error.status = 429;
         throw error;
       }
-      tx.set(ref, {
+      await conn.query(
+        `INSERT INTO ai_usage (day_key, uid_hash, uid, email, count, limit_used, last_used_at)
+         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON DUPLICATE KEY UPDATE count = VALUES(count), email = VALUES(email), limit_used = VALUES(limit_used), last_used_at = CURRENT_TIMESTAMP`,
+        [day, uidHash, req.user.uid, String(req.user?.email || '').slice(0, 255), count, limit]
+      );
+      await conn.commit();
+    } catch (err) {
+      try { await conn.rollback(); } catch { /* broken connection */ }
+      throw err;
+    } finally {
+      conn.release();
+    }
+    // Optional standby mirror (Firestore data plane enabled) — non-blocking.
+    if (db && typeof db.collection === 'function') {
+      Promise.resolve(db.collection('ai_usage').doc(`${day}_${uidHash}`).set({
         uid: req.user.uid,
-        email: req.user?.email || userData.email || '',
-        day: dayKey(),
+        email: req.user?.email || '',
+        day,
         count,
         limit,
         lastUsed: new Date(),
-        updatedAt: new Date()
-      }, { merge: true });
-    });
+        updatedAt: new Date(),
+      }, { merge: true })).catch(() => {});
+    }
     res.setHeader('X-AI-Daily-Limit', String(limit));
     res.setHeader('X-AI-Daily-Remaining', String(Math.max(0, limit - count)));
     return next();

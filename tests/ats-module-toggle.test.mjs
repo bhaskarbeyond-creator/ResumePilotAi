@@ -177,7 +177,8 @@ test('getSystemSettings no longer times out into default-ON modules', () => {
   assert.match(operations, /enableAtsScoreModule: true/);
   assert.match(operations, /_settingsSource: 'remote'/);
   assert.match(operations, /fallbackSource = localCache\.modules \? 'cache' : 'fallback'/);
-  assert.match(operations, /docRef\.get\(\{ source: 'server' \}\)/);
+  // Settings are read from the MySQL-backed platform config API, never Firestore.
+  assert.match(operations, /apiJson\('\/api\/platform\/public-config'\)/);
   assert.doesNotMatch(operations, /body: JSON\.stringify\(\{ data, expectedRevision: -1 \}\)/);
   assert.doesNotMatch(operations, /setTimeout\(\(\) => resolve\(null\), 1200\)/);
   assert.doesNotMatch(operations, /enableAtsScoreModule:\s*settings/);
@@ -189,7 +190,8 @@ test('backend settings persist booleans and merge partial modules payloads', () 
   assert.match(backend, /mergeAdminSettingCategory/);
   assert.match(backend, /if \(value === null \|\| typeof value === 'boolean'\) return value;/);
   assert.match(backend, /GENERIC_ADMIN_SETTING_CATEGORIES = new Set\(\[[\s\S]*'modules'/);
-  assert.match(backend, /transaction\.set\(publicRef, \{ \[category\]: publicSettings/);
+  assert.match(backend, /publicAdminSettings\(category, persisted\)/);
+  assert.match(backend, /system_settings.*ON DUPLICATE KEY UPDATE data = VALUES\(data\)/s);
 });
 
 test('users cannot write public_config or admin_configuration from the client', () => {

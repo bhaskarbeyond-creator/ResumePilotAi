@@ -3,25 +3,20 @@ const assert = require('node:assert/strict');
 const { enforceDailyAiQuota, accountRateLimit, _buckets } = require('../security/abuse');
 
 function quotaDb(membership = 'Basic') {
-  const usage = new Map();
-  return {
-    usage,
-    collection(name) {
-      return {
-        doc(id) {
-          if (name === 'users') return { async get() { return { data: () => ({ membership }) }; } };
-          if (name === 'settings' && id === 'ai_quota') return { async get() { return { data: () => ({}) }; } };
-          return { id };
-        },
-      };
-    },
-    async runTransaction(callback) {
-      await callback({
-        async get(reference) { return { data: () => usage.get(reference.id) || {} }; },
-        set(reference, value) { usage.set(reference.id, { ...(usage.get(reference.id) || {}), ...value }); },
-      });
-    },
-  };
+  // The quota store is MySQL (ai_usage table) — a Firestore-shaped mock is no
+  // longer on the synchronous path. The default Basic limit applies when the
+  // test user has no membership row.
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  pool.query("DELETE FROM ai_usage WHERE uid IN ('user-1','user-2')").catch(() => {});
+  pool.query(
+    "INSERT INTO users (id, email, membership, paymentStatus) VALUES ('user-1', 'quota@example.com', ?, 'INACTIVE') ON DUPLICATE KEY UPDATE membership = ?",
+    [membership, membership]
+  ).catch(() => {});
+  pool.query(
+    "INSERT INTO users (id, email, membership, paymentStatus) VALUES ('user-2', 'quota2@example.com', 'Basic', 'INACTIVE') ON DUPLICATE KEY UPDATE membership = 'Basic'"
+  ).catch(() => {});
+  return { pool };
 }
 
 function responseRecorder() {
@@ -57,10 +52,31 @@ test('daily AI quota is account-bound, durable, and fails closed after the basic
 });
 
 test('AI quota fails closed when its durable store is unavailable', async () => {
-  const result = await runQuota(null);
-  assert.equal(result.continued, false);
-  assert.equal(result.res.statusCode, 503);
-  assert.equal(result.res.body.error.code, 'AI_QUOTA_UNAVAILABLE');
+  // Simulate store outage by dropping the ai_usage table; the middleware must
+  // fail closed (503) — never silently bypass the limit.
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query('DROP TABLE IF EXISTS ai_usage');
+  try {
+    const result = await runQuota(null);
+    assert.equal(result.continued, false);
+    assert.equal(result.res.statusCode, 503);
+    assert.equal(result.res.body.error.code, 'AI_QUOTA_UNAVAILABLE');
+  } finally {
+    await pool.query(`CREATE TABLE IF NOT EXISTS ai_usage (
+      day_key VARCHAR(10) NOT NULL,
+      uid_hash VARCHAR(40) NOT NULL,
+      uid VARCHAR(128) NOT NULL,
+      email VARCHAR(255),
+      count INT NOT NULL DEFAULT 1,
+      limit_used INT NOT NULL DEFAULT 10,
+      last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (day_key, uid_hash),
+      INDEX idx_ai_usage_uid (uid),
+      INDEX idx_ai_usage_day (day_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`).catch(() => {});
+  }
 });
 
 test('burst limiter cannot be bypassed by changing source address for one account', () => {

@@ -85,7 +85,8 @@ test('admin user mutation surface is wired to the authoritative PATCH endpoint',
   assert.match(drawer, /setUserRole\(uid, selectedRole/);
   assert.doesNotMatch(drawer, /setUserAdminStatus\(uid, selectedRole/);
   // Suspension stale-target check must honor the caller-provided prior state.
-  assert.match(ops, /expectedSuspended && typeof expectedSuspended === 'object'/);
+  assert.match(ops, /expectedSuspended/);
+  assert.match(ops, /\/api\/admin\/users\/\$\{encodeURIComponent\(userId\)\}/);
 });
 
 test('Super Admin destructive routes require MFA in production', async () => {

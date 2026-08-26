@@ -111,7 +111,7 @@ test('invariant: both engines down never fake success', async () => {
     assert.equal(stores.firestore.size, 0);
 });
 
-test('invariant: MariaDB down fails over writes to Firestore', async () => {
+test('invariant: MariaDB down degrades writes with controlled errors — no silent Firestore failover', async () => {
     fencing.__resetForTests();
     authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: false, firestoreHealthy: true });
     authority.recordFailure('mysql', 'write', new Error('down'));
@@ -119,9 +119,14 @@ test('invariant: MariaDB down fails over writes to Firestore', async () => {
     const stores = dualStore();
     stores.mysqlRepo.fail = true;
     const repo = new ResilientRepository({ mysqlRepo: stores.mysqlRepo, firestoreRepo: stores.firestoreRepo });
-    await repo.saveUser('u-fs', { email: 'fs@x.com', membership: 'Pro', paymentStatus: 'ACTIVE' });
-    assert.equal(stores.firestore.has('user:u-fs'), true);
-    assert.equal(stores.mysql.has('user:u-fs'), false);
+    // MySQL is the single authoritative store: an outage must NOT silently
+    // switch writes to Firestore. The write is rejected with a controlled error.
+    await assert.rejects(
+        () => repo.saveUser('u-fs', { email: 'fs@x.com', membership: 'Pro', paymentStatus: 'ACTIVE' }),
+        error => error.code === 'SERVICE_DEGRADED' || error.code === 'DATABASE_UNAVAILABLE'
+    );
+    assert.equal(stores.firestore.has('user:u-fs'), false, 'Firestore must not receive the write');
+    assert.equal(stores.mysql.has('user:u-fs'), false, 'MySQL must not receive the write');
 });
 
 test('invariant: same mutation id applied N times equals once (processed ledger)', async () => {
@@ -208,8 +213,13 @@ test('chaos: alternating availability converges without fake success', async () 
     stores.mysqlRepo.fail = true;
     authority.recordFailure('mysql', 'write', new Error('down'));
     authority.recordFailure('mysql', 'write', new Error('down'));
-    await repo.saveUser('chaos', { email: 'c@x.com', membership: 'Premium', paymentStatus: 'ACTIVE', membershipEnds: '2026-12-01T00:00:00.000Z' });
-    assert.equal(stores.firestore.get('user:chaos').membership, 'Premium');
+    // MySQL down → the write is rejected with a controlled error; the standby
+    // Firestore store must never receive it (no silent failover).
+    await assert.rejects(
+        () => repo.saveUser('chaos', { email: 'c@x.com', membership: 'Premium', paymentStatus: 'ACTIVE', membershipEnds: '2026-12-01T00:00:00.000Z' }),
+        error => error.code === 'SERVICE_DEGRADED' || error.code === 'DATABASE_UNAVAILABLE'
+    );
+    assert.equal(stores.firestore.has('user:chaos'), false);
 
     stores.mysqlRepo.fail = false;
     stores.firestoreRepo.fail = true;

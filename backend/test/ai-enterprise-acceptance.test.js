@@ -18,8 +18,18 @@ const { requireAuth, setTokenVerifierForTests } = require('../security/auth');
 const { enforceApiPolicy } = require('../security/policy');
 const aiRoutes = require('../routes/ai');
 
+// MySQL seed helper: seeds the authoritative AI settings store.
+const { getPool } = require('../database/mysql');
+async function seedMysqlAiSettings(secrets, pubConfig) {
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, ?)", [JSON.stringify(secrets), 1]);
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, ?)", [JSON.stringify(pubConfig), 1]);
+  return null;
+}
+
 // In-memory Firestore Mock for Acceptance Tests
-function createMockFirestore() {
+function _createMockFirestore() {
   const store = new Map();
   return {
     _store: store,
@@ -122,12 +132,10 @@ function createMockApp(db) {
 }
 
 test('Acceptance Gate 1: 50 Concurrent AI requests execute safely with sub-second throughput and bounded memory', async () => {
-  const db = createMockFirestore();
-  await db.collection('settings').doc('ai_providers').set({
+  const db = await seedMysqlAiSettings({
     nvidia: { apiKey: 'nvapi-test', model: 'meta/llama-3.2-11b-vision-instruct' },
     _revision: 1
-  });
-  await db.collection('data').doc('public_config').set({
+  }, {
     ai: { provider: 'nvidia', enableNvidia: true, enableFallback: false, maxTokens: 2048 },
     aiRevision: 1
   });
@@ -180,13 +188,11 @@ test('Acceptance Gate 1: 50 Concurrent AI requests execute safely with sub-secon
 });
 
 test('Acceptance Gate 2: Concurrent Admin settings update + User AI generation race test', async () => {
-  const db = createMockFirestore();
-  await db.collection('settings').doc('ai_providers').set({
+  const db = await seedMysqlAiSettings({
     nvidia: { apiKey: 'nvapi-old', model: 'meta/llama-3.2-11b-vision-instruct' },
     gemini: { apiKey: 'gemini-key', model: 'gemini-2.0-flash' },
     _revision: 1
-  });
-  await db.collection('data').doc('public_config').set({
+  }, {
     ai: { provider: 'nvidia', enableNvidia: true, enableGemini: true, enableFallback: true, maxTokens: 2048 },
     aiRevision: 1
   });
@@ -262,13 +268,11 @@ test('Acceptance Gate 3: Exhaustive 12-Failure-Mode Recovery, Telemetry & Retry-
   ];
 
   for (const scenario of failureScenarios) {
-    const db = createMockFirestore();
-    await db.collection('settings').doc('ai_providers').set({
+    const db = await seedMysqlAiSettings({
       nvidia: { apiKey: 'nvapi-failing', model: 'meta/llama-3.2-11b-vision-instruct' },
       gemini: { apiKey: 'gemini-backup', model: 'gemini-2.0-flash' },
       _revision: 1
-    });
-    await db.collection('data').doc('public_config').set({
+    }, {
       ai: { provider: 'nvidia', enableNvidia: true, enableGemini: true, enableFallback: true, maxTokens: 2048 },
       aiRevision: 1
     });
@@ -310,13 +314,11 @@ test('Acceptance Gate 3: Exhaustive 12-Failure-Mode Recovery, Telemetry & Retry-
 });
 
 test('Acceptance Gate 4: Database-Level Multi-Tenant Data Isolation & Vault Boundary Enforcement', async () => {
-  const db = createMockFirestore();
-  await db.collection('settings').doc('ai_providers').set({
+  const db = await seedMysqlAiSettings({
     nvidia: { apiKey: 'fixture-nvidia-vault-key', model: 'meta/llama-3.2-11b-vision-instruct' },
     openai: { apiKey: 'fixture-openai-vault-key', model: 'gpt-4o-mini' },
     _revision: 5
-  });
-  await db.collection('data').doc('public_config').set({
+  }, {
     ai: { provider: 'nvidia', enableNvidia: true, maxTokens: 2048 },
     aiRevision: 5
   });
@@ -377,13 +379,11 @@ test('Acceptance Gate 4: Database-Level Multi-Tenant Data Isolation & Vault Boun
 });
 
 test('Acceptance Gate 5: Behavioral Cache Invalidation & Dynamic Model Switch Verification', async () => {
-  const db = createMockFirestore();
-  await db.collection('settings').doc('ai_providers').set({
+  const db = await seedMysqlAiSettings({
     nvidia: { apiKey: 'nvapi-test', model: 'meta/llama-3.2-11b-vision-instruct' },
     openai: { apiKey: 'sk-test', model: 'gpt-4o-mini' },
     _revision: 1
-  });
-  await db.collection('data').doc('public_config').set({
+  }, {
     ai: { provider: 'nvidia', nvidiaModel: 'meta/llama-3.2-11b-vision-instruct', enableNvidia: true, enableOpenai: true, enableFallback: true, maxTokens: 2048 },
     aiRevision: 1
   });

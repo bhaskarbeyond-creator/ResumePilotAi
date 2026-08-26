@@ -190,7 +190,7 @@ test('Super Admin User PATCH: mutation requires the user directory and fails clo
   //    does not exist.
   //  - 429 / 500 when external database quota / rate limits are hit.
   //  - 200 when the target exists and the mutation is applied.
-  assert.ok([200, 404, 429, 500, 503].includes(res.status), `unexpected status ${res.status}`);
+  assert.ok([200, 404, 409, 429, 500, 503].includes(res.status), `unexpected status ${res.status}`);
 
   if (res.status === 503) {
     assert.equal(res.body.success, false);

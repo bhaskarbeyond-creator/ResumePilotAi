@@ -34,15 +34,17 @@ test('jobs surfaces never fall back to fabricated listings, employers, or match 
   assert.match(settings, /does not enable scraping or deploy a scheduler/);
 });
 
-test('employer and application queries use deployed indexes without collection sampling logs', async () => {
-  const [operations, indexes] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'), fs.readFile('firestore.indexes.json', 'utf8'),
+test('employer and application queries are backend-owned with no Firestore sampling', async () => {
+  const [operations, backend] = await Promise.all([
+    fs.readFile('src/firestore/dbOperations.js', 'utf8'), fs.readFile('backend/index.js', 'utf8'),
   ]);
-  assert.match(operations, /where\('employerId'.*orderBy\('createdAt', 'desc'\)/s);
+  // Job/application queries go through the MySQL repository with server-side
+  // owner scoping — no client-controlled where/orderBy, no sampling logs.
+  assert.match(operations, /\/api\/jobs-data/);
+  assert.match(backend, /getApplications\(\{ jobId \}\)/);
+  const jobsRoutes = await fs.readFile('backend/routes/jobsData.js', 'utf8');
+  assert.match(jobsRoutes, /getApplications\(\{ applicantId: req\.user\.uid \}\)/);
   assert.doesNotMatch(operations, /Sample jobs in collection|Returning sorted jobs/);
-  const parsed = JSON.parse(indexes);
-  assert.ok(parsed.indexes.some(index => index.collectionGroup === 'jobs'));
-  assert.ok(parsed.indexes.some(index => index.collectionGroup === 'jobApplications'));
 });
 
 test('all Firebase sign-outs clear account-scoped legacy browser state through the auth listener', async () => {
@@ -79,7 +81,7 @@ test('browser entitlement checks display server state and never downgrade member
   const [operations, welcome] = await Promise.all([
     fs.readFile('src/firestore/dbOperations.js', 'utf8'), fs.readFile('src/components/welcome/Welcome.jsx', 'utf8'),
   ]);
-  assert.match(operations, /axios\.post\('\/api\/check', \{\}\)/);
+  assert.match(operations, /getUserProfile\(userId\)/);
   assert.doesNotMatch(operations, /function makeBasicAccount|accountType: accountType|expDate: expDate/);
   assert.doesNotMatch(welcome, /makeBasicAccount/);
 });

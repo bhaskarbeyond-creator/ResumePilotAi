@@ -51,10 +51,13 @@ router.post('/:id', express.json({ limit: '5mb' }), async (req, res) => {
     }
 });
 
-// DELETE /api/resumes/:id - Delete resume
+// DELETE /api/resumes/:id - Delete resume (owner-scoped; 404 when not found/not owned)
 router.delete('/:id', async (req, res) => {
     try {
-        await req.repository.deleteResume(req.user.uid, req.params.id);
+        const result = await req.repository.deleteResume(req.user.uid, req.params.id);
+        if (result === 0 || result === false) {
+            return res.status(404).json({ success: false, error: 'Resume not found' });
+        }
         return res.json({ success: true });
     } catch (err) {
         console.error('[Resumes API] deleteResume error:', err.message);

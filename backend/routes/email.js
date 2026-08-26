@@ -128,28 +128,9 @@ async function getEmailConfig(db) {
         }
     } catch (_) {}
 
-    // 1b. Try legacy Firestore configuration as a fallback over environment defaults.
-    if (db) {
-        try {
-            const doc = await db.collection('data').doc('system_settings').get();
-            if (doc.exists && doc.data()?.smtp) {
-                config.smtp = mergeSection(config.smtp, doc.data().smtp);
-            }
-            if (doc.exists && doc.data()?.fallbackSmtp) {
-                config.fallbackSmtp = mergeSection(config.fallbackSmtp, doc.data().fallbackSmtp);
-            }
-            if (doc.exists && doc.data()?.imap) {
-                config.imap = mergeSection(config.imap, doc.data().imap);
-            }
-            if (doc.exists && doc.data()?.enabledTemplates) {
-                config.enabledTemplates = { ...config.enabledTemplates, ...doc.data().enabledTemplates };
-            }
-        } catch (_) {}
-    }
-
     // 2. The Admin-managed local file is authoritative on this instance. This order
-    // matches the original "local primary, Firestore fallback" contract and ensures a
-    // confirmed credential replacement is the credential the runtime actually uses.
+    // matches the "MySQL primary, local mirror" contract and ensures a confirmed
+    // credential replacement is the credential the runtime actually uses.
     if (localConfig) {
         if (localConfig.smtp) config.smtp = mergeSection(config.smtp, localConfig.smtp);
         if (localConfig.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, localConfig.fallbackSmtp);
@@ -1134,12 +1115,20 @@ async function logOutboundEmail(db, logEntry) {
     emailLogsStore.unshift(entry);
     if (emailLogsStore.length > 200) emailLogsStore.pop(); // Keep last 200 logs
 
-    if (db) {
-        try {
-            await db.collection('email_logs').doc(entry.id).set(entry);
-        } catch (e) {
-            console.error('Failed to log email in DB:', e.message);
-        }
+    // Durable email log: MySQL (email_logs table) is authoritative; the
+    // Firestore data plane is never required.
+    try {
+        const { getPool } = require('../database/mysql');
+        await getPool().query(
+            `INSERT INTO email_logs (id, recipient, subject, template_type, status, html, message_id, error, transport, sent_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE status = VALUES(status), message_id = VALUES(message_id), error = VALUES(error), transport = VALUES(transport)`,
+            [entry.id, String(entry.recipient || '').slice(0, 255), String(entry.subject || '').slice(0, 255),
+             entry.templateType, entry.status, entry.html || null, entry.messageId || null,
+             entry.error ? String(entry.error).slice(0, 1000) : null, entry.transport, new Date(entry.sentAt || Date.now())]
+        ).catch(e => console.error('Failed to log email in MySQL:', e.message));
+    } catch (e) {
+        console.error('Failed to log email in MySQL:', e.message);
     }
 
     return entry;
@@ -1900,12 +1889,14 @@ router.post('/send-email', async (req, res) => {
 router.post('/send-invoice-email', async (req, res) => {
     const db = req.app.get('db');
     const paymentOrderId = String(req.body.paymentOrderId || '');
-    if (!db || !req.user?.uid || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
+    if (!req.user?.uid || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
         return res.status(400).json({ success: false, error: 'A valid payment order is required.' });
     }
-    const orderSnap = await db.collection('payment_orders').doc(paymentOrderId).get();
-    const order = orderSnap.data();
-    if (!orderSnap.exists || order.uid !== req.user.uid || order.status !== 'ACTIVE') {
+    // MySQL is the authoritative payment-order store (owner-scoped read).
+    const { getRepository } = require('../repositories');
+    const repo = getRepository(db);
+    const order = await repo.getPaymentOrder(paymentOrderId).catch(() => null);
+    if (!order || String(order.uid || order.userId || '') !== req.user.uid || String(order.status || '').toUpperCase() !== 'ACTIVE') {
         return res.status(404).json({ success: false, error: 'Active payment order not found.' });
     }
     const customerEmail = req.user.email;

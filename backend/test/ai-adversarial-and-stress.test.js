@@ -369,12 +369,15 @@ test('Concurrency: 20 simultaneous AI requests execute safely without state corr
 });
 
 test('Concurrency: Admin settings optimistic concurrency control with revision conflict (409)', async () => {
-  const db = createMockDb({ 'data/public_config': { ai: {}, aiRevision: 0 }, 'settings/ai_providers': {} });
+  // MySQL is the authoritative store; OCC is enforced with real transactions.
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
   const adminMock = { firestore: { FieldValue: { serverTimestamp: () => new Date() } } };
 
   // Admin A saves revision 0 -> becomes revision 1
   const result1 = await saveAiAdminSettings({
-    db,
+    db: null,
     admin: adminMock,
     input: { provider: 'nvidia', temperature: 0.8 },
     expectedRevision: 0,
@@ -385,7 +388,7 @@ test('Concurrency: Admin settings optimistic concurrency control with revision c
   // Admin B tries to save with stale expectedRevision 0 -> rejected with 409
   await assert.rejects(
     () => saveAiAdminSettings({
-      db,
+      db: null,
       admin: adminMock,
       input: { provider: 'openai', temperature: 0.5 },
       expectedRevision: 0,
@@ -396,7 +399,7 @@ test('Concurrency: Admin settings optimistic concurrency control with revision c
 
   // Admin B refreshes and saves with expectedRevision 1 -> succeeds, becomes revision 2
   const result2 = await saveAiAdminSettings({
-    db,
+    db: null,
     admin: adminMock,
     input: { provider: 'openai', temperature: 0.5 },
     expectedRevision: 1,
@@ -406,16 +409,18 @@ test('Concurrency: Admin settings optimistic concurrency control with revision c
 });
 
 test('Cache Invalidation: Saving settings immediately flushes configuration cache', async () => {
-  const db = createMockDb({ 'data/public_config': { ai: {}, aiRevision: 0 }, 'settings/ai_providers': {} });
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
   const adminMock = { firestore: { FieldValue: { serverTimestamp: () => new Date() } } };
 
   // 1. Initial load caches default configuration
-  const config1 = await loadProviderConfiguration(db, {});
+  const config1 = await loadProviderConfiguration(null, {});
   assert.equal(config1.primary, 'gemini');
 
   // 2. Save settings changing primary to nvidia
   await saveAiAdminSettings({
-    db,
+    db: null,
     admin: adminMock,
     input: { provider: 'nvidia', nvidiaApiKey: 'nv-test-key-123456789012' },
     expectedRevision: 0,
@@ -423,7 +428,7 @@ test('Cache Invalidation: Saving settings immediately flushes configuration cach
   });
 
   // 3. Next loadProviderConfiguration immediately reads fresh values instead of stale cache
-  const config2 = await loadProviderConfiguration(db, {});
+  const config2 = await loadProviderConfiguration(null, {});
   assert.equal(config2.primary, 'nvidia');
   assert.equal(config2.providers.nvidia.key, 'nv-test-key-123456789012');
 });

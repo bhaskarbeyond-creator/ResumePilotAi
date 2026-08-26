@@ -105,8 +105,13 @@ async function loadAiAdminSettings(db, environment = process.env) {
     }
   } catch (_) {}
 
-  // 2. Standby Fallback: Firestore (if stored or secrets not loaded from MariaDB)
-  if (Object.keys(stored).length === 0 && Object.keys(secrets).length === 0 && db && typeof db.collection === 'function') {
+  // 2. Standby Fallback: Firestore ONLY when the standby data plane is
+  // explicitly enabled by an operator (FIREBASE_DATA_PLANE=on|standby).
+  // Default OFF: MySQL is the only synchronous store and Firestore is never
+  // consulted, even when a Firestore handle happens to be available.
+  const dataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
+  const standbyEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(dataPlane);
+  if (standbyEnabled && Object.keys(stored).length === 0 && Object.keys(secrets).length === 0 && db && typeof db.collection === 'function') {
     try {
       const [publicDoc, secretDoc, legacyDoc] = await Promise.allSettled([
         db.collection('data').doc('public_config').get(),
@@ -242,9 +247,11 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
         }
-        await batch.commit();
+        // Standby replication is non-blocking: the user request must never wait
+        // on the secondary system (MySQL is authoritative and already committed).
+        Promise.resolve(batch.commit()).catch(() => {});
       } else if (typeof db.runTransaction === 'function') {
-        await db.runTransaction(async tx => {
+        Promise.resolve(db.runTransaction(async tx => {
           const secretRef = db.collection('settings').doc('ai_providers');
           const publicRef = db.collection('data').doc('public_config');
           tx.set(secretRef, mergedSecrets, { merge: true });
@@ -257,7 +264,7 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
             requestId: requestId || null,
             createdAt: admin?.firestore?.FieldValue?.serverTimestamp ? admin.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
           });
-        });
+        })).catch(() => {});
       }
     } catch (_) {}
   }

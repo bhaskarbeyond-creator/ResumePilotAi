@@ -16,25 +16,19 @@ setTokenVerifierForTests(async token => {
 });
 
 const app = require('../index');
-const secrets = { gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } };
-const fakeDb = {
-  collection(name) {
-    return {
-      doc(id) {
-        if (name === 'settings') return { id, async get() { return { exists: true, data: () => secrets }; } };
-        if (name === 'data') return { id, async get() { return { exists: true, data: () => ({ ai: { provider: 'gemini', enableGemini: true } }) }; } };
-        return { id, async get() { return { exists: false, data: () => ({}) }; } };
-      },
-    };
-  },
-  async runTransaction(callback) {
-    await callback({
-      async get() { return { exists: false, data: () => ({}) }; },
-      set() {},
-    });
-  },
-};
-app.set('db', fakeDb);
+// AI provider secrets are seeded in the authoritative MySQL system_settings
+// store (Firestore data plane OFF).
+const { before } = require('node:test');
+const { getPool } = require('../database/mysql');
+before(async () => {
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1)",
+    [JSON.stringify({ gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } })]);
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)",
+    [JSON.stringify({ ai: { provider: 'gemini', enableGemini: true, enableFallback: true, maxTokens: 2048 } })]);
+});
+app.set('db', null);
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 
 test('extractJson parses clean, wrapped, and malformed JSON with raw control characters', () => {

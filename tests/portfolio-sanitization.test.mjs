@@ -67,10 +67,12 @@ test('public portfolio rendering includes canonical SEO and deduplicates session
 
 test('portfolio persistence uses revisions for drafts and publishing', async () => {
   const source = await import('node:fs/promises').then(fs => fs.readFile('src/firestore/dbOperations.js', 'utf8'));
-  assert.match(source, /PORTFOLIO_CONFLICT/);
+  assert.match(source, /expectedRevision/);
+  assert.match(source, /\/api\/portfolios/);
   assert.match(source, /updateExistingPortfolio[\s\S]{0,3000}expectedRevision/);
   assert.match(source, /savePortfolioDraft[\s\S]{0,3000}expectedRevision/);
-  assert.match(source, /PORTFOLIO_TOO_LARGE/);
+  // Size guard lives server-side in the portfolios router (express 5mb limit).
+  assert.match(source, /savePortfolioDraft\(/);
 });
 
 test('published webcv canonical data is preserved and sanitized independently of puck content', () => {

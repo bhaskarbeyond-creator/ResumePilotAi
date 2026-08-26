@@ -140,7 +140,9 @@ test('contact messages expose truthful loading, error, search, filter, paginatio
   assert.match(messages, /PAGE_SIZE = 20/);
   assert.match(messages, /aria-expanded/);
   assert.match(messages, /role="alert"/);
-  assert.match(operations, /id: document\.id/);
+  // Contact messages are read through the backend API (MySQL contact_messages).
+  assert.match(operations, /apiJson\('\/api\/contact'/);
+  assert.match(operations, /\/api\/messages\/conversations/);
 });
 
 test('Trusted By lifecycle is revisioned, publish-aware, audited, sanitized, and backend-only', async () => {

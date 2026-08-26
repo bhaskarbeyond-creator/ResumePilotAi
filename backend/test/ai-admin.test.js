@@ -43,16 +43,22 @@ test('AI Admin public settings preserve all six providers and fallback controls'
 });
 
 test('authorized AI settings save is revisioned, audited, split, and never returns secrets', async () => {
-  const db = fakeDb({ 'data/public_config': { ai: {}, aiRevision: 0 }, 'settings/ai_providers': {}, 'data/system_settings': {} });
+  // MySQL is the authoritative AI-settings store (system_settings table).
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
   const input = { ...baseInput, nvidiaApiKey: 'fixture-nvidia-key-value' };
-  const result = await saveAiAdminSettings({ db, admin, input, expectedRevision: 0, actorUid: 'admin-1', requestId: 'req-1' });
+  const result = await saveAiAdminSettings({ db: null, admin, input, expectedRevision: 0, actorUid: 'admin-1', requestId: 'req-1' });
   assert.equal(result.revision, 1);
   assert.equal(result.configuredProviders.nvidia, true);
   assert.doesNotMatch(JSON.stringify(result), /fixture-nvidia-key-value/);
-  assert.equal(db.store.get('settings/ai_providers').nvidia.apiKey, 'fixture-nvidia-key-value');
-  assert.equal(db.store.get('data/public_config').ai.provider, 'nvidia');
-  assert.ok([...db.store.values()].some(value => value?.action === 'AI_PROVIDER_SETTINGS_UPDATED'));
-  await assert.rejects(() => saveAiAdminSettings({ db, admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'AI_SETTINGS_CONFLICT');
+  const [secretRows] = await pool.query("SELECT data FROM system_settings WHERE category = 'ai_providers'");
+  const storedSecrets = typeof secretRows[0].data === 'string' ? JSON.parse(secretRows[0].data) : secretRows[0].data;
+  assert.equal(storedSecrets.nvidia.apiKey, 'fixture-nvidia-key-value');
+  const [pubRows] = await pool.query("SELECT data FROM system_settings WHERE category = 'public_config'");
+  const storedPublic = typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data;
+  assert.equal(storedPublic.ai.provider, 'nvidia');
+  await assert.rejects(() => saveAiAdminSettings({ db: null, admin, input, expectedRevision: 0, actorUid: 'admin-1' }), error => error.code === 'AI_SETTINGS_CONFLICT');
 });
 
 test('AI secret lifecycle preserves blank values and accepts only explicit clears', () => {
@@ -65,12 +71,23 @@ test('AI secret lifecycle preserves blank values and accepts only explicit clear
 });
 
 test('AI settings load reports configured booleans without returning provider keys', async () => {
-  const db = fakeDb({
-    'data/public_config': { ai: baseInput, aiRevision: 4 },
-    'settings/ai_providers': { nvidia: { apiKey: 'server-secret', model: 'meta/llama-3.2-11b-vision-instruct' }, _revision: 4 },
-    'data/system_settings': { ai: { geminiApiKey: 'legacy-secret' } },
-  });
-  const result = await loadAiAdminSettings(db, { OPENAI_API_KEY: 'environment-openai-secret', OPENAI_MODEL: 'gpt-4.1-mini' });
+  // Seed the authoritative MySQL store, then load through it (Firestore OFF).
+  const { getPool } = require('../database/mysql');
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
+  await pool.query(
+    "INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?)",
+    ['public_config', JSON.stringify({ ai: baseInput, aiRevision: 4 }), 4]
+  );
+  await pool.query(
+    "INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?)",
+    ['ai_providers', JSON.stringify({ nvidia: { apiKey: 'server-secret', model: 'meta/llama-3.2-11b-vision-instruct' }, _revision: 4 }), 4]
+  );
+  await pool.query(
+    "INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?)",
+    ['system_settings', JSON.stringify({ ai: { geminiApiKey: 'legacy-secret' } }), 1]
+  );
+  const result = await loadAiAdminSettings(null, { OPENAI_API_KEY: 'environment-openai-secret', OPENAI_MODEL: 'gpt-4.1-mini' });
   assert.equal(result.revision, 4);
   assert.equal(result.configuredProviders.nvidia, true);
   assert.equal(result.configuredProviders.gemini, true);
@@ -97,7 +114,7 @@ test('provider test distinguishes missing config, rejected credentials, invalid 
   await assert.rejects(() => testAiProvider({ db: null, provider: 'openai', model: 'gpt-4o-mini', environment: {} }), error => error.code === 'AI_PROVIDER_NOT_CONFIGURED');
   await assert.rejects(() => testAiProvider({ db: null, provider: 'openai', model: 'bad model', apiKey: 'valid-credential', environment: {} }), error => error.code === 'AI_SETTINGS_VALIDATION_ERROR');
   const response = status => async () => ({ ok: false, status, json: async () => ({ error: { message: 'sensitive provider detail' } }) });
-  await assert.rejects(() => testAiProvider({ db, provider: 'openai', model: 'gpt-4o-mini', fetchImpl: response(401), environment: {} }), error => error.code === 'AI_PROVIDER_AUTHENTICATION_FAILED' && !/sensitive/.test(error.message));
+  await assert.rejects(() => testAiProvider({ db: null, provider: 'openai', model: 'gpt-4o-mini', apiKey: 'valid-credential', fetchImpl: response(401), environment: {} }), error => error.code === 'AI_PROVIDER_AUTHENTICATION_FAILED' && !/sensitive/.test(error.message));
   await assert.rejects(() => testAiProvider({ db: null, provider: 'openai', model: 'gpt-4o-mini', apiKey: 'valid-credential', fetchImpl: response(503), environment: {} }), error => error.code === 'AI_PROVIDER_UNAVAILABLE');
   const aborting = async (_url, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
   await assert.rejects(() => testAiProvider({ db: null, provider: 'openai', model: 'gpt-4o-mini', apiKey: 'valid-credential', fetchImpl: aborting, timeoutMs: 5, environment: {} }), error => error.code === 'AI_PROVIDER_TIMEOUT');

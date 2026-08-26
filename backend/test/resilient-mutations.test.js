@@ -98,7 +98,7 @@ test('application status concurrent CAS: second writer loses', async () => {
     );
 });
 
-test('CMS ads/reviews/pages survive MariaDB-down via Firestore adapter', async () => {
+test('CMS ads/reviews/pages degrade with controlled errors when MariaDB is down — no Firestore fallback', async () => {
     fencing.__resetForTests();
     authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: false, firestoreHealthy: true });
     authority.recordFailure('mysql', 'write', new Error('down'));
@@ -107,8 +107,13 @@ test('CMS ads/reviews/pages survive MariaDB-down via Firestore adapter', async (
     const firestore = memoryRepo();
     mysql.saveDocument = async () => { const e = new Error('mysql down'); e.code = 'ECONNREFUSED'; throw e; };
     const repo = new ResilientRepository({ mysqlRepo: mysql, firestoreRepo: firestore });
-    const saved = await mutations.createDocument({ repo, entityType: 'ads', data: { name: 'Ad', imageLink: 'https://x.test/a.png', destinationLink: 'https://x.test' }, actorUid: 'admin' });
-    assert.ok(firestore.store.has(`ads:${saved.id}`));
+    // MySQL is the single authoritative store: the write is rejected with a
+    // controlled error instead of silently landing in Firestore.
+    await assert.rejects(
+        () => mutations.createDocument({ repo, entityType: 'ads', data: { name: 'Ad', imageLink: 'https://x.test/a.png', destinationLink: 'https://x.test' }, actorUid: 'admin' }),
+        error => error.code === 'SERVICE_DEGRADED' || error.code === 'DATABASE_UNAVAILABLE'
+    );
+    assert.equal(firestore.store.size, 0, 'Firestore must never receive the write');
 });
 
 test('account deletion is durable and idempotent; tombstone prevents silent success with leftovers', async () => {

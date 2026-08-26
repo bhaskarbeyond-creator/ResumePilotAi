@@ -43,6 +43,21 @@ function setRegisteredFirestore(instance) {
 }
 
 /**
+ * True when the Firestore standby data plane is explicitly enabled
+ * (FIREBASE_DATA_PLANE=on|firestore-standby|standby). Default is OFF:
+ * MySQL is the only store, so outbox replication is skipped entirely and
+ * the queue cannot accumulate events that could never be delivered.
+ */
+function isStandbyReplicationEnabled() {
+    const value = String(
+        process.env.FIREBASE_DATA_PLANE
+        || process.env.ENABLE_FIRESTORE_DATA_PLANE
+        || 'off'
+    ).toLowerCase();
+    return ['on', 'true', '1', 'firestore-standby', 'standby'].includes(value);
+}
+
+/**
  * Enqueues a durable outbox event during a MySQL mutation transaction.
  * @param {object} connection - Active MySQL connection or pool
  * @param {object} params - Event parameters
@@ -55,6 +70,14 @@ async function enqueueOutboxEvent(connection, {
     version = 1,
     sourceEngine = 'mysql'
 }) {
+    // MySQL-only mode: there is no secondary system, so no outbox event is
+    // created. This keeps the queue empty and makes the absence of Firestore
+    // completely invisible to the write path. The event is re-created once the
+    // standby data plane is enabled by an operator.
+    if (!isStandbyReplicationEnabled()) {
+        return { eventId: null, contentHash: null, skipped: 'STANDBY_DISABLED' };
+    }
+
     const eventId = createMutationId('ev');
     const hash = calculateContentHash(entityType, payload);
     const conn = connection || getPool();
@@ -761,6 +784,22 @@ async function processSyncQueue(batchSize = 25, adminFirestore = null, poolOverr
         return { processed: 0, failed: 0, deadLettered: 0, isQuota: false };
     }
 
+    // Standby disabled: any legacy/leftover outbox rows (from a deployment
+    // that previously had the standby enabled) are retired without retry or
+    // dead-letter churn — there is no secondary system to deliver to.
+    if (!adminFirestore) {
+        const legacy = events.filter(event => String(event.source_engine || 'mysql') === 'mysql');
+        if (legacy.length) {
+            for (const event of legacy) {
+                await pool.query(
+                    `UPDATE sync_outbox SET status = 'STANDBY_OFF', last_error = 'standby replication disabled; event retired', processed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    [event.id]
+                );
+            }
+            return { processed: legacy.length, failed: 0, deadLettered: 0, isQuota: false, standbyOff: true };
+        }
+    }
+
     let processed = 0;
     let failed = 0;
     let deadLettered = 0;
@@ -948,7 +987,7 @@ async function pruneSyncedOutboxEvents(retentionDays = 7, maxBatch = 1000, poolO
     try {
         const [result] = await pool.query(`
             DELETE FROM sync_outbox
-            WHERE status = 'SYNCED'
+            WHERE status IN ('SYNCED', 'STANDBY_OFF')
               AND processed_at < (NOW() - INTERVAL ? DAY)
             LIMIT ?
         `, [days, limit]);
@@ -1111,6 +1150,13 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
     setRegisteredFirestore(adminFirestore);
     if (backgroundWorkerTimer) {
         return; // Already running
+    }
+
+    // MySQL-only mode: no standby to replicate to, so the worker must not run.
+    // MySQL remains fully authoritative; the queue is empty by construction.
+    if (!adminFirestore || !isStandbyReplicationEnabled()) {
+        console.log('[SyncWorker] Standby replication disabled (Firestore data plane off). MySQL-only mode; outbox worker idle.');
+        return;
     }
 
     console.log(`[SyncWorker] 🟢 Autonomous Background Sync Worker started (PID: ${process.pid}, Interval: ${pollIntervalMs}ms)`);

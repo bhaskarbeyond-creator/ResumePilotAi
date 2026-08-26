@@ -11,7 +11,7 @@ test('Blog taxonomy and Trusted By mutations are backend-owned and public lists 
   assert.match(backend, /CMS_CATEGORY_UPDATED/);
   assert.match(backend, /CATEGORY_HAS_POSTS/);
   assert.match(operations, /\/api\/admin\/blog\/categories/);
-  assert.match(operations, /\/public\/trusted-by\.json/);
+  assert.match(operations, /\/api\/public\/trusted-by/);
   assert.match(backend, /item\.published !== false/);
   assert.match(trusted, /let active = true/);
   assert.match(trusted, /role="status"/);

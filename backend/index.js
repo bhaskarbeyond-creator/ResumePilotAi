@@ -43,6 +43,7 @@ const { blogDataRouter } = require('./routes/blogData');
 const { cmsPagesRouter } = require('./routes/cmsPages');
 const { notificationsDataRouter } = require('./routes/notificationsData');
 const { usersDataRouter } = require('./routes/usersData');
+const { miscDataRouter } = require('./routes/miscData');
 const { databaseAdminRouter } = require('./routes/databaseAdmin');
 const { getRepository } = require('./repositories');
 const app = express();
@@ -77,8 +78,6 @@ const {
     hashToken,
     isOpaqueToken,
     assertPasswordPolicy,
-    assertTokenRecord,
-    assertLeaseOwner,
     minimumEnumerationDelay,
 } = require('./security/reset');
 const {
@@ -102,7 +101,18 @@ if (!['http', 'https'].includes(protocol) || (process.env.NODE_ENV === 'producti
     throw new Error('PROTOCOL must be https in production');
 }
 
-// Safe Module-Level Firebase Admin Initialization
+// ---------------------------------------------------------------------------
+// Firebase Admin initialization — identity only by default.
+//
+// ARCHITECTURE (zero-Firestore on synchronous production paths):
+//  * The Firebase Admin SDK is used for ID-token verification (Firebase Auth
+//    is the deployed identity provider). That is an identity service, not a
+//    database dependency.
+//  * The Firestore DATA PLANE (db) is created ONLY when explicitly enabled via
+//    FIREBASE_DATA_PLANE=on (or =firestore-standby). Default is OFF: db stays
+//    null and every Firestore call in routes/services is a no-op, so MySQL is
+//    the single authoritative store. Firestore is never a read/write fallback.
+// ---------------------------------------------------------------------------
 let admin = null;
 let db = null;
 try {
@@ -131,22 +141,37 @@ try {
 
         if (credential) {
             admin.initializeApp({ credential, projectId, databaseURL });
-            db = admin.firestore();
         }
-    } else {
-        db = admin.firestore();
     }
 } catch (e) {
     console.warn('[Firebase Admin] Initialization notice:', e.message);
 }
-// Make Firestore accessible to routes via req.app.get('db')
+// Firestore data-plane gate. Default OFF: ZERO Firestore on synchronous paths.
+const firestoreDataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
+const firestoreDataPlaneEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(firestoreDataPlane);
+if (firestoreDataPlaneEnabled && admin && admin.apps && admin.apps.length > 0) {
+    try {
+        db = admin.firestore();
+        console.log('[Firestore Data Plane] ENABLED (standby replication only; MySQL remains authoritative)');
+    } catch (e) {
+        console.warn('[Firestore Data Plane] could not be created:', e.message);
+        db = null;
+    }
+} else if (admin && admin.apps && admin.apps.length > 0) {
+    console.log('[Firestore Data Plane] OFF — MySQL is the only synchronous data store');
+}
+// Make Firestore accessible to routes via req.app.get('db') — null unless the
+// data plane is explicitly enabled, which makes all `if (db && ...)` guards
+// structural no-ops in the default production configuration.
 app.set('db', db);
-// The Firebase admin runtime is exposed for enterprise services (outbox,
-// storage) that need FieldValue/Timestamp sentinels — never secrets.
+// The Firebase admin runtime is exposed for identity verification and for
+// enterprise services (outbox, storage) that need FieldValue/Timestamp
+// sentinels — never secrets.
 app.set('firebaseAdmin', admin);
 // The enterprise control plane is intentionally server-only. It is dormant until
 // enterprise routes are enabled and does not alter certified UID-scoped paths.
 app.set('tenantService', createTenantService({ db, admin }));
+
 // Truthful one-time architecture statement. Never logs secrets or URLs.
 if (enterpriseFeatureEnabled()) {
     const runtime = app.get('tenantService')?.describeRuntime?.() || {};
@@ -199,8 +224,13 @@ initSystemFonts();
 
 // Start Autonomous Dual-Database Background Sync Worker (continuous polling + heartbeat)
 const { startBackgroundSyncWorker, stopBackgroundSyncWorker } = require('./database/syncManager');
-if (process.env.NODE_ENV !== 'test') {
+// The outbox worker only runs when the Firestore standby data plane is explicitly
+// enabled. It is asynchronous, durable (MySQL sync_outbox), non-blocking, and never
+// required for application correctness — MySQL is the source of truth either way.
+if (process.env.NODE_ENV !== 'test' && db) {
     startBackgroundSyncWorker(db, 3000);
+} else if (process.env.NODE_ENV !== 'test') {
+    console.log('[Sync Worker] Standby Firestore replication disabled (FIREBASE_DATA_PLANE off). MySQL-only mode.');
 }
 
 process.on('SIGTERM', () => {
@@ -292,7 +322,9 @@ const publicApiPaths = new Set([
     '/public/trusted-by', '/public/trusted-by.json',
     '/custom-pages', '/custom-pages.json',
     '/trusted-by', '/trusted-by.json',
-    '/cms-pages', '/blog-data', '/jobs-data'
+    '/cms-pages', '/blog-data', '/jobs-data',
+    // Public read surfaces (MySQL-backed); mutating variants still require auth.
+    '/stats', '/reviews', '/phrases'
 ]);
 // Enterprise API authentication accepts exactly one credential kind per request:
 // a Firebase bearer token (tenant member or support elevation) or an x-api-key
@@ -320,6 +352,7 @@ app.use('/api/blog-data', blogDataRouter);
 app.use('/api/cms-pages', cmsPagesRouter);
 app.use('/api/notifications-data', notificationsDataRouter);
 app.use('/api/users-data', usersDataRouter);
+app.use('/api', miscDataRouter);
 app.use('/api/admin/database-settings', databaseAdminRouter);
 
 // During enterprise rollout, reject tenant/workspace headers on legacy routes rather
@@ -1218,6 +1251,25 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
     }
 });
 
+// Applications for a job — MySQL authoritative (any authenticated reader of
+// an active job may view; employers see their own jobs' applications).
+app.get('/api/jobs/:jobId/applications', async (req, res) => {
+    const jobId = String(req.params.jobId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job.' });
+    try {
+        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const job = await repo.getJob(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+        const isOwner = String(job.employerId || job.employer_id || '') === req.user.uid;
+        const applications = await repo.getApplications({ jobId });
+        // Applicants see their own applications only; the owner sees all.
+        const visible = isOwner ? applications : (applications || []).filter(app => String(app.applicant_id || app.applicantId || '') === req.user.uid);
+        return res.json({ success: true, applications: visible });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: 'Applications are unavailable.' });
+    }
+});
+
 // Employer mutations: EMPLOYER_COMPANY_CREATED, EMPLOYER_COMPANY_EDITED, EMPLOYER_COMPANY_DELETED, COMPANY_HAS_JOBS, EMPLOYER_JOB_CREATED, EMPLOYER_JOB_STATUS_CHANGED, EMPLOYER_JOB_EDITED, EMPLOYER_JOB_DELETED, EMPLOYER_JOB_CHANGED
 
 function normalizeEmployerJobInput(input = {}, company = {}) {
@@ -1280,6 +1332,27 @@ app.post('/api/employer-applications', async (req, res) => {
     }
 });
 
+// Employer company list — MySQL authoritative (owner-scoped).
+app.get('/api/employer/companies', async (req, res) => {
+    try {
+        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const companies = await repo.getCompanies({ employerId: req.user.uid });
+        const items = (companies || []).map(company => ({
+            id: company.id,
+            name: company.name || company.companyName || company.company_name || '',
+            website: company.website || company.company_website || '',
+            logo: company.logo || company.logoUrl || company.extra_json?.logo || '',
+            status: company.status || company.approvalStatus || 'pending',
+            featured: company.featured === true || company.featured === 1,
+            revision: Number(company.revision || 0),
+            createdAt: adminIso(company.created_at || company.createdAt),
+        }));
+        return res.json({ success: true, companies: items });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: 'Companies are unavailable.' });
+    }
+});
+
 app.post('/api/employer/companies', async (req, res) => {
     if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
     try {
@@ -1323,6 +1396,17 @@ app.delete('/api/employer/companies/:companyId', async (req, res) => {
     } catch (error) {
         const status = ['EMPLOYER_COMPANY_CHANGED', 'COMPANY_HAS_JOBS', 'CAS_CONFLICT'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
         return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete company.' : error.message });
+    }
+});
+
+// Employer job list — MySQL authoritative (owner-scoped).
+app.get('/api/employer/jobs', async (req, res) => {
+    try {
+        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const jobs = await repo.getJobs({ employerId: req.user.uid });
+        return res.json({ success: true, jobs: jobs || [] });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: 'Jobs are unavailable.' });
     }
 });
 
@@ -1395,18 +1479,75 @@ app.delete('/api/employer/jobs/:jobId', async (req, res) => {
     }
 });
 
+app.get('/api/messages/conversations', async (req, res) => {
+    // List conversations for the current user. Realtime chat lives in Firebase
+    // Realtime Database (a realtime delivery channel, NOT the Firestore data
+    // plane); the authoritative participant/application records are in MySQL.
+    if (!admin?.database) return res.json({ success: true, conversations: [] });
+    try {
+        const realtime = admin.database();
+        const index = await realtime.ref(`user-conversations/${req.user.uid}`).get();
+        const conversationIds = Object.keys(index.val() || {});
+        const conversations = [];
+        for (const conversationId of conversationIds.slice(0, 100)) {
+            const snapshot = await realtime.ref(`conversations/${conversationId}`).get();
+            if (!snapshot.exists()) continue;
+            const data = snapshot.val() || {};
+            const participants = Object.keys(data.participants || {});
+            if (!participants.includes(req.user.uid)) continue;
+            const lastMessage = await realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').limitToLast(1).get();
+            let lastMessageData = null;
+            lastMessage.forEach(child => { lastMessageData = { id: child.key, ...child.val() }; });
+            conversations.push({ id: conversationId, ...data, lastMessage: lastMessageData });
+        }
+        conversations.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
+        return res.json({ success: true, conversations });
+    } catch (error) {
+        console.error('[List conversations]', error.message);
+        return res.json({ success: true, conversations: [] });
+    }
+});
+
+app.get('/api/messages/conversations/:conversationId/messages', async (req, res) => {
+    const conversationId = String(req.params.conversationId || '');
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !admin?.database) {
+        return res.status(404).json({ success: false, error: 'Conversation not found.' });
+    }
+    try {
+        const realtime = admin.database();
+        const conversation = await realtime.ref(`conversations/${conversationId}`).get();
+        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+            return res.status(404).json({ success: false, error: 'Conversation not found.' });
+        }
+        const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+        const snapshot = await realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').limitToLast(limit).get();
+        const messages = [];
+        snapshot.forEach(child => messages.push({ id: child.key, ...child.val() }));
+        messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ success: true, messages });
+    } catch (error) {
+        console.error('[List messages]', error.message);
+        return res.status(503).json({ success: false, error: 'Messages are temporarily unavailable.' });
+    }
+});
+
 app.post('/api/messages/conversations', async (req, res) => {
     const applicationId = String(req.body.applicationId || '');
-    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !db || !admin?.database) {
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !admin?.database) {
         return res.status(400).json({ success: false, error: 'Valid job application is required.' });
     }
     try {
-        const application = await db.collection('jobApplications').doc(applicationId).get();
-        if (!application.exists) return res.status(404).json({ success: false, error: 'Job application not found.' });
-        const applicationData = application.data();
-        const job = await db.collection('jobs').doc(applicationData.jobId).get();
-        const applicantUid = applicationData.userId;
-        const employerUid = job.data()?.employerId;
+        // MySQL is the authoritative store for applications/jobs; RTDB is used
+        // only for realtime chat delivery, never for authoritative records.
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const application = await repo.getApplication(applicationId);
+        if (!application) return res.status(404).json({ success: false, error: 'Job application not found.' });
+        const applicationData = application;
+        const job = await repo.getJob(applicationData.jobId || applicationData.job_id);
+        const applicantUid = applicationData.userId || applicationData.applicant_id;
+        const employerUid = job?.employerId || job?.employer_id;
         if (!applicantUid || !employerUid || ![applicantUid, employerUid].includes(req.user.uid)) {
             return res.status(403).json({ success: false, error: 'Conversation is not available to this account.' });
         }
@@ -1442,8 +1583,7 @@ app.post('/api/messages/conversations', async (req, res) => {
 
 app.get('/api/messages/conversations/:conversationId/participant-profile', async (req, res) => {
     const conversationId = String(req.params.conversationId || '');
-    const requestDb = req.app.get('db');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !requestDb || !admin?.database) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !admin?.database) {
         return res.status(404).json({ success: false, error: 'Conversation not found.' });
     }
     try {
@@ -1458,8 +1598,10 @@ app.get('/api/messages/conversations/:conversationId/participant-profile', async
             res.setHeader('Cache-Control', 'no-store, private');
             return res.json({ success: true, profile: { name: 'Deleted account', avatar: '' } });
         }
-        const userSnapshot = await requestDb.collection('users').doc(otherUserId).get();
-        const user = userSnapshot.data() || {};
+        // Authoritative profile read from MySQL; Firestore is never consulted.
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const user = (await repo.getUser(otherUserId)) || {};
         const profile = user.profile || {};
         const name = String(profile.name || user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User').replace(/\p{Cc}/gu, ' ').trim().slice(0, 100);
         const avatar = safePublicUrl(profile.image || user.photoURL || '');
@@ -1487,13 +1629,17 @@ app.post('/api/messages/send', async (req, res) => {
         await messageRef.set({ senderId: req.user.uid, text, timestamp: { '.sv': 'timestamp' } });
         let notificationState = 'NOTIFICATION_CREATED';
         const recipientUid = Object.keys(conversation.child('participants').val() || {}).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
-        if (recipientUid && req.app.get('db')) {
+        if (recipientUid) {
             try {
                 const eventId = notificationEventId('message', conversationId, messageRef.key);
-                await req.app.get('db').collection('notifications').doc(recipientUid).collection('userNotifications').doc(eventId).set({
+                // Authoritative notification record goes to MySQL; the Firestore
+                // data plane is never required.
+                const { getRepository } = require('./repositories');
+                const repo = getRepository(req.app.get('db') || db);
+                await repo.saveNotification(recipientUid, eventId, {
                     eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message', title: 'New message', message: 'You have a new message.',
                     data: { conversationId }, read: false,
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 });
             } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }
         } else notificationState = 'NOTIFICATION_CREATION_FAILED';
@@ -1942,31 +2088,32 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
 });
 
 app.get('/api/admin/health-summary', async (req, res) => {
-    const requestDb = req.app.get('db');
-    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!requestDb || !firebaseAdmin) return res.status(503).json({ success: false, code: 'HEALTH_UNAVAILABLE', error: 'Health services unavailable.' });
+    // MySQL is the authoritative configuration store; Firestore is never
+    // required for the health summary.
     try {
-        const [publicConfig, aiProviders, paymentProviders] = await Promise.all([
-            requestDb.collection('data').doc('public_config').get(),
-            requestDb.collection('settings').doc('ai_providers').get(),
-            requestDb.collection('settings').doc('payment_providers').get(),
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const [publicData, ai, payments] = await Promise.all([
+            repo.getSetting('public_config').catch(() => ({})),
+            repo.getSetting('ai_providers').catch(() => ({})),
+            repo.getSetting('payment_providers').catch(() => ({})),
         ]);
-        const publicData = publicConfig.data() || {};
-        const ai = aiProviders.data() || {};
-        const payments = paymentProviders.data() || {};
+        const systemHealth = (publicData || {}).systemHealth || {};
+        const maintenance = await repo.getSetting('maintenance').catch(() => null);
+        const mergedMaintenance = { ...systemHealth, ...(maintenance || {}) };
         return res.json({
             success: true,
             checkedAt: new Date().toISOString(),
             revision: Number(publicData._settingsRevisions?.systemHealth || 0),
             services: {
-                backend: { reachable: true }, firebaseAdmin: { configured: true },
+                backend: { reachable: true }, database: { engine: 'mysql', authoritative: true },
                 aiProviders: Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].map(provider => [provider, { configured: Boolean(ai[provider]?.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`]) }])),
                 payments: {
                     stripe: { configured: Boolean(payments.stripe?.secretKey || process.env.STRIPE_SECRET) },
                     razorpay: { configured: Boolean((payments.razorpay?.keyId && payments.razorpay?.keySecret) || (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)) },
                 },
             },
-            settings: publicData.systemHealth || { maintenanceMode: false, maintenanceMessage: '' },
+            settings: { maintenanceMode: mergedMaintenance.maintenanceMode === true || mergedMaintenance.enabled === true, maintenanceMessage: mergedMaintenance.maintenanceMessage || mergedMaintenance.message || '' },
         });
     } catch (error) {
         console.error('[Admin health summary]', error.message);
@@ -1975,41 +2122,35 @@ app.get('/api/admin/health-summary', async (req, res) => {
 });
 
 app.post('/api/admin/system-health-settings', requireRecentAdminAuthentication, async (req, res) => {
-    const requestDb = req.app.get('db');
-    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.' });
     const maintenanceMode = req.body?.maintenanceMode === true;
     const maintenanceMessage = String(req.body?.maintenanceMessage || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
     if (maintenanceMode && !maintenanceMessage) return res.status(400).json({ success: false, code: 'INVALID_MAINTENANCE_MESSAGE', error: 'A maintenance message is required while maintenance mode is enabled.' });
     const systemHealth = { maintenanceMode, maintenanceMessage };
     try {
-        const publicRef = requestDb.collection('data').doc('public_config');
-        const maintenanceRef = requestDb.collection('settings').doc('maintenance');
-        const revision = await requestDb.runTransaction(async transaction => {
-            const [publicSnapshot, maintenanceSnapshot] = await Promise.all([transaction.get(publicRef), transaction.get(maintenanceRef)]);
-            const currentPublic = publicSnapshot.data() || {};
-            const currentMaintenance = maintenanceSnapshot.data() || {};
-            const currentRevision = Number(currentPublic._settingsRevisions?.systemHealth || currentMaintenance._revision || 0);
-            const expectedRevision = req.body?.expectedRevision === undefined ? currentRevision : Number(req.body.expectedRevision);
-            if (!Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
-                const conflict = new Error('Health settings changed after this panel loaded. Refresh before saving.');
-                conflict.code = 'ADMIN_SETTINGS_CONFLICT';
-                throw conflict;
-            }
-            const nextRevision = currentRevision + 1;
-            const timestamp = firebaseAdmin.firestore.FieldValue.serverTimestamp();
-            transaction.set(maintenanceRef, {
-                enabled: maintenanceMode, message: maintenanceMessage,
-                updatedBy: req.user?.email || req.user?.uid || 'admin', updatedAt: timestamp, _revision: nextRevision,
-            }, { merge: true });
-            transaction.set(publicRef, { systemHealth, _settingsRevisions: { systemHealth: nextRevision } }, { merge: true });
-            transaction.set(requestDb.collection('security_audit_logs').doc(), {
-                action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
-                revision: nextRevision, requestId: res.locals.requestId, createdAt: timestamp,
-            });
-            return nextRevision;
-        });
-        return res.json({ success: true, settings: systemHealth, revision });
+        // MySQL is the authoritative settings store (system_settings table).
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const currentPublic = (await repo.getSetting('public_config').catch(() => ({}))) || {};
+        const currentMaintenance = (await repo.getSetting('maintenance').catch(() => ({}))) || {};
+        const currentRevision = Number(currentPublic._settingsRevisions?.systemHealth || currentMaintenance._revision || 0);
+        const expectedRevision = req.body?.expectedRevision === undefined ? currentRevision : Number(req.body.expectedRevision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
+            const conflict = new Error('Health settings changed after this panel loaded. Refresh before saving.');
+            conflict.code = 'ADMIN_SETTINGS_CONFLICT';
+            throw conflict;
+        }
+        const nextRevision = currentRevision + 1;
+        await repo.saveSetting('maintenance', {
+            enabled: maintenanceMode, message: maintenanceMessage,
+            updatedBy: req.user?.email || req.user?.uid || 'admin', updatedAt: new Date().toISOString(), _revision: nextRevision,
+        }, nextRevision);
+        await repo.saveSetting('public_config', { ...currentPublic, systemHealth, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), systemHealth: nextRevision } }, nextRevision);
+        await repo.recordAdminAuditLog({
+            action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
+            revision: nextRevision, requestId: res.locals.requestId, category: 'system.config',
+            severity: 'HIGH', targetType: 'PLATFORM_CONFIG', targetId: 'systemHealth',
+        }).catch(() => {});
+        return res.json({ success: true, settings: systemHealth, revision: nextRevision });
     } catch (error) {
         const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 500;
         return res.status(status).json({ success: false, code: error.code || 'SYSTEM_HEALTH_SETTINGS_SAVE_FAILED', error: status === 409 ? error.message : 'Unable to save system health settings.', requestId: res.locals.requestId });
@@ -2153,15 +2294,15 @@ function publicAdminSettings(category, data) {
 // server-owned settings are projected through the same secret redaction policy
 // before they leave this process.
 app.get('/api/admin/settings', async (req, res) => {
-    const requestDb = req.app.get('db');
-    if (!requestDb) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.', requestId: res.locals.requestId });
     try {
-        const [publicSnapshot, adminSnapshot] = await Promise.all([
-            requestDb.collection('data').doc('public_config').get(),
-            requestDb.collection('settings').doc('admin_configuration').get(),
+        // MySQL system_settings is the authoritative store; Firestore is never
+        // required on this synchronous admin surface.
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const [publicRoot, adminRoot] = await Promise.all([
+            repo.getSetting('public_config').catch(() => ({})),
+            repo.getSetting('admin_configuration').catch(() => ({})),
         ]);
-        const publicRoot = publicSnapshot.data() || {};
-        const adminRoot = adminSnapshot.data() || {};
         const settings = {};
         for (const [category, data] of Object.entries(publicRoot)) {
             if (category.startsWith('_')) continue;
@@ -2193,8 +2334,6 @@ app.post('/api/admin/settings/:category', async (req, res) => {
         const guarded = requireRecentAdminAuthentication(req, res, () => {});
         if (guarded) return guarded;
     }
-    const requestDb = req.app.get('db');
-    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'Settings service unavailable.' });
     try {
         if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
         const normalized = normalizeAdminSettingValue(req.body.data);
@@ -2202,31 +2341,57 @@ app.post('/api/admin/settings/:category', async (req, res) => {
         const rawRevision = req.body?.expectedRevision;
         const expectedRevision = rawRevision !== undefined ? Number(rawRevision) : -1;
         if (!Number.isInteger(expectedRevision) || (expectedRevision < 0 && expectedRevision !== -1)) throw new Error('Invalid settings revision.');
-        const secretRef = requestDb.collection('settings').doc('admin_configuration');
-        const publicRef = requestDb.collection('data').doc('public_config');
-        const revision = await requestDb.runTransaction(async transaction => {
-            const snapshot = await transaction.get(secretRef);
-            const currentRevision = Number(snapshot.data()?._revisions?.[category] || 0);
+        // MySQL system_settings is the authoritative store; the revision guard
+        // is enforced with a MySQL row lock (transactional OCC).
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const pool = require('./database/mysql').getPool();
+        const conn = await pool.getConnection();
+        let revision;
+        try {
+            await conn.beginTransaction();
+            const [rows] = await conn.query(
+                "SELECT data FROM system_settings WHERE category = 'admin_configuration' FOR UPDATE"
+            ).catch(() => [[]]);
+            const currentAdmin = rows[0] ? (typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data) : {};
+            const currentRevision = Number(currentAdmin._revisions?.[category] || 0);
             if (expectedRevision !== -1 && expectedRevision !== currentRevision) {
                 const stale = new Error('These settings changed after the panel loaded. Refresh before saving.');
                 stale.code = 'ADMIN_SETTINGS_CONFLICT';
                 throw stale;
             }
-            const nextRevision = currentRevision + 1;
-            const currentCategory = snapshot.data()?.[category];
+            revision = currentRevision + 1;
+            const currentCategory = currentAdmin[category];
             const mergedInput = mergeAdminSettingCategory(currentCategory, normalized);
             const withClears = applyExplicitAdminSecretClears(category, currentCategory, mergedInput, req.body?.clearSecrets);
             const persisted = materializeAdminSecretDeletes(preserveAdminSettingSecrets(category, currentCategory, withClears), admin);
             publicSettings = publicAdminSettings(category, persisted);
-            transaction.set(secretRef, { [category]: persisted, _revisions: { [category]: nextRevision } }, { merge: true });
-            transaction.set(publicRef, { [category]: publicSettings, _settingsRevisions: { [category]: nextRevision } }, { merge: true });
-            transaction.set(requestDb.collection('security_audit_logs').doc(), {
-                action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision: nextRevision,
-                changedFields: [...Object.keys(normalized), ...(Array.isArray(req.body?.clearSecrets) ? req.body.clearSecrets : Object.entries(req.body?.clearSecrets || {}).filter(([, value]) => value === true).map(([key]) => `clear:${key}`))].slice(0, 200), requestId: res.locals.requestId,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-            return nextRevision;
-        });
+            await conn.query(
+                `INSERT INTO system_settings (category, data, revision, updated_at)
+                 VALUES ('admin_configuration', ?, ?, CURRENT_TIMESTAMP)
+                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
+                [JSON.stringify({ ...currentAdmin, [category]: persisted, _revisions: { ...(currentAdmin._revisions || {}), [category]: revision } }), revision]
+            );
+            const [pubRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'public_config' FOR UPDATE").catch(() => [[]]);
+            const currentPublic = pubRows[0] ? (typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data) : {};
+            await conn.query(
+                `INSERT INTO system_settings (category, data, revision, updated_at)
+                 VALUES ('public_config', ?, ?, CURRENT_TIMESTAMP)
+                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
+                [JSON.stringify({ ...currentPublic, [category]: publicSettings, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), [category]: revision } }), revision]
+            );
+            await conn.commit();
+        } catch (err) {
+            try { await conn.rollback(); } catch { /* broken connection */ }
+            throw err;
+        } finally {
+            conn.release();
+        }
+        await repo.recordAdminAuditLog({
+            action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision,
+            changedFields: [...Object.keys(normalized), ...(Array.isArray(req.body?.clearSecrets) ? req.body.clearSecrets : Object.entries(req.body?.clearSecrets || {}).filter(([, value]) => value === true).map(([key]) => `clear:${key}`))].slice(0, 200), requestId: res.locals.requestId,
+            categoryLabel: 'system.config', severity: 'HIGH', targetType: 'PLATFORM_CONFIG', targetId: category,
+        }).catch(() => {});
         return res.json({ success: true, settings: publicSettings, revision, message: `${category} settings saved.` });
     } catch (error) {
         return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
@@ -2234,9 +2399,6 @@ app.post('/api/admin/settings/:category', async (req, res) => {
 });
 
 app.post('/api/admin/gdpr-settings', async (req, res) => {
-    const requestDb = req.app.get('db');
-    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
-    if (!requestDb || !firebaseAdmin?.firestore?.FieldValue) return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Settings service unavailable.' });
     const input = req.body || {};
     const safePath = (value, fallback) => {
         const pathValue = String(value || fallback).trim();
@@ -2250,26 +2412,25 @@ app.post('/api/admin/gdpr-settings', async (req, res) => {
         termsOfServiceUrl: safePath(input.termsOfServiceUrl, '/p/terms-of-service'),
     };
     try {
-        const publicRef = requestDb.collection('data').doc('public_config');
-        const revision = await requestDb.runTransaction(async transaction => {
-            const snapshot = await transaction.get(publicRef);
-            const current = snapshot.data() || {};
-            const currentRevision = Number(current._settingsRevisions?.gdpr || 0);
-            const requestedRevision = input.expectedRevision === undefined ? currentRevision : Number(input.expectedRevision);
-            if (!Number.isInteger(requestedRevision) || requestedRevision !== currentRevision) {
-                const conflict = new Error('GDPR settings changed after this panel loaded. Refresh before saving.');
-                conflict.code = 'ADMIN_SETTINGS_CONFLICT';
-                throw conflict;
-            }
-            const nextRevision = currentRevision + 1;
-            transaction.set(publicRef, { gdpr, _settingsRevisions: { gdpr: nextRevision } }, { merge: true });
-            transaction.set(requestDb.collection('security_audit_logs').doc(), {
-                action: 'GDPR_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision,
-                requestId: res.locals.requestId, createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
-            });
-            return nextRevision;
-        });
-        return res.json({ success: true, settings: gdpr, revision });
+        // MySQL system_settings is the authoritative GDPR store.
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const current = (await repo.getSetting('public_config').catch(() => ({}))) || {};
+        const currentRevision = Number(current._settingsRevisions?.gdpr || 0);
+        const requestedRevision = input.expectedRevision === undefined ? currentRevision : Number(input.expectedRevision);
+        if (!Number.isInteger(requestedRevision) || requestedRevision !== currentRevision) {
+            const conflict = new Error('GDPR settings changed after this panel loaded. Refresh before saving.');
+            conflict.code = 'ADMIN_SETTINGS_CONFLICT';
+            throw conflict;
+        }
+        const nextRevision = currentRevision + 1;
+        await repo.saveSetting('public_config', { ...current, gdpr, _settingsRevisions: { ...(current._settingsRevisions || {}), gdpr: nextRevision } }, nextRevision);
+        await repo.recordAdminAuditLog({
+            action: 'GDPR_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision,
+            requestId: res.locals.requestId, categoryLabel: 'system.config', severity: 'HIGH',
+            targetType: 'PLATFORM_CONFIG', targetId: 'gdpr',
+        }).catch(() => {});
+        return res.json({ success: true, settings: gdpr, revision: nextRevision });
     } catch (error) {
         return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 500).json({ success: false, code: error.code || 'GDPR_SETTINGS_SAVE_FAILED', error: error.code === 'ADMIN_SETTINGS_CONFLICT' ? error.message : 'Unable to save GDPR settings.', requestId: res.locals.requestId });
     }
@@ -2682,13 +2843,27 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
     }
 });
 
-// Admin diagnostic test-connection endpoint
+// Admin coupon list — MySQL authoritative (coupons table).
 app.get('/api/admin/coupons', async (req, res) => {
-    const requestDb = req.app.get('db');
-    if (!requestDb) return res.status(503).json({ success: false, error: 'Coupon service unavailable.' });
-    const snapshot = await requestDb.collection('coupons').get();
-    const coupons = snapshot.docs.filter(document => document.id !== '_meta').map(document => ({ code: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) }));
-    return res.json({ success: true, coupons });
+    try {
+        const pool = require('./database/mysql').getPool();
+        const [rows] = await pool.query('SELECT * FROM coupons ORDER BY created_at DESC LIMIT 500');
+        const coupons = rows.map(row => ({
+            code: row.code,
+            discount: Number(row.discount || 0),
+            description: row.description || '',
+            active: row.active === 1 || row.active === true,
+            maxUses: Number(row.max_uses || 0),
+            singleUsePerUser: row.single_use_per_user === 1,
+            validUntil: row.valid_until ? adminIso(row.valid_until) : null,
+            revision: Number(row.revision || 0),
+            createdAt: adminIso(row.created_at),
+            ...(row.extra_json ? (typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : row.extra_json) : {}),
+        }));
+        return res.json({ success: true, coupons });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: 'Coupon service unavailable.' });
+    }
 });
 
 app.put('/api/admin/coupons/:code', async (req, res) => {
@@ -2861,13 +3036,16 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
 async function loadTwilioRuntimeConfig(database) {
     let canonical = {};
     let legacy = {};
-    if (database) {
-        const [canonicalSnapshot, legacySnapshot] = await Promise.all([
-            database.collection('settings').doc('admin_configuration').get(),
-            database.collection('settings').doc('system').get(),
-        ]);
-        canonical = canonicalSnapshot.data()?.twilio || {};
-        legacy = legacySnapshot.data()?.twilio || {};
+    // MySQL is the authoritative Twilio configuration store; the Firestore
+    // data plane is consulted only when explicitly enabled (standby legacy).
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(database);
+        canonical = (await repo.getSetting('admin_configuration').catch(() => ({})))?.twilio || {};
+        legacy = (await repo.getSetting('system').catch(() => ({})))?.twilio || {};
+    } catch (_error) {
+        canonical = {};
+        legacy = {};
     }
     const envSid = String(process.env.TWILIO_ACCOUNT_SID || '').trim();
     const envToken = String(process.env.TWILIO_AUTH_TOKEN || '').trim();
@@ -2881,7 +3059,7 @@ async function loadTwilioRuntimeConfig(database) {
     const storedToken = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalToken : legacyToken;
     const useEnvironment = Boolean(envSid && envToken);
     const useStored = !useEnvironment && Boolean(storedSid && storedToken);
-    const credentialSource = useEnvironment ? 'environment' : useStored ? 'firestore' : envSid || envToken ? 'environment-partial' : storedSid || storedToken ? 'firestore-partial' : 'none';
+    const credentialSource = useEnvironment ? 'environment' : useStored ? 'mysql' : envSid || envToken ? 'environment-partial' : storedSid || storedToken ? 'mysql-partial' : 'none';
     const accountSid = credentialSource.startsWith('environment') ? envSid : storedSid;
     const authToken = credentialSource.startsWith('environment') ? envToken : storedToken;
     return {
@@ -2915,7 +3093,6 @@ app.get('/api/admin/twilio-settings', async (req, res) => {
 
 app.post('/api/admin/twilio-settings', requireRecentAdminAuthentication, async (req, res) => {
     const requestDb = req.app.get('db');
-    if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS configuration service unavailable.' });
     const accountSid = String(req.body?.accountSid || '').trim();
     const authToken = String(req.body?.authToken || '').trim();
     const fromPhoneNumber = String(req.body?.fromPhoneNumber || '').trim();
@@ -2929,29 +3106,58 @@ app.post('/api/admin/twilio-settings', requireRecentAdminAuthentication, async (
     if (authToken && (authToken.length < 16 || authToken.length > 256 || /\p{Cc}/u.test(authToken))) return res.status(400).json({ success: false, error: 'Invalid Twilio Auth Token.' });
     if (fromPhoneNumber && !/^\+[1-9]\d{7,14}$/.test(fromPhoneNumber)) return res.status(400).json({ success: false, error: 'The Twilio sender must be a valid E.164 phone number.' });
     try {
+        // MySQL system_settings is the authoritative Twilio store; the revision
+        // guard is enforced with a MySQL row lock (transactional OCC).
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(requestDb);
+        const pool = require('./database/mysql').getPool();
         const configuredFallback = await loadTwilioRuntimeConfig(requestDb);
-        const reference = requestDb.collection('settings').doc('admin_configuration');
-        const publicReference = requestDb.collection('data').doc('public_config');
-        const revision = await requestDb.runTransaction(async transaction => {
-            const snapshot = await transaction.get(reference);
-            const current = snapshot.data()?.twilio || {};
+        const conn = await pool.getConnection();
+        let revision;
+        try {
+            await conn.beginTransaction();
+            const [rows] = await conn.query(
+                "SELECT data FROM system_settings WHERE category = 'admin_configuration' FOR UPDATE"
+            ).catch(() => [[]]);
+            const currentAdmin = rows[0] ? (typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data) : {};
+            const current = currentAdmin.twilio || {};
             const currentRevision = Number(current._revision || 0);
             if (currentRevision !== expectedRevision) { const conflict = new Error('SMS settings changed after this panel loaded. Refresh before saving.'); conflict.code = 'ADMIN_SETTINGS_CONFLICT'; throw conflict; }
             const resolvedAccountSid = clearCredentials ? '' : accountSid || configuredFallback.accountSid || '';
             const resolvedAuthToken = clearCredentials ? '' : authToken || configuredFallback.authToken || '';
             const resolvedFrom = fromPhoneNumber || current.fromPhoneNumber || configuredFallback.fromPhoneNumber || '';
             if (enableSmsAlerts && (!resolvedAccountSid || !resolvedAuthToken || !resolvedFrom)) { const invalid = new Error('Configure the Account SID, Auth Token, and sender number before enabling SMS alerts.'); invalid.code = 'TWILIO_CONFIGURATION_INCOMPLETE'; throw invalid; }
-            const nextRevision = currentRevision + 1;
-            const next = { ...current, ...(accountSid ? { accountSid, authToken } : {}), ...(fromPhoneNumber ? { fromPhoneNumber } : {}), enableSmsAlerts, _revision: nextRevision };
+            revision = currentRevision + 1;
+            const next = { ...current, ...(accountSid ? { accountSid, authToken } : {}), ...(fromPhoneNumber ? { fromPhoneNumber } : {}), enableSmsAlerts, _revision: revision };
             if (clearCredentials) {
-                next.accountSid = admin.firestore.FieldValue.delete();
-                next.authToken = admin.firestore.FieldValue.delete();
+                delete next.accountSid;
+                delete next.authToken;
             }
-            transaction.set(reference, { twilio: next }, { merge: true });
-            transaction.set(publicReference, { twilio: { enableSmsAlerts }, _settingsRevisions: { twilio: nextRevision } }, { merge: true });
-            transaction.set(requestDb.collection('security_audit_logs').doc(), { action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision, credentialsRotated: Boolean(accountSid), credentialsCleared: clearCredentials, requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-            return nextRevision;
-        });
+            await conn.query(
+                `INSERT INTO system_settings (category, data, revision, updated_at)
+                 VALUES ('admin_configuration', ?, ?, CURRENT_TIMESTAMP)
+                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
+                [JSON.stringify({ ...currentAdmin, twilio: next, _revisions: { ...(currentAdmin._revisions || {}), twilio: revision } }), revision]
+            );
+            const [pubRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'public_config' FOR UPDATE").catch(() => [[]]);
+            const currentPublic = pubRows[0] ? (typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data) : {};
+            await conn.query(
+                `INSERT INTO system_settings (category, data, revision, updated_at)
+                 VALUES ('public_config', ?, ?, CURRENT_TIMESTAMP)
+                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
+                [JSON.stringify({ ...currentPublic, twilio: { enableSmsAlerts }, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), twilio: revision } }), revision]
+            );
+            await conn.commit();
+        } catch (err) {
+            try { await conn.rollback(); } catch { /* broken connection */ }
+            throw err;
+        } finally {
+            conn.release();
+        }
+        await repo.recordAdminAuditLog({
+            action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision, credentialsRotated: Boolean(accountSid), credentialsCleared: clearCredentials,
+            requestId: res.locals.requestId, categoryLabel: 'system.config', severity: 'HIGH', targetType: 'PLATFORM_CONFIG', targetId: 'twilio',
+        }).catch(() => {});
         const config = await loadTwilioRuntimeConfig(requestDb);
         return res.json({ success: true, revision, settings: { accountSidConfigured: Boolean(config.accountSid), authTokenConfigured: Boolean(config.authToken), accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '', fromPhoneNumber: config.fromPhoneNumber, enableSmsAlerts: config.enableSmsAlerts } });
     } catch (error) {
@@ -3974,9 +4180,17 @@ app.post('/api/admin/firebase-service-account', requireRecentAdminAuthentication
             databaseURL: process.env.FIREBASE_DATABASE_URL || undefined
         });
         admin = firebaseAdmin;
-        db = newApp.firestore();
+        // The Firestore data plane stays gated: rotating identity credentials must
+        // never silently enable Firestore on synchronous production paths.
+        const firestoreDataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
+        const firestoreDataPlaneEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(firestoreDataPlane);
+        if (firestoreDataPlaneEnabled) {
+            db = newApp.firestore();
+        } else {
+            db = null;
+        }
         app.set('db', db);
-        console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials');
+        console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials' + (db ? '' : ' (Firestore data plane remains OFF)'));
 
         return res.json({
             success: true,
@@ -4004,21 +4218,18 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
     };
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) return respond();
     try {
-        if (!db || !admin?.auth) throw new Error('Password reset service unavailable');
+        if (!admin?.auth) throw new Error('Password reset service unavailable');
         let user;
         try { user = await admin.auth().getUserByEmail(email); }
         catch (err) { if (err.code === 'auth/user-not-found') return respond(); throw err; }
         const token = crypto.randomBytes(32).toString('base64url');
         const tokenHash = hashToken(token);
         const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
-        const stateRef = db.collection('password_reset_state').doc(user.uid);
-        const tokenRef = db.collection('password_reset_tokens').doc(tokenHash);
-        const batch = db.batch();
-        // Replaces the account's prior active token so an older email cannot reset a
+        // MySQL is the authoritative token store (authTokens). The account's prior
+        // active token is replaced atomically so an older email can never reset a
         // password after the user has requested a newer link.
-        batch.set(stateRef, { activeTokenHash: tokenHash, expiresAt, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-        batch.set(tokenRef, { uid: user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-        await batch.commit();
+        const { createPasswordResetToken } = require('./database/authTokens');
+        await createPasswordResetToken({ tokenHash, uid: user.uid, email, expiresAt });
         const resetLink = `${protocol}://${websiteName}/login#mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyPasswordReset(db, { userEmail: email, userName: email.split('@')[0], resetLink });
         return respond();
@@ -4038,16 +4249,13 @@ app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-em
     }
     const generic = { success: true, message: 'If verification is required, an email will be sent shortly.' };
     try {
-        if (!db) throw new Error('Verification service unavailable');
         const token = crypto.randomBytes(32).toString('base64url');
         const tokenHash = hashToken(token);
         const expiresAt = Date.now() + VERIFICATION_TOKEN_TTL_MS;
-        const stateRef = db.collection('email_verification_state').doc(req.user.uid);
-        const tokenRef = db.collection('email_verifications').doc(tokenHash);
-        const batch = db.batch();
-        batch.set(stateRef, { activeTokenHash: tokenHash, expiresAt, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-        batch.set(tokenRef, { uid: req.user.uid, email, expiresAt, usedAt: null, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-        await batch.commit();
+        // MySQL is the authoritative token store; the previous active token is
+        // replaced atomically inside the same transaction.
+        const { createEmailVerificationToken } = require('./database/authTokens');
+        await createEmailVerificationToken({ tokenHash, uid: req.user.uid, email, expiresAt });
         const verificationLink = `${protocol}://${websiteName}/login#mode=verifyEmail&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
         await EmailNotifier.notifyEmailVerificationLink(db, {
             userEmail: email,
@@ -4064,47 +4272,31 @@ app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-em
 app.post('/api/auth/verify-email-token', async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const token = String(req.body.token || '');
-    if (!/^\S+@\S+\.\S+$/.test(email) || !isOpaqueToken(token) || !db || !admin?.auth) {
+    if (!/^\S+@\S+\.\S+$/.test(email) || !isOpaqueToken(token) || !admin?.auth) {
         return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
     }
     const tokenHash = hashToken(token);
-    const tokenRef = db.collection('email_verifications').doc(tokenHash);
     const leaseId = crypto.randomUUID();
+    const { leaseEmailVerificationToken, finalizeEmailVerification, releaseEmailVerificationLease } = require('./database/authTokens');
     try {
-        let uid;
-        await db.runTransaction(async tx => {
-            const tokenSnap = await tx.get(tokenRef);
-            const record = tokenSnap.data();
-            uid = record?.uid;
-            const stateRef = uid ? db.collection('email_verification_state').doc(uid) : null;
-            const stateSnap = stateRef ? await tx.get(stateRef) : null;
-            if (!tokenSnap.exists || !stateSnap?.exists) throw new Error('INVALID_VERIFICATION_TOKEN');
-            assertTokenRecord({ record, state: stateSnap.data(), email, tokenHash });
-            tx.update(tokenRef, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
-        });
+        // Atomic validate + lease in MySQL (single-use, latest-token-only).
+        const leased = await leaseEmailVerificationToken({ tokenHash, email, leaseId });
+        const uid = leased.uid;
         const user = await admin.auth().getUser(uid);
         if (String(user.email || '').toLowerCase() !== email) throw new Error('INVALID_VERIFICATION_TOKEN');
         await admin.auth().updateUser(uid, { emailVerified: true });
-        await db.runTransaction(async tx => {
-            const latest = await tx.get(tokenRef);
-            if (!latest.exists) throw new Error('INVALID_VERIFICATION_TOKEN');
-            assertLeaseOwner(latest.data(), leaseId);
-            tx.update(tokenRef, { usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
-            tx.set(db.collection('email_verification_state').doc(uid), {
-                activeTokenHash: admin.firestore.FieldValue.delete(),
-                verifiedAt: admin.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            tx.set(db.collection('users').doc(uid), { emailVerified: true }, { merge: true });
-        });
+        // Mark used + account state verified in the same MySQL transaction.
+        await finalizeEmailVerification({ tokenHash, uid, leaseId });
+        const { getRepository } = require('./repositories');
+        try {
+            const repo = getRepository(db);
+            const profile = await repo.getUser(uid);
+            await repo.saveUser(uid, { ...(profile || {}), emailVerified: true, revision: Number(profile?.revision || 1) + 1 });
+        } catch (_repoErr) { /* non-fatal: identity is verified; profile flag is best-effort */ }
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ success: true, message: 'Email address verified successfully.' });
     } catch (_error) {
-        try {
-            const snap = await tokenRef.get();
-            if (snap.exists && snap.data().leaseId === leaseId) {
-                await tokenRef.update({ leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
-            }
-        } catch (_) {}
+        await releaseEmailVerificationLease({ tokenHash, leaseId }).catch(() => {});
         return res.status(400).json({ success: false, error: 'Invalid or expired email verification link.' });
     }
 });
@@ -4179,28 +4371,59 @@ function adminIso(value) {
     } catch (_) { return null; }
 }
 
-async function adminCollectionRead(database, collectionName, { limit = 200, orderField = null } = {}) {
-    if (!database) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
+/**
+ * Admin collection read — MySQL authoritative.
+ *
+ * Reads the collection from MySQL first (canonical_documents table, or the
+ * dedicated relational table when one exists). The Firestore data plane is
+ * consulted ONLY when it is explicitly enabled (FIREBASE_DATA_PLANE on) and
+ * MySQL has no rows — the reverse of the legacy order, so a Firestore outage
+ * can never make an admin list unavailable. In the default configuration
+ * `database` is null and this function is purely MySQL.
+ */
+async function adminCollectionRead(database, collectionName, { limit = 200, _orderField = null } = {}) {
     const bounded = Math.min(Math.max(Number(limit) || 200, 1), 500);
-    let snapshot;
+    // Domain-specific relational tables take precedence over the generic
+    // canonical_documents store.
+    const relationalTables = {
+        companies: 'companies',
+        jobs: 'jobs',
+        reviews: 'reviews',
+        blog_posts: 'blog',
+        ads: 'canonical_documents',
+        blog_categories: 'canonical_documents',
+        employerApplications: 'canonical_documents',
+        trusted_by: 'canonical_documents',
+        landing_content: 'canonical_documents',
+    };
+    const table = relationalTables[collectionName] || 'canonical_documents';
     try {
-        let query = database.collection(collectionName);
-        if (orderField) query = query.orderBy(orderField, 'desc');
-        snapshot = await query.limit(bounded).get();
-    } catch (error) {
-        // A missing composite/index configuration must not turn a valid Admin
-        // list into a false empty state. Fall back to a bounded collection read
-        // and let the caller's deterministic in-memory sort handle presentation.
-        if (!orderField) throw error;
-        snapshot = await database.collection(collectionName).limit(bounded).get();
+        const pool = require('./database/mysql').getPool();
+        if (table === 'canonical_documents') {
+            const [rows] = await pool.query(
+                `SELECT entity_id, payload, created_at, updated_at FROM canonical_documents WHERE entity_type = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT ?`,
+                [collectionName, bounded]
+            );
+            const items = rows.map(row => {
+                let payload = {};
+                try { payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {}); } catch { /* ignore */ }
+                return { id: row.entity_id, ...payload };
+            });
+            return items;
+        }
+        const [rows] = await pool.query(`SELECT * FROM ${table} ORDER BY updated_at DESC LIMIT ?`, [bounded]);
+        return rows.map(row => ({ id: row.id, ...row }));
+    } catch (mysqlErr) {
+        // Firestore is never a fallback for availability: rethrow so the admin
+        // surface answers a controlled 503 instead of silently degrading.
+        throw Object.assign(new Error(`Admin collection unavailable: ${mysqlErr.message}`), { status: 503 });
     }
-    return snapshot.docs.map(document => ({ id: document.id, ...document.data() }));
 }
 
 app.get('/api/admin/employer-applications', async (req, res) => {
     try {
         const rows = await adminCollectionRead(req.app.get('db'), 'employerApplications', { limit: req.query?.limit || 200, orderField: 'submittedAt' });
-        return res.json({ success: true, applications: rows, source: 'FIRESTORE_SERVER_READ', count: rows.length });
+        return res.json({ success: true, applications: rows, source: 'MYSQL_SERVER_READ', count: rows.length });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'EMPLOYER_APPLICATIONS_UNAVAILABLE', error: 'Employer applications are unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4214,7 +4437,7 @@ app.get('/api/admin/companies', async (req, res) => {
             const related = jobs.filter(job => job.companyId === company.id || job.employerId === company.employerId);
             return { ...company, stats: { totalJobs: related.length, activeJobs: related.filter(job => String(job.status || '').toLowerCase() === 'active').length, totalApplications: related.reduce((sum, job) => sum + Number(job.applicationsCount || 0), 0), lastJobPosted: related.map(job => adminIso(job.createdAt)).filter(Boolean).sort().pop() || null } };
         });
-        return res.json({ success: true, companies: result, source: 'FIRESTORE_SERVER_READ', statsSource: jobs ? 'MEASURED' : 'UNAVAILABLE', count: result.length });
+        return res.json({ success: true, companies: result, source: 'MYSQL_SERVER_READ', statsSource: jobs ? 'MEASURED' : 'UNAVAILABLE', count: result.length });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'COMPANIES_UNAVAILABLE', error: 'Company directory is unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4229,30 +4452,32 @@ app.get('/api/admin/jobs', async (req, res) => {
         const filtered = mapped.filter(job => (status === 'all' || String(job.status || '').toLowerCase() === status) && (!search || [job.title, job.company, job.location, job.id].some(value => String(value || '').toLowerCase().includes(search))));
         const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
         const currentPage = Math.min(page, totalPages);
-        return res.json({ success: true, jobs: filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize), allJobs: mapped, source: 'FIRESTORE_SERVER_READ', pagination: { totalItems: filtered.length, totalPages, currentPage, hasNextPage: currentPage < totalPages, hasPreviousPage: currentPage > 1 } });
+        return res.json({ success: true, jobs: filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize), allJobs: mapped, source: 'MYSQL_SERVER_READ', pagination: { totalItems: filtered.length, totalPages, currentPage, hasNextPage: currentPage < totalPages, hasPreviousPage: currentPage > 1 } });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'JOBS_UNAVAILABLE', error: 'Job directory is unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/reviews', async (req, res) => {
-    try { const reviews = await adminCollectionRead(req.app.get('db'), 'reviews', { limit: req.query?.limit || 500 }); return res.json({ success: true, reviews, source: 'FIRESTORE_SERVER_READ', count: reviews.length }); }
+    try { const reviews = await adminCollectionRead(req.app.get('db'), 'reviews', { limit: req.query?.limit || 500 }); return res.json({ success: true, reviews, source: 'MYSQL_SERVER_READ', count: reviews.length }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'REVIEWS_UNAVAILABLE', error: 'Reviews are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/ads', async (req, res) => {
-    try { const ads = await adminCollectionRead(req.app.get('db'), 'ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'FIRESTORE_SERVER_READ', count: ads.length }); }
+    try { const ads = await adminCollectionRead(req.app.get('db'), 'ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'MYSQL_SERVER_READ', count: ads.length }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'ADS_UNAVAILABLE', error: 'Advertisements are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/payment-orders', async (req, res) => {
     try {
-        const requestDb = req.app.get('db');
         const limit = Math.min(Math.max(Number(req.query?.limit) || 200, 1), 500);
-        if (!requestDb) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
-        const snapshots = await Promise.allSettled([
-            requestDb.collection('payment_orders').orderBy('createdAt', 'desc').limit(limit).get(),
-            requestDb.collection('invoices').orderBy('createdAt', 'desc').limit(limit).get(),
-            requestDb.collection('transactions').orderBy('created_at', 'desc').limit(limit).get(),
-        ]);
+        const pool = require('./database/mysql').getPool();
+        const [orderRows] = await pool.query(
+            'SELECT * FROM payment_orders ORDER BY created_at DESC LIMIT ?',
+            [limit]
+        ).catch(() => [[]]);
+        const [transactionRows] = await pool.query(
+            'SELECT * FROM transactions ORDER BY created_at DESC LIMIT ?',
+            [limit]
+        ).catch(() => [[]]);
         const records = [];
         const seen = new Set();
         const dateValue = value => adminIso(value);
@@ -4264,15 +4489,15 @@ app.get('/api/admin/payment-orders', async (req, res) => {
             if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING', 'INITIATED'].includes(status)) return 'Pending';
             return 'Unknown';
         };
-        const add = (document, data, source) => {
-            const identity = source === 'payment_orders' ? document.id : data.paymentOrderId || data.transactionId || document.id;
+        const add = (id, data, source) => {
+            const identity = source === 'payment_orders' ? id : data.paymentOrderId || data.transactionId || id;
             if (seen.has(identity)) return;
             seen.add(identity);
             const amount = Number(data.amount || data.total || data.price || 0);
             records.push({
-                docId: source === 'payment_orders' ? document.id : data.paymentOrderId || document.id,
+                docId: source === 'payment_orders' ? id : data.paymentOrderId || id,
                 source,
-                transactionId: data.providerPaymentId || data.providerOrderId || data.transactionId || document.id,
+                transactionId: data.providerPaymentId || data.providerOrderId || data.transactionId || id,
                 providerReference: data.providerPaymentId || data.providerOrderId || data.providerReference || '',
                 userId: data.uid || data.userId || '',
                 customerEmail: data.customerEmail || '',
@@ -4296,12 +4521,10 @@ app.get('/api/admin/payment-orders', async (req, res) => {
                 refundReason: data.refundReason || '',
             });
         };
-        if (snapshots[0].status === 'fulfilled') snapshots[0].value.docs.forEach(doc => add(doc, doc.data() || {}, 'payment_orders'));
-        if (snapshots[1].status === 'fulfilled') snapshots[1].value.docs.forEach(doc => add(doc, doc.data() || {}, 'invoices'));
-        if (snapshots[2].status === 'fulfilled') snapshots[2].value.docs.forEach(doc => add(doc, doc.data() || {}, 'legacy_transactions'));
-        if (snapshots.every(result => result.status === 'rejected')) throw Object.assign(new Error('Billing ledgers unavailable'), { status: 503 });
+        for (const row of orderRows) add(row.id, { ...row, provider: row.provider || row.last_payment_gateway }, 'payment_orders');
+        for (const row of transactionRows) add(row.id, row, 'legacy_transactions');
         records.sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
-        return res.json({ success: true, records, sources: { paymentOrders: snapshots[0].status === 'fulfilled' ? 'AVAILABLE' : 'UNAVAILABLE', invoices: snapshots[1].status === 'fulfilled' ? 'AVAILABLE' : 'UNAVAILABLE', legacy: snapshots[2].status === 'fulfilled' ? 'AVAILABLE' : 'UNAVAILABLE' }, count: records.length });
+        return res.json({ success: true, records, sources: { paymentOrders: 'MYSQL', invoices: 'NOT_CONFIGURED', legacy: 'MYSQL' }, count: records.length });
     } catch (error) {
         return res.status(error.status || 503).json({ success: false, code: 'PAYMENT_LEDGER_UNAVAILABLE', error: 'Payment ledger is unavailable.', requestId: res.locals.requestId });
     }
@@ -4309,14 +4532,21 @@ app.get('/api/admin/payment-orders', async (req, res) => {
 
 app.get('/api/admin/landing-content', async (req, res) => {
     try {
-        if (!req.app.get('db')) throw Object.assign(new Error('Firestore unavailable'), { status: 503 });
-        const snapshot = await req.app.get('db').collection('data').doc('frontendstats').get();
-        return res.json({ success: true, content: snapshot.exists ? snapshot.data() : null, source: snapshot.exists ? 'FIRESTORE_SERVER_READ' : 'NOT_CONFIGURED' });
+        // MySQL is the authoritative landing-content store (system_settings
+        // 'landing_content' / 'frontendstats'). Firestore is never required.
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const [landing, frontendStats] = await Promise.all([
+            repo.getSetting('landing_content').catch(() => null),
+            repo.getSetting('frontendstats').catch(() => null),
+        ]);
+        const content = landing || frontendStats || null;
+        return res.json({ success: true, content, source: content ? 'MYSQL_SERVER_READ' : 'NOT_CONFIGURED' });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'LANDING_CONTENT_UNAVAILABLE', error: 'Landing content is unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/blog/categories', async (_req, res) => {
-    try { const categories = await adminCollectionRead(_req.app.get('db'), 'blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'FIRESTORE_SERVER_READ' }); }
+    try { const categories = await adminCollectionRead(_req.app.get('db'), 'blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'MYSQL_SERVER_READ' }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_CATEGORIES_UNAVAILABLE', error: 'Blog categories are unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4332,7 +4562,7 @@ app.get('/api/admin/blog/posts', async (req, res) => {
         posts.sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
         const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
         const currentPage = Math.min(page, totalPages);
-        return res.json({ success: true, posts: posts.slice((currentPage - 1) * pageSize, currentPage * pageSize), source: 'FIRESTORE_SERVER_READ', pagination: { totalCount: posts.length, totalPages, currentPage, hasNextPage: currentPage < totalPages, hasPreviousPage: currentPage > 1 } });
+        return res.json({ success: true, posts: posts.slice((currentPage - 1) * pageSize, currentPage * pageSize), source: 'MYSQL_SERVER_READ', pagination: { totalCount: posts.length, totalPages, currentPage, hasNextPage: currentPage < totalPages, hasPreviousPage: currentPage > 1 } });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_POSTS_UNAVAILABLE', error: 'Blog posts are unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4468,14 +4698,20 @@ app.get(['/public/custom-pages.json', '/api/public/custom-pages', '/api/custom-p
 });
 
 app.get('/api/admin/pages', async (req, res) => {
-    const requestDb = req.app.get('db');
-    if (!requestDb) return res.status(503).json({ success: false, error: 'Page service unavailable.' });
-    const snapshot = await requestDb.collection('pages').get();
-    const pages = snapshot.docs.map(document => {
-        const value = document.data() || {};
-        return { id: document.id, title: value.title || document.id, description: value.description || '', pagecontent: value.pagecontent || '', status: value.status || 'published', revision: Number(value.revision || 0), legacy: !value.status };
-    });
-    return res.json({ success: true, pages });
+    try {
+        // MySQL is the authoritative custom-pages store (canonical_documents
+        // 'custom_pages'); Firestore is never required.
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const docs = await repo.listDocuments('custom_pages', { limit: 500 });
+        const pages = (docs || []).map(doc => {
+            const value = doc.payload || {};
+            return { id: doc.id, title: value.title || doc.id, description: value.description || '', pagecontent: value.pagecontent || '', status: value.status || 'published', revision: Number(value.revision || 0), legacy: !value.status };
+        });
+        return res.json({ success: true, pages });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: 'Page service unavailable.' });
+    }
 });
 
 app.put('/api/admin/pages/:slug', async (req, res) => {
@@ -4550,40 +4786,33 @@ app.post('/api/admin/landing-content', async (req, res) => {
 });
 
 app.get(['/public/trusted-by.json', '/api/public/trusted-by', '/api/trusted-by.json', '/trusted-by.json'], async (req, res) => {
-    const requestDb = req.app.get('db') || db;
+    // MySQL is the authoritative trusted-by store; Firestore is never consulted.
     try {
-        const repo = getRepository(requestDb);
-        if (repo && typeof repo.getTrustedBy === 'function') {
-            const list = await repo.getTrustedBy();
-            if (Array.isArray(list) && list.length > 0) {
-                res.setHeader('Cache-Control', 'no-store');
-                return res.json({ success: true, items: list });
-            }
-        }
-    } catch (_) {}
-    try {
-        if (requestDb) {
-            const snapshot = await requestDb.collection('trustedBy').get();
-            const items = snapshot.docs.map(document => ({ id: document.id, ...document.data() })).filter(item => item.published !== false).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
-            res.setHeader('Cache-Control', 'no-store');
-            return res.json({ success: true, items });
-        }
-    } catch (_) {}
-    return res.json({
-        success: true,
-        items: [
-            { id: 'google', name: 'Google', url: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' },
-            { id: 'microsoft', name: 'Microsoft', url: 'https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg' },
-            { id: 'amazon', name: 'Amazon', url: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg' }
-        ]
-    });
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const docs = await repo.listDocuments('trusted_by', { limit: 500 });
+        const items = (docs || [])
+            .map(doc => ({ id: doc.id, ...(doc.payload || {}) }))
+            .filter(item => item.published !== false)
+            .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, items });
+    } catch (_error) {
+        return res.json({ success: true, items: [] });
+    }
 });
 
 app.get('/api/admin/trusted-by', async (_req, res) => {
-    if (!db) return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
-    const snapshot = await db.collection('trustedBy').get();
-    const items = snapshot.docs.map(document => ({ id: document.id, ...document.data(), revision: Number(document.data()?.revision || 0) })).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
-    return res.json({ success: true, items });
+    try {
+        // MySQL is the authoritative trusted-by store (canonical_documents).
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(_req.app.get('db') || db);
+        const docs = await repo.listDocuments('trusted_by', { limit: 500 });
+        const items = (docs || []).map(doc => ({ id: doc.id, ...(doc.payload || {}), revision: Number(doc.payload?.revision || 0) })).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+        return res.json({ success: true, items });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+    }
 });
 
 app.post('/api/admin/trusted-by', async (req, res) => {
@@ -4802,6 +5031,68 @@ async function removeDeletedUserFromRealtimeMessaging(uid, identityAdmin = admin
 
 // Durable account deletion: cleans up owned profiles, resumes, portfolios, blog_posts, companies, jobApplications,
 // reporting ACCOUNT_SELF_DELETION_INCOMPLETE on partial failure, while preserving retainedRecordTypes: payment_orders, invoices, transactions.
+// GDPR / account data export — MySQL authoritative. Assembled from the
+// owner-scoped rows of the current authenticated user only.
+app.post('/api/account/export', async (req, res) => {
+    const uid = req.user.uid;
+    if (!uid) return res.status(401).json({ success: false, error: 'Authentication required.' });
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db') || db);
+        const [user, resumes, portfolios, covers, favourites, jobTracker, transactions, notifications, applications, jobs, companies] = await Promise.all([
+            repo.getUser(uid).catch(() => null),
+            repo.getResumes(uid).catch(() => []),
+            repo.getPortfolios(uid).catch(() => []),
+            repo.getCovers(uid).catch(() => []),
+            repo.getFavourites(uid).catch(() => []),
+            repo.listDocuments('job_tracker', { limit: 500 }).catch(() => []),
+            repo.getUserPaymentOrders(uid).catch(() => []),
+            repo.getNotifications(uid).catch(() => []),
+            repo.getApplications({ applicantId: uid }).catch(() => []),
+            repo.getJobs({ employerId: uid }).catch(() => []),
+            repo.getCompanies({ employerId: uid }).catch(() => []),
+        ]);
+        const exportWarnings = [];
+        const messaging = { conversations: [], messagesByConversation: {} };
+        try {
+            // Messages are delivered over Firebase Realtime Database; export what
+            // is reachable for this account (best-effort, never blocking).
+            if (admin?.database) {
+                const realtime = admin.database();
+                const index = await realtime.ref(`user-conversations/${uid}`).get();
+                for (const conversationId of Object.keys(index.val() || {})) {
+                    const [conversationSnapshot, messagesSnapshot] = await Promise.all([
+                        realtime.ref(`conversations/${conversationId}`).get(),
+                        realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').get(),
+                    ]);
+                    if (conversationSnapshot.exists()) messaging.conversations.push({ id: conversationId, ...conversationSnapshot.val() });
+                    const messages = [];
+                    messagesSnapshot.forEach(message => messages.push({ id: message.key, ...message.val() }));
+                    messaging.messagesByConversation[conversationId] = messages;
+                }
+            }
+        } catch (error) { exportWarnings.push(`Messaging export unavailable: ${error.message}`); }
+
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({
+            success: true,
+            export: {
+                exportDate: new Date().toISOString(),
+                userId: uid,
+                profile: user || {},
+                resumes, portfolios, covers, favourites,
+                jobTracker: (jobTracker || []).map(doc => ({ id: doc.id, ...doc.payload })),
+                transactions, notifications, applications, jobs, companies,
+                messaging, exportWarnings,
+                note: 'Provider-held identity, payment-provider records, security audit logs, and legally retained billing records require provider/support export channels.',
+            },
+        });
+    } catch (error) {
+        console.error('[Account export]', error.message);
+        return res.status(500).json({ success: false, error: 'Account export is temporarily unavailable.' });
+    }
+});
+
 app.post('/api/account/delete', async (req, res) => {
     const uid = req.user.uid;
     // Applications belong to their applicants and retain a bounded job snapshot.
@@ -4830,12 +5121,17 @@ app.post('/api/account/delete', async (req, res) => {
 });
 
 // Administrative deletion is explicit, recently authenticated, and recursive.
+// MySQL is the authoritative store: the user row is deleted and ON DELETE
+// CASCADE removes all owned data (resumes, portfolios, covers, favourites,
+// jobs, applications, notifications, blog, companies). When the Firestore
+// data plane is enabled it is also cleaned, but it is never required.
 app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRecentAdminAuthentication, async (req, res) => {
     const requestedUid = String(req.body?.uid || '').trim();
     const requestedEmail = String(req.body?.email || '').trim().toLowerCase();
     const requestDb = req.app.get('db');
     const identityAdmin = req.app.get('firebaseAdmin') || admin;
-    if ((!requestedUid && !requestedEmail) || !requestDb || !identityAdmin?.auth) {
+    const { getRepository } = require('./repositories');
+    if ((!requestedUid && !requestedEmail) || !identityAdmin?.auth) {
         return res.status(400).json({ success: false, code: 'USER_DELETE_INPUT_INVALID', error: 'User UID or email is required.' });
     }
     if (requestedUid && !/^[A-Za-z0-9:_-]{1,128}$/.test(requestedUid)) {
@@ -4846,6 +5142,7 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRec
     }
 
     try {
+        const repo = getRepository(requestDb);
         let target = null;
         try {
             target = requestedUid ? await identityAdmin.auth().getUser(requestedUid) : await identityAdmin.auth().getUserByEmail(requestedEmail);
@@ -4856,9 +5153,9 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRec
         if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user UID.' });
         if (targetUid === req.user.uid) return res.status(400).json({ success: false, code: 'SELF_DELETION_PROHIBITED', error: 'Self-deletion through the admin endpoint is prohibited.' });
 
-        const profileSnapshot = await requestDb.collection('users').doc(targetUid).get();
-        if (!target && !profileSnapshot.exists) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
-        const profileData = profileSnapshot.data() || {};
+        const profileRecord = await repo.getUser(targetUid);
+        if (!target && !profileRecord) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
+        const profileData = profileRecord || {};
         const authoritativeEmail = String(target?.email || profileData.email || '').toLowerCase();
         if (requestedEmail && authoritativeEmail && authoritativeEmail !== requestedEmail) {
             return res.status(400).json({ success: false, code: 'USER_IDENTITY_MISMATCH', error: 'UID/email identity mismatch.' });
@@ -4868,55 +5165,64 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRec
             return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
         }
 
-        // Clean application-owned data before deleting the Auth identity. If any
-        // cleanup fails, the account remains recoverable and the operator gets a
-        // retryable failure instead of an orphaned/deleted half-state.
         const cleanupFailures = [];
-        try {
-            const ownedJobs = await requestDb.collection('jobs').where('employerId', '==', targetUid).get();
-            for (const job of ownedJobs.docs) await requestDb.recursiveDelete(job.ref);
-        } catch { cleanupFailures.push('employer jobs'); }
-        try {
-            const applications = await requestDb.collection('jobApplications').where('userId', '==', targetUid).get();
-            const applicationIds = applications.docs.map(application => application.id);
-            for (const application of applications.docs) await requestDb.recursiveDelete(application.ref);
-            await deleteApplicationNotifications(requestDb, applicationIds);
-        } catch { cleanupFailures.push('job applications'); }
-        const relatedQueries = [
-            ['portfolios', requestDb.collection('portfolios').where('userId', '==', targetUid)],
-            ['published portfolios', requestDb.collection('pb').where('ownerUid', '==', targetUid)],
-            ['blog posts', requestDb.collection('blog_posts').where('authorUid', '==', targetUid)],
-            ['companies', requestDb.collection('companies').where('employerId', '==', targetUid)],
-        ];
-        for (const [label, query] of relatedQueries) {
+
+        // Firestore data-plane cleanup — best-effort and only when the data
+        // plane is explicitly enabled. Never required for correctness.
+        if (requestDb && typeof requestDb.collection === 'function') {
             try {
-                const snapshot = await query.get();
-                for (const item of snapshot.docs) await requestDb.recursiveDelete(item.ref);
-            } catch (error) {
-                cleanupFailures.push(label);
-                console.warn(`[User deletion ${label}]`, error.message);
+                const ownedJobs = await requestDb.collection('jobs').where('employerId', '==', targetUid).get();
+                for (const job of ownedJobs.docs) await requestDb.recursiveDelete(job.ref);
+            } catch { cleanupFailures.push('employer jobs (standby)'); }
+            try {
+                const applications = await requestDb.collection('jobApplications').where('userId', '==', targetUid).get();
+                const applicationIds = applications.docs.map(application => application.id);
+                for (const application of applications.docs) await requestDb.recursiveDelete(application.ref);
+                await deleteApplicationNotifications(requestDb, applicationIds);
+            } catch { cleanupFailures.push('job applications (standby)'); }
+            const relatedQueries = [
+                ['portfolios (standby)', requestDb.collection('portfolios').where('userId', '==', targetUid)],
+                ['published portfolios (standby)', requestDb.collection('pb').where('ownerUid', '==', targetUid)],
+                ['blog posts (standby)', requestDb.collection('blog_posts').where('authorUid', '==', targetUid)],
+                ['companies (standby)', requestDb.collection('companies').where('employerId', '==', targetUid)],
+            ];
+            for (const [label, query] of relatedQueries) {
+                try {
+                    const snapshot = await query.get();
+                    for (const item of snapshot.docs) await requestDb.recursiveDelete(item.ref);
+                } catch (error) {
+                    cleanupFailures.push(label);
+                    console.warn(`[User deletion ${label}]`, error.message);
+                }
             }
-        }
-        for (const [label, reference] of [
-            ['employer application', requestDb.collection('employerApplications').doc(targetUid)],
-            ['notifications', requestDb.collection('notifications').doc(targetUid)],
-        ]) {
-            try { await requestDb.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
-        }
-        try { await removeDeletedUserFromRealtimeMessaging(targetUid, identityAdmin); } catch { cleanupFailures.push('realtime messaging'); }
-        if (!cleanupFailures.length) {
-            try { await requestDb.recursiveDelete(requestDb.collection('users').doc(targetUid)); }
-            catch { cleanupFailures.push('user profile tree'); }
+            for (const [label, reference] of [
+                ['employer application (standby)', requestDb.collection('employerApplications').doc(targetUid)],
+                ['notifications (standby)', requestDb.collection('notifications').doc(targetUid)],
+            ]) {
+                try { await requestDb.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
+            }
+            try {
+                await requestDb.recursiveDelete(requestDb.collection('users').doc(targetUid));
+            } catch { cleanupFailures.push('user profile tree (standby)'); }
         }
 
-        const auditRef = requestDb.collection('security_audit_logs').doc();
+        try { await removeDeletedUserFromRealtimeMessaging(targetUid, identityAdmin); } catch { cleanupFailures.push('realtime messaging'); }
+
+        // Authoritative MySQL deletion (cascades to all owned tables).
+        try {
+            if (profileRecord) await repo.deleteUser(targetUid);
+        } catch (error) {
+            cleanupFailures.push('MySQL user record');
+            console.error('[Admin delete user MySQL]', error.message);
+        }
+
         const auditPayload = {
             action: cleanupFailures.length ? 'USER_DELETION_INCOMPLETE' : 'USER_DELETED',
             actorUid: req.user.uid, targetUid, cleanupFailures,
-            requestId: res.locals.requestId, createdAt: identityAdmin.firestore?.FieldValue?.serverTimestamp?.() || new Date(),
+            requestId: res.locals.requestId, createdAt: new Date().toISOString(),
         };
+        try { await repo.recordSecurityAuditLog({ ...auditPayload, severity: 'HIGH', category: 'admin.users' }); } catch {}
         if (cleanupFailures.length) {
-            await auditRef.set(auditPayload).catch(() => {});
             return res.status(500).json({
                 success: false, code: 'USER_CLEANUP_INCOMPLETE',
                 error: `Cleanup failed for: ${cleanupFailures.join(', ')}. The identity was retained; retry this operation.`,
@@ -4926,11 +5232,10 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRec
         if (target) {
             try { await identityAdmin.auth().deleteUser(targetUid); }
             catch (error) {
-                await auditRef.set({ ...auditPayload, action: 'USER_IDENTITY_DELETE_FAILED', cleanupFailures: ['firebase identity'], failureCategory: error.code || 'AUTH_DELETE_FAILED' }).catch(() => {});
+                await repo.recordSecurityAuditLog({ ...auditPayload, action: 'USER_IDENTITY_DELETE_FAILED', cleanupFailures: ['firebase identity'], failureCategory: error.code || 'AUTH_DELETE_FAILED', severity: 'HIGH', category: 'admin.users' }).catch(() => {});
                 return res.status(500).json({ success: false, code: 'USER_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Retry immediately.' });
             }
         }
-        await auditRef.set(auditPayload).catch(() => {});
         return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, employer content, notifications, messaging data, and authored blog posts were deleted.' });
     } catch (error) {
         console.error('[Admin delete user]', error.message);
@@ -4947,42 +5252,25 @@ app.post('/api/auth/set-user-password', async (req, res) => {
     } catch (_) {
         return res.status(400).json({ success: false, error: 'A valid reset token, email, and a password of 12-128 characters not containing the email name are required.' });
     }
-    if (!db || !admin?.auth) return res.status(503).json({ success: false, error: 'Password reset service unavailable.' });
+    if (!admin?.auth) return res.status(503).json({ success: false, error: 'Password reset service unavailable.' });
     const tokenHash = hashToken(token);
-    const ref = db.collection('password_reset_tokens').doc(tokenHash);
     const leaseId = crypto.randomUUID();
+    const { leasePasswordResetToken, finalizePasswordReset, releasePasswordResetLease } = require('./database/authTokens');
     try {
-        // Atomically reserve the token. A concurrent request cannot acquire the same token.
-        await db.runTransaction(async tx => {
-            const snap = await tx.get(ref);
-            const record = snap.data();
-            const stateRef = record?.uid ? db.collection('password_reset_state').doc(record.uid) : null;
-            const stateSnap = stateRef ? await tx.get(stateRef) : null;
-            if (!snap.exists || !stateSnap?.exists) throw new Error('INVALID_RESET_TOKEN');
-            assertTokenRecord({ record, state: stateSnap.data(), email, tokenHash });
-            tx.update(ref, { leaseId, leaseExpiresAt: Date.now() + 60_000 });
-        });
+        // Atomically validate + lease the token in MySQL (single-use,
+        // latest-token-only). A concurrent request cannot acquire the same token.
+        const leased = await leasePasswordResetToken({ tokenHash, email, leaseId });
         const user = await admin.auth().getUserByEmail(email);
-        const record = (await ref.get()).data();
-        if (!record || record.uid !== user.uid) throw new Error('INVALID_RESET_TOKEN');
-        assertLeaseOwner(record, leaseId);
+        if (leased.uid !== user.uid) throw new Error('INVALID_RESET_TOKEN');
         await admin.auth().updateUser(user.uid, { password: newPassword });
         await admin.auth().revokeRefreshTokens(user.uid);
-        await db.runTransaction(async tx => {
-            const latest = await tx.get(ref);
-            if (!latest.exists) throw new Error('INVALID_RESET_TOKEN');
-            assertLeaseOwner(latest.data(), leaseId);
-            tx.update(ref, { usedAt: admin.firestore.FieldValue.serverTimestamp(), leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() });
-            tx.set(db.collection('password_reset_state').doc(user.uid), {
-                activeTokenHash: admin.firestore.FieldValue.delete(),
-                consumedAt: admin.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-        });
+        // Mark used + account state consumed in the same MySQL transaction.
+        await finalizePasswordReset({ tokenHash, uid: user.uid, leaseId });
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ success: true, message: 'Password updated successfully.' });
     } catch (_err) {
         // Release a lease only when this request owns it; do not make an already-used token reusable.
-        try { const snap = await ref.get(); if (snap.exists && snap.data().leaseId === leaseId) await ref.update({ leaseId: admin.firestore.FieldValue.delete(), leaseExpiresAt: admin.firestore.FieldValue.delete() }); } catch (_) {}
+        await releasePasswordResetLease({ tokenHash, leaseId }).catch(() => {});
         return res.status(400).json({ success: false, error: 'Invalid or expired password reset link.' });
     }
 });
@@ -5105,23 +5393,27 @@ const oauthCookie = (state, clear = false) => {
 };
 const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
 
-async function getSocialAuthCredentials(provider, database = db) {
+async function getSocialAuthCredentials(provider, _database = db) {
     let storedClientId = '';
     let storedClientSecret = '';
     const legacyPrefix = provider === 'linkedin' ? 'linkedin' : 'github';
+    // MySQL is the authoritative store for OAuth provider credentials (stored via
+    // the admin settings surface in system_settings.admin_configuration /
+    // system_settings.system_settings). Firestore is never consulted.
     try {
-        if (database) {
-            const [providerSecrets, adminConfiguration, legacySettings] = await Promise.all([
-                database.collection('settings').doc('oauth_providers').get(),
-                database.collection('settings').doc('admin_configuration').get(),
-                database.collection('data').doc('system_settings').get(),
-            ]);
-            const providerConfig = providerSecrets.data()?.[provider] || {};
-            const canonical = adminConfiguration.data()?.socialAuth || {};
-            const legacy = legacySettings.data()?.socialAuth || {};
-            storedClientId = String(providerConfig.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || '').trim();
-            storedClientSecret = String(providerConfig.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || '').trim();
+        const { getPool } = require('./database/mysql');
+        const pool = getPool();
+        const [rows] = await pool.query(
+            "SELECT category, data FROM system_settings WHERE category IN ('admin_configuration','system_settings') LIMIT 2"
+        ).catch(() => [[]]);
+        let canonical = {};
+        for (const row of rows || []) {
+            const data = row && row.data ? (typeof row.data === 'string' ? safeJsonParse(row.data) : row.data) : {};
+            const social = (data && data.socialAuth) || {};
+            canonical = { ...canonical, ...social };
         }
+        storedClientId = String(canonical[`${legacyPrefix}ClientId`] || canonical[`${legacyPrefix}ClientID`] || '').trim();
+        storedClientSecret = String(canonical[`${legacyPrefix}ClientSecret`] || '').trim();
     } catch (error) {
         console.warn(`[OAuth config ${provider}]`, error.message);
     }
@@ -5133,6 +5425,10 @@ async function getSocialAuthCredentials(provider, database = db) {
         storedSecret: storedClientSecret,
     });
     return { clientId: selected.id, clientSecret: selected.secret, source: selected.source };
+}
+
+function safeJsonParse(value) {
+    try { return JSON.parse(value); } catch { return {}; }
 }
 
 /**
@@ -5149,12 +5445,7 @@ function failOAuthBegin(res, provider, reason) {
 
 async function beginOAuth(provider, req, res) {
     try {
-        // No datastore means we cannot mint or verify the anti-CSRF state, so the
-        // flow genuinely cannot start. That is an outage, not a misconfiguration.
-        if (!db) {
-            console.warn(`[OAuth begin ${provider}] state store unavailable`);
-            return failOAuthBegin(res, provider, 'oauth_unavailable');
-        }
+        const { createOAuthState } = require('./database/oauthStore');
         const { clientId, clientSecret } = await getSocialAuthCredentials(provider, req.app.get('db'));
         // Both halves are required for the complete code exchange. Starting a
         // redirect with only a client id would create a guaranteed callback
@@ -5166,7 +5457,7 @@ async function beginOAuth(provider, req, res) {
         const state = crypto.randomBytes(32).toString('base64url');
         const codeVerifier = crypto.randomBytes(32).toString('base64url');
         const challenge = createPkceChallenge(codeVerifier);
-        await db.collection('oauth_states').doc(hashOpaque(state)).create({ provider, codeVerifier, expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
+        await createOAuthState({ stateHash: hashOpaque(state), provider, codeVerifier, expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
         res.setHeader('Set-Cookie', oauthCookie(state));
         const callback = `${protocol}://${websiteName}/api/auth/${provider}/callback`;
         const url = provider === 'linkedin'
@@ -5187,20 +5478,17 @@ async function consumeOAuthState(provider, req) {
     const state = typeof req.query.state === 'string' ? req.query.state : '';
     const cookieState = parseCookies(req.headers.cookie).rp_oauth_state || '';
     assertStateBinding(state, cookieState);
-    const ref = db.collection('oauth_states').doc(hashOpaque(state));
-    let record;
-    await db.runTransaction(async tx => {
-        const snap = await tx.get(ref);
-        record = snap.data();
-        if (!snap.exists) throw new Error('OAUTH_STATE_INVALID');
-        assertStateRecord(record, provider);
-        tx.delete(ref);
-    });
-    return record;
+    const { consumeOAuthState: consumeStateRow } = require('./database/oauthStore');
+    // The store row is deleted atomically with the read; expiry is enforced inside
+    // the store, and assertStateRecord re-checks shape + provider + TTL.
+    const record = await consumeStateRow({ stateHash: hashOpaque(state), provider });
+    if (!record) throw new Error('OAUTH_STATE_INVALID');
+    assertStateRecord({ ...record, expiresAt: Number(record.expiresAt) || 0 }, provider);
+    return { codeVerifier: record.codeVerifier };
 }
 
 async function upsertFederatedIdentity({ provider, providerId, email, emailVerified, displayName, photoURL }) {
-    if (!admin?.auth || !db) throw new Error('OAUTH_IDENTITY_INVALID');
+    if (!admin?.auth) throw new Error('OAUTH_IDENTITY_INVALID');
     const normalizedEmail = assertVerifiedIdentity({ provider, providerId, email, emailVerified });
     const providerUid = `${provider}:${String(providerId)}`.slice(0, 128);
     let providerUser = null;
@@ -5239,15 +5527,12 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
             paymentStatus: existingProfile && existingProfile.paymentStatus ? existingProfile.paymentStatus : 'INACTIVE',
         });
     } catch (repoErr) {
-        console.warn('[OAuth] Resilient profile write failed, attempting identity-adjacent Firestore:', repoErr.message);
-        const userRef = db.collection('users').doc(user.uid);
-        const existing = await userRef.get();
-        await userRef.set({
-            ...profile,
-            authProviders: admin.firestore.FieldValue.arrayUnion(provider),
-            lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
-            ...(!existing.exists ? { membership: 'Basic', createdAt: admin.firestore.FieldValue.serverTimestamp() } : {})
-        }, { merge: true });
+        // MySQL is the authoritative store. A profile-write failure here must be
+        // surfaced as a controlled error — never silently redirected to Firestore.
+        console.error('[OAuth] Authoritative MySQL profile write failed:', repoErr.message);
+        const err = new Error('OAUTH_PROFILE_WRITE_FAILED');
+        err.status = 503;
+        throw err;
     }
     if (isNew) EmailNotifier.notifyOAuthNewUser(db, { userEmail: normalizedEmail, userName: displayName, provider }).catch(() => {});
     return user.uid;
@@ -5255,7 +5540,8 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
 
 async function issueOAuthExchange(uid, provider) {
     const code = crypto.randomBytes(32).toString('base64url');
-    await db.collection('oauth_exchange_codes').doc(hashOpaque(code)).create({ uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS, usedAt: null });
+    const { createOAuthExchangeCode } = require('./database/oauthStore');
+    await createOAuthExchangeCode({ codeHash: hashOpaque(code), uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS });
     return code;
 }
 
@@ -5331,17 +5617,13 @@ app.get('/api/auth/github/callback', async (req, res) => {
 
 app.post('/api/auth/oauth/exchange', async (req, res) => {
     const code = String(req.body.code || '');
-    if (!isOpaqueToken(code) || !db || !admin?.auth) return res.status(400).json({ error: 'Invalid OAuth exchange code' });
-    const ref = db.collection('oauth_exchange_codes').doc(hashOpaque(code));
+    if (!isOpaqueToken(code) || !admin?.auth) return res.status(400).json({ error: 'Invalid OAuth exchange code' });
     try {
-        let record;
-        await db.runTransaction(async tx => {
-            const snap = await tx.get(ref);
-            record = snap.data();
-            if (!snap.exists) throw new Error('INVALID_EXCHANGE_CODE');
-            assertExchangeRecord(record);
-            tx.update(ref, { usedAt: admin.firestore.FieldValue.serverTimestamp() });
-        });
+        const { redeemOAuthExchangeCode } = require('./database/oauthStore');
+        // Atomically read + delete in MySQL: a code can never be redeemed twice.
+        const record = await redeemOAuthExchangeCode({ codeHash: hashOpaque(code) });
+        if (!record) throw new Error('INVALID_EXCHANGE_CODE');
+        assertExchangeRecord({ ...record, expiresAt: Number(record.expiresAt) || 0 });
         const customToken = await admin.auth().createCustomToken(record.uid, { signInProvider: record.provider });
         res.setHeader('Cache-Control', 'no-store');
         return res.json({ customToken });

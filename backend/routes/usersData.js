@@ -23,11 +23,31 @@ router.get('/profile', requireAuth, async (req, res) => {
 });
 
 // POST /api/users-data/profile - Update current user profile
+// Supports optimistic-concurrency via `expectedRevision`: when provided the
+// save fails with 409 PROFILE_CONFLICT if the stored revision differs, so
+// concurrent tabs/devices cannot silently overwrite each other (MySQL FOR
+// UPDATE inside the repository transaction).
 router.post('/profile', requireAuth, express.json({ limit: '2mb' }), async (req, res) => {
     try {
-        const saved = await req.repository.saveUser(req.user.uid, req.body);
+        const expectedRevision = req.body.expectedRevision !== undefined && req.body.expectedRevision !== null
+            ? Number(req.body.expectedRevision)
+            : null;
+        // The revision guard is a protocol field, never profile data.
+        const payload = { ...req.body };
+        delete payload.expectedRevision;
+        const saved = typeof req.repository.saveUserWithRevisionGuard === 'function' && expectedRevision !== null
+            ? await req.repository.saveUserWithRevisionGuard(req.user.uid, payload, expectedRevision)
+            : await req.repository.saveUser(req.user.uid, payload);
         return res.json({ success: true, user: saved });
-    } catch (_err) {
+    } catch (err) {
+        if (err && err.code === 'PROFILE_CONFLICT') {
+            return res.status(409).json({
+                success: false,
+                code: 'PROFILE_CONFLICT',
+                error: err.message,
+                remoteRevision: err.remoteRevision,
+            });
+        }
         return res.status(500).json({ success: false, error: 'Failed to save user profile' });
     }
 });

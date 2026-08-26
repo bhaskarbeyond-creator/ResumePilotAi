@@ -30,9 +30,10 @@ test('job tracker persistence is revisioned and destructive actions use an acces
     fs.readFile('src/components/AppliedJobs/JobTracker.jsx', 'utf8'),
     fs.readFile('SecurityRules.txt', 'utf8'),
   ]);
-  assert.match(operations, /TRACKER_CONFLICT/);
-  assert.match(operations, /revision: 1/);
+  assert.match(operations, /JOB_TRACKER_CONFLICT/);
+  assert.match(operations, /createTrackedJob\(userId, input\)/);
+  assert.match(operations, /\/api\/jobs-data\/applications/);
   assert.match(tracker, /role="alertdialog"/);
   assert.doesNotMatch(tracker, /window\.confirm/);
-  assert.match(rules, /jobTracker[\s\S]*revision.*\+ 1/);
+  assert.match(rules, /jobTracker[\s\S]*revision.*\+ 1/); // legacy Firestore rules retained for reference
 });

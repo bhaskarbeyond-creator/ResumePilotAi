@@ -47,8 +47,10 @@ test('CMS implementation uses revisions, private drafts, scheduling, sanitized p
     fs.readFile('src/components/Blog/components/BlogCard.jsx', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
   ]);
-  assert.match(operations, /BLOG_CONFLICT/);
-  assert.match(operations, /status:\s*normalized\.status === 'pending' \? 'pending' : 'draft'/);
+  // Blog persistence is backend-owned and revisioned via the blog API (MySQL).
+  assert.match(operations, /saveBlogPost\(id, normalized\)/);
+  assert.match(operations, /blogPostFitsFirestore/);
+  assert.match(operations, /expectedRevision/);
   assert.match(editor, /handleSave\(false\)/);
   assert.match(editor, /BlogPreviewModal/);
   assert.match(editor, /emitUpdate:\s*false/);
@@ -66,5 +68,5 @@ test('CMS implementation uses revisions, private drafts, scheduling, sanitized p
   assert.match(backend, /\/api\/admin\/blog\/posts\/:postId/);
   assert.match(backend, /INVALID_BLOG_TRANSITION/);
   assert.match(backend, /blog_scheduled_published/);
-  assert.match(operations, /\/api\/admin\/blog\/posts/);
+  assert.match(operations, /\/api\/blog-data/);
 });

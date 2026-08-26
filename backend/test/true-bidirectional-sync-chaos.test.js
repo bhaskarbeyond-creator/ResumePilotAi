@@ -1,3 +1,6 @@
+// Standby replication is the subject under test: enable the operator flag.
+process.env.FIREBASE_DATA_PLANE = 'on';
+
 /**
  * ResumePilot AI — True Bidirectional Sync Chaos & Zero-Trust Isolation Test Suite
  *

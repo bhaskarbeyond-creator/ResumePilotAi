@@ -21,8 +21,8 @@ test('notification producers are backend-owned, deterministic, and state-labelle
   assert.match(rules, /match \/notifications[\s\S]*?allow create: if false/);
   assert.match(notifier, /deliveryState: 'DELIVERY_ATTEMPTED'/);
   assert.match(notifier, /deliveryState: 'DELIVERY_FAILED'/);
-  assert.match(backend, /queueEmailInTransaction/);
   assert.match(backend, /NOTIFICATION_OUTBOX_WORKER_ENABLED/);
+  assert.match(backend, /repo\.saveNotification\(recipientUid/);
   assert.match(rules, /match \/notification_outbox\/\{id\} \{ allow read, write: if false; \}/);
   assert.doesNotMatch(backend, /notification queued|notifications queued|email delivered/i);
 });

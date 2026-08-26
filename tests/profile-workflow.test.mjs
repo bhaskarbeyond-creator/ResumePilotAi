@@ -24,12 +24,17 @@ test('profile avatar accepts bounded inert raster data or safe URLs and rejects 
 });
 
 test('profile persistence and UI use revisions, truthful save states, conflicts, and validated avatar uploads', async () => {
-  const [operations, settings] = await Promise.all([
+  const [_operations, persistence, settings] = await Promise.all([
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/profilePersistence.js', 'utf8'),
     fs.readFile('src/components/Dashboard/DashboardSettings/DashboardSettings.jsx', 'utf8'),
   ]);
-  assert.match(operations, /PROFILE_CONFLICT/);
-  assert.match(operations, /runTransaction/);
+  // Profile conflict semantics live in profilePersistence (server-side OCC via
+  // the MySQL-backed API + injected-store tests).
+  assert.match(persistence, /PROFILE_CONFLICT/);
+  assert.match(persistence, /saveProfileViaApi/);
+  assert.match(persistence, /runTransaction/);
+  assert.match(settings, /saveProfile\(null, currentUser\.uid/);
   assert.match(settings, /Pending autosave/);
   assert.match(settings, /Conflict—action required/);
   assert.doesNotMatch(settings, /remoteRevision\s*[),}][\s\S]{0,250}persistProfileRef\.current/);
@@ -48,7 +53,7 @@ test('preferences are account-scoped, revisioned, validated, and intentionally s
     fs.readFile('SecurityRules.txt', 'utf8'),
   ]);
   assert.match(operations, /saveUserPreferences/);
-  assert.match(operations, /PREFERENCES_CONFLICT/);
+  assert.match(operations, /saveCurrentUserProfile\(\{ userId, profile: \{ \.\.\.\(profile\?\.profile \|\| \{\}\), preferences \} \}\)/);
   assert.match(settings, /Preferences &amp; Privacy/);
   assert.match(settings, /do not change analytics consent or payment state/);
   assert.match(rules, /validPreferences/);

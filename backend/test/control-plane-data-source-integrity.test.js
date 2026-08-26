@@ -29,29 +29,10 @@ describe('Control Plane Data Source Integrity & Quota Degradation', () => {
         });
         app.use(requireAuth);
 
-        const createMockQuery = () => {
-            const throwQuota = async () => {
-                const err = new Error('8 RESOURCE_EXHAUSTED: Quota exceeded.');
-                err.code = 8;
-                throw err;
-            };
-            const obj = {
-                get: throwQuota,
-                set: throwQuota,
-                doc: () => createMockQuery(),
-                collection: () => createMockQuery(),
-                orderBy: () => createMockQuery(),
-                where: () => createMockQuery(),
-                limit: () => createMockQuery(),
-                startAfter: () => createMockQuery(),
-                count: () => ({ get: throwQuota })
-            };
-            return obj;
-        };
-
-        const mockDb = createMockQuery();
-
-        app.set('db', mockDb);
+        // MySQL is the authoritative control-plane store. A Firestore quota
+        // exhaustion can no longer degrade these endpoints — Firestore is not
+        // consulted on the synchronous path.
+        app.set('db', null);
         app.set('firebaseAdmin', {
             firestore: { FieldValue: { serverTimestamp: () => new Date() } },
             auth: () => ({
@@ -67,42 +48,37 @@ describe('Control Plane Data Source Integrity & Quota Degradation', () => {
         setTokenVerifierForTests(token => admin.auth().verifyIdToken(token, true));
     });
 
-    it('1. Admin Audit Logs route gracefully degrades with HTTP 200 and quotaLimited: true when Firestore quota is exhausted', async () => {
+    it('1. Admin Audit Logs route serves from MySQL with a truthful envelope', async () => {
         const res = await request(app)
             .get('/api/admin/audit-logs')
             .set('Authorization', 'Bearer valid_mock_token')
             .expect(200);
 
-        assert.strictEqual(res.body.degraded, true);
-        assert.strictEqual(res.body.quotaLimited, true);
-        assert(Array.isArray(res.body.logs));
-        assert.strictEqual(res.body.logs.length, 0);
+        assert.ok(Array.isArray(res.body.logs));
         assert(!JSON.stringify(res.body).includes('RESOURCE_EXHAUSTED'));
+        assert(!/quotaLimited|RESOURCE_EXHAUSTED|STANDBY_FIRESTORE/.test(JSON.stringify(res.body)));
     });
 
-    it('2. Admin Audit Stats route gracefully degrades with HTTP 200 and quotaLimited: true when Firestore quota is exhausted', async () => {
+    it('2. Admin Audit Stats route serves from MySQL without quota flags', async () => {
         const res = await request(app)
             .get('/api/admin/audit-logs/stats')
             .set('Authorization', 'Bearer valid_mock_token')
             .expect(200);
 
-        assert.strictEqual(res.body.degraded, true);
-        assert.strictEqual(res.body.quotaLimited, true);
-        assert.strictEqual(res.body.sampleSize, 0);
+        assert.ok(Number.isFinite(Number(res.body.sampleSize)));
         assert(!JSON.stringify(res.body).includes('RESOURCE_EXHAUSTED'));
+        assert(!/quotaLimited|RESOURCE_EXHAUSTED|STANDBY_FIRESTORE/.test(JSON.stringify(res.body)));
     });
 
-    it('3. Security Events route gracefully degrades with HTTP 200 when Firestore quota is exhausted', async () => {
+    it('3. Security Events route serves from MySQL with a truthful envelope', async () => {
         const res = await request(app)
             .get('/api/platform/security-events')
             .set('Authorization', 'Bearer valid_mock_token')
             .expect(200);
 
-        assert.strictEqual(res.body.degraded, true);
-        assert.strictEqual(res.body.quotaLimited, true);
-        assert(Array.isArray(res.body.events));
-        assert.strictEqual(res.body.events.length, 0);
+        assert.ok(Array.isArray(res.body.events));
         assert(!JSON.stringify(res.body).includes('RESOURCE_EXHAUSTED'));
+        assert(!JSON.stringify(res.body).includes('firestore'));
     });
 
     it('4. Platform Version endpoint is 100% resilient and requires no database reads', async () => {

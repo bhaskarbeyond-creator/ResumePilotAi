@@ -49,14 +49,16 @@ test('lease prevents a second instance from taking write authority while fresh',
     assert.equal(afterExpiry.acquired, true);
 });
 
-test('authority failover increments fence generation', () => {
+test('authority degrades without failover by default — MySQL stays authoritative', () => {
     fencing.__resetForTests({ generation: 1, operationalWriteEngine: 'mysql' });
     authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: true, firestoreHealthy: true });
     authority.recordFailure('mysql', 'write', new Error('ECONNREFUSED'));
     authority.recordFailure('mysql', 'write', new Error('ECONNREFUSED'));
     const status = authority.getStatus();
-    assert.equal(status.operationalWriteEngine, 'firestore');
-    assert.ok(status.fence.generation >= 2);
+    // Default configuration: no automatic failover to Firestore.
+    assert.equal(status.operationalWriteEngine, 'mysql');
+    assert.equal(status.canAcceptWrites, false);
+    assert.equal(status.metrics.failovers, 0);
 });
 
 test('recovery bump restores primary write engine on a new generation', () => {
@@ -74,16 +76,26 @@ test('recovery bump restores primary write engine on a new generation', () => {
     assert.ok(fencing.currentGeneration() >= 5);
 });
 
-test('conflicts during recovery do not restore primary (no silent overwrite)', () => {
+test('conflicts during an operator-approved standby recovery do not restore primary (no silent overwrite)', () => {
     fencing.__resetForTests({ generation: 7, operationalWriteEngine: 'firestore' });
-    authority.__resetForTests({
-        configuredPrimary: 'mysql',
-        operationalWriteEngine: 'firestore',
-        mode: 'RECONCILING',
-        mysqlHealthy: true,
-        firestoreHealthy: true,
-    });
-    const result = authority.completeRecovery({ conflicts: 3 });
-    assert.equal(result.mode, 'CONFLICT_DETECTED');
-    assert.equal(result.operationalWriteEngine, 'firestore');
+    const previous = process.env.ALLOW_FIRESTORE_FAILOVER;
+    process.env.ALLOW_FIRESTORE_FAILOVER = 'true';
+    try {
+        delete require.cache[require.resolve('../database/authority')];
+        const authorityOptedIn = require('../database/authority');
+        authorityOptedIn.__resetForTests({
+            configuredPrimary: 'mysql',
+            operationalWriteEngine: 'firestore',
+            mode: 'RECONCILING',
+            mysqlHealthy: true,
+            firestoreHealthy: true,
+        });
+        const result = authorityOptedIn.completeRecovery({ conflicts: 3 });
+        assert.equal(result.mode, 'CONFLICT_DETECTED');
+        assert.equal(result.operationalWriteEngine, 'firestore');
+    } finally {
+        process.env.ALLOW_FIRESTORE_FAILOVER = previous || '';
+        delete require.cache[require.resolve('../database/authority')];
+        require('../database/authority');
+    }
 });

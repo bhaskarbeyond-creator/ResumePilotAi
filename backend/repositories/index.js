@@ -21,27 +21,31 @@ function getDirectRepository(engine, firestoreDb = null) {
 }
 
 /**
- * Factory: resilient dual-engine repository by default.
+ * Factory: resilient MySQL-authoritative repository.
  *
- * Pass `{ direct: true }` or `{ engine: 'mysql'|'firestore' }` to obtain a
- * single-engine adapter (used by the sync worker, which must target a
- * specific standby).
+ * Firestore is NEVER used on the synchronous application path:
+ *  - `getRepository()` returns the MySQL-only ResilientRepository; the
+ *    Firestore adapter is only constructed by callers that explicitly ask for
+ *    it via `getDirectRepository('firestore', ...)` — i.e. the optional
+ *    asynchronous standby replication worker and migration tooling.
+ *  - Pass `{ direct: true }` or `{ engine: 'mysql' }` to obtain the raw MySQL
+ *    adapter (used by the sync worker to target the standby).
  */
 function getRepository(firestoreDb = null, options = {}) {
-    if (options && (options.direct === true || options.engine)) {
-        return getDirectRepository(options.engine || getActiveEngine(), firestoreDb);
+    if (options && options.direct === true && options.engine && options.engine !== 'mysql') {
+        return getDirectRepository(options.engine, firestoreDb);
+    }
+    if (options && (options.direct === true || options.engine === 'mysql')) {
+        return getDirectRepository('mysql', firestoreDb);
     }
 
     if (!mysqlRepoInstance) mysqlRepoInstance = new MySQLRepository();
-    if (!firestoreRepoInstance || (firestoreDb && firestoreRepoInstance.db !== firestoreDb)) {
-        firestoreRepoInstance = new FirestoreRepository(firestoreDb);
-    }
 
     if (!resilientRepoInstance || resilientFirestoreDb !== firestoreDb) {
         resilientRepoInstance = new ResilientRepository({
             mysqlRepo: mysqlRepoInstance,
-            firestoreRepo: firestoreRepoInstance,
-            firestoreDb,
+            firestoreRepo: null,
+            firestoreDb: null,
         });
         resilientFirestoreDb = firestoreDb;
     }

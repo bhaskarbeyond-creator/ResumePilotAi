@@ -30,6 +30,18 @@ function fakeDb({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
   };
 }
 
+
+// MySQL seed helper: seeds the authoritative AI settings store.
+const { getPool } = require('../database/mysql');
+async function seedRuntimeSettings({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
+  const pool = getPool();
+  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
+  if (Object.keys(secrets).length) await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1)", [JSON.stringify(secrets)]);
+  if (Object.keys(publicAi).length) await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)", [JSON.stringify({ ai: publicAi })]);
+  if (Object.keys(legacyAi).length) await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('system_settings', ?, 1)", [JSON.stringify({ ai: legacyAi })]);
+  return null;
+}
+
 const okJson = body => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
 test('restored prompts preserve old contextual product instructions and response contracts', () => {
@@ -115,14 +127,15 @@ test('grammar responses are deterministically bounded and invalid indexes are re
 });
 
 test('server configuration preserves primary provider, model, controls, and fallback order without exposing keys', async () => {
-  const configuration = await loadProviderConfiguration(fakeDb({
+  await seedRuntimeSettings({
     secrets: {
       nvidia: { apiKey: 'nvidia-test-key-12345', model: 'meta/custom-model' },
       gemini: { apiKey: 'gemini-test-key-12345' },
       openai: { apiKey: 'openai-test-key-12345' },
     },
     publicAi: { provider: 'nvidia', enableNvidia: true, enableGemini: true, enableOpenai: false, enableFallback: true, temperature: 0.4, maxTokens: 1337 },
-  }), {});
+  });
+  const configuration = await loadProviderConfiguration(null, {});
   assert.equal(configuration.primary, 'nvidia');
   assert.equal(configuration.providers.nvidia.model, 'meta/custom-model');
   assert.equal(configuration.temperature, 0.4);
@@ -132,19 +145,20 @@ test('server configuration preserves primary provider, model, controls, and fall
 });
 
 test('provider configuration cache avoids cross-request mutation of generation controls', async () => {
-  const db = fakeDb({ secrets: { gemini: { apiKey: 'gemini-test-key-12345' } }, publicAi: { temperature: 0.4, maxTokens: 1337 } });
-  const first = await loadProviderConfiguration(db, {});
+  await seedRuntimeSettings({ secrets: { gemini: { apiKey: 'gemini-test-key-12345' } }, publicAi: { temperature: 0.4, maxTokens: 1337 } });
+  const first = await loadProviderConfiguration(null, {});
   first.temperature = 0.1;
   first.maxTokens = 4096;
-  const second = await loadProviderConfiguration(db, {});
+  const second = await loadProviderConfiguration(null, {});
   assert.equal(second.temperature, 0.4);
   assert.equal(second.maxTokens, 1337);
 });
 
 test('legacy server-side provider settings remain migration-compatible without returning secrets to browsers', async () => {
-  const configuration = await loadProviderConfiguration(fakeDb({
+  await seedRuntimeSettings({
     legacyAi: { provider: 'groq', groqApiKey: 'legacy-groq-key-12345', groqModel: 'legacy/model', enableGroq: true },
-  }), {});
+  });
+  const configuration = await loadProviderConfiguration(null, {});
   assert.equal(configuration.primary, 'groq');
   assert.equal(configuration.providers.groq.enabled, true);
   assert.equal(configuration.providers.groq.model, 'legacy/model');
@@ -157,12 +171,13 @@ test('provider failure falls back in configured order and returns the original n
     if (url.includes('nvidia.com')) return new Response(JSON.stringify({ error: { message: 'busy' } }), { status: 503 });
     return okJson({ candidates: [{ content: { parts: [{ text: '```json\n{"summary":"Platform engineer focused on reliable APIs."}\n```' }] } }] });
   };
+  await seedRuntimeSettings({
+    secrets: { nvidia: { apiKey: 'nvidia-test-key-12345' }, gemini: { apiKey: 'gemini-test-key-12345' } },
+    publicAi: { provider: 'nvidia', enableFallback: true },
+  });
   const result = await executeContentOperation({
     operation: 'generate-summary', payload: { name: 'Asha', jobTitle: 'Platform Engineer', workHistory: 'Built APIs' },
-    db: fakeDb({
-      secrets: { nvidia: { apiKey: 'nvidia-test-key-12345' }, gemini: { apiKey: 'gemini-test-key-12345' } },
-      publicAi: { provider: 'nvidia', enableFallback: true },
-    }), environment: {}, fetchImpl, requestId: 'fixture',
+    db: null, environment: {}, fetchImpl, requestId: 'fixture',
   });
   assert.equal(result.provider, 'gemini');
   assert.deepEqual(result.data, { summary: 'Platform engineer focused on reliable APIs.' });
@@ -173,10 +188,11 @@ test('provider failure falls back in configured order and returns the original n
 
 test('disabled fallback fails after the selected provider and never spends against another provider', async () => {
   let calls = 0;
-  const configuration = await loadProviderConfiguration(fakeDb({
+  await seedRuntimeSettings({
     secrets: { nvidia: { apiKey: 'nvidia-test-key-12345' }, gemini: { apiKey: 'gemini-test-key-12345' } },
     publicAi: { provider: 'nvidia', enableFallback: false },
-  }), {});
+  });
+  const configuration = await loadProviderConfiguration(null, {});
   await assert.rejects(() => require('../services/aiRuntime').generateWithProviders({
     prompt: 'fixture', operation: 'generate-summary', configuration,
     fetchImpl: async () => { calls += 1; return new Response('{}', { status: 503 }); },

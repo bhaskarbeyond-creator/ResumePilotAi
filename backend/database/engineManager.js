@@ -142,6 +142,11 @@ async function switchActiveEngine(newEngine, switchedBy = 'SUPER_ADMIN', firesto
     if (target !== 'firestore' && target !== 'mysql') {
         throw new Error(`Invalid database engine '${target}'. Allowed values: 'firestore', 'mysql'.`);
     }
+    if (target === 'firestore' && String(process.env.ALLOW_FIRESTORE_ENGINE || 'false').toLowerCase() !== 'true') {
+        const err = new Error('Switching the active engine to Firestore is disabled. MySQL/MariaDB is the authoritative database; Firestore is not a synchronous fallback. Set ALLOW_FIRESTORE_ENGINE=true only for explicit migration tooling.');
+        err.status = 403;
+        throw err;
+    }
 
     if (switchInProgress) {
         const err = new Error('A database engine switch is already in progress; retry when it completes.');

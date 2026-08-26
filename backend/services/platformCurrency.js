@@ -217,7 +217,8 @@ async function setPlatformCurrencyConfig({ db, admin, currency, allowMultiCurren
         requestId: requestId || null,
         createdAt: now,
       });
-      await batch.commit();
+      // Non-blocking standby replication: never delay the user response.
+      Promise.resolve(batch.commit()).catch(() => {});
     } catch (_) {}
   }
 
