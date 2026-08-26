@@ -4,12 +4,12 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 const hygieneWarnings = {
-  'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+  'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
   'no-empty': ['error', { allowEmptyCatch: true }],
   'no-useless-escape': 'warn',
   'no-case-declarations': 'error',
   'no-constant-binary-expression': 'error',
-  'no-control-regex': 'warn',
+  'no-control-regex': 'off', // Required: security sanitizers deliberately strip ASCII control characters (\x00-\x1f)
   'no-prototype-builtins': 'error',
   'no-undef': 'error',
   'no-extra-boolean-cast': 'error',
@@ -35,8 +35,6 @@ export default [
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       ...hygieneWarnings,
-      // Legacy components are being incrementally migrated; these remain visible without
-      // making security/build gates unusable for unrelated changes.
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
@@ -56,12 +54,9 @@ export default [
     rules: { ...js.configs.recommended.rules, ...hygieneWarnings },
   },
   {
-    files: ['tests/**/*.mjs'],
+    files: ['backend/test/**/*.js', 'tests/**/*.{js,mjs}', 'template-lab/**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 'latest',
-      // The test directory intentionally contains both Node contract tests and
-      // Playwright page.evaluate callbacks. Browser globals in this scope make
-      // those callbacks lintable without disabling no-undef for the suite.
       globals: { ...globals.node, ...globals.browser },
       parserOptions: { sourceType: 'module' },
     },
