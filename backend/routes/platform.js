@@ -83,24 +83,26 @@ async function inspectOutbox(db) {
     }
   } catch (_) {}
 
-  // 2. Check Firestore notification_outbox
-  if (db && typeof db.collection === 'function') {
-    try {
-      const snap = await db.collection('notification_outbox').limit(100).get();
-      if (snap && !snap.empty) {
+  // 2. Check MySQL notification_outbox (transactional outbox; MySQL authoritative)
+  try {
+    const pool = getPool();
+    if (pool) {
+      const [rows] = await pool.query(
+        'SELECT state, attempt_count, provider_accepted FROM notification_outbox LIMIT 100'
+      );
+      if (Array.isArray(rows)) {
         hasData = true;
-        snap.forEach(doc => {
-          const data = doc.data() || {};
+        rows.forEach(r => {
           stats.inspected += 1;
-          if (data.state === 'DEAD_LETTER' || Number(data.attemptCount || 0) >= 5) stats.deadLetter += 1;
-          else if (data.providerAccepted === true) stats.completed += 1;
+          if (r.state === 'DEAD_LETTER' || Number(r.attempt_count || 0) >= 5) stats.deadLetter += 1;
+          else if (r.provider_accepted === 1 || r.provider_accepted === true) stats.completed += 1;
           else stats.active += 1;
         });
       }
-    } catch (_) {}
-  }
+    }
+  } catch (_) {}
 
-  if (!hasData && !db && !getPool()) return { active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null };
+  if (!hasData) return { active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null };
   if (stats.deadLetter > 0) stats.status = 'DEGRADED';
   return stats;
 }
@@ -414,9 +416,6 @@ router.post('/operational-status/:serviceId/test', requireRecentAdminAuthenticat
   }
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.firestore?.FieldValue) {
-    return res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE', message: 'The provider test cannot run without a durable audit store.', requestId: res.locals?.requestId } });
-  }
   try {
     const result = await runServiceTest(req.app, serviceId);
     resetHealthCache();
@@ -588,40 +587,36 @@ router.get('/queues', async (req, res) => {
     }
   }
 
-  // 2. Query Firestore notification_outbox if Firestore db is available
-  if (db && typeof db.collection === 'function') {
+  // 2. Query MySQL notification_outbox (durable notification queue; MySQL authoritative)
+  if (pool) {
     try {
-      let snap;
-      try {
-        snap = await db.collection('notification_outbox').orderBy('createdAt', 'desc').limit(50).get();
-        queriedSources.push('FIRESTORE_ORDERED');
-      } catch (_) {
-        snap = await db.collection('notification_outbox').limit(50).get();
-        queriedSources.push('FIRESTORE_UNORDERED');
-      }
-      if (snap && typeof snap.forEach === 'function') {
-        snap.forEach(doc => {
-          const data = doc.data() || {};
-          const isDeadLetter = data.state === 'DEAD_LETTER' || Number(data.attemptCount || 0) >= 5;
+      const [rows] = await pool.query(
+        'SELECT id, channel, recipient, template_type, state, attempt_count, last_error, created_at, updated_at FROM notification_outbox ORDER BY created_at DESC LIMIT 50'
+      );
+      if (Array.isArray(rows)) {
+        queriedSources.push('MYSQL_NOTIFICATION_OUTBOX');
+        rows.forEach(row => {
+          const isDeadLetter = row.state === 'DEAD_LETTER' || Number(row.attempt_count || 0) >= 5;
+          const recipientRaw = String(row.recipient || '');
           if (isDeadLetter) deadLetterCount += 1;
-          else if (data.providerAccepted || data.state === 'DELIVERED' || data.state === 'COMPLETED') successCount += 1;
+          else if (row.state === 'DELIVERED' || row.state === 'COMPLETED') successCount += 1;
           else pendingCount += 1;
 
           items.push({
-            id: doc.id,
-            channel: data.channel || 'email',
-            recipient: data.recipient ? `${String(data.recipient).slice(0, 3)}***@${String(data.recipient).split('@')[1] || 'domain.com'}` : 'unknown',
-            templateType: data.templateType || 'general',
-            state: isDeadLetter ? 'DEAD_LETTER' : data.state || 'QUEUED',
-            attemptCount: Number(data.attemptCount || 0),
-            lastError: data.lastError ? String(data.lastError).slice(0, 200) : null,
-            createdAt: isoFrom(data.createdAt),
-            updatedAt: isoFrom(data.updatedAt),
+            id: String(row.id || ''),
+            channel: row.channel || 'email',
+            recipient: recipientRaw ? `${recipientRaw.slice(0, 3)}***@${recipientRaw.split('@')[1] || 'domain.com'}` : 'unknown',
+            templateType: row.template_type || 'general',
+            state: isDeadLetter ? 'DEAD_LETTER' : String(row.state || 'QUEUED'),
+            attemptCount: Number(row.attempt_count || 0),
+            lastError: row.last_error ? String(row.last_error).slice(0, 200) : null,
+            createdAt: isoFrom(row.created_at),
+            updatedAt: isoFrom(row.updated_at),
           });
         });
       }
-    } catch (firestoreErr) {
-      console.warn('[PlatformQueues] Firestore notification_outbox notice:', firestoreErr.message);
+    } catch (notifErr) {
+      console.warn('[PlatformQueues] MySQL notification_outbox notice:', notifErr.message);
     }
   }
 
@@ -683,53 +678,29 @@ router.post('/queues/retry', requireRecentAdminAuthentication, async (req, res) 
       }
     }
 
-    // Retry Firestore notification_outbox
-    if (db && typeof db.collection === 'function' && admin?.firestore?.Timestamp) {
+    // Retry MySQL notification_outbox (durable notification queue)
+    if (pool) {
       try {
         if (jobId) {
-          const docRef = db.collection('notification_outbox').doc(String(jobId));
-          const snap = await docRef.get();
-          if (snap.exists) {
-            await docRef.update({
-              state: 'NOTIFICATION_QUEUED',
-              attemptCount: 0,
-              nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now()),
-              lastError: admin.firestore.FieldValue.delete(),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-            retriedCount += 1;
-          }
+          const [result] = await pool.query(
+            "UPDATE notification_outbox SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = ?, last_error = NULL, lease_owner = NULL, lease_expires_at = 0 WHERE id = ?",
+            [Date.now(), String(jobId)]
+          );
+          if (result && result.affectedRows > 0) retriedCount += result.affectedRows;
         } else if (all) {
-          const deadLetters = await db.collection('notification_outbox').where('attemptCount', '>=', 5).limit(20).get();
-          if (!deadLetters.empty) {
-            const batch = db.batch();
-            deadLetters.forEach(doc => {
-              batch.update(doc.ref, {
-                state: 'NOTIFICATION_QUEUED',
-                attemptCount: 0,
-                nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now()),
-                lastError: admin.firestore.FieldValue.delete(),
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-              retriedCount += 1;
-            });
-            await batch.commit();
-          }
+          const [result] = await pool.query(
+            "UPDATE notification_outbox SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = ?, last_error = NULL, lease_owner = NULL, lease_expires_at = 0 WHERE state = 'DEAD_LETTER'",
+            [Date.now()]
+          );
+          if (result && result.affectedRows > 0) retriedCount += result.affectedRows;
         }
-      } catch (firestoreErr) {
-        console.warn('[PlatformQueues] Firestore retry notice:', firestoreErr.message);
+      } catch (notifErr) {
+        console.warn('[PlatformQueues] MySQL notification retry notice:', notifErr.message);
       }
     }
 
-    // Write audit log safely
+    // Write audit log safely (MySQL-backed via recordAdminAuditLog)
     try {
-      if (db && typeof db.collection === 'function' && admin?.firestore?.FieldValue) {
-        await db.collection('security_audit_logs').doc().set({
-          action: 'PLATFORM_QUEUE_RETRY', actorUid: req.user?.uid,
-          jobId: jobId || null, all: all === true, retriedCount,
-          requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        }).catch(() => {});
-      }
       await recordAdminAuditLog(db, admin, {
         actorUid: req.user?.uid,
         actorEmail: req.user?.email,
@@ -774,31 +745,31 @@ router.post('/queues/purge', requireRecentAdminAuthentication, async (req, res) 
       }
     }
 
-    // Purge Firestore dead letters
-    if (db && typeof db.collection === 'function' && admin?.firestore?.FieldValue) {
+    // Purge MySQL notification_outbox dead letters
+    if (pool) {
       try {
-        const deadLetters = await db.collection('notification_outbox').where('attemptCount', '>=', 5).limit(50).get();
-        if (!deadLetters.empty) {
-          const batch = db.batch();
-          deadLetters.forEach(doc => {
-            batch.delete(doc.ref);
-            purgedCount += 1;
-          });
-          await batch.commit();
-        }
-      } catch (firestoreErr) {
-        console.warn('[PlatformQueues] Firestore purge notice:', firestoreErr.message);
+        const [result] = await pool.query("DELETE FROM notification_outbox WHERE state = 'DEAD_LETTER'");
+        if (result && result.affectedRows > 0) purgedCount += result.affectedRows;
+      } catch (notifErr) {
+        console.warn('[PlatformQueues] MySQL notification purge notice:', notifErr.message);
       }
     }
 
     try {
-      if (db && typeof db.collection === 'function' && admin?.firestore?.FieldValue) {
-        await db.collection('security_audit_logs').doc().set({
-          action: 'PLATFORM_QUEUE_PURGE', actorUid: req.user?.uid,
-          purgedCount, requestId: res.locals?.requestId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        }).catch(() => {});
-      }
+      await recordAdminAuditLog(db, admin, {
+        actorUid: req.user?.uid,
+        actorEmail: req.user?.email,
+        actorRole: 'SUPER_ADMIN',
+        action: 'PLATFORM_QUEUE_PURGE',
+        category: 'platform.queue',
+        severity: 'HIGH',
+        outcome: 'SUCCESS',
+        method: 'POST',
+        pathname: req.originalUrl,
+        statusCode: 200,
+        metadata: { purgedCount },
+        requestId: res.locals?.requestId,
+      });
     } catch (_) {}
 
     return res.json({ success: true, purgedCount });
@@ -1616,177 +1587,166 @@ router.get('/search', async (req, res) => {
 });
 
 router.get('/announcements', async (req, res) => {
-  const db = req.app?.get('db');
   const pool = getPool();
   const announcements = [];
-  const seenIds = new Set();
 
-  // 1. Try MySQL system_settings for announcements
+  // MySQL platform_announcements table (authoritative).
   if (pool) {
     try {
       const [rows] = await pool.query(
-        "SELECT category, data, updated_at FROM system_settings WHERE category LIKE 'announcement:%' OR category = 'platform_announcements' LIMIT 50"
+        'SELECT id, title, message, severity, audience, enabled, revision, created_by, updated_at FROM platform_announcements ORDER BY updated_at DESC LIMIT 50'
       );
       if (Array.isArray(rows)) {
-        for (const row of rows) {
-          const parsed = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
-          if (Array.isArray(parsed)) {
-            parsed.forEach(a => {
-              if (a.id && !seenIds.has(a.id)) {
-                seenIds.add(a.id);
-                announcements.push(a);
-              }
-            });
-          } else if (parsed && parsed.title) {
-            const id = row.category.replace('announcement:', '') || parsed.id || 'announcement-1';
-            if (!seenIds.has(id)) {
-              seenIds.add(id);
-              announcements.push({ id, ...parsed, updatedAt: row.updated_at });
-            }
-          }
-        }
+        rows.forEach(row => {
+          announcements.push({
+            id: row.id,
+            title: row.title || '',
+            message: row.message || '',
+            severity: row.severity || 'INFO',
+            audience: row.audience || 'ALL',
+            enabled: row.enabled === 1 || row.enabled === true,
+            revision: Number(row.revision || 0),
+            createdBy: row.created_by || null,
+            updatedAt: isoFrom(row.updated_at),
+          });
+        });
       }
     } catch (mysqlErr) {
       console.warn('[Platform announcements] MySQL query notice:', mysqlErr.message);
     }
   }
 
-  // 2. Try Firestore platform_announcements
-  if (db && typeof db.collection === 'function') {
-    try {
-      const snap = await db.collection('platform_announcements').limit(50).get();
-      snap.forEach(doc => {
-        if (!seenIds.has(doc.id)) {
-          seenIds.add(doc.id);
-          const data = doc.data() || {};
-          announcements.push({
-            id: doc.id,
-            title: data.title || '',
-            message: data.message || '',
-            severity: data.severity || 'INFO',
-            audience: data.audience || 'ALL',
-            enabled: data.enabled === true,
-            revision: Number(data.revision || 0),
-            createdBy: data.createdBy || null,
-            updatedAt: isoFrom(data.updatedAt),
-          });
-        }
-      });
-    } catch (fsErr) {
-      console.warn('[Platform announcements] Firestore query notice:', fsErr.message);
-    }
-  }
-
-  announcements.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
   return res.json({ announcements });
 });
 
 router.post('/announcements', requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.firestore?.FieldValue) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
-  }
+  const pool = getPool();
   const title = String(req.body?.title || '').trim().slice(0, 160);
   const message = String(req.body?.message || '').trim().slice(0, 1000);
   if (title.length < 3 || message.length < 3) {
     return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Title and message are required' } });
   }
-  const ref = db.collection('platform_announcements').doc();
-  const payload = {
-    title,
-    message,
-    severity: ['INFO', 'MEDIUM', 'HIGH'].includes(String(req.body?.severity || '').toUpperCase()) ? String(req.body.severity).toUpperCase() : 'INFO',
-    audience: String(req.body?.audience || 'ALL').slice(0, 40),
-    enabled: req.body?.enabled !== false,
-    revision: 1,
-    createdBy: req.user?.email || req.user?.uid || 'admin',
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-  const auditRef = db.collection('security_audit_logs').doc();
-  const batch = db.batch();
-  batch.set(ref, payload);
-  batch.set(auditRef, {
-    action: 'PLATFORM_ANNOUNCEMENT_CREATED', actorUid: req.user?.uid, announcementId: ref.id,
-    revision: 1, requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
-  await batch.commit();
-  return res.status(201).json({ announcement: { id: ref.id, ...payload, revision: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+  const id = require('crypto').randomUUID();
+  const severity = ['INFO', 'MEDIUM', 'HIGH'].includes(String(req.body?.severity || '').toUpperCase()) ? String(req.body.severity).toUpperCase() : 'INFO';
+  const audience = String(req.body?.audience || 'ALL').slice(0, 40);
+  const enabled = req.body?.enabled !== false;
+  const createdBy = req.user?.email || req.user?.uid || 'admin';
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query(
+      `INSERT INTO platform_announcements (id, title, message, severity, audience, enabled, revision, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, NOW(), NOW())`,
+      [id, title, message, severity, audience, enabled ? 1 : 0, createdBy]
+    );
+    await conn.query(
+      `INSERT INTO security_audit_logs (id, action, actor_uid, category, severity, metadata, request_id, created_at)
+       VALUES (?, 'PLATFORM_ANNOUNCEMENT_CREATED', ?, 'platform.announcements', 'INFO', ?, ?, NOW())`,
+      [require('crypto').randomUUID(), req.user?.uid || 'admin', JSON.stringify({ announcementId: id, revision: 1 }), res.locals?.requestId || null]
+    );
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Announcement could not be persisted', requestId: res.locals?.requestId } });
+  } finally {
+    conn.release();
+  }
+  return res.status(201).json({ announcement: { id, title, message, severity, audience, enabled, revision: 1, createdBy, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
 });
 
 router.patch('/announcements/:id', requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.firestore?.FieldValue) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
-  }
+  const pool = getPool();
   const id = String(req.params.id || '');
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
     return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Invalid announcement id' } });
   }
-  const ref = db.collection('platform_announcements').doc(id);
+  const expectedRevision = req.body?.expectedRevision === undefined ? null : Number(req.body.expectedRevision);
+  if (expectedRevision === null || !Number.isInteger(expectedRevision)) {
+    return res.status(400).json({ error: { code: 'INVALID_REVISION', message: 'expectedRevision is required' } });
+  }
+  const severityOverride = req.body?.severity !== undefined ? String(req.body.severity).toUpperCase() : null;
+  if (severityOverride !== null && !['INFO', 'MEDIUM', 'HIGH'].includes(severityOverride)) {
+    return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Invalid announcement severity' } });
+  }
+
+  const conn = await pool.getConnection();
   try {
-    const result = await db.runTransaction(async transaction => {
-      const snap = await transaction.get(ref);
-      if (!snap.exists) throw Object.assign(new Error('Announcement not found'), { code: 'NOT_FOUND', status: 404 });
-      const current = snap.data() || {};
-      const currentRevision = Number(current.revision || 0);
-      const expectedRevision = req.body?.expectedRevision === undefined ? null : Number(req.body.expectedRevision);
-      if (expectedRevision === null || !Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
-        throw Object.assign(new Error('This announcement changed after the page loaded. Refresh before saving.'), { code: 'ADMIN_TARGET_CHANGED', status: 409 });
-      }
-      const updates = { revision: currentRevision + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
-      if (req.body?.title !== undefined) updates.title = String(req.body.title).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
-      if (req.body?.message !== undefined) updates.message = String(req.body.message).replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000);
-      if (req.body?.enabled !== undefined) updates.enabled = req.body.enabled === true;
-      if (req.body?.severity !== undefined) {
-        const severity = String(req.body.severity).toUpperCase();
-        if (!['INFO', 'MEDIUM', 'HIGH'].includes(severity)) throw Object.assign(new Error('Invalid announcement severity'), { code: 'INVALID_ANNOUNCEMENT', status: 400 });
-        updates.severity = severity;
-      }
-      transaction.set(ref, updates, { merge: true });
-      transaction.set(db.collection('security_audit_logs').doc(), {
-        action: 'PLATFORM_ANNOUNCEMENT_UPDATED', actorUid: req.user?.uid, announcementId: id,
-        revision: updates.revision, requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-      return { ...current, ...updates, id, revision: updates.revision };
-    });
-    return res.json({ success: true, announcement: { id, title: result.title, message: result.message, severity: result.severity, audience: result.audience, enabled: result.enabled, revision: result.revision } });
+    await conn.beginTransaction();
+    const [rows] = await conn.query(
+      'SELECT id, title, message, severity, audience, enabled, revision FROM platform_announcements WHERE id = ? FOR UPDATE',
+      [id]
+    );
+    if (!rows.length) {
+      await conn.rollback();
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } });
+    }
+    const current = rows[0];
+    const currentRevision = Number(current.revision || 0);
+    if (expectedRevision !== currentRevision) {
+      await conn.rollback();
+      return res.status(409).json({ error: { code: 'ADMIN_TARGET_CHANGED', message: 'This announcement changed after the page loaded. Refresh before saving.' } });
+    }
+    const nextTitle = req.body?.title !== undefined ? String(req.body.title).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160) : current.title;
+    const nextMessage = req.body?.message !== undefined ? String(req.body.message).replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000) : current.message;
+    const nextEnabled = req.body?.enabled !== undefined ? (req.body.enabled === true) : (current.enabled === 1 || current.enabled === true);
+    const nextSeverity = severityOverride || current.severity;
+    const nextRevision = currentRevision + 1;
+    await conn.query(
+      `UPDATE platform_announcements SET title = ?, message = ?, severity = ?, audience = ?, enabled = ?, revision = ?, updated_at = NOW() WHERE id = ?`,
+      [nextTitle, nextMessage, nextSeverity, current.audience, nextEnabled ? 1 : 0, nextRevision, id]
+    );
+    await conn.query(
+      `INSERT INTO security_audit_logs (id, action, actor_uid, category, severity, metadata, request_id, created_at)
+       VALUES (?, 'PLATFORM_ANNOUNCEMENT_UPDATED', ?, 'platform.announcements', 'INFO', ?, ?, NOW())`,
+      [require('crypto').randomUUID(), req.user?.uid || 'admin', JSON.stringify({ announcementId: id, revision: nextRevision }), res.locals?.requestId || null]
+    );
+    await conn.commit();
+    return res.json({ success: true, announcement: { id, title: nextTitle, message: nextMessage, severity: nextSeverity, audience: current.audience, enabled: nextEnabled, revision: nextRevision } });
   } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ error: { code: error.code || 'ANNOUNCEMENT_UPDATE_FAILED', message: status === 409 || status === 400 ? error.message : 'Announcement could not be updated', requestId: res.locals?.requestId } });
+    await conn.rollback().catch(() => {});
+    return res.status(503).json({ error: { code: 'ANNOUNCEMENT_UPDATE_FAILED', message: 'Announcement could not be updated', requestId: res.locals?.requestId } });
+  } finally {
+    conn.release();
   }
 });
 
 router.delete('/announcements/:id', requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.firestore?.FieldValue) return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
+  const pool = getPool();
   const id = String(req.params.id || '');
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) {
     return res.status(400).json({ error: { code: 'INVALID_ANNOUNCEMENT', message: 'Invalid announcement id' } });
   }
-  const ref = db.collection('platform_announcements').doc(id);
+  const expectedRevision = req.body?.expectedRevision === undefined ? null : Number(req.body.expectedRevision);
+  if (expectedRevision === null || !Number.isInteger(expectedRevision)) {
+    return res.status(400).json({ error: { code: 'INVALID_REVISION', message: 'expectedRevision is required' } });
+  }
+  const conn = await pool.getConnection();
   try {
-    await db.runTransaction(async transaction => {
-      const snap = await transaction.get(ref);
-      if (!snap.exists) throw Object.assign(new Error('Announcement not found'), { code: 'NOT_FOUND', status: 404 });
-      const currentRevision = Number(snap.data()?.revision || 0);
-      const expectedRevision = req.body?.expectedRevision === undefined ? null : Number(req.body.expectedRevision);
-      if (expectedRevision === null || !Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
-        throw Object.assign(new Error('This announcement changed after the page loaded. Refresh before deleting.'), { code: 'ADMIN_TARGET_CHANGED', status: 409 });
-      }
-      transaction.delete(ref);
-      transaction.set(db.collection('security_audit_logs').doc(), {
-        action: 'PLATFORM_ANNOUNCEMENT_DELETED', actorUid: req.user?.uid, announcementId: id,
-        revision: currentRevision, requestId: res.locals?.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    });
+    await conn.beginTransaction();
+    const [rows] = await conn.query('SELECT id, revision FROM platform_announcements WHERE id = ? FOR UPDATE', [id]);
+    if (!rows.length) {
+      await conn.rollback();
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Announcement not found' } });
+    }
+    const currentRevision = Number(rows[0].revision || 0);
+    if (expectedRevision !== currentRevision) {
+      await conn.rollback();
+      return res.status(409).json({ error: { code: 'ADMIN_TARGET_CHANGED', message: 'This announcement changed after the page loaded. Refresh before deleting.' } });
+    }
+    await conn.query('DELETE FROM platform_announcements WHERE id = ?', [id]);
+    await conn.query(
+      `INSERT INTO security_audit_logs (id, action, actor_uid, category, severity, metadata, request_id, created_at)
+       VALUES (?, 'PLATFORM_ANNOUNCEMENT_DELETED', ?, 'platform.announcements', 'MEDIUM', ?, ?, NOW())`,
+      [require('crypto').randomUUID(), req.user?.uid || 'admin', JSON.stringify({ announcementId: id, revision: currentRevision }), res.locals?.requestId || null]
+    );
+    await conn.commit();
     return res.json({ success: true, id });
   } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ error: { code: error.code || 'ANNOUNCEMENT_DELETE_FAILED', message: status === 409 || status === 404 ? error.message : 'Announcement could not be deleted', requestId: res.locals?.requestId } });
+    await conn.rollback().catch(() => {});
+    return res.status(503).json({ error: { code: 'ANNOUNCEMENT_DELETE_FAILED', message: 'Announcement could not be deleted', requestId: res.locals?.requestId } });
+  } finally {
+    conn.release();
   }
 });
 
@@ -2108,7 +2068,8 @@ router.post('/operators', requireRecentAdminAuthentication, async (req, res) => 
   }
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.auth) {
+  const pool = getPool();
+  if (!admin?.auth) {
     return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
   }
   if (uid === req.user?.uid && nextRole !== 'ADMIN' && nextRole !== 'SUPER_ADMIN') {
@@ -2125,12 +2086,13 @@ router.post('/operators', requireRecentAdminAuthentication, async (req, res) => 
     }
     await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: nextRole });
     await admin.auth().revokeRefreshTokens(uid);
-    await db.collection('users').doc(uid).set({ role: nextRole, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    await db.collection('security_audit_logs').doc().set({
-      action: 'PLATFORM_OPERATOR_ROLE_CHANGED', actorUid: req.user?.uid, targetUid: uid,
-      previousRole: currentRole, nextRole, requestId: res.locals?.requestId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    // Authoritative role record lives in MySQL. Best-effort: an unknown uid
+    // (identity-only operator) is still audited below.
+    try {
+      await pool.query('UPDATE users SET role = ? WHERE id = ?', [nextRole, uid]);
+    } catch (mysqlErr) {
+      console.warn('[Platform operators] MySQL role write notice:', mysqlErr.message);
+    }
     await recordAdminAuditLog(db, admin, {
       actorUid: req.user?.uid,
       actorEmail: req.user?.email,
@@ -2161,20 +2123,12 @@ router.post('/operators/:uid/revoke-sessions', requireRecentAdminAuthentication,
   }
   const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.auth) {
+  if (!admin?.auth) {
     return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
   }
   try {
     const target = await admin.auth().getUser(uid);
     await admin.auth().revokeRefreshTokens(uid);
-    await db.collection('security_audit_logs').doc().set({
-      action: 'PLATFORM_OPERATOR_SESSIONS_REVOKED',
-      actorUid: req.user?.uid,
-      targetUid: uid,
-      targetEmail: target.email || null,
-      requestId: res.locals?.requestId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
     await recordAdminAuditLog(db, admin, {
       actorUid: req.user?.uid,
       actorEmail: req.user?.email,
@@ -2420,12 +2374,8 @@ router.put('/feature-flags/:flagKey', requireRecentAdminAuthentication, async (r
     return res.status(400).json({ error: { code: 'UNKNOWN_FEATURE_FLAG', message: `Unknown feature flag: ${flagKey}` } });
   }
   try {
-    const db = req.app.get('db');
-    const admin = req.app.get('firebaseAdmin');
-    if (!db || !admin?.firestore?.FieldValue) {
-      return res.status(503).json({ error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Feature flag storage is unavailable', requestId: res.locals?.requestId } });
-    }
-    const result = await setFlagValue(db, admin, flagKey, value, req.user?.uid, res.locals.requestId);
+    // MySQL-backed: flags persist in system_settings with a durable audit event.
+    const result = await setFlagValue(null, null, flagKey, value, req.user?.uid, res.locals.requestId);
     return res.json({ success: true, ...result });
   } catch (error) {
     const status = Number(error.status) >= 400 && Number(error.status) < 600 ? Number(error.status) : 400;

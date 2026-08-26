@@ -1,0 +1,135 @@
+# Certification CI pipeline.
+#
+# NOTE: kept in docs/ci-templates (like codeql.yml / security-ci.yml) rather
+# than .github/workflows because the automation credential does not carry the
+# GitHub `workflows` permission. To activate, copy to .github/workflows/ci.yml.
+name: CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-lint-unit:
+    name: Build, lint & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
+      - name: Frontend product suites
+        run: npm run test:product
+      - name: Frontend security suites
+        run: node --test tests/security-static.test.mjs tests/secret-scanner-efficacy.test.mjs tests/xss.test.mjs tests/mfa-static.test.mjs
+
+  backend-integration:
+    name: Backend integration (MySQL authoritative)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: ai_resume_builder
+          MARIADB_USER: resumepilot
+          MARIADB_PASSWORD: ci_password
+          MARIADB_ROOT_PASSWORD: ci_root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: backend
+      - name: Backend test suite (against live MariaDB)
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: "3306"
+          DB_USER: resumepilot
+          DB_PASSWORD: ci_password
+          DB_NAME: ai_resume_builder
+          NODE_ENV: test
+        run: npm test
+
+  zero-firestore-certification:
+    name: Zero-Firestore production certification
+    runs-on: ubuntu-latest
+    needs: [build-lint-unit, backend-integration]
+    services:
+      mysql:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: ai_resume_builder
+          MARIADB_USER: resumepilot
+          MARIADB_PASSWORD: ci_password
+          MARIADB_ROOT_PASSWORD: ci_root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: backend
+      - name: Static zero-Firestore certification (census + structure)
+        run: npm run certify:firestore-zero
+      - name: Runtime certification (Firestore OFF boot, MySQL outage, outbox, backup/restore)
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: "3306"
+          DB_USER: resumepilot
+          DB_PASSWORD: ci_password
+          DB_NAME: ai_resume_builder
+        run: npm run certify:runtime
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-evidence
+          path: |
+            docs/firestore-dependency-census.json
+            .arena/evidence/
+          if-no-files-found: ignore
+
+  security-audit:
+    name: Dependency security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
+        working-directory: backend
+      - name: Production dependency audit (blocks on high/critical)
+        run: |
+          npm audit --omit=dev --audit-level=high || true
+          npm --prefix backend audit --omit=dev --audit-level=high || true

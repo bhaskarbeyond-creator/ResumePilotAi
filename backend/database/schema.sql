@@ -798,4 +798,53 @@ CREATE TABLE IF NOT EXISTS ai_usage (
     INDEX idx_ai_usage_day (day_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 45. Durable notification outbox (transactional outbox pattern).
+--     Business writes and these events commit in the SAME MySQL transaction;
+--     a background worker delivers them with retry/backoff/dead-letter.
+--     Replaces the legacy Firestore-backed queue: MySQL is authoritative and
+--     the queue must function with Firestore completely unavailable.
+CREATE TABLE IF NOT EXISTS notification_outbox (
+    id VARCHAR(64) NOT NULL PRIMARY KEY,
+    event_id VARCHAR(300) NOT NULL,
+    channel VARCHAR(32) NOT NULL DEFAULT 'email',
+    recipient VARCHAR(255) NOT NULL,
+    template_type VARCHAR(80) NOT NULL,
+    vars JSON,
+    metadata JSON,
+    tenant_id VARCHAR(128) NULL,
+    idempotency_key VARCHAR(128) NULL,
+    state VARCHAR(40) NOT NULL DEFAULT 'NOTIFICATION_QUEUED',
+    attempt_count INT NOT NULL DEFAULT 0,
+    max_attempts INT NOT NULL DEFAULT 5,
+    provider_accepted TINYINT(1) NOT NULL DEFAULT 0,
+    provider_accepted_at TIMESTAMP NULL,
+    next_attempt_at BIGINT NOT NULL DEFAULT 0,
+    lease_owner VARCHAR(128) NULL,
+    lease_expires_at BIGINT NOT NULL DEFAULT 0,
+    last_attempt_at TIMESTAMP NULL,
+    last_error VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_notification_idempotency (idempotency_key),
+    INDEX idx_notification_due (state, next_attempt_at),
+    INDEX idx_notification_recipient (recipient),
+    INDEX idx_notification_state (state)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 46. Platform announcements (admin control plane). MySQL authoritative;
+--     revision column drives optimistic concurrency for admin edits.
+CREATE TABLE IF NOT EXISTS platform_announcements (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    title VARCHAR(160) NOT NULL,
+    message VARCHAR(1000) NOT NULL,
+    severity VARCHAR(16) NOT NULL DEFAULT 'INFO',
+    audience VARCHAR(40) NOT NULL DEFAULT 'ALL',
+    enabled TINYINT(1) NOT NULL DEFAULT 1,
+    revision INT NOT NULL DEFAULT 1,
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_announcements_enabled (enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

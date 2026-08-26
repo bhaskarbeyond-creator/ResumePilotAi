@@ -102,25 +102,27 @@ if (!['http', 'https'].includes(protocol) || (process.env.NODE_ENV === 'producti
 }
 
 // ---------------------------------------------------------------------------
-// Firebase Admin initialization — identity only by default.
+// Firebase Admin initialization — IDENTITY ONLY.
 //
-// ARCHITECTURE (zero-Firestore on synchronous production paths):
-//  * The Firebase Admin SDK is used for ID-token verification (Firebase Auth
-//    is the deployed identity provider). That is an identity service, not a
-//    database dependency.
-//  * The Firestore DATA PLANE (db) is created ONLY when explicitly enabled via
-//    FIREBASE_DATA_PLANE=on (or =firestore-standby). Default is OFF: db stays
-//    null and every Firestore call in routes/services is a no-op, so MySQL is
-//    the single authoritative store. Firestore is never a read/write fallback.
+// ARCHITECTURE (zero-Firestore production certification):
+//  * The Firebase Admin SDK is used exclusively for ID-token verification
+//    (Firebase Auth is the deployed identity provider). Identity is not a
+//    database dependency: no Firestore reads, writes, listeners, transactions
+//    or availability checks exist on any production application path.
+//  * The Firestore data plane has been REMOVED from the runtime. `db` is a
+//    permanent null constant; every legacy `if (db && ...)` guard in
+//    routes/services is a structural no-op. MySQL/MariaDB is the single
+//    authoritative store — there is no Firestore fallback by construction.
+//  * Legacy one-time migration tooling (scripts/migrate-firestore-to-mysql.mjs)
+//    remains OUT-OF-BAND: it never runs inside the production server.
 // ---------------------------------------------------------------------------
 let admin = null;
-let db = null;
+const db = null; // PERMANENT: no Firestore data plane exists in the runtime.
 try {
     admin = require('./services/firebaseAdmin');
     if (!admin.apps.length) {
         let credential;
         const projectId = process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf';
-        const databaseURL = process.env.FIREBASE_DATABASE_URL || undefined;
 
         if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
             credential = admin.credential.cert({
@@ -128,41 +130,30 @@ try {
                 clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                 privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             });
-            console.log('[Firebase Admin] Initialized via environment variables');
+            console.log('[Firebase Admin] Initialized via environment variables (identity only)');
         } else if (process.env.NODE_ENV === 'production' || process.env.FIREBASE_USE_ADC === 'true' || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
             // Workload Identity / Application Default Credentials avoid long-lived key files.
             credential = admin.credential.applicationDefault();
-            console.log('[Firebase Admin] Initialized via Application Default Credentials');
+            console.log('[Firebase Admin] Initialized via Application Default Credentials (identity only)');
         } else {
             // Local builds without credentials can serve non-Firebase diagnostics only.
-            admin.initializeApp({ projectId, databaseURL });
+            admin.initializeApp({ projectId });
             console.log('[Firebase Admin] Initialized without credentials (limited local mode)');
         }
 
         if (credential) {
-            admin.initializeApp({ credential, projectId, databaseURL });
+            admin.initializeApp({ credential, projectId });
         }
     }
 } catch (e) {
     console.warn('[Firebase Admin] Initialization notice:', e.message);
 }
-// Firestore data-plane gate. Default OFF: ZERO Firestore on synchronous paths.
-const firestoreDataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
-const firestoreDataPlaneEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(firestoreDataPlane);
-if (firestoreDataPlaneEnabled && admin && admin.apps && admin.apps.length > 0) {
-    try {
-        db = admin.firestore();
-        console.log('[Firestore Data Plane] ENABLED (standby replication only; MySQL remains authoritative)');
-    } catch (e) {
-        console.warn('[Firestore Data Plane] could not be created:', e.message);
-        db = null;
-    }
-} else if (admin && admin.apps && admin.apps.length > 0) {
-    console.log('[Firestore Data Plane] OFF — MySQL is the only synchronous data store');
+if (String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || '').toLowerCase() !== '') {
+    console.warn('[Architecture] FIREBASE_DATA_PLANE is ignored: the Firestore data plane has been removed from the runtime. MySQL/MariaDB is the sole authoritative store.');
 }
-// Make Firestore accessible to routes via req.app.get('db') — null unless the
-// data plane is explicitly enabled, which makes all `if (db && ...)` guards
-// structural no-ops in the default production configuration.
+console.log('[Firestore Data Plane] REMOVED — MySQL/MariaDB is the only data store; Firestore dependency is ZERO.');
+// `req.app.get('db')` stays null forever. All legacy `if (db && ...)` guards
+// are structural no-ops; no route can reach a Firestore handle.
 app.set('db', db);
 // The Firebase admin runtime is exposed for identity verification and for
 // enterprise services (outbox, storage) that need FieldValue/Timestamp
@@ -222,23 +213,56 @@ const initSystemFonts = () => {
 };
 initSystemFonts();
 
-// Start Autonomous Dual-Database Background Sync Worker (continuous polling + heartbeat)
-const { startBackgroundSyncWorker, stopBackgroundSyncWorker } = require('./database/syncManager');
-// The outbox worker only runs when the Firestore standby data plane is explicitly
-// enabled. It is asynchronous, durable (MySQL sync_outbox), non-blocking, and never
-// required for application correctness — MySQL is the source of truth either way.
-if (process.env.NODE_ENV !== 'test' && db) {
-    startBackgroundSyncWorker(db, 3000);
-} else if (process.env.NODE_ENV !== 'test') {
-    console.log('[Sync Worker] Standby Firestore replication disabled (FIREBASE_DATA_PLANE off). MySQL-only mode.');
+// Standby replication history: a dual-database sync worker used to mirror
+// MySQL mutations into a Firestore standby. It has been REMOVED from the
+// runtime: MySQL/MariaDB is the single authoritative store, and no production
+// path may depend on Firestore availability. The durable outbox table
+// (sync_outbox) remains as the transactional-outbox mechanism for any future
+// asynchronous secondary integration; with no secondary enabled it simply
+// stays empty.
+const { stopBackgroundSyncWorker } = require('./database/syncManager');
+if (process.env.NODE_ENV !== 'test') {
+    console.log('[Sync Worker] Firestore standby replication removed. MySQL-only authoritative mode.');
 }
 
-process.on('SIGTERM', () => {
-    stopBackgroundSyncWorker();
-});
-process.on('SIGINT', () => {
-    stopBackgroundSyncWorker();
-});
+// ---------------------------------------------------------------------------
+// Startup schema bootstrap (release engineering §28): a fresh deployment with
+// an empty database becomes operational on first boot. The bootstrap is
+// idempotent and non-fatal — if MySQL is unreachable the server still starts
+// and reports degraded readiness instead of crash-looping.
+// ---------------------------------------------------------------------------
+const { initializeSchema, testConnection: testMysql, closePool } = require('./database/mysql');
+let schemaState = { success: false, error: 'NOT_RUN' };
+async function runSchemaBootstrap() {
+    const conn = await testMysql();
+    if (!conn.connected) {
+        schemaState = { success: false, error: conn.error || 'MySQL unreachable at startup' };
+        console.warn('[Startup] MySQL unreachable — starting in degraded mode:', schemaState.error);
+        return schemaState;
+    }
+    schemaState = await initializeSchema();
+    if (!schemaState.success) console.warn('[Startup] Schema bootstrap incomplete:', schemaState.error);
+    return schemaState;
+}
+app.set('schemaState', () => schemaState);
+
+// Graceful shutdown (§25/§28): stop background workers, drain the HTTP server,
+// close the MySQL pool, then exit. No acknowledged transaction is dropped by
+// the shutdown itself: the pool end waits for in-flight queries.
+let httpServer = null;
+let shuttingDown = false;
+async function gracefulShutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[Shutdown] ${signal} received — draining connections...`);
+    try { stopBackgroundSyncWorker(); } catch (_e) { /* worker already stopped */ }
+    try { if (httpServer) await new Promise(resolve => httpServer.close(resolve)); } catch (_e) { /* not listening */ }
+    try { await closePool(); } catch (_e) { /* pool already closed */ }
+    console.log('[Shutdown] Clean exit complete.');
+    process.exit(0);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 app.use((req, res, next) => {
     const suppliedRequestId = req.get('x-request-id') || '';
@@ -3756,17 +3780,29 @@ function databaseHealthPayload() {
     };
 }
 
+// Liveness: the process is up. Readiness (below) is what proves the data plane.
+function livenessPayload() {
+    return {
+        status: 'ok',
+        identityProviderConfigured: Boolean(admin && admin.apps && admin.apps.length > 0),
+        firestoreDataPlane: 'REMOVED',
+        authoritativeDatabase: 'mysql',
+        date: new Date().toISOString(),
+        commitSha: globalCommitSha,
+        databases: databaseHealthPayload(),
+    };
+}
 app.get('/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha, databases: databaseHealthPayload() });
+    return res.json(livenessPayload());
 });
 app.get('/api/healthz', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), commitSha: globalCommitSha, databases: databaseHealthPayload() });
+    return res.json(livenessPayload());
 });
 app.get('/api/health', (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    return res.json({ status: 'ok', firebaseAdminConfigured: Boolean(db && admin), date: new Date().toISOString(), databases: databaseHealthPayload() });
+    return res.json(livenessPayload());
 });
 app.get('/api/health/databases', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -3778,22 +3814,36 @@ app.get('/api/health/databases', async (req, res) => {
     }
 });
 
-function computeReadyzPayload(req) {
-    const requestDb = req.app.get('db');
-    const firebaseReady = Boolean(requestDb && admin?.auth);
-    const tenantService = req.app.get('tenantService');
+/**
+ * Readiness is defined by the AUTHORITATIVE data plane: MySQL/MariaDB.
+ * Firestore has no part in readiness — the data plane was removed from the
+ * runtime. Identity (Firebase Admin) is reported but is not the readiness
+ * gate, because local/CI environments legitimately run without identity
+ * credentials while the data plane is fully operational.
+ */
+async function computeReadyzPayload() {
+    const mysql = await testMysql();
+    const schema = app.get('schemaState')();
+    const tenantService = app.get('tenantService');
     const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
 
+    const ready = mysql.connected === true;
     return {
-        status: firebaseReady ? 'ready' : 'not_ready',
+        status: ready ? 'ready' : 'not_ready',
+        authoritativeDatabase: 'mysql',
         checks: {
-            firebaseAdmin: firebaseReady ? 'READY' : 'UNAVAILABLE',
+            mysql: ready
+                ? { status: 'READY', latencyMs: mysql.latencyMs, version: mysql.version, host: mysql.host, database: mysql.database }
+                : { status: 'UNAVAILABLE', error: mysql.error, code: mysql.code },
+            schema: schema.success ? 'INITIALIZED' : `INCOMPLETE (${schema.error || 'unknown'})`,
+            identityProvider: (admin && admin.apps && admin.apps.length > 0) ? 'CONFIGURED' : 'NOT_CONFIGURED',
+            firestoreDataPlane: 'REMOVED',
             enterprise: enterpriseRuntime ? {
                 dataProvider: enterpriseRuntime.dataProvider,
                 dataPlaneConfigured: enterpriseRuntime.dataPlaneConfigured === true,
                 encryption: enterpriseRuntime.encryption?.provider || 'none',
                 quotaStore: enterpriseRuntime.quotaStore,
-                queue: 'firestore-durable-outbox',
+                queue: 'mysql-transactional-outbox',
             } : 'UNAVAILABLE',
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
@@ -3804,23 +3854,27 @@ function computeReadyzPayload(req) {
     };
 }
 
-app.get('/readyz', (req, res) => {
+app.get('/readyz', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const payload = computeReadyzPayload(req);
+    const payload = await computeReadyzPayload();
     return res.status(payload.status === 'ready' ? 200 : 503).json(payload);
 });
-app.get('/api/readyz', (req, res) => {
+app.get('/api/readyz', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const payload = computeReadyzPayload(req);
+    const payload = await computeReadyzPayload();
     return res.status(payload.status === 'ready' ? 200 : 503).json(payload);
 });
 
 
 // Start a listener only for the executable entry point; integration tests import the Express app.
 if (require.main === module) {
+    // Startup schema bootstrap (idempotent, non-fatal). Fresh deployments become
+    // operational on first boot; a MySQL outage degrades instead of crash-looping.
+    runSchemaBootstrap().catch(() => {});
     // Publication is executed only by this trusted backend. Production enables the
     // worker explicitly; no browser clock or client write can make a post public.
-    if (process.env.CMS_SCHEDULER_ENABLED === 'true' && db && admin) {
+    // MySQL-backed (repository), independent of any Firestore availability.
+    if (process.env.CMS_SCHEDULER_ENABLED === 'true') {
         const intervalMs = Math.max(60_000, Math.min(Number(process.env.CMS_SCHEDULER_INTERVAL_MS) || 300_000, 3_600_000));
         let schedulerRunning = false;
         const runScheduler = async () => {
@@ -3840,7 +3894,13 @@ if (require.main === module) {
         setTimeout(runScheduler, 10_000).unref?.();
     }
 
-    if (process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' && db && admin) {
+    // Durable notification delivery worker — MySQL transactional outbox.
+    // Lease-based claims, exponential backoff + jitter, dead-letter after
+    // max attempts. Requires NO Firestore: the queue is the MySQL
+    // notification_outbox table, so delivery retries survive with Firestore
+    // completely unavailable.
+    if (process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true') {
+        const { getPool } = require('./database/mysql');
         const workerId = `${process.pid}-${crypto.randomUUID()}`;
         const intervalMs = Math.max(5_000, Math.min(Number(process.env.NOTIFICATION_OUTBOX_INTERVAL_MS) || 15_000, 300_000));
         let workerRunning = false;
@@ -3851,13 +3911,12 @@ if (require.main === module) {
                 const emailRoute = require('./routes/email');
                 const tenantService = app.get('tenantService');
                 await processOutboxOnce({
-                    db,
-                    admin,
+                    pool: getPool(),
                     workerId,
                     // Tenant-bound outbox events are reauthorized at execution time;
                     // legacy events retain their certified UID-era delivery behavior.
                     authorize: event => tenantService?.authorizeOutboxEvent(event),
-                    dispatch: event => emailRoute.dispatchNotification(db, { to: event.recipient, templateType: event.templateType, vars: event.vars })
+                    dispatch: event => emailRoute.dispatchNotification(null, { to: event.recipient, templateType: event.templateType, vars: event.vars })
                 });
             } catch (error) { console.error('[Notification outbox]', error.message); }
             finally { workerRunning = false; }
@@ -3865,6 +3924,7 @@ if (require.main === module) {
         const outboxTimer = setInterval(runOutbox, intervalMs);
         outboxTimer.unref?.();
         setTimeout(runOutbox, 5_000).unref?.();
+        console.log('[Notification outbox] MySQL-backed delivery worker enabled.');
     }
 
     // Durable enterprise job worker (Firestore outbox). Jobs are claimed via
@@ -3969,31 +4029,27 @@ if (require.main === module) {
         setTimeout(runTenantGc, 30_000).unref?.();
     }
 
-    // Autonomous Continuous Intelligent Sync Worker (Firestore <-> MySQL bidirectional daemon)
-    try {
-        const { startBackgroundSyncWorker } = require('./database/syncManager');
-        startBackgroundSyncWorker(db, 5000);
-    } catch (syncWorkerErr) {
-        console.warn('[SyncWorker] Could not start sync worker:', syncWorkerErr.message);
-    }
+    // The legacy Firestore<->MySQL bidirectional sync daemon has been REMOVED:
+    // MySQL/MariaDB is the single authoritative store, and no background
+    // process may require Firestore on any path.
 
     // Listen HTTP/HTTPS port safely
     const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
     const certPath = '/etc/letsencrypt/live/' + websiteName + '/fullchain.pem';
 
     if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-        const httpsServer = https.createServer(
+        httpServer = https.createServer(
             {
                 key: fs.readFileSync(keyPath),
                 cert: fs.readFileSync(certPath),
             },
             app
         );
-        httpsServer.listen(port, () => {
+        httpServer.listen(port, () => {
             console.log('HTTPS Server running on port ' + port);
         });
     } else {
-        const httpServer = http.createServer(app);
+        httpServer = http.createServer(app);
         httpServer.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
                 console.warn(`[HTTP Server] Port ${port} is already in use by another instance.`);
@@ -4171,7 +4227,7 @@ app.post('/api/admin/firebase-service-account', requireRecentAdminAuthentication
         if (firebaseAdmin.apps.length) {
             await firebaseAdmin.app().delete();
         }
-        const newApp = firebaseAdmin.initializeApp({
+        firebaseAdmin.initializeApp({
             credential: firebaseAdmin.credential.cert({
                 projectId,
                 clientEmail,
@@ -4180,17 +4236,11 @@ app.post('/api/admin/firebase-service-account', requireRecentAdminAuthentication
             databaseURL: process.env.FIREBASE_DATABASE_URL || undefined
         });
         admin = firebaseAdmin;
-        // The Firestore data plane stays gated: rotating identity credentials must
-        // never silently enable Firestore on synchronous production paths.
-        const firestoreDataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
-        const firestoreDataPlaneEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(firestoreDataPlane);
-        if (firestoreDataPlaneEnabled) {
-            db = newApp.firestore();
-        } else {
-            db = null;
-        }
-        app.set('db', db);
-        console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials' + (db ? '' : ' (Firestore data plane remains OFF)'));
+        // ARCHITECTURE: rotating identity credentials can NEVER re-enable a
+        // Firestore data plane. `db` is a permanent null constant; the
+        // credential rotation applies to Firebase Auth (identity) only.
+        app.set('db', null);
+        console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials (identity only; Firestore data plane remains REMOVED)');
 
         return res.json({
             success: true,

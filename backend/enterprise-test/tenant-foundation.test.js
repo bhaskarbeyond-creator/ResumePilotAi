@@ -303,13 +303,25 @@ test('tenant-bound notification outbox records persist immutable tenant context 
   const registry = new InMemoryTenantRegistry();
   const context = await contextFor(registry, PRINCIPAL_A);
   let written;
-  const db = { collection: name => ({ doc: id => ({ path: `${name}/${id}` }) }) };
-  const transaction = { set(reference, value) { written = { reference, value }; } };
-  const admin = { firestore: { Timestamp: { fromMillis: value => ({ value }) }, FieldValue: { serverTimestamp: () => ({ server: true }) } } };
-  queueEmailInTransaction(transaction, db, admin, { eventId: 'tenant-event-1', recipient: 'user@example.com', templateType: 'notification', tenantContext: context });
-  assert.equal(written.value.tenant.tenantId, context.tenantId);
-  assert.equal(written.value.tenant.workspaceId, context.workspaceId);
-  assert.equal(written.value.tenant.correlationId, context.correlationId);
+  // MySQL transaction connection double: captures the INSERT row.
+  const connection = {
+    async query(sql, params) {
+      assert.match(sql, /INSERT IGNORE INTO notification_outbox/);
+      written = {
+        id: params[0],
+        recipient: params[2],
+        templateType: params[3],
+        metadata: JSON.parse(params[5]),
+        tenantId: params[6],
+      };
+      return [{ affectedRows: 1 }, []];
+    },
+  };
+  await queueEmailInTransaction(connection, { eventId: 'tenant-event-1', recipient: 'user@example.com', templateType: 'notification', tenantContext: context });
+  assert.equal(written.metadata.tenant.tenantId, context.tenantId);
+  assert.equal(written.metadata.tenant.workspaceId, context.workspaceId);
+  assert.equal(written.metadata.tenant.correlationId, context.correlationId);
+  assert.equal(written.tenantId, context.tenantId);
 });
 
 test('tenant outbox reauthorization resolves current membership, lifecycle and route before dispatch', async () => {

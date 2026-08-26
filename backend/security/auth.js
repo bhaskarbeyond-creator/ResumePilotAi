@@ -1,4 +1,64 @@
+const crypto = require('crypto');
 const admin = require('../services/firebaseAdmin');
+
+// ---------------------------------------------------------------------------
+// Non-production identity verifier (certification/E2E harness only).
+//
+// Production identity is Firebase Auth: ID tokens are verified against
+// Google's public keys via the Admin SDK. Acceptance environments that have
+// no network path to Google (and no Firebase credentials) can enable a
+// strictly local HMAC verifier with TEST_AUTH_HMAC_SECRET. Tokens then use
+// the explicit `rptest.` prefix; anything else still goes to Firebase.
+//
+// Hard fail-closed guarantees:
+//   - In NODE_ENV=production the verifier is inert regardless of env vars.
+//   - Unsigned/malformed/expired rptest tokens are rejected.
+//   - Regular bearer tokens are NEVER verified locally.
+// ---------------------------------------------------------------------------
+function testVerifierEnabled() {
+  return process.env.NODE_ENV !== 'production'
+    && typeof process.env.TEST_AUTH_HMAC_SECRET === 'string'
+    && process.env.TEST_AUTH_HMAC_SECRET.length >= 16;
+}
+
+function timingSafeEqualHex(a, b) {
+  const ba = Buffer.from(String(a), 'hex');
+  const bb = Buffer.from(String(b), 'hex');
+  return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
+}
+
+function verifyLocalTestToken(token) {
+  const parts = String(token).split('.');
+  if (parts.length !== 3 || parts[0] !== 'rptest') throw new Error('Invalid test token');
+  const secret = process.env.TEST_AUTH_HMAC_SECRET;
+  const expected = crypto.createHmac('sha256', secret).update(parts[1]).digest('hex');
+  if (!timingSafeEqualHex(expected, parts[2])) throw new Error('Bad test token signature');
+  let payload;
+  try { payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')); }
+  catch (_e) { throw new Error('Bad test token payload'); }
+  if (!payload || typeof payload.uid !== 'string' || payload.uid.length === 0 || payload.uid.length > 128) {
+    throw new Error('Test token missing uid');
+  }
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (Number(payload.exp || 0) > 0 && Number(payload.exp) < nowSec) throw new Error('Test token expired');
+  return {
+    uid: payload.uid,
+    email: payload.email || null,
+    email_verified: payload.email_verified !== false,
+    auth_time: Number(payload.auth_time || nowSec),
+    role: payload.role || null,
+    permissions: Array.isArray(payload.permissions) ? payload.permissions : undefined,
+    // Second-factor signal is part of the identity surface (MFA enforcement).
+    sign_in_second_factor: payload.sign_in_second_factor === true,
+    ...(payload.firebase && typeof payload.firebase === 'object' ? { firebase: payload.firebase } : {}),
+  };
+}
+
+function issueLocalTestToken(payload, secret = process.env.TEST_AUTH_HMAC_SECRET) {
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(body).digest('hex');
+  return `rptest.${body}.${sig}`;
+}
 
 const PERMISSIONS = Object.freeze({
   SUPER_ADMIN: ['*'],
@@ -39,7 +99,14 @@ function unauthorized(res, code = 'AUTH_REQUIRED') {
   return res.status(401).json({ error: { code, message: 'Authentication required', requestId: res.locals.requestId } });
 }
 
-let verifyToken = token => admin.auth().verifyIdToken(token, true);
+let verifyToken = async token => {
+  // Explicit non-production harness tokens (see header comment). In production
+  // this branch is inert and every token is verified against Firebase.
+  if (testVerifierEnabled() && String(token).startsWith('rptest.')) {
+    return verifyLocalTestToken(token);
+  }
+  return admin.auth().verifyIdToken(token, true);
+};
 let lookupUser = uid => admin.auth().getUser(uid);
 
 async function requireAuth(req, res, next) {
@@ -187,6 +254,9 @@ module.exports = {
   permissionsFor,
   setTokenVerifierForTests,
   setUserLookupForTests,
+  // Non-production certification harness helpers (inert in NODE_ENV=production).
+  issueLocalTestToken,
+  testVerifierEnabled,
 };
 
 

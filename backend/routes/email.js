@@ -1325,7 +1325,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
 async function recordMailAdminAudit(req, { action, outcome = 'SUCCESS', severity = 'MEDIUM', metadata = {}, requestId = null } = {}) {
     const db = req.app?.get('db');
     const admin = req.app?.get('firebaseAdmin');
-    if (!db || !admin?.firestore?.FieldValue) return null;
+    // recordAdminAuditLog writes to MySQL (authoritative); no Firestore gate.
     return recordAdminAuditLog(db, admin, {
         actorUid: req.user?.uid,
         actorEmail: req.user?.email,
@@ -2012,33 +2012,34 @@ router.post('/resend', async (req, res) => {
     // Tier 1: Search in-memory store
     let targetLog = emailLogsStore.find(l => l.id === searchId || l.messageId === searchId);
 
-    // Tier 2: Fallback query to Firestore email_logs if not found in memory
-    if (!targetLog && db) {
+    // Tier 2: Fallback query to the authoritative MySQL email_logs table.
+    if (!targetLog) {
         try {
-            // Direct document lookup by ID
-            const docSnap = await db.collection('email_logs').doc(searchId).get();
-            if (docSnap.exists) {
-                targetLog = docSnap.data();
-            } else {
-                // Query by 'id' field
-                const querySnap = await db.collection('email_logs').where('id', '==', searchId).limit(1).get();
-                if (!querySnap.empty) {
-                    targetLog = querySnap.docs[0].data();
-                } else {
-                    // Query by 'messageId' field
-                    const msgSnap = await db.collection('email_logs').where('messageId', '==', searchId).limit(1).get();
-                    if (!msgSnap.empty) {
-                        targetLog = msgSnap.docs[0].data();
-                    }
-                }
-            }
-
-            // Cache retrieved log into memory store for fast subsequent access
-            if (targetLog) {
+            const { getPool } = require('../database/mysql');
+            const [rows] = await getPool().query(
+                'SELECT id, recipient, subject, template_type, status, html, message_id, error, transport, sent_at FROM email_logs WHERE id = ? OR message_id = ? LIMIT 1',
+                [String(searchId).slice(0, 64), String(searchId).slice(0, 255)]
+            );
+            if (rows.length) {
+                const row = rows[0];
+                targetLog = {
+                    id: row.id,
+                    recipient: row.recipient,
+                    to: row.recipient,
+                    subject: row.subject,
+                    templateType: row.template_type,
+                    status: row.status,
+                    html: row.html,
+                    messageId: row.message_id,
+                    error: row.error,
+                    transport: row.transport,
+                    sentAt: row.sent_at ? new Date(row.sent_at).toISOString() : null,
+                };
+                // Cache retrieved log into memory store for fast subsequent access
                 emailLogsStore.unshift(targetLog);
             }
         } catch (e) {
-            console.warn('[Resend Email] Firestore log lookup notice:', e.message);
+            console.warn('[Resend Email] MySQL log lookup notice:', e.message);
         }
     }
 

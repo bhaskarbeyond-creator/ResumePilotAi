@@ -1,6 +1,7 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
 const { requireAuth } = require('../security/auth');
+const { replyRepoError } = require('./errorResponder');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -17,8 +18,8 @@ router.get('/profile', requireAuth, async (req, res) => {
     try {
         const user = await req.repository.getUser(req.user.uid);
         return res.json({ success: true, user });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to fetch user profile' });
+    } catch (err) {
+        return replyRepoError(res, err, 'Failed to fetch user profile');
     }
 });
 
@@ -48,7 +49,7 @@ router.post('/profile', requireAuth, express.json({ limit: '2mb' }), async (req,
                 remoteRevision: err.remoteRevision,
             });
         }
-        return res.status(500).json({ success: false, error: 'Failed to save user profile' });
+        return replyRepoError(res, err, 'Failed to save user profile');
     }
 });
 
@@ -58,8 +59,8 @@ router.get('/:id', async (req, res) => {
         const user = await req.repository.getUser(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
         return res.json({ success: true, user });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to fetch user' });
+    } catch (err) {
+        return replyRepoError(res, err, 'Failed to fetch user');
     }
 });
 

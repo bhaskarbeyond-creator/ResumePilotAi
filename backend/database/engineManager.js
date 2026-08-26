@@ -13,11 +13,14 @@ let currentEngine = null;
 let switchInProgress = false;
 
 /**
- * Resolves the initial active database engine.
- * Precedence:
- * 1. engine_state.json (Super Admin persistent runtime choice)
- * 2. process.env.DB_ENGINE ('mysql' or 'firestore')
- * 3. Default fallback: 'mysql' (Authoritative Enterprise Primary)
+ * Resolves the active database engine.
+ *
+ * ZERO-FORESTORE CERTIFICATION: MySQL/MariaDB is the single authoritative
+ * engine and this function can no longer return 'firestore'. A legacy
+ * engine_state.json or DB_ENGINE=firestore left over from the dual-database
+ * era is detected, reported, and overridden — silently honoring such state
+ * would recreate the split-brain architecture this platform was hardened
+ * against.
  */
 function getActiveEngine() {
     if (currentEngine) {
@@ -27,9 +30,8 @@ function getActiveEngine() {
     try {
         if (fs.existsSync(STATE_FILE_PATH)) {
             const data = JSON.parse(fs.readFileSync(STATE_FILE_PATH, 'utf8'));
-            if (data.engine === 'mysql' || data.engine === 'firestore') {
-                currentEngine = data.engine;
-                return currentEngine;
+            if (data.engine === 'firestore') {
+                console.warn('[EngineManager] Legacy engine_state.json requests the removed Firestore engine; MySQL/MariaDB is enforced as the authoritative store.');
             }
         }
     } catch (e) {
@@ -37,7 +39,10 @@ function getActiveEngine() {
     }
 
     const envEngine = String(process.env.DB_ENGINE || 'mysql').trim().toLowerCase();
-    currentEngine = (envEngine === 'firestore') ? 'firestore' : 'mysql';
+    if (envEngine === 'firestore') {
+        console.warn('[EngineManager] DB_ENGINE=firestore is ignored: the Firestore data plane has been removed. MySQL/MariaDB is authoritative.');
+    }
+    currentEngine = 'mysql';
     return currentEngine;
 }
 
@@ -52,79 +57,16 @@ async function testEngineConnectivity(engine, firestoreDb) {
     }
 
     if (engine === 'firestore') {
-        const start = Date.now();
-        try {
-            let db = firestoreDb;
-            if (!db) {
-                try {
-                    const admin = require('../services/firebaseAdmin');
-                    if (admin && admin.apps && admin.apps.length > 0) {
-                        db = admin.firestore();
-                    } else if (process.env.FIREBASE_PROJECT_ID) {
-                        if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-                            admin.initializeApp({
-                                credential: admin.credential.cert({
-                                    projectId: process.env.FIREBASE_PROJECT_ID,
-                                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                                    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-                                }),
-                                projectId: process.env.FIREBASE_PROJECT_ID
-                            });
-                        } else {
-                            admin.initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
-                        }
-                        db = admin.firestore();
-                    }
-                } catch (e) {
-                    return {
-                        connected: false,
-                        latencyMs: Date.now() - start,
-                        error: e.message || 'Firestore initialization failed',
-                    };
-                }
-            }
-            if (!db) {
-                return {
-                    connected: false,
-                    latencyMs: Date.now() - start,
-                    error: 'Firestore admin instance not initialized or unavailable',
-                };
-            }
-            // Lightweight test query
-            try {
-                await db.collection('settings').limit(1).get();
-            } catch (queryErr) {
-                const isQuota = /RESOURCE_EXHAUSTED|Quota exceeded/i.test(queryErr.message) || queryErr.code === 8;
-                if (isQuota) {
-                    return {
-                        connected: true,
-                        quotaExceeded: true,
-                        status: 'quota_limited',
-                        latencyMs: Date.now() - start,
-                        projectId: db.projectId || process.env.FIREBASE_PROJECT_ID || 'ai-resume-builder-424cf',
-                        warning: 'Google Cloud Firestore free-tier read quota reached; resets automatically at midnight UTC. Standby operations remain configured.',
-                        error: queryErr.message,
-                    };
-                }
-                return {
-                    connected: false,
-                    latencyMs: Date.now() - start,
-                    error: queryErr.message || 'Firestore query failed',
-                };
-            }
-            return {
-                connected: true,
-                latencyMs: Date.now() - start,
-                projectId: db.projectId || process.env.FIREBASE_PROJECT_ID || 'connected',
-            };
-        } catch (err) {
-            return {
-                connected: false,
-                latencyMs: Date.now() - start,
-                error: err.message,
-                code: err.code,
-            };
-        }
+        // The Firestore data plane has been REMOVED from the runtime. This
+        // probe must never create a client or issue a network read: it reports
+        // the architectural truth instead. MySQL/MariaDB is the sole
+        // authoritative store.
+        return {
+            connected: false,
+            removed: true,
+            latencyMs: 0,
+            error: 'The Firestore data plane has been removed from the runtime. MySQL/MariaDB is the single authoritative database.',
+        };
     }
 
     return { connected: false, error: `Unknown database engine: ${engine}` };
