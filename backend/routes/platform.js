@@ -17,6 +17,7 @@ const {
 } = require('../services/platformHealth');
 const { getActiveEngine } = require('../database/engineManager');
 const { getPool } = require('../database/mysql');
+const { getRepository } = require('../repositories');
 const { getPlatformCurrencyConfig, normalizeCurrencyCode, formatCurrencyAmount } = require('../services/platformCurrency');
 
 const router = express.Router();
@@ -192,6 +193,69 @@ async function buildHealthPayload(req) {
 router.get('/version', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   return res.json({ commitSha: getCommitSha(), service: 'resumepilot-backend', apiVersion: 'platform-v2' });
+});
+
+// Public platform and module configuration (Public, 100% MariaDB-backed)
+router.get('/public-config', async (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  const repo = getRepository(req.app?.get('db'));
+  const defaults = {
+    modules: {
+      atsChecker: true,
+      resumeImport: true,
+      aiAssistant: true,
+      coverLetter: true,
+      blog: true,
+      jobs: true,
+      jobTracker: true,
+      portfolio: true,
+      review: true,
+      contact: true,
+      subscriptions: true,
+    },
+    subscriptions: {
+      stripeEnabled: false,
+      paypalEnabled: false,
+      razorpayEnabled: false,
+      paytmEnabled: false,
+      phonepeEnabled: false,
+      sandboxMode: true,
+      enableTax: true,
+      taxName: 'GST',
+      taxRate: 18,
+      taxInclusive: false,
+      companyTaxId: '',
+      requireCustomerTaxId: false,
+      receiptTemplate: 'modern',
+    },
+    _settingsSource: 'remote',
+  };
+
+  try {
+    let settings = null;
+    if (repo && typeof repo.getSetting === 'function') {
+      settings = await repo.getSetting('public_config').catch(() => null);
+    }
+    if (!settings && req.app?.get('db')) {
+      try {
+        const snap = await req.app.get('db').collection('data').doc('public_config').get();
+        if (snap.exists) settings = snap.data();
+      } catch (_) {}
+    }
+
+    if (settings && typeof settings === 'object') {
+      return res.json({
+        ...defaults,
+        ...settings,
+        modules: { ...defaults.modules, ...(settings.modules || {}) },
+        subscriptions: { ...defaults.subscriptions, ...(settings.subscriptions || {}) },
+        _settingsSource: 'remote',
+      });
+    }
+    return res.json(defaults);
+  } catch (err) {
+    return res.json(defaults);
+  }
 });
 
 router.use(requirePermission('system.config.read'));

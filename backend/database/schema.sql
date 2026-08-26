@@ -554,4 +554,49 @@ CREATE TABLE IF NOT EXISTS sync_worker_state (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 29. Authoritative Administrative Audit Logs
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    actor_uid VARCHAR(128) NOT NULL,
+    actor_email VARCHAR(255),
+    actor_role VARCHAR(64) DEFAULT 'ADMIN',
+    action VARCHAR(128) NOT NULL,
+    category VARCHAR(128) DEFAULT 'general',
+    severity VARCHAR(32) DEFAULT 'INFO',
+    outcome VARCHAR(32) DEFAULT 'SUCCESS',
+    method VARCHAR(16) DEFAULT 'GET',
+    pathname VARCHAR(512),
+    status_code INT DEFAULT 200,
+    resource_type VARCHAR(64),
+    resource_id VARCHAR(128),
+    metadata JSON,
+    request_id VARCHAR(128),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_actor (actor_uid),
+    INDEX idx_audit_action (action),
+    INDEX idx_audit_category (category),
+    INDEX idx_audit_resource (resource_id),
+    INDEX idx_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 30. Authoritative Security Audit Logs
+CREATE TABLE IF NOT EXISTS security_audit_logs (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    actor_uid VARCHAR(128) NOT NULL,
+    target_uid VARCHAR(128),
+    action VARCHAR(128) NOT NULL,
+    category VARCHAR(128) DEFAULT 'iam.users',
+    severity VARCHAR(32) DEFAULT 'MEDIUM',
+    target_type VARCHAR(64) DEFAULT 'USER',
+    target_id VARCHAR(128),
+    changes JSON,
+    metadata JSON,
+    request_id VARCHAR(128),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_sec_actor (actor_uid),
+    INDEX idx_sec_target (target_uid),
+    INDEX idx_sec_action (action),
+    INDEX idx_sec_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

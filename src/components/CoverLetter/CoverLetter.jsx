@@ -178,26 +178,16 @@ class CoverLetter extends Component {
             }
         };
         window.addEventListener('systemSettingsUpdated', this.handleSettingsUpdated);
-        // Server-confirmed live subscription: the ATS flag changes only when
-        // Firestore itself (not a cached snapshot) confirms the public_config
-        // value. A listener error fails closed rather than defaulting ON.
-        try {
-            this.unsubscribePublicConfig = fire.firestore()
-                .collection('data')
-                .doc('public_config')
-                .onSnapshot(
-                    { includeMetadataChanges: true },
-                    (snapshot) => {
-                        const settings = settingsFromSnapshot(snapshot);
-                        if (settings._settingsSource !== 'remote') return;
-                        this.applyAtsVisibility(settings, { allowMissingDefault: false });
-                    },
-                    () => this.setState({ isAtsEnabled: false }),
-                );
-        } catch {
-            this.setState({ isAtsEnabled: false });
-            this.unsubscribePublicConfig = () => {};
-        }
+        // Server-confirmed configuration via REST API (MariaDB-first)
+        fetch('/api/platform/public-config')
+            .then(r => r.json())
+            .then(settings => {
+                if (settings && typeof settings === 'object') {
+                    this.applyAtsVisibility(settings, { allowMissingDefault: true });
+                }
+            })
+            .catch(() => {});
+        this.unsubscribePublicConfig = () => {};
     };
 
     handleKeyDown = (e) => {

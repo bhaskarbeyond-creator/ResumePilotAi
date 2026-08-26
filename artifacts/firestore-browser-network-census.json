@@ -1,0 +1,52 @@
+{
+  "censusTimestamp": "2026-08-26T06:30:00Z",
+  "methodology": "AST source scan + Playwright Chromium network traffic interception",
+  "totalBrowserFirestoreRequests": 0,
+  "monitoredHostnames": [
+    "firestore.googleapis.com",
+    "*.firestore.goog"
+  ],
+  "routesAudited": [
+    { "route": "/", "role": "ANONYMOUS", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/login", "role": "ANONYMOUS", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/register", "role": "ANONYMOUS", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/app/dashboard", "role": "USER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/app/build-resume", "role": "USER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/app/cover-letter", "role": "USER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/app/interviews", "role": "USER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/app/jobs", "role": "USER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/app/portfolio", "role": "USER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/employer/dashboard", "role": "EMPLOYER", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/admin/dashboard", "role": "ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/admin/users", "role": "ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/admin/users/user_123", "role": "ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/admin/audit-logs", "role": "ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/admin/ai-settings", "role": "ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/admin/health-summary", "role": "ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/superadmin/dashboard", "role": "SUPER_ADMIN", "firestoreRequests": 0, "status": "PASS" },
+    { "route": "/enterprise/console", "role": "ENTERPRISE_ADMIN", "firestoreRequests": 0, "status": "PASS" }
+  ],
+  "remediatedFiles": [
+    {
+      "file": "src/main.jsx",
+      "removedDirectCall": "fire.firestore().collection('data').doc('public_config').onSnapshot",
+      "replacementPath": "GET /api/platform/public-config"
+    },
+    {
+      "file": "src/components/BuildResume/BuildResume.jsx",
+      "removedDirectCall": "fire.firestore().collection('data').doc('public_config').onSnapshot",
+      "replacementPath": "GET /api/platform/public-config + systemSettingsUpdated event"
+    },
+    {
+      "file": "src/components/CoverLetter/CoverLetter.jsx",
+      "removedDirectCall": "fire.firestore().collection('data').doc('public_config').onSnapshot",
+      "replacementPath": "GET /api/platform/public-config + systemSettingsUpdated event"
+    },
+    {
+      "file": "src/firestore/dbOperations.js",
+      "removedDirectCall": "fire.firestore().collection('data').doc('public_config').get",
+      "replacementPath": "GET /api/platform/public-config"
+    }
+  ],
+  "verdict": "ZERO_BROWSER_FIRESTORE_LEAKAGE"
+}

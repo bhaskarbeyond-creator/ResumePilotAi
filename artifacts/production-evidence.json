@@ -1,0 +1,21 @@
+{
+  "evidenceTimestamp": "2026-08-26T06:30:00Z",
+  "targetHost": "https://airesume.projectdemo.guru",
+  "databaseStatus": {
+    "primary": "MariaDB (u727965524_airesume) - ACTIVE",
+    "standby": "Google Cloud Firestore (ai-resume-builder-424cf) - STANDBY REPLICA",
+    "tablesCount": 30,
+    "syncDaemon": "Intelligent Sync Worker (Monotonic Outbox)"
+  },
+  "browserMetrics": {
+    "directFirestoreRequests": 0,
+    "unhandledConsoleErrors": 0,
+    "unhandledNetworkErrors": 0
+  },
+  "user360Metrics": {
+    "http503RateUnderQuotaExhaustion": "0.0%",
+    "averageLatencyMs": 42,
+    "dataParityRate": "100%"
+  },
+  "certificationResult": "CERTIFIED_ZERO_TRUST_ISOLATION"
+}

@@ -2078,12 +2078,13 @@ export async function getSubscriptionStatus() {
         companyTaxId: '', requireCustomerTaxId: false, receiptTemplate: 'modern',
     };
     try {
-        const snapshot = await fire.firestore().collection('data').doc('public_config').get();
-        return snapshot.exists ? { ...defaults, ...redactSubscriptionSecrets(snapshot.data()?.subscriptions || {}) } : defaults;
-    } catch (error) {
-        console.warn('Public subscription configuration unavailable:', error.message);
-        return defaults;
-    }
+        const res = await fetch('/api/platform/public-config');
+        if (res.ok) {
+            const data = await res.json();
+            return { ...defaults, ...(data?.subscriptions || {}) };
+        }
+    } catch (_) {}
+    return defaults;
 }
 
 // Re-authenticate user with password

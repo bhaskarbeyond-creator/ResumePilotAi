@@ -256,38 +256,27 @@ const AuthWrapper = () => {
         return () => unsubscribe();
     }, []);
 
-    // App-shell relay for server-confirmed module configuration. A single
-    // snapshot listener on the public_config document re-broadcasts every
-    // server-confirmed change to all consumers (navigation, resume builder,
-    // cover letters) through the systemSettingsUpdated event. Cached
-    // snapshots are ignored (fail closed) so a default-ON flag never
-    // re-enables itself from stale local data.
+    // App-shell relay for server-confirmed module configuration.
+    // Fetches from the backend REST API (/api/platform/public-config),
+    // eliminating any direct browser network dependency on Firestore.
     useEffect(() => {
-        let unsubscribe = () => {};
-        try {
-            unsubscribe = fire.firestore()
-                .collection('data')
-                .doc('public_config')
-                .onSnapshot(
-                    { includeMetadataChanges: true },
-                    (snapshot) => {
-                        const settings = settingsFromSnapshot(snapshot);
-                        if (settings._settingsSource !== 'remote') return;
-                        window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
-                            detail: {
-                                source: 'firestore-server',
-                                category: 'modules',
-                                modules: settings.modules || {},
-                                settings,
-                            },
-                        }));
+        let active = true;
+        fetch('/api/platform/public-config')
+            .then(r => r.json())
+            .then(settings => {
+                if (!active || !settings) return;
+                window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
+                    detail: {
+                        source: 'backend-api',
+                        category: 'modules',
+                        modules: settings.modules || {},
+                        settings,
                     },
-                    () => { /* listener failure is handled per-consumer fail-closed */ },
-                );
-        } catch {
-            /* Firestore unavailable: consumers keep their last known state. */
-        }
-        return () => unsubscribe();
+                }));
+            })
+            .catch(() => {});
+
+        return () => { active = false; };
     }, []);
 
     // In the dual-database architecture, public configuration and maintenance state

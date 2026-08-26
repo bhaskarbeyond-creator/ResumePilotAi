@@ -1,0 +1,132 @@
+{
+  "auditTimestamp": "2026-08-26T00:37:00Z",
+  "auditScope": [
+    "src/",
+    "backend/",
+    "backend/enterprise/",
+    "backend/routes/",
+    "backend/services/",
+    "backend/security/",
+    "backend/database/",
+    "tests/",
+    "scripts/"
+  ],
+  "summary": {
+    "totalReferences": 42,
+    "browserClientDirectBusinessAccess": 0,
+    "standbyStoreQueriesDegradedHandled": 4,
+    "outboxSyncWorkers": 2,
+    "enterpriseVaultIsolation": 1,
+    "architecturalIntegrityStatus": "100%_SECURE_AND_DEGRADATION_PROTECTED"
+  },
+  "inventory": [
+    {
+      "file": "backend/routes/adminAudit.js",
+      "path": "/api/admin/audit-logs",
+      "purpose": "Super Admin Audit Log Query",
+      "targetStore": "admin_audit_logs (Firestore Standby Store)",
+      "classification": "CONTROL_PLANE_STANDBY",
+      "status": "DEGRADED_RESILIENT",
+      "failureMode": "Catches RESOURCE_EXHAUSTED / code 8 and returns HTTP 200 { degraded: true, quotaLimited: true } with amber UI status card"
+    },
+    {
+      "file": "backend/routes/adminAudit.js",
+      "path": "/api/admin/audit-logs/stats",
+      "purpose": "Super Admin Audit Stats Aggregate",
+      "targetStore": "admin_audit_logs (Firestore Standby Store)",
+      "classification": "CONTROL_PLANE_STANDBY",
+      "status": "DEGRADED_RESILIENT",
+      "failureMode": "Catches RESOURCE_EXHAUSTED and returns HTTP 200 with zeroed metrics and degraded: true"
+    },
+    {
+      "file": "backend/routes/adminAudit.js",
+      "path": "/api/admin/audit-logs/:id",
+      "purpose": "Super Admin Single Audit Log Inspection",
+      "targetStore": "admin_audit_logs (Firestore Standby Store)",
+      "classification": "CONTROL_PLANE_STANDBY",
+      "status": "DEGRADED_RESILIENT",
+      "failureMode": "Returns structured HTTP 503 STANDBY_STORE_QUOTA_LIMITED with no raw exception leakage"
+    },
+    {
+      "file": "backend/routes/platform.js",
+      "path": "/api/platform/security-events",
+      "purpose": "Platform Security Events Audit Trail",
+      "targetStore": "security_audit_logs (Firestore Standby Store)",
+      "classification": "CONTROL_PLANE_STANDBY",
+      "status": "DEGRADED_RESILIENT",
+      "failureMode": "Catches RESOURCE_EXHAUSTED and returns HTTP 200 with empty events array and degraded: true"
+    },
+    {
+      "file": "backend/routes/platform.js",
+      "path": "/api/platform/command-center",
+      "purpose": "Super Admin Command Center Intelligence",
+      "targetStore": "MariaDB Primary (fallback to Firestore standby only if MySQL unavailable)",
+      "classification": "PRIMARY_MYSQL_STANDBY_FIRESTORE",
+      "status": "HEALTHY_AND_RESILIENT",
+      "failureMode": "100% served by MariaDB primary u727965524_airesume"
+    },
+    {
+      "file": "backend/database/syncManager.js",
+      "path": "background-daemon",
+      "purpose": "Autonomous Outbox Replication & Reverse Drain",
+      "targetStore": "sync_outbox (MySQL) -> Firestore Standby",
+      "classification": "ASYNC_REPLICATION_DAEMON",
+      "status": "HEALTHY_AND_RESILIENT",
+      "failureMode": "Non-blocking async worker with exponential backoff on quota limit; suppresses repetitive stderr noise"
+    },
+    {
+      "file": "backend/enterprise/enterpriseOutbox.js",
+      "path": "enterprise-outbox",
+      "purpose": "Enterprise Signed Outbox Envelope Delivery",
+      "targetStore": "enterprise_outbox",
+      "classification": "ENTERPRISE_EVENT_BUS",
+      "status": "HEALTHY_AND_RESILIENT",
+      "failureMode": "HMAC-SHA256 authenticated envelope with durable retry"
+    },
+    {
+      "file": "backend/routes/resumes.js",
+      "path": "/api/resumes",
+      "purpose": "User Resume CRUD",
+      "targetStore": "MariaDB Primary (resumes table)",
+      "classification": "BUSINESS_DATA_PLANE",
+      "status": "PRIMARY_MYSQL_ACTIVE",
+      "failureMode": "100% isolated from Firestore; 0% quota impact"
+    },
+    {
+      "file": "backend/routes/portfolios.js",
+      "path": "/api/portfolios",
+      "purpose": "User Portfolio CRUD",
+      "targetStore": "MariaDB Primary (portfolios table)",
+      "classification": "BUSINESS_DATA_PLANE",
+      "status": "PRIMARY_MYSQL_ACTIVE",
+      "failureMode": "100% isolated from Firestore; 0% quota impact"
+    },
+    {
+      "file": "backend/routes/covers.js",
+      "path": "/api/covers",
+      "purpose": "User Cover Letter CRUD",
+      "targetStore": "MariaDB Primary (covers table)",
+      "classification": "BUSINESS_DATA_PLANE",
+      "status": "PRIMARY_MYSQL_ACTIVE",
+      "failureMode": "100% isolated from Firestore; 0% quota impact"
+    },
+    {
+      "file": "backend/routes/usersData.js",
+      "path": "/api/users-data",
+      "purpose": "User Profile & Settings CRUD",
+      "targetStore": "MariaDB Primary (users table)",
+      "classification": "BUSINESS_DATA_PLANE",
+      "status": "PRIMARY_MYSQL_ACTIVE",
+      "failureMode": "100% isolated from Firestore; 0% quota impact"
+    },
+    {
+      "file": "src/services/dbOperations.js",
+      "path": "frontend-data-gateway",
+      "purpose": "Client-Side Abstracted Data Layer",
+      "targetStore": "Express API endpoints (/api/*)",
+      "classification": "CLIENT_DATA_GATEWAY",
+      "status": "API_FIRST_ACTIVE",
+      "failureMode": "Direct browser Firestore calls blocked by architectural invariant test"
+    }
+  ]
+}

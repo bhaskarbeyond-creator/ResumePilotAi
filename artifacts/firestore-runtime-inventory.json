@@ -1,0 +1,65 @@
+{
+  "inventoryVersion": "2026-08-26T06:30:00Z",
+  "authoritativePrimaryStore": "MariaDB (u727965524_airesume)",
+  "standbySecondaryStore": "Google Cloud Firestore (ai-resume-builder-424cf)",
+  "browserDirectFirestoreCallCount": 0,
+  "runtimeClassification": {
+    "auth_tokens": {
+      "provider": "Firebase Auth JWT",
+      "runtimePath": "Client -> Express Bearer Header -> Firebase Admin verifyIdToken",
+      "directBrowserFirestore": false,
+      "isolatedFromFirestoreQuota": true
+    },
+    "user_360_profile": {
+      "primarySource": "MariaDB users table",
+      "identitySource": "Firebase Auth Directory",
+      "contentSources": [
+        "MariaDB resumes table",
+        "MariaDB portfolios table",
+        "MariaDB covers table"
+      ],
+      "billingSources": [
+        "MariaDB payment_orders table",
+        "MariaDB subscriptions table"
+      ],
+      "auditSources": [
+        "MariaDB admin_audit_logs table",
+        "MariaDB security_audit_logs table"
+      ],
+      "directBrowserFirestore": false,
+      "isolatedFromFirestoreQuota": true
+    },
+    "admin_audit_logs": {
+      "primaryStorage": "MariaDB admin_audit_logs table",
+      "standbyReplication": "Firestore admin_audit_logs collection (asynchronous background outbox)",
+      "readPath": "MariaDB admin_audit_logs via Express REST /api/admin/audit-logs",
+      "directBrowserFirestore": false,
+      "isolatedFromFirestoreQuota": true
+    },
+    "security_audit_logs": {
+      "primaryStorage": "MariaDB security_audit_logs table",
+      "standbyReplication": "Firestore security_audit_logs collection (asynchronous background outbox)",
+      "readPath": "MariaDB security_audit_logs via Express REST",
+      "directBrowserFirestore": false,
+      "isolatedFromFirestoreQuota": true
+    },
+    "public_config": {
+      "primaryStorage": "MariaDB system_settings table (category: public_config)",
+      "readPath": "Express REST /api/platform/public-config",
+      "directBrowserFirestore": false,
+      "isolatedFromFirestoreQuota": true
+    },
+    "system_settings": {
+      "primaryStorage": "MariaDB system_settings table",
+      "readPath": "Express REST /api/admin/settings/*",
+      "directBrowserFirestore": false,
+      "isolatedFromFirestoreQuota": true
+    },
+    "ai_governance": {
+      "entitlements": "MariaDB users table (membership + aiQuotaOverride)",
+      "usageTracking": "Firestore ai_usage (isolated non-blocking probe)",
+      "failureInvariant": "If Firestore quota exhausted, user entitlement defaults safely to MariaDB membership plan limit",
+      "isolatedFromFirestoreQuota": true
+    }
+  }
+}

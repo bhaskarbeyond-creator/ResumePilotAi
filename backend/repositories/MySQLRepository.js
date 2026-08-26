@@ -872,6 +872,189 @@ class MySQLRepository {
         );
         return true;
     }
+
+    // ==========================================
+    // 10. AUDIT LOGS, SECURITY EVENTS & USER 360 AGGREGATES
+    // ==========================================
+    async recordAdminAuditLog(data) {
+        const pool = this._getPool();
+        const id = data.id || `audit_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const values = [
+            id,
+            data.actorUid || data.actor_uid || 'system',
+            data.actorEmail || data.actor_email || null,
+            data.actorRole || data.actor_role || 'ADMIN',
+            data.action || 'ADMIN_ACTION',
+            data.category || 'general',
+            data.severity || 'INFO',
+            data.outcome || 'SUCCESS',
+            data.method || 'GET',
+            data.pathname || null,
+            data.statusCode || data.status_code || 200,
+            data.resourceType || data.resource_type || null,
+            data.resourceId || data.resource_id || null,
+            JSON.stringify(data.metadata || {}),
+            data.requestId || data.request_id || null,
+        ];
+        await pool.query(
+            `INSERT INTO admin_audit_logs 
+             (id, actor_uid, actor_email, actor_role, action, category, severity, outcome, method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            values
+        );
+        return { id, ...data };
+    }
+
+    async getAdminAuditLogs(options = {}) {
+        const pool = this._getPool();
+        let sql = 'SELECT * FROM admin_audit_logs WHERE 1=1';
+        const params = [];
+
+        if (options.actorUid) {
+            sql += ' AND actor_uid = ?';
+            params.push(options.actorUid);
+        }
+        if (options.resourceId) {
+            sql += ' AND resource_id = ?';
+            params.push(options.resourceId);
+        }
+        if (options.category && options.category !== 'all') {
+            sql += ' AND category = ?';
+            params.push(options.category);
+        }
+        if (options.severity && options.severity !== 'all') {
+            sql += ' AND severity = ?';
+            params.push(options.severity);
+        }
+        if (options.outcome && options.outcome !== 'all') {
+            sql += ' AND outcome = ?';
+            params.push(options.outcome);
+        }
+        if (options.action) {
+            sql += ' AND action = ?';
+            params.push(options.action);
+        }
+
+        sql += ' ORDER BY created_at DESC';
+        const limit = Math.min(Math.max(Number(options.limit || options.pageSize || 50), 1), 200);
+        sql += ' LIMIT ?';
+        params.push(limit);
+
+        const [rows] = await pool.query(sql, params);
+        return rows.map(r => ({
+            id: r.id,
+            actorUid: r.actor_uid,
+            actorEmail: r.actor_email,
+            actorRole: r.actor_role,
+            action: r.action,
+            category: r.category,
+            severity: r.severity,
+            outcome: r.outcome,
+            method: r.method,
+            pathname: r.pathname,
+            statusCode: r.status_code,
+            resourceType: r.resource_type,
+            resourceId: r.resource_id,
+            metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata || '{}') : r.metadata,
+            requestId: r.request_id,
+            createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+        }));
+    }
+
+    async recordSecurityAuditLog(data) {
+        const pool = this._getPool();
+        const id = data.id || `sec_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const values = [
+            id,
+            data.actorUid || data.actor_uid || 'system',
+            data.targetUid || data.target_uid || null,
+            data.action || 'SECURITY_EVENT',
+            data.category || 'iam.users',
+            data.severity || 'MEDIUM',
+            data.targetType || data.target_type || 'USER',
+            data.targetId || data.target_id || null,
+            JSON.stringify(data.changes || null),
+            JSON.stringify(data.metadata || null),
+            data.requestId || data.request_id || null,
+        ];
+        await pool.query(
+            `INSERT INTO security_audit_logs 
+             (id, actor_uid, target_uid, action, category, severity, target_type, target_id, changes, metadata, request_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            values
+        );
+        return { id, ...data };
+    }
+
+    async getSecurityAuditLogs(options = {}) {
+        const pool = this._getPool();
+        let sql = 'SELECT * FROM security_audit_logs WHERE 1=1';
+        const params = [];
+
+        if (options.actorUid) {
+            sql += ' AND actor_uid = ?';
+            params.push(options.actorUid);
+        }
+        if (options.targetUid) {
+            sql += ' AND target_uid = ?';
+            params.push(options.targetUid);
+        }
+        if (options.severity && options.severity !== 'all') {
+            sql += ' AND severity = ?';
+            params.push(options.severity);
+        }
+
+        sql += ' ORDER BY created_at DESC';
+        const limit = Math.min(Math.max(Number(options.limit || 50), 1), 200);
+        sql += ' LIMIT ?';
+        params.push(limit);
+
+        const [rows] = await pool.query(sql, params);
+        return rows.map(r => ({
+            id: r.id,
+            actorUid: r.actor_uid,
+            targetUid: r.target_uid,
+            action: r.action,
+            category: r.category,
+            severity: r.severity,
+            targetType: r.target_type,
+            targetId: r.target_id,
+            changes: typeof r.changes === 'string' ? JSON.parse(r.changes || 'null') : r.changes,
+            metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata || 'null') : r.metadata,
+            requestId: r.request_id,
+            createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+        }));
+    }
+
+    async getUserContentCounts(userId) {
+        const pool = this._getPool();
+        const [resumeRows] = await pool.query('SELECT COUNT(*) as c FROM resumes WHERE user_id = ?', [userId]);
+        const [portfolioRows] = await pool.query('SELECT COUNT(*) as c FROM portfolios WHERE user_id = ?', [userId]);
+        const [coverRows] = await pool.query('SELECT COUNT(*) as c FROM covers WHERE user_id = ?', [userId]);
+        return {
+            resumeCount: resumeRows[0]?.c || 0,
+            portfolioCount: portfolioRows[0]?.c || 0,
+            coverCount: coverRows[0]?.c || 0,
+        };
+    }
+
+    async getUserPaymentOrders(userId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT * FROM payment_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+            [userId]
+        );
+        return rows.map(r => ({
+            id: r.id || r.order_id,
+            orderId: r.order_id || r.id,
+            planId: r.plan_id || 'monthly',
+            amount: r.amount,
+            currency: r.currency || 'INR',
+            status: r.status || 'COMPLETED',
+            paymentType: r.gateway || r.provider || 'Gateway',
+            createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+        }));
+    }
 }
 
 module.exports = MySQLRepository;

@@ -592,6 +592,99 @@ class FirestoreRepository {
         }, { merge: true });
         return true;
     }
+
+    // ==========================================
+    // 10. AUDIT LOGS, SECURITY EVENTS & USER 360 AGGREGATES
+    // ==========================================
+    async recordAdminAuditLog(data) {
+        const db = this._ensureDb();
+        const id = data.id || `audit_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const payload = {
+            ...data,
+            id,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await db.collection('admin_audit_logs').doc(id).set(payload);
+        return payload;
+    }
+
+    async getAdminAuditLogs(options = {}) {
+        const db = this._ensureDb();
+        let query = db.collection('admin_audit_logs');
+        if (options.actorUid) query = query.where('actorUid', '==', options.actorUid);
+        if (options.resourceId) query = query.where('resourceId', '==', options.resourceId);
+        if (options.category && options.category !== 'all') query = query.where('category', '==', options.category);
+        if (options.severity && options.severity !== 'all') query = query.where('severity', '==', options.severity);
+        if (options.outcome && options.outcome !== 'all') query = query.where('outcome', '==', options.outcome);
+        
+        try {
+            query = query.orderBy('createdAt', 'desc');
+        } catch (_) {}
+
+        const limit = Math.min(Math.max(Number(options.limit || options.pageSize || 50), 1), 200);
+        query = query.limit(limit);
+
+        const snap = await query.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async recordSecurityAuditLog(data) {
+        const db = this._ensureDb();
+        const id = data.id || `sec_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        const payload = {
+            ...data,
+            id,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await db.collection('security_audit_logs').doc(id).set(payload);
+        return payload;
+    }
+
+    async getSecurityAuditLogs(options = {}) {
+        const db = this._ensureDb();
+        let query = db.collection('security_audit_logs');
+        if (options.actorUid) query = query.where('actorUid', '==', options.actorUid);
+        if (options.targetUid) query = query.where('targetUid', '==', options.targetUid);
+        if (options.severity && options.severity !== 'all') query = query.where('severity', '==', options.severity);
+
+        try {
+            query = query.orderBy('createdAt', 'desc');
+        } catch (_) {}
+
+        const limit = Math.min(Math.max(Number(options.limit || 50), 1), 200);
+        query = query.limit(limit);
+
+        const snap = await query.get();
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async getUserContentCounts(userId) {
+        const db = this._ensureDb();
+        try {
+            const [resumesSnap, portfoliosSnap, coversSnap] = await Promise.all([
+                db.collection('users').doc(userId).collection('resumes').get().catch(() => ({ docs: [] })),
+                db.collection('users').doc(userId).collection('portfolios').get().catch(() => ({ docs: [] })),
+                db.collection('users').doc(userId).collection('coverLetters').get().catch(() => ({ docs: [] })),
+            ]);
+            return {
+                resumeCount: resumesSnap.docs.length,
+                portfolioCount: portfoliosSnap.docs.length,
+                coverCount: coversSnap.docs.length,
+            };
+        } catch (_) {
+            return { resumeCount: 0, portfolioCount: 0, coverCount: 0 };
+        }
+    }
+
+    async getUserPaymentOrders(userId) {
+        const db = this._ensureDb();
+        try {
+            const snap = await db.collection('payment_orders').where('userId', '==', userId).limit(50).get();
+            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (_) {
+            return [];
+        }
+    }
 }
 
 module.exports = FirestoreRepository;

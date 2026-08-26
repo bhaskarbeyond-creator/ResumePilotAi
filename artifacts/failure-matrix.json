@@ -1,0 +1,71 @@
+{
+  "matrixTitle": "Zero-Trust Failure Chaos Matrix",
+  "generatedAt": "2026-08-26T06:30:00Z",
+  "scenarios": [
+    {
+      "scenarioId": "CHAOS_01",
+      "name": "Standby Firestore Outage / RESOURCE_EXHAUSTED (Code 8)",
+      "mariaDBState": "HEALTHY",
+      "firestoreState": "OFFLINE_QUOTA_EXHAUSTED",
+      "targetEndpoint": "GET /api/admin/users/:uid/details (User 360)",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "blastRadius": "STANDBY_ONLY",
+      "applicationImpact": "ZERO_IMPACT",
+      "proofTest": "backend/test/zero-trust-firestore-isolation.test.js:test1"
+    },
+    {
+      "scenarioId": "CHAOS_02",
+      "name": "Standby Firestore Outage during Admin User Listing",
+      "mariaDBState": "HEALTHY",
+      "firestoreState": "OFFLINE_QUOTA_EXHAUSTED",
+      "targetEndpoint": "GET /api/admin/users",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "blastRadius": "STANDBY_ONLY",
+      "applicationImpact": "ZERO_IMPACT",
+      "proofTest": "backend/test/zero-trust-firestore-isolation.test.js:test2"
+    },
+    {
+      "scenarioId": "CHAOS_03",
+      "name": "Standby Firestore Outage during User Profile Mutation",
+      "mariaDBState": "HEALTHY",
+      "firestoreState": "OFFLINE_QUOTA_EXHAUSTED",
+      "targetEndpoint": "PATCH /api/admin/users/:uid",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "blastRadius": "STANDBY_ONLY",
+      "applicationImpact": "ZERO_IMPACT (Writes commit to MariaDB; standby replication queued in outbox)",
+      "proofTest": "backend/test/zero-trust-firestore-isolation.test.js:test3"
+    },
+    {
+      "scenarioId": "CHAOS_04",
+      "name": "Standby Firestore Outage during Audit Logs Query",
+      "mariaDBState": "HEALTHY",
+      "firestoreState": "OFFLINE_QUOTA_EXHAUSTED",
+      "targetEndpoint": "GET /api/admin/audit-logs",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "blastRadius": "STANDBY_ONLY",
+      "applicationImpact": "ZERO_IMPACT (Reads directly from MariaDB admin_audit_logs table)",
+      "proofTest": "backend/test/zero-trust-firestore-isolation.test.js:test4"
+    },
+    {
+      "scenarioId": "CHAOS_05",
+      "name": "Standby Firestore Outage during Public App Configuration Read",
+      "mariaDBState": "HEALTHY",
+      "firestoreState": "OFFLINE_QUOTA_EXHAUSTED",
+      "targetEndpoint": "GET /api/platform/public-config",
+      "expectedStatus": 200,
+      "observedStatus": 200,
+      "blastRadius": "STANDBY_ONLY",
+      "applicationImpact": "ZERO_IMPACT (Reads from MariaDB system_settings table)",
+      "proofTest": "backend/test/zero-trust-firestore-isolation.test.js:test5"
+    }
+  ],
+  "summary": {
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "systemInvariantPreserved": true
+  }
+}

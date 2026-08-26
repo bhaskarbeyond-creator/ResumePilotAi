@@ -1,14 +1,19 @@
-# Final Zero-Trust Gap Register
+# Final Gap Register & Defect Remediation Log
 
-## Defect Closure & Resolution Summary
+## 1. Resolved Defect Register
 
-| ID | Module | Reported Symptom | Root Cause | Remediation Applied | Automated Proof | Status |
+| Defect ID | Description | Severity | Originating Component | Root Cause | Status | Verification Evidence |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **GAP-01** | Admin Audit Logs | Raw `8 RESOURCE_EXHAUSTED` popup on audit log page | Standby Firestore audit query threw unhandled gRPC exception to client | Added backend route degradation layer returning HTTP 200 `{ degraded: true }` and frontend amber status card | `backend/test/control-plane-data-source-integrity.test.js`, `backend/test/control-plane-firestore-degradation.test.js` | **CLOSED & VERIFIED** |
-| **GAP-02** | Platform Security | Raw error banner on Security Events query | Security audit log endpoint threw on standby quota exhaustion | Added quota catch handler returning HTTP 200 `{ degraded: true, events: [] }` and amber status banner | `backend/test/control-plane-firestore-degradation.test.js` | **CLOSED & VERIFIED** |
-| **GAP-03** | Browser Firestore Access | Potential direct browser Firestore bypass | Client components importing `fire.js` directly | Created AST scanner test enforcing 0 direct business collection accesses and explicit allowlist | `tests/unauthorized-firestore-access.test.mjs` | **CLOSED & VERIFIED** |
-| **GAP-04** | Sync Worker Noise | Background worker logging repeated quota errors | Reverse outbox drain poll triggered on quota exhausted Firestore | Suppressed expected quota limit stderr spam with backoff | `backend/database/syncManager.js` | **CLOSED & VERIFIED** |
+| **GAP-01** | User 360 returns HTTP 503 under Firestore quota exhaustion | **CRITICAL** | `backend/routes/adminUsers.js` | Direct `requestDb.collection('users').doc(uid).get()` in `Promise.all` | **RESOLVED** | `backend/test/zero-trust-firestore-isolation.test.js:test1` |
+| **GAP-02** | Direct browser Firestore `onSnapshot` listeners in React tree | **HIGH** | `src/main.jsx`, `BuildResume.jsx`, `CoverLetter.jsx` | Client listening to `data/public_config` | **RESOLVED** | `tests/unauthorized-firestore-access.test.mjs` |
+| **GAP-03** | Admin Audit Logs screen vulnerable to Firestore quota limits | **HIGH** | `backend/security/adminAudit.js`, `backend/routes/adminAudit.js` | Direct Firestore collection reads without MySQL primary table | **RESOLVED** | Added `admin_audit_logs` & `security_audit_logs` MySQL tables + `backend/test/zero-trust-firestore-isolation.test.js:test4` |
+| **GAP-04** | AI Entitlement calculation fails if Firestore quota exceeded | **MEDIUM** | `backend/services/adminAiEntitlement.js` | Unhandled Firestore error on `ai_usage` doc read | **RESOLVED** | Sourced user membership directly from MariaDB with fail-safe fallbacks |
+| **GAP-05** | Public subscription config queries Firestore directly | **MEDIUM** | `src/firestore/dbOperations.js` | `getSubscriptionStatus` called `fire.firestore()` | **RESOLVED** | Sourced via REST API `GET /api/platform/public-config` |
 
-**Total Open Blocking Defects**: 0
-**Total Open Non-Blocking Defects**: 0
-**Release Readiness**: 100% PRODUCTION READY
+---
+
+## 2. Active System Invariants & Zero-Tolerance Policies
+- **Invariant 1**: Standby failures must NEVER become primary application failures.
+- **Invariant 2**: Zero direct Firestore network calls from the browser client.
+- **Invariant 3**: 100% of user data and business entities are stored authoritatively in MariaDB.
+- **Invariant 4**: Monotonic sequence-guaranteed outbox synchronization to Firestore standby.

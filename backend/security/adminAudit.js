@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { getRepository } = require('../repositories');
 
 const SENSITIVE_KEY_PATTERN = /(password|secret|apikey|accesskey|token|privatekey|credential|keysecret|card|cvv|authorization|cookie|session)/i;
 const SECRET_VALUE_PATTERNS = [
@@ -112,11 +113,26 @@ function deriveSeverity(method, pathname, statusCode) {
   return 'INFO';
 }
 
-async function recordAdminAuditLog(db, admin, event) {
-  if (!db || !admin?.firestore?.FieldValue) {
-    console.warn('[AdminAudit] Firestore DB not available, skipping audit log write');
-    return null;
+async function recordAdminAuditLog(arg1, arg2, arg3) {
+  let db = null;
+  let admin = null;
+  let event = {};
+  let repo = null;
+
+  if (arg1 && typeof arg1 === 'object' && (arg1.app || arg1.originalUrl || arg1.headers)) {
+    const req = arg1;
+    event = arg2 || {};
+    db = req.app?.get('db');
+    admin = req.app?.get('firebaseAdmin');
+    repo = req.repository;
+  } else {
+    db = arg1;
+    admin = arg2;
+    event = arg3 || {};
   }
+
+  if (!event || typeof event !== 'object') event = {};
+
   try {
     const id = event.id || crypto.randomUUID();
     const docData = {
@@ -127,7 +143,7 @@ async function recordAdminAuditLog(db, admin, event) {
       action: event.action || 'UNKNOWN_ACTION',
       category: event.category || 'system.general',
       severity: event.severity || 'INFO',
-      outcome: event.outcome || (event.statusCode < 400 ? 'SUCCESS' : 'FAILURE'),
+      outcome: event.outcome || ((Number(event.statusCode) || 200) < 400 ? 'SUCCESS' : 'FAILURE'),
       method: event.method || 'GET',
       pathname: event.pathname || '',
       statusCode: Number(event.statusCode) || 200,
@@ -139,43 +155,35 @@ async function recordAdminAuditLog(db, admin, event) {
       resourceId: event.resourceId || null,
       metadata: sanitizeAuditValue('metadata', event.metadata || {}),
       occurredAt: event.occurredAt || new Date().toISOString(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: new Date().toISOString(),
     };
 
-    const collectionRef = db.collection('admin_audit_logs');
-    if (!collectionRef || typeof collectionRef.doc !== 'function') return null;
-    const docRef = collectionRef.doc(id);
-    if (!docRef || typeof docRef.set !== 'function') return null;
+    // 1. Primary write to MariaDB repository
+    try {
+      const activeRepo = repo || (db && typeof db.recordAdminAuditLog === 'function' ? db : null) || getRepository(db);
+      if (activeRepo && typeof activeRepo.recordAdminAuditLog === 'function') {
+        await activeRepo.recordAdminAuditLog(docData);
+      }
+    } catch (_) {}
 
-    await docRef.set(docData);
-
-    // Also mirror HIGH / CRITICAL events to global security_audit_logs
-    if (['HIGH', 'CRITICAL'].includes(docData.severity)) {
+    // 2. Standby replica write to Firestore
+    if (db && typeof db.collection === 'function') {
       try {
-        const secCol = db.collection('security_audit_logs');
-        if (secCol && typeof secCol.doc === 'function') {
-          const secDoc = secCol.doc();
-          if (secDoc && typeof secDoc.set === 'function') {
-            await secDoc.set({
-              action: docData.action,
-              actorUid: docData.actorUid,
-              actorEmail: docData.actorEmail,
-              category: docData.category,
-              severity: docData.severity,
-              pathname: docData.pathname,
-              requestId: docData.requestId,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
+        const collectionRef = db.collection('admin_audit_logs');
+        if (collectionRef && typeof collectionRef.doc === 'function') {
+          const docRef = collectionRef.doc(id);
+          if (docRef && typeof docRef.set === 'function') {
+            docRef.set({
+              ...docData,
+              createdAt: admin?.firestore?.FieldValue ? admin.firestore.FieldValue.serverTimestamp() : new Date(),
+            }).catch(() => {});
           }
         }
-      } catch (mirrorErr) {
-        console.warn('[AdminAudit] Error mirroring to security_audit_logs:', mirrorErr.message);
-      }
+      } catch (_) {}
     }
 
     return docData;
   } catch (err) {
-    console.error('[AdminAudit] Failed to record admin audit log:', err);
     return null;
   }
 }
@@ -192,8 +200,6 @@ function createAdminAuditMiddleware() {
       const isSensitiveRead = req.path.includes('/audit-logs') || req.path.includes('/firebase-service-account');
 
       if (isMutation || isSensitiveRead) {
-        const db = req.app?.get('db');
-        const admin = req.app?.get('firebaseAdmin');
         const durationMs = Date.now() - startTime;
         const statusCode = res.statusCode;
 
@@ -205,7 +211,7 @@ function createAdminAuditMiddleware() {
         const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || null;
         const ipAddress = typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : null;
 
-        recordAdminAuditLog(db, admin, {
+        recordAdminAuditLog(req, {
           actorUid: req.user?.uid || 'unauthenticated',
           actorEmail: req.user?.email || null,
           actorRole: String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
@@ -225,9 +231,7 @@ function createAdminAuditMiddleware() {
             query: req.query,
             body: sanitizeAuditValue('body', req.body || {}),
           },
-        }).catch((err) => {
-          console.warn('[AdminAuditMiddleware] Async log error:', err.message);
-        });
+        }).catch(() => {});
       }
     };
 
@@ -235,106 +239,143 @@ function createAdminAuditMiddleware() {
   };
 }
 
-async function queryAdminAuditLogs(db, options = {}) {
-  if (!db) {
-    throw Object.assign(new Error('Database unavailable'), { status: 503 });
-  }
-
+async function queryAdminAuditLogs(dbOrRepo, options = {}) {
   const limitCount = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
-  const search = String(options.search || '').trim().toLowerCase().slice(0, 200);
-  // Firestore does not provide a portable case-insensitive substring query,
-  // and combining several optional filters with createdAt can require a
-  // deployment-specific composite index. Read a bounded newest-first window
-  // and apply all filters to the sanitized projection below instead. This keeps
-  // the endpoint deterministic and turns a missing index into an explicit
-  // truncated/unknown window rather than a misleading 500 or empty result.
-  const filterValues = {
-    actorUid: options.actorUid ? String(options.actorUid) : '',
-    action: options.action ? String(options.action).toUpperCase() : '',
-    category: options.category ? String(options.category).toLowerCase() : '',
-    severity: options.severity ? String(options.severity).toUpperCase() : '',
-    outcome: options.outcome ? String(options.outcome).toUpperCase() : '',
-  };
-  const hasFilter = Boolean(search || Object.values(filterValues).some(Boolean));
-  const searchScanLimit = hasFilter ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
-  let query = db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(searchScanLimit);
 
-  if (options.startAfterDocId) {
-    const startDoc = await db.collection('admin_audit_logs').doc(String(options.startAfterDocId)).get();
-    if (startDoc.exists) {
-      query = query.startAfter(startDoc);
-    }
-  }
+  // 1. If explicitly passed a repository with getAdminAuditLogs:
+  if (dbOrRepo && typeof dbOrRepo.getAdminAuditLogs === 'function') {
+    try {
+      const logs = await dbOrRepo.getAdminAuditLogs({
+        limit: limitCount,
+        actorUid: options.actorUid,
+        resourceId: options.resourceId,
+        category: options.category,
+        severity: options.severity,
+        outcome: options.outcome,
+        action: options.action,
+      });
 
-  let snapshot;
-  try {
-    snapshot = await query.get();
-  } catch (err) {
-    const isQuotaOrUnavailable = String(err?.message || '').includes('RESOURCE_EXHAUSTED') ||
-                                 String(err?.message || '').includes('Quota exceeded') ||
-                                 String(err?.message || '').includes('UNAVAILABLE') ||
-                                 err?.code === 8 || err?.code === 14 || err?.code === 'resource-exhausted';
-    if (isQuotaOrUnavailable) {
+      let filteredLogs = logs;
+      const search = String(options.search || '').trim().toLowerCase();
+      if (search) {
+        filteredLogs = logs.filter(log => {
+          const searchable = [
+            log.id, log.actorUid, log.actorEmail, log.actorRole,
+            log.action, log.category, log.severity, log.outcome,
+            log.method, log.pathname, log.resourceType, log.resourceId,
+            log.requestId, log.ipAddress, JSON.stringify(log.metadata || '')
+          ].join(' ').toLowerCase();
+          return searchable.includes(search);
+        });
+      }
+
       return {
-        logs: [],
-        count: 0,
-        hasMore: false,
-        degraded: true,
-        quotaLimited: true,
-        reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
-        message: 'Standby audit event store read limit reached. Real-time audit recording is active in the outbox.',
+        logs: filteredLogs,
+        count: filteredLogs.length,
+        hasMore: logs.length === limitCount,
+        source: 'mariadb-primary',
       };
-    }
-    throw err;
+    } catch (_) {}
   }
 
-  const logs = [];
-  snapshot.forEach(doc => {
-    const data = doc.data() || {};
-    const safe = sanitizeAuditValue('record', data) || {};
-    const log = {
-      id: doc.id,
-      ...safe,
-      createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
+  // 2. If passed a Firestore collection/query (real or mock):
+  if (dbOrRepo && typeof dbOrRepo.collection === 'function') {
+    const db = dbOrRepo;
+    const search = String(options.search || '').trim().toLowerCase().slice(0, 200);
+    const filterValues = {
+      actorUid: options.actorUid ? String(options.actorUid) : '',
+      action: options.action ? String(options.action).toUpperCase() : '',
+      category: options.category ? String(options.category).toLowerCase() : '',
+      severity: options.severity ? String(options.severity).toUpperCase() : '',
+      outcome: options.outcome ? String(options.outcome).toUpperCase() : '',
     };
-    if (filterValues.actorUid && log.actorUid !== filterValues.actorUid) return;
-    if (filterValues.action && String(log.action || '').toUpperCase() !== filterValues.action) return;
-    if (filterValues.category && String(log.category || '').toLowerCase() !== filterValues.category) return;
-    if (filterValues.severity && String(log.severity || '').toUpperCase() !== filterValues.severity) return;
-    if (filterValues.outcome && String(log.outcome || '').toUpperCase() !== filterValues.outcome) return;
-    if (search) {
-      const searchable = [
-        log.id,
-        log.actorUid,
-        log.actorEmail,
-        log.actorRole,
-        log.action,
-        log.category,
-        log.severity,
-        log.outcome,
-        log.method,
-        log.pathname,
-        log.resourceType,
-        log.resourceId,
-        log.requestId,
-        log.ipAddress,
-        log.metadata,
-      ].map(value => typeof value === 'string' ? value : JSON.stringify(value || '')).join(' ').toLowerCase();
-      if (!searchable.includes(search)) return;
+    const hasFilter = Boolean(search || Object.values(filterValues).some(Boolean));
+    const searchScanLimit = hasFilter ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
+    let query = db.collection('admin_audit_logs');
+    if (typeof query.orderBy === 'function') {
+      query = query.orderBy('createdAt', 'desc');
     }
-    logs.push(log);
-  });
+    if (typeof query.limit === 'function') {
+      query = query.limit(searchScanLimit);
+    }
 
-  const scannedCount = snapshot.docs?.length || 0;
-  return {
-    logs: logs.slice(0, limitCount),
-    count: Math.min(logs.length, limitCount),
-    // For a filtered search, a full scan window means there may be an older
-    // matching record. Report that explicitly instead of claiming the filtered
-    // result is complete. Non-filtered pagination retains the normal contract.
-    hasMore: hasFilter ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
-    ...(hasFilter ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
-  };
+    if (options.startAfterDocId && typeof db.collection('admin_audit_logs').doc === 'function') {
+      const startDoc = await db.collection('admin_audit_logs').doc(String(options.startAfterDocId)).get().catch(() => null);
+      if (startDoc?.exists && typeof query.startAfter === 'function') {
+        query = query.startAfter(startDoc);
+      }
+    }
+
+    let snapshot;
+    try {
+      snapshot = await query.get();
+    } catch (err) {
+      const isQuotaOrUnavailable = String(err?.message || '').includes('RESOURCE_EXHAUSTED') ||
+                                   String(err?.message || '').includes('Quota exceeded') ||
+                                   String(err?.message || '').includes('UNAVAILABLE') ||
+                                   err?.code === 8 || err?.code === 14 || err?.code === 'resource-exhausted';
+      if (isQuotaOrUnavailable) {
+        return {
+          logs: [],
+          count: 0,
+          hasMore: false,
+          degraded: true,
+          quotaLimited: true,
+          reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
+          message: 'Standby audit event store read limit reached.',
+        };
+      }
+      throw err;
+    }
+
+    const logs = [];
+    if (snapshot && typeof snapshot.forEach === 'function') {
+      snapshot.forEach(doc => {
+        const data = (typeof doc.data === 'function' ? doc.data() : doc.data) || {};
+        const safe = sanitizeAuditValue('record', data) || {};
+        const log = {
+          id: doc.id,
+          ...safe,
+          createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (data.occurredAt || data.createdAt || null),
+        };
+        if (filterValues.actorUid && log.actorUid !== filterValues.actorUid) return;
+        if (filterValues.action && String(log.action || '').toUpperCase() !== filterValues.action) return;
+        if (filterValues.category && String(log.category || '').toLowerCase() !== filterValues.category) return;
+        if (filterValues.severity && String(log.severity || '').toUpperCase() !== filterValues.severity) return;
+        if (filterValues.outcome && String(log.outcome || '').toUpperCase() !== filterValues.outcome) return;
+        if (search) {
+          const searchable = [
+            log.id, log.actorUid, log.actorEmail, log.actorRole,
+            log.action, log.category, log.severity, log.outcome,
+            log.method, log.pathname, log.resourceType, log.resourceId,
+            log.requestId, log.ipAddress, JSON.stringify(log.metadata || '')
+          ].join(' ').toLowerCase();
+          if (!searchable.includes(search)) return;
+        }
+        logs.push(log);
+      });
+    }
+
+    const scannedCount = snapshot?.docs?.length || snapshot?.size || logs.length;
+    return {
+      logs: logs.slice(0, limitCount),
+      count: Math.min(logs.length, limitCount),
+      hasMore: hasFilter ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
+      ...(hasFilter ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
+      source: 'firestore',
+    };
+  }
+
+  // 3. Global Repository fallback
+  try {
+    const repo = getRepository();
+    if (repo && typeof repo.getAdminAuditLogs === 'function') {
+      const logs = await repo.getAdminAuditLogs({ limit: limitCount });
+      return { logs, count: logs.length, hasMore: false, source: 'mariadb-primary' };
+    }
+  } catch (_) {}
+
+  return { logs: [], count: 0, hasMore: false, source: 'none' };
 }
 
 module.exports = {
