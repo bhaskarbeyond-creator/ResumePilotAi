@@ -90,8 +90,23 @@ async function loadAiAdminSettings(db, environment = process.env) {
   let secrets = {};
   let legacyAi = {};
 
-  // 1. If db is provided and has .collection (e.g. Firestore / mock store), query db:
-  if (db && typeof db.collection === 'function') {
+  // 1. Primary: MariaDB system_settings
+  try {
+    const repo = getRepository(db);
+    if (repo && typeof repo.getSetting === 'function') {
+      const [pubSetting, secSetting, legSetting] = await Promise.all([
+        repo.getSetting('public_config').catch(() => null),
+        repo.getSetting('ai_providers').catch(() => null),
+        repo.getSetting('system_settings').catch(() => null),
+      ]);
+      if (pubSetting) stored = pubSetting;
+      if (secSetting) secrets = secSetting;
+      if (legSetting?.ai) legacyAi = legSetting.ai;
+    }
+  } catch (_) {}
+
+  // 2. Standby Fallback: Firestore (if stored or secrets not loaded from MariaDB)
+  if (Object.keys(stored).length === 0 && Object.keys(secrets).length === 0 && db && typeof db.collection === 'function') {
     try {
       const [publicDoc, secretDoc, legacyDoc] = await Promise.allSettled([
         db.collection('data').doc('public_config').get(),
@@ -101,23 +116,6 @@ async function loadAiAdminSettings(db, environment = process.env) {
       if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) stored = publicDoc.value.data() || {};
       if (secretDoc.status === 'fulfilled' && secretDoc.value.exists) secrets = secretDoc.value.data() || {};
       if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyAi = legacyDoc.value.data()?.ai || {};
-    } catch (_) {}
-  }
-
-  // 2. Primary: MariaDB system_settings (if not loaded from explicit db)
-  if (db === undefined && Object.keys(stored).length === 0 && Object.keys(secrets).length === 0) {
-    try {
-      const repo = getRepository(db);
-      if (repo && typeof repo.getSetting === 'function') {
-        const [pubSetting, secSetting, legSetting] = await Promise.all([
-          repo.getSetting('public_config').catch(() => null),
-          repo.getSetting('ai_providers').catch(() => null),
-          repo.getSetting('system_settings').catch(() => null),
-        ]);
-        if (pubSetting) stored = pubSetting;
-        if (secSetting) secrets = secSetting;
-        if (legSetting?.ai) legacyAi = legSetting.ai;
-      }
     } catch (_) {}
   }
 
@@ -152,13 +150,27 @@ async function loadAiAdminSettings(db, environment = process.env) {
 
 async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, actorUid, requestId }) {
   const safePublic = publicAiSettings(input);
-  const repo = db === undefined ? getRepository(db) : null;
+  const repo = getRepository(db);
   let currentSecrets = {};
   let currentPublic = {};
   let legacyAi = {};
 
-  // 1. If db is provided with .collection (e.g. Firestore / mock store), load current state:
-  if (db && typeof db.collection === 'function') {
+  // 1. Primary: MariaDB system_settings
+  if (repo && typeof repo.getSetting === 'function') {
+    try {
+      const [secSetting, pubSetting, legSetting] = await Promise.all([
+        repo.getSetting('ai_providers').catch(() => null),
+        repo.getSetting('public_config').catch(() => null),
+        repo.getSetting('system_settings').catch(() => null),
+      ]);
+      if (secSetting) currentSecrets = secSetting;
+      if (pubSetting) currentPublic = pubSetting;
+      if (legSetting?.ai) legacyAi = legSetting.ai;
+    } catch (_) {}
+  }
+
+  // 2. Standby Fallback: Firestore (if currentSecrets and currentPublic not loaded from MariaDB)
+  if (Object.keys(currentSecrets).length === 0 && Object.keys(currentPublic).length === 0 && db && typeof db.collection === 'function') {
     try {
       const [secretDoc, publicDoc, legacyDoc] = await Promise.allSettled([
         db.collection('settings').doc('ai_providers').get(),
@@ -169,22 +181,6 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
       if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) currentPublic = publicDoc.value.data() || {};
       if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyAi = legacyDoc.value.data()?.ai || {};
     } catch (_) {}
-  }
-
-  // 2. Primary: MariaDB system_settings (if not loaded from explicit db)
-  if (db === undefined && Object.keys(currentSecrets).length === 0 && Object.keys(currentPublic).length === 0) {
-    if (repo && typeof repo.getSetting === 'function') {
-      try {
-        const [secSetting, pubSetting, legSetting] = await Promise.all([
-          repo.getSetting('ai_providers').catch(() => null),
-          repo.getSetting('public_config').catch(() => null),
-          repo.getSetting('system_settings').catch(() => null),
-        ]);
-        if (secSetting) currentSecrets = secSetting;
-        if (pubSetting) currentPublic = pubSetting;
-        if (legSetting?.ai) legacyAi = legSetting.ai;
-      } catch (_) {}
-    }
   }
 
   const currentRevision = Number(currentPublic.aiRevision || currentSecrets._revision || 0);

@@ -77,7 +77,7 @@ async function getUserAiEntitlement(db, uid) {
       lastResetAt: userData.aiQuotaLastResetAt || null,
     };
   } catch (error) {
-    return { uid, dailyLimit: 10, usedToday: 0, remainingToday: 10, plan: 'Basic', customOverride: null };
+    return { uid, dailyLimit: 10, effectiveLimit: 10, usedToday: 0, remainingToday: 10, plan: 'Basic', customOverride: null };
   }
 }
 
