@@ -1,0 +1,668 @@
+{
+  "timestamp": "2026-08-26T07:01:04.521Z",
+  "browsersTested": [
+    "Chromium",
+    "Firefox",
+    "WebKit"
+  ],
+  "viewportsTested": [
+    "Desktop_1280x800",
+    "Laptop_1024x768",
+    "Tablet_768x1024",
+    "Mobile_375x667"
+  ],
+  "routesAudited": 15,
+  "totalJourneysExecuted": 180,
+  "consoleErrors": [],
+  "consoleWarnings": [],
+  "pageErrors": [],
+  "networkFailures": [
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/proxy-Bt-MAwVK.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/subscriptionUtils-C0LFH6Mr.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/DropdownInput-B-fle_AH.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/DropdownInput-xYzyw-bU.css",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/SimpleInput-B-FhpV9k.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/paidOperations-BbuEi92Q.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/blur-b3WimTLq.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/LexicalListPlugin.prod-BjY6s2LG.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/aiService-CjjBzHuM.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/bi-ChzKu8j9.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/blur-D8DuMFaX.css",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/assets/HomepageNavbar-jlSZqV84.js",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/api/platform/public-config",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Desktop_1280x800",
+      "url": "https://ai-resume-builder.local/api/health",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "Firefox",
+      "viewport": "Tablet_768x1024",
+      "url": "https://ai-resume-builder.local/api/platform/public-config",
+      "failure": "NS_BINDING_ABORTED"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Desktop_1280x800",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Laptop_1024x768",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Tablet_768x1024",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    },
+    {
+      "browser": "WebKit",
+      "viewport": "Mobile_375x667",
+      "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+      "failure": "Load request cancelled"
+    }
+  ],
+  "http4xx": [],
+  "http5xx": [],
+  "brokenControls": [],
+  "securityAudit": {
+    "unauthorizedApiBlocked": 2,
+    "unauthorizedAdminRedirected": 60,
+    "crossTenantIsolated": 0
+  },
+  "performanceMetrics": {
+    "/": [
+      1254.0221999999999,
+      348.12199999999984,
+      352.3800000000001,
+      331.0765000000001,
+      703.6954999999989,
+      387.85719999999856,
+      448.22539999999935,
+      391.5686999999998,
+      293.61339999999836,
+      270.7604999999967,
+      266.09400000000096,
+      264.6209999999992
+    ],
+    "/pricing": [
+      56.273099999999886,
+      48.1284999999998,
+      47.557300000000396,
+      48.39009999999962,
+      798.0992999999999,
+      157.64270000000033,
+      160.8122999999996,
+      146.55599999999686,
+      102.06790000000183,
+      108.98419999999896,
+      115.69440000000031,
+      108.97589999999764
+    ],
+    "/build-resume": [
+      32.91020000000003,
+      29.960900000000038,
+      34.3091000000004,
+      30.642100000000028,
+      178.4242000000013,
+      144.73710000000028,
+      137.5521000000008,
+      142.29520000000048,
+      105.20339999999851,
+      105.36390000000029,
+      109.26230000000214,
+      91.05950000000303
+    ],
+    "/dashboard": [
+      30.857600000000048,
+      31.144800000000032,
+      30.89140000000043,
+      33.41960000000017,
+      172.71290000000045,
+      152.02430000000095,
+      297.54669999999896,
+      155.1320999999989,
+      108.95170000000144,
+      98.21319999999832,
+      109.70570000000225,
+      96.26279999999679
+    ],
+    "/portfolio-builder": [
+      31.09069999999997,
+      30.508100000000013,
+      29.712099999999737,
+      30.488900000000285,
+      240.85159999999996,
+      231.22180000000117,
+      489.72539999999935,
+      228.3132000000005,
+      101.41619999999966,
+      99.79200000000128,
+      103.6108000000022,
+      101.31589999999414
+    ],
+    "/cover-letter": [
+      40.86149999999998,
+      38.82979999999998,
+      26.72819999999956,
+      39.21110000000044,
+      97.39899999999943,
+      110.51390000000174,
+      118.53619999999864,
+      175.3758999999991,
+      103.51889999999912,
+      104.59259999999995,
+      102.22940000000017,
+      104.29219999999623
+    ],
+    "/login": [
+      31.0163,
+      32.93550000000005,
+      30.017800000000534,
+      30.66899999999987,
+      95.96199999999953,
+      101.83489999999983,
+      99.27180000000226,
+      107.8244999999988,
+      108.59010000000126,
+      91.4574999999968,
+      109.1485999999968,
+      107.5650999999998
+    ],
+    "/register": [
+      40.77489999999989,
+      39.296299999999974,
+      25.98790000000008,
+      26.15059999999994,
+      221.28540000000066,
+      239.97920000000158,
+      99.32860000000073,
+      111.37879999999859,
+      115.38099999999758,
+      98.3936999999969,
+      109.28440000000046,
+      112.40449999999691
+    ],
+    "/blog": [
+      31.054000000000087,
+      26.796299999999974,
+      25.891700000000128,
+      26.791300000000774,
+      98.55689999999959,
+      154.8174999999992,
+      108.58339999999953,
+      110.60149999999703,
+      98.04430000000139,
+      102.5047999999988,
+      107.48210000000108,
+      101.98519999999553
+    ],
+    "/enterprise": [
+      30.069100000000162,
+      30.5945999999999,
+      30.782799999999952,
+      31.003700000000208,
+      100.46709999999985,
+      180.17529999999897,
+      109.59220000000278,
+      97.72869999999966,
+      105.90630000000237,
+      98.14909999999873,
+      106.44910000000164,
+      103.61560000000463
+    ],
+    "/adm": [
+      29.992299999999886,
+      31.164299999999912,
+      30.200600000000122,
+      28.302300000000287,
+      102.78719999999885,
+      165.10269999999946,
+      99.93289999999979,
+      105.73040000000037,
+      107.40259999999762,
+      104.99120000000039,
+      105.59720000000016,
+      106.74239999999554
+    ],
+    "/adm/users": [
+      31.733000000000175,
+      34.91190000000006,
+      31.40360000000055,
+      32.58780000000024,
+      97.30500000000029,
+      163.19880000000012,
+      108.685300000001,
+      96.26130000000194,
+      119.83369999999923,
+      99.41289999999935,
+      111.86070000000109,
+      112.56319999999687
+    ],
+    "/adm/payments": [
+      30.991399999999885,
+      33.983400000000074,
+      30.656700000000455,
+      27.99240000000009,
+      147.7567999999992,
+      102.28450000000157,
+      96.0666999999994,
+      97.8140999999996,
+      98.82020000000193,
+      102.20339999999851,
+      100.79650000000038,
+      97.32249999999476
+    ],
+    "/adm/queues": [
+      31.36810000000014,
+      33.61610000000019,
+      28.854199999999764,
+      28.992199999999684,
+      113.69070000000102,
+      97.4315000000006,
+      101.17829999999958,
+      94.86599999999817,
+      100.23730000000069,
+      107.96840000000157,
+      107.09770000000208,
+      108.02270000000135
+    ],
+    "/adm/system-health": [
+      27.672500000000127,
+      30.747800000000097,
+      31.99240000000009,
+      28.803600000000188,
+      291.98029999999926,
+      98.84569999999985,
+      107.19839999999749,
+      112.51350000000093,
+      115.1166000000012,
+      106.5038999999997,
+      106.13349999999991,
+      103.58870000000024
+    ]
+  },
+  "defects": []
+}
