@@ -99,3 +99,10 @@ test('conflicts during an operator-approved standby recovery do not restore prim
         require('../database/authority');
     }
 });
+
+test.after(async () => {
+    try {
+        const { getPool } = require('../database/mysql');
+        await getPool().end();
+    } catch (_) {}
+});

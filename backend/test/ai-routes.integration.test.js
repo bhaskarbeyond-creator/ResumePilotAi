@@ -122,3 +122,10 @@ test('provider failures return a safe retryable error without leaking provider d
     global.fetch = originalFetch;
   }
 });
+
+test.after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
+});

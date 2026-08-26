@@ -97,3 +97,10 @@ test('conflicts during an operator-approved standby recovery do not blindly over
         require('../database/authority');
     }
 });
+
+test.after(async () => {
+    try {
+        const { getPool } = require('../database/mysql');
+        await getPool().end();
+    } catch (_) {}
+});

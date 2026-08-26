@@ -487,3 +487,10 @@ test('Isolation: Role-based access control blocks unauthorized and unverified us
     assert.equal(typeof res6.body.configuredProviders[provider], 'boolean');
   }
 });
+
+test.after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
+});

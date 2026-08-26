@@ -426,3 +426,10 @@ test('Acceptance Gate 5: Behavioral Cache Invalidation & Dynamic Model Switch Ve
   await generateWithProviders({ prompt: 'p', configuration: config2, operation: 'generate-summary', fetchImpl: trackingFetch });
   assert.equal(calledModel, 'meta/llama-3.3-70b-instruct', 'Subsequent AI request must immediately use the newly updated model');
 });
+
+test.after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
+});

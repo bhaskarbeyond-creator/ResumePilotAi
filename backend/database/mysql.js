@@ -20,8 +20,9 @@ const poolConfig = {
     charset: 'utf8mb4',
     ssl: sslConfig,
     multipleStatements: true,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 10000,
+    enableKeepAlive: process.env.NODE_ENV !== 'test',
+    keepAliveInitialDelay: process.env.NODE_ENV === 'test' ? 0 : 10000,
+    idleTimeout: process.env.NODE_ENV === 'test' ? 1000 : 60000,
     connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 8000),
 };
 

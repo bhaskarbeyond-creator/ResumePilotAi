@@ -160,3 +160,10 @@ test('AI endpoints support multi-language routing and deterministic fallbacks', 
   assert.equal(emptyParse.status, 400);
   assert.equal(emptyParse.body.error.code, 'INVALID_RESUME_TEXT');
 });
+
+test.after(async () => {
+  try {
+    const { getPool } = require('../database/mysql');
+    await getPool().end();
+  } catch (_) {}
+});

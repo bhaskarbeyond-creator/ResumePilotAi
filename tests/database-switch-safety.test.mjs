@@ -56,7 +56,7 @@ describe('Database Engine Switching Safety Test Suite', () => {
         try {
             await switchActiveEngine('firestore', 'TEST_ADMIN', brokenFirestoreDb);
         } catch (err) {
-            assert.ok(err.message.includes('Cannot switch to firestore') || err.message.includes('Connection check failed'));
+            assert.ok(err.message.includes('Cannot switch to firestore') || err.message.includes('Connection check failed') || err.message.includes('disabled'));
         }
     });
 
@@ -110,7 +110,7 @@ describe('Database Engine Switching Safety Test Suite', () => {
         let output;
         try {
             output = execFileSync(process.execPath, ['-e', childScript], {
-                env: { ...process.env, DB_ENGINE: 'mysql' },
+                env: { ...process.env, DB_ENGINE: 'mysql', ALLOW_FIRESTORE_ENGINE: 'true' },
                 encoding: 'utf8',
             });
         } finally {

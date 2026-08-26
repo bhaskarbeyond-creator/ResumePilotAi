@@ -41,30 +41,36 @@ describe('Intelligent Synchronization & Outbox Engine Test Suite', () => {
     });
 
     it('3. Outbox enqueuing formats valid replication event envelope', async () => {
-        const mockConn = {
-            query: async (sql, params) => {
-                assert.ok(sql.includes('INSERT INTO sync_outbox'));
-                assert.equal(params[1], 'resumes');
-                assert.equal(params[2], 'res_123');
-                assert.equal(params[3], 'UPSERT');
-                assert.equal(params[5], 3);
-                assert.equal(params[6], 'mysql');
-                assert.equal(params[7].length, 64);
-                return [{ insertId: 1 }];
-            }
-        };
+        const prevDataPlane = process.env.FIREBASE_DATA_PLANE;
+        process.env.FIREBASE_DATA_PLANE = 'on';
+        try {
+            const mockConn = {
+                query: async (sql, params) => {
+                    assert.ok(sql.includes('INSERT INTO sync_outbox'));
+                    assert.equal(params[1], 'resumes');
+                    assert.equal(params[2], 'res_123');
+                    assert.equal(params[3], 'UPSERT');
+                    assert.equal(params[5], 3);
+                    assert.equal(params[6], 'mysql');
+                    assert.equal(params[7].length, 64);
+                    return [{ insertId: 1 }];
+                }
+            };
 
-        const result = await enqueueOutboxEvent(mockConn, {
-            entityType: 'resumes',
-            entityId: 'res_123',
-            operation: 'UPSERT',
-            payload: { title: 'Architect', revision: 3 },
-            version: 3,
-            sourceEngine: 'mysql'
-        });
+            const result = await enqueueOutboxEvent(mockConn, {
+                entityType: 'resumes',
+                entityId: 'res_123',
+                operation: 'UPSERT',
+                payload: { title: 'Architect', revision: 3 },
+                version: 3,
+                sourceEngine: 'mysql'
+            });
 
-        assert.ok(result.eventId.startsWith('ev_'));
-        assert.equal(result.contentHash.length, 64);
+            assert.ok(result.eventId.startsWith('ev_'));
+            assert.equal(result.contentHash.length, 64);
+        } finally {
+            process.env.FIREBASE_DATA_PLANE = prevDataPlane || 'off';
+        }
     });
 
     it('4. Sync health status reports active and standby roles accurately', async () => {
