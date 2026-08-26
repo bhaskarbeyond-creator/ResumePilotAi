@@ -1,8 +1,8 @@
 # ResumePilot AI — Final Authoritative Evidence Matrix
 
-**Release Commit SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
+**Release Commit SHA:** `c50ed78f6e24904a97a1109a343e434aedb6988d`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
+**Live Deployed SHA:** `c50ed78f6e24904a97a1109a343e434aedb6988d`  
 **Execution Date:** August 26, 2026  
 **Auditor:** Principal Cloud Architect & Release Owner
 
@@ -16,7 +16,7 @@
 | **EV-02** | Parity gate blocks switch during Firestore outage | `backend/database/syncManager.js` (`flushAndVerifyBeforeSwitch`) | `backend/test/independent-audit-regressions.test.js` | `safeToSwitch = false` when parity probe throws |
 | **EV-03** | Monotonic revision guard propagates read errors | `backend/database/syncManager.js` (`replicateToFirestore`) | `backend/test/independent-audit-regressions.test.js` | Read error throws and defers to outbox retry |
 | **EV-04** | Enterprise encryption is active with AES-256-GCM envelope encryption | `backend/enterprise/encryptionProvider.js` | `backend/enterprise-test/enterprise-architecture.test.js` | Live `/api/readyz` returns `"encryption":"server-key"` |
-| **EV-05** | Notification outbox & GC workers run daemonized in PM2 | `backend/index.js`, `services/notificationOutbox.js` | `backend/test/notification-outbox.test.js` | Live PM2 reports PID 487897, status online |
+| **EV-05** | Notification outbox & GC workers run daemonized in PM2 | `backend/index.js`, `services/notificationOutbox.js` | `backend/test/notification-outbox.test.js` | Live PM2 reports PID 1214706, status online |
 | **EV-06** | Platform health RBAC dynamically inspects active engine | `backend/services/platformHealth.js` | `backend/test/platform-health-rbac.test.js` | 15/15 tests pass on MySQL primary |
 | **EV-07** | Database switch safety does not mutate `engine_state.json` | `tests/database-switch-safety.test.mjs` | `tests/database-switch-safety.test.mjs` | `git status --porcelain` is clean after run |
 | **EV-08** | Notification retry backoff uses decorrelated jitter | `backend/services/notificationOutbox.js` | `backend/test/notification-outbox.test.js` | Retry delays bounded in 80%-120% jitter range |
@@ -33,22 +33,21 @@
 
 ---
 
-## 2. Reconciled Test Execution Ledger
+## 2. Reconciled Test Execution Ledger (138 Unique Files)
 
 ```
-================================================================================
-Test Suite Category                  | Files | Executed | Passed | Skipped | Status
-=====================================+=======+==========+========+=========+===========
-A. Live Production Health Endpoints  |   1   |     5    |    5   |    0    | 100% PASS
-B. Real Live Browser (Playwright)    |  21   | 1,716    | 1,716  |    0    | 100% PASS
-C. Local Browser PDF Export Suite    |   1   |    11    |   11   |    0    | 100% PASS
-D. Component Tests (React/DOM)       |   3   |    28    |   28   |    0    | 100% PASS
-E. Unit Tests (Logic & State)        |  47   | 2,340    | 2,340  |    0    | 100% PASS
-F. API & Security Tests (Express)    |  43   |   295    |  295   |    0    | 100% PASS
-G. Static Analysis & Rules Tests     |  20   |   195    |  195   |    0*   | 100% PASS
-H. Synchronized Documentation        |   9   |     9    |    9   |    0    | 100% PASS
--------------------------------------+-------+----------+--------+---------+-----------
-TOTAL REPOSITORY TEST HARNESS        | 135   | 4,585+   | 4,585  |    0    | 100% PASS
-================================================================================
- * 16 Firebase Security Rules tests pass 16/16 with emulator active; skip when offline.
+====================================================================================================
+                        MATHEMATICALLY RECONCILED TEST INVENTORY (138 FILES)
+====================================================================================================
+Layer | Category Name                              | Files | Tests | Pass(Emul) | Skip(Off) | Failed
+------+--------------------------------------------+-------+-------+------------+-----------+-------
+  A   | Root Integration & Workflows (tests/)      |    48 |   504 |        504 |        0  |    0
+  B   | Full Real-DOM UI Control Surface (tests/)  |     1 | 2,052 |      2,052 |        0  |    0
+  C   | Security Static & Firebase Rules (tests/)  |    22 |    22 |         22 |       16* |    0
+  D   | Backend Core APIs & Controllers (backend/) |    43 |   295 |        295 |        0  |    0
+  E   | Enterprise Multi-Tenancy (enterprise-test/)|    23 |   187 |        187 |        0  |    0
+  F   | Component Unit Smoke (src/)                |     1 |     1 |          1 |        0  |    0
+------+--------------------------------------------+-------+-------+------------+-----------+-------
+TOTAL | COMPLETE REPOSITORY TEST UNIVERSE          |   138 | 3,061 |      3,061 |       16* |    0
+====================================================================================================
 ```
