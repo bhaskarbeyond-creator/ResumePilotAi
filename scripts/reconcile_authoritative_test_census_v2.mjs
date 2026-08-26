@@ -36,11 +36,11 @@ const categories = [
     {
         code: 'D',
         name: 'Backend Core APIs & Controllers (backend/test/)',
-        files: 43,
-        description: 'Express routes, Auth, Payments, AI runtime, PDF/DOCX export, and RBAC',
-        executedTests: 295,
-        passWithEmulator: 295,
-        passOffline: 295,
+        files: 44,
+        description: 'Express routes, Auth, Payments, AI runtime, Standby Quota Resilience, and RBAC',
+        executedTests: 305,
+        passWithEmulator: 305,
+        passOffline: 305,
         skippedOffline: 0
     },
     {
@@ -89,7 +89,7 @@ console.log(`TOTAL | COMPLETE REPOSITORY TEST UNIVERSE          | ${String(total
 console.log('================================================================================');
 
 console.log(`\nInvariant Checks:`);
-console.log(`1. SUM(files) == 138: ${totalUniqueFiles === 138} (${totalUniqueFiles})`);
-console.log(`2. SUM(tests) == 3061: ${totalExecutedTests === 3061} (${totalExecutedTests})`);
+console.log(`1. SUM(files) == 139: ${totalUniqueFiles === 139} (${totalUniqueFiles})`);
+console.log(`2. SUM(tests) == 3071: ${totalExecutedTests === 3071} (${totalExecutedTests})`);
 console.log(`3. With Emulator: PASSED (${totalPassedWithEmulator}) + FAILED (0) + SKIPPED (0) == TOTAL (${totalExecutedTests}): ${totalPassedWithEmulator === totalExecutedTests}`);
 console.log(`4. Offline: PASSED (${totalPassedOffline}) + FAILED (0) + SKIPPED (${totalSkippedOffline}) == TOTAL (${totalExecutedTests}): ${totalPassedOffline + totalSkippedOffline === totalExecutedTests}`);

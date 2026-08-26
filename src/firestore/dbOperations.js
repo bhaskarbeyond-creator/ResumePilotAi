@@ -878,6 +878,19 @@ export async function getUserData(userId) {
     try {
         const uid = typeof userId === 'object' && userId !== null ? (userId.uid || userId.id) : userId;
         if (!uid || typeof uid !== 'string') return null;
+
+        // 1. Authoritative API-first routing (MariaDB primary)
+        try {
+            const { getUserProfile } = await import('../services/api/users.js');
+            const profile = await getUserProfile(uid);
+            if (profile) {
+                return profile;
+            }
+        } catch (apiErr) {
+            console.warn('[dbOperations] /api/users-data primary fetch bypassed, attempting direct DB:', apiErr.message);
+        }
+
+        // 2. Direct Firestore fallback for offline/isolated environments
         const db = fire.firestore();
         const userRef = db.collection('users').doc(uid);
         const snapshot = await userRef.get();
@@ -1496,16 +1509,18 @@ export async function submitJobApplication(userId, jobId, applicationData) {
 // jobApplications statuses and live under the authenticated user's document.
 export async function getTrackedJobs(userId) {
     if (!userId) throw new Error('Authentication is required');
-    const snapshot = await fire.firestore().collection('users').doc(userId).collection('jobTracker').get();
-    return snapshot.docs.map((document) => {
-        const data = document.data();
-        return {
-            id: document.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.() || data.createdAt,
-            updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
-        };
-    });
+    return safeDbOperation(async () => {
+        const snapshot = await fire.firestore().collection('users').doc(userId).collection('jobTracker').get();
+        return snapshot.docs.map((document) => {
+            const data = document.data();
+            return {
+                id: document.id,
+                ...data,
+                createdAt: data.createdAt?.toDate?.() || data.createdAt,
+                updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+            };
+        });
+    }, false) || [];
 }
 
 export async function createTrackedJob(userId, input) {
@@ -2326,9 +2341,20 @@ export async function sendSmsNotification(toPhone, messageBody, _twilioOverride 
 export async function saveCoverLetter(coverLetterData) {
     const user = fire.auth().currentUser;
     if (!user) return { success: false, error: 'User not logged in' };
+    const id = coverLetterData.id || `cl_${Date.now()}`;
+
+    // 1. Authoritative API-first routing (MariaDB primary)
+    try {
+        const { saveCover } = await import('../services/api/covers.js');
+        const saved = await saveCover(id, { ...coverLetterData, id, updatedAt: new Date().toISOString() });
+        if (saved) return { success: true, id };
+    } catch (apiErr) {
+        console.warn('[dbOperations] /api/covers save bypassed, attempting direct DB:', apiErr.message);
+    }
+
+    // 2. Direct Firestore fallback for offline/isolated environments
     try {
         const db = fire.firestore();
-        const id = coverLetterData.id || `cl_${Date.now()}`;
         const docRef = db.collection('users').doc(user.uid).collection('coverLetters').doc(id);
         await docRef.set({
             ...coverLetterData,
@@ -2346,6 +2372,17 @@ export async function saveCoverLetter(coverLetterData) {
 export async function getUserCoverLetters() {
     const user = fire.auth().currentUser;
     if (!user) return [];
+
+    // 1. Authoritative API-first routing (MariaDB primary)
+    try {
+        const { getCovers } = await import('../services/api/covers.js');
+        const covers = await getCovers();
+        if (Array.isArray(covers)) return covers;
+    } catch (apiErr) {
+        console.warn('[dbOperations] /api/covers get bypassed, attempting direct DB:', apiErr.message);
+    }
+
+    // 2. Direct Firestore fallback for offline/isolated environments
     try {
         const db = fire.firestore();
         const snapshot = await db.collection('users').doc(user.uid).collection('coverLetters').get();
@@ -2353,7 +2390,7 @@ export async function getUserCoverLetters() {
         snapshot.forEach(doc => letters.push(doc.data()));
         return letters;
     } catch (err) {
-        console.error('Error getting cover letters:', err);
+        console.warn('Non-fatal error getting cover letters from Firestore:', err.message);
         return [];
     }
 }
@@ -3160,6 +3197,44 @@ export async function addDetails(websitename, websitedescription) {
         })
 }
 export async function getResumes(userId, page = 1, itemsPerPage = 5) {
+    // 1. Authoritative API-first routing (MariaDB primary)
+    try {
+        const { getResumes: getResumesFromApi } = await import('../services/api/resumes.js');
+        const apiResumes = await getResumesFromApi();
+        if (Array.isArray(apiResumes)) {
+            const totalItems = apiResumes.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+            const startIndex = Math.max(0, (page - 1) * itemsPerPage);
+            const pageResumes = apiResumes.slice(startIndex, startIndex + itemsPerPage);
+            const formatted = pageResumes.map(stored => {
+                const isCanonical = Number(stored.revision) > 0 || ['employments', 'educations', 'skills', 'languages'].some(key => Array.isArray(stored[key]));
+                return {
+                    id: stored.id,
+                    template: stored.template || stored.item?.template || 'Cv1',
+                    item: stored,
+                    employments: isCanonical && Array.isArray(stored.employments) ? stored.employments : (stored.item?.employments || []),
+                    educations: isCanonical && Array.isArray(stored.educations) ? stored.educations : (stored.item?.educations || []),
+                    languages: isCanonical && Array.isArray(stored.languages) ? stored.languages : (stored.item?.languages || []),
+                    skills: isCanonical && Array.isArray(stored.skills) ? stored.skills : (stored.item?.skills || []),
+                    isNewStyle: true,
+                };
+            });
+            return {
+                resumes: formatted,
+                pagination: {
+                    totalItems,
+                    totalPages,
+                    currentPage: page,
+                    hasNextPage: page < totalPages,
+                    hasPreviousPage: page > 1,
+                }
+            };
+        }
+    } catch (apiErr) {
+        console.warn('[dbOperations] /api/resumes primary fetch bypassed, attempting direct DB:', apiErr.message);
+    }
+
+    // 2. Direct Firestore fallback for offline/isolated environments
     const db = fire.firestore();
     const userRef = db.collection('users').doc(userId).collection('resumes');
 
@@ -3432,6 +3507,26 @@ export async function getCoverById(userId, coverId) {
 
 //  get covers function same as get resumes
 export async function getCovers(userId) {
+    // 1. Authoritative API-first routing (MariaDB primary)
+    try {
+        const { getCovers: getCoversFromApi } = await import('../services/api/covers.js');
+        const apiCovers = await getCoversFromApi();
+        if (Array.isArray(apiCovers)) {
+            return apiCovers.map(stored => ({
+                id: stored.id,
+                template: stored.template || stored.item?.template || 'Cover1',
+                item: stored,
+                employments: stored.employments || [],
+                educations: stored.educations || [],
+                languages: stored.languages || [],
+                skills: stored.skills || [],
+            }));
+        }
+    } catch (apiErr) {
+        console.warn('[dbOperations] /api/covers primary fetch bypassed, attempting direct DB:', apiErr.message);
+    }
+
+    // 2. Direct Firestore fallback for offline/isolated environments
     var cover = {};
     var covers = [];
     var i = 0;
@@ -5009,6 +5104,16 @@ export async function getPortfolioBySlug(slug) {
 }
 
 export async function getPortfolioById(portfolioId) {
+    // 1. Authoritative API-first routing (MariaDB primary)
+    try {
+        const { getPortfolio } = await import('../services/api/portfolios.js');
+        const portfolio = await getPortfolio(portfolioId);
+        if (portfolio) return portfolio;
+    } catch (apiErr) {
+        console.warn('[dbOperations] /api/portfolios/:id fetch bypassed, attempting direct DB:', apiErr.message);
+    }
+
+    // 2. Direct Firestore fallback for offline/isolated environments
     const db = fire.firestore();
 
     try {
@@ -5018,12 +5123,25 @@ export async function getPortfolioById(portfolioId) {
         }
         return null;
     } catch (error) {
-        console.error('Error getting portfolio by ID:', error);
-        throw error;
+        console.warn('Non-fatal error getting portfolio from Firestore:', error.message);
+        return null;
     }
 }
 
 export async function getUserPortfolios(userId, includeUnpublished = true) {
+    // 1. Authoritative API-first routing (MariaDB primary)
+    try {
+        const { getPortfolios: getPortfoliosFromApi } = await import('../services/api/portfolios.js');
+        const apiPortfolios = await getPortfoliosFromApi();
+        if (Array.isArray(apiPortfolios)) {
+            const filtered = includeUnpublished ? apiPortfolios : apiPortfolios.filter(p => p.isPublished === true);
+            return filtered;
+        }
+    } catch (apiErr) {
+        console.warn('[dbOperations] /api/portfolios primary fetch bypassed, attempting direct DB:', apiErr.message);
+    }
+
+    // 2. Direct Firestore fallback for offline/isolated environments
     const db = fire.firestore();
 
     try {
