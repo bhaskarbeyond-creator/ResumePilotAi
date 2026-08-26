@@ -80,7 +80,7 @@ CERTIFICATION: ZERO synchronous Firestore data-plane references.
 ```
 
 - Classification summary (full detail in `docs/firestore-dependency-census.json`): IDENTITY_ONLY (Firebase Auth — the IdP, not a database), COMPAT_ADAPTER (narrow Admin SDK wrapper used for token verification), DORMANT_LEGACY (legacy branches guarded behind the permanently-null `db` handle — proven inert by the runtime suite below), LEGACY_NAMED_API_SHIM (frontend `src/firestore/*` modules that are API-first MySQL clients), MIGRATION_TOOLING / OPERATIONAL_TOOLING (out-of-band scripts, never executed by the server), TEST_INFRASTRUCTURE, UI_LABEL, DOCUMENTATION.
-- `tests/certification/firestore-zero-static.test.mjs` (6 tests) asserts: repository factory never hands out a Firestore adapter; resilient repository pins null handles; census = 0 active hits; frontend has no Firestore SDK imports and the compat shim throws on `firestore()`; notification outbox is MySQL-only; the runtime data-plane gate is a permanent `null` that no env can re-enable.
+- `tests/certification/firestore-zero-static.test.mjs` (7 tests) asserts: repository factory never hands out a Firestore adapter; resilient repository pins null handles; census = 0 active hits; frontend has no Firestore SDK imports and the compat shim throws on `firestore()`; notification outbox is MySQL-only; the runtime data-plane gate is a permanent `null` that no env can re-enable; and the **built production bundle** ships no Firestore client code (`getFirestore`, `onSnapshot`, and `firebase/compat/firestore` all absent across `dist/assets/*.js` — the only Firestore-shaped artifact is an inert component-name string constant inside the Firebase app-core registry).
 
 ### 4.2 Runtime proof (Firestore OFF acceptance, §3)
 

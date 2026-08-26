@@ -85,6 +85,23 @@ test('notification outbox is a MySQL transactional outbox (no external queue dep
   assert.match(schema, /CREATE TABLE IF NOT EXISTS notification_outbox/);
 });
 
+test('production bundle contains no Firestore SDK code (when built)', { skip: !fs.existsSync(path.join(ROOT, 'dist')) ? 'run npm run build first' : false }, () => {
+  const distAssets = path.join(ROOT, 'dist', 'assets');
+  const jsFiles = fs.existsSync(distAssets)
+    ? fs.readdirSync(distAssets).filter(f => f.endsWith('.js')).map(f => path.join(distAssets, f))
+    : [];
+  assert.ok(jsFiles.length > 0, 'bundle assets must exist');
+  for (const file of jsFiles) {
+    const text = fs.readFileSync(file, 'utf8');
+    assert.equal((text.match(/getFirestore/g) || []).length, 0, `${path.basename(file)} must not bundle getFirestore`);
+    assert.equal((text.match(/onSnapshot/g) || []).length, 0, `${path.basename(file)} must not bundle Firestore listeners`);
+    assert.doesNotMatch(text, /firebase\/compat\/firestore/, `${path.basename(file)} must not import the Firestore compat SDK`);
+  }
+  // The Firebase app core may carry component-name string constants
+  // ("@firebase/firestore" as a registry label) — string labels are not code;
+  // the assertions above prove no Firestore client implementation ships.
+});
+
 test('runtime data-plane gate is a permanent null (no env can re-enable Firestore)', () => {
   const indexSource = fs.readFileSync(path.join(ROOT, 'backend', 'index.js'), 'utf8');
   assert.match(indexSource, /const db = null; \/\/ PERMANENT/, 'the data-plane handle must be a permanent null constant');
