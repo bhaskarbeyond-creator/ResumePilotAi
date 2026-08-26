@@ -43,7 +43,7 @@ import logo from '../../assets/logo/logo.png';
 import Toasts from '../Toasts/Toats';
 
 // Import animation library for toast animations
-import { evaluateDownloadAccess } from '../../utils/subscriptionUtils';
+import { evaluateDownloadAccess, parseSafeDate } from '../../utils/subscriptionUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import user membership functions
@@ -1006,7 +1006,7 @@ const BuildResume = () => {
                             setUserData((prevData) => ({
                                 ...prevData,
                                 membership: value.membership,
-                                membershipEnds: value.membershipEnds ? value.membershipEnds.toDate() : null,
+                                membershipEnds: parseSafeDate(value.membershipEnds),
                             }));
                         } else {
                             setUserData((prevData) => ({

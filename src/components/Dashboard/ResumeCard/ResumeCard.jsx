@@ -158,7 +158,10 @@ class ResumeCard extends Component {
                     </div>
                     <div className="dashboard-resume-card-footer">
                         <div className="dashboard-resume-card-footer-date">
-                            {this.props.document.item?.created_at?.toDate().toLocaleString('en-US', {
+                            {(this.props.document.item?.created_at?.toDate
+                                ? this.props.document.item.created_at.toDate()
+                                : new Date(this.props.document.item?.created_at || Date.now())
+                            ).toLocaleString('en-US', {
                                 month: 'long',
                                 day: 'numeric',
                                 year: 'numeric',
@@ -209,17 +212,16 @@ class ResumeCard extends Component {
 
                     <div className="dashboard-resume-card-footer">
                         <div className="dashboard-resume-card-footer-date">
-                            {
-                                // firebase date object to  Month day, year at hour
-
-                                this.props.document.item?.created_at?.toDate().toLocaleString('en-US', {
-                                    month: 'long',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: 'numeric',
-                                    minute: 'numeric',
-                                })
-                            }
+                            {(this.props.document.item?.created_at?.toDate
+                                ? this.props.document.item.created_at.toDate()
+                                : new Date(this.props.document.item?.created_at || Date.now())
+                            ).toLocaleString('en-US', {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: 'numeric',
+                                minute: 'numeric',
+                            })}
                         </div>
                     </div>
                 </div>

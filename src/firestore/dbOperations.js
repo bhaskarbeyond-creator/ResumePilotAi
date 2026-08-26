@@ -5186,7 +5186,9 @@ export async function getUserPortfolios(userId, includeUnpublished = true) {
             if (!dateA && !dateB) return 0;
             if (!dateA) return 1;
             if (!dateB) return -1;
-            return dateB.toDate() - dateA.toDate();
+            const timeA = dateA?.toDate ? dateA.toDate().getTime() : new Date(dateA || 0).getTime();
+            const timeB = dateB?.toDate ? dateB.toDate().getTime() : new Date(dateB || 0).getTime();
+            return timeB - timeA;
         });
 
         return portfolios;

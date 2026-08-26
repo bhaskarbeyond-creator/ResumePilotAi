@@ -20,6 +20,7 @@ import fire from '../../conf/fire';
 import signOutUser from '../../utils/signOut';
 import { InitialisationCheck, getPages, getWebsiteData, getSubscriptionStatus, checkSbs, checkIfSuspended } from '../../firestore/dbOperations';
 import { getUserMembership } from '../../firestore/paidOperations';
+import { parseSafeDate } from '../../utils/subscriptionUtils';
 // Initialisation Component
 import InitialisationWrapper from '../initailisation/initialisationWrapper/initialisationWrapper';
 /// Animation Library
@@ -302,8 +303,11 @@ class Welcome extends Component {
         try {
             const value = await getUserMembership(userId);
             if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== userId) return;
-            if (value.membershipEnds != undefined && typeof value.membershipEnds != 'string') {
-                this.setState({ membership: value.membership, membershipEnds: value.membershipEnds.toDate() });
+            if (value && value.membership) {
+                this.setState({ 
+                    membership: value.membership, 
+                    membershipEnds: parseSafeDate(value.membershipEnds) 
+                });
                 const subscriptionsDisabled = await checkSbs();
                 if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== userId) return;
                 if (subscriptionsDisabled === 'false') this.setState({ membership: 'Basic' });
