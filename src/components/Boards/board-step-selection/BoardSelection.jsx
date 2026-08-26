@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import "./BoardSelection.scss";
+import { motion } from "framer-motion";
 import { CSSTransition } from "react-transition-group";
 import { withTranslation } from "react-i18next";
 import { FiSearch, FiStar, FiFilter, FiArrowLeft, FiArrowRight, FiEye } from "react-icons/fi";

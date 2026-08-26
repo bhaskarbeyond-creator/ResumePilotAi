@@ -6,7 +6,7 @@ import { withTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../main';
 import AuthWrapper from '../../auth/authWrapper/AuthWrapper';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 // Optimized sentences for better impact - will be loaded from translations
 const defaultSentences = [
     'Build professional resumes with AI',

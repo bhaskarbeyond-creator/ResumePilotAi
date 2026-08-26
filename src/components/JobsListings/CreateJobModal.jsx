@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaImage, FaExclamationTriangle } from 'react-icons/fa';

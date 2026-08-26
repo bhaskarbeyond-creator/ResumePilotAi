@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaPaperPlane, FaTimes } from 'react-icons/fa';
 import { createConversation, sendMessage } from '../../../firestore/dbOperations';
 import fire from '../../../conf/fire';

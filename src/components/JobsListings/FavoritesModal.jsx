@@ -1,5 +1,5 @@
 import React, { _useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaHeart, FaTimes, FaBookmark, FaBriefcase, FaMapMarkerAlt, FaClock, FaExclamationTriangle } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
 

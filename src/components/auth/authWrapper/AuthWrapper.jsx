@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './AuthWrapper.scss'
 import Login from '../login/Login'
-import { AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from 'framer-motion'
 import Register from '../register/Register'
 import RecoverPassword from '../recoverPassword/RecoverPassword';
 import Toast from '../../Toasts/Toats';

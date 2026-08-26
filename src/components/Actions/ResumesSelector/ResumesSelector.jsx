@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import "./ResumesSelector.scss";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
 import { GrClose } from "react-icons/gr";
 import { BiSearchAlt } from "react-icons/bi";
 // Resume Templates

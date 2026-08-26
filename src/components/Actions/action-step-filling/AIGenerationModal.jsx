@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FaBrain, FaRegFileAlt, FaGraduationCap, FaTools, FaBriefcase } from 'react-icons/fa';
 import { BsCheckCircleFill, BsArrowLeft, BsArrowRight, BsX, BsStars, BsInfoCircle, BsLightning } from 'react-icons/bs';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLottie } from 'lottie-react';
 import { useTranslation } from 'react-i18next';
 import aiGeneratingAnimation from '../../../assets/animations/Ai-Generating.json';

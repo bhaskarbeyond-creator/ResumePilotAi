@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { extractTextFromResumeFile } from '../../services/resumeParser';
 import { parseResumeTextToStructuredData } from '../../services/aiService';
 import { normalizeRawDataToTempJson, mapTempJsonToResumePayload } from '../../services/resumeFieldMapper';

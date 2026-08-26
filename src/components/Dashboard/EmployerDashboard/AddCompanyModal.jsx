@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaBuilding, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaExclamationCircle, FaImage } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
 import { createCompany } from '../../../firestore/dbOperations';

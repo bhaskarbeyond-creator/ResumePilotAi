@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../../main';

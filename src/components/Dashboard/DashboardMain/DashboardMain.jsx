@@ -10,7 +10,7 @@ import { FaBars, FaEnvelope, FaCheckCircle, FaTimes, FaRedo } from 'react-icons/
 
 import { getFullName, getAds } from '../../../firestore/dbOperations';
 // Animation Library
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { trackEvent, trackUserLogin, trackEngagement } from '../../../utils/ga4';
 import signOutUser from '../../../utils/signOut';

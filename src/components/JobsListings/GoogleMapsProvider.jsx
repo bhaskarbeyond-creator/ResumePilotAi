@@ -35,7 +35,7 @@ const GoogleMapsProvider = ({ children, apiKey }) => {
         }
 
         if (!apiKey) {
-            console.warn('Google Maps API key is not configured - using graceful fallback');
+            console.debug('Google Maps API key is not configured - using graceful fallback');
             setLoadError(null);
             setIsLoaded(false);
             return;

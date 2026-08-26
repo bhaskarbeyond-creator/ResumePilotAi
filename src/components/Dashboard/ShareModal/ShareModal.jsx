@@ -1,6 +1,6 @@
 import React, { useState, Component } from 'react';
 import { IoClose } from 'react-icons/io5';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaTwitter, FaLinkedin, FaFacebook, FaWhatsapp, FaEnvelope, FaLink, FaCheck } from 'react-icons/fa';
 import './ShareModal.scss';
 import { useTranslation, withTranslation } from 'react-i18next';

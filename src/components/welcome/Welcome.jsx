@@ -24,7 +24,7 @@ import { parseSafeDate } from '../../utils/subscriptionUtils';
 // Initialisation Component
 import InitialisationWrapper from '../initailisation/initialisationWrapper/initialisationWrapper';
 /// Animation Library
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import i18n from '../../i18n';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { Link } from 'react-router-dom';

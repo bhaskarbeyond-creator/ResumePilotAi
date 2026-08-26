@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './initialisationWrapper.scss'
-import { AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from 'framer-motion'
 import InstallationSuccess from '../installationSuccess/installationSuccess'
 import InitialisationSetup from '../initialisationSetup/initialisationSetup'
 class InitialisationWrapper extends Component {

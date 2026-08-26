@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { FaBuilding, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaGlobe, FaLinkedin, FaFileAlt, FaSpinner, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 
 const EmployerApplicationForm = ({ onSubmit, _isSubmitting, showSuccess }) => {

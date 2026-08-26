@@ -1,6 +1,6 @@
 import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaTimes, FaBriefcase, FaMapMarkerAlt, FaClock, FaDollarSign, FaUser, FaBuilding, FaGraduationCap, FaCalendarAlt, FaBookmark, FaShare, FaFlag, FaExternalLinkAlt, FaStar, FaStarHalfAlt, FaRegStar, FaLinkedin, FaTwitter, FaFacebook, FaEnvelope, FaPhone, FaExclamationTriangle, FaChevronUp, FaExpand, FaCompress, FaDownload, FaPrint, FaHeart, FaGift, FaThumbsUp, FaThumbsDown, FaComment, FaBolt, FaChartLine, FaShieldAlt, FaGlobe, FaLaptop, FaCoffee, FaMedkit, FaPlane, FaHome, FaCar, FaUtensils, FaDumbbell, FaChild } from 'react-icons/fa';
 

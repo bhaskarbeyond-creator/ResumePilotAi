@@ -44,7 +44,7 @@ import Toasts from '../Toasts/Toats';
 
 // Import animation library for toast animations
 import { evaluateDownloadAccess, parseSafeDate } from '../../utils/subscriptionUtils';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Import user membership functions
 import { getUserMembership } from '../../firestore/paidOperations';

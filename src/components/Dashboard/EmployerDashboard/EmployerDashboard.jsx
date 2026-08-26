@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaSearch, FaFilter, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaEye, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaSortAmountDown, FaBuilding, FaPlus, FaEdit, FaTrash, FaUsers, FaChartBar, FaFileAlt, FaExclamationTriangle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../firestore/dbOperations';

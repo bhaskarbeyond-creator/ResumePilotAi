@@ -44,7 +44,7 @@ export const safeDbOperation = async (operation, requireAuth = true) => {
             String(error?.message || '').includes('quota') ||
             String(error?.message || '').includes('429')
         ) {
-            console.warn('Safe database operation handled non-fatal error:', error?.message || error?.code);
+            console.debug('Safe database operation handled non-fatal error:', error?.message || error?.code);
             return null;
         }
         throw error;
@@ -748,7 +748,7 @@ export async function getCoupons() {
         });
         return coupons;
     } catch (err) {
-        console.warn('⚠️ Could not fetch coupons from Firestore:', err.message);
+        console.debug('Could not fetch coupons from Firestore:', err.message);
         return {};
     }
 }

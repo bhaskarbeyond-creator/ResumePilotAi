@@ -2,7 +2,7 @@ import React from 'react';
 import './DashboardFavourites.scss';
 import { AiFillDelete } from 'react-icons/ai';
 import { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getCoverById, getFavourites, getResumeById } from '../../../firestore/dbOperations';
 import { AiFillStar } from 'react-icons/ai';
 import { FaTrash } from 'react-icons/fa';

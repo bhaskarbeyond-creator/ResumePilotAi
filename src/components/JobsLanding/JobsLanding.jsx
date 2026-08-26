@@ -9,7 +9,7 @@ import LandingJobsProcess from './LandingJobsProcess';
 import LandingJobsFeatured from './LandingJobsFeatured';
 import LandingJobsCategories from './LandingJobsCategories';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import fire from '../../conf/fire';
 
 const JobsLanding = () => {

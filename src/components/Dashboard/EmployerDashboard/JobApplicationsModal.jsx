@@ -1,6 +1,6 @@
 import { sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { sanitizeRichText } from '../../../utils/sanitizeHtml';
 import { withTranslation } from 'react-i18next';
 import './JobApplicationsModal.css';

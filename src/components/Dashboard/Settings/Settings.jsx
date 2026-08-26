@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import './Settings.scss'
 import Input from '../../Form/simple-input/SimpleInput'
 import { addUser, changePassword, getWebsiteDetails, editPersonalInfo } from '../../../firestore/dbOperations'
-import { AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Toasts from '../../Toasts/Toats'
 import { withTranslation } from 'react-i18next';
 import BasicPlanImage from '../../../assets/pen.png'

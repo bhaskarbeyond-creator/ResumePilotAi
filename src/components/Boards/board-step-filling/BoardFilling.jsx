@@ -5,7 +5,7 @@ import Canvas from '../canvas/Canvas';
 import Toasts from '../../Toasts/Toats';
 import { setResumePropertyPerUser, addEmployments, addEducations, IncrementDownloads, addSkills, addLanguages, setJsonPb, getResumeById, addCoverLetter, addOneToNumberOfDocumentsGenerated, addOneToNumberOfDocumentsDownloaded } from '../../../firestore/dbOperations';
 // Animation Library
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 
 import axios from 'axios';

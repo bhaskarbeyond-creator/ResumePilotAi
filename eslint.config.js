@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 const hygieneWarnings = {
-  'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+  'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]|motion', argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
   'no-empty': ['error', { allowEmptyCatch: true }],
   'no-useless-escape': 'warn',
   'no-case-declarations': 'error',
