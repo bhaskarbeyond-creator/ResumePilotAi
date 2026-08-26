@@ -1,5 +1,6 @@
 const { getPool } = require('../database/mysql');
 const { enqueueOutboxEvent } = require('../database/syncManager');
+const { recordTombstone } = require('../database/tombstones');
 
 class MySQLRepository {
     constructor() {
@@ -81,7 +82,7 @@ class MySQLRepository {
                 throw conflict;
             }
 
-            const nextRev = currentRev + 1;
+            const nextRev = Math.max(currentRev + 1, Number(data.revision || 0));
             const values = {
                 id: resumeId,
                 user_id: userId,
@@ -139,9 +140,13 @@ class MySQLRepository {
 
     async deleteResume(userId, resumeId) {
         const pool = this._getPool();
+        const [existing] = await pool.query('SELECT revision FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]).catch(() => [[]]);
+        const rev = existing && existing.length ? Number(existing[0].revision || 1) : 1;
+
         await pool.query('DELETE FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]);
         await pool.query('DELETE FROM public_resumes WHERE id = ? AND owner_uid = ?', [resumeId, userId]);
         await pool.query('DELETE FROM favourites WHERE item_id = ? AND user_id = ?', [resumeId, userId]);
+        await recordTombstone(pool, { entityType: 'resumes', entityId: resumeId, version: rev, sourceEngine: 'mysql' });
 
         // Enqueue delete replication event
         await enqueueOutboxEvent(pool, {
@@ -149,7 +154,7 @@ class MySQLRepository {
             entityId: resumeId,
             operation: 'DELETE',
             payload: { user_id: userId },
-            version: 1,
+            version: rev,
             sourceEngine: 'mysql'
         }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
 
@@ -395,14 +400,18 @@ class MySQLRepository {
 
     async deleteUser(userId) {
         const pool = this._getPool();
+        const [existing] = await pool.query('SELECT revision FROM users WHERE id = ?', [userId]).catch(() => [[]]);
+        const rev = existing && existing.length ? Number(existing[0].revision || 1) : 1;
+
         await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+        await recordTombstone(pool, { entityType: 'users', entityId: userId, version: rev, sourceEngine: 'mysql' });
 
         await enqueueOutboxEvent(pool, {
             entityType: 'users',
             entityId: userId,
             operation: 'DELETE',
             payload: { id: userId },
-            version: 1,
+            version: rev,
             sourceEngine: 'mysql'
         }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
 

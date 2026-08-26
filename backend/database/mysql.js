@@ -92,6 +92,7 @@ async function initializeSchema() {
         const schemaSql = fs.readFileSync(schemaPath, 'utf8');
         const p = getPool();
         await p.query(schemaSql);
+        await ensureExtendedSchema(p);
         console.log('[MySQL] Schema successfully initialized / verified.');
         return { success: true };
     } catch (err) {

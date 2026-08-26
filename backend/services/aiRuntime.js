@@ -468,8 +468,8 @@ async function loadProviderConfiguration(db, environment = process.env) {
         } catch (_) {}
     }
 
-    // 2. Primary: MariaDB system_settings (if not loaded from explicit db or if db is null)
-    if (Object.keys(secrets).length === 0 && Object.keys(publicAi).length === 0) {
+    // 2. Primary: MariaDB system_settings (if db is undefined / omitted)
+    if (db === undefined && Object.keys(secrets).length === 0 && Object.keys(publicAi).length === 0) {
         try {
             const { getRepository } = require('../repositories');
             const repo = getRepository(db);

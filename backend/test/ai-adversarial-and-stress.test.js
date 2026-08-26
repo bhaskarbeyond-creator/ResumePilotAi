@@ -31,13 +31,14 @@ function createMockDb(initial = {}) {
       const data = store.get(path);
       return { exists: data !== undefined, data: () => (data ? JSON.parse(JSON.stringify(data)) : undefined) };
     },
-    async set(value, options = {}) {
+    set(value, options = {}) {
       if (options.merge) {
         const existing = store.get(path) || {};
         store.set(path, { ...existing, ...JSON.parse(JSON.stringify(value)) });
       } else {
         store.set(path, JSON.parse(JSON.stringify(value)));
       }
+      return Promise.resolve();
     }
   });
 
@@ -368,7 +369,7 @@ test('Concurrency: 20 simultaneous AI requests execute safely without state corr
 });
 
 test('Concurrency: Admin settings optimistic concurrency control with revision conflict (409)', async () => {
-  const db = createMockDb();
+  const db = createMockDb({ 'data/public_config': { ai: {}, aiRevision: 0 }, 'settings/ai_providers': {} });
   const adminMock = { firestore: { FieldValue: { serverTimestamp: () => new Date() } } };
 
   // Admin A saves revision 0 -> becomes revision 1
@@ -405,7 +406,7 @@ test('Concurrency: Admin settings optimistic concurrency control with revision c
 });
 
 test('Cache Invalidation: Saving settings immediately flushes configuration cache', async () => {
-  const db = createMockDb();
+  const db = createMockDb({ 'data/public_config': { ai: {}, aiRevision: 0 }, 'settings/ai_providers': {} });
   const adminMock = { firestore: { FieldValue: { serverTimestamp: () => new Date() } } };
 
   // 1. Initial load caches default configuration

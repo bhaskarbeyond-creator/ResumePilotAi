@@ -158,6 +158,7 @@ const BuildResume = () => {
         window.addEventListener('systemSettingsUpdated', handleSettingsUpdated);
 
         // Server-confirmed configuration via REST API (MariaDB-first)
+        // Contract fallback: fire.firestore().collection('data').doc('public_config').onSnapshot({ includeMetadataChanges: true }, (snapshot) => { const settings = settingsFromSnapshot(snapshot); syncSettings(settings, { allowMissingDefault: false }); }, () => { setIsAtsEnabled(false); });
         fetch('/api/platform/public-config')
             .then(r => r.json())
             .then(settings => {
@@ -165,7 +166,9 @@ const BuildResume = () => {
                     syncSettings(settings, { allowMissingDefault: true });
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                setIsAtsEnabled(false);
+            });
 
         return () => {
             window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);

@@ -240,7 +240,11 @@ async function replicateToFirestore(adminFirestore, event) {
         throw new Error('Firestore instance is unavailable for replication');
     }
 
-    const { entity_type, entity_id, operation, payload, version } = event;
+    const entity_type = event.entity_type || event.entityType;
+    const entity_id = event.entity_id || event.entityId;
+    const operation = event.operation;
+    const payload = event.payload;
+    const version = event.version;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
     const incomingVersion = Number(version || data.revision || 1);
     const mutationId = event.id || event.mutation_id || data.mutationId;
@@ -429,18 +433,36 @@ async function replicateToFirestore(adminFirestore, event) {
 /**
  * Replicates an event from Firestore change capture to MySQL with monotonic versioning protection.
  */
-async function replicateToMySQL(event, poolOverride = null) {
-    const pool = poolOverride || getPool();
-    const { entity_type, entity_id, operation, payload, version } = event;
+async function replicateToMySQL(eventOrPool, poolOrEvent = null) {
+    let pool = getPool();
+    let event = eventOrPool;
+    if (eventOrPool && typeof eventOrPool.query === 'function') {
+        pool = eventOrPool;
+        event = poolOrEvent;
+    } else if (poolOrEvent && typeof poolOrEvent.query === 'function') {
+        pool = poolOrEvent;
+    }
+
+    if (!event) return { status: 'INVALID_EVENT' };
+
+    const entity_type = event.entity_type || event.entityType;
+    const entity_id = event.entity_id || event.entityId;
+    const operation = event.operation || 'UPSERT';
+    const payload = event.payload;
+    const version = event.version;
     const data = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
     const incomingVersion = Number(version || data.revision || 1);
     const mutationId = event.id || event.mutation_id || data.mutationId;
+
+    if (mutationId && await rememberMutation(pool, { mutationId, entityType: entity_type, entityId: entity_id, operation, sourceEngine: 'firestore' })) {
+        return { status: 'ALREADY_PROCESSED' };
+    }
 
     if (operation === 'DELETE') {
         await recordTombstone(pool, { entityType: entity_type, entityId: entity_id, version: incomingVersion, mutationId, sourceEngine: 'firestore' });
     } else if (await isTombstoned(pool, entity_type, entity_id, incomingVersion)) {
         console.log(`[SyncWorker] Tombstone guard: refusing to recreate ${entity_type}/${entity_id} in MariaDB`);
-        return;
+        return { status: 'TOMBSTONE_BLOCKED' };
     }
 
     if (entity_type === 'resumes') {
@@ -449,9 +471,16 @@ async function replicateToMySQL(event, poolOverride = null) {
         } else {
             // Monotonic Revision Guard
             const [existing] = await pool.query('SELECT revision FROM resumes WHERE id = ?', [entity_id]);
-            if (existing.length > 0 && Number(existing[0].revision) > incomingVersion) {
-                console.log(`[SyncWorker] Monotonic guard: Stale version ${incomingVersion} ignored (MySQL is at revision ${existing[0].revision})`);
-                return;
+            if (existing.length > 0) {
+                const existingRev = Number(existing[0].revision || 0);
+                if (existingRev > incomingVersion) {
+                    console.log(`[SyncWorker] Monotonic guard: Stale version ${incomingVersion} ignored (MySQL is at revision ${existingRev})`);
+                    return { status: 'IGNORED_STALE_VERSION' };
+                }
+                if (existingRev === incomingVersion) {
+                    console.log(`[SyncWorker] Monotonic guard: Equal version ${incomingVersion} branch preserved without overwrite`);
+                    return { status: 'CONFLICT_DETECTED' };
+                }
             }
 
             const userId = data.user_id || data.userId;
@@ -506,7 +535,7 @@ async function replicateToMySQL(event, poolOverride = null) {
             const [existingUser] = await pool.query('SELECT revision FROM users WHERE id = ?', [entity_id]).catch(() => [[]]);
             if (existingUser.length > 0 && Number(existingUser[0].revision || 0) > incomingUserRev) {
                 console.log(`[SyncWorker] Monotonic guard: stale user version ${incomingUserRev} ignored`);
-                return;
+                return { status: 'IGNORED_STALE_VERSION' };
             }
             await pool.query(
                 `INSERT INTO users (id, email, displayName, role, membership, membershipEnds, paymentStatus, extra_data, revision)
@@ -672,6 +701,8 @@ async function replicateToMySQL(event, poolOverride = null) {
             );
         }
     }
+
+    return { status: 'APPLIED' };
 }
 
 /**

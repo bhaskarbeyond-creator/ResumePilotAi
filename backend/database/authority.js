@@ -83,7 +83,7 @@ function engineAlias(name) {
 
 function getConfiguredPrimary() {
     if (configuredPrimary) return configuredPrimary;
-    configuredPrimary = engineAlias(getActiveEngine());
+    configuredPrimary = engineAlias(engineManager().getActiveEngine());
     if (!operationalWriteEngine) operationalWriteEngine = configuredPrimary;
     return configuredPrimary;
 }

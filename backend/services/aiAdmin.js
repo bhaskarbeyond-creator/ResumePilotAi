@@ -105,7 +105,7 @@ async function loadAiAdminSettings(db, environment = process.env) {
   }
 
   // 2. Primary: MariaDB system_settings (if not loaded from explicit db)
-  if (Object.keys(stored).length === 0 && Object.keys(secrets).length === 0) {
+  if (db === undefined && Object.keys(stored).length === 0 && Object.keys(secrets).length === 0) {
     try {
       const repo = getRepository(db);
       if (repo && typeof repo.getSetting === 'function') {
@@ -152,7 +152,7 @@ async function loadAiAdminSettings(db, environment = process.env) {
 
 async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, actorUid, requestId }) {
   const safePublic = publicAiSettings(input);
-  const repo = getRepository(db);
+  const repo = db === undefined ? getRepository(db) : null;
   let currentSecrets = {};
   let currentPublic = {};
   let legacyAi = {};
@@ -172,7 +172,7 @@ async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, act
   }
 
   // 2. Primary: MariaDB system_settings (if not loaded from explicit db)
-  if (Object.keys(currentSecrets).length === 0 && Object.keys(currentPublic).length === 0) {
+  if (db === undefined && Object.keys(currentSecrets).length === 0 && Object.keys(currentPublic).length === 0) {
     if (repo && typeof repo.getSetting === 'function') {
       try {
         const [secSetting, pubSetting, legSetting] = await Promise.all([

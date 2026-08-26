@@ -41,8 +41,8 @@ class FirestoreRepository {
             status: 'PENDING',
             attemptCount: 0,
             sourceEngine: 'firestore',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: (this.db?.FieldValue || admin.firestore.FieldValue).serverTimestamp(),
+            updatedAt: (this.db?.FieldValue || admin.firestore.FieldValue).serverTimestamp(),
         };
     }
 

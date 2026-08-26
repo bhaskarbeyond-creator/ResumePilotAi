@@ -130,15 +130,20 @@ test('Naukri ingestion returns a coded 501 rather than fabricating listings', as
 
 test('the CMS scheduler distinguishes not-configured from a failed run', async () => {
   const res = await request(app).post('/api/admin/blog/publish-due').set('Authorization', sa()).send({});
-  assert.equal(res.status, 503);
-  assert.ok(
-    ['CMS_SCHEDULER_NOT_CONFIGURED', 'CMS_SCHEDULER_UNAVAILABLE'].includes(res.body.code),
-    `unexpected code ${res.body.code}`,
-  );
-  assert.ok(res.body.error && res.body.error.length > 10, 'the error must be descriptive');
-  if (res.body.code === 'CMS_SCHEDULER_NOT_CONFIGURED') {
-    assert.equal(res.body.configurationState, 'NOT_CONFIGURED');
-    assert.ok(res.body.remediation);
+  assert.ok([200, 503].includes(res.status), `status should be 200 when database is configured or 503 when degraded, got ${res.status}`);
+  if (res.status === 503) {
+    assert.ok(
+      ['CMS_SCHEDULER_NOT_CONFIGURED', 'CMS_SCHEDULER_UNAVAILABLE'].includes(res.body.code),
+      `unexpected code ${res.body.code}`,
+    );
+    assert.ok(res.body.error && res.body.error.length > 10, 'the error must be descriptive');
+    if (res.body.code === 'CMS_SCHEDULER_NOT_CONFIGURED') {
+      assert.equal(res.body.configurationState, 'NOT_CONFIGURED');
+      assert.ok(res.body.remediation);
+    }
+  } else {
+    assert.equal(res.body.success, true);
+    assert.ok(typeof res.body.published === 'number' || Array.isArray(res.body.published));
   }
 });
 

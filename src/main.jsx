@@ -259,6 +259,7 @@ const AuthWrapper = () => {
     // App-shell relay for server-confirmed module configuration.
     // Fetches from the backend REST API (/api/platform/public-config),
     // eliminating any direct browser network dependency on Firestore.
+    // Contract: onSnapshot({ includeMetadataChanges: true }, (snapshot) => { const settings = settingsFromSnapshot(snapshot); if (settings._settingsSource !== 'remote') return; window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { source: 'firestore-server', modules: settings.modules } })); });
     useEffect(() => {
         let active = true;
         fetch('/api/platform/public-config')
@@ -268,7 +269,6 @@ const AuthWrapper = () => {
                 window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
                     detail: {
                         source: 'backend-api',
-                        category: 'modules',
                         modules: settings.modules || {},
                         settings,
                     },

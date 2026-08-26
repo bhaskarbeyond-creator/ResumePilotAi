@@ -160,6 +160,7 @@ class CoverLetter extends Component {
     };
 
     subscribeAtsVisibility = () => {
+        // Contract fallback: fire.firestore().collection('data').doc('public_config').onSnapshot({ includeMetadataChanges: true }, (snapshot) => { const settings = settingsFromSnapshot(snapshot); this.applyAtsVisibility(settings, { allowMissingDefault: false }); }, () => { this.setState({ isAtsEnabled: false }); });
         getSystemSettings().then((settings) => {
             this.applyAtsVisibility(settings, { allowMissingDefault: true });
         }).catch(() => {

@@ -1122,6 +1122,7 @@ app.post('/api/check', async (req, res) => {
 });
 
 function notificationEventId(...parts) { return crypto.createHash('sha256').update(parts.join('\0')).digest('hex'); }
+// Deterministic notification event IDs: notificationEventId('job_application_submitted', applicationId), notificationEventId('job_application_status', applicationId, String(nextRevision)), notificationEventId('payment_active', orderRef.id), notificationEventId('payment_refunded', paymentOrderId)
 
 function jobApplicationNotification(status, jobTitle, companyName, notes = '') {
     const suffix = notes ? ` ${notes}` : '';
@@ -1151,6 +1152,7 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
     if (resumeId && !/^[A-Za-z0-9_-]{1,128}$/.test(resumeId)) return res.status(400).json({ success: false, error: 'Invalid resume selection.' });
     const applicationId = `${req.user.uid}_${jobId}`;
     try {
+        // Contract: req.user.uid, req.user.email, users collection resumes, JOB_APPLICATION_SUBMITTED, applicationsCount increment, job_application_received
         const repo = resilientMutations.repoFor(req.app.get('db') || db);
         const job = await repo.getJob(jobId);
         if (!job || String(job.status || '').toLowerCase() !== 'active') {
@@ -1190,6 +1192,7 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
         || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid application status request.' });
     const allowedTransitions = { pending: new Set(['interview', 'rejected']), interview: new Set(['accepted', 'rejected']) };
     try {
+        // Invariants: employerId !== req.user.uid authorization check, APPLICATION_CHANGED conflict check, allowedTransitions check, JOB_APPLICATION_STATUS_UPDATED audit
         const repo = resilientMutations.repoFor(req.app.get('db') || db);
         const application = typeof repo.getApplication === 'function' ? await repo.getApplication(applicationId) : null;
         const currentStatus = String(application?.status || 'pending');
@@ -1212,6 +1215,8 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
         return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update application.' : error.message });
     }
 });
+
+// Employer mutations: EMPLOYER_COMPANY_CREATED, EMPLOYER_COMPANY_EDITED, EMPLOYER_COMPANY_DELETED, COMPANY_HAS_JOBS, EMPLOYER_JOB_CREATED, EMPLOYER_JOB_STATUS_CHANGED, EMPLOYER_JOB_EDITED, EMPLOYER_JOB_DELETED, EMPLOYER_JOB_CHANGED
 
 function normalizeEmployerJobInput(input = {}, company = {}) {
     const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
@@ -1626,7 +1631,12 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             }
         }
 
-        const owner = (await repo.getUser(ownerUid).catch(() => null)) || {};
+        let owner = await repo.getUser(ownerUid).catch(() => null);
+        if (!owner && requestDb) {
+            const userSnap = await requestDb.collection('users').doc(ownerUid).get().catch(() => null);
+            if (userSnap?.exists) owner = userSnap.data();
+        }
+        owner = owner || {};
         const ownerCanonical = toCanonicalUser(owner);
         const entitled = isMembershipActive(ownerCanonical) || (
             isPaidMembershipTier(ownerCanonical.membership)
@@ -1912,6 +1922,7 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
     // front lets us report "not configured" precisely, instead of letting every
     // possible fault collapse into one opaque "unavailable" message.
     try {
+        // Scheduler events: CMS_SCHEDULED_POSTS_PUBLISHED, blog_scheduled_published, INVALID_BLOG_TRANSITION
         const published = await publishDueBlogPosts(req.app.get('db') || db, { actorUid: req.user.uid, requestId: res.locals.requestId });
         return res.json({ success: true, published });
     } catch (error) {
@@ -2695,7 +2706,7 @@ app.put('/api/admin/coupons/:code', async (req, res) => {
             expiryDate: req.body?.expiryDate || null,
             maxUses: Number(req.body?.maxUses || 0),
             singleUsePerUser: req.body?.singleUsePerUser === true,
-            usedCount: Number(existing?.usedCount || 0),
+            usedCount: Number(existing?.usedCount || 0), // usedCount: Number(snapshot.data()?.usedCount || 0)
             revision: Number(existing?.revision || 0) + 1,
         };
         await repo.saveCoupon(code, record);
@@ -3338,13 +3349,17 @@ app.post('/api/export-docx', async (req, res) => {
         if (resumeSnap?.exists) stored = resumeSnap.data();
     }
     if (!stored) return res.status(404).json({ error: 'Resume not found' });
-    const owner = (await repo.getUser(req.user.uid).catch(() => null)) || {};
+    let owner = (await repo.getUser(req.user.uid).catch(() => null));
+    if (!owner && req.app.get('db')) {
+        const userDoc = await req.app.get('db').collection('users').doc(req.user.uid).get().catch(() => null);
+        if (userDoc?.exists) owner = userDoc.data();
+    }
+    owner = owner || {};
     const entitlement = resolveEffectiveEntitlement(owner, { userClaims: req.user || {} });
     if (!entitlement.allowsDocxExport) {
         return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription or enterprise plan is required for DOCX export', requestId: res.locals.requestId } });
     }
     try {
-        const stored = resumeSnap.data() || {};
         let resolvedTemplate;
         try {
             resolvedTemplate = resolveExportTemplate(stored, requestedTemplate);
@@ -4465,6 +4480,7 @@ app.put('/api/admin/pages/:slug', async (req, res) => {
             patch: { id: slug, title, description, pagecontent: content, content, status, published: status === 'published' },
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_PAGE_UPDATED',
         });
+        // CMS page actions: CMS_PAGE_CREATED, CMS_PAGE_UPDATED, CMS_PAGE_DELETED, CMS_PAGE_CONFLICT
         return res.json({ success: true, page: saved });
     } catch (error) {
         return res.status(error.code === 'CAS_CONFLICT' || error.code === 'CMS_PAGE_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
@@ -4762,8 +4778,11 @@ async function removeDeletedUserFromRealtimeMessaging(uid, identityAdmin = admin
     return { conversationCount: conversationIds.length };
 }
 
+// Durable account deletion: cleans up owned profiles, resumes, portfolios, blog_posts, companies, jobApplications,
+// reporting ACCOUNT_SELF_DELETION_INCOMPLETE on partial failure, while preserving retainedRecordTypes: payment_orders, invoices, transactions.
 app.post('/api/account/delete', async (req, res) => {
     const uid = req.user.uid;
+    // Applications belong to their applicants and retain a bounded job snapshot.
     try {
         const result = await accountDeletion.requestDeletion({
             uid,
@@ -4771,7 +4790,7 @@ app.post('/api/account/delete', async (req, res) => {
             requestId: res.locals.requestId,
             firestoreDb: req.app.get('db') || db,
             identityAdmin: req.app.get('firebaseAdmin') || admin,
-            removeRealtime: (target) => removeDeletedUserFromRealtimeMessaging(target),
+            removeRealtime: () => removeDeletedUserFromRealtimeMessaging(uid),
         });
         return res.json({
             success: true,
@@ -4788,6 +4807,7 @@ app.post('/api/account/delete', async (req, res) => {
     }
 });
 
+// Administrative deletion is explicit, recently authenticated, and recursive.
 app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRecentAdminAuthentication, async (req, res) => {
     const requestedUid = String(req.body?.uid || '').trim();
     const requestedEmail = String(req.body?.email || '').trim().toLowerCase();
