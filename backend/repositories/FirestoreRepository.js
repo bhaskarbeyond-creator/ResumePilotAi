@@ -491,7 +491,8 @@ class FirestoreRepository {
         const db = this._ensureDb();
         const ref = db.collection('blog').doc(id);
         const revision = Number(data.revision || 1);
-        const serverTs = (this.db?.FieldValue || admin.firestore?.FieldValue)?.serverTimestamp ? (this.db?.FieldValue || admin.firestore?.FieldValue).serverTimestamp() : new Date().toISOString();
+        const fv = (this.db && this.db.FieldValue) || (admin && admin.firestore && admin.firestore.FieldValue);
+        const serverTs = (fv && typeof fv.serverTimestamp === 'function') ? fv.serverTimestamp() : new Date().toISOString();
         const payload = { ...data, revision, updatedAt: serverTs };
         const batch = db.batch();
         batch.set(ref, payload, { merge: true });
@@ -618,7 +619,8 @@ class FirestoreRepository {
     async saveContactMessage(msgId, data) {
         const db = this._ensureDb();
         const ref = db.collection('contact').doc(msgId);
-        const serverTs = (this.db?.FieldValue || admin.firestore?.FieldValue)?.serverTimestamp ? (this.db?.FieldValue || admin.firestore?.FieldValue).serverTimestamp() : new Date().toISOString();
+        const fv = (this.db && this.db.FieldValue) || (admin && admin.firestore && admin.firestore.FieldValue);
+        const serverTs = (fv && typeof fv.serverTimestamp === 'function') ? fv.serverTimestamp() : new Date().toISOString();
         const payload = { ...data, createdAt: serverTs };
         await ref.set(payload, { merge: true });
         return { id: msgId, ...payload };

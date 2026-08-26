@@ -1,4 +1,5 @@
 process.env.NODE_ENV = 'test';
+const { describe, it, before } = require('node:test');
 const assert = require('assert');
 const express = require('express');
 const request = require('supertest');
@@ -293,7 +294,7 @@ describe('Firestore Quota Exhaustion & Standby Failure Resilience', () => {
                 throw err;
             }
         });
-        offlineAppResumes = timeoutApp.use('/api/resumes', resumesRouter);
+        const offlineAppResumes = timeoutApp.use('/api/resumes', resumesRouter);
 
         const listRes = await request(timeoutApp).get('/api/resumes').expect(200);
         assert.strictEqual(listRes.body.success, true);

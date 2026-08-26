@@ -44,6 +44,7 @@ const { cmsPagesRouter } = require('./routes/cmsPages');
 const { notificationsDataRouter } = require('./routes/notificationsData');
 const { usersDataRouter } = require('./routes/usersData');
 const { databaseAdminRouter } = require('./routes/databaseAdmin');
+const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');

@@ -155,13 +155,13 @@ function DashboardSettings(props) {
                 if (deleteAccountModalOpen && !isSubmitting) setDeleteAccountModalOpen(false);
                 if (totpSetupModalOpen && !isSubmitting) setTotpSetupModalOpen(false);
                 if (totpDisableModalOpen && !isSubmitting) setTotpDisableModalOpen(false);
-                if (showImageCropModal) setShowImageCropModal(false);
-                if (showSubscriptionModal) setShowSubscriptionModal(false);
+                if (cropModalSrc) setCropModalSrc(null);
+                if (isSubscriptionModalOpen) setIsSubscriptionModalOpen(false);
             }
         };
         window.addEventListener('keydown', handleGlobalEscape);
         return () => window.removeEventListener('keydown', handleGlobalEscape);
-    }, [deleteAccountModalOpen, totpSetupModalOpen, totpDisableModalOpen, showImageCropModal, showSubscriptionModal, isSubmitting]);
+    }, [deleteAccountModalOpen, totpSetupModalOpen, totpDisableModalOpen, cropModalSrc, isSubscriptionModalOpen, isSubmitting]);
 
     // Data Normalizers for legacy Firestore structures
     const normalizeSkills = (arr) => {
