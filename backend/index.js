@@ -276,7 +276,7 @@ app.use('/api/auth', authLimiter);
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
-    '/healthz', '/readyz', '/health', '/service-availability', '/platform/version',
+    '/healthz', '/readyz', '/health', '/service-availability', '/platform/version', '/platform/public-config',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange',
