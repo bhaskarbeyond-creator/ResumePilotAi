@@ -39,11 +39,27 @@ router.get('/audit-logs', async (req, res) => {
 
     return res.json(result);
   } catch (error) {
+    const isQuotaOrUnavailable = String(error?.message || '').includes('RESOURCE_EXHAUSTED') ||
+                                 String(error?.message || '').includes('Quota exceeded') ||
+                                 String(error?.message || '').includes('UNAVAILABLE') ||
+                                 error?.code === 8 || error?.code === 14 || error?.code === 'resource-exhausted';
+    if (isQuotaOrUnavailable) {
+      console.warn('[AdminAuditRoute] Standby Firestore quota limited, returning degraded state');
+      return res.json({
+        logs: [],
+        count: 0,
+        hasMore: false,
+        degraded: true,
+        quotaLimited: true,
+        reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
+        message: 'Standby audit event store read limit reached. Real-time audit recording is active in the outbox.',
+      });
+    }
     console.error('[AdminAuditRoute] Error fetching audit logs:', error);
     return res.status(error.status || 500).json({
       error: {
         code: error.code || 'AUDIT_QUERY_FAILED',
-        message: error.message || 'Failed to query admin audit logs',
+        message: 'Failed to query admin audit logs',
         requestId: res.locals?.requestId,
       },
     });
@@ -85,6 +101,23 @@ router.get('/audit-logs/stats', async (req, res) => {
       topActors: Object.entries(actorCounts).map(([actor, count]) => ({ actor, count })).slice(0, 10),
     });
   } catch (error) {
+    const isQuotaOrUnavailable = String(error?.message || '').includes('RESOURCE_EXHAUSTED') ||
+                                 String(error?.message || '').includes('Quota exceeded') ||
+                                 String(error?.message || '').includes('UNAVAILABLE') ||
+                                 error?.code === 8 || error?.code === 14 || error?.code === 'resource-exhausted';
+    if (isQuotaOrUnavailable) {
+      console.warn('[AdminAuditRoute] Standby Firestore quota limited for stats, returning degraded aggregate');
+      return res.json({
+        sampleSize: 0,
+        highSeverityCount: 0,
+        failureCount: 0,
+        successRate: null,
+        categoryCounts: {},
+        topActors: [],
+        degraded: true,
+        quotaLimited: true,
+      });
+    }
     console.error('[AdminAuditRoute] Error computing stats:', error);
     return res.status(500).json({ error: { code: 'STATS_ERROR', message: 'Failed to compute audit statistics', requestId: res.locals?.requestId } });
   }
@@ -110,7 +143,13 @@ router.get('/audit-logs/:id', async (req, res) => {
       createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
     });
   } catch (error) {
-    return res.status(500).json({ error: { code: 'QUERY_FAILED', message: error.message, requestId: res.locals?.requestId } });
+    const isQuotaOrUnavailable = String(error?.message || '').includes('RESOURCE_EXHAUSTED') ||
+                                 String(error?.message || '').includes('Quota exceeded') ||
+                                 error?.code === 8 || error?.code === 'resource-exhausted';
+    if (isQuotaOrUnavailable) {
+      return res.status(503).json({ error: { code: 'STANDBY_STORE_QUOTA_LIMITED', message: 'Audit event lookup is temporarily paused due to standby store daily quota.', requestId: res.locals?.requestId } });
+    }
+    return res.status(500).json({ error: { code: 'QUERY_FAILED', message: 'Failed to retrieve audit record', requestId: res.locals?.requestId } });
   }
 });
 

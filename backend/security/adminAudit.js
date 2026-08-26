@@ -266,7 +266,28 @@ async function queryAdminAuditLogs(db, options = {}) {
     }
   }
 
-  const snapshot = await query.get();
+  let snapshot;
+  try {
+    snapshot = await query.get();
+  } catch (err) {
+    const isQuotaOrUnavailable = String(err?.message || '').includes('RESOURCE_EXHAUSTED') ||
+                                 String(err?.message || '').includes('Quota exceeded') ||
+                                 String(err?.message || '').includes('UNAVAILABLE') ||
+                                 err?.code === 8 || err?.code === 14 || err?.code === 'resource-exhausted';
+    if (isQuotaOrUnavailable) {
+      return {
+        logs: [],
+        count: 0,
+        hasMore: false,
+        degraded: true,
+        quotaLimited: true,
+        reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
+        message: 'Standby audit event store read limit reached. Real-time audit recording is active in the outbox.',
+      };
+    }
+    throw err;
+  }
+
   const logs = [];
   snapshot.forEach(doc => {
     const data = doc.data() || {};

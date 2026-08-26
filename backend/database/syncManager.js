@@ -1008,7 +1008,9 @@ function startBackgroundSyncWorker(adminFirestore, pollIntervalMs = 3000) {
             // Drain the Firestore reverse-outbox (Firestore → MySQL standby)
             // with the same heartbeat cadence as the MySQL → Firestore queue.
             const reverse = await processFirestoreOutbox(adminFirestore, 25).catch(err => {
-                console.warn('[SyncWorker] Reverse outbox drain failed:', err.message);
+                if (!String(err?.message || '').includes('RESOURCE_EXHAUSTED') && !String(err?.message || '').includes('Quota exceeded')) {
+                    console.warn('[SyncWorker] Reverse outbox drain failed:', err.message);
+                }
                 return { processed: 0, failed: 0, deadLettered: 0 };
             });
 

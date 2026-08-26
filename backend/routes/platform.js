@@ -1107,7 +1107,21 @@ router.get('/security-events', async (req, res) => {
     });
     return res.json({ events, count: events.length });
   } catch (error) {
-    return res.status(500).json({ error: { code: 'SECURITY_EVENTS_UNAVAILABLE', message: error.message } });
+    const isQuotaOrUnavailable = String(error?.message || '').includes('RESOURCE_EXHAUSTED') ||
+                                 String(error?.message || '').includes('Quota exceeded') ||
+                                 String(error?.message || '').includes('UNAVAILABLE') ||
+                                 error?.code === 8 || error?.code === 14 || error?.code === 'resource-exhausted';
+    if (isQuotaOrUnavailable) {
+      return res.json({
+        events: [],
+        count: 0,
+        degraded: true,
+        quotaLimited: true,
+        reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
+        message: 'Security events store is temporarily quota-limited. Real-time security enforcement is active.',
+      });
+    }
+    return res.status(500).json({ error: { code: 'SECURITY_EVENTS_UNAVAILABLE', message: 'Failed to retrieve security events' } });
   }
 });
 
