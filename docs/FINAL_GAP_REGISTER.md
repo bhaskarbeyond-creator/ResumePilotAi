@@ -1,8 +1,8 @@
 # ResumePilot AI — Final Authoritative Gap Register
 
-**Release Commit SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
+**Release Commit SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `d61fa2cec7dd845329ce54b08c3b939f4c1283b1`  
+**Live Deployed SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
 **Review Status:** All Blocking Gaps Remediated & Closed (P0 = 0, P1 = 0, P2 = 0, P3 = 0)  
 **Auditor:** Principal Cloud Architect & Release Owner
 

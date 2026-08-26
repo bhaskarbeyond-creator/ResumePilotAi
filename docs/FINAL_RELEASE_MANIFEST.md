@@ -1,9 +1,9 @@
 # ResumePilot AI — Final Release Manifest
 
 **Release Version:** `2.0.0-uat.final`  
-**Release Commit SHA:** `c50ed78f6e24904a97a1109a343e434aedb6988d`  
+**Release Commit SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
 **Release Tag:** `uat-release-2026-08-26-final`  
-**Live Deployed SHA:** `c50ed78f6e24904a97a1109a343e434aedb6988d`  
+**Live Deployed SHA:** `5c0546d6ab472b171d34dc12f361f42e2e070632`  
 **Release Date:** August 26, 2026  
 **Target Environment:** Hostinger Cloud VPS (`https://airesume.projectdemo.guru`)
 
@@ -30,4 +30,4 @@
 - **Real DOM Browser Controls Exercised**: 1,716 controls (100% real Playwright execution)
 - **Negative Control Mutation Proofs**: 8 / 8 Proven
 - **Known P0 / P1 / P2 Defect Count**: 0
-- **Live Health Status**: `https://airesume.projectdemo.guru/api/healthz` -> `HTTP 200 ok` (`commitSha: "c50ed78f6e24904a97a1109a343e434aedb6988d"`)
+- **Live Health Status**: `https://airesume.projectdemo.guru/api/healthz` -> `HTTP 200 ok` (`commitSha: "5c0546d6ab472b171d34dc12f361f42e2e070632"`)
