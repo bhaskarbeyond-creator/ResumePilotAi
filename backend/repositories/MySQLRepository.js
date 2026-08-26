@@ -342,6 +342,17 @@ class MySQLRepository {
             });
             const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
             const nextRev = Number(userData.revision || currentRev + 1);
+            const knownUserCols = new Set([
+                'id', 'email', 'firstname', 'lastname', 'displayName', 'photoUrl', 'avatarUrl',
+                'phone', 'jobTitle', 'bio', 'city', 'country', 'website', 'membership',
+                'membershipEnds', 'paymentStatus', 'lastPaymentGateway', 'lastPaymentOrderId',
+                'role', 'suspended', 'revision', 'extra_data'
+            ]);
+            const extraData = { ...(userData.extra_data || {}) };
+            for (const [k, v] of Object.entries(userData)) {
+                if (!knownUserCols.has(k) && v !== undefined) extraData[k] = v;
+            }
+
             const values = {
                 id: userId,
                 email: userData.email || '',
@@ -372,7 +383,7 @@ class MySQLRepository {
                 role: userData.role || 'USER',
                 suspended: userData.suspended ? 1 : 0,
                 revision: nextRev,
-                extra_data: JSON.stringify(userData.extra_data || {}),
+                extra_data: JSON.stringify(extraData),
             };
 
             const keys = Object.keys(values);
@@ -1410,7 +1421,15 @@ class MySQLRepository {
             applicantId: r.applicant_id,
             applicantName: r.applicant_name,
             applicantEmail: r.applicant_email,
+            applicantPhone: r.applicant_phone,
+            resumeId: r.resume_id,
+            resumeUrl: r.resume_url,
+            coverLetter: r.cover_letter,
             status: r.status,
+            rating: Number(r.rating || 0),
+            notes: r.notes || '',
+            createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
+            updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : null,
             revision: Number(r.revision || extra.revision || 1),
         };
     }
