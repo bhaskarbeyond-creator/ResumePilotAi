@@ -542,7 +542,10 @@ function EnterpriseConsoleInner() {
       <main className="enterprise-empty-state" role="main">
         <h1>Enterprise Unavailable</h1>
         <p>Enterprise features are disabled or unavailable in this environment.</p>
-        <Link to="/" className="enterprise-button enterprise-button-primary">Return Home</Link>
+        <div className="enterprise-inline-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
+          <Link to="/dashboard" className="enterprise-button enterprise-button-primary">Return to Dashboard</Link>
+          <Link to="/" className="enterprise-button enterprise-button-secondary">Return Home</Link>
+        </div>
       </main>
     );
   }
@@ -589,7 +592,7 @@ function EnterpriseConsoleInner() {
           <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
             Retry Connection
           </button>
-          <Link to="/" className="enterprise-button enterprise-button-secondary">Return Home</Link>
+          <Link to="/dashboard" className="enterprise-button enterprise-button-secondary">Return to Dashboard</Link>
         </div>
       </main>
     );

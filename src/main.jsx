@@ -394,8 +394,8 @@ const AuthWrapper = () => {
                     <RouteFocus />
                     <Suspense fallback={<Spinner />}>
                         <Routes>
-                            <Route path="/" element={<Welcome key={user?.uid || 'guest'} />} />
-                            <Route path="/login" element={<Welcome key={user?.uid || 'guest'} />} />
+                            <Route path="/" element={<Welcome key={user?.uid || 'guest'} user={user} />} />
+                            <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Welcome key="guest" user={null} />} />
                             <Route path="/coverletter" element={<CoverLetter key={user?.uid || 'guest'} />} />
                             <Route path="/coverletter/*" element={<CoverLetter key={user?.uid || 'guest'} />} />
                             <Route path="/cover-letter" element={<CoverLetter key={user?.uid || 'guest'} />} />

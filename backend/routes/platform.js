@@ -242,6 +242,23 @@ router.get('/public-config', async (req, res) => {
       review: true,
       contact: true,
       subscriptions: true,
+      enableGoogleAuthModule: true,
+      enableGoogle: true,
+      enableFacebookAuthModule: true,
+      enableFacebook: true,
+    },
+    google: {
+      enableGoogleLogin: true,
+    },
+    socialAuth: {
+      enableGoogleLogin: true,
+      enableFacebookLogin: true,
+      enableLinkedinLogin: false,
+      enableGithubLogin: false,
+    },
+    firebase: {
+      enableGoogleAuth: true,
+      enableFacebookAuth: true,
     },
     subscriptions: {
       stripeEnabled: false,

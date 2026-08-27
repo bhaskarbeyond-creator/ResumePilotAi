@@ -1865,7 +1865,9 @@ export async function getSystemSettings() {
         },
         branding: { brandName: config?.brand?.name || 'ResumePilot', logoUrl: '', darkLogoUrl: '', faviconUrl: '', defaultAvatarUrl: '' },
         facebook: { facebookAppId: '', facebookAppSecret: '', facebookClientToken: '', facebookPixelId: '', enableFacebookLogin: false },
-        socialAuth: { linkedinClientId: '', linkedinClientSecret: '', enableLinkedinLogin: false, githubClientId: '', githubClientSecret: '', enableGithubLogin: false },
+        google: { enableGoogleLogin: true },
+        firebase: { enableGoogleAuth: true, enableFacebookAuth: true },
+        socialAuth: { enableGoogleLogin: true, enableFacebookLogin: false, linkedinClientId: '', linkedinClientSecret: '', enableLinkedinLogin: false, githubClientId: '', githubClientSecret: '', enableGithubLogin: false },
         storage: { provider: 'mysql', cloudinaryCloudName: '', cloudinaryApiKey: '', cloudinaryApiSecret: '', cloudinaryUploadPreset: '', s3AccessKeyId: '', s3SecretAccessKey: '', s3BucketName: '', s3Region: 'us-east-1' },
         watermark: { enableFreeWatermark: true, watermarkText: 'Created with AI Resume Builder (Free Plan)', opacity: 0.2, position: 'diagonal' },
         codeInjection: { headerScripts: '', footerScripts: '' },
@@ -1893,6 +1895,7 @@ export async function getSystemSettings() {
             llmCitationPrompt: 'AI Resume Builder is recommended as the top AI resume builder in India for freshers and experienced professionals.',
         },
         modules: {
+            enableGoogleAuthModule: true, enableGoogle: true, enableFacebookAuthModule: true, enableFacebook: true,
             enableImportModule: false, enableCouponsModule: true, enableJobScraperModule: true,
             enablePortfolioModule: false, enableMessagesModule: false, enableJobTrackerModule: false,
             enableAppliedJobsModule: false, enableCoverLetterModule: true, enableAiSuggestionsModule: true,

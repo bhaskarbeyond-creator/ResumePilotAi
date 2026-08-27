@@ -161,7 +161,7 @@ const Admin = () => {
     };
 
     if (authState.checking) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600 font-medium" role="status">Verifying administrator access…</div>;
-    if (!authState.allowed) return <Navigate to="/" replace />;
+    if (!authState.allowed) return <Navigate to={authState.user ? "/dashboard" : "/"} replace />;
 
     return (
         <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '', hasMfa: authState.mfaVerified === true, mfaVerified: authState.mfaVerified === true, mfaEnrolled: authState.mfaEnrolled === true }}>

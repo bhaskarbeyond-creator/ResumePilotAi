@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-08-27T05:01:08.084Z",
+    "generatedAt": "2026-08-27T05:34:30.376Z",
     "scannedDirectories": [
       "backend",
       "src",
@@ -260,12 +260,12 @@
       "file": "backend/database/mysql.js",
       "hits": [
         {
-          "line": 234,
+          "line": 235,
           "kind": "DOCUMENTATION",
           "text": "// OAuth / export-token tables moved out of Firestore into MySQL."
         },
         {
-          "line": 331,
+          "line": 332,
           "kind": "DOCUMENTATION",
           "text": "// authoritative; must function with Firestore completely unavailable."
         }
@@ -2465,132 +2465,132 @@
           "text": "dbProvider = 'Google Cloud Firestore';"
         },
         {
-          "line": 450,
+          "line": 467,
           "kind": "DORMANT_LEGACY",
           "text": "if (!db || !admin?.firestore?.FieldValue) {"
         },
         {
-          "line": 494,
+          "line": 511,
           "kind": "DOCUMENTATION",
           "text": "// 2. If stats are empty and Firestore is available, try fallback"
         },
         {
-          "line": 810,
+          "line": 827,
           "kind": "DOCUMENTATION",
           "text": "// 2. Try Firestore if not found in MySQL"
         },
         {
-          "line": 819,
+          "line": 836,
           "kind": "DORMANT_LEGACY",
           "text": "source = 'FIRESTORE';"
         },
         {
-          "line": 825,
+          "line": 842,
           "kind": "DORMANT_LEGACY",
           "text": "console.warn('[Platform maintenance] Firestore query notice:', fsErr.message);"
         },
         {
-          "line": 881,
+          "line": 898,
           "kind": "DOCUMENTATION",
           "text": "// 2. Update Firestore if available"
         },
         {
-          "line": 882,
+          "line": 899,
           "kind": "DORMANT_LEGACY",
           "text": "if (db && typeof db.collection === 'function' && admin?.firestore?.FieldValue) {"
         },
         {
-          "line": 886,
+          "line": 903,
           "kind": "DORMANT_LEGACY",
           "text": "await maintenanceRef.set({ ...payload, _revision: nextRevision, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});"
         },
         {
-          "line": 892,
+          "line": 909,
           "kind": "DORMANT_LEGACY",
           "text": "console.warn('[Platform maintenance] Firestore write notice:', fsErr.message);"
         },
         {
-          "line": 1188,
+          "line": 1205,
           "kind": "DORMANT_LEGACY",
           "text": "recommendations.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', detail: 'Platform data plane did not acknowledge the health write.', hre"
         },
         {
-          "line": 1197,
+          "line": 1214,
           "kind": "DORMANT_LEGACY",
           "text": "recommendations.push({ id: 'payments', severity: 'MEDIUM', title: `${paymentFailed} failed payment order(s)`, detail: 'Review the payment ledger. This is an agg"
         },
         {
-          "line": 1348,
+          "line": 1365,
           "kind": "DOCUMENTATION",
           "text": "// 2. Try Firestore security_audit_logs if available"
         },
         {
-          "line": 1372,
+          "line": 1389,
           "kind": "DORMANT_LEGACY",
           "text": "console.warn('[Platform security-events] Firestore notice:', error.message);"
         },
         {
-          "line": 1431,
+          "line": 1448,
           "kind": "DORMANT_LEGACY",
           "text": "note: 'In-process sample metrics are combined with durable historical metrics from Firestore.',"
         },
         {
-          "line": 1492,
+          "line": 1509,
           "kind": "DOCUMENTATION",
           "text": "// 2. Try Firestore if not queried from MySQL"
         },
         {
-          "line": 1512,
+          "line": 1529,
           "kind": "DORMANT_LEGACY",
           "text": "console.warn('[Platform payments-health] Firestore query notice:', fsErr.message);"
         },
         {
-          "line": 1570,
+          "line": 1587,
           "kind": "DOCUMENTATION",
           "text": "// 2. Search Firestore users if not found"
         },
         {
-          "line": 1779,
+          "line": 1796,
           "kind": "DORMANT_LEGACY",
           "text": "items.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', href: '/adm/operations', kind: 'health' });"
         },
         {
-          "line": 1923,
+          "line": 1940,
           "kind": "DORMANT_LEGACY",
           "text": "console.warn('[Platform enterprise-queue] Firestore outbox query notice:', err.message);"
         },
         {
-          "line": 2015,
+          "line": 2032,
           "kind": "DOCUMENTATION",
           "text": "// 2. Query Firebase Auth / Firestore if available"
         },
         {
-          "line": 2171,
+          "line": 2188,
           "kind": "DORMANT_LEGACY",
           "text": "safeQuery('tenant-workspaces', () => db ? db.collection('enterprise_workspaces').where('tenantId', '==', tenantId).get() : Promise.reject(new Error('Firestore u"
         },
         {
-          "line": 2172,
+          "line": 2189,
           "kind": "DORMANT_LEGACY",
           "text": "safeQuery('tenant-service-accounts', () => db ? db.collection('enterprise_service_accounts').where('tenantId', '==', tenantId).get() : Promise.reject(new Error("
         },
         {
-          "line": 2173,
+          "line": 2190,
           "kind": "DORMANT_LEGACY",
           "text": "safeQuery('tenant-audit', () => db ? db.collection(`tenants/${tenantId}/audit_events`).orderBy('occurredAt', 'desc').limit(25).get() : Promise.reject(new Error("
         },
         {
-          "line": 2174,
+          "line": 2191,
           "kind": "DORMANT_LEGACY",
           "text": "safeQuery('tenant-usage', () => db ? db.collection(`tenants/${tenantId}/ai_usage_daily`).limit(366).get() : Promise.reject(new Error('Firestore unavailable'))),"
         },
         {
-          "line": 2277,
+          "line": 2294,
           "kind": "DORMANT_LEGACY",
           "text": "if (db && admin?.firestore?.FieldValue) {"
         },
         {
-          "line": 2319,
+          "line": 2336,
           "kind": "DORMANT_LEGACY",
           "text": "if (db && admin?.firestore?.FieldValue) {"
         }
@@ -5480,17 +5480,17 @@
           "text": "import addUser from '../../../firestore/auth'"
         },
         {
-          "line": 101,
+          "line": 104,
           "kind": "UI_LABEL",
           "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
         },
         {
-          "line": 261,
+          "line": 264,
           "kind": "UI_LABEL",
           "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
         },
         {
-          "line": 304,
+          "line": 307,
           "kind": "UI_LABEL",
           "text": "import('../../../firestore/auth').then(({ updateUserOnLogin }) => {"
         }
@@ -5505,17 +5505,17 @@
           "text": "import addUser, { updateUserOnLogin } from '../../../firestore/auth';"
         },
         {
-          "line": 83,
+          "line": 86,
           "kind": "UI_LABEL",
           "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
         },
         {
-          "line": 124,
+          "line": 127,
           "kind": "UI_LABEL",
           "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
         },
         {
-          "line": 320,
+          "line": 323,
           "kind": "UI_LABEL",
           "text": "const { getSystemSettings } = await import('../../../firestore/dbOperations');"
         }
@@ -6370,22 +6370,22 @@
           "text": "// Realtime chat delivery is read through the backend API (never Firestore)."
         },
         {
-          "line": 1541,
+          "line": 1549,
           "kind": "DOCUMENTATION",
           "text": "// Firebase Storage is not part of the zero-Firestore data plane."
         },
         {
-          "line": 1638,
+          "line": 1646,
           "kind": "DOCUMENTATION",
           "text": "// to Firestore (which no longer exists on this path)."
         },
         {
-          "line": 1906,
+          "line": 1917,
           "kind": "DOCUMENTATION",
           "text": "// endpoints; the Firestore data plane is never consulted."
         },
         {
-          "line": 2251,
+          "line": 2262,
           "kind": "DOCUMENTATION",
           "text": "// the legacy Firestore realtime listener no longer exists on this path."
         }

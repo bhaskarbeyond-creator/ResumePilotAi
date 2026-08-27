@@ -33,7 +33,10 @@ class Login extends Component {
             if (raw) cachedSettings = JSON.parse(raw);
         } catch (_e) {}
 
-        const { enableGoogle, enableFacebook, enableLinkedIn, enableGitHub } = resolveOAuthSettings(cachedSettings);
+        const resolved = resolveOAuthSettings(cachedSettings);
+        const enableGoogle = cachedSettings ? resolved.enableGoogle : true;
+        const enableFacebook = cachedSettings ? resolved.enableFacebook : true;
+        const { enableLinkedIn, enableGitHub } = resolved;
 
         let savedEmail = '';
         try {

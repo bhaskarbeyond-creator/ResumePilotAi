@@ -146,7 +146,7 @@ class Welcome extends Component {
             fullFields: 0,
             isMobileTogglerShowed: true,
             isMenuShowed: false,
-            isAuthShowed: typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.pathname === '/login/'),
+            isAuthShowed: !this.props.user && !fire.auth().currentUser && typeof window !== 'undefined' && (window.location.pathname === '/login' || window.location.pathname === '/login/'),
             language: 'en',
             stepIndex: 0,
             currentStep: 'Introduction',
@@ -284,7 +284,7 @@ class Welcome extends Component {
             }
             if (previousUid && previousUid !== nextUid) this.resetAccountBuilderState(user);
             // Reset account-derived fields before any asynchronous A → B transition work.
-            this.setState({ user, email: user.email, membership: 'Basic', membershipEnds: null });
+            this.setState({ user, email: user.email, membership: 'Basic', membershipEnds: null, isAuthShowed: false });
             try { localStorage.setItem('user', user.uid); } catch { /* compatibility storage */ }
             const suspended = await checkIfSuspended(user.uid);
             if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== user.uid) return;
@@ -496,7 +496,7 @@ class Welcome extends Component {
             this.setState({
                 currentStep: 'Introduction',
                 stepIndex: 0,
-                isAuthShowed: pathname === '/login',
+                isAuthShowed: !this.props.user && !this.state.user && !fire.auth().currentUser && pathname === '/login',
             });
             return;
         }
