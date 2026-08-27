@@ -1,6 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
-const { requireAuth } = require('../security/auth');
+const { requireAuth, permissionsFor } = require('../security/auth');
 const { replyRepoError } = require('./errorResponder');
 const router = express.Router();
 
@@ -53,12 +53,33 @@ router.post('/profile', requireAuth, express.json({ limit: '2mb' }), async (req,
     }
 });
 
-// GET /api/users-data/:id - Get public or specific user info
-router.get('/:id', async (req, res) => {
+// GET /api/users-data/:id - Get a user profile.
+// Privacy: the FULL record (email, payment status, revision, profile blob) is
+// only returned to the account owner or to an operator holding users.read
+// (Admin+). Every other authenticated caller receives a minimal public
+// projection (display name + avatar) so a uid can never be used to enumerate
+// another account's PII.
+router.get('/:id', requireAuth, async (req, res) => {
     try {
-        const user = await req.repository.getUser(req.params.id);
+        const targetId = String(req.params.id || '');
+        const user = await req.repository.getUser(targetId);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-        return res.json({ success: true, user });
+
+        const isOwner = req.user?.uid === targetId;
+        const isOperator = permissionsFor(req.user).has('users.read') || permissionsFor(req.user).has('*');
+        if (isOwner || isOperator) {
+            return res.json({ success: true, user });
+        }
+
+        const displayName = String(user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User');
+        return res.json({
+            success: true,
+            user: {
+                id: user.id,
+                displayName,
+                photoURL: user.photoURL || user.photoUrl || null,
+            },
+        });
     } catch (err) {
         return replyRepoError(res, err, 'Failed to fetch user');
     }

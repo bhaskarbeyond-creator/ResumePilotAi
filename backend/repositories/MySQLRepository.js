@@ -89,10 +89,28 @@ class MySQLRepository {
 
     async saveResume(userId, resumeId, data, { expectedRevision = null } = {}) {
         return this._withTransaction(async (connection) => {
-            const [existingRows] = await connection.query(
-                'SELECT revision FROM resumes WHERE id = ? AND user_id = ? FOR UPDATE',
-                [resumeId, userId]
+            // Ownership-collision guard (IDOR): the resume id is the primary
+            // key, so an unguarded upsert would let a different user overwrite
+            // (and silently re-own) somebody else's document. Lock the row by
+            // id and refuse the write when it belongs to another owner —
+            // returning the same shape as "not found" so existence is not
+            // disclosed.
+            const [ownerRows] = await connection.query(
+                'SELECT user_id FROM resumes WHERE id = ? FOR UPDATE',
+                [resumeId]
             );
+            if (ownerRows.length && ownerRows[0].user_id !== userId) {
+                const denied = new Error('Resume not found');
+                denied.code = 'RESUME_NOT_FOUND';
+                denied.status = 404;
+                throw denied;
+            }
+
+            // The row (if any) is already locked FOR UPDATE by the id lookup
+            // above, so reading its revision here is race-free.
+            const existingRows = ownerRows.length
+                ? (await connection.query('SELECT revision FROM resumes WHERE id = ? AND user_id = ?', [resumeId, userId]))[0]
+                : [];
 
             const currentRev = existingRows.length ? Number(existingRows[0].revision || 0) : 0;
             if (expectedRevision !== null && currentRev !== Number(expectedRevision)) {
@@ -484,34 +502,46 @@ class MySQLRepository {
     }
 
     async savePortfolio(userId, portfolioId, data) {
-        const pool = this._getPool();
-        const values = {
-            id: portfolioId,
-            user_id: userId,
-            title: data.title || 'Untitled Portfolio',
-            theme: data.theme || 'modern',
-            is_published: data.is_published ? 1 : 0,
-            data: JSON.stringify(data.data || data),
-        };
-        const keys = Object.keys(values);
-        const placeholders = keys.map(() => '?').join(', ');
-        const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
+        return this._withTransaction(async (connection) => {
+            // Ownership-collision guard (IDOR): refuse to upsert over a
+            // portfolio owned by a different user (see saveResume).
+            const [ownerRows] = await connection.query(
+                'SELECT user_id FROM portfolios WHERE id = ? FOR UPDATE',
+                [portfolioId]
+            );
+            if (ownerRows.length && ownerRows[0].user_id !== userId) {
+                const denied = new Error('Portfolio not found');
+                denied.code = 'PORTFOLIO_NOT_FOUND';
+                denied.status = 404;
+                throw denied;
+            }
 
-        await pool.query(
-            `INSERT INTO portfolios (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
-            Object.values(values)
-        );
+            const values = {
+                id: portfolioId,
+                user_id: userId,
+                title: data.title || 'Untitled Portfolio',
+                theme: data.theme || 'modern',
+                is_published: data.is_published ? 1 : 0,
+                data: JSON.stringify(data.data || data),
+            };
+            const keys = Object.keys(values);
+            const placeholders = keys.map(() => '?').join(', ');
+            const updateClause = keys.map(k => `${k} = VALUES(${k})`).join(', ');
 
-        await enqueueOutboxEvent(pool, {
-            entityType: 'portfolios',
-            entityId: portfolioId,
-            operation: 'UPSERT',
-            payload: { ...data, id: portfolioId, user_id: userId },
-            version: 1,
-            sourceEngine: 'mysql'
-        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+            await connection.query(
+                `INSERT INTO portfolios (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP`,
+                Object.values(values)
+            );
 
-        return { id: portfolioId, ...data };
+            await enqueueOutboxEvent(connection, {
+                entityType: 'portfolios',
+                entityId: portfolioId,
+                operation: 'UPSERT',
+                payload: { ...data, id: portfolioId, user_id: userId },
+                version: 1,
+                sourceEngine: 'mysql'
+            }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        }).then(() => ({ id: portfolioId, ...data }));
     }
 
     async deletePortfolio(userId, portfolioId) {
@@ -551,26 +581,40 @@ class MySQLRepository {
     }
 
     async saveCover(userId, coverId, data) {
-        const pool = this._getPool();
         const title = data.title || data.jobTitle || 'Untitled Cover Letter';
         const template = data.template || 'Cover1';
         const dataJson = JSON.stringify(data);
 
-        await pool.query(
-            `INSERT INTO covers (id, user_id, title, template, data, updated_at)
-             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-             ON DUPLICATE KEY UPDATE title = VALUES(title), template = VALUES(template), data = VALUES(data), updated_at = CURRENT_TIMESTAMP`,
-            [coverId, userId, title, template, dataJson]
-        );
+        await this._withTransaction(async (connection) => {
+            // Ownership-collision guard (IDOR): refuse to upsert over a cover
+            // letter owned by a different user (see saveResume).
+            const [ownerRows] = await connection.query(
+                'SELECT user_id FROM covers WHERE id = ? FOR UPDATE',
+                [coverId]
+            );
+            if (ownerRows.length && ownerRows[0].user_id !== userId) {
+                const denied = new Error('Cover letter not found');
+                denied.code = 'COVER_NOT_FOUND';
+                denied.status = 404;
+                throw denied;
+            }
 
-        await enqueueOutboxEvent(pool, {
-            entityType: 'covers',
-            entityId: coverId,
-            operation: 'UPSERT',
-            payload: { ...data, id: coverId, user_id: userId },
-            version: 1,
-            sourceEngine: 'mysql'
-        }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+            await connection.query(
+                `INSERT INTO covers (id, user_id, title, template, data, updated_at)
+                 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 ON DUPLICATE KEY UPDATE title = VALUES(title), template = VALUES(template), data = VALUES(data), updated_at = CURRENT_TIMESTAMP`,
+                [coverId, userId, title, template, dataJson]
+            );
+
+            await enqueueOutboxEvent(connection, {
+                entityType: 'covers',
+                entityId: coverId,
+                operation: 'UPSERT',
+                payload: { ...data, id: coverId, user_id: userId },
+                version: 1,
+                sourceEngine: 'mysql'
+            }).catch(e => console.warn('[MySQLRepository] Outbox enqueue warning:', e.message));
+        });
 
         return { id: coverId, ...data };
     }

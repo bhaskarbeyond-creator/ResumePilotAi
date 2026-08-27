@@ -1,5 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { replyRepoError } = require('./errorResponder');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -37,8 +38,8 @@ router.post('/:id', express.json({ limit: '5mb' }), async (req, res) => {
     try {
         const saved = await req.repository.saveCover(req.user.uid, req.params.id, req.body);
         return res.json({ success: true, cover: saved });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to save cover letter' });
+    } catch (err) {
+        return replyRepoError(res, err, 'Failed to save cover letter');
     }
 });
 
@@ -47,8 +48,8 @@ router.delete('/:id', async (req, res) => {
     try {
         await req.repository.deleteCover(req.user.uid, req.params.id);
         return res.json({ success: true });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to delete cover letter' });
+    } catch (err) {
+        return replyRepoError(res, err, 'Failed to delete cover letter');
     }
 });
 
