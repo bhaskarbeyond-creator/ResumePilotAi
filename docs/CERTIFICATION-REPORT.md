@@ -233,8 +233,9 @@ the certification suites). Individual evidence files under `.arena/evidence/`.
   `cca6c87` (browser E2E), `fb49707` (performance), `aed5aac` (failure
   injection), `6da72d0` (test retargeting), `cc1c4be` (reconciliation runner),
   `497f3b3`/`a15f4f8`/`c2493c6` (report + census).
-- **Remote head (pushed & verified):** `c2493c6f52f51242cc3999a8214e71c0c11001df`
-  on `arena/01a03e27-resumepilotai`. Local and remote SHAs match exactly.
+- **Remote head (pushed & verified):** `3ea9ad590579b16450fd4ce2eb13e3995c11267a`
+  on `arena/01a03e27-resumepilotai` (this report-finalization commit). Local and
+  remote SHAs match exactly; GitHub connectivity confirmed.
 - CI workflow file: committed at `docs/ci-templates/certification-ci.yml`; the
   direct `.github/workflows/ci.yml` commit was dropped because the automation
   credential lacks the `workflows` permission (see §18).
