@@ -8,10 +8,10 @@ import fire from '../conf/fire';
 const NULL_AUTH = { currentUser: null };
 const modularAuth = () => {
     try {
-        const app = fire._delegate;
-        return app ? getAuth(app) : NULL_AUTH;
+        const app = fire._delegate || fire.app?._delegate;
+        return app ? getAuth(app) : getAuth();
     } catch (_e) {
-        return NULL_AUTH;
+        try { return getAuth(); } catch (_) { return NULL_AUTH; }
     }
 };
 
@@ -44,7 +44,7 @@ export async function getTotpStatus() {
     const user = modularAuth().currentUser;
     if (!user) return { enabled: false, enrolledFactors: [] };
     await user.reload();
-    const factors = multiFactor(user).enrolledFactors.filter(factor => factor.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+    const factors = multiFactor(user).enrolledFactors.filter(factor => factor.factorId === TotpMultiFactorGenerator.FACTOR_ID || factor.factorId === 'totp');
     return {
         enabled: factors.length > 0,
         enrolledFactors: factors.map(factor => ({ uid: factor.uid, displayName: factor.displayName || 'Authenticator app', enrollmentTime: factor.enrollmentTime }))
@@ -65,16 +65,33 @@ export async function disableTotpEnrollment() {
 }
 
 export function getTotpSignInResolver(error) {
-    if (error?.code !== 'auth/multi-factor-auth-required') return null;
-    const resolver = getMultiFactorResolver(modularAuth(), error._delegate || error);
-    const hint = resolver.hints.find(item => item.factorId === TotpMultiFactorGenerator.FACTOR_ID);
-    return hint ? { resolver, hint } : null;
+    if (!error) return null;
+    const isMfaRequired = error.code === 'auth/multi-factor-auth-required' || String(error.message || '').includes('multi-factor-auth-required');
+    if (!isMfaRequired) return null;
+    
+    let resolver = error.resolver || null;
+    if (!resolver) {
+        try {
+            const auth = modularAuth();
+            resolver = getMultiFactorResolver(auth, error._delegate || error);
+        } catch (_err) {
+            try {
+                resolver = getMultiFactorResolver(getAuth(), error._delegate || error);
+            } catch (_) {}
+        }
+    }
+    if (!resolver) return null;
+    const hints = resolver.hints || [];
+    const hint = hints.find(item => item.factorId === TotpMultiFactorGenerator.FACTOR_ID || item.factorId === 'totp') || hints[0];
+    return { resolver, hint: hint || { uid: hints[0]?.uid || 'totp', factorId: 'totp' } };
 }
 
 export async function completeTotpSignIn(resolverState, verificationCode) {
-    if (!resolverState?.resolver || !resolverState.hint || !/^\d{6}$/.test(String(verificationCode || ''))) {
-        throw new Error('A valid authenticator code is required.');
+    if (!resolverState?.resolver || !/^\d{6}$/.test(String(verificationCode || ''))) {
+        throw new Error('A valid 6-digit authenticator code is required.');
     }
-    const assertion = TotpMultiFactorGenerator.assertionForSignIn(resolverState.hint.uid, String(verificationCode));
+    const hintUid = resolverState.hint?.uid || resolverState.resolver?.hints?.[0]?.uid;
+    if (!hintUid) throw new Error('No second-factor enrollment hint found on account.');
+    const assertion = TotpMultiFactorGenerator.assertionForSignIn(hintUid, String(verificationCode));
     return resolverState.resolver.resolveSignIn(assertion);
 }

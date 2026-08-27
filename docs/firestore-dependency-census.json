@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-08-27T06:09:37.065Z",
+    "generatedAt": "2026-08-27T06:33:44.201Z",
     "scannedDirectories": [
       "backend",
       "src",
@@ -5485,12 +5485,12 @@
           "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
         },
         {
-          "line": 264,
+          "line": 267,
           "kind": "UI_LABEL",
           "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
         },
         {
-          "line": 307,
+          "line": 310,
           "kind": "UI_LABEL",
           "text": "import('../../../firestore/auth').then(({ updateUserOnLogin }) => {"
         }

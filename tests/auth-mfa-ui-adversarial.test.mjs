@@ -102,3 +102,60 @@ test('UI-004: Keyboard accessibility and focus ring preservation', async () => {
 
   assert.match(cssSrc, /button:focus-visible/, 'CSS must preserve visible keyboard focus indicator');
 });
+
+test('MFA-LOGIN-001: Password login MFA challenge resolver & verification pipeline', async () => {
+  const mfaSrc = fs.readFileSync('src/services/mfaService.js', 'utf8');
+  const loginSrc = fs.readFileSync('src/components/auth/login/Login.jsx', 'utf8');
+
+  // Verify resolver function extracts resolver properly on auth/multi-factor-auth-required
+  assert.match(mfaSrc, /getTotpSignInResolver/, 'MFA service must provide getTotpSignInResolver');
+  assert.match(mfaSrc, /completeTotpSignIn/, 'MFA service must provide completeTotpSignIn');
+  assert.match(loginSrc, /getTotpSignInResolver\(error\)/, 'Login must intercept multi-factor error into resolver state');
+  assert.match(loginSrc, /completeMfaLogin/, 'Login must execute completeMfaLogin');
+});
+
+test('MFA-LOGIN-002: Invalid TOTP submission displays error and retains challenge form', async () => {
+  const loginSrc = fs.readFileSync('src/components/auth/login/Login.jsx', 'utf8');
+
+  assert.match(loginSrc, /Invalid or expired authenticator code/, 'Login must report clear error on invalid TOTP without unmounting challenge');
+  assert.match(loginSrc, /this\.setState\(\{\s*isSubmitting:\s*false,\s*mfaCode:\s*''\s*\}\)/, 'Login must unlock submitting state and clear invalid input');
+});
+
+test('MFA-LOGIN-003: Cancel challenge cleanly returns to login form', async () => {
+  const loginSrc = fs.readFileSync('src/components/auth/login/Login.jsx', 'utf8');
+
+  assert.match(loginSrc, /mfaResolver:\s*null,\s*mfaCode:\s*'',\s*password:\s*''/, 'Cancel button must clear MFA state and return to login form');
+  assert.match(loginSrc, /← Back to Login/, 'Challenge form must provide clear back navigation');
+});
+
+test('MFA-LOGIN-004: OAuth authentication MFA challenge interception', async () => {
+  const loginSrc = fs.readFileSync('src/components/auth/login/Login.jsx', 'utf8');
+
+  // Verify Google and Facebook OAuth catches also resolve MFA challenge
+  const googleCatch = loginSrc.indexOf('signInWithGoogle');
+  const facebookCatch = loginSrc.indexOf('signInWithFacebook');
+  assert.ok(googleCatch !== -1 && facebookCatch !== -1, 'OAuth methods must exist');
+  assert.match(loginSrc, /signInWithGoogle[\s\S]*?getTotpSignInResolver\(error\)/, 'Google OAuth catch must handle MFA required error');
+  assert.match(loginSrc, /signInWithFacebook[\s\S]*?getTotpSignInResolver\(error\)/, 'Facebook OAuth catch must handle MFA required error');
+});
+
+test('MFA-LOGIN-005: Stale session / expired token rejection safety', async () => {
+  const authGateSrc = fs.readFileSync('backend/security/auth.js', 'utf8');
+
+  assert.match(authGateSrc, /INVALID_AUTH_TOKEN|unauthorized/, 'Auth gate must reject expired tokens fail-closed');
+});
+
+test('MFA-LOGIN-006: Unauthorized MFA disable rejection (fail-closed)', async () => {
+  const usersDataRoute = fs.readFileSync('backend/routes/usersData.js', 'utf8');
+
+  assert.match(usersDataRoute, /router\.post\('\/mfa\/disable',\s*requireAuth/, 'MFA disable endpoint must reject unauthenticated callers');
+});
+
+test('MFA-LOGIN-007: Authorized MFA disable unenrolls factor and synchronizes MariaDB', async () => {
+  const mfaSrc = fs.readFileSync('src/services/mfaService.js', 'utf8');
+  const usersDataRoute = fs.readFileSync('backend/routes/usersData.js', 'utf8');
+
+  assert.match(mfaSrc, /multiFactor\(user\)\.unenroll/, 'Client service must unenroll factor from Firebase Auth');
+  assert.match(usersDataRoute, /mfaEnabled\s*=\s*false|mfaEnabled:\s*false/, 'Backend must update MariaDB to clear mfaEnabled');
+});
+

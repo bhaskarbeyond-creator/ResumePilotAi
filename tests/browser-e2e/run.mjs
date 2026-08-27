@@ -173,12 +173,12 @@ await scenario('4. resume creation with fast step navigation (unmount-flush)', a
   if (!page.url().includes('build-resume')) {
     await page.goto(BASE + '/build-resume/heading', { waitUntil: 'domcontentloaded' });
   }
-  await page.waitForSelector('#firstname', { timeout: 30000 });
-  await page.fill('#firstname', 'Aria');
-  await page.fill('#lastname', 'Sharma');
-  await page.fill('#occupation', 'Senior Software Engineer');
-  await page.fill('#email', USER_A);
-  await page.fill('#phone', '+919876543210');
+  await page.waitForSelector('input[name="firstname"], #firstname', { timeout: 30000 });
+  await page.fill('input[name="firstname"], #firstname', 'Aria');
+  await page.fill('input[name="lastname"], #lastname', 'Sharma');
+  await page.fill('input[name="occupation"], #occupation', 'Senior Software Engineer');
+  await page.fill('input[name="email"], #email', USER_A);
+  await page.fill('input[name="phone"], #phone', '+919876543210');
   // Deliberately navigate immediately (no debounce wait) — the unmount flush
   // must preserve the typed data.
   await page.locator('button:has-text("Next: Summary")').click();
@@ -219,15 +219,15 @@ await scenario('6. autosave persists resume to MySQL', async () => {
 await scenario('7. reload restores the saved resume (persistence)', async () => {
   await page.goto(BASE + `/build-resume/heading`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3500);
-  const fname = await page.locator('#firstname').inputValue().catch(() => '');
-  const occ = await page.locator('#occupation').inputValue().catch(() => '');
+  const fname = await page.locator('input[name="firstname"], #firstname').inputValue().catch(() => '');
+  const occ = await page.locator('input[name="occupation"], #occupation').inputValue().catch(() => '');
   if (fname !== 'Aria') throw new Error('firstname not restored: ' + JSON.stringify(fname));
   if (occ !== 'Senior Software Engineer') throw new Error('occupation not restored: ' + JSON.stringify(occ));
   await page.screenshot({ path: path.join(EVIDENCE, 'screenshots', '07-reload-restored.png') });
 });
 
 await scenario('8. resume edit updates the stored revision', async () => {
-  await page.fill('#city', 'Vijayawada');
+  await page.fill('input[name="city"], #city', 'Vijayawada');
   await page.waitForTimeout(2000); // debounce + save
   const conn = await getConnection();
   const [rows] = await conn.query('SELECT city FROM resumes WHERE id = ?', [resumeId]);

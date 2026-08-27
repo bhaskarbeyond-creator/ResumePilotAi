@@ -201,15 +201,18 @@ class Login extends Component {
         this.setState({ isSubmitting: true });
         try {
             const credential = await completeTotpSignIn(this.state.mfaResolver, this.state.mfaCode);
+            const u = credential.user;
+            await this._postAuth(u.uid, u.displayName, u.email, u.photoURL, 'password');
             this.setState({ mfaResolver: null, mfaCode: '', isSubmitting: false });
-            if (this.props.throwSuccess) this.props.throwSuccess('Two-factor authentication successful.');
+            if (this.props.throwSuccess) this.props.throwSuccess(`Two-factor authentication verified. Welcome back, ${u.displayName || u.email?.split('@')[0]}!`);
             setTimeout(() => {
                 if (this.props.closeModal) this.props.closeModal();
-                this._handleRedirect(credential.user.uid);
-            }, 500);
-        } catch (_error) {
+                this._handleRedirect(u.uid);
+            }, 300);
+        } catch (error) {
+            console.error('[MFA Verification Error]:', error);
             this.setState({ isSubmitting: false, mfaCode: '' });
-            if (this.props.throwError) this.props.throwError('Invalid or expired authenticator code. Please try again.');
+            if (this.props.throwError) this.props.throwError('Invalid or expired authenticator code. Please check your authenticator app and try again.');
         }
     }
 
@@ -447,22 +450,29 @@ class Login extends Component {
                         </div>
                     )}
                         {this.state.mfaResolver && (
-                            <form onSubmit={this.completeMfaLogin} className="w-full flex flex-col gap-3" autoComplete="one-time-code">
-                                <label htmlFor="mfa-code" className="text-sm font-semibold text-slate-700">Authenticator code</label>
-                                <p className="text-xs text-slate-500">Enter the 6-digit code from your authenticator app to finish signing in.</p>
+                            <form onSubmit={this.completeMfaLogin} className="w-full flex flex-col gap-3 py-2" autoComplete="one-time-code">
+                                <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
+                                    <span>Two-Factor Authentication 🛡️</span>
+                                </div>
+                                <label htmlFor="mfa-code" className="text-xs font-semibold text-slate-700">Authenticator Code</label>
+                                <p className="text-xs text-slate-500 leading-relaxed">Enter the 6-digit code from your authenticator app (Google Authenticator, Authy, etc.) to complete sign-in.</p>
                                 <input
                                     id="mfa-code"
+                                    type="text"
                                     inputMode="numeric"
                                     autoFocus
                                     maxLength={6}
+                                    placeholder="123456"
                                     value={this.state.mfaCode}
                                     onChange={(event) => this.setState({ mfaCode: event.target.value.replace(/\D/g, '') })}
-                                    className="w-full p-3 text-center text-xl tracking-[0.4em] border border-slate-300 rounded-xl"
+                                    className="w-full p-3 text-center text-2xl font-mono tracking-[0.4em] border border-slate-300 rounded-xl focus:border-indigo-600 outline-none"
                                 />
-                                <button type="submit" disabled={this.state.isSubmitting || this.state.mfaCode.length !== 6} className="inputSubmit mt-2">
-                                    {this.state.isSubmitting ? 'Verifying…' : 'Verify & Sign In'}
+                                <button type="submit" disabled={this.state.isSubmitting || this.state.mfaCode.length !== 6} className="inputSubmit mt-2 font-bold">
+                                    {this.state.isSubmitting ? 'Verifying…' : 'Verify & Sign In ✓'}
                                 </button>
-                                <button type="button" onClick={() => this.setState({ mfaResolver: null, mfaCode: '', password: '' })} className="text-xs text-slate-500 hover:text-slate-800">Cancel</button>
+                                <button type="button" onClick={() => this.setState({ mfaResolver: null, mfaCode: '', password: '', isSubmitting: false, oauthLoading: null })} className="text-xs text-slate-500 hover:text-slate-800 py-1">
+                                    ← Back to Login
+                                </button>
                             </form>
                         )}
                         {/* Login Form */}
