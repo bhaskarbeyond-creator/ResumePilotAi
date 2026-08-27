@@ -53,6 +53,16 @@ export function buildCertEnv({ port, extra = {}, db: dbEnv = {} } = {}) {
 }
 
 export async function bootServer({ port = 8300, extraEnv = {}, db, timeoutMs = 30_000 } = {}) {
+  // Fail fast if another process already serves this port: silently attaching to
+  // a stale instance (different HMAC secret / schema state) produces confusing
+  // 401s instead of a clean boot.
+  const occupied = await fetch(`http://127.0.0.1:${port}/healthz`, { signal: AbortSignal.timeout(1500) })
+    .then(() => true)
+    .catch(() => false);
+  if (occupied) {
+    throw new Error(`certification port ${port} is already occupied; stop the stale server first`);
+  }
+
   const env = buildCertEnv({ port, extra: extraEnv, db });
   const proc = spawn(process.execPath, [BACKEND_ENTRY], {
     cwd: path.join(ROOT, 'backend'),

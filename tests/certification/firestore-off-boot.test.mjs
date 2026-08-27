@@ -34,8 +34,12 @@ let server;
 let aiRequests = [];
 let aiServer;
 
-function startMockAiGateway() {
-  aiServer = http.createServer((req, res) => {
+let aiPort = AI_PORT;
+
+async function startMockAiGateway() {
+  // Find a free port (another stack may already run a mock on AI_PORT): try to
+  // bind and move up on EADDRINUSE.
+  const makeServer = () => http.createServer((req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
@@ -46,7 +50,17 @@ function startMockAiGateway() {
       }));
     });
   });
-  return new Promise(resolve => aiServer.listen(AI_PORT, '127.0.0.1', resolve));
+  for (;;) {
+    const candidate = makeServer();
+    const bound = await new Promise((resolve) => {
+      candidate.once('error', (err) => resolve(err.code === 'EADDRINUSE' ? 'inuse' : 'error'));
+      candidate.listen(aiPort, '127.0.0.1', () => resolve('ok'));
+    });
+    if (bound === 'ok') { aiServer = candidate; return; }
+    candidate.removeAllListeners();
+    if (bound === 'error') throw new Error(`could not bind mock AI gateway on port ${aiPort}`);
+    aiPort += 1;
+  }
 }
 
 test.before(async () => {
@@ -59,7 +73,7 @@ test.before(async () => {
       // the full AI pipeline (config → provider request → parse → response)
       // without any Google/Firebase dependency.
       OPENAI_API_KEY: 'certification-openai-key',
-      OPENAI_BASE_URL: `http://127.0.0.1:${AI_PORT}/v1`,
+      OPENAI_BASE_URL: `http://127.0.0.1:${aiPort}/v1`,
       OPENAI_MODEL: 'certification-mock-model',
     },
   });
