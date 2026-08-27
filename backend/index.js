@@ -343,6 +343,7 @@ app.use('/api/auth', authLimiter);
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
 const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health', '/health/databases', '/service-availability', '/platform/version', '/platform/public-config',
+    '/enterprise/status',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange', '/auth/preview-login',

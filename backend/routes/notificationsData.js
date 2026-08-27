@@ -1,5 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { requireAuth, requirePermission, requireAdmin } = require('../security/auth');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -56,8 +57,8 @@ router.patch('/:id', async (req, res) => {
     }
 });
 
-// GET /api/notifications-data/contact/list - List contact submissions
-router.get('/contact/list', async (req, res) => {
+// GET /api/notifications-data/contact/list - List contact submissions (Admin / messages.read permission required)
+router.get('/contact/list', requirePermission('messages.read'), async (req, res) => {
     try {
         const messages = await req.repository.getContactMessages();
         return res.json({ success: true, messages });

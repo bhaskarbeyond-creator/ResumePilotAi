@@ -1,5 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { requireAuth, requireAdmin, requirePermission } = require('../security/auth');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -11,7 +12,7 @@ router.use((req, res, next) => {
     }
 });
 
-// GET /api/cms-pages - List custom pages
+// GET /api/cms-pages - List custom pages (Public read)
 router.get('/', async (req, res) => {
     try {
         const pages = await req.repository.getCustomPages({
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/cms-pages/slug/:slug - Page by slug
+// GET /api/cms-pages/slug/:slug - Page by slug (Public read)
 router.get('/slug/:slug', async (req, res) => {
     try {
         const page = await req.repository.getCustomPageBySlug(req.params.slug);
@@ -34,8 +35,8 @@ router.get('/slug/:slug', async (req, res) => {
     }
 });
 
-// POST /api/cms-pages/:id - Save page
-router.post('/:id', async (req, res) => {
+// POST /api/cms-pages/:id - Save page (Admin only)
+router.post('/:id', requirePermission('system.config.write'), async (req, res) => {
     try {
         const saved = await req.repository.saveCustomPage(req.params.id, req.body);
         return res.json({ success: true, page: saved });
@@ -44,8 +45,8 @@ router.post('/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/cms-pages/:id - Delete page
-router.delete('/:id', async (req, res) => {
+// DELETE /api/cms-pages/:id - Delete page (Admin only)
+router.delete('/:id', requirePermission('system.config.write'), async (req, res) => {
     try {
         await req.repository.deleteCustomPage(req.params.id);
         return res.json({ success: true });
@@ -54,7 +55,7 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// GET /api/cms-pages/trusted-by/list - Trusted by
+// GET /api/cms-pages/trusted-by/list - Trusted by (Public read)
 router.get('/trusted-by/list', async (req, res) => {
     try {
         const list = await req.repository.getTrustedBy();
@@ -65,3 +66,4 @@ router.get('/trusted-by/list', async (req, res) => {
 });
 
 module.exports = { cmsPagesRouter: router };
+

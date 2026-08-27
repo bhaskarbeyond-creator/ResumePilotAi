@@ -1,5 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { requireAuth, requireAdmin, requirePermission } = require('../security/auth');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -11,7 +12,7 @@ router.use((req, res, next) => {
     }
 });
 
-// GET /api/blog-data - List blog posts
+// GET /api/blog-data - List blog posts (Public read)
 router.get('/', async (req, res) => {
     try {
         const posts = await req.repository.getBlogPosts({
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/blog-data/slug/:slug - Post by slug
+// GET /api/blog-data/slug/:slug - Post by slug (Public read)
 router.get('/slug/:slug', async (req, res) => {
     try {
         const post = await req.repository.getBlogPostBySlug(req.params.slug);
@@ -35,8 +36,8 @@ router.get('/slug/:slug', async (req, res) => {
     }
 });
 
-// POST /api/blog-data/:id - Save post
-router.post('/:id', async (req, res) => {
+// POST /api/blog-data/:id - Save post (Admin only)
+router.post('/:id', requirePermission('system.config.write'), async (req, res) => {
     try {
         const saved = await req.repository.saveBlogPost(req.params.id, req.body);
         return res.json({ success: true, post: saved });
@@ -45,8 +46,8 @@ router.post('/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/blog-data/:id - Delete post
-router.delete('/:id', async (req, res) => {
+// DELETE /api/blog-data/:id - Delete post (Admin only)
+router.delete('/:id', requirePermission('system.config.write'), async (req, res) => {
     try {
         await req.repository.deleteBlogPost(req.params.id);
         return res.json({ success: true });
@@ -56,3 +57,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = { blogDataRouter: router };
+
