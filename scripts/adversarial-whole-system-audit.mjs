@@ -111,7 +111,7 @@ describe('2. Real Browser DOM & OAuth Verification', () => {
       // 3. Close modal
       const closeBtn = page.locator('.closeModalBtn');
       await closeBtn.click();
-      await page.waitForTimeout(300);
+      await loginModal.waitFor({ state: 'hidden', timeout: 5000 });
       assert.ok(!(await loginModal.isVisible()), 'Modal must close cleanly on close button click');
     } finally {
       await browser.close();
