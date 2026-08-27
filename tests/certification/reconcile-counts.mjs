@@ -19,12 +19,38 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
+const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const EVIDENCE = path.join(ROOT, '.arena', 'evidence');
 fs.mkdirSync(EVIDENCE, { recursive: true });
 
 const LD = process.env.HOME ? { LD_LIBRARY_PATH: `${process.env.HOME}/.cache/nss-install/lib` } : {};
+const mysql = require(path.join(ROOT, 'backend', 'node_modules', 'mysql2', 'promise'));
+const DB = { host: '127.0.0.1', port: 3306, user: 'resumepilot', password: 'resumepilot_sandbox_pw', database: 'ai_resume_builder' };
+
+async function ensureMysqldRunning() {
+  for (let i = 0; i < 10; i++) {
+    try {
+      const c = await mysql.createConnection({ ...DB, connectTimeout: 1000 });
+      await c.query('SELECT 1');
+      await c.end();
+      return true;
+    } catch (_e) {
+      if (process.platform === 'win32') {
+        try {
+          execFileSync('powershell.exe', [
+            '-NoProfile', '-Command',
+            'Remove-Item -Path "D:\\xampp\\mysql\\data\\master-*.info", "D:\\xampp\\mysql\\data\\relay-log-*.info", "D:\\xampp\\mysql\\data\\multi-master.info" -Force -ErrorAction SilentlyContinue; Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
+          ], { stdio: 'ignore' });
+        } catch (_) {}
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+  return false;
+}
 
 function parseNodeTest(stdout) {
   const get = (key) => {
@@ -44,6 +70,8 @@ function runNodeTest(files, opts = {}) {
 const results = {};
 
 const listTestFiles = (dir) => fs.readdirSync(dir).filter(f => f.endsWith('.test.js')).sort().map(f => path.join(dir, f));
+
+await ensureMysqldRunning();
 
 console.log('== unit+integration (backend/test) ==');
 results['unit+integration'] = runNodeTest(listTestFiles(path.join(ROOT, 'backend', 'test')), { cwd: path.join(ROOT, 'backend') });
@@ -78,6 +106,7 @@ const runtimeFiles = [
 let rcTotal = { tests: 0, pass: 0, fail: 0, cancelled: 0, skipped: 0, todo: 0 };
 let rcExit = 0;
 for (const f of runtimeFiles) {
+  await ensureMysqldRunning();
   const res = runNodeTest([f], { timeout: 300_000 });
   rcTotal.tests += res.counts.tests;
   rcTotal.pass += res.counts.pass;
@@ -88,6 +117,7 @@ results['runtime-cert'] = { counts: rcTotal, exitCode: rcExit };
 
 console.log('== browser e2e ==');
 {
+  await ensureMysqldRunning();
   const r = spawnSync(process.execPath, ['tests/browser-e2e/run.mjs'], {
     cwd: ROOT, encoding: 'utf8', env: { ...process.env, ...LD }, timeout: 900_000,
   });

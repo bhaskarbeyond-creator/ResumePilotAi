@@ -74,7 +74,7 @@ function startMysqld() {
       execFileSync('powershell.exe', [
         '-NoProfile',
         '-Command',
-        'Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
+        'Remove-Item -Path "D:\\xampp\\mysql\\data\\master-*.info", "D:\\xampp\\mysql\\data\\relay-log-*.info", "D:\\xampp\\mysql\\data\\multi-master.info" -Force -ErrorAction SilentlyContinue; Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
       ], { stdio: 'ignore' });
     } catch (_e) {}
     return null;
