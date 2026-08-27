@@ -221,3 +221,30 @@ describe('4. Operational Health & Data Plane Integrity', () => {
     assert.ok(typeof status.enabled === 'boolean', 'status.enabled must be a boolean');
   });
 });
+
+describe('5. UI Button Cursor & MFA Security Lifecycle Boundaries', () => {
+  test('Active buttons on live DOM compute cursor: pointer style', async () => {
+    const browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
+    
+    try {
+      await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
+      const signInBtn = page.locator('button:has-text("Sign in"), button:has-text("Sign In")').first();
+      await signInBtn.waitFor({ state: 'visible', timeout: 5000 });
+      
+      const cursor = await signInBtn.evaluate((el) => window.getComputedStyle(el).cursor);
+      assert.equal(cursor, 'pointer', 'Active interactive buttons must have computed cursor: pointer');
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('MFA disable endpoint rejects unauthenticated requests (Fail-Closed)', async () => {
+    const res = await fetch(`${API_BASE}/users-data/mfa/disable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(res.status, 401, 'Unauthenticated MFA disable request must return HTTP 401');
+  });
+});

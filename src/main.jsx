@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate 
 import { isSafeInternalPath, loginPathWithNext, getPostLoginRedirectPath, clearPostLoginRedirectPath } from './utils/safeInternalPath';
 import './tailwind.css';
 import './index.scss';
+import './index.css';
 import './cv-templates/css/globalTemplateEnhancements.css';
 import './i18n'; // Import i18n configuration
 

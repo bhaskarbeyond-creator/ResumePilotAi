@@ -55,9 +55,11 @@ export async function disableTotpEnrollment() {
     const user = modularAuth().currentUser;
     if (!user) throw new Error('Authentication required');
     await user.reload();
-    const factor = multiFactor(user).enrolledFactors.find(item => item.factorId === TotpMultiFactorGenerator.FACTOR_ID);
-    if (!factor) return { enabled: false, enrolledFactors: [] };
-    await multiFactor(user).unenroll(factor);
+    const factors = multiFactor(user).enrolledFactors || [];
+    const factor = factors.find(item => item.factorId === TotpMultiFactorGenerator.FACTOR_ID || item.factorId === 'totp') || factors[0];
+    if (factor) {
+        await multiFactor(user).unenroll(factor);
+    }
     await user.getIdToken(true);
     return getTotpStatus();
 }

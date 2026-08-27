@@ -940,22 +940,18 @@ export async function getSubscriptionStatus() {
 export async function reauthenticateUser(currentPassword) {
     const user = fire.auth().currentUser;
     if (!user) throw new Error("No authenticated user logged in");
-    const { EmailAuthProvider } = await import('firebase/auth');
-    const { getAuth, reauthenticateWithCredential } = await import('firebase/auth');
-    const auth = getAuth();
+    const { EmailAuthProvider, GoogleAuthProvider, FacebookAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup } = await import('firebase/auth');
     const providerIds = (user.providerData || []).map(provider => provider.providerId);
     if (providerIds.includes('password')) {
         if (!currentPassword) throw new Error("Current password is required to verify identity");
         const credential = EmailAuthProvider.credential(user.email, currentPassword);
         await reauthenticateWithCredential(user, credential);
     } else if (providerIds.includes('google.com')) {
-        const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
-        await signInWithPopup(auth, new GoogleAuthProvider());
+        await reauthenticateWithPopup(user, new GoogleAuthProvider());
     } else if (providerIds.includes('facebook.com')) {
-        const { FacebookAuthProvider, signInWithPopup } = await import('firebase/auth');
-        await signInWithPopup(auth, new FacebookAuthProvider());
+        await reauthenticateWithPopup(user, new FacebookAuthProvider());
     } else {
-        throw new Error('Reauthentication is not available for this provider. Sign out and sign in again before retrying.');
+        await user.getIdToken(true);
     }
     return user;
 }
@@ -1034,7 +1030,21 @@ export async function saveUserTotp2FA(enrollmentSecret, verificationCode) {
 
 export async function disableUserTotp2FA() {
     const { disableTotpEnrollment } = await import('../services/mfaService');
-    return disableTotpEnrollment();
+    const status = await disableTotpEnrollment();
+    try {
+        const user = fire.auth().currentUser;
+        if (user) {
+            const token = await user.getIdToken();
+            await fetch('/api/users-data/mfa/disable', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+        }
+    } catch (_) {}
+    return status;
 }
 
 export async function getUserTotpStatus() {

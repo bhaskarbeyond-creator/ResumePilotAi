@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-08-27T05:47:49.003Z",
+    "generatedAt": "2026-08-27T06:09:37.065Z",
     "scannedDirectories": [
       "backend",
       "src",
@@ -5515,7 +5515,7 @@
           "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
         },
         {
-          "line": 323,
+          "line": 331,
           "kind": "UI_LABEL",
           "text": "const { getSystemSettings } = await import('../../../firestore/dbOperations');"
         }
@@ -6370,22 +6370,22 @@
           "text": "// Realtime chat delivery is read through the backend API (never Firestore)."
         },
         {
-          "line": 1549,
+          "line": 1559,
           "kind": "DOCUMENTATION",
           "text": "// Firebase Storage is not part of the zero-Firestore data plane."
         },
         {
-          "line": 1646,
+          "line": 1656,
           "kind": "DOCUMENTATION",
           "text": "// to Firestore (which no longer exists on this path)."
         },
         {
-          "line": 1917,
+          "line": 1927,
           "kind": "DOCUMENTATION",
           "text": "// endpoints; the Firestore data plane is never consulted."
         },
         {
-          "line": 2262,
+          "line": 2272,
           "kind": "DOCUMENTATION",
           "text": "// the legacy Firestore realtime listener no longer exists on this path."
         }
@@ -6450,22 +6450,22 @@
       "file": "src/main.jsx",
       "hits": [
         {
-          "line": 226,
+          "line": 227,
           "kind": "LEGACY_NAMED_API_SHIM",
           "text": "import('./firestore/auth').then(({ default: addUser, updateUserOnLogin }) => {"
         },
         {
-          "line": 267,
+          "line": 268,
           "kind": "DOCUMENTATION",
           "text": "// eliminating any direct browser network dependency on Firestore."
         },
         {
-          "line": 268,
+          "line": 269,
           "kind": "DOCUMENTATION",
           "text": "// Contract: onSnapshot({ includeMetadataChanges: true }, (snapshot) => { const settings = settingsFromSnapshot(snapshot); if (settings._settingsSource !== 'rem"
         },
         {
-          "line": 289,
+          "line": 290,
           "kind": "DOCUMENTATION",
           "text": "// are fetched from the backend REST API, eliminating raw Firestore quota limits."
         }

@@ -331,6 +331,10 @@ class Login extends Component {
             if (error.code === 'auth/popup-blocked') {
                 fire.auth().signInWithRedirect(googleProvider); return;
             }
+            if (error.code === 'auth/account-exists-with-different-credential') {
+                if (self.props.throwError) self.props.throwError('An account with this email already exists with password authentication. Please sign in with your email and password.');
+                return;
+            }
             if (['auth/operation-not-allowed', 'auth/unauthorized-domain', 'auth/configuration-not-found'].includes(error.code)) {
                 import('../../../utils/googleSdkAuth').then(({ directGoogleAuthFallback }) => {
                     directGoogleAuthFallback(self.props.closeModal, self.props.throwError);
@@ -360,6 +364,10 @@ class Login extends Component {
             if (mfaResolver) { self.setState({ mfaResolver, mfaCode: '' }); return; }
             if (error.code === 'auth/popup-blocked') {
                 fire.auth().signInWithRedirect(facebookProvider); return;
+            }
+            if (error.code === 'auth/account-exists-with-different-credential') {
+                if (self.props.throwError) self.props.throwError('An account with this email already exists with password authentication. Please sign in with your email and password.');
+                return;
             }
             if (['auth/operation-not-allowed', 'auth/unauthorized-domain', 'auth/configuration-not-found'].includes(error.code)) {
                 import('../../../utils/facebookSdkAuth').then(({ directFacebookAuthFallback }) => {

@@ -32,6 +32,35 @@ body {
     margin-left: 20px;
     margin-top: 20px;
 }
+/* Global Interactive Controls & Accessibility Standards */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]):not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+a[href],
+summary,
+select:not(:disabled),
+.cursor-pointer,
+.btn-default,
+.inputSubmit,
+.googleAuthItem,
+.facebookAuthItem,
+.linkedinAuthItem,
+.githubAuthItem,
+.closeModalBtn {
+    cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[aria-disabled="true"],
+input:disabled,
+select:disabled,
+.cursor-not-allowed {
+    cursor: not-allowed !important;
+}
+
 .btn-default {
     font-family: $font;
     background-color: $btn-default;

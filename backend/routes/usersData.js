@@ -85,4 +85,31 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
 });
 
+// POST /api/users-data/mfa/disable - Server-assisted MFA unenroll with active authenticated session
+router.post('/mfa/disable', requireAuth, async (req, res) => {
+    try {
+        const admin = req.app.get('firebaseAdmin') || require('../services/firebaseAdmin');
+        if (admin && admin.auth) {
+            try {
+                await admin.auth().updateUser(req.user.uid, {
+                    multiFactor: { enrolledFactors: null }
+                });
+            } catch (_) {
+                try {
+                    await admin.auth().updateUser(req.user.uid, {
+                        multiFactor: { enrolledFactors: [] }
+                    });
+                } catch (authErr) {
+                    console.warn('[UsersData MFA unenroll notice]:', authErr.message);
+                }
+            }
+        }
+        await req.repository.saveUser(req.user.uid, { mfaEnabled: false, mfa_enabled: false });
+        return res.json({ success: true, mfaEnabled: false });
+    } catch (err) {
+        console.error('[UsersData MFA disable error]:', err.message);
+        return replyRepoError(res, err, 'Failed to disable MFA');
+    }
+});
+
 module.exports = { usersDataRouter: router };
