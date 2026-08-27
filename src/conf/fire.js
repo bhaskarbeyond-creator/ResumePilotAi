@@ -58,6 +58,141 @@ const notConfigured = (operation) => {
     return Promise.reject(error);
 };
 
+// ───────────────────────────────────────────────────────────────────────────
+// Local identity mode (no-Firebase environments only):
+//
+// When the build has VITE_LOCAL_AUTH=true (or a VITE_PREVIEW_TOKEN is baked
+// in) and no Firebase configuration exists, `fire.auth()` returns a local
+// session-backed auth implementation:
+//   - the real login/registration forms authenticate against the backend's
+//     non-production preview-login endpoint (POST /api/auth/preview-login),
+//     which is itself inert in NODE_ENV=production deployments;
+//   - sessions persist in localStorage and restore on reload;
+//   - uid is deterministic per email, so accounts isolate exactly like real
+//     identities (multi-tenant browser E2E works).
+// Production builds (Firebase configured, or no local flag) never reach this
+// code path; without the flag the null-auth stub below still fails closed.
+// ───────────────────────────────────────────────────────────────────────────
+const LOCAL_SESSION_KEY = 'resumepilot_local_session_v1';
+
+function decodeTokenPayload(token) {
+    try {
+        return JSON.parse(atob(String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    } catch (_e) { return {}; }
+}
+
+function createLocalAuth(bootstrapToken) {
+    let session = null;
+    try {
+        const raw = localStorage.getItem(LOCAL_SESSION_KEY);
+        if (raw) session = JSON.parse(raw);
+    } catch (_e) { /* corrupted session storage must not break boot */ }
+    if (!session && bootstrapToken) {
+        const claims = decodeTokenPayload(bootstrapToken);
+        session = {
+            token: bootstrapToken,
+            uid: claims.uid || 'preview-user',
+            email: claims.email || null,
+            displayName: claims.email ? claims.email.split('@')[0] : 'Preview User',
+            role: claims.role || 'USER',
+            exp: claims.exp || 0,
+        };
+        try { localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(session)); } catch (_e) { /* storage unavailable */ }
+    }
+
+    const sessionValid = () => Boolean(session && (!session.exp || session.exp * 1000 > Date.now() + 60_000));
+    let signedOut = false;
+    const listeners = new Set();
+
+    const makeUser = () => {
+        if (!sessionValid()) return null;
+        const snapshot = session;
+        return {
+            uid: snapshot.uid,
+            email: snapshot.email,
+            displayName: snapshot.displayName || (snapshot.email ? snapshot.email.split('@')[0] : 'User'),
+            emailVerified: true,
+            providerData: [],
+            getIdToken: async () => {
+                if (!sessionValid()) throw Object.assign(new Error('Local session expired'), { code: 'auth/user-token-expired' });
+                return snapshot.token;
+            },
+            getIdTokenResult: async () => ({ token: snapshot.token, claims: decodeTokenPayload(snapshot.token) }),
+        };
+    };
+    const currentUser = () => (!signedOut && sessionValid() ? makeUser() : null);
+    const notify = () => {
+        const user = currentUser();
+        listeners.forEach(cb => { try { cb(user); } catch (_e) { /* listener errors must not break auth */ } });
+    };
+
+    async function authenticate(email, password, name) {
+        const res = await fetch('/api/auth/preview-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.token) {
+            const err = new Error(data.error?.message || 'Sign-in failed');
+            err.code = data.error?.code || 'auth/operation-not-allowed';
+            throw err;
+        }
+        const claims = decodeTokenPayload(data.token);
+        session = {
+            token: data.token,
+            uid: data.uid,
+            email: data.email,
+            displayName: data.displayName || (data.email ? data.email.split('@')[0] : 'User'),
+            role: data.role || 'USER',
+            exp: claims.exp || 0,
+        };
+        signedOut = false;
+        try { localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(session)); } catch (_e) { /* storage unavailable */ }
+        notify();
+        return { user: makeUser() };
+    }
+
+    const subscribe = (cb) => {
+        listeners.add(cb);
+        setTimeout(() => { try { cb(currentUser()); } catch (_e) { /* noop */ } }, 0);
+        return () => listeners.delete(cb);
+    };
+
+    return {
+        get currentUser() { return currentUser(); },
+        onAuthStateChanged: subscribe,
+        onIdTokenChanged: subscribe,
+        signInWithEmailAndPassword: (email, password) => authenticate(email, password),
+        createUserWithEmailAndPassword: (email, password) => authenticate(email, password),
+        signOut: () => {
+            signedOut = true;
+            session = null;
+            try { localStorage.removeItem(LOCAL_SESSION_KEY); } catch (_e) { /* noop */ }
+            notify();
+            return Promise.resolve();
+        },
+        setPersistence: () => Promise.resolve(),
+        getRedirectResult: () => Promise.resolve(null),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendEmailVerification: () => Promise.resolve(),
+        updateProfile: () => Promise.resolve(),
+        useDeviceLanguage: () => undefined,
+        languageCode: null,
+        signInWithPopup: () => notConfigured('signInWithPopup'),
+        signInWithRedirect: () => notConfigured('signInWithRedirect'),
+        verifyPasswordResetCode: () => notConfigured('verifyPasswordResetCode'),
+        confirmPasswordReset: () => notConfigured('confirmPasswordReset'),
+        applyActionCode: () => notConfigured('applyActionCode'),
+        fetchSignInMethodsForEmail: () => Promise.resolve([]),
+    };
+}
+
+const envFlags = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
+const previewToken = String(envFlags.VITE_PREVIEW_TOKEN || '');
+const localAuthEnabled = envFlags.VITE_LOCAL_AUTH === 'true' || Boolean(previewToken);
+const localAuth = localAuthEnabled ? createLocalAuth(previewToken) : null;
+
 function createNullAuth() {
     const noop = () => undefined;
     return {
@@ -94,8 +229,8 @@ const fireProxy = new Proxy({}, {
     get(_target, prop) {
         if (prop === 'auth') {
             return () => {
-                if (!fire) return createNullAuth();
-                try { return fire.auth(); } catch (_error) { return createNullAuth(); }
+                if (!fire) return localAuth || createNullAuth();
+                try { return fire.auth(); } catch (_error) { return localAuth || createNullAuth(); }
             };
         }
         if (prop === 'firestore') {

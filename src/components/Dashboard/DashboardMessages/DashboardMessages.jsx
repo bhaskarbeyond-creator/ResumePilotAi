@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiMessageCircle, FiUser, FiUsers } from 'react-icons/fi';
-import { getConversationParticipantProfile, getConversations, getMessages, getMessagesPaginated, sendMessage } from '../../../firestore/dbOperations';
+import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage } from '../../../firestore/dbOperations';
 import fire from '../../../conf/fire';
 import userPlaceholder from '../../../assets/user.png';
 
@@ -174,7 +174,7 @@ const DashboardMessages = ({ t }) => {
             if (!conversationId || !currentUser) return () => {};
             const userId = currentUser.uid;
 
-            const unsubMsg = getMessages(
+            const unsubMsg = subscribeConversationMessages(
                 conversationId,
                 (liveMessages) => {
                     if (activeAccountUidRef.current !== userId || fire.auth().currentUser?.uid !== userId) return;

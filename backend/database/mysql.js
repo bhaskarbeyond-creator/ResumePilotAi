@@ -140,8 +140,45 @@ async function addIndexIfMissing(p, table, indexName, definition) {
     }
 }
 
+/**
+ * Messaging schema migration: deployments initialized with the legacy draft
+ * schema carry a `conversations` table shaped (participant1_id, participant2_id)
+ * that no code path ever used. Rename legacy tables non-destructively and let
+ * the current schema create the real ones.
+ */
+async function migrateLegacyMessagingSchema(p) {
+    try {
+        const [convCols] = await p.query(
+            "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'conversations' AND COLUMN_NAME = 'participant1_id'"
+        );
+        if (convCols[0]?.c > 0) {
+            const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+            await p.query(`RENAME TABLE conversations TO conversations_legacy_${stamp}`);
+            console.log(`[MySQL] Legacy conversations table preserved as conversations_legacy_${stamp}; creating current messaging schema.`);
+            await p.query(`CREATE TABLE IF NOT EXISTS conversations (
+                id VARCHAR(128) NOT NULL PRIMARY KEY,
+                application_id VARCHAR(300) NULL,
+                deleted_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_conversations_created (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+        }
+        const [msgCols] = await p.query(
+            "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'receiver_id'"
+        );
+        if (msgCols[0]?.c > 0) {
+            const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+            await p.query(`RENAME TABLE messages TO messages_legacy_${stamp}`);
+            console.log(`[MySQL] Legacy messages table preserved as messages_legacy_${stamp}.`);
+        }
+    } catch (err) {
+        console.warn('[MySQL] Messaging migration notice:', err.message);
+    }
+}
+
 async function ensureExtendedSchema(poolOverride = null) {
     const p = poolOverride || getPool();
+    await migrateLegacyMessagingSchema(p);
     await addColumnIfMissing(p, 'users', 'revision', 'INT NOT NULL DEFAULT 1');
     await addColumnIfMissing(p, 'users', 'deleted_at', 'TIMESTAMP NULL');
     await addColumnIfMissing(p, 'resumes', 'deleted_at', 'TIMESTAMP NULL');
@@ -318,6 +355,30 @@ async function ensureExtendedSchema(poolOverride = null) {
             INDEX idx_notification_due (state, next_attempt_at),
             INDEX idx_notification_recipient (recipient),
             INDEX idx_notification_state (state)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        // Messaging (migrated from Firebase Realtime Database to MySQL).
+        `CREATE TABLE IF NOT EXISTS conversations (
+            id VARCHAR(128) NOT NULL PRIMARY KEY,
+            application_id VARCHAR(300) NULL,
+            deleted_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_conversations_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS conversation_participants (
+            conversation_id VARCHAR(128) NOT NULL,
+            user_id VARCHAR(128) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (conversation_id, user_id),
+            INDEX idx_conv_participants_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS conversation_messages (
+            id VARCHAR(128) NOT NULL PRIMARY KEY,
+            conversation_id VARCHAR(128) NOT NULL,
+            sender_id VARCHAR(128) NOT NULL,
+            text TEXT,
+            timestamp BIGINT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_conv_messages_conv_ts (conversation_id, timestamp)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     ];
     for (const sql of statements) {

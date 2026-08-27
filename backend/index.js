@@ -49,7 +49,7 @@ const { getRepository } = require('./repositories');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
-const { requireAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, isSuperAdmin } = require('./security/auth');
+const { requireAuth, requirePermission, _permissionsFor, requireRecentAdminAuthentication, isSuperAdmin, testVerifierEnabled, issueLocalTestToken } = require('./security/auth');
 const { enforceApiPolicy } = require('./security/policy');
 const { createEnterpriseAuthMiddleware } = require('./enterprise/enterpriseAuth');
 const {
@@ -314,10 +314,12 @@ const rateLimit = require('express-rate-limit');
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow cross-origin image/resource loading if needed
 
-// Global API Rate Limiter (2500 requests per 15 minutes for interactive SPA & enterprise console usage)
+// Global API Rate Limiter (2500 requests per 15 minutes for interactive SPA & enterprise console usage).
+// GLOBAL_RATE_LIMIT_MAX overrides in every environment (previously ignored in
+// test mode, which made the limiter unmeasurable under load).
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'test' ? 10000 : Number(process.env.GLOBAL_RATE_LIMIT_MAX || 2500),
+    max: Number(process.env.GLOBAL_RATE_LIMIT_MAX || (process.env.NODE_ENV === 'test' ? 10000 : 2500)),
     message: { error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again in a few moments.', requestId: undefined } },
     standardHeaders: true,
     legacyHeaders: false,
@@ -326,10 +328,12 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// Strict Auth/Email Rate Limiter (20 requests per hour)
+// Strict Auth/Email Rate Limiter (20 requests per hour). The cap is lifted in
+// the automated test environment the same way the global limiter is, so
+// certification/E2E suites that provision many accounts are not throttled.
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: 20,
+    max: process.env.NODE_ENV === 'test' ? Number(process.env.AUTH_RATE_LIMIT_MAX || 10000) : Number(process.env.AUTH_RATE_LIMIT_MAX || 20),
     message: 'Too many sensitive requests from this IP, please try again after an hour'
 });
 app.use('/api/email', authLimiter);
@@ -341,7 +345,7 @@ const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health', '/health/databases', '/service-availability', '/platform/version', '/platform/public-config',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
-    '/auth/github', '/auth/github/callback', '/auth/oauth/exchange',
+    '/auth/github', '/auth/github/callback', '/auth/oauth/exchange', '/auth/preview-login',
     '/public/custom-pages', '/public/custom-pages.json',
     '/public/trusted-by', '/public/trusted-by.json',
     '/custom-pages', '/custom-pages.json',
@@ -1504,50 +1508,72 @@ app.delete('/api/employer/jobs/:jobId', async (req, res) => {
 });
 
 app.get('/api/messages/conversations', async (req, res) => {
-    // List conversations for the current user. Realtime chat lives in Firebase
-    // Realtime Database (a realtime delivery channel, NOT the Firestore data
-    // plane); the authoritative participant/application records are in MySQL.
-    if (!admin?.database) return res.json({ success: true, conversations: [] });
+    // List conversations for the current user. Messaging is fully MySQL-backed
+    // (migrated from Firebase Realtime Database); no Firebase database is
+    // consulted on this path.
     try {
-        const realtime = admin.database();
-        const index = await realtime.ref(`user-conversations/${req.user.uid}`).get();
-        const conversationIds = Object.keys(index.val() || {});
+        const pool = require('./database/mysql').getPool();
+        const uid = req.user.uid;
+        const [convRows] = await pool.query(
+            `SELECT c.id, c.application_id AS applicationId
+             FROM conversations c
+             JOIN conversation_participants cp ON cp.conversation_id = c.id
+             WHERE cp.user_id = ? AND c.deleted_at IS NULL
+             ORDER BY c.created_at DESC
+             LIMIT 100`,
+            [uid]
+        );
         const conversations = [];
-        for (const conversationId of conversationIds.slice(0, 100)) {
-            const snapshot = await realtime.ref(`conversations/${conversationId}`).get();
-            if (!snapshot.exists()) continue;
-            const data = snapshot.val() || {};
-            const participants = Object.keys(data.participants || {});
-            if (!participants.includes(req.user.uid)) continue;
-            const lastMessage = await realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').limitToLast(1).get();
-            let lastMessageData = null;
-            lastMessage.forEach(child => { lastMessageData = { id: child.key, ...child.val() }; });
-            conversations.push({ id: conversationId, ...data, lastMessage: lastMessageData });
+        for (const row of convRows) {
+            const [partRows] = await pool.query(
+                'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
+                [row.id]
+            );
+            const participants = {};
+            partRows.forEach(p => { participants[p.user_id] = true; });
+            const [lastRows] = await pool.query(
+                `SELECT id, sender_id AS senderId, text, timestamp
+                 FROM conversation_messages WHERE conversation_id = ?
+                 ORDER BY timestamp DESC LIMIT 1`,
+                [row.id]
+            );
+            conversations.push({
+                id: row.id,
+                applicationId: row.applicationId || null,
+                participants,
+                lastMessage: lastRows.length ? lastRows[0] : null,
+            });
         }
         conversations.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
         return res.json({ success: true, conversations });
     } catch (error) {
         console.error('[List conversations]', error.message);
-        return res.json({ success: true, conversations: [] });
+        return res.status(503).json({ success: false, error: 'Messaging is temporarily unavailable.' });
     }
 });
 
 app.get('/api/messages/conversations/:conversationId/messages', async (req, res) => {
     const conversationId = String(req.params.conversationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !admin?.database) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) {
         return res.status(404).json({ success: false, error: 'Conversation not found.' });
     }
     try {
-        const realtime = admin.database();
-        const conversation = await realtime.ref(`conversations/${conversationId}`).get();
-        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+        const pool = require('./database/mysql').getPool();
+        const [membership] = await pool.query(
+            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+            [conversationId, req.user.uid]
+        );
+        if (!membership.length) {
             return res.status(404).json({ success: false, error: 'Conversation not found.' });
         }
         const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
-        const snapshot = await realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').limitToLast(limit).get();
-        const messages = [];
-        snapshot.forEach(child => messages.push({ id: child.key, ...child.val() }));
-        messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        const [rows] = await pool.query(
+            `SELECT id, sender_id AS senderId, text, timestamp
+             FROM conversation_messages WHERE conversation_id = ?
+             ORDER BY timestamp DESC, id DESC LIMIT ?`,
+            [conversationId, limit]
+        );
+        const messages = rows.reverse();
         res.setHeader('Cache-Control', 'no-store, private');
         return res.json({ success: true, messages });
     } catch (error) {
@@ -1558,12 +1584,11 @@ app.get('/api/messages/conversations/:conversationId/messages', async (req, res)
 
 app.post('/api/messages/conversations', async (req, res) => {
     const applicationId = String(req.body.applicationId || '');
-    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !admin?.database) {
+    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) {
         return res.status(400).json({ success: false, error: 'Valid job application is required.' });
     }
     try {
-        // MySQL is the authoritative store for applications/jobs; RTDB is used
-        // only for realtime chat delivery, never for authoritative records.
+        // MySQL is the single store for applications, jobs, and conversations.
         const { getRepository } = require('./repositories');
         const repo = getRepository(req.app.get('db') || db);
         const application = await repo.getApplication(applicationId);
@@ -1575,30 +1600,32 @@ app.post('/api/messages/conversations', async (req, res) => {
         if (!applicantUid || !employerUid || ![applicantUid, employerUid].includes(req.user.uid)) {
             return res.status(403).json({ success: false, error: 'Conversation is not available to this account.' });
         }
-        const participants = [applicantUid, employerUid].sort();
-        const lookupKey = crypto.createHash('sha256').update(participants.join('\0')).digest('hex');
-        const realtime = admin.database();
-        const lookupRef = realtime.ref(`conversation-participants/${lookupKey}`);
-        const existing = await lookupRef.get();
-        const existingId = String(existing.val() || '');
-        if (existing.exists() && /^[A-Za-z0-9_-]{1,128}$/.test(existingId)) {
-            return res.json({ success: true, conversationId: existingId, existing: true });
+        const participants = [String(applicantUid), String(employerUid)].sort();
+        // A deterministic conversation ID makes concurrent create requests
+        // idempotent (INSERT IGNORE on the primary key).
+        const conversationId = crypto.createHash('sha256').update(participants.join('\0')).digest('hex');
+        const pool = require('./database/mysql').getPool();
+        const conn = await pool.getConnection();
+        let created = false;
+        try {
+            await conn.beginTransaction();
+            const [inserted] = await conn.query(
+                'INSERT IGNORE INTO conversations (id, application_id) VALUES (?, ?)',
+                [conversationId, applicationId]
+            );
+            created = inserted.affectedRows > 0;
+            await conn.query(
+                'INSERT IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)',
+                [conversationId, participants[0], conversationId, participants[1]]
+            );
+            await conn.commit();
+        } catch (txErr) {
+            await conn.rollback().catch(() => {});
+            throw txErr;
+        } finally {
+            conn.release();
         }
-        // A deterministic first ID makes concurrent create requests idempotent. Legacy
-        // random IDs remain available through the protected lookup above.
-        const conversationId = lookupKey;
-        const timestamp = { '.sv': 'timestamp' };
-        await realtime.ref().update({
-            [`conversations/${conversationId}`]: {
-                participants: { [applicantUid]: true, [employerUid]: true },
-                applicationId,
-                createdAt: timestamp
-            },
-            [`user-conversations/${applicantUid}/${conversationId}`]: true,
-            [`user-conversations/${employerUid}/${conversationId}`]: true,
-            [`conversation-participants/${lookupKey}`]: conversationId
-        });
-        return res.status(201).json({ success: true, conversationId });
+        return res.status(created ? 201 : 200).json({ success: true, conversationId, existing: !created });
     } catch (error) {
         console.error('[Create conversation]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
@@ -1607,15 +1634,23 @@ app.post('/api/messages/conversations', async (req, res) => {
 
 app.get('/api/messages/conversations/:conversationId/participant-profile', async (req, res) => {
     const conversationId = String(req.params.conversationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !admin?.database) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) {
         return res.status(404).json({ success: false, error: 'Conversation not found.' });
     }
     try {
-        const conversation = await admin.database().ref(`conversations/${conversationId}`).get();
-        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+        const pool = require('./database/mysql').getPool();
+        const [membership] = await pool.query(
+            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+            [conversationId, req.user.uid]
+        );
+        if (!membership.length) {
             return res.status(404).json({ success: false, error: 'Conversation not found.' });
         }
-        const participantIds = Object.keys(conversation.child('participants').val() || {});
+        const [partRows] = await pool.query(
+            'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
+            [conversationId]
+        );
+        const participantIds = partRows.map(r => r.user_id);
         const otherUserId = participantIds.find(uid => uid !== req.user.uid);
         if (!otherUserId) return res.status(404).json({ success: false, error: 'Participant not found.' });
         if (otherUserId.startsWith('deleted_')) {
@@ -1640,22 +1675,33 @@ app.get('/api/messages/conversations/:conversationId/participant-profile', async
 app.post('/api/messages/send', async (req, res) => {
     const conversationId = String(req.body.conversationId || '');
     const text = String(req.body.text || '').trim();
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !text || text.length > 10_000 || !admin?.database) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !text || text.length > 10_000) {
         return res.status(400).json({ success: false, error: 'Valid conversation and message are required.' });
     }
     try {
-        const realtime = admin.database();
-        const conversation = await realtime.ref(`conversations/${conversationId}`).get();
-        if (!conversation.exists() || conversation.child(`participants/${req.user.uid}`).val() !== true) {
+        const pool = require('./database/mysql').getPool();
+        const [membership] = await pool.query(
+            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+            [conversationId, req.user.uid]
+        );
+        if (!membership.length) {
             return res.status(404).json({ success: false, error: 'Conversation not found.' });
         }
-        const messageRef = realtime.ref(`messages/${conversationId}`).push();
-        await messageRef.set({ senderId: req.user.uid, text, timestamp: { '.sv': 'timestamp' } });
+        const messageId = `msg_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+        const timestamp = Date.now();
+        await pool.query(
+            'INSERT INTO conversation_messages (id, conversation_id, sender_id, text, timestamp) VALUES (?, ?, ?, ?, ?)',
+            [messageId, conversationId, req.user.uid, text, timestamp]
+        );
         let notificationState = 'NOTIFICATION_CREATED';
-        const recipientUid = Object.keys(conversation.child('participants').val() || {}).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
+        const [partRows] = await pool.query(
+            'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
+            [conversationId]
+        );
+        const recipientUid = partRows.map(r => r.user_id).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
         if (recipientUid) {
             try {
-                const eventId = notificationEventId('message', conversationId, messageRef.key);
+                const eventId = notificationEventId('message', conversationId, messageId);
                 // Authoritative notification record goes to MySQL; the Firestore
                 // data plane is never required.
                 const { getRepository } = require('./repositories');
@@ -1667,7 +1713,7 @@ app.post('/api/messages/send', async (req, res) => {
                 });
             } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }
         } else notificationState = 'NOTIFICATION_CREATION_FAILED';
-        return res.status(201).json({ success: true, messageId: messageRef.key, notificationState });
+        return res.status(201).json({ success: true, messageId, notificationState });
     } catch (error) {
         console.error('[Send message]', error.message);
         return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
@@ -5040,42 +5086,48 @@ async function deleteApplicationNotifications(database, applicationIds) {
     }
 }
 
-async function removeDeletedUserFromRealtimeMessaging(uid, identityAdmin = admin) {
-    if (!identityAdmin?.database) throw new Error('Realtime Database is unavailable');
-    let realtime;
-    try { realtime = identityAdmin.database(); } catch (_e) { return; }
-    const indexSnapshot = await realtime.ref(`user-conversations/${uid}`).get();
-    const conversationIds = Object.keys(indexSnapshot.val() || {});
+// MySQL-backed messaging cleanup for account deletion (migrated from Firebase
+// Realtime Database). Semantics preserved: when no real accounts remain in a
+// conversation it is removed entirely; otherwise the deleted account is
+// replaced by an anonymous placeholder and its messages are purged.
+async function removeDeletedUserFromRealtimeMessaging(uid, _identityAdmin = admin) {
+    const pool = require('./database/mysql').getPool();
+    const [memberRows] = await pool.query(
+        'SELECT conversation_id FROM conversation_participants WHERE user_id = ?',
+        [uid]
+    );
+    const conversationIds = memberRows.map(r => r.conversation_id);
     for (const conversationId of conversationIds) {
-        const deletedParticipantId = `deleted_${crypto.randomBytes(10).toString('hex')}`;
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) continue;
-        const [conversationSnapshot, messagesSnapshot] = await Promise.all([
-            realtime.ref(`conversations/${conversationId}`).get(),
-            realtime.ref(`messages/${conversationId}`).get(),
-        ]);
-        if (!conversationSnapshot.exists() || conversationSnapshot.child(`participants/${uid}`).val() !== true) continue;
-        const participantIds = Object.keys(conversationSnapshot.child('participants').val() || {}).sort();
-        const lookupKey = crypto.createHash('sha256').update(participantIds.join('\0')).digest('hex');
-        const remainingAccounts = participantIds.filter(participantId => participantId !== uid && !participantId.startsWith('deleted_'));
-        const updates = {
-            [`user-conversations/${uid}/${conversationId}`]: null,
-            [`conversation-participants/${lookupKey}`]: null,
-        };
-        if (!remainingAccounts.length) {
-            updates[`conversations/${conversationId}`] = null;
-            updates[`messages/${conversationId}`] = null;
-        } else {
-            updates[`conversations/${conversationId}/participants/${uid}`] = null;
-            updates[`conversations/${conversationId}/participants/${deletedParticipantId}`] = true;
-            updates[`conversations/${conversationId}/applicationId`] = null;
-            updates[`conversations/${conversationId}/deletedAt`] = { '.sv': 'timestamp' };
-            messagesSnapshot.forEach(message => {
-                if (message.child('senderId').val() === uid) updates[`messages/${conversationId}/${message.key}`] = null;
-            });
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+            const [partRows] = await conn.query(
+                'SELECT user_id FROM conversation_participants WHERE conversation_id = ? FOR UPDATE',
+                [conversationId]
+            );
+            const participantIds = partRows.map(r => r.user_id);
+            if (!participantIds.includes(uid)) { await conn.rollback(); continue; }
+            const remainingAccounts = participantIds.filter(participantId => participantId !== uid && !participantId.startsWith('deleted_'));
+            if (!remainingAccounts.length) {
+                await conn.query('DELETE FROM conversation_messages WHERE conversation_id = ?', [conversationId]);
+                await conn.query('DELETE FROM conversation_participants WHERE conversation_id = ?', [conversationId]);
+                await conn.query('DELETE FROM conversations WHERE id = ?', [conversationId]);
+            } else {
+                const deletedParticipantId = `deleted_${crypto.randomBytes(10).toString('hex')}`;
+                await conn.query('DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, uid]);
+                await conn.query('INSERT IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)', [conversationId, deletedParticipantId]);
+                await conn.query('UPDATE conversations SET application_id = NULL, deleted_at = NOW() WHERE id = ?', [conversationId]);
+                await conn.query('DELETE FROM conversation_messages WHERE conversation_id = ? AND sender_id = ?', [conversationId, uid]);
+            }
+            await conn.commit();
+        } catch (txErr) {
+            await conn.rollback().catch(() => {});
+            throw txErr;
+        } finally {
+            conn.release();
         }
-        await realtime.ref().update(updates);
     }
-    await realtime.ref(`user-conversations/${uid}`).remove();
     return { conversationCount: conversationIds.length };
 }
 
@@ -5105,21 +5157,30 @@ app.post('/api/account/export', async (req, res) => {
         const exportWarnings = [];
         const messaging = { conversations: [], messagesByConversation: {} };
         try {
-            // Messages are delivered over Firebase Realtime Database; export what
-            // is reachable for this account (best-effort, never blocking).
-            if (admin?.database) {
-                const realtime = admin.database();
-                const index = await realtime.ref(`user-conversations/${uid}`).get();
-                for (const conversationId of Object.keys(index.val() || {})) {
-                    const [conversationSnapshot, messagesSnapshot] = await Promise.all([
-                        realtime.ref(`conversations/${conversationId}`).get(),
-                        realtime.ref(`messages/${conversationId}`).orderByChild('timestamp').get(),
-                    ]);
-                    if (conversationSnapshot.exists()) messaging.conversations.push({ id: conversationId, ...conversationSnapshot.val() });
-                    const messages = [];
-                    messagesSnapshot.forEach(message => messages.push({ id: message.key, ...message.val() }));
-                    messaging.messagesByConversation[conversationId] = messages;
-                }
+            // Messaging lives in MySQL; export this account's conversations
+            // (best-effort, never blocking).
+            const pool = require('./database/mysql').getPool();
+            const [memberRows] = await pool.query(
+                'SELECT conversation_id FROM conversation_participants WHERE user_id = ?',
+                [uid]
+            );
+            for (const { conversation_id: conversationId } of memberRows) {
+                const [convRows] = await pool.query(
+                    'SELECT id, application_id AS applicationId, created_at AS createdAt FROM conversations WHERE id = ?',
+                    [conversationId]
+                );
+                const [partRows] = await pool.query(
+                    'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
+                    [conversationId]
+                );
+                const participants = {};
+                partRows.forEach(p => { participants[p.user_id] = true; });
+                if (convRows.length) messaging.conversations.push({ id: conversationId, ...convRows[0], participants });
+                const [msgRows] = await pool.query(
+                    'SELECT id, sender_id AS senderId, text, timestamp FROM conversation_messages WHERE conversation_id = ? ORDER BY timestamp ASC',
+                    [conversationId]
+                );
+                messaging.messagesByConversation[conversationId] = msgRows;
             }
         } catch (error) { exportWarnings.push(`Messaging export unavailable: ${error.message}`); }
 
@@ -5680,6 +5741,67 @@ app.post('/api/auth/oauth/exchange', async (req, res) => {
     } catch (_) {
         return res.status(400).json({ error: 'Invalid or expired OAuth exchange code' });
     }
+});
+
+/**
+ * POST /api/auth/preview-login — non-production local identity.
+ *
+ * Preview / local-development environments run with NO Firebase identity
+ * provider configured (zero-Firestore certification mode). This endpoint lets
+ * the real login/registration form authenticate so the full browser journey is
+ * testable. Hard gates:
+ *   - Responds ONLY when the local HMAC verifier is enabled
+ *     (TEST_AUTH_HMAC_SECRET set AND NODE_ENV !== 'production'); otherwise 404.
+ *   - uid is derived deterministically from the email, so the same login
+ *     restores the same account and distinct emails isolate accounts
+ *     (enables multi-tenant browser E2E).
+ *   - Admin/Super Admin roles come ONLY from an explicit server allowlist
+ *     (PREVIEW_ADMIN_EMAILS / PREVIEW_SUPER_ADMIN_EMAILS); clients cannot
+ *     escalate themselves.
+ */
+app.post('/api/auth/preview-login', async (req, res) => {
+    if (!testVerifierEnabled()) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+    const name = String(req.body?.name || '').trim().slice(0, 120);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+        return res.status(400).json({ error: { code: 'auth/invalid-email', message: 'A valid email is required.' } });
+    }
+    if (password.length < 6) {
+        return res.status(400).json({ error: { code: 'auth/weak-password', message: 'Password must be at least 6 characters.' } });
+    }
+    const uid = 'local_' + crypto.createHash('sha256').update(email).digest('hex').slice(0, 22);
+    const adminEmails = String(process.env.PREVIEW_ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const superEmails = String(process.env.PREVIEW_SUPER_ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const role = superEmails.includes(email) ? 'SUPER_ADMIN' : adminEmails.includes(email) ? 'ADMIN' : 'USER';
+    const now = Math.floor(Date.now() / 1000);
+    const token = issueLocalTestToken({
+        uid, email, role,
+        email_verified: true,
+        auth_time: now,
+        exp: now + 60 * 60 * 24 * 7,
+        sign_in_second_factor: role !== 'USER',
+    });
+    // Provision the users row (MySQL authoritative) so profile/resume flows and
+    // the resumes.user_id FK work immediately for this account.
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository(req.app.get('db'));
+        const existing = await repo.getUser(uid).catch(() => null);
+        const displayName = name || email.split('@')[0];
+        if (!existing) {
+            await repo.saveUser(uid, {
+                email, firstname: displayName, lastname: '', displayName,
+                membership: 'Basic', paymentStatus: 'INACTIVE',
+            }).catch(() => {});
+        }
+    } catch (e) {
+        console.warn('[PreviewLogin] user provision notice:', e.message);
+    }
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ token, uid, email, displayName: name || email.split('@')[0], role });
 });
 
 
