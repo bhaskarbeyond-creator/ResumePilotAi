@@ -54,6 +54,8 @@ export function docxFileName(firstname, lastname, fallback = 'resume') {
     return `${safe || fallback}.docx`;
 }
 
+import fire from '../conf/fire';
+
 /**
  * Authoritative client-side DOCX download helper.
  * Persists the latest draft (if persistLatest provided), requests /api/export-docx,
@@ -79,6 +81,10 @@ export async function executeDocxDownload({
         }
     }
 
+    const user = fire.auth().currentUser;
+    const token = user && typeof user.getIdToken === 'function' ? await user.getIdToken().catch(() => null) : null;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
     const response = await axios.post(
         `${config.provider}://${config.backendUrl}/api/export-docx`,
         {
@@ -89,6 +95,7 @@ export async function executeDocxDownload({
         },
         {
             responseType: 'blob',
+            headers,
         }
     );
 

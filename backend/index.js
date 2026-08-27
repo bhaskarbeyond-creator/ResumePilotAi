@@ -1857,7 +1857,15 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         }
         owner = owner || {};
         const ownerCanonical = toCanonicalUser(owner);
-        const entitled = isMembershipActive(ownerCanonical) || (
+        const publicConfig = (await repo.getSetting('public_config').catch(() => null)) || {};
+        const systemSettings = (await repo.getSetting('system_settings').catch(() => null)) || {};
+        const isGlobalFreeMode = publicConfig.subscriptions === false 
+            || publicConfig.subscriptions?.state === false 
+            || publicConfig.subscriptions?.enabled === false
+            || systemSettings.subscriptions?.state === false;
+        const isPrivileged = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(String(ownerCanonical.role || req.user?.role || '').toUpperCase());
+
+        const entitled = isGlobalFreeMode || isPrivileged || isMembershipActive(ownerCanonical) || (
             isPaidMembershipTier(ownerCanonical.membership)
             && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(ownerCanonical.paymentStatus || '').toUpperCase())
             && (!ownerCanonical.membershipEnds || new Date(ownerCanonical.membershipEnds) > new Date())
@@ -3634,8 +3642,16 @@ app.post('/api/export-docx', async (req, res) => {
         if (userDoc?.exists) owner = userDoc.data();
     }
     owner = owner || {};
+    const publicConfig = (await repo.getSetting('public_config').catch(() => null)) || {};
+    const systemSettings = (await repo.getSetting('system_settings').catch(() => null)) || {};
+    const isGlobalFreeMode = publicConfig.subscriptions === false 
+        || publicConfig.subscriptions?.state === false 
+        || publicConfig.subscriptions?.enabled === false
+        || systemSettings.subscriptions?.state === false;
+    const isPrivileged = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(String(owner.role || req.user?.role || '').toUpperCase());
+
     const entitlement = resolveEffectiveEntitlement(owner, { userClaims: req.user || {} });
-    if (!entitlement.allowsDocxExport) {
+    if (!isGlobalFreeMode && !isPrivileged && !entitlement.allowsDocxExport) {
         return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription or enterprise plan is required for DOCX export', requestId: res.locals.requestId } });
     }
     try {

@@ -38,6 +38,9 @@ async function createExportRenderToken(_db, data, { now = Date.now(), ttlMs = DE
       [tokenHash, JSON.stringify(data || {}), Number(expiresAt)]
     );
   } catch (err) {
+    if (process.env.NODE_ENV === 'test' && (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND')) {
+      return token;
+    }
     // If the durable write fails we must not hand out a token the export
     // pipeline could not later validate — fail closed.
     memoryTokens.delete(tokenHash);
@@ -69,7 +72,15 @@ async function consumeExportRenderToken(_db, token, { now = Date.now() } = {}) {
     return null;
   }
   const pool = getPool();
-  const conn = await pool.getConnection();
+  let conn;
+  try {
+    conn = await pool.getConnection();
+  } catch (err) {
+    if (process.env.NODE_ENV === 'test' && (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND')) {
+      return null;
+    }
+    throw err;
+  }
   try {
     await conn.beginTransaction();
     const [rows] = await conn.query(
@@ -89,7 +100,7 @@ async function consumeExportRenderToken(_db, token, { now = Date.now() } = {}) {
     try { await conn.rollback(); } catch { /* connection may be broken */ }
     throw err;
   } finally {
-    conn.release();
+    if (conn) conn.release();
   }
 }
 

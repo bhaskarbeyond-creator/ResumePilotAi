@@ -789,26 +789,26 @@ const BuildResume = () => {
             const user = userIdRef.current;
             if (!resumeId || !user || !await persistLatest({ manual: true })) throw new Error('Resume must be saved before export');
 
-            // Increment download counter
             await IncrementDownloads();
-
             await addOneToNumberOfDocumentsDownloaded(user);
 
-            // Make API call to generate PDF
+            const currentUser = fire.auth().currentUser;
+            const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
             const response = await axios.post(
                 `${config.provider}://${config.backendUrl}/api/export`,
                 {
-                    language: i18n.language, // Use current language from i18n
+                    language: i18n.language,
                     resumeId,
-                    resumeName: currentTemplate, // Using selected template
+                    resumeName: currentTemplate,
                 },
                 {
                     responseType: 'blob',
+                    headers,
                 }
             );
 
-            // Validate the blob is a real PDF before downloading. Shared with the other
-            // export surfaces so every path rejects JSON error bodies identically.
             const pdfBlob = await toValidatedPdfBlob(response.data);
             download(pdfBlob, pdfFileName(previewData?.firstname, previewData?.lastname), 'application/pdf');
 

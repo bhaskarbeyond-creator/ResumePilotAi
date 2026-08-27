@@ -161,6 +161,10 @@ class BoardFilling extends Component {
 
         setJsonPb(localStorage.getItem('currentResumeId'), this.props.values);
 
+        const currentUser = fire.auth().currentUser;
+        const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         axios
             .post(
                 config.provider + '://' + config.backendUrl + '/api/export',
@@ -171,6 +175,7 @@ class BoardFilling extends Component {
                 },
                 {
                     responseType: 'blob',
+                    headers,
                 }
             )
             .then(async function (response) {

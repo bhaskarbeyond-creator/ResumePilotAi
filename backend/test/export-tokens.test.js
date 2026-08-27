@@ -67,6 +67,4 @@ test('token store failure fails closed (no token is handed out without durable s
   );
 });
 
-// Allow clean process exit: close the shared MySQL pool after this file.
-const { after: teardown } = require('node:test');
-teardown(async () => { try { await getPool().end(); } catch { /* already closed */ } });
+// End of test file

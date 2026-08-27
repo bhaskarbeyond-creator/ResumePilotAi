@@ -598,6 +598,10 @@ class DashboardHomepage extends Component {
       const saved = await saveResumeDraft(userId, resumeId, completeResumeData, { expectedRevision: Number(document.item?.revision) || 0 });
       document.item = { ...saved.data, revision: saved.revision };
 
+      const currentUser = fire.auth().currentUser;
+      const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       // Call the export API
       const response = await axios.post(
         config.provider + "://" + config.backendUrl + "/api/export",
@@ -608,6 +612,7 @@ class DashboardHomepage extends Component {
         },
         {
           responseType: "blob",
+          headers,
         }
       );
 

@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-08-27T06:54:17.463Z",
+    "generatedAt": "2026-08-27T07:24:39.273Z",
     "scannedDirectories": [
       "backend",
       "src",
@@ -1820,217 +1820,217 @@
           "text": "// Authoritative notification record goes to MySQL; the Firestore"
         },
         {
-          "line": 2162,
+          "line": 2170,
           "kind": "DOCUMENTATION",
           "text": "// MySQL is the authoritative configuration store; Firestore is never"
         },
         {
-          "line": 2312,
+          "line": 2320,
           "kind": "DOCUMENTATION",
           "text": "// The caller replaces this marker with a Firestore delete sentinel before"
         },
         {
-          "line": 2323,
+          "line": 2331,
           "kind": "DORMANT_LEGACY",
           "text": "if (value.__adminSecretDelete === true && Object.keys(value).length === 1) return admin.firestore.FieldValue.delete();"
         },
         {
-          "line": 2369,
+          "line": 2377,
           "kind": "DOCUMENTATION",
           "text": "// MySQL system_settings is the authoritative store; Firestore is never"
         },
         {
-          "line": 2556,
+          "line": 2564,
           "kind": "DOCUMENTATION",
           "text": "// Load configured quota limits from Firestore"
         },
         {
-          "line": 2637,
+          "line": 2645,
           "kind": "DORMANT_LEGACY",
           "text": "updatedAt: admin ? admin.firestore.FieldValue.serverTimestamp() : new Date(),"
         },
         {
-          "line": 2708,
+          "line": 2716,
           "kind": "DOCUMENTATION",
           "text": "// 2. Secondary Standby: Firestore (if MariaDB returned empty and requestDb is available)"
         },
         {
-          "line": 2858,
+          "line": 2866,
           "kind": "DOCUMENTATION",
           "text": "// 2. Secondary Standby Write: Replicate to Firestore asynchronously"
         },
         {
-          "line": 2859,
+          "line": 2867,
           "kind": "DORMANT_LEGACY",
           "text": "if (requestDb && firebaseAdmin?.firestore?.FieldValue) {"
         },
         {
-          "line": 2872,
+          "line": 2880,
           "kind": "DORMANT_LEGACY",
           "text": "createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp()"
         },
         {
-          "line": 3110,
+          "line": 3118,
           "kind": "DOCUMENTATION",
           "text": "// MySQL is the authoritative Twilio configuration store; the Firestore"
         },
         {
-          "line": 3266,
+          "line": 3274,
           "kind": "DORMANT_LEGACY",
           "text": "requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),"
         },
         {
-          "line": 3520,
+          "line": 3528,
           "kind": "DORMANT_LEGACY",
           "text": "tx.set(counterDocRef, { currentSeq: invoiceSeq, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });"
         },
         {
-          "line": 3585,
+          "line": 3593,
           "kind": "DOCUMENTATION",
           "text": "// Save into Firestore if db available"
         },
         {
-          "line": 3800,
+          "line": 3816,
           "kind": "DORMANT_LEGACY",
           "text": "const fsState = status.health.firestore.healthy === true ? 'UP' : (status.health.firestore.healthy === false ? 'DOWN' : 'UNKNOWN');"
         },
         {
-          "line": 3808,
+          "line": 3824,
           "kind": "DORMANT_LEGACY",
           "text": "firestore: {"
         },
         {
-          "line": 3810,
+          "line": 3826,
           "kind": "DORMANT_LEGACY",
           "text": "healthy: status.health.firestore.healthy,"
         },
         {
-          "line": 3811,
+          "line": 3827,
           "kind": "DORMANT_LEGACY",
           "text": "lastError: status.health.firestore.lastError,"
         },
         {
-          "line": 3812,
+          "line": 3828,
           "kind": "DORMANT_LEGACY",
           "text": "latencyMs: status.health.firestore.latencyMs,"
         },
         {
-          "line": 3818,
+          "line": 3834,
           "kind": "DORMANT_LEGACY",
           "text": "operationalAuthority: status.operationalWriteEngine === 'mysql' ? 'MARIA' : 'FIRESTORE',"
         },
         {
-          "line": 3866,
+          "line": 3882,
           "kind": "DOCUMENTATION",
           "text": "* Firestore has no part in readiness — the data plane was removed from the"
         },
         {
-          "line": 3923,
+          "line": 3939,
           "kind": "DOCUMENTATION",
           "text": "// MySQL-backed (repository), independent of any Firestore availability."
         },
         {
-          "line": 3946,
+          "line": 3962,
           "kind": "DOCUMENTATION",
           "text": "// max attempts. Requires NO Firestore: the queue is the MySQL"
         },
         {
-          "line": 3947,
+          "line": 3963,
           "kind": "DOCUMENTATION",
           "text": "// notification_outbox table, so delivery retries survive with Firestore"
         },
         {
-          "line": 3977,
+          "line": 3993,
           "kind": "DOCUMENTATION",
           "text": "// Durable enterprise job worker (Firestore outbox). Jobs are claimed via"
         },
         {
-          "line": 4018,
+          "line": 4034,
           "kind": "DORMANT_LEGACY",
           "text": "nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now()),"
         },
         {
-          "line": 4019,
+          "line": 4035,
           "kind": "DORMANT_LEGACY",
           "text": "createdAt: admin.firestore.FieldValue.serverTimestamp(),"
         },
         {
-          "line": 4020,
+          "line": 4036,
           "kind": "DORMANT_LEGACY",
           "text": "updatedAt: admin.firestore.FieldValue.serverTimestamp(),"
         },
         {
-          "line": 4079,
+          "line": 4095,
           "kind": "DOCUMENTATION",
           "text": "// The legacy Firestore<->MySQL bidirectional sync daemon has been REMOVED:"
         },
         {
-          "line": 4081,
+          "line": 4097,
           "kind": "DOCUMENTATION",
           "text": "// process may require Firestore on any path."
         },
         {
-          "line": 4287,
+          "line": 4303,
           "kind": "DOCUMENTATION",
           "text": "// Firestore data plane. `db` is a permanent null constant; the"
         },
         {
-          "line": 4290,
+          "line": 4306,
           "kind": "DORMANT_LEGACY",
           "text": "console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials (identity only; Firestore data plane remains REMOVED)');"
         },
         {
-          "line": 4475,
+          "line": 4491,
           "kind": "DOCUMENTATION",
           "text": "* dedicated relational table when one exists). The Firestore data plane is"
         },
         {
-          "line": 4477,
+          "line": 4493,
           "kind": "DOCUMENTATION",
           "text": "* MySQL has no rows — the reverse of the legacy order, so a Firestore outage"
         },
         {
-          "line": 4514,
+          "line": 4530,
           "kind": "DOCUMENTATION",
           "text": "// Firestore is never a fallback for availability: rethrow so the admin"
         },
         {
-          "line": 4633,
+          "line": 4649,
           "kind": "DOCUMENTATION",
           "text": "// 'landing_content' / 'frontendstats'). Firestore is never required."
         },
         {
-          "line": 4800,
+          "line": 4816,
           "kind": "DOCUMENTATION",
           "text": "// 'custom_pages'); Firestore is never required."
         },
         {
-          "line": 4886,
+          "line": 4902,
           "kind": "DOCUMENTATION",
           "text": "// MySQL is the authoritative trusted-by store; Firestore is never consulted."
         },
         {
-          "line": 5238,
+          "line": 5254,
           "kind": "DOCUMENTATION",
           "text": "// jobs, applications, notifications, blog, companies). When the Firestore"
         },
         {
-          "line": 5282,
+          "line": 5298,
           "kind": "DOCUMENTATION",
           "text": "// Firestore data-plane cleanup — best-effort and only when the data"
         },
         {
-          "line": 5514,
+          "line": 5530,
           "kind": "DOCUMENTATION",
           "text": "// system_settings.system_settings). Firestore is never consulted."
         },
         {
-          "line": 5643,
+          "line": 5659,
           "kind": "DOCUMENTATION",
           "text": "// surfaced as a controlled error — never silently redirected to Firestore."
         },
         {
-          "line": 5751,
+          "line": 5767,
           "kind": "DOCUMENTATION",
           "text": "* provider configured (zero-Firestore certification mode). This endpoint lets"
         }

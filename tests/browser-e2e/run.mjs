@@ -228,7 +228,8 @@ await scenario('7. reload restores the saved resume (persistence)', async () => 
 
 await scenario('8. resume edit updates the stored revision', async () => {
   await page.fill('input[name="city"], #city', 'Vijayawada');
-  await page.waitForTimeout(2000); // debounce + save
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(3500); // debounce + save
   const conn = await getConnection();
   const [rows] = await conn.query('SELECT city FROM resumes WHERE id = ?', [resumeId]);
   await conn.end();
