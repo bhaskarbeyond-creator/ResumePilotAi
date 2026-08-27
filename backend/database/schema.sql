@@ -320,33 +320,38 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     INDEX idx_contact_read (is_read)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 16. Conversations & Direct Messages (Firestore: messages & conversations)
+-- 16. Messaging (migrated from Firebase Realtime Database to MySQL; the
+--     legacy participant1/participant2 draft schema was never used by any
+--     code path and has been replaced by this design).
 CREATE TABLE IF NOT EXISTS conversations (
     id VARCHAR(128) NOT NULL PRIMARY KEY,
-    participant1_id VARCHAR(128) NOT NULL,
-    participant2_id VARCHAR(128) NOT NULL,
-    last_message TEXT,
-    unread_count JSON,
+    application_id VARCHAR(300) NULL,
+    deleted_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_conv_p1 (participant1_id),
-    INDEX idx_conv_p2 (participant2_id)
+    INDEX idx_conversations_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS messages (
+CREATE TABLE IF NOT EXISTS conversation_participants (
+    conversation_id VARCHAR(128) NOT NULL,
+    user_id VARCHAR(128) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (conversation_id, user_id),
+    INDEX idx_conv_participants_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS conversation_messages (
     id VARCHAR(128) NOT NULL PRIMARY KEY,
     conversation_id VARCHAR(128) NOT NULL,
     sender_id VARCHAR(128) NOT NULL,
-    receiver_id VARCHAR(128) NOT NULL,
-    content MEDIUMTEXT,
-    is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMP NULL,
+    text TEXT,
+    timestamp BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-    INDEX idx_msg_conv (conversation_id),
-    INDEX idx_msg_sender (sender_id),
-    INDEX idx_msg_receiver (receiver_id)
+    INDEX idx_conv_messages_conv_ts (conversation_id, timestamp)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- (legacy dead schema removed: the old `messages` draft table had no code
+--  path writing to or reading from it; existing deployments with the legacy
+--  tables are migrated non-destructively by ensureExtendedSchema)
 
 -- 17. User Notifications (Firestore: notifications/{uid}/userNotifications/{notifId})
 CREATE TABLE IF NOT EXISTS notifications (
@@ -796,6 +801,55 @@ CREATE TABLE IF NOT EXISTS ai_usage (
     PRIMARY KEY (day_key, uid_hash),
     INDEX idx_ai_usage_uid (uid),
     INDEX idx_ai_usage_day (day_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 45. Durable notification outbox (transactional outbox pattern).
+--     Business writes and these events commit in the SAME MySQL transaction;
+--     a background worker delivers them with retry/backoff/dead-letter.
+--     Replaces the legacy Firestore-backed queue: MySQL is authoritative and
+--     the queue must function with Firestore completely unavailable.
+CREATE TABLE IF NOT EXISTS notification_outbox (
+    id VARCHAR(64) NOT NULL PRIMARY KEY,
+    event_id VARCHAR(300) NOT NULL,
+    channel VARCHAR(32) NOT NULL DEFAULT 'email',
+    recipient VARCHAR(255) NOT NULL,
+    template_type VARCHAR(80) NOT NULL,
+    vars JSON,
+    metadata JSON,
+    tenant_id VARCHAR(128) NULL,
+    idempotency_key VARCHAR(128) NULL,
+    state VARCHAR(40) NOT NULL DEFAULT 'NOTIFICATION_QUEUED',
+    attempt_count INT NOT NULL DEFAULT 0,
+    max_attempts INT NOT NULL DEFAULT 5,
+    provider_accepted TINYINT(1) NOT NULL DEFAULT 0,
+    provider_accepted_at TIMESTAMP NULL,
+    next_attempt_at BIGINT NOT NULL DEFAULT 0,
+    lease_owner VARCHAR(128) NULL,
+    lease_expires_at BIGINT NOT NULL DEFAULT 0,
+    last_attempt_at TIMESTAMP NULL,
+    last_error VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_notification_idempotency (idempotency_key),
+    INDEX idx_notification_due (state, next_attempt_at),
+    INDEX idx_notification_recipient (recipient),
+    INDEX idx_notification_state (state)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 46. Platform announcements (admin control plane). MySQL authoritative;
+--     revision column drives optimistic concurrency for admin edits.
+CREATE TABLE IF NOT EXISTS platform_announcements (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    title VARCHAR(160) NOT NULL,
+    message VARCHAR(1000) NOT NULL,
+    severity VARCHAR(16) NOT NULL DEFAULT 'INFO',
+    audience VARCHAR(40) NOT NULL DEFAULT 'ALL',
+    enabled TINYINT(1) NOT NULL DEFAULT 1,
+    revision INT NOT NULL DEFAULT 1,
+    created_by VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_announcements_enabled (enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

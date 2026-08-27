@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
@@ -133,6 +133,28 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
     }, [formData]);
 
     const requiredFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
+
+    // Unmount flush: the debounced auto-save above is cancelled when the step
+    // unmounts (e.g. the user types and clicks Next within the 500ms window).
+    // Without this flush the most recent keystrokes would silently vanish from
+    // the resume. Commit the latest form data synchronously on unmount.
+    const formDataRef = useRef(formData);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData.completedSteps || []);
+    useEffect(() => { formDataRef.current = formData; }, [formData]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData.completedSteps || []; }, [resumeData.completedSteps]);
+    useEffect(() => () => {
+        const data = formDataRef.current;
+        updateResumeDataRef.current(data);
+        const complete = requiredFields.every((field) => String(data[field] || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        if (complete && !completedSteps.includes(1)) {
+            completedSteps.push(1);
+            updateResumeDataRef.current({ ...data, completedSteps });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const completedRequiredFields = requiredFields.filter((field) => formData[field].trim() !== '').length;
     const totalProgress = (completedRequiredFields / requiredFields.length) * 100;
     const isStepComplete = completedRequiredFields === requiredFields.length;

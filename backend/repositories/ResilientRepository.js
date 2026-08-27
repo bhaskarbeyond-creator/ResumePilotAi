@@ -65,8 +65,14 @@ function classifyUnavailable(err) {
     if (!err) return false;
     const msg = String(err.message || err).toLowerCase();
     const code = err.code;
-    if (code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'PROTOCOL_CONNECTION_LOST' || code === 'ER_CON_COUNT_ERROR') return true;
-    return /unavailable|econnreset|etimedout|socket hang up|timeout|pool is closed|connect econnrefused|too many connections|mariadb|mysql/.test(msg);
+    // Transport failures AND transient server-state errors (shutdown in
+    // progress, query interrupted mid-flight, broken pipe) all mean the
+    // authoritative store cannot serve this request right now: degrade with a
+    // controlled 503 instead of leaking a generic 500.
+    if (['ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET', 'EPIPE', 'PROTOCOL_CONNECTION_LOST',
+        'ER_CON_COUNT_ERROR', 'ER_SERVER_SHUTDOWN', 'ER_QUERY_INTERRUPTED', 'ER_NET_READ_ERROR',
+        'ER_NET_WRITE_INTERRUPTED', 'ER_NET_ERROR_ON_WRITE', 'POOL_CLOSED'].includes(code)) return true;
+    return /unavailable|econnreset|etimedout|socket hang up|timeout|pool is closed|connect econnrefused|too many connections|server shutdown|shutdown in progress|mariadb|mysql/.test(msg);
 }
 
 function normalizeResult(method, result) {

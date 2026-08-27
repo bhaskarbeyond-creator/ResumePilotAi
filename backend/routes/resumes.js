@@ -1,5 +1,6 @@
 const express = require('express');
 const { getRepository } = require('../repositories');
+const { replyRepoError } = require('./errorResponder');
 const router = express.Router();
 
 router.use((req, res, next) => {
@@ -18,7 +19,7 @@ router.get('/', async (req, res) => {
         return res.json({ success: true, resumes });
     } catch (err) {
         console.error('[Resumes API] getResumes error:', err.message);
-        return res.status(500).json({ success: false, error: 'Failed to fetch resumes' });
+        return replyRepoError(res, err, 'Failed to fetch resumes');
     }
 });
 
@@ -30,7 +31,7 @@ router.get('/:id', async (req, res) => {
         return res.json({ success: true, resume });
     } catch (err) {
         console.error('[Resumes API] getResume error:', err.message);
-        return res.status(500).json({ success: false, error: 'Failed to fetch resume' });
+        return replyRepoError(res, err, 'Failed to fetch resume');
     }
 });
 
@@ -47,7 +48,7 @@ router.post('/:id', express.json({ limit: '5mb' }), async (req, res) => {
             return res.status(409).json({ success: false, error: err.message, code: err.code, remoteRevision: err.remoteRevision });
         }
         console.error('[Resumes API] saveResume error:', err.message);
-        return res.status(500).json({ success: false, error: 'Failed to save resume' });
+        return replyRepoError(res, err, 'Failed to save resume');
     }
 });
 
@@ -61,7 +62,7 @@ router.delete('/:id', async (req, res) => {
         return res.json({ success: true });
     } catch (err) {
         console.error('[Resumes API] deleteResume error:', err.message);
-        return res.status(500).json({ success: false, error: 'Failed to delete resume' });
+        return replyRepoError(res, err, 'Failed to delete resume');
     }
 });
 
@@ -78,7 +79,7 @@ router.post('/:id/publish', express.json({ limit: '5mb' }), async (req, res) => 
         if (err.code === 'RESUME_CONFLICT' || err.code === 'RESUME_PUBLICATION_CONFLICT') {
             return res.status(409).json({ success: false, error: err.message, code: err.code });
         }
-        return res.status(500).json({ success: false, error: err.message || 'Failed to publish resume' });
+        return replyRepoError(res, err, 'Failed to publish resume');
     }
 });
 
@@ -91,7 +92,7 @@ router.post('/:id/unpublish', async (req, res) => {
         });
         return res.json({ success: true, ...result });
     } catch (err) {
-        return res.status(500).json({ success: false, error: err.message || 'Failed to unpublish resume' });
+        return replyRepoError(res, err, 'Failed to unpublish resume');
     }
 });
 
@@ -100,8 +101,8 @@ router.get('/:id/publication', async (req, res) => {
     try {
         const result = await req.repository.getResumePublication(req.user.uid, req.params.id);
         return res.json({ success: true, ...result });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to get publication status' });
+    } catch (err) {
+        return replyRepoError(res, err, 'Failed to get publication status');
     }
 });
 

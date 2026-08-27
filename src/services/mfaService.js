@@ -2,7 +2,18 @@ import QRCode from 'qrcode';
 import { getAuth, multiFactor, TotpMultiFactorGenerator, getMultiFactorResolver } from 'firebase/auth';
 import fire from '../conf/fire';
 
-const modularAuth = () => getAuth(fire._delegate);
+// In no-Firebase environments `fire` is the compat proxy with no initialized
+// app (`fire._delegate` is undefined); getAuth() would throw "No Firebase App".
+// Return a null-shaped auth object instead so callers degrade gracefully.
+const NULL_AUTH = { currentUser: null };
+const modularAuth = () => {
+    try {
+        const app = fire._delegate;
+        return app ? getAuth(app) : NULL_AUTH;
+    } catch (_e) {
+        return NULL_AUTH;
+    }
+};
 
 export async function beginTotpEnrollment() {
     const user = modularAuth().currentUser;

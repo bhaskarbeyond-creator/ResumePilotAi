@@ -73,12 +73,27 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
     // working provider while still giving operators a deliberate revocation path.
     const finalKey = explicitlyCleared ? '' : ((!isMasked && rawKey) ? rawKey : existingKey);
     const model = String(input[MODEL_FIELDS[provider]] || '').trim();
+    // Optional operator endpoint override (self-hosted / private AI gateway).
+    // Blank preserves the existing value; 'none' clears it.
+    const rawBaseUrl = String(input[`${provider}BaseUrl`] || '').trim();
+    const existingBaseUrl = existing[provider]?.baseUrl || '';
+    let baseUrl = existingBaseUrl;
+    if (rawBaseUrl && rawBaseUrl.toLowerCase() !== 'none') {
+      if (!/^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(rawBaseUrl)) {
+        throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} base URL.`, 400);
+      }
+      baseUrl = rawBaseUrl;
+    } else if (rawBaseUrl.toLowerCase() === 'none') {
+      baseUrl = '';
+    }
     patch[provider] = {
       ...(existing[provider] || {}),
       ...(finalKey ? { apiKey: finalKey } : {}),
       ...(model ? { model } : {}),
+      ...(baseUrl ? { baseUrl } : {}),
     };
     if (explicitlyCleared) delete patch[provider].apiKey;
+    if (!baseUrl) delete patch[provider].baseUrl;
   }
   return patch;
 }

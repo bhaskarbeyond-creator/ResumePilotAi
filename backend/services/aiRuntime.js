@@ -17,6 +17,15 @@ const ENV_MODELS = Object.freeze({
     nvidia: 'NVIDIA_MODEL', gemini: 'GEMINI_MODEL', openai: 'OPENAI_MODEL',
     groq: 'GROQ_MODEL', openrouter: 'OPENROUTER_MODEL', deepseek: 'DEEPSEEK_MODEL',
 });
+// Operator-configurable endpoint overrides for self-hosted / private AI
+// gateways (e.g. Azure-style proxies, on-prem OpenAI-compatible servers) and
+// for acceptance testing. Values come from deployment env or Super Admin AI
+// settings; they are never derived from user input, so there is no SSRF
+// surface beyond what an operator can already configure.
+const ENV_BASE_URLS = Object.freeze({
+    nvidia: 'NVIDIA_BASE_URL', gemini: 'GEMINI_BASE_URL', openai: 'OPENAI_BASE_URL',
+    groq: 'GROQ_BASE_URL', openrouter: 'OPENROUTER_BASE_URL', deepseek: 'DEEPSEEK_BASE_URL',
+});
 const MODEL_FIELDS = Object.freeze({
     nvidia: 'nvidiaModel', gemini: 'model', openai: 'openaiModel', groq: 'groqModel',
     openrouter: 'openrouterModel', deepseek: 'deepseekModel',
@@ -492,9 +501,11 @@ async function loadProviderConfiguration(db, environment = process.env) {
     for (const provider of PROVIDERS) {
         const key = String(environment[ENV_KEYS[provider]] || secrets[provider]?.apiKey || legacyAi[legacySecretFields[provider]] || '').trim();
         const configuredModel = environment[ENV_MODELS[provider]] || secrets[provider]?.model || effectiveAi[MODEL_FIELDS[provider]];
+        const baseUrl = String(environment[ENV_BASE_URLS[provider]] || secrets[provider]?.baseUrl || '').trim();
         providers[provider] = {
             key,
             model: safeModel(configuredModel, PROVIDER_DEFAULTS[provider].model),
+            baseUrl: /^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(baseUrl) ? baseUrl : '',
             enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
         };
     }
@@ -550,10 +561,24 @@ function extractProviderErrorMessage(body, status, provider) {
     return `${provider} HTTP ${status}`;
 }
 
+/**
+ * Resolves the OpenAI-compatible chat completions URL for a provider. An
+ * operator-configured baseUrl (deployment env or Super Admin AI settings)
+ * takes precedence; `/chat/completions` is appended unless the override
+ * already points at a completions path.
+ */
+function chatCompletionsUrl(provider, baseUrl) {
+    const configured = String(baseUrl || '').trim().replace(/\/+$/, '');
+    if (!configured) return PROVIDER_DEFAULTS[provider].url;
+    if (/\/chat\/completions$/.test(configured)) return configured;
+    return `${configured}/chat/completions`;
+}
+
 async function requestProvider(provider, providerConfig, prompt, generation, { fetchImpl = global.fetch, signal, timeoutMs = 30000 } = {}) {
     if (provider === 'gemini') {
         const model = providerConfig.model.startsWith('models/') ? providerConfig.model : `models/${providerConfig.model}`;
-        const url = `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${encodeURIComponent(providerConfig.key)}`;
+        const geminiBase = String(providerConfig.baseUrl || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
+        const url = `${geminiBase}/v1beta/${model}:generateContent?key=${encodeURIComponent(providerConfig.key)}`;
         const response = await fetchWithDeadline(fetchImpl, url, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -584,7 +609,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
                 headers['HTTP-Referer'] = 'https://airesume.projectdemo.guru';
                 headers['X-Title'] = 'ResumePilot AI';
             }
-            const response = await fetchWithDeadline(fetchImpl, defaults.url, {
+            const response = await fetchWithDeadline(fetchImpl, chatCompletionsUrl(provider, providerConfig.baseUrl), {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({

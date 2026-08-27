@@ -105,26 +105,104 @@ async function initializeSchema() {
 /**
  * Additive, idempotent schema extensions for existing deployments whose
  * tables were created before revision/tombstone/idempotency columns existed.
- * MariaDB supports ADD COLUMN IF NOT EXISTS.
+ *
+ * Portable across MySQL 5.7/8.x and MariaDB: MySQL does not support
+ * `ADD COLUMN IF NOT EXISTS`, so every ALTER is guarded by an
+ * information_schema check first (the old MariaDB-only syntax silently
+ * skipped every extension on plain MySQL).
  */
+async function addColumnIfMissing(p, table, column, definition) {
+    try {
+        const [rows] = await p.query(
+            'SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [table, column]
+        );
+        if (rows[0]?.c > 0) return;
+        await p.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+    } catch (err) {
+        if (!/unknown table|duplicate column|check that column/i.test(String(err.message || ''))) {
+            console.warn(`[MySQL] Column extension notice (${table}.${column}):`, err.message);
+        }
+    }
+}
+
+async function addIndexIfMissing(p, table, indexName, definition) {
+    try {
+        const [rows] = await p.query(
+            'SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
+            [table, indexName]
+        );
+        if (rows[0]?.c > 0) return;
+        await p.query(`ALTER TABLE \`${table}\` ADD ${definition}`);
+    } catch (err) {
+        if (!/unknown table|duplicate key name/i.test(String(err.message || ''))) {
+            console.warn(`[MySQL] Index extension notice (${table}.${indexName}):`, err.message);
+        }
+    }
+}
+
+/**
+ * Messaging schema migration: deployments initialized with the legacy draft
+ * schema carry a `conversations` table shaped (participant1_id, participant2_id)
+ * that no code path ever used. Rename legacy tables non-destructively and let
+ * the current schema create the real ones.
+ */
+async function migrateLegacyMessagingSchema(p) {
+    try {
+        const [convCols] = await p.query(
+            "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'conversations' AND COLUMN_NAME = 'participant1_id'"
+        );
+        if (convCols[0]?.c > 0) {
+            const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+            await p.query(`RENAME TABLE conversations TO conversations_legacy_${stamp}`);
+            console.log(`[MySQL] Legacy conversations table preserved as conversations_legacy_${stamp}; creating current messaging schema.`);
+            await p.query(`CREATE TABLE IF NOT EXISTS conversations (
+                id VARCHAR(128) NOT NULL PRIMARY KEY,
+                application_id VARCHAR(300) NULL,
+                deleted_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_conversations_created (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+        }
+        const [msgCols] = await p.query(
+            "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'receiver_id'"
+        );
+        if (msgCols[0]?.c > 0) {
+            const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+            await p.query(`RENAME TABLE messages TO messages_legacy_${stamp}`);
+            console.log(`[MySQL] Legacy messages table preserved as messages_legacy_${stamp}.`);
+        }
+    } catch (err) {
+        console.warn('[MySQL] Messaging migration notice:', err.message);
+    }
+}
+
 async function ensureExtendedSchema(poolOverride = null) {
     const p = poolOverride || getPool();
+    await migrateLegacyMessagingSchema(p);
+    await addColumnIfMissing(p, 'users', 'revision', 'INT NOT NULL DEFAULT 1');
+    await addColumnIfMissing(p, 'users', 'deleted_at', 'TIMESTAMP NULL');
+    await addColumnIfMissing(p, 'resumes', 'deleted_at', 'TIMESTAMP NULL');
+    await addColumnIfMissing(p, 'sync_outbox', 'mutation_id', 'VARCHAR(64) NULL');
+    await addColumnIfMissing(p, 'sync_outbox', 'idempotency_key', 'VARCHAR(64) NULL');
+    await addColumnIfMissing(p, 'payment_orders', 'revision', 'INT NOT NULL DEFAULT 1');
+    await addColumnIfMissing(p, 'payment_orders', 'mutation_id', 'VARCHAR(64) NULL');
+    await addColumnIfMissing(p, 'payment_orders', 'recovery_needed', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await addColumnIfMissing(p, 'payment_orders', 'recovery_reason', 'VARCHAR(128) NULL');
+    await addColumnIfMissing(p, 'payment_orders', 'last_payment_gateway', 'VARCHAR(64) NULL');
+    await addColumnIfMissing(p, 'payment_orders', 'provider_refund_id', 'VARCHAR(255) NULL');
+    await addColumnIfMissing(p, 'jobs', 'revision', 'INT NOT NULL DEFAULT 1');
+    await addColumnIfMissing(p, 'blog', 'revision', 'INT NOT NULL DEFAULT 1');
+    await addColumnIfMissing(p, 'blog', 'status', "VARCHAR(50) DEFAULT 'draft'");
+    await addColumnIfMissing(p, 'blog', 'scheduled_at', 'TIMESTAMP NULL');
+    await addColumnIfMissing(p, 'companies', 'extra_json', 'JSON NULL');
+    await addColumnIfMissing(p, 'companies', 'revision', 'INT NOT NULL DEFAULT 1');
+    await addColumnIfMissing(p, 'companies', 'status', "VARCHAR(50) DEFAULT 'pending'");
+    await addColumnIfMissing(p, 'jobs', 'extra_json', 'JSON NULL');
+    await addColumnIfMissing(p, 'applications', 'extra_json', 'JSON NULL');
+    await addColumnIfMissing(p, 'applications', 'revision', 'INT NOT NULL DEFAULT 1');
+    await addIndexIfMissing(p, 'favourites', 'uq_fav_user_item', 'UNIQUE KEY uq_fav_user_item (user_id, item_id)');
     const statements = [
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL",
-        "ALTER TABLE resumes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL",
-        "ALTER TABLE sync_outbox ADD COLUMN IF NOT EXISTS mutation_id VARCHAR(64) NULL",
-        "ALTER TABLE sync_outbox ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(64) NULL",
-        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
-        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS mutation_id VARCHAR(64) NULL",
-        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS recovery_needed TINYINT(1) NOT NULL DEFAULT 0",
-        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS recovery_reason VARCHAR(128) NULL",
-        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS last_payment_gateway VARCHAR(64) NULL",
-        "ALTER TABLE payment_orders ADD COLUMN IF NOT EXISTS provider_refund_id VARCHAR(255) NULL",
-        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
-        "ALTER TABLE blog ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
-        "ALTER TABLE blog ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'draft'",
-        "ALTER TABLE blog ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP NULL",
         `CREATE TABLE IF NOT EXISTS payment_webhook_events (
             event_id VARCHAR(128) NOT NULL PRIMARY KEY,
             provider VARCHAR(64) NOT NULL,
@@ -143,12 +221,6 @@ async function ensureExtendedSchema(poolOverride = null) {
             reason TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS extra_json JSON NULL",
-        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
-        "ALTER TABLE companies ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'",
-        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS extra_json JSON NULL",
-        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS extra_json JSON NULL",
-        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS revision INT NOT NULL DEFAULT 1",
         `CREATE TABLE IF NOT EXISTS canonical_documents (
             entity_type VARCHAR(64) NOT NULL,
             entity_id VARCHAR(128) NOT NULL,
@@ -188,7 +260,6 @@ async function ensureExtendedSchema(poolOverride = null) {
             consumed_at TIMESTAMP NULL,
             INDEX idx_export_tokens_expiry (expires_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        "ALTER TABLE favourites ADD UNIQUE KEY IF NOT EXISTS uq_fav_user_item (user_id, item_id)",
         `CREATE TABLE IF NOT EXISTS ai_usage (
             day_key VARCHAR(10) NOT NULL,
             uid_hash VARCHAR(40) NOT NULL,
@@ -257,6 +328,59 @@ async function ensureExtendedSchema(poolOverride = null) {
             INDEX idx_email_logs_recipient (recipient),
             INDEX idx_email_logs_sent_at (sent_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        // Durable notification outbox (transactional outbox pattern). MySQL is
+        // authoritative; must function with Firestore completely unavailable.
+        `CREATE TABLE IF NOT EXISTS notification_outbox (
+            id VARCHAR(64) NOT NULL PRIMARY KEY,
+            event_id VARCHAR(300) NOT NULL,
+            channel VARCHAR(32) NOT NULL DEFAULT 'email',
+            recipient VARCHAR(255) NOT NULL,
+            template_type VARCHAR(80) NOT NULL,
+            vars JSON,
+            metadata JSON,
+            tenant_id VARCHAR(128) NULL,
+            idempotency_key VARCHAR(128) NULL,
+            state VARCHAR(40) NOT NULL DEFAULT 'NOTIFICATION_QUEUED',
+            attempt_count INT NOT NULL DEFAULT 0,
+            max_attempts INT NOT NULL DEFAULT 5,
+            provider_accepted TINYINT(1) NOT NULL DEFAULT 0,
+            provider_accepted_at TIMESTAMP NULL,
+            next_attempt_at BIGINT NOT NULL DEFAULT 0,
+            lease_owner VARCHAR(128) NULL,
+            lease_expires_at BIGINT NOT NULL DEFAULT 0,
+            last_attempt_at TIMESTAMP NULL,
+            last_error VARCHAR(500) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_notification_idempotency (idempotency_key),
+            INDEX idx_notification_due (state, next_attempt_at),
+            INDEX idx_notification_recipient (recipient),
+            INDEX idx_notification_state (state)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        // Messaging (migrated from Firebase Realtime Database to MySQL).
+        `CREATE TABLE IF NOT EXISTS conversations (
+            id VARCHAR(128) NOT NULL PRIMARY KEY,
+            application_id VARCHAR(300) NULL,
+            deleted_at TIMESTAMP NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_conversations_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS conversation_participants (
+            conversation_id VARCHAR(128) NOT NULL,
+            user_id VARCHAR(128) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (conversation_id, user_id),
+            INDEX idx_conv_participants_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS conversation_messages (
+            id VARCHAR(128) NOT NULL PRIMARY KEY,
+            conversation_id VARCHAR(128) NOT NULL,
+            sender_id VARCHAR(128) NOT NULL,
+            text TEXT,
+            timestamp BIGINT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_conv_messages_conv_ts (conversation_id, timestamp)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     ];
     for (const sql of statements) {
         try {
@@ -270,11 +394,25 @@ async function ensureExtendedSchema(poolOverride = null) {
     }
 }
 
+/**
+ * Closes the pool deterministically (graceful shutdown, test teardown).
+ * Pending queries complete; idle connections are destroyed. Subsequent
+ * getPool() calls create a fresh pool, so a restart-in-place is safe.
+ */
+async function closePool() {
+    if (pool && !pool._closed) {
+        const p = pool;
+        pool = null;
+        await p.end().catch(() => {});
+    }
+}
+
 module.exports = {
     getPool,
     pool: getPool(),
     testConnection,
     initializeSchema,
     ensureExtendedSchema,
+    closePool,
     poolConfig,
 };

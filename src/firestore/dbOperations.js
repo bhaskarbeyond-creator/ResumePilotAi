@@ -920,8 +920,18 @@ export function redactSubscriptionSecrets(value = {}) {
 
 export async function getSubscriptionStatus() {
     try {
-        const data = await apiJson('/api/platform/payment-settings');
-        return data;
+        // Public configuration endpoint: exposes the payment provider toggles,
+        // sandbox mode, and currency without requiring admin permission.
+        // (The admin payment-settings projection stays admin-only.)
+        const data = await apiJson('/api/platform/public-config');
+        const subscriptions = data?.subscriptions || {};
+        return {
+            ...subscriptions,
+            sandboxMode: subscriptions.sandboxMode !== false,
+            currency: data?.currency || 'INR',
+            currencySymbol: data?.currencySymbol || undefined,
+            allowMultiCurrency: data?.allowMultiCurrency === true,
+        };
     } catch {
         return { sandboxMode: true, currency: 'INR' };
     }
@@ -1625,7 +1635,12 @@ export async function getAllCategories() {
     }
 }
 
-export async function getConversations(userId, callback) {
+// NOTE: must stay SYNCHRONOUS — callers use the return value directly as an
+// effect cleanup / unsubscribe handle (useUnreadMessages, DashboardMessages).
+// Declaring this `async` turned the handle into a Promise, which React then
+// treated as an invalid effect cleanup ("destroy is not a function") and the
+// polling interval was never cleared.
+export function getConversations(userId, callback) {
     // Realtime chat is read through the backend API. This function keeps the
     // historical subscription-style signature but polls instead of listening
     // to Firestore (which no longer exists on this path).
@@ -2038,7 +2053,9 @@ export async function getCovers(_userId) {
 
 export async function getAllReviews() {
     try {
-        const data = await apiJson('/api/admin/reviews');
+        // Public approved-reviews endpoint — the admin endpoint requires the
+        // system.config.read permission and must not be called from public pages.
+        const data = await apiJson('/api/reviews?limit=50');
         return Array.isArray(data.reviews) ? data.reviews : [];
     } catch {
         return [];
@@ -2235,4 +2252,23 @@ export async function sendMessage(conversationId, _senderId, text) {
 export async function getMessages(conversationId, limit = 20) {
     const result = await getMessagesPaginated(conversationId, limit);
     return result.messages || [];
+}
+
+// NOTE: must stay SYNCHRONOUS — callers use the return value directly as a
+// React effect cleanup handle. Polls the REST conversation-messages endpoint;
+// the legacy Firestore realtime listener no longer exists on this path.
+export function subscribeConversationMessages(conversationId, onData, onError = () => {}) {
+    let active = true;
+    const poll = async () => {
+        if (!active) return;
+        try {
+            const data = await apiJson(`/api/messages/conversations/${encodeURIComponent(conversationId)}/messages`);
+            if (active) onData(data.messages || []);
+        } catch (error) {
+            if (active) onError(error);
+        }
+    };
+    poll();
+    const timer = setInterval(poll, 10000);
+    return () => { active = false; clearInterval(timer); };
 }

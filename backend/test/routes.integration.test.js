@@ -33,10 +33,17 @@ test('minimal health endpoint is public and does not cache', async () => {
   assert.equal(response.headers['cache-control'], 'no-store');
 });
 
-test('readiness is truthful and marks unprobed providers as not checked', async () => {
+test('readiness is truthful: reflects the MySQL data plane, never a secondary store', async () => {
+  const { testConnection } = require('../database/mysql');
+  const mysql = await testConnection();
   const response = await request(app).get('/readyz');
-  assert.equal(response.status, 503);
-  assert.equal(response.body.status, 'not_ready');
+  // Readiness tracks the AUTHORITATIVE database. With MySQL reachable this
+  // environment is ready; with MySQL down it must report not_ready (503).
+  assert.equal(response.status, mysql.connected ? 200 : 503);
+  assert.equal(response.body.status, mysql.connected ? 'ready' : 'not_ready');
+  assert.equal(response.body.authoritativeDatabase, 'mysql');
+  assert.equal(response.body.checks.firestoreDataPlane, 'REMOVED', 'readiness must never depend on a secondary store');
+  assert.equal(response.body.checks.mysql.status, mysql.connected ? 'READY' : 'UNAVAILABLE');
   assert.equal(response.body.checks.aiProviders, 'NOT_CHECKED');
   assert.equal(response.headers['cache-control'], 'no-store');
 });

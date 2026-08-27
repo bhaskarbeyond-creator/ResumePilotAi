@@ -44,7 +44,7 @@ export const useUnreadMessages = () => {
             }
         );
 
-        return unsubscribeConversations;
+        return typeof unsubscribeConversations === 'function' ? unsubscribeConversations : undefined;
     }, [currentUser]);
 
     return unreadCount;

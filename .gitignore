@@ -80,3 +80,6 @@ template-lab/pdf-evidence.json
 artifacts/
 scratch/
 test-results/
+
+# Certification evidence / scratch workspace (regenerable)
+.arena/

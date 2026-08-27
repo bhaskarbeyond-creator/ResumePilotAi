@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test test/*.test.js",
+    "test": "node --test --test-force-exit test/*.test.js",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test:enterprise": "node --test enterprise-test/*.test.js"
+    "test:enterprise": "node --test --test-force-exit enterprise-test/*.test.js"
   },
   "author": "",
   "license": "ISC",

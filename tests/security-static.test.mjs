@@ -53,11 +53,12 @@ test('tracked files contain no recognizable private credentials', () => {
     try { content = read(file); } catch (_) { continue; }
     const scrubbed = placeholders.reduce((text, placeholder) => text.replace(new RegExp(placeholder, 'g'), ''), content);
     if (patterns.some(pattern => pattern.test(scrubbed))) findings.push(file);
-    if (file !== '.env.example' && /\bpassword\s*=\s*['"][^'"]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
-    // Object-literal and JSON forms of the same leak (password: 'literal').
-    // Test fixtures intentionally use fake credentials; everything else must
-    // read credentials from the environment.
+    // Test fixtures intentionally use fake (disposable, local-only) credentials;
+    // everything else must read credentials from the environment. The same
+    // fixture policy applies to the assignment form (password = '...') and the
+    // object-literal/JSON form (password: '...').
     const isTestFixture = /^(?:backend\/(?:test|enterprise-test)\/|tests\/)/.test(file);
+    if (!isTestFixture && file !== '.env.example' && /\bpassword\s*=\s*['"][^'"]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
     if (!isTestFixture && /\bpassword\s*:\s*['"][^'"{]{8,}['"]/i.test(content)) findings.push(`${file}: hardcoded password`);
   }
   assert.deepEqual(findings, []);

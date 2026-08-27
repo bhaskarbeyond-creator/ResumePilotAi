@@ -13,6 +13,7 @@ const {
 } = require('../services/featureFlagService');
 const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { setTokenVerifierForTests } = require('../security/auth');
+const { getPool } = require('../database/mysql');
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
@@ -24,6 +25,17 @@ setTokenVerifierForTests(async token => {
 
 const app = require('../index');
 const bearer = token => ({ Authorization: `Bearer ${token}` });
+
+// Test isolation: flags live in MySQL system_settings; restore the category
+// before and after this file so parallel suites see no cross-talk.
+async function resetFlagStore() {
+  try {
+    await getPool().query("DELETE FROM system_settings WHERE category = 'feature_flags'");
+  } catch (_e) { /* schema may not exist yet in degenerate environments */ }
+}
+
+test.before(async () => { await resetFlagStore(); });
+test.after(async () => { await resetFlagStore(); try { await getPool().end(); } catch (_e) {} });
 
 test('feature flags: definition contract and default values', () => {
   assert.ok(FLAG_DEFINITIONS.ENTERPRISE_TENANCY_ENABLED);
@@ -41,24 +53,10 @@ test('feature flags: definition contract and default values', () => {
   assert.equal(FLAG_DEFINITIONS.ENTERPRISE_OUTBOX_WORKER_ENABLED.requiresRestart, true);
 });
 
-test('feature flags: getFlagValue priority resolution (Firestore > Env > Default)', async () => {
-  const mockDb = {
-    doc(path) {
-      assert.equal(path, 'settings/feature_flags');
-      return {
-        async get() {
-          return {
-            exists: true,
-            data: () => ({
-              ENTERPRISE_TENANCY_ENABLED: { value: true, changedBy: 'admin-sa' },
-            }),
-          };
-        },
-      };
-    },
-  };
-
-  const valWithDb = await getFlagValue(mockDb, 'ENTERPRISE_TENANCY_ENABLED');
+test('feature flags: getFlagValue priority resolution (MySQL > Env > Default)', async () => {
+  // MySQL override wins: set via the audited writer (also invalidates cache).
+  await setFlagValue(null, null, 'PDF_RENDERER_ISOLATED', true, 'super-1', 'req-priority');
+  const valWithDb = await getFlagValue(null, 'PDF_RENDERER_ISOLATED');
   assert.equal(valWithDb, true);
 
   const prevEnv = process.env.CMS_SCHEDULER_ENABLED;
@@ -80,117 +78,60 @@ test('feature flags: getFlagValue priority resolution (Firestore > Env > Default
 });
 
 test('feature flags: getAllFlags returns structured metadata and effective source', async () => {
-  const mockDb = {
-    doc(_path) {
-      return {
-        async get() {
-          return {
-            exists: true,
-            data: () => ({
-              ENTERPRISE_TENANCY_ENABLED: { value: true, changedBy: 'super-admin-uid', changedAt: new Date('2026-08-20T10:00:00Z') },
-            }),
-          };
-        },
-      };
-    },
-  };
-
-  const all = await getAllFlags(mockDb);
-  assert.ok(all.ENTERPRISE_TENANCY_ENABLED);
-  assert.equal(all.ENTERPRISE_TENANCY_ENABLED.value, true);
-  assert.equal(all.ENTERPRISE_TENANCY_ENABLED.source, 'firestore');
-  assert.equal(all.ENTERPRISE_TENANCY_ENABLED.lastChangedBy, 'super-admin-uid');
-  assert.equal(all.ENTERPRISE_TENANCY_ENABLED.auditEvent, 'FEATURE_FLAG_CHANGED');
-  assert.equal(all.ENTERPRISE_TENANCY_ENABLED.requiresRestart, false);
+  await setFlagValue(null, null, 'NOTIFICATION_OUTBOX_EXTERNAL_WORKER', true, 'super-admin-uid', 'req-meta');
+  const all = await getAllFlags(null);
+  assert.ok(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER);
+  assert.equal(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.value, true);
+  assert.equal(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.source, 'mysql');
+  assert.equal(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.lastChangedBy, 'super-admin-uid');
+  assert.equal(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.auditEvent, 'FEATURE_FLAG_CHANGED');
+  assert.ok(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.lastChangedAt, 'changedAt persisted as ISO timestamp');
 
   assert.ok(all.CMS_SCHEDULER_ENABLED);
   assert.equal(all.CMS_SCHEDULER_ENABLED.category, 'workers');
 });
 
-test('feature flags: setFlagValue validates parameters, updates Firestore, and logs audit', async () => {
-  const transactionLogs = [];
-  const storedData = {};
-  const mockAdmin = {
-    firestore: {
-      FieldValue: {
-        serverTimestamp: () => new Date('2026-08-23T12:00:00Z'),
-      },
-    },
-  };
-
-  const mockDb = {
-    doc(path) {
-      return {
-        path,
-        async get() {
-          return { exists: Boolean(storedData[path]), data: () => storedData[path] || {} };
-        },
-      };
-    },
-    collection(name) {
-      return {
-        doc() {
-          return { path: `${name}/audit-doc-id` };
-        },
-      };
-    },
-    async runTransaction(updateFunction) {
-      const transaction = {
-        async get(ref) {
-          return ref.get();
-        },
-        set(ref, data, options) {
-          transactionLogs.push({ ref: ref.path, data, options });
-          if (ref.path === 'settings/feature_flags') {
-            storedData[ref.path] = { ...(storedData[ref.path] || {}), ...data };
-          }
-        },
-      };
-      return updateFunction(transaction);
-    },
-  };
-
+test('feature flags: setFlagValue validates parameters, persists to MySQL, and logs audit', async () => {
   // Validation errors
   await assert.rejects(
-    () => setFlagValue(mockDb, mockAdmin, 'INVALID_FLAG_KEY', true, 'super-1', 'req-1'),
+    () => setFlagValue(null, null, 'INVALID_FLAG_KEY', true, 'super-1', 'req-1'),
     { code: 'UNKNOWN_FEATURE_FLAG', status: 400 }
   );
 
   await assert.rejects(
-    () => setFlagValue(mockDb, mockAdmin, 'ENTERPRISE_TENANCY_ENABLED', 'not-a-bool', 'super-1', 'req-1'),
+    () => setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', 'not-a-bool', 'super-1', 'req-1'),
     { code: 'INVALID_FLAG_VALUE', status: 400 }
   );
 
   await assert.rejects(
-    () => setFlagValue(mockDb, mockAdmin, 'ENTERPRISE_TENANCY_ENABLED', true, null, 'req-1'),
+    () => setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', true, null, 'req-1'),
     { code: 'AUTH_REQUIRED', status: 401 }
   );
 
-  await assert.rejects(
-    () => setFlagValue(null, mockAdmin, 'ENTERPRISE_TENANCY_ENABLED', true, 'super-1', 'req-1'),
-    { code: 'FEATURE_FLAGS_UNAVAILABLE', status: 503 }
-  );
-
-  // Successful mutation
-  const result = await setFlagValue(mockDb, mockAdmin, 'ENTERPRISE_TENANCY_ENABLED', true, 'super-1', 'req-test-123');
-  assert.equal(result.flag, 'ENTERPRISE_TENANCY_ENABLED');
-  assert.equal(result.value, true);
+  // Successful mutation — durable in MySQL with an audit row in the same transaction.
+  const result = await setFlagValue(null, null, 'PDF_RENDERER_ISOLATED', false, 'super-1', 'req-test-123');
+  assert.equal(result.flag, 'PDF_RENDERER_ISOLATED');
+  assert.equal(result.value, false);
   assert.equal(result.auditEvent, 'FEATURE_FLAG_CHANGED');
   assert.equal(result.requiresRestart, false);
 
-  assert.equal(transactionLogs.length, 2);
-  const flagWrite = transactionLogs.find(log => log.ref === 'settings/feature_flags');
-  assert.ok(flagWrite);
-  assert.equal(flagWrite.data.ENTERPRISE_TENANCY_ENABLED.value, true);
-  assert.equal(flagWrite.data.ENTERPRISE_TENANCY_ENABLED.changedBy, 'super-1');
+  const pool = getPool();
+  const [rows] = await pool.query("SELECT data FROM system_settings WHERE category = 'feature_flags'");
+  const stored = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
+  assert.equal(stored.PDF_RENDERER_ISOLATED.value, false);
+  assert.equal(stored.PDF_RENDERER_ISOLATED.changedBy, 'super-1');
 
-  const auditWrite = transactionLogs.find(log => log.ref.startsWith('security_audit_logs/'));
-  assert.ok(auditWrite);
-  assert.equal(auditWrite.data.action, 'FEATURE_FLAG_CHANGED');
-  assert.equal(auditWrite.data.flag, 'ENTERPRISE_TENANCY_ENABLED');
-  assert.equal(auditWrite.data.newValue, true);
-  assert.equal(auditWrite.data.actorUid, 'super-1');
-  assert.equal(auditWrite.data.requestId, 'req-test-123');
+  const [auditRows] = await pool.query(
+    "SELECT action, actor_uid, metadata, request_id FROM security_audit_logs WHERE action = 'FEATURE_FLAG_CHANGED' AND request_id = 'req-test-123'"
+  );
+  assert.equal(auditRows.length, 1);
+  const meta = typeof auditRows[0].metadata === 'string' ? JSON.parse(auditRows[0].metadata) : auditRows[0].metadata;
+  assert.equal(meta.flag, 'PDF_RENDERER_ISOLATED');
+  assert.equal(meta.newValue, false);
+  assert.equal(auditRows[0].actor_uid, 'super-1');
+
+  // Cleanup so the enterprise gate below starts from a clean state.
+  await pool.query("DELETE FROM security_audit_logs WHERE request_id = 'req-test-123'");
 });
 
 test('feature flags: enterpriseFeatureEnabled and enterpriseFeatureEnabledAsync helpers', async () => {
@@ -198,22 +139,17 @@ test('feature flags: enterpriseFeatureEnabled and enterpriseFeatureEnabledAsync 
   assert.equal(enterpriseFeatureEnabled({ ENTERPRISE_TENANCY_ENABLED: 'false' }), false);
   assert.equal(enterpriseFeatureEnabled({}), false);
 
-  const mockDb = {
-    doc(_path) {
-      return {
-        async get() {
-          return {
-            exists: true,
-            data: () => ({
-              ENTERPRISE_TENANCY_ENABLED: { value: true },
-            }),
-          };
-        },
-      };
-    },
-  };
-  const asyncVal = await enterpriseFeatureEnabledAsync(mockDb);
-  assert.equal(asyncVal, true);
+  // The async helper reads the MySQL-backed override. Restore the flag after
+  // the assertion so parallel suites never observe an enabled enterprise plane.
+  try {
+    await setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', true, 'super-1', 'req-ent-helper');
+    const asyncVal = await enterpriseFeatureEnabledAsync(null);
+    assert.equal(asyncVal, true);
+  } finally {
+    await setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', false, 'super-1', 'req-ent-helper-off');
+    const restored = await enterpriseFeatureEnabledAsync(null);
+    assert.equal(restored, false);
+  }
 });
 
 test('feature flags: Express API RBAC enforcement', async () => {
@@ -254,4 +190,17 @@ test('feature flags: Express API RBAC enforcement', async () => {
     .set(bearer('admin'))
     .send({ value: true });
   assert.equal(adminPut.status, 403);
+
+  // Super Admin PUT valid flag -> 200 and persisted in MySQL; reset afterwards.
+  const goodPut = await request(app)
+    .put('/api/platform/feature-flags/PDF_RENDERER_ISOLATED')
+    .set(bearer('super-admin'))
+    .send({ value: true });
+  assert.equal(goodPut.status, 200);
+  assert.equal(goodPut.body.success, true);
+  const resetPut = await request(app)
+    .put('/api/platform/feature-flags/PDF_RENDERER_ISOLATED')
+    .set(bearer('super-admin'))
+    .send({ value: false });
+  assert.equal(resetPut.status, 200);
 });

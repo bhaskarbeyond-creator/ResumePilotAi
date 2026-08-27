@@ -1,15 +1,21 @@
 /**
  * Runtime Feature Flag Service
- * 
- * Reads flags from Firestore `settings/feature_flags` first, falling back to
- * process.env. Every mutation is audited. The service is designed to be used
- * by both the Enterprise feature gate and the new Super Admin Feature Flags UI.
- * 
+ *
+ * Reads flag overrides from MySQL `system_settings` (category
+ * 'feature_flags') first, falling back to process.env, then defaults.
+ * MySQL/MariaDB is the authoritative store — the service has no dependency on
+ * any external secondary database. Every mutation is audited. The service is
+ * used by both the Enterprise feature gate and the Super Admin Feature Flags UI.
+ *
  * Flags that require a server restart are clearly marked. Toggling them via the
  * API updates the stored value and the audit trail, but the actual runtime
  * behavior only changes after the next restart (for worker-based flags) or
  * immediately (for per-request flags like ENTERPRISE_TENANCY_ENABLED).
  */
+
+const crypto = require('crypto');
+const { getPool } = require('../database/mysql');
+const FLAGS_CATEGORY = 'feature_flags';
 
 const FLAG_DEFINITIONS = {
   ENTERPRISE_TENANCY_ENABLED: {
@@ -19,7 +25,7 @@ const FLAG_DEFINITIONS = {
     category: 'enterprise',
     securityRisk: 'medium',
     defaultValue: false,
-    dependencies: ['Firestore tenant repository', 'Enterprise route middleware'],
+    dependencies: ['Enterprise tenant repository', 'Enterprise route middleware'],
   },
   CMS_SCHEDULER_ENABLED: {
     description: 'Enable blog CMS scheduled publishing worker',
@@ -28,16 +34,16 @@ const FLAG_DEFINITIONS = {
     category: 'workers',
     securityRisk: 'low',
     defaultValue: false,
-    dependencies: ['Firestore blog collection'],
+    dependencies: ['MySQL blog table'],
   },
   NOTIFICATION_OUTBOX_WORKER_ENABLED: {
     description: 'Enable notification outbox local worker',
-    impact: 'When enabled, a background worker processes queued notifications (email, SMS) from the outbox.',
+    impact: 'When enabled, a background worker processes queued notifications (email, SMS) from the MySQL outbox.',
     requiresRestart: true,
     category: 'workers',
     securityRisk: 'low',
     defaultValue: false,
-    dependencies: ['Firestore notification_outbox collection', 'SMTP/Twilio configuration'],
+    dependencies: ['MySQL notification_outbox table', 'SMTP/Twilio configuration'],
   },
   ENTERPRISE_OUTBOX_WORKER_ENABLED: {
     description: 'Enable Enterprise durable outbox worker',
@@ -46,7 +52,7 @@ const FLAG_DEFINITIONS = {
     category: 'enterprise',
     securityRisk: 'low',
     defaultValue: false,
-    dependencies: ['TENANT_JOB_SIGNING_SECRET', 'Firestore enterprise_outbox collection'],
+    dependencies: ['TENANT_JOB_SIGNING_SECRET'],
   },
   NOTIFICATION_OUTBOX_EXTERNAL_WORKER: {
     description: 'Declare external notification worker',
@@ -73,11 +79,9 @@ const FLAG_DEFINITIONS = {
     category: 'security',
     securityRisk: 'high',
     defaultValue: false,
-    dependencies: ['Firebase Admin SDK'],
+    dependencies: ['Firebase Admin SDK (identity only)'],
   },
 };
-
-const FIRESTORE_DOC = 'settings/feature_flags';
 
 function timestampToIso(value) {
   if (!value) return null;
@@ -93,15 +97,19 @@ let _cacheTime = 0;
 const CACHE_TTL_MS = 30_000; // 30 seconds
 
 /**
- * Get the Firestore-stored flag overrides.
- * @param {FirebaseFirestore.Firestore} db
+ * Load the MySQL-stored flag overrides from system_settings.
  * @returns {Promise<Record<string, { value: boolean, changedAt: any, changedBy: string }>>}
  */
-async function _loadFromFirestore(db) {
-  if (!db) return {};
+async function _loadFromMysql() {
   try {
-    const doc = await db.doc(FIRESTORE_DOC).get();
-    return doc.exists ? (doc.data() || {}) : {};
+    const pool = getPool();
+    const [rows] = await pool.query(
+      'SELECT data FROM system_settings WHERE category = ?',
+      [FLAGS_CATEGORY]
+    );
+    if (!rows.length) return {};
+    const parsed = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : (rows[0].data || {});
+    return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
     return {};
   }
@@ -109,22 +117,20 @@ async function _loadFromFirestore(db) {
 
 /**
  * Get the effective value of a single flag.
- * Priority: Firestore override > process.env > default.
+ * Priority: MySQL override > process.env > default.
+ * The `db` argument is retained for signature compatibility and ignored.
  */
 async function getFlagValue(db, flagKey) {
   const def = FLAG_DEFINITIONS[flagKey];
   if (!def) return undefined;
 
-  // Try Firestore first
-  if (db) {
-    const now = Date.now();
-    if (!_cache || (now - _cacheTime) > CACHE_TTL_MS) {
-      _cache = await _loadFromFirestore(db);
-      _cacheTime = now;
-    }
-    if (_cache[flagKey] && typeof _cache[flagKey].value === 'boolean') {
-      return _cache[flagKey].value;
-    }
+  const now = Date.now();
+  if (!_cache || (now - _cacheTime) > CACHE_TTL_MS) {
+    _cache = await _loadFromMysql();
+    _cacheTime = now;
+  }
+  if (_cache[flagKey] && typeof _cache[flagKey].value === 'boolean') {
+    return _cache[flagKey].value;
   }
 
   // Fallback to process.env
@@ -141,7 +147,7 @@ async function getFlagValue(db, flagKey) {
  * Used by the Super Admin Feature Flags UI.
  */
 async function getAllFlags(db) {
-  const stored = db ? await _loadFromFirestore(db) : {};
+  const stored = await _loadFromMysql();
   const result = {};
 
   for (const [key, def] of Object.entries(FLAG_DEFINITIONS)) {
@@ -152,7 +158,7 @@ async function getAllFlags(db) {
 
     if (override && typeof override.value === 'boolean') {
       effectiveValue = override.value;
-      source = 'firestore';
+      source = 'mysql';
     } else if (envVal !== undefined) {
       effectiveValue = String(envVal).toLowerCase() === 'true';
       source = 'environment';
@@ -165,8 +171,8 @@ async function getAllFlags(db) {
       value: effectiveValue,
       source,
       ...def,
-      // Environment values are startup-bound even when the same flag supports a
-      // Firestore runtime override. The UI must show the effective restart rule.
+      // Environment values are startup-bound even when the same flag supports
+      // a MySQL runtime override. The UI must show the effective restart rule.
       requiresRestart: source === 'environment' ? true : def.requiresRestart,
       lastChangedAt: timestampToIso(override?.changedAt),
       lastChangedBy: override?.changedBy || null,
@@ -178,51 +184,62 @@ async function getAllFlags(db) {
 }
 
 /**
- * Set a flag value. Audited, SUPER_ADMIN only.
- * @param {FirebaseFirestore.Firestore} db
- * @param {object} admin - Firebase Admin SDK
- * @param {string} flagKey
- * @param {boolean} value
- * @param {string} actorUid
- * @param {string} requestId
+ * Set a flag value. Audited, SUPER_ADMIN only. MySQL/MariaDB is the
+ * authoritative store; the flag override and its audit event commit in ONE
+ * transaction. The `db`/`admin` arguments are retained for signature
+ * compatibility and ignored.
  */
 async function setFlagValue(db, admin, flagKey, value, actorUid, requestId) {
   const def = FLAG_DEFINITIONS[flagKey];
   if (!def) throw Object.assign(new Error(`Unknown feature flag: ${flagKey}`), { code: 'UNKNOWN_FEATURE_FLAG', status: 400 });
   if (typeof value !== 'boolean') throw Object.assign(new Error('Flag value must be a boolean'), { code: 'INVALID_FLAG_VALUE', status: 400 });
-  if (!db || !admin?.firestore?.FieldValue) {
-    throw Object.assign(new Error('Feature flag storage is unavailable'), { code: 'FEATURE_FLAGS_UNAVAILABLE', status: 503 });
-  }
   if (!actorUid) throw Object.assign(new Error('An authenticated actor is required'), { code: 'AUTH_REQUIRED', status: 401 });
 
+  const pool = getPool();
+  const conn = await pool.getConnection();
   let previousValue;
-  await db.runTransaction(async transaction => {
-    const reference = db.doc(FIRESTORE_DOC);
-    const snapshot = await transaction.get(reference);
-    const stored = snapshot.data() || {};
+  try {
+    await conn.beginTransaction();
+    const [rows] = await conn.query(
+      'SELECT data, revision FROM system_settings WHERE category = ? FOR UPDATE',
+      [FLAGS_CATEGORY]
+    );
+    const stored = rows.length
+      ? (typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : (rows[0].data || {}))
+      : {};
     const envValue = process.env[flagKey];
     previousValue = stored[flagKey]?.value === true || stored[flagKey]?.value === false
       ? stored[flagKey].value
       : envValue !== undefined ? String(envValue).toLowerCase() === 'true' : def.defaultValue;
-    const auditRef = db.collection('security_audit_logs').doc();
-    transaction.set(reference, {
-      [flagKey]: {
-        value,
-        changedAt: admin.firestore.FieldValue.serverTimestamp(),
-        changedBy: actorUid,
-      },
-    }, { merge: true });
-    transaction.set(auditRef, {
-      action: 'FEATURE_FLAG_CHANGED',
-      flag: flagKey,
-      previousValue,
-      newValue: value,
-      requiresRestart: def.requiresRestart,
-      actorUid,
-      requestId: requestId || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  });
+
+    const nextStored = {
+      ...stored,
+      [flagKey]: { value, changedAt: new Date().toISOString(), changedBy: actorUid },
+    };
+    const currentRevision = Number(rows[0]?.revision || 0);
+    await conn.query(
+      `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+      [FLAGS_CATEGORY, JSON.stringify(nextStored), currentRevision + 1]
+    );
+    // Durable security audit event in the SAME transaction.
+    await conn.query(
+      `INSERT INTO security_audit_logs (id, action, actor_uid, category, severity, metadata, request_id, created_at)
+       VALUES (?, 'FEATURE_FLAG_CHANGED', ?, 'platform.flags', 'MEDIUM', ?, ?, NOW())`,
+      [
+        crypto.randomUUID(),
+        actorUid,
+        JSON.stringify({ flag: flagKey, previousValue, newValue: value, requiresRestart: def.requiresRestart }),
+        requestId || null,
+      ]
+    );
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    throw Object.assign(new Error('Feature flag storage is unavailable'), { code: 'FEATURE_FLAGS_UNAVAILABLE', status: 503, cause: err });
+  } finally {
+    conn.release();
+  }
 
   _cache = null;
   _cacheTime = 0;
