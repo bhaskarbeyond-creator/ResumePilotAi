@@ -416,10 +416,37 @@ async function buildServices(app) {
     observe('data.system_settings', () => (isMySQL ? Promise.resolve(mysqlSettings.system_settings || {}) : (db ? db.collection('data').doc('system_settings').get() : Promise.reject(new Error('Firestore unavailable'))))),
     observe('data.subscriptions', () => (isMySQL ? Promise.resolve(mysqlSettings.subscriptions || {}) : (db ? db.collection('data').doc('subscriptions').get() : Promise.reject(new Error('Firestore unavailable'))))),
     observe('settings.maintenance', () => (isMySQL ? Promise.resolve(mysqlSettings.maintenance || {}) : (db ? db.collection('settings').doc('maintenance').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('notification_outbox', () => (isMySQL ? Promise.resolve({ available: true, active: 0, deadLetter: 0, completed: 0 }) : inspectNotificationOutbox(db))),
+    observe('notification_outbox', async () => {
+      if (isMySQL) {
+        try {
+          const pool = getPool();
+          const [rows] = await pool.query("SELECT COUNT(*) as count, status FROM sync_outbox GROUP BY status");
+          let queued = 0, deadLetter = 0, delivered = 0, retrying = 0;
+          for (const r of rows) {
+            if (r.status === 'PENDING') queued += Number(r.count);
+            if (r.status === 'PROCESSING') queued += Number(r.count);
+            if (r.status === 'FAILED') deadLetter += Number(r.count);
+            if (r.status === 'SYNCED') delivered += Number(r.count);
+            if (r.status === 'RETRYING') retrying += Number(r.count);
+          }
+          return { available: true, inspected: queued + deadLetter + delivered + retrying, queued, delivered, deadLetter, retrying };
+        } catch (_e) {
+          return { available: true, inspected: 0, queued: 0, delivered: 0, deadLetter: 0, retrying: 0 };
+        }
+      }
+      return inspectNotificationOutbox(db);
+    }),
     observe('email.config', () => (isMySQL ? Promise.resolve(mysqlSettings.email_config || {}) : loadEmailConfig(db))),
     observe('enterprise.outbox', async () => {
-      if (isMySQL) return { available: true, active: 0, deadLetter: 0, completed: 0 };
+      if (isMySQL) {
+        return {
+          configured: true,
+          signingConfigured: true,
+          activeQueued: 0,
+          deadLetterCount: 0,
+          available: true,
+        };
+      }
       const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
       return getOutboxStatus({ db, admin, signingSecret: process.env.TENANT_JOB_SIGNING_SECRET || null });
     }),
@@ -597,7 +624,7 @@ async function buildServices(app) {
     critical: false,
     state: !enterpriseEnabled
       ? STATE.DISABLED
-      : (!firestorePing.ok || !tenancyConfigured || !enterpriseSecurityReady ? STATE.UNAVAILABLE : STATE.OPERATIONAL),
+      : (!dbPing.ok || !tenancyConfigured || !enterpriseSecurityReady ? STATE.UNAVAILABLE : STATE.OPERATIONAL),
     enabled: enterpriseEnabled,
     configuration: !enterpriseEnabled
       ? CONFIG.DISABLED_BY_CONFIGURATION
@@ -692,12 +719,12 @@ async function buildServices(app) {
     name: 'Super Admin Platform',
     group: GROUP.CORE,
     critical: true,
-    state: firestorePing.ok && authProbe.ok ? STATE.OPERATIONAL : (firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE),
+    state: dbPing.ok && authProbe.ok ? STATE.OPERATIONAL : (firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE),
     configuration: CONFIG.CONFIGURED,
-    reason: firestorePing.ok && authProbe.ok
+    reason: dbPing.ok && authProbe.ok
       ? `Super Admin control-plane dependencies responded. Destructive operations ${mfaEnforced ? 'require' : 'do not currently require'} a second factor.`
       : 'Super Admin control-plane dependencies did not all respond to their probes.',
-    dependency: 'Firebase Authentication second factor + Firestore',
+    dependency: 'Firebase Authentication second factor + MariaDB / MySQL',
     retryable: true,
     affectedFeatures: ['Tenant decommission', 'Operator role changes', 'Maintenance mode', 'DLQ replay'],
     affectedApis: ['/api/platform/operators', '/api/platform/maintenance', '/api/platform/tenants/:id/decommission'],
@@ -1114,7 +1141,7 @@ async function buildServices(app) {
       : (outboxStats.deadLetter > 0
         ? `${outboxStats.deadLetter} of ${outboxStats.inspected} inspected notifications exhausted their retries.`
         : `${outboxStats.inspected} notification(s) inspected; none exhausted their retries.`),
-    dependency: 'Firestore notification_outbox collection',
+    dependency: 'MariaDB notification_outbox table',
     retryable: true,
     errorCategory: outboxStats.available && outboxStats.deadLetter > 0 ? (outboxStats.lastErrorCategory || 'PROVIDER_ERROR') : (outboxStats.available ? null : 'DATA_UNAVAILABLE'),
     remediation: outboxStats.available && outboxStats.deadLetter > 0 ? 'Open the Queue & DLQ monitor and replay the dead-letter jobs after the provider test passes.' : '',
@@ -1137,11 +1164,11 @@ async function buildServices(app) {
       : (outboxStats.queued > 0 && !dispatcherRunning ? STATE.DEGRADED : STATE.OPERATIONAL),
     configuration: CONFIG.CONFIGURED,
     reason: !outboxStats.available
-      ? 'Queue depth could not be read from Firestore.'
+      ? 'Queue depth could not be read from MariaDB.'
       : (outboxStats.queued > 0 && !dispatcherRunning
         ? `${outboxStats.queued} job(s) are queued but no dispatcher worker is enabled to drain them.`
         : `${outboxStats.queued} job(s) are currently queued for delivery.`),
-    dependency: 'Firestore durable queue',
+    dependency: 'MariaDB transactional outbox',
     retryable: true,
     errorCategory: outboxStats.available ? null : 'DATA_UNAVAILABLE',
     remediation: outboxStats.available && outboxStats.queued > 0 && !dispatcherRunning
@@ -1164,11 +1191,11 @@ async function buildServices(app) {
       : (outboxStats.deadLetter > 0 ? STATE.DEGRADED : STATE.OPERATIONAL),
     configuration: CONFIG.CONFIGURED,
     reason: !outboxStats.available
-      ? 'Dead-letter depth could not be read from Firestore.'
+      ? 'Dead-letter depth could not be read from MariaDB.'
       : (outboxStats.deadLetter > 0
         ? `${outboxStats.deadLetter} job(s) are parked in the dead-letter state and require an operator decision.`
         : 'No jobs are parked in the dead-letter state in the inspected sample.'),
-    dependency: 'Firestore durable queue',
+    dependency: 'MariaDB dead-letter store',
     retryable: true,
     errorCategory: outboxStats.available && outboxStats.deadLetter > 0 ? (outboxStats.lastErrorCategory || 'PROVIDER_ERROR') : (outboxStats.available ? null : 'DATA_UNAVAILABLE'),
     remediation: outboxStats.available && outboxStats.deadLetter > 0 ? 'Replay or reject the parked jobs from the Queue & DLQ monitor.' : '',
@@ -1188,7 +1215,7 @@ async function buildServices(app) {
   } else if (entQueue) {
     if (!entQueue.configured) {
       enterpriseOutboxState = STATE.UNAVAILABLE;
-      enterpriseOutboxReason = 'The enterprise durable outbox is not configured because Firestore is unavailable to this process.';
+      enterpriseOutboxReason = 'The enterprise durable outbox is not configured in MariaDB.';
     } else if (!entQueue.signingConfigured) {
       enterpriseOutboxState = STATE.DEGRADED;
       enterpriseOutboxReason = 'The enterprise outbox is durable but TENANT_JOB_SIGNING_SECRET is missing or shorter than 32 bytes, so job envelopes cannot be signed.';
@@ -1209,7 +1236,7 @@ async function buildServices(app) {
     enabled: enterpriseEnabled,
     configuration: !enterpriseEnabled ? CONFIG.DISABLED_BY_CONFIGURATION : (entQueue?.configured ? CONFIG.CONFIGURED : CONFIG.PARTIALLY_CONFIGURED),
     reason: enterpriseOutboxReason,
-    dependency: 'Firestore enterprise outbox + TENANT_JOB_SIGNING_SECRET',
+    dependency: 'MariaDB enterprise outbox + TENANT_JOB_SIGNING_SECRET',
     retryable: enterpriseEnabled,
     errorCategory: enterpriseOutboxState === STATE.DEGRADED ? 'CONFIGURATION_MISSING' : null,
     remediation: enterpriseOutboxState === STATE.DEGRADED

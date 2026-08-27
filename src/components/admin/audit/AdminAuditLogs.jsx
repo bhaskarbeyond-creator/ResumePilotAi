@@ -44,20 +44,14 @@ export default function AdminAuditLogs() {
       if (!logsRes.ok) {
         const data = await logsRes.json().catch(() => ({}));
         const errMsg = data.error?.message || `HTTP ${logsRes.status}`;
-        const isQuota = errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota');
-        if (isQuota) {
-          setDegradedInfo('Standby audit event store daily read quota is reached. Live audit recording remains active.');
-          setLogs([]);
-          return;
-        }
         throw new Error(errMsg);
       }
 
       const logsData = await logsRes.json();
       const statsData = statsRes.ok ? await statsRes.json() : null;
 
-      if (logsData.degraded || logsData.quotaLimited) {
-        setDegradedInfo(logsData.message || 'Standby audit event store daily read quota is reached. Live audit recording remains active.');
+      if (logsData.degraded) {
+        setDegradedInfo(logsData.message || 'Audit log query is currently degraded.');
       } else {
         setDegradedInfo(null);
       }
@@ -67,13 +61,8 @@ export default function AdminAuditLogs() {
       setStats(statsData);
     } catch (err) {
       console.error('[AdminAuditLogs] Error fetching logs:', err);
-      const isQuota = String(err.message || '').includes('RESOURCE_EXHAUSTED') || String(err.message || '').includes('Quota');
-      if (isQuota) {
-        setDegradedInfo('Standby audit event store daily read quota is reached. Live audit recording remains active.');
-        setError(null);
-      } else {
-        setError(err.message || 'Failed to load audit logs');
-      }
+      setError(err.message || 'Failed to load audit logs');
+      setDegradedInfo(null);
     } finally {
       setLoading(false);
     }

@@ -68,17 +68,19 @@ class CoversList extends Component {
                             <span className="name">{this.state.covers[index].item.firstname + ' ' + this.state.covers[index].item.lastname}</span>
                             <span className="occupation">{this.state.covers[index].item.title || 'Cover Letter'}</span>
                         </div>
-                        <div>
+                        <div className="flex items-center gap-2">
                             <Link
                                 onClick={() => this.setAsCurrentCover(this.state.covers[index].id, JSON.stringify(this.state.covers[index]))}
-                                className="btn-default btn-goResume"
+                                className="inline-flex items-center px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-colors"
                                 to={'/?step=Cover'}>
-                                {' '}
-                                Go To Cover Letter
+                                Edit Cover Letter
                             </Link>
-                            <a onClick={() => this.deleteCover(fire.auth().currentUser?.uid, this.state.covers[index].id, index)} className="btn-default btn-removeResume">
+                            <button
+                                type="button"
+                                onClick={() => this.deleteCover(fire.auth().currentUser?.uid, this.state.covers[index].id, index)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-lg shadow-sm transition-colors">
                                 Remove
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </li>

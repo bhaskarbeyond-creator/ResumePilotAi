@@ -17,20 +17,15 @@ export default function PlatformSecurity() {
     setError(null);
     try {
       const result = await getSecurityEvents('limit=100');
-      if (result.degraded || result.quotaLimited) {
-        setDegradedInfo(result.message || 'Security events history is temporarily quota-limited.');
+      if (result.degraded) {
+        setDegradedInfo(result.message || 'Security events query is currently degraded.');
       } else {
         setDegradedInfo(null);
       }
       setEvents(result.events || []);
     } catch (err) {
-      const isQuota = String(err.message || '').includes('RESOURCE_EXHAUSTED') || String(err.message || '').includes('Quota');
-      if (isQuota) {
-        setDegradedInfo('Security events store is temporarily quota-limited. Real-time security enforcement is active.');
-        setError(null);
-      } else {
-        setError(err.message || 'Failed to load security events');
-      }
+      setError(err.message || 'Failed to load security events');
+      setDegradedInfo(null);
     } finally {
       setLoading(false);
     }
@@ -87,17 +82,16 @@ export default function PlatformSecurity() {
         </select>
       </div>
 
-      {/* Degraded Standby State Banner */}
+      {/* Degraded State Banner */}
       {degradedInfo && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-start gap-3">
           <FiAlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="font-bold text-amber-950">Standby Security Store Quota Limited</p>
+            <p className="font-bold text-amber-950">Security Events Stream Notice</p>
             <p className="mt-0.5 text-amber-800">{degradedInfo}</p>
-            <p className="mt-1 text-[11px] text-amber-700">Primary application database (MariaDB) is 100% operational. Historical queries will resume automatically once the standby store quota resets.</p>
           </div>
           <button type="button" onClick={load} disabled={loading} className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg border border-amber-300 transition">
-            Check Status
+            Retry Query
           </button>
         </div>
       )}

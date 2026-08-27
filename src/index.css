@@ -49,20 +49,22 @@ a:hover {
     color: #6c7ee1;
 }
 
-/* Basic button styles that don't conflict */
+/* Modern button base reset (preserves Tailwind utilities & component styles) */
 button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
     font-family: inherit;
+    font-size: inherit;
     cursor: pointer;
-    transition: border-color 0.25s;
+    background: transparent;
+    border: none;
 }
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
+
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
 }
 
 /* Enhanced Native Dropdowns (<select>) */

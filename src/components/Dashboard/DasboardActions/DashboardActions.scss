@@ -22,25 +22,26 @@
         }
 
         .dashboard-action-btn {
-            background-color: #426ae0;
-            padding: 7px 20px;
-            border-radius: 5px;
+            background-color: #4f46e5;
+            padding: 9px 20px;
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             text-decoration: none;
-            color: white;
-            font-weight: 500;
-            font-size: 0.8em;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.875rem;
             margin: 10px 0px;
-            // small hove effect
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             transition: all 0.2s ease-in-out;
             &:hover {
-                background-color: #2c4db0;
+                background-color: #4338ca;
+                box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
             }
             &:visited {
-                color: #ffff;
+                color: #ffffff;
             }
         }
     }

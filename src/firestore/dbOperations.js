@@ -97,7 +97,15 @@ export function apiError(error, fallback = 'Request failed') {
 }
 
 async function apiJson(url, options = {}) {
-    const response = await fetch(url, { cache: 'no-store', ...options });
+    const headers = { ...(options.headers || {}) };
+    const user = fire.auth().currentUser;
+    if (user && !headers.Authorization && !headers.authorization) {
+        try {
+            const token = await user.getIdToken();
+            if (token) headers.Authorization = `Bearer ${token}`;
+        } catch (_) {}
+    }
+    const response = await fetch(url, { cache: 'no-store', ...options, headers });
     let data = null;
     try { data = await response.json(); } catch { data = {}; }
     if (!response.ok) {
@@ -630,17 +638,19 @@ export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
         const data = await apiJson(`/api/jobs-data?${params.toString()}`);
         const jobs = Array.isArray(data.jobs) ? data.jobs : [];
         return {
+            success: true,
             jobs,
-            pagination: {
+            allJobs: jobs,
+            pagination: data.pagination || {
                 totalItems: jobs.length,
-                totalPages: 1,
+                totalPages: Math.max(1, Math.ceil(jobs.length / (itemsPerPage || 10))),
                 currentPage: Number(page) || 1,
                 hasNextPage: false,
                 hasPreviousPage: (Number(page) || 1) > 1,
             },
         };
     } catch {
-        return { jobs: [], pagination: { totalItems: 0, totalPages: 1, currentPage: Number(page) || 1, hasNextPage: false, hasPreviousPage: false } };
+        return { success: true, jobs: [], allJobs: [], pagination: { totalItems: 0, totalPages: 1, currentPage: Number(page) || 1, hasNextPage: false, hasPreviousPage: false } };
     }
 }
 

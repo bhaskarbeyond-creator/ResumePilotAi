@@ -43,6 +43,11 @@ const app = require('../index');
 assert.equal(app.get('db'), null, 'Firestore data plane must be null (OFF) in the default production configuration');
 assert.equal(app.get('firebaseAdmin').apps.length >= 0, true);
 
+test('CERTIFICATION: clean initial outbox state', async () => {
+    const pool = getPool();
+    await pool.query("DELETE FROM sync_outbox WHERE status IN ('PENDING','RETRYING','PROCESSING')");
+});
+
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 const rid = () => crypto.randomBytes(6).toString('hex');
 

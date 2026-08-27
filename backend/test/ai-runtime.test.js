@@ -33,6 +33,7 @@ function fakeDb({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
 
 // MySQL seed helper: seeds the authoritative AI settings store.
 const { getPool } = require('../database/mysql');
+const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 async function seedRuntimeSettings({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
   const pool = getPool();
   await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
@@ -45,6 +46,7 @@ async function seedRuntimeSettings({ secrets = {}, publicAi = {}, legacyAi = {} 
   if (Object.keys(legacyAi).length) {
     await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('system_settings', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify({ ai: legacyAi })]);
   }
+  clearProviderConfigurationCache();
   return null;
 }
 

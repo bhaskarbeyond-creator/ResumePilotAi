@@ -20,11 +20,12 @@ const aiRoutes = require('../routes/ai');
 
 // MySQL seed helper: seeds the authoritative AI settings store.
 const { getPool } = require('../database/mysql');
+const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 async function seedMysqlAiSettings(secrets, pubConfig) {
   const pool = getPool();
-  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, ?)", [JSON.stringify(secrets), 1]);
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, ?)", [JSON.stringify(pubConfig), 1]);
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)", [JSON.stringify(secrets), 1]);
+  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)", [JSON.stringify(pubConfig), 1]);
+  clearProviderConfigurationCache();
   return null;
 }
 

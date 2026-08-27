@@ -385,9 +385,12 @@ const ModulesSettings = () => {
                                     {/* Toggle Switch */}
                                     <button
                                         type="button"
+                                        role="switch"
+                                        aria-checked={Boolean(isEnabled)}
+                                        aria-label={`${mod.title} toggle`}
                                         disabled={saving || !settingsHydrated}
                                         onClick={() => toggleModule(mod.key)}
-                                        className="flex items-center space-x-2 focus:outline-none shrink-0 disabled:opacity-60"
+                                        className="flex items-center space-x-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-full shrink-0 disabled:opacity-60"
                                         title={isEnabled ? 'Click to Disable' : 'Click to Enable'}
                                     >
                                         <div className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${

@@ -36,22 +36,35 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
     const location = useLocation();
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const currentTab = new URLSearchParams(location.search).get('tab');
-    const [health, setHealth] = useState({ loading: true, reachable: false, firebase: false });
+    const [health, setHealth] = useState({ loading: true, reachable: false, db: 'MariaDB', auth: true });
 
     const checkHealth = useCallback(async () => {
         setHealth(current => ({ ...current, loading: true }));
         try {
             const response = await fetch('/api/healthz', { cache: 'no-store' });
             const result = await response.json();
-            setHealth({ loading: false, reachable: response.ok && result.status === 'ok', firebase: Boolean(result.firebaseAdminConfigured) });
+            const reachable = response.ok && result.status === 'ok';
+            const authConfigured = Boolean(result.identityProviderConfigured ?? result.firebaseAdminConfigured);
+            const dbEngine = result.authoritativeDatabase || 'MariaDB';
+            setHealth({ loading: false, reachable, db: dbEngine, auth: authConfigured });
         } catch {
-            setHealth({ loading: false, reachable: false, firebase: false });
+            setHealth({ loading: false, reachable: false, db: 'MariaDB', auth: false });
         }
     }, []);
 
     useEffect(() => { checkHealth(); }, [checkHealth]);
-    const statusLabel = health.loading ? 'Checking services' : !health.reachable ? 'API unavailable' : health.firebase ? 'API & Firebase ready' : 'API ready; Firebase offline';
-    const statusTone = health.loading ? 'bg-slate-100 text-slate-600 border-slate-200' : health.reachable && health.firebase ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200';
+    const statusLabel = health.loading
+        ? 'Checking platform health...'
+        : !health.reachable
+            ? 'API unavailable'
+            : health.auth
+                ? 'API & MariaDB Ready • Auth Active'
+                : 'API & MariaDB Ready';
+    const statusTone = health.loading
+        ? 'bg-slate-100 text-slate-600 border-slate-200'
+        : health.reachable
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-xs'
+            : 'bg-rose-50 text-rose-800 border-rose-200';
 
     return (
         <header className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-2xs backdrop-blur-md sm:px-6">

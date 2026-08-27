@@ -90,13 +90,13 @@ class ResumesList extends Component {
                             <span className="occupation">{currentItem.item.title}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Link onClick={() => this.setAsCurrentResume(currentItem.id)} className="btn-default btn-goResume" to={'/build-resume/heading'}>
+                            <Link onClick={() => this.setAsCurrentResume(currentItem.id)} className="inline-flex items-center px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-colors" to={'/build-resume/heading'}>
                                 Edit Resume
                             </Link>
-                            <button onClick={() => this.duplicateResume(currentItem)} className="btn-default px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-md border border-slate-300 transition-colors">
+                            <button type="button" onClick={() => this.duplicateResume(currentItem)} className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-lg border border-slate-300 transition-colors">
                                 Duplicate
                             </button>
-                            <button type="button" onClick={() => this.deleteResume(fire.auth().currentUser?.uid, currentItem.id)} className="btn-default btn-removeResume">
+                            <button type="button" onClick={() => this.deleteResume(fire.auth().currentUser?.uid, currentItem.id)} className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 rounded-lg shadow-sm transition-colors">
                                 Remove
                             </button>
                         </div>
