@@ -58,13 +58,16 @@ test('2. Plain USER request to /api/admin/database-settings is rejected with 403
     assert.equal(res.status, 403);
 });
 
-test('3. ADMIN / SUPER_ADMIN can read database settings and connectivity status', async () => {
+test('3. ADMIN / SUPER_ADMIN can read database settings reflecting MariaDB authority', async () => {
     const res = await request(app)
         .get('/api/admin/database-settings')
         .set('Authorization', 'Bearer admin');
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
-    assert.ok(res.body.activeEngine === 'firestore' || res.body.activeEngine === 'mysql');
+    assert.equal(res.body.activeEngine, 'mysql');
+    assert.equal(res.body.authoritativeDatabase, 'mysql');
+    assert.equal(res.body.firestoreDataPlane, 'REMOVED');
+    assert.equal(res.body.firebaseAuth, 'IDENTITY_ONLY');
     assert.ok(res.body.engineDetails);
 });
 
@@ -77,14 +80,31 @@ test('4. Test connection endpoint validates engine argument', async () => {
     assert.equal(res.body.error?.code, 'INVALID_ENGINE');
 });
 
-test('5. Test connection to firestore returns connectivity report', async () => {
+test('5. DB-UI-002: Switching to decommissioned Firestore is rejected (Fail-Closed)', async () => {
     const res = await request(app)
-        .post('/api/admin/database-settings/test-connection')
-        .set('Authorization', 'Bearer admin')
+        .post('/api/admin/database-settings')
+        .set('Authorization', 'Bearer superadmin')
         .send({ engine: 'firestore' });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.success, false);
+    assert.equal(res.body.error?.code, 'FIRESTORE_DATA_PLANE_DECOMMISSIONED');
+});
+
+test('6. DB-UI-004: Jobs API /api/admin/jobs retrieves jobs from MariaDB', async () => {
+    const res = await request(app)
+        .get('/api/admin/jobs')
+        .set('Authorization', 'Bearer admin');
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
-    assert.equal(typeof res.body.result?.connected, 'boolean');
+    assert.ok(Array.isArray(res.body.jobs));
+});
+
+test('7. DB-UI-005: Public jobs API /api/jobs-data serves active jobs with MariaDB', async () => {
+    const res = await request(app)
+        .get('/api/jobs-data');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.success, true);
+    assert.ok(Array.isArray(res.body.jobs));
 });
 
 after(async () => {

@@ -1,20 +1,20 @@
 {
   "summary": {
-    "generatedAt": "2026-08-27T06:33:44.201Z",
+    "generatedAt": "2026-08-27T06:54:17.463Z",
     "scannedDirectories": [
       "backend",
       "src",
       "scripts"
     ],
-    "filesWithReferences": 297,
+    "filesWithReferences": 295,
     "activeDataPlaneHits": 0,
     "classification": {
-      "DOCUMENTATION": 280,
-      "DORMANT_LEGACY": 321,
-      "TEST_INFRASTRUCTURE": 301,
+      "DOCUMENTATION": 281,
+      "DORMANT_LEGACY": 320,
+      "TEST_INFRASTRUCTURE": 300,
       "OPERATIONAL_TOOLING": 231,
       "COMPAT_ADAPTER": 10,
-      "UI_LABEL": 175,
+      "UI_LABEL": 151,
       "IDENTITY_ONLY": 5,
       "LEGACY_NAMED_API_SHIM": 6,
       "CONTENT_DATA": 1
@@ -2305,49 +2305,49 @@
       "file": "backend/routes/databaseAdmin.js",
       "hits": [
         {
-          "line": 30,
+          "line": 51,
           "kind": "DORMANT_LEGACY",
-          "text": "testEngineConnectivity('firestore', firestoreDb),"
+          "text": "firestore: {"
         },
         {
-          "line": 42,
-          "kind": "DORMANT_LEGACY",
-          "text": "firestore: firestoreStatus,"
-        },
-        {
-          "line": 104,
+          "line": 123,
           "kind": "DORMANT_LEGACY",
           "text": "firestore: fsPrune,"
         },
         {
-          "line": 114,
+          "line": 133,
           "kind": "DOCUMENTATION",
           "text": "* Deep continuous parity verification comparing all 13 canonical entities across Firestore and MySQL."
         },
         {
-          "line": 124,
+          "line": 143,
           "kind": "DORMANT_LEGACY",
           "text": "firestore: info.firestoreCount,"
         },
         {
-          "line": 195,
+          "line": 214,
           "kind": "DORMANT_LEGACY",
           "text": "if (targetEngine !== 'firestore' && targetEngine !== 'mysql') {"
         },
         {
-          "line": 198,
+          "line": 217,
           "kind": "DORMANT_LEGACY",
           "text": "error: { code: 'INVALID_ENGINE', message: \"Engine must be 'firestore' or 'mysql'.\" }"
         },
         {
-          "line": 238,
-          "kind": "DORMANT_LEGACY",
-          "text": "if (targetEngine !== 'firestore' && targetEngine !== 'mysql') {"
+          "line": 250,
+          "kind": "DOCUMENTATION",
+          "text": "* Handles database administration actions and rejects switching to decommissioned Firestore."
         },
         {
-          "line": 241,
+          "line": 256,
           "kind": "DORMANT_LEGACY",
-          "text": "error: { code: 'INVALID_ENGINE', message: \"Target engine must be 'firestore' or 'mysql'.\" }"
+          "text": "if (targetEngine === 'firestore') {"
+        },
+        {
+          "line": 261,
+          "kind": "DORMANT_LEGACY",
+          "text": "message: 'Google Cloud Firestore has been decommissioned as an application data plane. MariaDB / MySQL is 100% authoritative for all user and application data. "
         }
       ]
     },
@@ -3815,17 +3815,12 @@
       "file": "backend/test/database-admin.test.js",
       "hits": [
         {
-          "line": 67,
+          "line": 83,
           "kind": "TEST_INFRASTRUCTURE",
-          "text": "assert.ok(res.body.activeEngine === 'firestore' || res.body.activeEngine === 'mysql');"
+          "text": "test('5. DB-UI-002: Switching to decommissioned Firestore is rejected (Fail-Closed)', async () => {"
         },
         {
-          "line": 80,
-          "kind": "TEST_INFRASTRUCTURE",
-          "text": "test('5. Test connection to firestore returns connectivity report', async () => {"
-        },
-        {
-          "line": 84,
+          "line": 87,
           "kind": "TEST_INFRASTRUCTURE",
           "text": ".send({ engine: 'firestore' });"
         }
@@ -4797,16 +4792,6 @@
       ]
     },
     {
-      "file": "src/components/admin/command/AdminCommandPalette.jsx",
-      "hits": [
-        {
-          "line": 29,
-          "kind": "UI_LABEL",
-          "text": "{ id: 'set-database', label: 'Dual Database Engine (Firestore & MySQL / MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSett"
-        }
-      ]
-    },
-    {
       "file": "src/components/admin/companyManagement/CompanyManagement.jsx",
       "hits": [
         {
@@ -4965,139 +4950,34 @@
       "file": "src/components/admin/settings/DatabaseSettings.jsx",
       "hits": [
         {
-          "line": 8,
+          "line": 12,
           "kind": "UI_LABEL",
-          "text": "const [engineDetails, setEngineDetails] = useState({ firestore: {}, mysql: {} });"
+          "text": "const [engineDetails, setEngineDetails] = useState({ mysql: {}, firestore: {}, auth: {} });"
         },
         {
-          "line": 163,
+          "line": 119,
           "kind": "UI_LABEL",
-          "text": "High-Performance MariaDB & Google Cloud Firestore with zero-downtime intelligent replication."
+          "text": "ZERO FIRESTORE DATA PLANE"
         },
         {
-          "line": 294,
+          "line": 261,
           "kind": "UI_LABEL",
-          "text": "<th className=\"py-2\">Firestore Count</th>"
+          "text": "✓ Used strictly for cryptographic token minting, OAuth flows, and MFA validation. Zero user profile or document data stored in Firestore."
         },
         {
-          "line": 304,
+          "line": 265,
           "kind": "UI_LABEL",
-          "text": "<td className=\"py-2.5\">{row.firestore}</td>"
+          "text": "{/* 3. Firestore Decommissioned Card */}"
         },
         {
-          "line": 324,
+          "line": 273,
           "kind": "UI_LABEL",
-          "text": "{/* 1. Firestore Card */}"
+          "text": "<h3 className=\"font-bold text-slate-700\">Google Cloud Firestore</h3>"
         },
         {
-          "line": 326,
+          "line": 298,
           "kind": "UI_LABEL",
-          "text": "activeEngine === 'firestore'"
-        },
-        {
-          "line": 336,
-          "kind": "UI_LABEL",
-          "text": "<h3 className=\"font-bold text-slate-900\">Google Cloud Firestore</h3>"
-        },
-        {
-          "line": 341,
-          "kind": "UI_LABEL",
-          "text": "{activeEngine === 'firestore' && ("
-        },
-        {
-          "line": 352,
-          "kind": "UI_LABEL",
-          "text": "engineDetails.firestore?.connected"
-        },
-        {
-          "line": 353,
-          "kind": "UI_LABEL",
-          "text": "? (engineDetails.firestore?.quotaExceeded ? 'text-amber-600' : 'text-emerald-600')"
-        },
-        {
-          "line": 356,
-          "kind": "UI_LABEL",
-          "text": "{engineDetails.firestore?.connected ? ("
-        },
-        {
-          "line": 357,
-          "kind": "UI_LABEL",
-          "text": "engineDetails.firestore?.quotaExceeded ? ("
-        },
-        {
-          "line": 378,
-          "kind": "UI_LABEL",
-          "text": "<span className=\"font-mono\">{engineDetails.firestore?.projectId || 'ai-resume-builder-424cf'}</span>"
-        },
-        {
-          "line": 382,
-          "kind": "UI_LABEL",
-          "text": "<span>{engineDetails.firestore?.latencyMs !== undefined ? `${engineDetails.firestore.latencyMs}ms` : '—'}</span>"
-        },
-        {
-          "line": 384,
-          "kind": "UI_LABEL",
-          "text": "{engineDetails.firestore?.quotaExceeded && ("
-        },
-        {
-          "line": 395,
-          "kind": "UI_LABEL",
-          "text": "onClick={() => handleTestConnection('firestore')}"
-        },
-        {
-          "line": 396,
-          "kind": "UI_LABEL",
-          "text": "disabled={testingEngine === 'firestore'}"
-        },
-        {
-          "line": 399,
-          "kind": "UI_LABEL",
-          "text": "{testingEngine === 'firestore' ? <FaSpinner className=\"animate-spin\" /> : <FaBolt />}"
-        },
-        {
-          "line": 400,
-          "kind": "UI_LABEL",
-          "text": "Test Firestore"
-        },
-        {
-          "line": 403,
-          "kind": "UI_LABEL",
-          "text": "{activeEngine !== 'firestore' && ("
-        },
-        {
-          "line": 406,
-          "kind": "UI_LABEL",
-          "text": "onClick={() => requestSwitch('firestore')}"
-        },
-        {
-          "line": 410,
-          "kind": "UI_LABEL",
-          "text": "Switch to Firestore"
-        },
-        {
-          "line": 663,
-          "kind": "UI_LABEL",
-          "text": "? `Engine Transitioned to ${to === 'MYSQL' ? 'MySQL / MariaDB' : 'Google Cloud Firestore'}`"
-        },
-        {
-          "line": 687,
-          "kind": "UI_LABEL",
-          "text": "{from === 'FIRESTORE' ? <FaFire className=\"text-amber-500\" /> : <FaServer className=\"text-sky-600\" />}"
-        },
-        {
-          "line": 688,
-          "kind": "UI_LABEL",
-          "text": "<span>{from === 'FIRESTORE' ? 'Cloud Firestore' : 'MySQL / MariaDB'}</span>"
-        },
-        {
-          "line": 696,
-          "kind": "UI_LABEL",
-          "text": "{to === 'FIRESTORE' ? <FaFire className=\"text-amber-500\" /> : <FaServer className=\"text-sky-600\" />}"
-        },
-        {
-          "line": 697,
-          "kind": "UI_LABEL",
-          "text": "<span>{to === 'FIRESTORE' ? 'Cloud Firestore' : 'MySQL / MariaDB'}</span>"
+          "text": "🛡️ Direct Firestore data plane reads and writes have been permanently decommissioned to eliminate dual-database drift and quota limits."
         }
       ]
     },
@@ -5263,21 +5143,6 @@
           "line": 2,
           "kind": "UI_LABEL",
           "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/Settings.jsx",
-      "hits": [
-        {
-          "line": 43,
-          "kind": "UI_LABEL",
-          "text": "{ key: 'firebaseSettings', label: 'Firebase', group: 'General', description: 'Firestore & Auth Keys' },"
-        },
-        {
-          "line": 44,
-          "kind": "UI_LABEL",
-          "text": "{ key: 'databaseSettings', label: 'Dual Database Engine', group: 'General', description: 'Switch between Firestore & MySQL / MariaDB' },"
         }
       ]
     },
@@ -6370,22 +6235,22 @@
           "text": "// Realtime chat delivery is read through the backend API (never Firestore)."
         },
         {
-          "line": 1559,
+          "line": 1600,
           "kind": "DOCUMENTATION",
           "text": "// Firebase Storage is not part of the zero-Firestore data plane."
         },
         {
-          "line": 1656,
+          "line": 1697,
           "kind": "DOCUMENTATION",
           "text": "// to Firestore (which no longer exists on this path)."
         },
         {
-          "line": 1927,
+          "line": 1968,
           "kind": "DOCUMENTATION",
           "text": "// endpoints; the Firestore data plane is never consulted."
         },
         {
-          "line": 2272,
+          "line": 2313,
           "kind": "DOCUMENTATION",
           "text": "// the legacy Firestore realtime listener no longer exists on this path."
         }

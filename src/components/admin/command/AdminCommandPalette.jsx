@@ -26,7 +26,7 @@ const COMMAND_ITEMS = [
   { id: 'nav-operators', label: 'Platform Operators', category: 'Navigation', icon: FiLock, path: '/adm/operators' },
 
   // Settings Tabs
-  { id: 'set-database', label: 'Dual Database Engine (Firestore & MySQL / MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSettings' },
+  { id: 'set-database', label: 'Database & Persistence Engine (Authoritative MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSettings' },
   { id: 'set-firebase', label: 'Firebase Cloud Settings', category: 'Settings', icon: FaFire, path: '/adm/settings?tab=firebaseSettings' },
   { id: 'set-ai', label: 'AI Models & Provider Settings', category: 'Settings', icon: FaRobot, path: '/adm/settings?tab=aiSettings' },
   { id: 'set-smtp', label: 'Email & SMTP Configuration', category: 'Settings', icon: FaEnvelope, path: '/adm/settings?tab=emailSettings' },

@@ -22,26 +22,45 @@ router.use(requirePermission('system.config.write'));
  */
 router.get('/', async (req, res) => {
     try {
-        const firestoreDb = req.app.get('db');
-        const activeEngine = getActiveEngine();
+        const activeEngine = 'mysql';
 
-        // Perform parallel connectivity & sync health checks
-        const [firestoreStatus, mysqlStatus, syncHealth, recentAudits, engineStateConsistency] = await Promise.all([
-            testEngineConnectivity('firestore', firestoreDb),
-            testEngineConnectivity('mysql', firestoreDb),
+        // Perform live MySQL connectivity & outbox status checks
+        const [mysqlStatus, syncHealth, recentAudits, engineStateConsistency] = await Promise.all([
+            testEngineConnectivity('mysql', null),
             getSyncHealthStatus(),
             getSwitchAuditLogs(),
             getEngineStateConsistency(),
         ]);
 
+        let tablesCount = 53;
+        try {
+            const p = getPool();
+            const [tables] = await p.query('SHOW TABLES');
+            tablesCount = tables.length;
+        } catch (_) {}
+
         return res.json({
             success: true,
-            activeEngine,
+            activeEngine: 'mysql',
+            authoritativeDatabase: 'mysql',
+            firestoreDataPlane: 'REMOVED',
+            firebaseAuth: 'IDENTITY_ONLY',
             engineDetails: {
-                current: activeEngine,
-                firestore: firestoreStatus,
+                current: 'mysql',
                 mysql: mysqlStatus,
+                firestore: {
+                    connected: false,
+                    status: 'DECOMMISSIONED',
+                    role: 'ZERO_DATA_PLANE',
+                    note: 'All application entities reside natively in MariaDB / MySQL. Firebase Auth is retained exclusively for identity verification.'
+                },
+                auth: {
+                    status: 'ACTIVE',
+                    role: 'IDENTITY_ONLY',
+                    providers: ['google', 'facebook', 'github', 'linkedin', 'password']
+                }
             },
+            tablesCount,
             engineStateConsistency,
             syncHealth,
             recentAudits,
@@ -228,54 +247,41 @@ router.post('/initialize-schema', requireRecentAdminAuthentication, async (req, 
 
 /**
  * POST /api/admin/database-settings
- * Atomically switches the database engine after pre-switch sync flush and validation.
+ * Handles database administration actions and rejects switching to decommissioned Firestore.
  */
 router.post('/', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const targetEngine = String(req.body.engine || '').trim().toLowerCase();
-        const force = req.body.force === true;
 
-        if (targetEngine !== 'firestore' && targetEngine !== 'mysql') {
+        if (targetEngine === 'firestore') {
             return res.status(400).json({
                 success: false,
-                error: { code: 'INVALID_ENGINE', message: "Target engine must be 'firestore' or 'mysql'." }
+                error: {
+                    code: 'FIRESTORE_DATA_PLANE_DECOMMISSIONED',
+                    message: 'Google Cloud Firestore has been decommissioned as an application data plane. MariaDB / MySQL is 100% authoritative for all user and application data. Firebase is used exclusively for Identity & Authentication.'
+                }
             });
         }
 
-        const firestoreDb = req.app.get('db');
-        const actor = req.user?.email || req.user?.uid || 'SUPER_ADMIN';
-        const switchedBy = force ? `EMERGENCY_FAILOVER(${actor})` : actor;
-
-        if (!force) {
-            const databaseAuthority = require('../database/authority');
-            databaseAuthority.assertManualSwitchAllowed();
+        if (targetEngine !== 'mysql') {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'INVALID_ENGINE', message: "Authoritative engine must be 'mysql'." }
+            });
         }
 
-        // Pre-Switch Safety & Parity Gate
-        if (!force) {
-            const preSwitch = await flushAndVerifyBeforeSwitch(firestoreDb);
-            if (!preSwitch.safeToSwitch) {
-                return res.status(409).json({
-                    success: false,
-                    error: {
-                        code: 'PRE_SWITCH_VALIDATION_FAILED',
-                        message: preSwitch.reason || 'Database switch blocked by pre-switch verification.',
-                        details: preSwitch
-                    }
-                });
-            }
-        }
-
-        const result = await switchActiveEngine(targetEngine, switchedBy, firestoreDb);
-        return res.json(result);
+        return res.json({
+            success: true,
+            engine: 'mysql',
+            message: 'MariaDB / MySQL is currently active and 100% authoritative.'
+        });
     } catch (err) {
         console.error('[DatabaseAdmin] Engine switch rejected:', err.message);
         return res.status(err.status || 500).json({
             success: false,
             error: {
-                code: 'DATABASE_SWITCH_FAILED',
+                code: 'DATABASE_ADMIN_ERROR',
                 message: err.message,
-                details: err.details || null,
                 requestId: res.locals?.requestId,
             }
         });

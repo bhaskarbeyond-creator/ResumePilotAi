@@ -18,10 +18,11 @@ async function testLiveMfaLoginJourney() {
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(600);
 
-    const emailInput = page.locator('.auth input[type="text"], .auth input[type="email"], #input-email').first();
-    const passwordInput = page.locator('.auth input[type="password"], #input-password').first();
+    const emailInput = page.locator('input[name="Email"], .auth input[type="text"], .auth input[type="email"], #input-email').first();
+    const passwordInput = page.locator('input[name="Password"], .auth input[type="password"], #input-password').first();
     const submitBtn = page.locator('.auth input[type="submit"], .auth .inputSubmit').first();
 
+    await emailInput.waitFor({ state: 'visible', timeout: 10000 });
     assert.ok(await emailInput.isVisible(), 'Email input must be visible on login form');
     assert.ok(await passwordInput.isVisible(), 'Password input must be visible on login form');
     console.log('  ✓ Login inputs and submit button rendered cleanly');

@@ -778,8 +778,49 @@ export async function updateApplicationStatusWithMessage(applicationId, status, 
 }
 
 export async function getAllJobs(page = 1, itemsPerPage = 10, filters = {}) {
-    return getActiveJobs(page, itemsPerPage, filters);
+    try {
+        const params = new URLSearchParams();
+        if (page) params.set('page', String(page));
+        if (itemsPerPage) params.set('limit', String(itemsPerPage));
+        if (filters.status && filters.status !== 'all') params.set('status', String(filters.status));
+        if (filters.searchTerm) params.set('search', String(filters.searchTerm));
+        if (filters.category && filters.category !== 'all') params.set('category', String(filters.category));
+
+        const { response, data } = await fetchAdminWithReauth(`/api/admin/jobs?${params.toString()}`);
+        if (response.ok && data?.success) {
+            return {
+                success: true,
+                jobs: data.jobs || [],
+                allJobs: data.allJobs || data.jobs || [],
+                pagination: data.pagination || {
+                    currentPage: page,
+                    totalItems: data.jobs?.length || 0,
+                    totalPages: Math.max(1, Math.ceil((data.jobs?.length || 0) / itemsPerPage)),
+                    hasNextPage: false,
+                    hasPreviousPage: false,
+                },
+            };
+        }
+        // Fallback to public jobs data endpoint
+        const publicData = await apiJson(`/api/jobs-data?${params.toString()}`);
+        return {
+            success: true,
+            jobs: publicData.jobs || [],
+            allJobs: publicData.jobs || [],
+            pagination: publicData.pagination || {
+                currentPage: page,
+                totalItems: publicData.jobs?.length || 0,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+            },
+        };
+    } catch (error) {
+        console.error('getAllJobs error:', error);
+        return { success: false, jobs: [], allJobs: [], error: error.message };
+    }
 }
+
 
 export async function updateJobStatus(jobId, status, expected = {}) {
     const { response, data } = await fetchAdminWithReauth(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
