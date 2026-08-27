@@ -66,7 +66,10 @@ test('AI, payment and email provider tests use unambiguous namespaces', async ()
   assert.doesNotMatch(index, /app\.post\('\/api\/admin\/test-connection'/);
   assert.match(ai, /\/api\/admin\/ai\/test-provider/);
   assert.match(paymentService, /\/api\/admin\/payment\/test-provider/);
-  assert.match(paymentService, /\/api\/platform\/payment-settings/);
+  // Subscription status for the product UI is read from the public platform
+  // configuration (it is public info and must not require an admin-only
+  // endpoint); the admin payment-settings projection stays admin-gated.
+  assert.match(paymentService, /\/api\/platform\/public-config/);
   assert.match(payment, /testPaymentProvider/);
   assert.match(payment, /razorpayKeySecret/);
   assert.match(payment, /configuredProviders/);

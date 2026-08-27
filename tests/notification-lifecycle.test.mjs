@@ -14,7 +14,9 @@ test('notification producers are backend-owned, deterministic, and state-labelle
   assert.match(backend, /deliveryState: 'NOT_REQUESTED'/);
   assert.match(backend, /notificationEventId\('job_application_submitted', applicationId\)/);
   assert.match(backend, /notificationEventId\('job_application_status', applicationId, String\(nextRevision\)\)/);
-  assert.match(backend, /notificationEventId\('message', conversationId, messageRef\.key\)/);
+  // Messaging is MySQL-backed: the deterministic event id is derived from the
+  // conversation plus the generated message id (not an RTDB push key).
+  assert.match(backend, /notificationEventId\('message', conversationId, messageId\)/);
   assert.match(backend, /notificationEventId\('payment_active', orderRef\.id\)/);
   assert.match(backend, /notificationEventId\('payment_refunded', paymentOrderId\)/);
   assert.doesNotMatch(operations, /export async function createNotification/);

@@ -3,23 +3,30 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 test('messaging creation and profile projection are participant-bound and deterministic', async () => {
-  const [backend, operations, rules] = await Promise.all([
+  // Messaging lives in MySQL (migrated off Firebase Realtime Database). These
+  // assertions target the current implementation's security properties:
+  // participant-bound creation, deterministic conversation ids, and a
+  // secret-free, non-cacheable participant projection.
+  const [backend, operations] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('Realtime_database_Security_rules.txt', 'utf8'),
   ]);
   const createRoute = backend.match(/app\.post\('\/api\/messages\/conversations'[\s\S]*?\n\}\);/)?.[0] || '';
+  // Only the applicant or the employer may open the conversation.
   assert.match(createRoute, /\[applicantUid, employerUid\]\.includes\(req\.user\.uid\)/);
-  assert.match(createRoute, /const conversationId = lookupKey/);
-  assert.match(createRoute, /conversation-participants/);
+  // Deterministic conversation id (sha256 over the sorted participant pair)
+  // makes concurrent creation idempotent.
+  assert.match(createRoute, /createHash\('sha256'\)\.update\(participants\.join/);
+  // Participants are persisted to the MySQL conversation_participants table.
+  assert.match(createRoute, /INSERT IGNORE INTO conversation_participants/);
   const profileRoute = backend.match(/app\.get\('\/api\/messages\/conversations\/:conversationId\/participant-profile'[\s\S]*?\n\}\);/)?.[0] || '';
-  assert.match(profileRoute, /participants\/\$\{req\.user\.uid\}/);
+  // Membership is verified against the participant table before any projection.
+  assert.match(profileRoute, /SELECT 1 FROM conversation_participants WHERE conversation_id = \? AND user_id = \?/);
   assert.match(profileRoute, /safePublicUrl/);
   assert.match(profileRoute, /no-store, private/);
+  // The projection must not leak credentials or contact details.
   assert.doesNotMatch(profileRoute, /clientSecret|authToken|email:/);
   assert.match(operations, /getConversationParticipantProfile/);
-  assert.match(rules, /data\.child\('participants'\)\.child\(auth\.uid\)\.val\(\) === true/);
-  assert.match(rules, /"\.write": false/);
 });
 
 test('message UI owns realtime cleanup, rejects stale account work, and confirms backend sends', async () => {
