@@ -89,6 +89,12 @@ class MySQLRepository {
 
     async saveResume(userId, resumeId, data, { expectedRevision = null } = {}) {
         return this._withTransaction(async (connection) => {
+            // Guarantee user row exists to satisfy the user_id foreign-key constraint.
+            await connection.query(
+                'INSERT IGNORE INTO users (id, email, revision) VALUES (?, ?, 1)',
+                [userId, data.email || '']
+            );
+
             // Ownership-collision guard (IDOR): the resume id is the primary
             // key, so an unguarded upsert would let a different user overwrite
             // (and silently re-own) somebody else's document. Lock the row by
@@ -503,6 +509,11 @@ class MySQLRepository {
 
     async savePortfolio(userId, portfolioId, data) {
         return this._withTransaction(async (connection) => {
+            await connection.query(
+                'INSERT IGNORE INTO users (id, email, revision) VALUES (?, ?, 1)',
+                [userId, '']
+            );
+
             // Ownership-collision guard (IDOR): refuse to upsert over a
             // portfolio owned by a different user (see saveResume).
             const [ownerRows] = await connection.query(
@@ -586,6 +597,11 @@ class MySQLRepository {
         const dataJson = JSON.stringify(data);
 
         await this._withTransaction(async (connection) => {
+            await connection.query(
+                'INSERT IGNORE INTO users (id, email, revision) VALUES (?, ?, 1)',
+                [userId, data.email || '']
+            );
+
             // Ownership-collision guard (IDOR): refuse to upsert over a cover
             // letter owned by a different user (see saveResume).
             const [ownerRows] = await connection.query(

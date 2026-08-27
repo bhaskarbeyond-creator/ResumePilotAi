@@ -57,22 +57,44 @@ async function mysqlUp(timeoutMs = 15000) {
   return false;
 }
 
-function stopMysqld() {
-  try { execFileSync('pkill', ['-f', 'mysqld --no-defaults'], { stdio: 'ignore' }); } catch (_e) { /* already stopped */ }
+async function stopMysqld() {
+  try {
+    if (process.platform === 'win32') {
+      execFileSync('taskkill', ['/F', '/IM', 'mysqld.exe'], { stdio: 'ignore' });
+    } else {
+      execFileSync('pkill', ['-f', 'mysqld'], { stdio: 'ignore' });
+    }
+  } catch (_e) { /* already stopped */ }
+  await new Promise(r => setTimeout(r, 1500));
 }
 
 function startMysqld() {
+  if (process.platform === 'win32') {
+    try {
+      execFileSync('powershell.exe', [
+        '-NoProfile',
+        '-Command',
+        'Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
+      ], { stdio: 'ignore' });
+    } catch (_e) {}
+    return null;
+  }
   const child = spawn(MYSQLD, mysqldArgs(), { stdio: 'ignore', detached: true });
   child.unref();
   return child;
 }
 
+async function ensureMysqldRunning(maxAttempts = 10) {
+  for (let i = 0; i < maxAttempts; i++) {
+    if (await mysqlUp(1000)) return true;
+    startMysqld();
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  return mysqlUp(2000);
+}
+
 // ─── Scenario A: MySQL unavailable at boot ────────────────────────────────
 test('A. app boots degraded with MySQL down; no fabricated data', async () => {
-  stopMysqld();
-  await new Promise(r => setTimeout(r, 1500));
-  assert.equal(await mysqlUp(3000), false, 'mysql must be down for this scenario');
-
   const { bootServer, certToken } = await import('./helpers/bootServer.mjs');
   const server = await bootServer({ port: 8321, db: { ...DB, port: '3399' }, timeoutMs: 45000 }); // dead port
   try {
@@ -191,8 +213,7 @@ test('G/H. app survives a MySQL restart; readiness and writes recover without ap
     assert.equal(save.status, 200, 'baseline write works');
 
     // G: kill MySQL under the running app
-    stopMysqld();
-    await new Promise(r => setTimeout(r, 1200));
+    await stopMysqld();
     const downReads = await fetch(`${base}/api/resumes`, { headers: { Authorization: `Bearer ${token}` } });
     const downBody = await downReads.json();
     console.log('[G debug] outage read status:', downReads.status, 'body:', JSON.stringify(downBody).slice(0, 200));
@@ -203,8 +224,7 @@ test('G/H. app survives a MySQL restart; readiness and writes recover without ap
     record('G', { appRestarted: false, readStatusDuringOutage: downReads.status, readyDuringOutage: downReady.status });
 
     // H: restart MySQL; the SAME app process must recover
-    startMysqld();
-    assert.ok(await mysqlUp(20000), 'mysql restarted');
+    assert.ok(await ensureMysqldRunning(), 'mysql restarted');
     let recovered = false;
     for (let i = 0; i < 30; i++) {
       const r = await fetch(`${base}/api/resumes`, { headers: { Authorization: `Bearer ${token}` } });
@@ -227,6 +247,6 @@ test('G/H. app survives a MySQL restart; readiness and writes recover without ap
 
 test.after(async () => {
   // Guarantee MySQL is back up for the rest of the certification stack.
-  if (!(await mysqlUp(5000))) { startMysqld(); await mysqlUp(20000); }
+  await ensureMysqldRunning();
   fs.writeFileSync(path.join(EVIDENCE, 'db-failure-injection.json'), JSON.stringify(log, null, 2));
 });

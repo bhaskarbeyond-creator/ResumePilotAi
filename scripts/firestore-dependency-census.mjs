@@ -131,7 +131,7 @@ for (const dirName of SCAN_DIRS) {
   const base = path.join(ROOT, dirName);
   if (!fs.existsSync(base)) continue;
   for (const file of walk(base)) {
-    const rel = path.relative(ROOT, file);
+    const rel = path.relative(ROOT, file).replace(/\\/g, '/');
     const content = fs.readFileSync(file, 'utf8');
     if (!FIRESTORE_PATTERNS.some(p => p.test(content))) continue;
     const lines = content.split('\n');

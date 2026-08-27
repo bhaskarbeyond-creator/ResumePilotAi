@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-08-27T03:08:40.483Z",
+    "generatedAt": "2026-08-27T05:01:08.084Z",
     "scannedDirectories": [
       "backend",
       "src",
@@ -21,21 +21,6 @@
     }
   },
   "census": [
-    {
-      "file": "backend/database/authTokens.js",
-      "hits": [
-        {
-          "line": 6,
-          "kind": "DOCUMENTATION",
-          "text": "* These single-use, lease-guarded tokens formerly lived in Firestore"
-        },
-        {
-          "line": 9,
-          "kind": "DOCUMENTATION",
-          "text": "* work with ZERO Firestore dependency. Semantics preserved:"
-        }
-      ]
-    },
     {
       "file": "backend/database/authority.js",
       "hits": [
@@ -143,6 +128,21 @@
           "line": 419,
           "kind": "DORMANT_LEGACY",
           "text": "firestore: { healthy: overrides.firestoreHealthy ?? null, checkedAt: 0, consecutiveFailures: 0, consecutiveSuccesses: 0, lastError: null, latencyMs: null },"
+        }
+      ]
+    },
+    {
+      "file": "backend/database/authTokens.js",
+      "hits": [
+        {
+          "line": 6,
+          "kind": "DOCUMENTATION",
+          "text": "* These single-use, lease-guarded tokens formerly lived in Firestore"
+        },
+        {
+          "line": 9,
+          "kind": "DOCUMENTATION",
+          "text": "* work with ZERO Firestore dependency. Semantics preserved:"
         }
       ]
     },
@@ -2182,10 +2182,30 @@
       ]
     },
     {
+      "file": "backend/repositories/index.js",
+      "hits": [
+        {
+          "line": 26,
+          "kind": "DOCUMENTATION",
+          "text": "* Firestore is NEVER used on the synchronous application path:"
+        },
+        {
+          "line": 28,
+          "kind": "DOCUMENTATION",
+          "text": "*    Firestore adapter is only constructed by callers that explicitly ask for"
+        },
+        {
+          "line": 29,
+          "kind": "DOCUMENTATION",
+          "text": "*    it via `getDirectRepository('firestore', ...)` — i.e. the optional"
+        }
+      ]
+    },
+    {
       "file": "backend/repositories/MySQLRepository.js",
       "hits": [
         {
-          "line": 1035,
+          "line": 1051,
           "kind": "DOCUMENTATION",
           "text": "// 9b. FAVOURITES (MySQL authoritative; formerly Firestore users/{uid}/favourites)"
         }
@@ -2213,26 +2233,6 @@
           "line": 101,
           "kind": "DOCUMENTATION",
           "text": "// The Firestore adapter is deliberately never used by this class. The"
-        }
-      ]
-    },
-    {
-      "file": "backend/repositories/index.js",
-      "hits": [
-        {
-          "line": 26,
-          "kind": "DOCUMENTATION",
-          "text": "* Firestore is NEVER used on the synchronous application path:"
-        },
-        {
-          "line": 28,
-          "kind": "DOCUMENTATION",
-          "text": "*    Firestore adapter is only constructed by callers that explicitly ask for"
-        },
-        {
-          "line": 29,
-          "kind": "DOCUMENTATION",
-          "text": "*    it via `getDirectRepository('firestore', ...)` — i.e. the optional"
         }
       ]
     },
@@ -4747,32 +4747,682 @@
       ]
     },
     {
+      "file": "src/components/addAds/AddAds.jsx",
+      "hits": [
+        {
+          "line": 4,
+          "kind": "UI_LABEL",
+          "text": "import { getAds, addAds, removeAd } from '../../firestore/dbOperations'"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/Admin.jsx",
+      "hits": [
+        {
+          "line": 12,
+          "kind": "UI_LABEL",
+          "text": "import { checkIfAdmin } from '../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/AdminReauthPrompt.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { reauthenticateUser } from '../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
+      "hits": [
+        {
+          "line": 5,
+          "kind": "UI_LABEL",
+          "text": "import { listBlogPosts, updateBlogPost, deleteBlogPost, listBlogCategories, getUserData } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/blogManagement/BlogPreviewModal.jsx",
+      "hits": [
+        {
+          "line": 4,
+          "kind": "UI_LABEL",
+          "text": "import { listBlogCategories } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/command/AdminCommandPalette.jsx",
+      "hits": [
+        {
+          "line": 29,
+          "kind": "UI_LABEL",
+          "text": "{ id: 'set-database', label: 'Dual Database Engine (Firestore & MySQL / MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSett"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/companyManagement/CompanyManagement.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getAllCompanies, approveCompany, rejectCompany, toggleCompanyFeatured } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/dashboard/dashboard.jsx",
+      "hits": [
+        {
+          "line": 182,
+          "kind": "UI_LABEL",
+          "text": "Firestore Latency: <strong>{formatMetric(center.subsystems?.database?.latencyMs)}{center.subsystems?.database?.latencyMs == null ? '' : 'ms'}</strong> • Heap Us"
+        },
+        {
+          "line": 200,
+          "kind": "UI_LABEL",
+          "text": "<Signal label=\"Database\" ok={center.signals?.database?.status === 'HEALTHY'} text={center.signals?.database?.status === 'HEALTHY' ? 'Firestore Live' : 'Unavaila"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/employerApplications/EmployerApplications.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getAllEmployerApplications, approveEmployerApplication, rejectEmployerApplication, reactivateEmployerApplication } from '../../../firestore/dbOperation"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/JobsLandingStats.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getStats, setStats } from '../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/jobsManager/JobsManager.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getAllJobs, updateJobStatus, deleteJobByAdmin, toggleJobFeatured } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/landingPages/LandingPages.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getFrontendStats, setFrontendStats } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/messages/Messages.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getAllMessages } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/phrases/Phrases.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { addCategoryToData, getAllCategories, removeCategoryByName, removePhraseFromCategory, addPhraseToCategory, getPhrasesOfCategory } from '../../../firesto"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/reviews/Reviews.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { addReview, getAllReviews, deleteReview, addGlobalRating } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/adsSettings.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { getAds, addAds, removeAd } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/AiSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { reauthenticateUser } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/anlyticsSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { editTrackingCode, getWebsiteData } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/blogSettings.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { getBlogSettings, updateBlogSettings, listBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCategory } from '../../../firestore/dbOperat"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/BrandingSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/CodeInjectionSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/DatabaseSettings.jsx",
+      "hits": [
+        {
+          "line": 8,
+          "kind": "UI_LABEL",
+          "text": "const [engineDetails, setEngineDetails] = useState({ firestore: {}, mysql: {} });"
+        },
+        {
+          "line": 163,
+          "kind": "UI_LABEL",
+          "text": "High-Performance MariaDB & Google Cloud Firestore with zero-downtime intelligent replication."
+        },
+        {
+          "line": 294,
+          "kind": "UI_LABEL",
+          "text": "<th className=\"py-2\">Firestore Count</th>"
+        },
+        {
+          "line": 304,
+          "kind": "UI_LABEL",
+          "text": "<td className=\"py-2.5\">{row.firestore}</td>"
+        },
+        {
+          "line": 324,
+          "kind": "UI_LABEL",
+          "text": "{/* 1. Firestore Card */}"
+        },
+        {
+          "line": 326,
+          "kind": "UI_LABEL",
+          "text": "activeEngine === 'firestore'"
+        },
+        {
+          "line": 336,
+          "kind": "UI_LABEL",
+          "text": "<h3 className=\"font-bold text-slate-900\">Google Cloud Firestore</h3>"
+        },
+        {
+          "line": 341,
+          "kind": "UI_LABEL",
+          "text": "{activeEngine === 'firestore' && ("
+        },
+        {
+          "line": 352,
+          "kind": "UI_LABEL",
+          "text": "engineDetails.firestore?.connected"
+        },
+        {
+          "line": 353,
+          "kind": "UI_LABEL",
+          "text": "? (engineDetails.firestore?.quotaExceeded ? 'text-amber-600' : 'text-emerald-600')"
+        },
+        {
+          "line": 356,
+          "kind": "UI_LABEL",
+          "text": "{engineDetails.firestore?.connected ? ("
+        },
+        {
+          "line": 357,
+          "kind": "UI_LABEL",
+          "text": "engineDetails.firestore?.quotaExceeded ? ("
+        },
+        {
+          "line": 378,
+          "kind": "UI_LABEL",
+          "text": "<span className=\"font-mono\">{engineDetails.firestore?.projectId || 'ai-resume-builder-424cf'}</span>"
+        },
+        {
+          "line": 382,
+          "kind": "UI_LABEL",
+          "text": "<span>{engineDetails.firestore?.latencyMs !== undefined ? `${engineDetails.firestore.latencyMs}ms` : '—'}</span>"
+        },
+        {
+          "line": 384,
+          "kind": "UI_LABEL",
+          "text": "{engineDetails.firestore?.quotaExceeded && ("
+        },
+        {
+          "line": 395,
+          "kind": "UI_LABEL",
+          "text": "onClick={() => handleTestConnection('firestore')}"
+        },
+        {
+          "line": 396,
+          "kind": "UI_LABEL",
+          "text": "disabled={testingEngine === 'firestore'}"
+        },
+        {
+          "line": 399,
+          "kind": "UI_LABEL",
+          "text": "{testingEngine === 'firestore' ? <FaSpinner className=\"animate-spin\" /> : <FaBolt />}"
+        },
+        {
+          "line": 400,
+          "kind": "UI_LABEL",
+          "text": "Test Firestore"
+        },
+        {
+          "line": 403,
+          "kind": "UI_LABEL",
+          "text": "{activeEngine !== 'firestore' && ("
+        },
+        {
+          "line": 406,
+          "kind": "UI_LABEL",
+          "text": "onClick={() => requestSwitch('firestore')}"
+        },
+        {
+          "line": 410,
+          "kind": "UI_LABEL",
+          "text": "Switch to Firestore"
+        },
+        {
+          "line": 663,
+          "kind": "UI_LABEL",
+          "text": "? `Engine Transitioned to ${to === 'MYSQL' ? 'MySQL / MariaDB' : 'Google Cloud Firestore'}`"
+        },
+        {
+          "line": 687,
+          "kind": "UI_LABEL",
+          "text": "{from === 'FIRESTORE' ? <FaFire className=\"text-amber-500\" /> : <FaServer className=\"text-sky-600\" />}"
+        },
+        {
+          "line": 688,
+          "kind": "UI_LABEL",
+          "text": "<span>{from === 'FIRESTORE' ? 'Cloud Firestore' : 'MySQL / MariaDB'}</span>"
+        },
+        {
+          "line": 696,
+          "kind": "UI_LABEL",
+          "text": "{to === 'FIRESTORE' ? <FaFire className=\"text-amber-500\" /> : <FaServer className=\"text-sky-600\" />}"
+        },
+        {
+          "line": 697,
+          "kind": "UI_LABEL",
+          "text": "<span>{to === 'FIRESTORE' ? 'Cloud Firestore' : 'MySQL / MariaDB'}</span>"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+      "hits": [
+        {
+          "line": 5,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/ExportPdfSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/FacebookAuthSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/FeatureFlagsSettings.jsx",
+      "hits": [
+        {
+          "line": 191,
+          "kind": "UI_LABEL",
+          "text": "flag.source === 'firestore' ? 'bg-indigo-50 text-indigo-700' :"
+        },
+        {
+          "line": 232,
+          "kind": "UI_LABEL",
+          "text": "Last modified flags are stored in Firestore and override environment defaults."
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/FirebaseSettings.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        },
+        {
+          "line": 258,
+          "kind": "UI_LABEL",
+          "text": "<p className=\"text-xs text-slate-500 mb-4\">Client-side credentials used by the browser (Firestore, Auth, Realtime DB).</p>"
+        },
+        {
+          "line": 515,
+          "kind": "UI_LABEL",
+          "text": "placeholder=\"firebase-adminsdk-xxx@my-project.iam.gserviceaccount.com\""
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/GdprLegalSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/GeoSeoSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/IntegrationsSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/JobScraperSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/LlmGeoSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        },
+        {
+          "line": 40,
+          "kind": "UI_LABEL",
+          "text": "- Integrations: Razorpay UPI, Stripe, PayPal, Google Auth, Firebase Firestore`,"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/ModulesSettings.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/pagesSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { addPages, getAdminPages, removePageByName } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/PlatformConfigSettings.jsx",
+      "hits": [
+        {
+          "line": 107,
+          "kind": "UI_LABEL",
+          "text": "{config?.sourceStatus?.firestore === 'PARTIAL' && <div className=\"rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900\" role=\"status\"><p c"
+        },
+        {
+          "line": 112,
+          "kind": "UI_LABEL",
+          "text": "<p className=\"text-center text-[10px] text-slate-400\">Generated {config?.generatedAt ? new Date(config.generatedAt).toLocaleString() : 'unknown'} · Firestore so"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/SecurityLimitsSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/Settings.jsx",
+      "hits": [
+        {
+          "line": 43,
+          "kind": "UI_LABEL",
+          "text": "{ key: 'firebaseSettings', label: 'Firebase', group: 'General', description: 'Firestore & Auth Keys' },"
+        },
+        {
+          "line": 44,
+          "kind": "UI_LABEL",
+          "text": "{ key: 'databaseSettings', label: 'Dual Database Engine', group: 'General', description: 'Switch between Firestore & MySQL / MariaDB' },"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/SocialAuthSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/socialSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSocialLinks, addSocial } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/StorageSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/subscriptionsSettings.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactio"
+        },
+        {
+          "line": 3056,
+          "kind": "UI_LABEL",
+          "text": "<p className=\"mt-1 text-[10px] font-semibold text-slate-500\">Secrets are write-only. Empty fields preserve the active credential; use Clear, then Save, to inten"
+        },
+        {
+          "line": 3548,
+          "kind": "UI_LABEL",
+          "text": "<p className=\"text-xs text-slate-500 mt-0.5\">Confirm permanent removal from Firestore database.</p>"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/TemplateManagerSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { sendSmsNotification } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/WatermarkSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/settings/websiteSettings.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { getWebsiteData, settWebsiteData } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/TrustedBy/TrustedBy.jsx",
+      "hits": [
+        {
+          "line": 3,
+          "kind": "UI_LABEL",
+          "text": "import { addTrustedBy, getTrustedBy, removeTrustedBy, updateTrustedBy } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/userEdit/UserEdit.jsx",
+      "hits": [
+        {
+          "line": 2,
+          "kind": "UI_LABEL",
+          "text": "import { editUser, getUserById } from '../../../firestore/dbOperations';"
+        },
+        {
+          "line": 61,
+          "kind": "UI_LABEL",
+          "text": "const { setUserRole } = await import('../../../firestore/dbOperations');"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/usersManager/User360Drawer.jsx",
+      "hits": [
+        {
+          "line": 5,
+          "kind": "UI_LABEL",
+          "text": "import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/admin/usersManager/UsersManager.jsx",
+      "hits": [
+        {
+          "line": 6,
+          "kind": "UI_LABEL",
+          "text": "import { toggleUserSuspension, deleteUserByAdmin } from '../../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
       "file": "src/components/Analytics.jsx",
       "hits": [
         {
           "line": 1,
           "kind": "UI_LABEL",
           "text": "import { getWebsiteData } from '../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/AppShell/AuthenticatedAppShell.jsx",
-      "hits": [
-        {
-          "line": 5,
-          "kind": "UI_LABEL",
-          "text": "import { getFullName } from '../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/AppShell/applicationShell.js",
-      "hits": [
-        {
-          "line": 9,
-          "kind": "DOCUMENTATION",
-          "text": "* This decision must not depend on Firestore profile, module flags, or"
         }
       ]
     },
@@ -4793,6 +5443,91 @@
           "line": 3,
           "kind": "UI_LABEL",
           "text": "import { createTrackedJob, deleteTrackedJob, getTrackedJobs, updateTrackedJob } from '../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/AppShell/applicationShell.js",
+      "hits": [
+        {
+          "line": 9,
+          "kind": "DOCUMENTATION",
+          "text": "* This decision must not depend on Firestore profile, module flags, or"
+        }
+      ]
+    },
+    {
+      "file": "src/components/AppShell/AuthenticatedAppShell.jsx",
+      "hits": [
+        {
+          "line": 5,
+          "kind": "UI_LABEL",
+          "text": "import { getFullName } from '../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
+      "file": "src/components/auth/login/Login.jsx",
+      "hits": [
+        {
+          "line": 6,
+          "kind": "UI_LABEL",
+          "text": "import firebase from 'firebase/compat/app';"
+        },
+        {
+          "line": 8,
+          "kind": "UI_LABEL",
+          "text": "import addUser from '../../../firestore/auth'"
+        },
+        {
+          "line": 101,
+          "kind": "UI_LABEL",
+          "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
+        },
+        {
+          "line": 261,
+          "kind": "UI_LABEL",
+          "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
+        },
+        {
+          "line": 304,
+          "kind": "UI_LABEL",
+          "text": "import('../../../firestore/auth').then(({ updateUserOnLogin }) => {"
+        }
+      ]
+    },
+    {
+      "file": "src/components/auth/register/Register.jsx",
+      "hits": [
+        {
+          "line": 7,
+          "kind": "UI_LABEL",
+          "text": "import addUser, { updateUserOnLogin } from '../../../firestore/auth';"
+        },
+        {
+          "line": 83,
+          "kind": "UI_LABEL",
+          "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
+        },
+        {
+          "line": 124,
+          "kind": "UI_LABEL",
+          "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
+        },
+        {
+          "line": 320,
+          "kind": "UI_LABEL",
+          "text": "const { getSystemSettings } = await import('../../../firestore/dbOperations');"
+        }
+      ]
+    },
+    {
+      "file": "src/components/auth/resetPassword/ResetPasswordModal.jsx",
+      "hits": [
+        {
+          "line": 91,
+          "kind": "UI_LABEL",
+          "text": "const { default: addUser } = await import('../../../firestore/auth');"
         }
       ]
     },
@@ -5312,6 +6047,16 @@
       ]
     },
     {
+      "file": "src/components/JobsLanding/LandingJobsFeatured.jsx",
+      "hits": [
+        {
+          "line": 5,
+          "kind": "UI_LABEL",
+          "text": "import { getFrontendStats, getFeaturedJobs } from '../../firestore/dbOperations';"
+        }
+      ]
+    },
+    {
       "file": "src/components/JobsLanding/LandingJobTopCompanies.jsx",
       "hits": [
         {
@@ -5328,16 +6073,6 @@
           "line": 25,
           "kind": "DOCUMENTATION",
           "text": "// Transform Firestore data to match component expectations"
-        }
-      ]
-    },
-    {
-      "file": "src/components/JobsLanding/LandingJobsFeatured.jsx",
-      "hits": [
-        {
-          "line": 5,
-          "kind": "UI_LABEL",
-          "text": "import { getFrontendStats, getFeaturedJobs } from '../../firestore/dbOperations';"
         }
       ]
     },
@@ -5412,22 +6147,22 @@
       ]
     },
     {
-      "file": "src/components/PortfolioBuilder/WebCvStudio.jsx",
-      "hits": [
-        {
-          "line": 4,
-          "kind": "UI_LABEL",
-          "text": "import { getPortfolioById, getResumes, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
       "file": "src/components/PortfolioBuilder/portfolioSanitization.js",
       "hits": [
         {
           "line": 80,
           "kind": "DOCUMENTATION",
           "text": "* are not registered by the application. Stored Firestore snapshots are never mutated."
+        }
+      ]
+    },
+    {
+      "file": "src/components/PortfolioBuilder/WebCvStudio.jsx",
+      "hits": [
+        {
+          "line": 4,
+          "kind": "UI_LABEL",
+          "text": "import { getPortfolioById, getResumes, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../firestore/dbOperations';"
         }
       ]
     },
@@ -5468,741 +6203,6 @@
           "line": 9,
           "kind": "UI_LABEL",
           "text": "import { getJsonById } from '../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/addAds/AddAds.jsx",
-      "hits": [
-        {
-          "line": 4,
-          "kind": "UI_LABEL",
-          "text": "import { getAds, addAds, removeAd } from '../../firestore/dbOperations'"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/Admin.jsx",
-      "hits": [
-        {
-          "line": 12,
-          "kind": "UI_LABEL",
-          "text": "import { checkIfAdmin } from '../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/AdminReauthPrompt.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { reauthenticateUser } from '../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/JobsLandingStats.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getStats, setStats } from '../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/TrustedBy/TrustedBy.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { addTrustedBy, getTrustedBy, removeTrustedBy, updateTrustedBy } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/blogManagement/BlogManagement.jsx",
-      "hits": [
-        {
-          "line": 5,
-          "kind": "UI_LABEL",
-          "text": "import { listBlogPosts, updateBlogPost, deleteBlogPost, listBlogCategories, getUserData } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/blogManagement/BlogPreviewModal.jsx",
-      "hits": [
-        {
-          "line": 4,
-          "kind": "UI_LABEL",
-          "text": "import { listBlogCategories } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/command/AdminCommandPalette.jsx",
-      "hits": [
-        {
-          "line": 29,
-          "kind": "UI_LABEL",
-          "text": "{ id: 'set-database', label: 'Dual Database Engine (Firestore & MySQL / MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSett"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/companyManagement/CompanyManagement.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getAllCompanies, approveCompany, rejectCompany, toggleCompanyFeatured } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/dashboard/dashboard.jsx",
-      "hits": [
-        {
-          "line": 182,
-          "kind": "UI_LABEL",
-          "text": "Firestore Latency: <strong>{formatMetric(center.subsystems?.database?.latencyMs)}{center.subsystems?.database?.latencyMs == null ? '' : 'ms'}</strong> • Heap Us"
-        },
-        {
-          "line": 200,
-          "kind": "UI_LABEL",
-          "text": "<Signal label=\"Database\" ok={center.signals?.database?.status === 'HEALTHY'} text={center.signals?.database?.status === 'HEALTHY' ? 'Firestore Live' : 'Unavaila"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/employerApplications/EmployerApplications.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getAllEmployerApplications, approveEmployerApplication, rejectEmployerApplication, reactivateEmployerApplication } from '../../../firestore/dbOperation"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/jobsManager/JobsManager.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getAllJobs, updateJobStatus, deleteJobByAdmin, toggleJobFeatured } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/landingPages/LandingPages.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getFrontendStats, setFrontendStats } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/messages/Messages.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getAllMessages } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/phrases/Phrases.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { addCategoryToData, getAllCategories, removeCategoryByName, removePhraseFromCategory, addPhraseToCategory, getPhrasesOfCategory } from '../../../firesto"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/reviews/Reviews.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { addReview, getAllReviews, deleteReview, addGlobalRating } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/AiSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { reauthenticateUser } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/BrandingSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/CodeInjectionSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/DatabaseSettings.jsx",
-      "hits": [
-        {
-          "line": 8,
-          "kind": "UI_LABEL",
-          "text": "const [engineDetails, setEngineDetails] = useState({ firestore: {}, mysql: {} });"
-        },
-        {
-          "line": 163,
-          "kind": "UI_LABEL",
-          "text": "High-Performance MariaDB & Google Cloud Firestore with zero-downtime intelligent replication."
-        },
-        {
-          "line": 294,
-          "kind": "UI_LABEL",
-          "text": "<th className=\"py-2\">Firestore Count</th>"
-        },
-        {
-          "line": 304,
-          "kind": "UI_LABEL",
-          "text": "<td className=\"py-2.5\">{row.firestore}</td>"
-        },
-        {
-          "line": 324,
-          "kind": "UI_LABEL",
-          "text": "{/* 1. Firestore Card */}"
-        },
-        {
-          "line": 326,
-          "kind": "UI_LABEL",
-          "text": "activeEngine === 'firestore'"
-        },
-        {
-          "line": 336,
-          "kind": "UI_LABEL",
-          "text": "<h3 className=\"font-bold text-slate-900\">Google Cloud Firestore</h3>"
-        },
-        {
-          "line": 341,
-          "kind": "UI_LABEL",
-          "text": "{activeEngine === 'firestore' && ("
-        },
-        {
-          "line": 352,
-          "kind": "UI_LABEL",
-          "text": "engineDetails.firestore?.connected"
-        },
-        {
-          "line": 353,
-          "kind": "UI_LABEL",
-          "text": "? (engineDetails.firestore?.quotaExceeded ? 'text-amber-600' : 'text-emerald-600')"
-        },
-        {
-          "line": 356,
-          "kind": "UI_LABEL",
-          "text": "{engineDetails.firestore?.connected ? ("
-        },
-        {
-          "line": 357,
-          "kind": "UI_LABEL",
-          "text": "engineDetails.firestore?.quotaExceeded ? ("
-        },
-        {
-          "line": 378,
-          "kind": "UI_LABEL",
-          "text": "<span className=\"font-mono\">{engineDetails.firestore?.projectId || 'ai-resume-builder-424cf'}</span>"
-        },
-        {
-          "line": 382,
-          "kind": "UI_LABEL",
-          "text": "<span>{engineDetails.firestore?.latencyMs !== undefined ? `${engineDetails.firestore.latencyMs}ms` : '—'}</span>"
-        },
-        {
-          "line": 384,
-          "kind": "UI_LABEL",
-          "text": "{engineDetails.firestore?.quotaExceeded && ("
-        },
-        {
-          "line": 395,
-          "kind": "UI_LABEL",
-          "text": "onClick={() => handleTestConnection('firestore')}"
-        },
-        {
-          "line": 396,
-          "kind": "UI_LABEL",
-          "text": "disabled={testingEngine === 'firestore'}"
-        },
-        {
-          "line": 399,
-          "kind": "UI_LABEL",
-          "text": "{testingEngine === 'firestore' ? <FaSpinner className=\"animate-spin\" /> : <FaBolt />}"
-        },
-        {
-          "line": 400,
-          "kind": "UI_LABEL",
-          "text": "Test Firestore"
-        },
-        {
-          "line": 403,
-          "kind": "UI_LABEL",
-          "text": "{activeEngine !== 'firestore' && ("
-        },
-        {
-          "line": 406,
-          "kind": "UI_LABEL",
-          "text": "onClick={() => requestSwitch('firestore')}"
-        },
-        {
-          "line": 410,
-          "kind": "UI_LABEL",
-          "text": "Switch to Firestore"
-        },
-        {
-          "line": 663,
-          "kind": "UI_LABEL",
-          "text": "? `Engine Transitioned to ${to === 'MYSQL' ? 'MySQL / MariaDB' : 'Google Cloud Firestore'}`"
-        },
-        {
-          "line": 687,
-          "kind": "UI_LABEL",
-          "text": "{from === 'FIRESTORE' ? <FaFire className=\"text-amber-500\" /> : <FaServer className=\"text-sky-600\" />}"
-        },
-        {
-          "line": 688,
-          "kind": "UI_LABEL",
-          "text": "<span>{from === 'FIRESTORE' ? 'Cloud Firestore' : 'MySQL / MariaDB'}</span>"
-        },
-        {
-          "line": 696,
-          "kind": "UI_LABEL",
-          "text": "{to === 'FIRESTORE' ? <FaFire className=\"text-amber-500\" /> : <FaServer className=\"text-sky-600\" />}"
-        },
-        {
-          "line": 697,
-          "kind": "UI_LABEL",
-          "text": "<span>{to === 'FIRESTORE' ? 'Cloud Firestore' : 'MySQL / MariaDB'}</span>"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
-      "hits": [
-        {
-          "line": 5,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/ExportPdfSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/FacebookAuthSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/FeatureFlagsSettings.jsx",
-      "hits": [
-        {
-          "line": 191,
-          "kind": "UI_LABEL",
-          "text": "flag.source === 'firestore' ? 'bg-indigo-50 text-indigo-700' :"
-        },
-        {
-          "line": 232,
-          "kind": "UI_LABEL",
-          "text": "Last modified flags are stored in Firestore and override environment defaults."
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/FirebaseSettings.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        },
-        {
-          "line": 258,
-          "kind": "UI_LABEL",
-          "text": "<p className=\"text-xs text-slate-500 mb-4\">Client-side credentials used by the browser (Firestore, Auth, Realtime DB).</p>"
-        },
-        {
-          "line": 515,
-          "kind": "UI_LABEL",
-          "text": "placeholder=\"firebase-adminsdk-xxx@my-project.iam.gserviceaccount.com\""
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/GdprLegalSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/GeoSeoSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/IntegrationsSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/JobScraperSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/LlmGeoSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        },
-        {
-          "line": 40,
-          "kind": "UI_LABEL",
-          "text": "- Integrations: Razorpay UPI, Stripe, PayPal, Google Auth, Firebase Firestore`,"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/ModulesSettings.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/PlatformConfigSettings.jsx",
-      "hits": [
-        {
-          "line": 107,
-          "kind": "UI_LABEL",
-          "text": "{config?.sourceStatus?.firestore === 'PARTIAL' && <div className=\"rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900\" role=\"status\"><p c"
-        },
-        {
-          "line": 112,
-          "kind": "UI_LABEL",
-          "text": "<p className=\"text-center text-[10px] text-slate-400\">Generated {config?.generatedAt ? new Date(config.generatedAt).toLocaleString() : 'unknown'} · Firestore so"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/SecurityLimitsSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/Settings.jsx",
-      "hits": [
-        {
-          "line": 43,
-          "kind": "UI_LABEL",
-          "text": "{ key: 'firebaseSettings', label: 'Firebase', group: 'General', description: 'Firestore & Auth Keys' },"
-        },
-        {
-          "line": 44,
-          "kind": "UI_LABEL",
-          "text": "{ key: 'databaseSettings', label: 'Dual Database Engine', group: 'General', description: 'Switch between Firestore & MySQL / MariaDB' },"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/SocialAuthSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/StorageSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/TemplateManagerSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/TwilioSmsSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { sendSmsNotification } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/WatermarkSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/adsSettings.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { getAds, addAds, removeAd } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/anlyticsSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { editTrackingCode, getWebsiteData } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/blogSettings.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { getBlogSettings, updateBlogSettings, listBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCategory } from '../../../firestore/dbOperat"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/pagesSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { addPages, getAdminPages, removePageByName } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/socialSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getSocialLinks, addSocial } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/subscriptionsSettings.jsx",
-      "hits": [
-        {
-          "line": 3,
-          "kind": "UI_LABEL",
-          "text": "import { getSubscriptionStatus, setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getSystemSettings, saveSystemSettings, getAllAdminTransactio"
-        },
-        {
-          "line": 3056,
-          "kind": "UI_LABEL",
-          "text": "<p className=\"mt-1 text-[10px] font-semibold text-slate-500\">Secrets are write-only. Empty fields preserve the active credential; use Clear, then Save, to inten"
-        },
-        {
-          "line": 3548,
-          "kind": "UI_LABEL",
-          "text": "<p className=\"text-xs text-slate-500 mt-0.5\">Confirm permanent removal from Firestore database.</p>"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/settings/websiteSettings.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { getWebsiteData, settWebsiteData } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/userEdit/UserEdit.jsx",
-      "hits": [
-        {
-          "line": 2,
-          "kind": "UI_LABEL",
-          "text": "import { editUser, getUserById } from '../../../firestore/dbOperations';"
-        },
-        {
-          "line": 61,
-          "kind": "UI_LABEL",
-          "text": "const { setUserRole } = await import('../../../firestore/dbOperations');"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/usersManager/User360Drawer.jsx",
-      "hits": [
-        {
-          "line": 5,
-          "kind": "UI_LABEL",
-          "text": "import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/admin/usersManager/UsersManager.jsx",
-      "hits": [
-        {
-          "line": 6,
-          "kind": "UI_LABEL",
-          "text": "import { toggleUserSuspension, deleteUserByAdmin } from '../../../firestore/dbOperations';"
-        }
-      ]
-    },
-    {
-      "file": "src/components/auth/login/Login.jsx",
-      "hits": [
-        {
-          "line": 6,
-          "kind": "UI_LABEL",
-          "text": "import firebase from 'firebase/compat/app';"
-        },
-        {
-          "line": 8,
-          "kind": "UI_LABEL",
-          "text": "import addUser from '../../../firestore/auth'"
-        },
-        {
-          "line": 101,
-          "kind": "UI_LABEL",
-          "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
-        },
-        {
-          "line": 261,
-          "kind": "UI_LABEL",
-          "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
-        },
-        {
-          "line": 304,
-          "kind": "UI_LABEL",
-          "text": "import('../../../firestore/auth').then(({ updateUserOnLogin }) => {"
-        }
-      ]
-    },
-    {
-      "file": "src/components/auth/register/Register.jsx",
-      "hits": [
-        {
-          "line": 7,
-          "kind": "UI_LABEL",
-          "text": "import addUser, { updateUserOnLogin } from '../../../firestore/auth';"
-        },
-        {
-          "line": 83,
-          "kind": "UI_LABEL",
-          "text": "import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {"
-        },
-        {
-          "line": 124,
-          "kind": "UI_LABEL",
-          "text": "const { checkIfAdmin } = await import('../../../firestore/dbOperations');"
-        },
-        {
-          "line": 320,
-          "kind": "UI_LABEL",
-          "text": "const { getSystemSettings } = await import('../../../firestore/dbOperations');"
-        }
-      ]
-    },
-    {
-      "file": "src/components/auth/resetPassword/ResetPasswordModal.jsx",
-      "hits": [
-        {
-          "line": 91,
-          "kind": "UI_LABEL",
-          "text": "const { default: addUser } = await import('../../../firestore/auth');"
         }
       ]
     },

@@ -49,8 +49,44 @@ async function tableCensus(conn) {
   return rows.map(r => r.t);
 }
 
+async function ensureMysqldRunning(maxAttempts = 10) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const c = await mysql.createConnection({ ...DB, connectTimeout: 1000 });
+      await c.query('SELECT 1');
+      await c.end();
+      return true;
+    } catch (_e) {
+      if (process.platform === 'win32') {
+        try {
+          execFileSync('powershell.exe', [
+            '-NoProfile',
+            '-Command',
+            'Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
+          ], { stdio: 'ignore' });
+        } catch (_) {}
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+  return false;
+}
+
+async function getConnection(retries = 10) {
+  await ensureMysqldRunning();
+  for (let i = 0; i < retries; i++) {
+    try {
+      const conn = await mysql.createConnection({ ...DB, multipleStatements: true, connectTimeout: 3000 });
+      return conn;
+    } catch (_e) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+  return mysql.createConnection({ ...DB, multipleStatements: true });
+}
+
 test('backup/restore drill: seed → backup → destroy → restore → reconcile', async () => {
-  const conn = await mysql.createConnection({ ...DB, multipleStatements: true });
+  const conn = await getConnection();
 
   // 1. Seed deterministic marker records.
   await conn.query('DELETE FROM resumes WHERE id = ?', [MARKER_RESUME]);
@@ -114,7 +150,7 @@ test('backup/restore drill: seed → backup → destroy → restore → reconcil
 });
 
 test('restored database is structurally healthy for the application', async () => {
-  const conn = await mysql.createConnection(DB);
+  const conn = await getConnection();
   const [alive] = await conn.query('SELECT 1 AS alive');
   assert.equal(alive[0].alive, 1);
   // The schema bootstrap must be idempotent on a restored database.
