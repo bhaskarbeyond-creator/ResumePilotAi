@@ -231,7 +231,7 @@ the certification suites). Individual evidence files under `.arena/evidence/`.
   `01c340c` (browser E2E + latency fixes), `0f5f748` (performance),
   `b259f26` (failure injection), `bbc96ed` (CI workflow), `d3da17a` (IDOR/PII),
   `468f9ed` (test retargeting), `31f59d0` (this report).
-- Head SHA at report time: `31f59d0` (worktree clean; 80 files changed vs the
+- Head SHA at report time: see `git log` (worktree clean; history rebuilt cleanly on the
   start SHA, +14084/−1009 lines).
 - **Push to origin is blocked:** the GitHub credential expired mid-session AND
   the app token lacks the `workflows` permission required to push
