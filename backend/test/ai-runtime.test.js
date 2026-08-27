@@ -36,9 +36,15 @@ const { getPool } = require('../database/mysql');
 async function seedRuntimeSettings({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
   const pool = getPool();
   await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
-  if (Object.keys(secrets).length) await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1)", [JSON.stringify(secrets)]);
-  if (Object.keys(publicAi).length) await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)", [JSON.stringify({ ai: publicAi })]);
-  if (Object.keys(legacyAi).length) await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('system_settings', ?, 1)", [JSON.stringify({ ai: legacyAi })]);
+  if (Object.keys(secrets).length) {
+    await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify(secrets)]);
+  }
+  if (Object.keys(publicAi).length) {
+    await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify({ ai: publicAi })]);
+  }
+  if (Object.keys(legacyAi).length) {
+    await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('system_settings', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify({ ai: legacyAi })]);
+  }
   return null;
 }
 

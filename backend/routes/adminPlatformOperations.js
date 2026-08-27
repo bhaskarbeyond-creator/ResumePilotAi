@@ -6,6 +6,7 @@ const { requireAuth, requirePermission, requireSuperAdmin, requireRecentAdminAut
 const { getPlatformCurrencyConfig, setPlatformCurrencyConfig, normalizeCurrencyCode, formatCurrencyAmount } = require('../services/platformCurrency');
 const { getGlobalAiDashboardData } = require('../services/adminAiEntitlement');
 const { getPool } = require('../database/mysql');
+const { getRepository } = require('../repositories');
 
 const router = express.Router();
 
@@ -204,25 +205,23 @@ router.post('/platform/tenants/:tenantId/members', requireRecentAdminAuthenticat
       invitationEmail: email || null,
     });
 
-    // Synchronize user document tenantMemberships
-    if (db) {
-      const userRef = db.collection('users').doc(principalId);
-      const userSnap = await userRef.get();
-      if (userSnap.exists) {
-        const profile = userSnap.data() || {};
-        const tenants = Array.isArray(profile.tenantMemberships) ? profile.tenantMemberships : [];
-        const tenantRecord = await tenantService.registry.getTenant(tenantId).catch(() => ({ displayName: tenantId, slug: tenantId }));
-        const updated = tenants.filter(t => t.tenantId !== tenantId);
-        updated.push({
-          tenantId,
-          displayName: tenantRecord.displayName,
-          slug: tenantRecord.slug,
-          role: String(role || 'MEMBER').toUpperCase(),
-          joinedAt: new Date().toISOString(),
-        });
-        await userRef.set({ tenantMemberships: updated }, { merge: true });
-      }
-    }
+    // Synchronize user document tenantMemberships in authoritative MariaDB repository
+    const repo = req.repository || getRepository(db);
+    try {
+      const profile = (await repo.getUser(principalId).catch(() => ({}))) || {};
+      const tenants = Array.isArray(profile.tenantMemberships) ? profile.tenantMemberships : [];
+      const tenantRecord = await tenantService.registry.getTenant(tenantId).catch(() => ({ displayName: tenantId, slug: tenantId }));
+      const updated = tenants.filter(t => t.tenantId !== tenantId && t.id !== tenantId);
+      updated.push({
+        tenantId,
+        id: tenantId,
+        displayName: tenantRecord.displayName,
+        slug: tenantRecord.slug,
+        role: String(role || 'MEMBER').toUpperCase(),
+        joinedAt: new Date().toISOString(),
+      });
+      await repo.saveUser(principalId, { ...profile, tenantMemberships: updated });
+    } catch (_) {}
 
     return res.status(201).json({ success: true, message: 'Member added to organization.', membership });
   } catch (error) {
@@ -243,16 +242,13 @@ router.delete('/platform/tenants/:tenantId/members/:principalId', requireRecentA
   try {
     await tenantService.registry.removeTenantMembership({ tenantId, principalId });
 
-    if (db) {
-      const userRef = db.collection('users').doc(principalId);
-      const userSnap = await userRef.get();
-      if (userSnap.exists) {
-        const profile = userSnap.data() || {};
-        const tenants = Array.isArray(profile.tenantMemberships) ? profile.tenantMemberships : [];
-        const updated = tenants.filter(t => t.tenantId !== tenantId);
-        await userRef.set({ tenantMemberships: updated }, { merge: true });
-      }
-    }
+    const repo = req.repository || getRepository(db);
+    try {
+      const profile = (await repo.getUser(principalId).catch(() => ({}))) || {};
+      const tenants = Array.isArray(profile.tenantMemberships) ? profile.tenantMemberships : [];
+      const updated = tenants.filter(t => t.tenantId !== tenantId && t.id !== tenantId);
+      await repo.saveUser(principalId, { ...profile, tenantMemberships: updated });
+    } catch (_) {}
 
     return res.json({ success: true, message: 'Member removed from organization.' });
   } catch (error) {

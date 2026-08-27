@@ -2531,7 +2531,7 @@ router.post('/generate-content', async (req, res) => {
         res.setHeader('X-AI-Model', result.model);
         return res.json(result.data);
     } catch (error) {
-        const status = Number(error.status) || (error.code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 502);
+        const status = error.code === 'AI_PROVIDER_ERROR' ? 502 : (Number(error.status) || (error.code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 502));
         const code = error.code || (status < 500 ? 'INVALID_AI_REQUEST' : 'AI_PROVIDER_ERROR');
         if (status >= 500) console.error('[AI generation]', { operation, code, requestId: res.locals.requestId });
         return res.status(status).json({ error: {

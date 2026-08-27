@@ -516,24 +516,14 @@ router.get('/overview', async (req, res) => {
       } catch (_) {}
     }
 
-    if (db) {
+    const tenantService = req.app?.get('tenantService');
+    if (tenantService?.registry) {
       try {
-        const earningsDoc = await db.collection('data').doc('earnings').get().catch(() => null);
-        if (earningsDoc?.exists) earningsData = earningsDoc.data();
-      } catch (_) {}
-      
-      try {
-        const tenantsSnap = await db.collection('enterprise_tenants').limit(500).get().catch(() => null);
-        if (tenantsSnap && !tenantsSnap.empty) {
-          let total = 0; let active = 0; let suspended = 0;
-          tenantsSnap.forEach(doc => {
-            total += 1;
-            const data = doc.data() || {};
-            if (data.lifecycleState === 'ACTIVE') active += 1;
-            else if (data.lifecycleState === 'SUSPENDED') suspended += 1;
-          });
-          tenantCounts = { total, active, suspended, source: 'SAMPLED_MAX_500' };
-        }
+        const tenants = await tenantService.registry.listAllTenants({ limit: 1000 }).catch(() => []);
+        let total = tenants.length;
+        let active = tenants.filter(t => t.lifecycleState === 'ACTIVE').length;
+        let suspended = tenants.filter(t => t.lifecycleState === 'SUSPENDED').length;
+        tenantCounts = { total, active, suspended, source: 'MYSQL_AUTHORITATIVE' };
       } catch (_) {}
     }
 
@@ -2182,33 +2172,26 @@ router.get('/tenants/:tenantId', async (req, res) => {
   }
   try {
     const tenant = await tenantService.registry.getTenant(tenantId);
-    const results = await Promise.all([
-      safeQuery('tenant-configuration', () => tenantService.registry.getTenantConfiguration(tenantId)),
-      safeQuery('tenant-memberships', () => tenantService.registry.listTenantMemberships(tenantId)),
-      safeQuery('tenant-workspaces', () => db ? db.collection('enterprise_workspaces').where('tenantId', '==', tenantId).get() : Promise.reject(new Error('Firestore unavailable'))),
-      safeQuery('tenant-service-accounts', () => db ? db.collection('enterprise_service_accounts').where('tenantId', '==', tenantId).get() : Promise.reject(new Error('Firestore unavailable'))),
-      safeQuery('tenant-audit', () => db ? db.collection(`tenants/${tenantId}/audit_events`).orderBy('occurredAt', 'desc').limit(25).get() : Promise.reject(new Error('Firestore unavailable'))),
-      safeQuery('tenant-usage', () => db ? db.collection(`tenants/${tenantId}/ai_usage_daily`).limit(366).get() : Promise.reject(new Error('Firestore unavailable'))),
-    ]);
-    const [configurationResult, membershipsResult, workspacesResult, accountsResult, auditResult, usageResult] = results;
+    const configurationResult = await safeQuery('tenant-configuration', () => tenantService.registry.getTenantConfiguration(tenantId));
+    const membershipsResult = await safeQuery('tenant-memberships', () => tenantService.registry.listTenantMemberships(tenantId));
+    const workspacesResult = await safeQuery('tenant-workspaces', () => tenantService.registry.listWorkspaces(tenantId, { includeArchived: true }));
+    const accountsResult = await safeQuery('tenant-service-accounts', () => tenantService.serviceAccountStore ? tenantService.serviceAccountStore.list({ tenantId }) : Promise.resolve([]));
+    const auditResult = await safeQuery('tenant-audit', () => tenantService.repository ? tenantService.repository.listAuditEvents({ tenantId, principalId: req.user?.uid || 'admin', workspaceScope: 'TENANT' }, { limit: 25 }) : Promise.resolve([]));
+    const usageResult = await safeQuery('tenant-usage', () => tenantService.repository ? tenantService.repository.getAiUsageSummary({ tenantId, principalId: req.user?.uid || 'admin', workspaceScope: 'TENANT' }, { days: 366 }) : Promise.resolve([]));
+
+    const results = [configurationResult, membershipsResult, workspacesResult, accountsResult, auditResult, usageResult];
     const memberships = membershipsResult.ok ? membershipsResult.value : [];
-    const workspaces = workspacesResult.ok ? workspacesResult.value.docs.map(doc => ({ id: doc.id, name: doc.data()?.name || 'Unnamed workspace', lifecycleState: doc.data()?.lifecycleState || doc.data()?.status || 'UNKNOWN', isDefault: doc.data()?.isDefault === true })) : [];
-    const serviceAccounts = accountsResult.ok ? accountsResult.value.docs.map(doc => {
-      const data = doc.data() || {};
-      return { id: doc.id, displayName: data.displayName || null, status: data.status || 'UNKNOWN', scopes: Array.isArray(data.scopes) ? data.scopes : [], expiresAt: isoFrom(data.expiresAt), lastUsedAt: isoFrom(data.lastUsedAt), createdAt: isoFrom(data.createdAt) };
-    }) : [];
-    const activity = auditResult.ok ? auditResult.value.docs.map(doc => {
-      const data = doc.data() || {};
-      return { id: doc.id, action: data.action || 'UNKNOWN', category: data.category || null, severity: data.severity || 'INFO', outcome: data.outcome || null, principalId: data.principalId || data.subjectId || null, resourceType: data.resourceType || null, resourceId: data.resourceId || null, occurredAt: isoFrom(data.occurredAt || data.createdAt) };
-    }) : [];
-    const usageRows = usageResult.ok ? usageResult.value.docs.map(doc => doc.data() || {}) : [];
+    const workspaces = workspacesResult.ok ? workspacesResult.value.map(w => ({ id: w.id, name: w.name || 'Unnamed workspace', lifecycleState: w.lifecycleState || 'ACTIVE', isDefault: w.isDefault === true })) : [];
+    const serviceAccounts = accountsResult.ok ? accountsResult.value.map(sa => ({ id: sa.id, displayName: sa.displayName || null, status: sa.status || 'ACTIVE', scopes: Array.isArray(sa.scopes) ? sa.scopes : [], expiresAt: sa.expiresAt, lastUsedAt: sa.lastUsedAt, createdAt: sa.createdAt })) : [];
+    const activity = auditResult.ok ? auditResult.value.map(evt => ({ id: evt.id, action: evt.action || 'UNKNOWN', category: evt.category || null, severity: evt.severity || 'INFO', outcome: evt.outcome || null, principalId: evt.actorPrincipalId || evt.principalId || null, resourceType: evt.resourceType || null, resourceId: evt.resourceId || null, occurredAt: evt.occurredAt || evt.createdAt || null })) : [];
+    const usageRows = usageResult.ok ? (Array.isArray(usageResult.value) ? usageResult.value : []) : [];
     const usage = usageResult.ok ? {
       source: 'MEASURED',
       daysInspected: usageRows.length,
-      inputTokens: usageRows.reduce((sum, row) => sum + Number(row.inputTokens || 0), 0),
-      outputTokens: usageRows.reduce((sum, row) => sum + Number(row.outputTokens || 0), 0),
-      requests: usageRows.reduce((sum, row) => sum + Number(row.requests || row.requestCount || 0), 0),
-      estimatedCostMicros: usageRows.reduce((sum, row) => sum + Number(row.estimatedCostMicros || 0), 0),
+      inputTokens: usageRows.reduce((sum, row) => sum + Number(row.promptTokens || 0), 0),
+      outputTokens: usageRows.reduce((sum, row) => sum + Number(row.completionTokens || 0), 0),
+      requests: usageRows.reduce((sum, row) => sum + Number(row.requestCount || row.requests || 0), 0),
+      estimatedCostMicros: 0,
     } : { source: 'UNAVAILABLE', daysInspected: null, inputTokens: null, outputTokens: null, requests: null, estimatedCostMicros: null };
     const memberUsers = [];
     if (admin?.auth && memberships.length) {
@@ -2220,6 +2203,8 @@ router.get('/tenants/:tenantId', async (req, res) => {
           memberUsers.push({ id: membership.principalId, email: null, displayName: null, emailVerified: null, disabled: null, roles: membership.roles, status: membership.status || 'UNKNOWN', workspaceId: membership.workspaceId || null });
         }
       }
+    } else {
+      memberships.forEach(m => memberUsers.push({ id: m.principalId, email: null, displayName: null, roles: m.roles, status: m.status, workspaceId: m.workspaceId || null }));
     }
     const measure = (value, source) => ({ value, source: source ? 'MEASURED' : 'UNAVAILABLE' });
     const sourceMap = Object.fromEntries(results.map(result => [result.source, result.ok ? 'AVAILABLE' : 'UNAVAILABLE']));

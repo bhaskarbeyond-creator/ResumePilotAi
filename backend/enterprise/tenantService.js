@@ -5,6 +5,11 @@ const { buildTenantAuditEvent, writeTenantAuditEvent } = require('./tenantAudit'
 const { createEnterpriseRepository } = require('./enterpriseRepository');
 const { createEncryptionProvider } = require('./encryptionProvider');
 const { FirestoreTenantRegistry, InMemoryTenantRegistry, membershipDocumentId, customRoleIds } = require('./tenantRegistry');
+const { MySqlTenantRegistry } = require('./mysqlTenantRegistry');
+const { MySqlEnterpriseRepository } = require('./mysqlEnterpriseRepository');
+const { MySqlServiceAccountStore } = require('./mysqlServiceAccountStore');
+const { MySqlSupportGrantStore } = require('./mysqlSupportGrantStore');
+const { MySqlAtomicCounterStore } = require('./mysqlAtomicCounterStore');
 const { assertSupportScopes } = require('./serviceIdentity');
 const { FirestoreServiceAccountStore } = require('./serviceAccountStore');
 const { FirestoreSupportGrantStore } = require('./supportAccessStore');
@@ -1292,58 +1297,62 @@ class TenantService {
   }
 }
 
-function createTenantService({ db, admin, registry = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, environment = process.env } = {}) {
-  const environmentIsProduction = String(environment.NODE_ENV || '').toLowerCase() === 'production';
-  const resolvedRegistry = registry || (
-    db
-      ? new FirestoreTenantRegistry({ db, admin })
-      // Local/dev fallback: without a Firestore handle the control plane cannot persist.
-      // Never used in production; a production process must have db (Firestore) configured.
-      : environmentIsProduction
-        ? new FirestoreTenantRegistry({ db: null, admin })
-        : new InMemoryTenantRegistry()
-  );
-  // Enterprise data plane: Firestore is the only provider and needs no
-  // external database, cache, queue, or KMS service.
+function createTenantService({ pool = null, db = null, admin = null, registry = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, environment = process.env } = {}) {
+  const provider = String(environment.ENTERPRISE_DATA_PROVIDER || (db ? 'firestore' : 'mysql')).toLowerCase();
+  const isMySql = provider === 'mysql' || !db;
+
   let encryptionProvider = null;
   try {
     encryptionProvider = createEncryptionProvider(environment);
   } catch (error) {
-    // Misconfigured keys surface per-operation (fail closed) instead of
-    // crashing unrelated startup paths; the runtime description stays truthful.
     encryptionProvider = Object.freeze({
       describe: () => ({ provider: error.code === 'ENTERPRISE_ENCRYPTION_PROVIDER_UNAVAILABLE' ? 'unavailable' : 'server-key', configured: false, error: error.message, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' }),
     });
   }
+
+  let resolvedRegistry = registry;
+  if (!resolvedRegistry) {
+    if (isMySql) {
+      resolvedRegistry = new MySqlTenantRegistry({ pool });
+    } else if (db) {
+      resolvedRegistry = new FirestoreTenantRegistry({ db, admin });
+    } else {
+      resolvedRegistry = new InMemoryTenantRegistry();
+    }
+  }
+
   let constructionError = null;
   let resolvedRepository = repository;
-  if (!resolvedRepository && db) {
+  if (!resolvedRepository) {
     try {
       resolvedRepository = createEnterpriseRepository({
         environment,
+        pool,
         db,
         admin,
         encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
       });
     } catch (error) {
-      // An explicitly requested-but-misconfigured provider must not crash the
-      // legacy application process. Enterprise data routes fail closed with the
-      // configuration error; the runtime description surfaces the cause.
       console.error('[Enterprise data plane] Repository construction failed:', error.message);
       resolvedRepository = null;
       constructionError = error.message;
     }
   }
+
+  const resolvedServiceAccountStore = serviceAccountStore || (isMySql ? new MySqlServiceAccountStore({ pool }) : (db && admin ? new FirestoreServiceAccountStore({ db, admin }) : null));
+  const resolvedSupportGrantStore = supportGrantStore || (isMySql ? new MySqlSupportGrantStore({ pool }) : (db && admin ? new FirestoreSupportGrantStore({ db, admin }) : null));
+  const resolvedQuotaGuard = quotaGuard || (isMySql ? new TenantQuotaGuard({ store: new MySqlAtomicCounterStore({ pool }) }) : (db && admin ? new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }) : null));
+
   return new TenantService({
     registry: resolvedRegistry,
     db,
     admin,
     repository: resolvedRepository || null,
-    serviceAccountStore: serviceAccountStore || (db && admin ? new FirestoreServiceAccountStore({ db, admin }) : null),
-    supportGrantStore: supportGrantStore || (db && admin ? new FirestoreSupportGrantStore({ db, admin }) : null),
-    quotaGuard: quotaGuard || (db && admin ? new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }) : null),
+    serviceAccountStore: resolvedServiceAccountStore,
+    supportGrantStore: resolvedSupportGrantStore,
+    quotaGuard: resolvedQuotaGuard,
     encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
-    dataProviderName: String(environment.ENTERPRISE_DATA_PROVIDER || 'firestore').toLowerCase(),
+    dataProviderName: String(environment.ENTERPRISE_DATA_PROVIDER || (isMySql ? 'mysql' : 'firestore')).toLowerCase(),
     constructionError,
   });
 }

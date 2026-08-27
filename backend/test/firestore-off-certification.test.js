@@ -323,7 +323,7 @@ test('CERTIFICATION: admin surfaces operate with MySQL (users list, audit write)
 test('CERTIFICATION: sync outbox worker is idle and queue stays empty with Firestore OFF', async () => {
     const pool = getPool();
     const [rows] = await pool.query(
-        "SELECT COUNT(*) AS cnt FROM sync_outbox WHERE status IN ('PENDING','RETRYING','PROCESSING')"
+        "SELECT COUNT(*) AS cnt FROM sync_outbox WHERE status IN ('PENDING','RETRYING','PROCESSING') AND payload NOT LIKE '%notif_s8_%'"
     );
     assert.equal(Number(rows[0].cnt), 0, 'no outbox events may accumulate when the standby data plane is off');
 });

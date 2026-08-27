@@ -349,16 +349,24 @@ router.get('/:uid/details', async (req, res) => {
       try {
         const memberships = await tenantService.registry.listMemberships(uid).catch(() => []);
         if (memberships.length) {
-          detailedTenants = memberships.map(m => ({
-            tenantId: m.tenant.id,
-            displayName: m.tenant.displayName,
-            slug: m.tenant.slug,
-            lifecycleState: m.tenant.lifecycleState,
-            isolationTier: m.tenant.isolationTier,
-            roles: m.membership.roles,
-            status: m.membership.status,
-            isPrimary: baseUser.primaryTenant?.id === m.tenant.id,
-          }));
+          detailedTenants = memberships.map(m => {
+            const tId = m.tenantId || m.tenant?.id || m.id;
+            const tName = m.displayName || m.tenant?.displayName || tId;
+            const tSlug = m.slug || m.tenant?.slug || tId;
+            const tRoles = m.roles || m.membership?.roles || ['MEMBER'];
+            const tStatus = m.status || m.membership?.status || 'ACTIVE';
+            return {
+              tenantId: tId,
+              id: tId,
+              displayName: tName,
+              slug: tSlug,
+              lifecycleState: m.tenantLifecycleState || m.tenant?.lifecycleState || 'ACTIVE',
+              isolationTier: m.isolationTier || m.tenant?.isolationTier || 'STANDARD',
+              roles: Array.isArray(tRoles) ? tRoles : [tRoles],
+              status: tStatus,
+              isPrimary: baseUser.primaryTenant?.id === tId,
+            };
+          });
         }
       } catch (_) { /* fallback to profile tenantMemberships */ }
     }

@@ -852,4 +852,208 @@ CREATE TABLE IF NOT EXISTS platform_announcements (
     INDEX idx_announcements_enabled (enabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 47. Enterprise Tenants (MySQL Authoritative Multi-Tenancy)
+CREATE TABLE IF NOT EXISTS enterprise_tenants (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    slug VARCHAR(160) NOT NULL UNIQUE,
+    displayName VARCHAR(255) NOT NULL,
+    lifecycleState VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    isolationTier VARCHAR(50) NOT NULL DEFAULT 'STANDARD',
+    dataPlane JSON,
+    policyVersion INT NOT NULL DEFAULT 1,
+    legacyOwnerUid VARCHAR(128),
+    decommissionedAt TIMESTAMP NULL,
+    purgeScheduledAt TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_tenant_state (lifecycleState),
+    INDEX idx_ent_tenant_owner (legacyOwnerUid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 48. Enterprise Workspaces
+CREATE TABLE IF NOT EXISTS enterprise_workspaces (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    lifecycleState VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    isDefault BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_ws_tenant (tenantId),
+    INDEX idx_ent_ws_state (lifecycleState)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 49. Enterprise Memberships
+CREATE TABLE IF NOT EXISTS enterprise_memberships (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    principalId VARCHAR(128) NOT NULL,
+    canonicalPrincipalId VARCHAR(128),
+    workspaceId VARCHAR(128),
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    roles JSON NOT NULL,
+    revision INT NOT NULL DEFAULT 1,
+    personalTenant BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_mem_tenant (tenantId),
+    INDEX idx_ent_mem_principal (principalId),
+    INDEX idx_ent_mem_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 50. Enterprise Workspace Memberships
+CREATE TABLE IF NOT EXISTS enterprise_workspace_memberships (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128) NOT NULL,
+    principalId VARCHAR(128) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_wsmem_ws (workspaceId),
+    INDEX idx_ent_wsmem_principal (principalId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 51. Enterprise Tenant Configurations
+CREATE TABLE IF NOT EXISTS enterprise_tenant_configurations (
+    tenantId VARCHAR(128) NOT NULL PRIMARY KEY,
+    revision INT NOT NULL DEFAULT 1,
+    customRoles JSON,
+    aiPolicy JSON,
+    quotaPolicy JSON,
+    retentionPolicy JSON,
+    securityPolicy JSON,
+    identityPolicy JSON,
+    commercials JSON,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 52. Enterprise Principal Tenant Mapping (Identity Map)
+CREATE TABLE IF NOT EXISTS enterprise_principal_tenants (
+    principalId VARCHAR(128) NOT NULL PRIMARY KEY,
+    personalTenantId VARCHAR(128) NOT NULL,
+    defaultWorkspaceId VARCHAR(128) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 53. Enterprise Teams
+CREATE TABLE IF NOT EXISTS enterprise_teams (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_team_tenant (tenantId),
+    INDEX idx_ent_team_ws (workspaceId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 54. Enterprise Team Members
+CREATE TABLE IF NOT EXISTS enterprise_team_members (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    teamId VARCHAR(128) NOT NULL,
+    tenantId VARCHAR(128) NOT NULL,
+    principalId VARCHAR(128) NOT NULL,
+    role VARCHAR(50) DEFAULT 'MEMBER',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_tm_team (teamId),
+    INDEX idx_ent_tm_principal (principalId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 55. Enterprise Resources (Partitioned Multi-Tenant Storage)
+CREATE TABLE IF NOT EXISTS enterprise_resources (
+    id VARCHAR(128) NOT NULL,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128),
+    resourceType VARCHAR(64) NOT NULL,
+    classification VARCHAR(32) DEFAULT 'PRIVATE',
+    data JSON NOT NULL,
+    revision INT DEFAULT 1,
+    created_by VARCHAR(128),
+    updated_by VARCHAR(128),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (tenantId, resourceType, id),
+    INDEX idx_ent_res_ws (tenantId, workspaceId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 56. Enterprise Audit Events
+CREATE TABLE IF NOT EXISTS enterprise_audit_events (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128),
+    actorPrincipalId VARCHAR(128) NOT NULL,
+    action VARCHAR(128) NOT NULL,
+    category VARCHAR(128) DEFAULT 'tenant',
+    severity VARCHAR(32) DEFAULT 'INFO',
+    resourceType VARCHAR(64),
+    resourceId VARCHAR(128),
+    metadata JSON,
+    occurredAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ent_audit_tenant (tenantId, occurredAt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 57. Enterprise AI Usage Events & Summaries
+CREATE TABLE IF NOT EXISTS enterprise_ai_usage (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128),
+    principalId VARCHAR(128) NOT NULL,
+    dayKey VARCHAR(10) NOT NULL,
+    model VARCHAR(128),
+    promptTokens INT DEFAULT 0,
+    completionTokens INT DEFAULT 0,
+    totalTokens INT DEFAULT 0,
+    costEstimate DECIMAL(10, 4) DEFAULT 0,
+    recordedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ent_ai_usage_tenant (tenantId, dayKey)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 58. Enterprise Service Accounts
+CREATE TABLE IF NOT EXISTS enterprise_service_accounts (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128),
+    displayName VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    keyId VARCHAR(128) NOT NULL,
+    keyPrefix VARCHAR(32) NOT NULL,
+    secretHash VARCHAR(128) NOT NULL,
+    scopes JSON,
+    expiresAt TIMESTAMP NULL,
+    lastUsedAt TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_sa_tenant (tenantId),
+    INDEX idx_ent_sa_hash (secretHash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 59. Enterprise Support Access Grants
+CREATE TABLE IF NOT EXISTS enterprise_support_grants (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    tenantId VARCHAR(128) NOT NULL,
+    workspaceId VARCHAR(128),
+    grantedBy VARCHAR(128) NOT NULL,
+    grantedTo VARCHAR(128) NOT NULL,
+    reason TEXT,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    expiresAt TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ent_sg_tenant (tenantId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 60. Enterprise Quota Buckets (Atomic Counter Store)
+CREATE TABLE IF NOT EXISTS enterprise_quota_buckets (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    keyHash VARCHAR(128) NOT NULL,
+    count INT NOT NULL DEFAULT 1,
+    expiresAt BIGINT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ent_qb_hash (keyHash),
+    INDEX idx_ent_qb_expiry (expiresAt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

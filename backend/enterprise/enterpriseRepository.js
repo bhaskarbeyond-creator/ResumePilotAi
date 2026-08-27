@@ -1,18 +1,14 @@
 'use strict';
 
+const { MySqlEnterpriseRepository } = require('./mysqlEnterpriseRepository');
 const { FirestoreEnterpriseRepository } = require('./firestoreEnterpriseRepository');
 
 /**
  * Enterprise data-access abstraction.
  *
  *   Enterprise services → EnterpriseRepository (this interface)
- *                          └─ FirestoreEnterpriseRepository (canonical, only)
- *
- * Firestore is the single enterprise data plane. There is no PostgreSQL
- * adapter, no provider branching in business logic, and no configuration that
- * can select another store: the optional PostgreSQL adapter was removed
- * outright rather than hidden behind a flag. Setting ENTERPRISE_DATA_PROVIDER
- * to anything else fails closed with an explicit error.
+ *                          ├─ MySqlEnterpriseRepository (authoritative, primary)
+ *                          └─ FirestoreEnterpriseRepository (legacy)
  */
 
 const REQUIRED_METHODS = Object.freeze([
@@ -39,8 +35,8 @@ function assertRepositoryInterface(instance) {
 }
 
 function normalizeProvider(value) {
-  const provider = String(value || 'firestore').trim().toLowerCase();
-  if (provider !== 'firestore') {
+  const provider = String(value || 'mysql').trim().toLowerCase();
+  if (provider !== 'mysql' && provider !== 'firestore') {
     throw Object.assign(
       new Error(`"${provider}" is not an available enterprise data provider: Firestore is the only enterprise data plane`),
       { code: 'ENTERPRISE_DATA_PROVIDER_INVALID', status: 503 }
@@ -49,8 +45,11 @@ function normalizeProvider(value) {
   return provider;
 }
 
-function createEnterpriseRepository({ environment = process.env, db = null, admin = null, encryptionProvider = null } = {}) {
-  normalizeProvider(environment.ENTERPRISE_DATA_PROVIDER);
+function createEnterpriseRepository({ environment = process.env, pool = null, db = null, admin = null, encryptionProvider = null } = {}) {
+  const provider = normalizeProvider(environment.ENTERPRISE_DATA_PROVIDER || 'mysql');
+  if (provider === 'mysql') {
+    return assertRepositoryInterface(new MySqlEnterpriseRepository({ pool, encryptionProvider }));
+  }
   if (!db) {
     throw Object.assign(new Error('The Firestore enterprise repository requires an initialized Firebase/Firestore handle'), { code: 'ENTERPRISE_DATA_PLANE_UNAVAILABLE', status: 503 });
   }

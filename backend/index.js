@@ -22,6 +22,7 @@ const { resolveEffectiveEntitlement, isPaidMembershipTier } = require('./securit
 const { toCanonicalDate } = require('./database/canonical');
 const { isMembershipActive, toCanonicalUser } = require('./database/domain');
 const databaseAuthority = require('./database/authority');
+const { getPool } = require('./database/mysql');
 const paymentActivation = require('./services/paymentActivation');
 const resilientMutations = require('./services/resilientMutations');
 const accountDeletion = require('./services/accountDeletion');
@@ -159,22 +160,21 @@ app.set('db', db);
 // enterprise services (outbox, storage) that need FieldValue/Timestamp
 // sentinels — never secrets.
 app.set('firebaseAdmin', admin);
-// The enterprise control plane is intentionally server-only. It is dormant until
-// enterprise routes are enabled and does not alter certified UID-scoped paths.
-app.set('tenantService', createTenantService({ db, admin }));
+// The enterprise control plane is authoritative over MySQL/MariaDB.
+app.set('tenantService', createTenantService({ pool: getPool(), db, admin }));
 
 // Truthful one-time architecture statement. Never logs secrets or URLs.
 if (enterpriseFeatureEnabled()) {
     const runtime = app.get('tenantService')?.describeRuntime?.() || {};
     console.log('[Enterprise Architecture]', JSON.stringify({
         enterpriseTenancy: 'ENABLED',
-        dataProvider: `Enterprise Data Provider: ${String(runtime.dataProvider || 'unknown')}`,
+        dataProvider: `Enterprise Data Provider: ${String(runtime.dataProvider || 'mysql')}`,
         dataPlaneConfigured: runtime.dataPlaneConfigured === true,
-        cache: 'Cache: none (Firestore is the durable store; no external cache exists in this architecture)',
+        cache: 'Cache: none (MySQL/MariaDB is the authoritative store)',
         queue: 'Queue: Firestore Durable Outbox',
         encryption: `Encryption Provider: ${String(runtime.encryption?.provider === 'server-key' ? 'ServerKey' : runtime.encryption?.provider || 'none')}`,
         encryptionSecurityLevel: runtime.encryption?.securityLevel || null,
-        quotaStore: runtime.quotaStore || 'unavailable',
+        quotaStore: runtime.quotaStore || 'mysql-atomic',
     }));
 }
 
