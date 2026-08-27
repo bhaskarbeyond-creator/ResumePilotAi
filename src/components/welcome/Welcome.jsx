@@ -210,6 +210,11 @@ class Welcome extends Component {
             // Colors for resume customization
             colors: this.getValueFromCurrentResume('colors', this.getDefaultColorsForTemplate()),
         };
+        this.authBtnHandler = this.authBtnHandler.bind(this);
+    }
+
+    authBtnHandler() {
+        this.setState((prevState) => ({ isAuthShowed: !prevState.isAuthShowed }));
     }
 
     // Get default colors based on current template
