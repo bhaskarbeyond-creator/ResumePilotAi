@@ -164,13 +164,14 @@ reconcile (table census + marker rows + content). Passes.
 
 ## 18. CI/CD (§3) — **UNRESOLVED BLOCKER (permissions)**
 
-The pipeline is authored and committed (`.github/workflows/ci.yml`, commit
-`bbc96ed`): build → lint → unit → integration (MariaDB service) → zero-Firestore →
-security → browser E2E → smoke. **It is NOT yet active:** the automation
-credential lacks the GitHub `workflows` permission (push of a workflow file was
-refused), and the token subsequently expired. This requires a human admin to grant
-the permission / install the workflow. Reported honestly per the mandate rather
-than claiming automation that is not live.
+The pipeline is authored and committed at `docs/ci-templates/certification-ci.yml`
+(the repo's established CI-template convention): build → lint → unit →
+integration (MariaDB service) → zero-Firestore → security → browser E2E →
+smoke. **It is NOT yet active:** the automation credential lacks the GitHub
+`workflows` permission, so the file cannot be installed to
+`.github/workflows/` (the push of that path was refused). Reported honestly per
+the mandate. **Owner action:** grant the `workflows` permission (or install the
+workflow manually), then a green CI run completes this gate.
 
 ## 19. Deployment / 20. Monitoring
 
@@ -227,16 +228,16 @@ the certification suites). Individual evidence files under `.arena/evidence/`.
 ## 23. Git evidence
 
 - Start SHA: `ef99e91a2743bf11418aab2eb41dd7933bddeb5a`
-- Round-1 head: `1ee81ac`; adversarial-round commits:
-  `01c340c` (browser E2E + latency fixes), `0f5f748` (performance),
-  `b259f26` (failure injection), `bbc96ed` (CI workflow), `d3da17a` (IDOR/PII),
-  `468f9ed` (test retargeting), `31f59d0` (this report).
-- Head SHA at report time: see `git log` (worktree clean; history rebuilt cleanly on the
-  start SHA, +14084/−1009 lines).
-- **Push to origin is blocked:** the GitHub credential expired mid-session AND
-  the app token lacks the `workflows` permission required to push
-  `.github/workflows/ci.yml`. All commits are preserved locally and in the
-  Arena snapshot. Flagged for the owner (§18).
+- Round-1 head: `1ee81ac`; adversarial-round commits (rebuilt cleanly on the
+  remote tip): `ffee5df` (IDOR/PII), `d833c8d` (messaging + hardening),
+  `cca6c87` (browser E2E), `fb49707` (performance), `aed5aac` (failure
+  injection), `6da72d0` (test retargeting), `cc1c4be` (reconciliation runner),
+  `497f3b3`/`a15f4f8`/`c2493c6` (report + census).
+- **Remote head (pushed & verified):** `c2493c6f52f51242cc3999a8214e71c0c11001df`
+  on `arena/01a03e27-resumepilotai`. Local and remote SHAs match exactly.
+- CI workflow file: committed at `docs/ci-templates/certification-ci.yml`; the
+  direct `.github/workflows/ci.yml` commit was dropped because the automation
+  credential lacks the `workflows` permission (see §18).
 
 ## 24. Remaining limitations (explicit, not downgraded)
 
