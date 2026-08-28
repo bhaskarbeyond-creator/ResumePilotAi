@@ -82,8 +82,9 @@ test.after(async () => { if (ENABLED) await cleanup(); });
 mariaTest('CERTIFICATION: application starts and reports MySQL-only authority with the retired data plane absent', async () => {
     const health = await request(app).get('/api/health').expect(200);
     assert.equal(health.body.status, 'ok');
-    assert.equal(health.body.databases.authority.configuredPrimary, 'mysql');
-    assert.equal(health.body.databases.authority.operationalWriteEngine, 'mysql');
+    assert.equal(health.body.authoritativeDatabase, 'MARIADB');
+    assert.equal(health.body.firestoreDataPlane, 'REMOVED');
+    assert.equal(health.body.databases.authority.owner, 'MARIADB');
     assert.equal(health.body.databases.authority.canAcceptWrites, true);
 
     const ready = await request(app).get('/readyz');

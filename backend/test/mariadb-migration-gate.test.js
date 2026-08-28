@@ -157,7 +157,7 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
     assert.deepEqual(second.pending, []);
 
     const status = await migrationStatus(pool);
-    assert.equal(status.current, true);
+    assert.deepEqual(status.pending, []);
     assert.deepEqual(status.mismatches, []);
     assert.deepEqual(status.unknownApplied, []);
   });
