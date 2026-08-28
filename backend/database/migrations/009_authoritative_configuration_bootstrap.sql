@@ -6,7 +6,7 @@
 -- clean-state baseline. Runtime code never reads that legacy category. Secrets
 -- move only into the server-only provider record; the public projection has all
 -- secret-shaped keys removed. Existing split-store values win every merge.
-INSERT INTO system_settings (category, data, revision, updated_at)
+INSERT IGNORE INTO system_settings (category, data, revision, updated_at)
 SELECT
   'payment_providers',
   JSON_OBJECT(
@@ -34,10 +34,39 @@ SELECT
   revision,
   CURRENT_TIMESTAMP
 FROM system_settings
-WHERE category = 'subscriptions'
-ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), system_settings.data);
+WHERE category = 'subscriptions';
 
-INSERT INTO system_settings (category, data, revision, updated_at)
+UPDATE system_settings target
+JOIN (
+  SELECT JSON_OBJECT(
+    'stripe', JSON_OBJECT('secretKey', JSON_UNQUOTE(JSON_EXTRACT(data, '$.stripeSecretKey'))),
+    'paypal', JSON_OBJECT(
+      'clientId', JSON_UNQUOTE(JSON_EXTRACT(data, '$.paypalClientId')),
+      'clientSecret', JSON_UNQUOTE(JSON_EXTRACT(data, '$.paypalClientSecret'))
+    ),
+    'razorpay', JSON_OBJECT(
+      'keyId', JSON_UNQUOTE(JSON_EXTRACT(data, '$.razorpayKeyId')),
+      'keySecret', JSON_UNQUOTE(JSON_EXTRACT(data, '$.razorpayKeySecret'))
+    ),
+    'paytm', JSON_OBJECT(
+      'mid', JSON_UNQUOTE(JSON_EXTRACT(data, '$.paytmMid')),
+      'merchantKey', JSON_UNQUOTE(JSON_EXTRACT(data, '$.paytmMerchantKey')),
+      'website', JSON_UNQUOTE(JSON_EXTRACT(data, '$.paytmWebsite'))
+    ),
+    'phonepe', JSON_OBJECT(
+      'merchantId', JSON_UNQUOTE(JSON_EXTRACT(data, '$.phonepeId')),
+      'saltKey', JSON_UNQUOTE(JSON_EXTRACT(data, '$.phonepeSaltKey')),
+      'saltIndex', JSON_UNQUOTE(JSON_EXTRACT(data, '$.phonepeSaltIndex'))
+    ),
+    '_revision', revision
+  ) AS migrated_data
+  FROM system_settings
+  WHERE category = 'subscriptions'
+) source
+SET target.data = JSON_MERGE_PATCH(source.migrated_data, target.data)
+WHERE target.category = 'payment_providers';
+
+INSERT IGNORE INTO system_settings (category, data, revision, updated_at)
 SELECT
   'public_config',
   JSON_OBJECT(
@@ -51,8 +80,23 @@ SELECT
   revision,
   CURRENT_TIMESTAMP
 FROM system_settings
-WHERE category = 'subscriptions'
-ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), system_settings.data);
+WHERE category = 'subscriptions';
+
+UPDATE system_settings target
+JOIN (
+  SELECT JSON_OBJECT(
+    'subscriptions',
+    JSON_REMOVE(
+      data,
+      '$.stripeSecretKey', '$.paypalClientSecret', '$.razorpayKeySecret',
+      '$.paytmMerchantKey', '$.phonepeSaltKey'
+    )
+  ) AS migrated_data
+  FROM system_settings
+  WHERE category = 'subscriptions'
+) source
+SET target.data = JSON_MERGE_PATCH(source.migrated_data, target.data)
+WHERE target.category = 'public_config';
 
 INSERT INTO system_settings (category, data, revision, updated_at) VALUES
   ('payment_providers', '{"_revision":0}', 0, CURRENT_TIMESTAMP),
@@ -60,4 +104,4 @@ INSERT INTO system_settings (category, data, revision, updated_at) VALUES
   ('website_meta', '{"title":"ResumePilot AI — ATS Resume Builder & CV Maker","description":"Create ATS-friendly resumes and cover letters in minutes.","keywords":"ResumePilot AI, ATS Resume Builder, CV Maker","language":"English","disabledLanguages":[],"trackingCode":"","rating":5,"revision":0}', 0, CURRENT_TIMESTAMP),
   ('system_settings', '{"currency":"INR","currencyRevision":0,"allowMultiCurrency":false}', 0, CURRENT_TIMESTAMP),
   ('admin_configuration', '{"_revisions":{}}', 0, CURRENT_TIMESTAMP)
-ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), system_settings.data);
+ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), data);
