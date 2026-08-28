@@ -35,7 +35,7 @@ SELECT
   CURRENT_TIMESTAMP
 FROM system_settings
 WHERE category = 'subscriptions'
-ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), data);
+ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), system_settings.data);
 
 INSERT INTO system_settings (category, data, revision, updated_at)
 SELECT
@@ -52,7 +52,7 @@ SELECT
   CURRENT_TIMESTAMP
 FROM system_settings
 WHERE category = 'subscriptions'
-ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), data);
+ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), system_settings.data);
 
 INSERT INTO system_settings (category, data, revision, updated_at) VALUES
   ('payment_providers', '{"_revision":0}', 0, CURRENT_TIMESTAMP),
@@ -60,4 +60,4 @@ INSERT INTO system_settings (category, data, revision, updated_at) VALUES
   ('website_meta', '{"title":"ResumePilot AI — ATS Resume Builder & CV Maker","description":"Create ATS-friendly resumes and cover letters in minutes.","keywords":"ResumePilot AI, ATS Resume Builder, CV Maker","language":"English","disabledLanguages":[],"trackingCode":"","rating":5,"revision":0}', 0, CURRENT_TIMESTAMP),
   ('system_settings', '{"currency":"INR","currencyRevision":0,"allowMultiCurrency":false}', 0, CURRENT_TIMESTAMP),
   ('admin_configuration', '{"_revisions":{}}', 0, CURRENT_TIMESTAMP)
-ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), data);
+ON DUPLICATE KEY UPDATE data = JSON_MERGE_PATCH(VALUES(data), system_settings.data);
