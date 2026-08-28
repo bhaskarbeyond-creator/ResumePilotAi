@@ -6,8 +6,8 @@ process.env.ENTERPRISE_TENANCY_ENABLED = 'true';
 /**
  * M2M first-class authentication acceptance suite.
  *
- * Proves end-to-end over real HTTP against the canonical Firestore stores
- * (memory harness speaking the real Admin SDK surface) that service-account
+ * Proves end-to-end over real HTTP using explicit test doubles for the
+ * immutable MariaDB store contracts that service-account
  * keys authenticate against the operational enterprise APIs with:
  *
  *   x-api-key → key verification → service account → tenant resolution →
@@ -24,12 +24,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const request = require('supertest');
-const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-const { FirestoreTenantRegistry } = require('../enterprise/tenantRegistry');
-const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
-const { FirestoreServiceAccountStore } = require('../enterprise/serviceAccountStore');
-const { FirestoreSupportGrantStore } = require('../enterprise/supportAccessStore');
-const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
+const { InMemoryAtomicCounterStore } = require('../test/helpers/inMemoryAtomicCounterStore');
+const { InMemoryServiceAccountStore } = require('../enterprise/serviceAccountStore');
+const { InMemorySupportGrantStore } = require('../enterprise/supportAccessStore');
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
 const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { TenantService } = require('../enterprise/tenantService');
 const { setTokenVerifierForTests } = require('../security/auth');
@@ -48,24 +48,20 @@ const tokens = {
 function bearer(name) { return `Bearer ${name}`; }
 
 function installService() {
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
   const encryptionProvider = new ServerKeyEncryptionProvider({ keys: new Map([['v1', Buffer.from(ENCRYPTION_KEY, 'base64')]]) });
+  const serviceAccountStore = new InMemoryServiceAccountStore();
+  const supportGrantStore = new InMemorySupportGrantStore();
   const service = new TenantService({
-    registry: new FirestoreTenantRegistry({ db, admin }),
-    db,
-    admin,
-    repository: new FirestoreEnterpriseRepository({ db, admin, encryptionProvider }),
-    serviceAccountStore: new FirestoreServiceAccountStore({ db, admin }),
-    supportGrantStore: new FirestoreSupportGrantStore({ db, admin }),
-    quotaGuard: new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }),
+    registry: new InMemoryTenantRegistry(),
+    repository: new InMemoryEnterpriseRepository({ encryptionProvider }),
+    serviceAccountStore,
+    supportGrantStore,
+    quotaGuard: new TenantQuotaGuard({ store: new InMemoryAtomicCounterStore() }),
     encryptionProvider,
-    dataProviderName: 'firestore',
+    dataProviderName: 'mysql',
   });
-  app.set('db', db);
-  app.set('firebaseAdmin', admin);
   app.set('tenantService', service);
-  return { db, admin, service };
+  return { service, serviceAccountStore, supportGrantStore };
 }
 
 test.beforeEach(() => {
@@ -169,7 +165,10 @@ test('M2M AI generation passes auth+RBAC only with ai.use (provider-independent 
   installService();
   const withScope = await provision({ user: 'alice', scopes: ['ai.use'] });
   const allowed = await request(app).post('/api/enterprise/ai/generate-content').set('X-API-Key', withScope.apiKey)
-    .send({ operation: 'generate-summary', payload: { jobTitle: 'Staff Engineer', skills: 'distributed systems', companyName: 'Acme' } });
+    .send({
+      operation: 'generate-summary',
+      payload: { jobTitle: 'Staff Engineer', sourceFacts: 'Maintained distributed systems for Acme' },
+    });
   // No AI provider is configured in the test environment: authentication,
   // authorization, metering and quota all succeed, then provider dispatch fails
   // closed (502/503) or the tenant provider policy rejects (403 with a
@@ -244,7 +243,7 @@ test('invalid, missing and ambiguous credentials fail closed', async () => {
 });
 
 test('plaintext key material is never persisted, logged, returned twice, or included in audit', async () => {
-  const { db } = installService();
+  const { serviceAccountStore } = installService();
   const { tenantId, apiKey, apiKeyPrefix } = await provision({ user: 'alice', scopes: ['resource.read'] });
 
   // 1. Not returned again: the list endpoint exposes only the safe prefix.
@@ -254,11 +253,9 @@ test('plaintext key material is never persisted, logged, returned twice, or incl
   assert.ok(!serializedList.includes(apiKey), 'list response leaked the plaintext key');
   assert.equal(list.body.serviceAccounts[0].apiKeyPrefix, apiKeyPrefix);
 
-  // 2. Not stored: Firestore key documents are keyed by the SHA-256 hash and
-  // contain no plaintext field.
-  const keysSnapshot = await db.collection('enterprise_api_keys').get();
-  assert.equal(keysSnapshot.docs.length, 1);
-  const keyDoc = JSON.stringify(keysSnapshot.docs[0].data());
+  // 2. Not stored: key records are keyed by the SHA-256 hash and contain no plaintext field.
+  assert.equal(serviceAccountStore.keys.size, 1);
+  const keyDoc = JSON.stringify([...serviceAccountStore.keys.values()][0]);
   assert.ok(!keyDoc.includes(apiKey), 'persisted key record leaked the plaintext key');
   assert.ok(keyDoc.includes(apiKeyPrefix), 'safe prefix should be stored');
 
@@ -547,7 +544,7 @@ test('support repair scopes respect the tenant approval policy (fail closed by d
 });
 
 test('expired support grants fail closed', async () => {
-  installService();
+  const { supportGrantStore } = installService();
   const provisioned = await request(app).post('/api/enterprise/tenants').set('Authorization', bearer('admin')).send({ displayName: 'Expiry Co', slug: 'expiry-co' });
   const tenantId = provisioned.body.tenant.id;
   const workspaceId = provisioned.body.workspace.id;
@@ -556,8 +553,8 @@ test('expired support grants fail closed', async () => {
     .send({ supportSubjectId: tokens.support.uid, reason: 'Short-lived diagnostics session', expiresInMinutes: 5, scopes: ['tenant.audit.read'] });
   assert.equal(grant.status, 201);
   // Fast-forward the grant past its expiry directly in the store.
-  const db = app.get('db');
-  await db.collection('enterprise_support_grants').doc(grant.body.grant.id).update({ expiresAt: new Date(Date.now() - 1000).toISOString() });
+  const storedGrant = supportGrantStore.grants.get(grant.body.grant.id);
+  supportGrantStore.grants.set(storedGrant.id, { ...storedGrant, expiresAt: new Date(Date.now() - 1000).toISOString() });
   const expired = await request(app).get('/api/enterprise/audit')
     .set('Authorization', bearer('support'))
     .set('X-Support-Grant-Id', grant.body.grant.id)

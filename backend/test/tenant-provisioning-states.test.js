@@ -6,7 +6,10 @@ process.env.ENTERPRISE_TENANCY_ENABLED = 'true';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const crypto = require('node:crypto');
+const { InMemoryTenantRegistry } = require('./helpers/inMemoryTenantRegistry');
+const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
+const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { TenantService } = require('../enterprise/tenantService');
 const { setTokenVerifierForTests } = require('../security/auth');
 const app = require('../index');
@@ -27,7 +30,9 @@ test.beforeEach(() => {
     return tokens[token];
   });
   const registry = new InMemoryTenantRegistry();
-  app.set('tenantService', new TenantService({ registry }));
+  const encryptionProvider = new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) });
+  const repository = new InMemoryEnterpriseRepository({ encryptionProvider });
+  app.set('tenantService', new TenantService({ registry, repository, encryptionProvider }));
 });
 
 test('POST /api/enterprise/tenants: 201 Created on valid input by platform admin', async () => {

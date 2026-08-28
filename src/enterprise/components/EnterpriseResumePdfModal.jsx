@@ -37,18 +37,18 @@ export function normalizeResumeValues(resource) {
   const fullName = p.personalInfo?.fullName ||
     (p.firstname || p.lastname ? `${p.firstname || ''} ${p.lastname || ''}`.trim() : '') ||
     resource.candidateName ||
-    'Candidate Profile';
+    '';
 
-  const nameParts = fullName.split(' ');
-  const firstname = p.firstname || nameParts[0] || 'Candidate';
-  const lastname = p.lastname || nameParts.slice(1).join(' ') || 'Profile';
+  const nameParts = fullName.split(' ').filter(Boolean);
+  const firstname = p.firstname || nameParts[0] || '';
+  const lastname = p.lastname || nameParts.slice(1).join(' ') || '';
 
   const occupation = p.occupation ||
     p.jobTitle ||
     p.personalInfo?.jobTitle ||
     p.positionTitle ||
     resource.jobTitle ||
-    'Executive Professional';
+    '';
 
   const email = p.email || p.personalInfo?.email || resource.ownerEmail || '';
   const phone = p.phone || p.personalInfo?.phone || '';
@@ -59,8 +59,8 @@ export function normalizeResumeValues(resource) {
     ? p.employment
     : (Array.isArray(p.experience)
       ? p.experience.map(e => ({
-          jobTitle: e.jobTitle || e.title || 'Role Title',
-          employer: e.companyName || e.company || 'Enterprise Organization',
+          jobTitle: e.jobTitle || e.title || '',
+          employer: e.companyName || e.company || '',
           startDate: e.startDate || e.date || '',
           endDate: e.endDate || (e.current ? 'Present' : ''),
           description: e.description || ''
@@ -69,7 +69,7 @@ export function normalizeResumeValues(resource) {
 
   const education = Array.isArray(p.education) ? p.education : [];
   const skills = Array.isArray(p.skills)
-    ? p.skills.map(s => (typeof s === 'string' ? { name: s, level: 'Experienced' } : s))
+    ? p.skills.map(s => (typeof s === 'string' ? { name: s, level: '' } : s))
     : [];
   const languages = Array.isArray(p.languages) ? p.languages : [];
   const certifications = Array.isArray(p.certifications) ? p.certifications : [];
@@ -158,9 +158,13 @@ export default function EnterpriseResumePdfModal({
 
   if (!isOpen || !normalizedData) return null;
 
-  const atsScore = Number(resume.atsScore || resume.payload?.atsScore || 85);
-  const candidateName = normalizedData.fullName || `${normalizedData.firstname} ${normalizedData.lastname}`.trim();
-  const jobTitle = normalizedData.occupation || 'Executive Professional';
+  const rawAtsScore = resume.atsScore ?? resume.payload?.atsScore;
+  const parsedAtsScore = Number(rawAtsScore);
+  const atsScore = rawAtsScore !== '' && rawAtsScore !== null && rawAtsScore !== undefined && Number.isFinite(parsedAtsScore)
+    ? Math.min(100, Math.max(0, parsedAtsScore))
+    : null;
+  const candidateName = normalizedData.fullName || `${normalizedData.firstname} ${normalizedData.lastname}`.trim() || 'Unnamed candidate';
+  const jobTitle = normalizedData.occupation || 'Role not provided';
 
   const handlePrint = () => {
     window.print();
@@ -276,22 +280,24 @@ export default function EnterpriseResumePdfModal({
                 >
                   {candidateName}
                 </h3>
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '20px',
-                    background: atsScore >= 80 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                    color: atsScore >= 80 ? '#34d399' : '#fbbf24',
-                    border: `1px solid ${atsScore >= 80 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                >
-                  <FiStar aria-hidden="true" style={{ fontSize: '0.68rem' }} /> {atsScore}% ATS Match
-                </span>
+                {atsScore !== null && (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '20px',
+                      background: atsScore >= 80 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                      color: atsScore >= 80 ? '#34d399' : '#fbbf24',
+                      border: `1px solid ${atsScore >= 80 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <FiStar aria-hidden="true" style={{ fontSize: '0.68rem' }} /> {atsScore}% ATS Match
+                  </span>
+                )}
               </div>
               <p
                 style={{

@@ -73,8 +73,8 @@ function DurableJobsCard({ focused = false }) {
         <div>
           <h2 className="enterprise-tab-title"><FiLayers aria-hidden="true" /> Durable Jobs & Dead Letters</h2>
           <p className="enterprise-tab-subtitle">
-            {engine.engine === 'firestore-durable-outbox'
-              ? 'Firestore-backed outbox with signed envelopes, lease-based workers, retries, and DLQ'
+            {engine.engine === 'mariadb-transactional-outbox'
+              ? 'MariaDB transactional outbox with signed envelopes, lease-based workers, retries, and dead-letter isolation'
               : 'Durable queue status unavailable'}
           </p>
         </div>

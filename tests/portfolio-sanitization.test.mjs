@@ -66,7 +66,7 @@ test('public portfolio rendering includes canonical SEO and deduplicates session
 });
 
 test('portfolio persistence uses revisions for drafts and publishing', async () => {
-  const source = await import('node:fs/promises').then(fs => fs.readFile('src/firestore/dbOperations.js', 'utf8'));
+  const source = await import('node:fs/promises').then(fs => fs.readFile('src/services/api/platform.js', 'utf8'));
   assert.match(source, /expectedRevision/);
   assert.match(source, /\/api\/portfolios/);
   assert.match(source, /updateExistingPortfolio[\s\S]{0,3000}expectedRevision/);

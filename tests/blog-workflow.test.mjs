@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { blogPostFitsFirestore, normalizeBlogImageUrl, normalizeBlogPost, validateBlogTransition } from '../src/utils/blogData.js';
+import { blogPostFitsStorageLimit, normalizeBlogImageUrl, normalizeBlogPost, validateBlogTransition } from '../src/utils/blogData.js';
 
 test('canonical blog model preserves Unicode, SEO, tags, drafts, and bounded fields', () => {
   const post = normalizeBlogPost({
@@ -34,13 +34,13 @@ test('member and administrator publishing transitions remain distinct', () => {
 });
 
 test('oversized articles fail the Firestore size boundary', () => {
-  assert.equal(blogPostFitsFirestore({ title: 'Small', content: 'x'.repeat(1000) }), true);
-  assert.equal(blogPostFitsFirestore({ title: 'Large', content: 'x'.repeat(910_000) }), false);
+  assert.equal(blogPostFitsStorageLimit({ title: 'Small', content: 'x'.repeat(1000) }), true);
+  assert.equal(blogPostFitsStorageLimit({ title: 'Large', content: 'x'.repeat(910_000) }), false);
 });
 
 test('CMS implementation uses revisions, private drafts, scheduling, sanitized preview, and public SEO', async () => {
   const [operations, editor, publicPost, publicList, card, backend] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('src/components/Blog/BlogEditor/BlogEditor.jsx', 'utf8'),
     fs.readFile('src/components/Blog/BlogPost/BlogPost.jsx', 'utf8'),
     fs.readFile('src/components/Blog/BlogList/BlogList.jsx', 'utf8'),
@@ -49,7 +49,7 @@ test('CMS implementation uses revisions, private drafts, scheduling, sanitized p
   ]);
   // Blog persistence is backend-owned and revisioned via the blog API (MySQL).
   assert.match(operations, /saveBlogPost\(id, normalized\)/);
-  assert.match(operations, /blogPostFitsFirestore/);
+  assert.match(operations, /blogPostFitsStorageLimit/);
   assert.match(operations, /expectedRevision/);
   assert.match(editor, /handleSave\(false\)/);
   assert.match(editor, /BlogPreviewModal/);

@@ -133,15 +133,80 @@ class MySqlServiceAccountStore {
     }));
   }
 
-  async revoke({ tenantId, serviceAccountId }) {
+  async revoke(serviceAccountId, { tenantId, workspaceId = null } = {}) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     serviceAccountId = assertUuid(serviceAccountId, 'Service account identifier');
-    await this.pool.query(
-      'UPDATE enterprise_service_accounts SET status = "REVOKED", updated_at = CURRENT_TIMESTAMP WHERE tenantId = ? AND id = ?',
-      [tenantId, serviceAccountId]
+    const params = [tenantId, serviceAccountId];
+    let scopeSql = '';
+    if (workspaceId) {
+      scopeSql = ' AND workspaceId = ?';
+      params.push(assertUuid(workspaceId, 'Workspace identifier'));
+    }
+    const [result] = await this.pool.query(
+      `UPDATE enterprise_service_accounts
+       SET status = 'REVOKED', secretHash = CONCAT('revoked:', id), updated_at = CURRENT_TIMESTAMP
+       WHERE tenantId = ? AND id = ? AND status = 'ACTIVE'${scopeSql}`,
+      params
     );
-    return { success: true };
+    return Number(result.affectedRows || 0) === 1;
+  }
+
+  async rotate(serviceAccountId, { tenantId, workspaceId = null, now = new Date() } = {}) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    serviceAccountId = assertUuid(serviceAccountId, 'Service account identifier');
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.query(
+        "SELECT * FROM enterprise_service_accounts WHERE tenantId = ? AND id = ? AND status = 'ACTIVE' FOR UPDATE",
+        [tenantId, serviceAccountId]
+      );
+      if (!rows.length || (workspaceId && rows[0].workspaceId !== assertUuid(workspaceId, 'Workspace identifier'))) {
+        await connection.rollback();
+        return null;
+      }
+      const row = rows[0];
+      const scopes = typeof row.scopes === 'string' ? JSON.parse(row.scopes) : (row.scopes || []);
+      const material = createApiKeyMaterial({
+        tenantId,
+        workspaceId: row.workspaceId || null,
+        serviceAccountId,
+        scopes,
+        now,
+      });
+      await connection.query(
+        `UPDATE enterprise_service_accounts
+         SET keyId = ?, keyPrefix = ?, secretHash = ?, scopes = ?, expiresAt = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE tenantId = ? AND id = ? AND status = 'ACTIVE'`,
+        [material.record.id, material.record.prefix, material.record.secretHash,
+          JSON.stringify(material.record.scopes), material.record.expiresAt ? new Date(material.record.expiresAt) : null,
+          tenantId, serviceAccountId]
+      );
+      await connection.commit();
+      return {
+        account: {
+          id: serviceAccountId,
+          tenantId,
+          workspaceId: row.workspaceId || null,
+          scope: row.workspaceId ? 'WORKSPACE' : 'TENANT',
+          displayName: row.displayName,
+          status: 'ACTIVE',
+          scopes: [...material.record.scopes],
+          apiKeyId: material.record.id,
+          apiKeyPrefix: material.record.prefix,
+          expiresAt: material.record.expiresAt,
+          rotatedAt: new Date(now).toISOString(),
+        },
+        material,
+      };
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 }
 

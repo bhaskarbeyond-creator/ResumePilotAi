@@ -24,7 +24,7 @@ let server;
 test.before(async () => {
   server = await bootServer({
     port: PORT,
-    db: { host: '127.0.0.1', port: String(DEAD_DB_PORT), user: 'resumepilot', password: 'x', name: 'ai_resume_builder' },
+    db: { host: '127.0.0.1', port: String(DEAD_DB_PORT), user: 'outage-fixture', password: '', name: 'resumepilot_cert_outage' },
     timeoutMs: 45_000,
   });
 });

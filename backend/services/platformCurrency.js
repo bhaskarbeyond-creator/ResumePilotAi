@@ -37,198 +37,119 @@ function formatCurrencyAmount(amount, currencyCode = 'INR') {
   return `${meta.symbol}${formatted}`;
 }
 
-// The fallback must carry the same authoritative shape as a healthy read —
-// `supportedCurrencies` is a static registry fact, so a momentarily unavailable
-// store can never degrade into a currency-agnostic response.
-function fallbackCurrencyConfig() {
-  return {
-    ...CURRENCY_REGISTRY.INR,
-    supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
-    allowMultiCurrency: false,
-    source: 'fallback-default',
-  };
+const crypto = require('crypto');
+const { getPool } = require('../database/mysql');
+
+
+function asCurrencyStorageError(error) {
+  if (error?.status) return error;
+  error.code = error.code || 'CURRENCY_STORAGE_UNAVAILABLE';
+  error.status = 503;
+  return error;
 }
 
-const { getRepository } = require('../repositories');
-
-async function getPlatformCurrencyConfig(db) {
-  // 1. Primary: MariaDB system_settings
+async function getPlatformCurrencyConfig() {
   try {
-    const repo = getRepository(db);
-    if (repo && typeof repo.getSetting === 'function') {
-      const [sysSetting, pubSetting] = await Promise.all([
-        repo.getSetting('system_settings').catch(() => null),
-        repo.getSetting('public_config').catch(() => null),
-      ]);
-      const sysData = sysSetting || {};
-      const pubData = pubSetting || {};
-      const code = normalizeCurrencyCode(
-        sysData.currency ||
-        sysData.defaultCurrency ||
-        pubData.currency ||
-        pubData.subscriptions?.currency ||
-        pubData.currencyMeta?.code ||
-        process.env.DEFAULT_CURRENCY ||
-        process.env.CURRENCY ||
-        'INR'
-      );
-      const meta = getCurrencyMeta(code);
-      if (sysSetting || pubSetting) {
-        return {
-          ...meta,
-          supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
-          allowMultiCurrency: Boolean(sysData.allowMultiCurrency ?? pubData.allowMultiCurrency),
-          source: (sysData.currency) ? 'system_settings' : 'public_config',
-          updatedAt: sysData.currencyUpdatedAt || pubData.updatedAt || null,
-        };
-      }
-    }
-  } catch (_) {}
-
-  // 2. Secondary Standby: Firestore
-  if (db) {
-    try {
-      const [sysDoc, pubDoc, subDoc, payDoc] = await Promise.allSettled([
-        db.collection('data').doc('system_settings').get(),
-        db.collection('data').doc('public_config').get(),
-        db.collection('data').doc('subscriptions').get(),
-        db.collection('settings').doc('payment_providers').get(),
-      ]);
-      const sysData = (sysDoc.status === 'fulfilled' && sysDoc.value.exists) ? (sysDoc.value.data() || {}) : {};
-      const pubData = (pubDoc.status === 'fulfilled' && pubDoc.value.exists) ? (pubDoc.value.data() || {}) : {};
-      const subData = (subDoc.status === 'fulfilled' && subDoc.value.exists) ? (subDoc.value.data() || {}) : {};
-      const payData = (payDoc.status === 'fulfilled' && payDoc.value.exists) ? (payDoc.value.data() || {}) : {};
-
-      const code = normalizeCurrencyCode(
-        sysData.currency ||
-        sysData.defaultCurrency ||
-        pubData.currency ||
-        pubData.subscriptions?.currency ||
-        pubData.currencyMeta?.code ||
-        subData.currency ||
-        payData.currency ||
-        process.env.DEFAULT_CURRENCY ||
-        process.env.CURRENCY ||
-        'INR'
-      );
-      const meta = getCurrencyMeta(code);
-      return {
-        ...meta,
-        supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
-        allowMultiCurrency: Boolean(sysData.allowMultiCurrency ?? pubData.allowMultiCurrency),
-        source: (sysData.currency) ? 'system_settings' : (pubData.currency || pubData.subscriptions?.currency) ? 'public_config' : 'default',
-        updatedAt: sysData.currencyUpdatedAt || pubData.updatedAt || null,
-      };
-    } catch (_error) {
-      return { ...fallbackCurrencyConfig(), source: 'error-fallback' };
-    }
+  const [rows] = await getPool().query(
+    "SELECT category, data, revision, updated_at FROM system_settings WHERE category IN ('system_settings','public_config')"
+  );
+  const byCategory = Object.fromEntries(rows.map(row => [row.category, {
+    data: typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
+    revision: Number(row.revision || 0), updatedAt: row.updated_at,
+  }]));
+  const system = byCategory.system_settings?.data || {};
+  const publicConfig = byCategory.public_config?.data || {};
+  const explicit = system.currency || system.defaultCurrency || publicConfig.currency
+    || publicConfig.subscriptions?.currency || publicConfig.currencyMeta?.code;
+  if (!explicit) {
+    throw Object.assign(new Error('Platform currency is not initialized in MariaDB'), {
+      code: 'CURRENCY_NOT_INITIALIZED', status: 503,
+    });
   }
+  const code = normalizeCurrencyCode(explicit);
+  return {
+    ...getCurrencyMeta(code),
+    supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
+    allowMultiCurrency: Boolean(system.allowMultiCurrency ?? publicConfig.allowMultiCurrency),
+    source: system.currency ? 'mariadb-system-settings' : 'mariadb-public-config',
+    updatedAt: system.currencyUpdatedAt || byCategory.system_settings?.updatedAt || byCategory.public_config?.updatedAt || null,
+    revision: Number(system.currencyRevision || 0),
+  };
 
-  return fallbackCurrencyConfig();
+  } catch (error) {
+    throw asCurrencyStorageError(error);
+  }
 }
 
-async function setPlatformCurrencyConfig({ db, admin, currency, allowMultiCurrency, actorUid, requestId }) {
-  const normalized = normalizeCurrencyCode(currency);
-  const meta = getCurrencyMeta(normalized);
-  const repo = getRepository(db);
-
-  let beforeState = { currency: 'INR', allowMultiCurrency: false };
-
-  // 1. Primary: Save to MariaDB
-  if (repo && typeof repo.saveSetting === 'function') {
-    try {
-      const [sysCurrent, pubCurrent] = await Promise.all([
-        repo.getSetting('system_settings').catch(() => null),
-        repo.getSetting('public_config').catch(() => null),
-      ]);
-      if (sysCurrent) beforeState = { currency: sysCurrent.currency || 'INR', allowMultiCurrency: Boolean(sysCurrent.allowMultiCurrency) };
-
-      const sysUpdated = {
-        ...(sysCurrent || {}),
-        currency: normalized,
-        currencyMeta: meta,
-        allowMultiCurrency: Boolean(allowMultiCurrency),
-        currencyUpdatedAt: new Date().toISOString(),
-        currencyUpdatedBy: actorUid || 'system',
-      };
-
-      const pubUpdated = {
-        ...(pubCurrent || {}),
-        currency: normalized,
-        currencySymbol: meta.symbol,
-        allowMultiCurrency: Boolean(allowMultiCurrency),
-      };
-
-      await Promise.all([
-        repo.saveSetting('system_settings', sysUpdated),
-        repo.saveSetting('public_config', pubUpdated),
-      ]);
-
-      if (typeof repo.recordAdminAuditLog === 'function') {
-        await repo.recordAdminAuditLog({
-          actorUid: actorUid || 'system',
-          action: 'PLATFORM_CURRENCY_UPDATED',
-          category: 'platform.configuration',
-          severity: 'HIGH',
-          targetType: 'PLATFORM_CONFIG',
-          targetId: 'currency',
-          metadata: {
-            before: beforeState,
-            after: { currency: normalized, allowMultiCurrency: Boolean(allowMultiCurrency) }
-          },
-          requestId: requestId || null,
-        }).catch(() => {});
-      }
-    } catch (err) {
-      console.warn('[PlatformCurrency] MySQL primary save error:', err.message);
+async function setPlatformCurrencyConfig({ currency, allowMultiCurrency, actorUid, requestId, expectedRevision }) {
+  const requested = String(currency || '').trim().toUpperCase();
+  if (!CURRENCY_REGISTRY[requested]) {
+    throw Object.assign(new Error('Unsupported currency code'), { code: 'UNSUPPORTED_CURRENCY', status: 400 });
+  }
+  if (!Number.isInteger(Number(expectedRevision)) || Number(expectedRevision) < 0) {
+    throw Object.assign(new Error('expectedRevision is required'), { code: 'CURRENCY_REVISION_REQUIRED', status: 400 });
+  }
+  const meta = getCurrencyMeta(requested);
+  let connection;
+  let nextRevision;
+  try {
+    connection = await getPool().getConnection();
+    await connection.beginTransaction();
+    const [rows] = await connection.query(
+      "SELECT category, data, revision FROM system_settings WHERE category IN ('system_settings','public_config') FOR UPDATE"
+    );
+    const settings = Object.fromEntries(rows.map(row => [row.category,
+      typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {})]));
+    const system = settings.system_settings || {};
+    const publicConfig = settings.public_config || {};
+    const currentRevision = Number(system.currencyRevision || 0);
+    if (Number(expectedRevision) !== currentRevision) {
+      throw Object.assign(new Error('Currency settings changed after this panel loaded. Refresh before saving.'), { code: 'CURRENCY_CONFLICT', status: 409 });
     }
+    nextRevision = currentRevision + 1;
+    const updatedAt = new Date().toISOString();
+    const nextSystem = {
+      ...system, currency: requested, currencyMeta: meta,
+      allowMultiCurrency: allowMultiCurrency === true, currencyRevision: nextRevision,
+      currencyUpdatedAt: updatedAt, currencyUpdatedBy: actorUid || 'system',
+    };
+    const nextPublic = {
+      ...publicConfig, currency: requested, currencySymbol: meta.symbol,
+      allowMultiCurrency: allowMultiCurrency === true,
+    };
+    for (const [category, data] of [['system_settings', nextSystem], ['public_config', nextPublic]]) {
+      await connection.query(
+        `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, 1, NOW())
+         ON DUPLICATE KEY UPDATE data = VALUES(data), revision = revision + 1, updated_at = NOW()`,
+        [category, JSON.stringify(data)]
+      );
+    }
+    await connection.query(
+      `INSERT INTO admin_audit_logs
+       (id, actor_uid, actor_role, action, category, severity, outcome, method, pathname,
+        status_code, resource_type, resource_id, metadata, request_id, created_at)
+       VALUES (?, ?, 'SUPER_ADMIN', 'PLATFORM_CURRENCY_UPDATED', 'platform.configuration',
+               'HIGH', 'SUCCESS', 'PUT', '/api/admin/platform/currency', 200,
+               'platform_configuration', 'currency', ?, ?, NOW())`,
+      [crypto.randomUUID(), actorUid || 'system', JSON.stringify({
+        before: { currency: system.currency || 'INR', allowMultiCurrency: Boolean(system.allowMultiCurrency) },
+        after: { currency: requested, allowMultiCurrency: allowMultiCurrency === true }, revision: nextRevision,
+      }), requestId || null]
+    );
+    await connection.commit();
+    return {
+      ...meta, supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
+      allowMultiCurrency: allowMultiCurrency === true,
+      source: 'mariadb-system-settings', updatedAt, revision: nextRevision,
+    };
+  } catch (error) {
+    if (connection) {
+      try { await connection.rollback(); } catch (rollbackError) { console.error('[Currency rollback failed]', rollbackError.message); }
+    }
+    throw asCurrencyStorageError(error);
+  } finally {
+    connection?.release();
   }
-
-  // 2. Secondary Standby: Replicate to Firestore asynchronously
-  if (db && admin?.firestore?.FieldValue) {
-    try {
-      const sysRef = db.collection('data').doc('system_settings');
-      const pubRef = db.collection('data').doc('public_config');
-      const now = admin.firestore.FieldValue.serverTimestamp();
-      const batch = db.batch();
-      batch.set(sysRef, {
-        currency: normalized,
-        currencyMeta: meta,
-        allowMultiCurrency: Boolean(allowMultiCurrency),
-        currencyUpdatedAt: now,
-        currencyUpdatedBy: actorUid || 'system',
-      }, { merge: true });
-      batch.set(pubRef, {
-        currency: normalized,
-        currencySymbol: meta.symbol,
-        allowMultiCurrency: Boolean(allowMultiCurrency),
-      }, { merge: true });
-      batch.set(db.collection('security_audit_logs').doc(), {
-        action: 'PLATFORM_CURRENCY_UPDATED',
-        actorUid: actorUid || 'system',
-        category: 'platform.configuration',
-        severity: 'HIGH',
-        targetType: 'PLATFORM_CONFIG',
-        targetId: 'currency',
-        changes: {
-          before: beforeState,
-          after: { currency: normalized, allowMultiCurrency: Boolean(allowMultiCurrency) }
-        },
-        requestId: requestId || null,
-        createdAt: now,
-      });
-      // Non-blocking standby replication: never delay the user response.
-      Promise.resolve(batch.commit()).catch(() => {});
-    } catch (_) {}
-  }
-
-  return {
-    ...meta,
-    supportedCurrencies: Object.keys(CURRENCY_REGISTRY),
-    allowMultiCurrency: Boolean(allowMultiCurrency),
-    source: 'system_settings',
-    updatedAt: new Date().toISOString(),
-  };
 }
 
 module.exports = {
@@ -236,7 +157,6 @@ module.exports = {
   normalizeCurrencyCode,
   getCurrencyMeta,
   formatCurrencyAmount,
-  fallbackCurrencyConfig,
   getPlatformCurrencyConfig,
   setPlatformCurrencyConfig,
 };

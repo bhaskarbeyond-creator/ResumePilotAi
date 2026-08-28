@@ -10,6 +10,7 @@
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { rejectFirebaseDataPlaneRequests } from './firebase-data-plane-guard.mjs';
 
 export function readEnvKey() {
   for (const file of ['.env', 'backend/.env']) {
@@ -47,9 +48,7 @@ export function viteFixtureDefines(overrides = {}) {
     'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'),
     'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
     'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
-    'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
     'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
-    'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
     'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
     'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
     ...overrides,
@@ -254,6 +253,25 @@ export function createEnterpriseFixtureBackend(state = seedEnterpriseState()) {
     try { body = route.request().postDataJSON() || {}; } catch { body = {}; }
     const json = (payload, status = 200) => route.fulfill({ status, json: payload });
 
+    // App-shell endpoints are part of every browser boot. Keep these fixtures
+    // explicit so a missing route cannot be mistaken for a clean network run.
+    if (path === '/api/platform/public-config' && method === 'GET') {
+      return json({
+        modules: { jobs: true, portfolio: true, blog: true, aiAssistant: true },
+        subscriptions: { state: false, sandboxMode: true },
+        website: { title: 'ResumePilot AI', description: 'Enterprise certification fixture', language: 'English', disabledLanguages: [], trackingCode: '', revision: 0 },
+        systemHealth: { maintenanceMode: false, maintenanceMessage: '' },
+        _settingsSource: 'mariadb-fixture',
+      });
+    }
+    if (path === '/api/health' && method === 'GET') {
+      return json({
+        status: 'ok',
+        authoritativeDatabase: 'MARIADB',
+        firestoreDataPlane: 'REMOVED',
+        systemHealth: { maintenanceMode: false, maintenanceMessage: '' },
+      });
+    }
     if (path === '/api/enterprise/status') return json({ enabled: true, apiVersion: 'tenant-foundation-v1' });
     if (path === '/api/enterprise/tenants' && method === 'GET') {
       return json({ tenants: [{ ...state.tenant, roles: ['TENANT_OWNER'], defaultWorkspaceId: state.workspaces[0].id, personalTenant: false }] });
@@ -269,7 +287,7 @@ export function createEnterpriseFixtureBackend(state = seedEnterpriseState()) {
       if (state.workspaces.some(ws => ws.id === requested && ws.lifecycleState === 'ACTIVE')) state.activeWorkspaceId = requested;
       const ws = activeWs();
       return json({
-        context: { tenantId: state.tenant.id, workspaceId: ws.id, roles: state.roles || ['TENANT_OWNER'], permissions: state.permissions || ['*'], policyVersion: state.configuration.revision, dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', region: 'default', routingVersion: 1 } },
+        context: { tenantId: state.tenant.id, workspaceId: ws.id, roles: state.roles || ['TENANT_OWNER'], permissions: state.permissions || ['*'], policyVersion: state.configuration.revision, dataPlane: { id: 'mysql-primary', type: 'MYSQL', region: 'default', routingVersion: 1 } },
         tenant: state.tenant,
         workspace: ws,
         platformAdmin: state.platformAdmin === true,
@@ -490,7 +508,7 @@ export function createEnterpriseFixtureBackend(state = seedEnterpriseState()) {
     }
     if (path === '/api/enterprise/queue/status') {
       const deadLetterCount = state.jobs.filter(job => job.status === 'DEAD_LETTER').length;
-      return json({ queue: { engine: 'firestore-durable-outbox', durable: true, configured: true, healthy: true, status: 'online', activeQueued: state.jobs.filter(job => job.status === 'QUEUED').length, deadLetterCount, counts: {}, signingConfigured: true } });
+      return json({ queue: { engine: 'mariadb-transactional-outbox', durable: true, configured: true, healthy: true, status: 'online', activeQueued: state.jobs.filter(job => job.status === 'QUEUED').length, deadLetterCount, counts: {}, signingConfigured: true } });
     }
     if (path === '/api/enterprise/queue/jobs' && method === 'GET') {
       const filter = url.searchParams.get('status');
@@ -534,7 +552,7 @@ export function createEnterpriseFixtureBackend(state = seedEnterpriseState()) {
       return json({ events: pageRows, nextCursor, total: events.length });
     }
     if (path === '/api/enterprise/observability/metrics') return json({ metrics: { sampleCount: 1284, p50: 42, p95: 180, p99: 320, errors: { clientErrors: 3, serverErrors: 1, authErrors: 1, dbErrors: 0, redisErrors: 0, queueErrors: 1, aiErrors: 1 } } });
-    if (path === '/api/enterprise/data-plane/status') return json({ dataPlane: { provider: 'firestore', configured: true, durable: true, encryption: 'server-key', encryptionSecurityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', quotaStore: 'firestore-atomic', queue: 'firestore-durable-outbox' } });
+    if (path === '/api/enterprise/data-plane/status') return json({ dataPlane: { provider: 'mysql', configured: true, durable: true, encryption: 'server-key', encryptionSecurityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', quotaStore: 'mariadb-atomic', queue: 'mariadb-transactional-outbox' } });
     if (path === '/api/enterprise/support-grants' && method === 'GET') return json({ grants: state.supportGrants });
     if (path === '/api/enterprise/support-grants' && method === 'POST') {
       const grant = { id: uuid(), tenantId: state.tenant.id, status: 'ACTIVE', reason: String(body?.reason || ''), scopes: body?.scopes || ['tenant.audit.read'], supportSubjectId: String(body?.supportSubjectId || 'support.engineer'), grantedBy: 'browser-owner', createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + (Number(body?.durationMinutes || 240) * 60_000)).toISOString() };
@@ -622,6 +640,7 @@ export async function installAuthenticatedSession(page, { uid = 'browser-owner',
     } catch { /* indexedDB optional */ }
   }, { key: authUserKey, apiKey: API_KEY, token: mockToken, uid, email, displayName });
 
+  await rejectFirebaseDataPlaneRequests(page);
   await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ access_token: mockToken, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fixture-refresh', id_token: mockToken, user_id: uid, project_id: 'ai-resume-builder-424cf' }),
@@ -630,8 +649,6 @@ export async function installAuthenticatedSession(page, { uid = 'browser-owner',
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ users: [{ localId: uid, email, emailVerified: true, displayName, providerUserInfo: [] }] }),
   }));
-  await page.route('**/firestore.googleapis.com/**', route => route.abort());
-  await page.route('**/*.firebaseio.com/**', route => route.abort());
   await page.route('**/fonts.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   await page.route('**/fonts.gstatic.com/**', route => route.fulfill({ status: 200, body: '' }));
   return mockToken;

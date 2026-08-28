@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 test('job application lifecycle is backend-owned, identity-bound, and atomic', async () => {
-  const [backend, operations, rules] = await Promise.all([
+  const [backend, operations, policy, migration] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
+    fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
   ]);
   const submit = backend.match(/app\.post\('\/api\/jobs\/:jobId\/applications'[\s\S]*?\n\}\);/)?.[0] || '';
   assert.match(submit, /req\.user\.uid/);
@@ -22,16 +23,18 @@ test('job application lifecycle is backend-owned, identity-bound, and atomic', a
   assert.match(status, /JOB_APPLICATION_STATUS_UPDATED/);
   assert.match(operations, /\/api\/jobs\/\$\{encodeURIComponent\(jobId\)\}\/applications/);
   assert.match(operations, /\/api\/job-applications\/\$\{encodeURIComponent\(applicationId\)\}\/status/);
-  const applicationRule = rules.match(/match \/jobApplications\/\{id\}[\s\S]*?\n\s+\}/)?.[0] || '';
-  assert.match(applicationRule, /allow create, update, delete: if false/);
-  assert.doesNotMatch(rules, /applicationsCount == resource\.data\.applicationsCount \+ 1/);
+  assert.match(policy, /VERIFIED_PREFIXES[\s\S]*'\/jobs\/'/);
+  assert.match(policy, /EMAIL_VERIFICATION_REQUIRED/);
+  assert.match(migration, /FOREIGN KEY \(applicant_id\) REFERENCES users\(id\) ON DELETE CASCADE/);
+  assert.match(migration, /INDEX idx_app_applicant \(applicant_id\)/);
 });
 
 test('employer job posting mutations are backend-owned, audited, and revision safe', async () => {
-  const [backend, operations, rules, dashboard, editor, companies] = await Promise.all([
+  const [backend, operations, policy, migration, dashboard, editor, companies] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
+    fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
     fs.readFile('src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx', 'utf8'),
     fs.readFile('src/components/Dashboard/EmployerDashboard/EditJobModal.jsx', 'utf8'),
     fs.readFile('src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx', 'utf8'),
@@ -47,10 +50,11 @@ test('employer job posting mutations are backend-owned, audited, and revision sa
   assert.match(backend, /EMPLOYER_JOB_CHANGED/);
   assert.match(operations, /\/api\/employer\/jobs/);
   assert.match(operations, /\/api\/employer\/companies/);
-  const companyRule = rules.slice(rules.indexOf('match /companies/{id}'), rules.indexOf('match /jobs/{id}'));
-  assert.match(companyRule, /allow create, update, delete: if false/);
-  const jobRule = rules.slice(rules.indexOf('match /jobs/{id}'), rules.indexOf('match /jobApplications/{id}'));
-  assert.match(jobRule, /allow create, update, delete: if false/);
+  assert.match(policy, /VERIFIED_PREFIXES[\s\S]*'\/employer\/'/);
+  assert.match(backend, /isEmployerAccount\(req\)/);
+  assert.match(backend, /employerId: req\.user\.uid/);
+  assert.match(migration, /FOREIGN KEY \(employer_id\) REFERENCES users\(id\) ON DELETE CASCADE/);
+  assert.match(migration, /INDEX idx_jobs_employer \(employer_id\)/);
   assert.match(dashboard, /job\.revision/);
   assert.match(dashboard, /result\.revision/);
   assert.match(editor, /job\.revision/);

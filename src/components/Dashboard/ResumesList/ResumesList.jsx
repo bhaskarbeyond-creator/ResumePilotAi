@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getResumes } from '../../../firestore/dbOperations';
+import { getResumes } from '../../../services/api/platform';
 import { createResumeDraft, deleteResumeDraft } from '../../../services/resumePersistence';
 import { Link } from 'react-router-dom';
 import addResumesImage from '../../../assets/undraw_add_document_0hek.svg';

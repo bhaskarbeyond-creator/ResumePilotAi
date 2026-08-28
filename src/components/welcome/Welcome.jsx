@@ -18,8 +18,8 @@ import { RxHamburgerMenu } from 'react-icons/rx';
 // Firease
 import fire from '../../conf/fire';
 import signOutUser from '../../utils/signOut';
-import { InitialisationCheck, getPages, getWebsiteData, getSubscriptionStatus, checkSbs, checkIfSuspended } from '../../firestore/dbOperations';
-import { getUserMembership } from '../../firestore/paidOperations';
+import { InitialisationCheck, getPages, getWebsiteData, getSubscriptionStatus } from '../../services/api/platform';
+import { getUserMembership } from '../../data/entitlements';
 import { parseSafeDate } from '../../utils/subscriptionUtils';
 // Initialisation Component
 import InitialisationWrapper from '../initailisation/initialisationWrapper/initialisationWrapper';
@@ -210,11 +210,6 @@ class Welcome extends Component {
             // Colors for resume customization
             colors: this.getValueFromCurrentResume('colors', this.getDefaultColorsForTemplate()),
         };
-        this.authBtnHandler = this.authBtnHandler.bind(this);
-    }
-
-    authBtnHandler() {
-        this.setState((prevState) => ({ isAuthShowed: !prevState.isAuthShowed }));
     }
 
     // Get default colors based on current template
@@ -291,13 +286,9 @@ class Welcome extends Component {
             // Reset account-derived fields before any asynchronous A → B transition work.
             this.setState({ user, email: user.email, membership: 'Basic', membershipEnds: null, isAuthShowed: false });
             try { localStorage.setItem('user', user.uid); } catch { /* compatibility storage */ }
-            const suspended = await checkIfSuspended(user.uid);
-            if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== user.uid) return;
-            if (suspended) {
-                await signOutUser();
-                alert('Your account has been temporarily suspended by an administrator. Please contact support.');
-                return;
-            }
+            // Firebase Authentication is the suspension authority. The backend
+            // verifies revoked/disabled sessions on every protected request;
+            // no MariaDB profile field is used as an identity fallback here.
             await this.fetchUserMembership(user.uid, generation);
         });
     }
@@ -313,9 +304,6 @@ class Welcome extends Component {
                     membership: value.membership, 
                     membershipEnds: parseSafeDate(value.membershipEnds) 
                 });
-                const subscriptionsDisabled = await checkSbs();
-                if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== userId) return;
-                if (subscriptionsDisabled === 'false') this.setState({ membership: 'Basic' });
             }
         } catch (error) {
             if (this._isMounted && generation === this._authGeneration) console.warn('Membership unavailable:', error.message);

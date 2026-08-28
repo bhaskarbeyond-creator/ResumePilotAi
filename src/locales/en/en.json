@@ -211,7 +211,7 @@
     "unlimitedResumes": "Unlimited Resumes",
     "nonRecuring": "Non-recurring payment.",
     "upgradeAndDownload": "Upgrade and Download",
-    "payment1": "Get your dream job",
+    "payment1": "Create your resume",
     "payment2": "Payment through a trusted payment service",
     "payment3": "SSL Secure / 256-bit SSL secure checkout",
     "payment4": "7-day money back guarantee",
@@ -243,7 +243,7 @@
     "featuresNav": "Features",
     "resumeBuilderFeatures": "Resume Builder Features",
     "featureTagline": "Everything you need for the perfect resume",
-    "userCount": "50K+ users",
+    "userCount": "Feature overview",
     "exploreFeatures": "Explore All Features",
     "freeToTry": "Free to try",
     "startBuilding": "Start building",
@@ -345,12 +345,12 @@
       "sentence5": "Ace interviews with AI prep tools"
     },
     "badge": "AI-Powered Resume Builder",
-    "description": "Create stunning, ATS-friendly resumes and cover letters with AI assistance. Choose from professional templates, get real-time feedback, and land your dream job faster.",
+    "description": "Create and edit resumes and cover letters with guided tools, configurable templates, live preview, and optional AI assistance.",
     "createResume": "Create Resume",
     "createCoverLetter": "Create Cover Letter",
     "stats": {
-      "users": "5,000+ happy users",
-      "rating": "4.9/5"
+      "users": "Guided resume tools",
+      "rating": "Live preview"
     },
     "features": {
       "freeToStart": "Free to start",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "PROVEN RESULTS • TRUSTED BY 50K+ PROFESSIONALS",
+    "badge": "GUIDED RESUME CREATION",
     "title": {
       "part1": "Transform",
       "part2": "Your Career",
       "part3": "Journey"
     },
-    "description": "Join thousands of professionals who've accelerated their careers with our AI-powered resume builder. Get noticed, land interviews, and secure your dream job faster than ever before.",
+    "description": "Use guided sections, configurable layouts, previews, and optional AI assistance to prepare and review a resume.",
     "benefits": [
       {
         "title": "Land More Job Interviews",
         "description": "Our ATS-optimized templates and AI-powered content suggestions help your resume get past automated screening systems and into the hands of hiring managers.",
-        "detail": "Join thousands of professionals who've increased their interview rate by 3x using our proven system."
+        "detail": "Review and adapt every suggestion before using it in an application."
       },
       {
         "title": "Stand Out From The Competition",
@@ -396,24 +396,6 @@
         "title": "Build Confidence In Your Job Search",
         "description": "Present your best professional self with a polished, error-free resume that reflects your true potential and professional accomplishments.",
         "detail": "Feel confident knowing your application materials are professionally crafted and industry-compliant."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Happy Users"
-      },
-      {
-        "number": "98.7%",
-        "label": "Success Rate"
-      },
-      {
-        "number": "50+",
-        "label": "Templates"
-      },
-      {
-        "number": "24hrs",
-        "label": "Avg. Time"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Ready to Land Your Dream Job?",
-      "description": "Join over 50,000 professionals who've transformed their careers. Start building your winning resume today.",
+      "title": "Ready to create your resume?",
+      "description": "Create, review, and export your resume with the guided editor.",
       "button": "Start Your Success Story",
       "noCredit": "✨ No credit card required • Free templates included"
     }
@@ -440,7 +422,7 @@
       "part2": "Users",
       "part3": " Are Saying"
     },
-    "description": "Join thousands of satisfied job seekers who have landed their dream jobs with our AI-powered resume builder.",
+    "description": "Read approved customer feedback published through the platform review workflow.",
     "navigation": {
       "previous": "Previous",
       "next": "Next",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Still need help?",
-      "description": "Our support team is here 24/7 to help you succeed",
+      "description": "Use the contact form for account or product questions. Response times are not guaranteed.",
       "contactButton": "Contact Support",
-      "docsButton": "Browse Docs"
+      "docsButton": "Career Articles"
     },
     "cta": {
       "badge": "Ready to create your resume?",
-      "title": "Transform Your Career with AI-Powered Resumes",
-      "description": "Join thousands of professionals who've created stunning resumes in seconds. Start your career journey today with our intelligent design platform.",
+      "title": "Create and review your resume",
+      "description": "Review common questions or start a resume with the guided editor.",
       "button": "Start Creating Free",
-      "freeCredits": "3 free credits • No credit card required",
-      "support": "24/7 Support",
-      "secure": "Secure & Private",
-      "instant": "Instant Results"
+      "freeCredits": "",
+      "support": "Account-based drafts",
+      "secure": "Review before export",
+      "instant": "Optional AI assistance"
     },
     "trustIndicators": {
-      "secure": "Secure & Private",
-      "instant": "Instant Results",
-      "support": "24/7 Support"
+      "secure": "Review before export",
+      "instant": "Optional AI assistance",
+      "support": "Account-based drafts"
     },
     "q1": {
-      "question": "How do I get started with AI resume generation?",
-      "answer": "Getting started is incredibly simple! Just sign up for a free account, and you'll instantly receive 3 free credits. Then, enter your information, select your industry, and watch our AI create stunning resumes in seconds. No design experience needed!"
+      "question": "How do I get started with the resume builder?",
+      "answer": "Create an account, open the resume builder, enter information you have verified, choose a layout, and review the preview before saving or exporting. AI assistance is optional and may be unavailable when the module is disabled."
     },
     "q2": {
-      "question": "How fast is the resume generation process?",
-      "answer": "Our AI generates multiple resume variations in under 5 minutes! What traditionally takes days or weeks with traditional designers happens instantly. You can iterate and refine until you find the perfect resume for your brand."
+      "question": "Does AI assistance guarantee an interview or job?",
+      "answer": "No. AI output can be incomplete or inaccurate and does not guarantee ATS acceptance, an interview, or employment. Review and edit every suggestion before using it."
     },
     "q3": {
-      "question": "What's included in the free plan?",
-      "answer": "New users get 3 free credits to generate and download resumes immediately. Each credit creates multiple resume variations, and you can download your favorites in PDF and Word formats."
+      "question": "Where can I see current plan limits and pricing?",
+      "answer": "Open the pricing page for the current server-provided plans, entitlements, taxes, and payment options. Availability can change by account and operator configuration."
     },
     "q4": {
-      "question": "Can I customize the generated resumes?",
-      "answer": "Yes! Our AI creates multiple variations automatically. You can regenerate with different styles, colors, and layouts. Plus, downloaded PDF files can be easily customized in any design software for further personalization."
+      "question": "Can I customize my resume?",
+      "answer": "Yes. You can edit resume sections, choose an available layout, and review the rendered preview. AI suggestions remain editable and should be checked for accuracy."
     },
     "q5": {
-      "question": "What file formats do you provide?",
-      "answer": "All resumes are available in high-quality PDF (for print and editing) and Word formats. Files come with standard fonts and are ready for immediate use across all platforms."
+      "question": "What export formats are available?",
+      "answer": "PDF and DOCX exports are offered where the relevant export route and account entitlement are available. Always inspect the downloaded file before submitting it."
     },
     "q6": {
-      "question": "How does the credit system work?",
-      "answer": "Each resume generation uses 1 credit and creates multiple design variations. Credits never expire, and you can purchase additional credits anytime through our flexible pricing plans."
+      "question": "How are drafts and account data stored?",
+      "answer": "Firebase Authentication manages identity. Resume drafts and other application data are stored through the MariaDB-backed API. Review the privacy policy and account export or deletion controls for more information."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Stay Updated",
       "securePayments": "Secure Payments"
     },
-    "aboutText": "We help job seekers create professional resumes in minutes. Our mission is to empower individuals to land their dream jobs with high-quality, AI-crafted application documents.",
+    "aboutText": "ResumePilot AI provides tools for creating, reviewing, and exporting resumes and related career documents.",
     "links": {
       "pricing": "Pricing",
       "contact": "Contact"
@@ -1141,8 +1123,8 @@
       "clickToView": "Click to view full size",
       "changeTemplate": "Change Template",
       "viewFullSize": "View Full Size",
-      "trustedBy": "Trusted by 50K+ professionals",
-      "joinSuccess": "Join the success stories",
+      "trustedBy": "Preview before export",
+      "joinSuccess": "Review content and formatting",
       "resumePdf": "Resume.pdf"
     },
     "templates": {
@@ -1562,26 +1544,6 @@
         "label": "Date Issued",
         "placeholder": "e.g. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "AI Certification Recommendations",
-      "recommend": "Recommend Certifications (AI)",
-      "tooltip": "Generate AI certification recommendations tailored to your profile",
-      "generating": "Analyzing & Generating...",
-      "tailoredSubtitle": "Recognized industry credentials tailored for {{role}}",
-      "genericSubtitle": "Top accredited industry credentials based on your skills and career path",
-      "promptTitle": "Supercharge Your Resume with Validated Certifications",
-      "promptDescRole": "Let AI analyze your experience as {{role}} and recommend the highest-value certifications hiring managers look for.",
-      "promptDescGeneric": "Generate industry-standard credentials and certifications matched to your field to boost ATS ranking and employer credibility.",
-      "generateNow": "Generate AI Recommendations Now",
-      "refresh": "Refresh Recommendations",
-      "getRecommendations": "Get Recommendations",
-      "addAll": "Add All Recommended",
-      "added": "Added",
-      "addedBadge": "Added",
-      "add": "Add",
-      "mandatoryBadge": "Industry Standard",
-      "recommendedBadge": "Recommended"
     }
   },
   "EducationSuggestionModal": {
@@ -1945,19 +1907,18 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Find your dream job today",
-        "sentence2": "Connect with top employers",
-        "sentence3": "Advance your career journey",
+        "sentence1": "Review current job listings",
+        "sentence2": "Review participating employers",
+        "sentence3": "Filter roles by location",
         "sentence4": "Discover remote opportunities",
-        "sentence5": "Join leading companies"
+        "sentence5": "Apply to published openings"
       },
       "badge": "Jobs Portal",
-      "description": "Discover thousands of job opportunities from top companies. Whether you're looking for remote work, career advancement, or your first job, we connect talented professionals with their perfect match.",
+      "description": "Search published job listings by keyword and location, review employer and role details, and apply through the jobs portal.",
       "searchPlaceholder": "Job title, keywords, or company",
       "locationPlaceholder": "City, state, or remote",
       "searchButton": "Search Jobs",
       "browseJobs": "Browse Jobs",
-      "hotBadge": "HOT",
       "postJob": "Post a Job",
       "employerBadge": "EMPLOYER",
       "careerResources": "Career Tips",
@@ -1967,84 +1928,38 @@
       "postDesc": "Hire top talent",
       "resources": "Resources",
       "resourcesDesc": "Career guidance & tips",
-      "stats": {
-        "jobs": "10,000+ Active Jobs",
-        "rating": "4.8/5 Rating"
-      },
+      "stats": {},
       "features": {
         "freeToApply": "Free to Apply",
-        "verifiedEmployers": "Verified Employers"
+        "verifiedEmployers": "Moderated Employers"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Top Employers",
-      "title": "Join Leading Companies",
-      "description": "Discover opportunities at world-class companies that are actively hiring. From startups to Fortune 500, find your perfect match.",
+      "badge": "Featured Employers",
+      "title": "Browse Employer Profiles",
+      "description": "Browse featured employer profiles with active listings. Open the jobs portal to review current roles and application details.",
       "featured": "Featured",
       "viewAll": "View All Companies",
       "stats": {
-        "companies": "Partner Companies",
+        "companies": "Featured Companies",
         "jobs": "Active Jobs",
         "hires": "Successful Hires"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "How It Works",
-      "title": "Land Your Dream Job in",
-      "titleHighlight": "4 Simple Steps",
-      "description": "Our streamlined process makes job searching effortless. From discovery to hiring, we guide you every step of the way to ensure you find the perfect opportunity.",
-      "featuresTitle": "Why Choose Our Platform?",
-      "featuresDescription": "We provide cutting-edge tools and features to make your job search more effective and efficient.",
-      "steps": {
-        "0": {
-          "title": "Search & Discover",
-          "description": "Browse thousands of job opportunities from top companies. Use our advanced filters to find the perfect match for your skills and preferences."
-        },
-        "1": {
-          "title": "Create Profile",
-          "description": "Build your professional profile with our resume builder. Showcase your skills, experience, and achievements to stand out from the crowd."
-        },
-        "2": {
-          "title": "Apply Instantly",
-          "description": "Apply to multiple jobs with one click. Our smart application system automatically tailors your profile to each position."
-        },
-        "3": {
-          "title": "Get Hired",
-          "description": "Connect with hiring managers, schedule interviews, and land your dream job. We support you throughout the entire process."
-        }
       },
-      "features": {
-        "0": {
-          "title": "AI-Powered Matching",
-          "description": "Our intelligent algorithm matches you with relevant opportunities"
-        },
-        "1": {
-          "title": "Resume Optimization",
-          "description": "Automatically optimize your resume for each application"
-        },
-        "2": {
-          "title": "Verified Companies",
-          "description": "All employers are verified for authenticity and quality"
-        }
-      },
-      "cta": {
-        "title": "Ready to Start Your Journey?",
-        "description": "Join thousands of professionals who have found their dream jobs through our platform. Your next opportunity is just a click away.",
-        "searchButton": "Start Job Search",
-        "profileButton": "Create Profile"
-      }
+      "empty": "No employers are currently featured.",
+      "unavailable": "Featured employers are temporarily unavailable.",
+      "evidenceReviewed": "Evidence reviewed"
     },
     "LandingJobsFeatured": {
       "badge": "Featured Jobs",
-      "title": "Discover Your Next",
-      "titleHighlight": "Dream Opportunity",
-      "description": "Explore hand-picked opportunities from top companies. These featured positions offer exceptional career growth, competitive compensation, and amazing work environments.",
-      "statsTitle": "Join Thousands of Successful Professionals",
-      "statsDescription": "Our platform has helped countless professionals find their dream jobs at top companies worldwide.",
+      "title": "Browse Featured",
+      "titleHighlight": "Job Listings",
+      "description": "Explore featured opportunities from participating employers. Review each listing for its role, compensation, location, and application requirements.",
+      "statsTitle": "Published Platform Snapshot",
+      "statsDescription": "These display values are revisioned and linked to evidence reviewed by the platform administrator.",
       "stats": {
         "jobs": "Featured Jobs",
         "success": "Success Rate",
-        "companies": "Top Companies"
+        "companies": "Featured Companies"
       },
       "JobCard": {
         "skills": {
@@ -2059,7 +1974,9 @@
           "applyNow": "Apply Now"
         }
       },
-      "viewAll": "View All Jobs"
+      "viewAll": "View All Jobs",
+      "empty": "No jobs are currently featured.",
+      "evidenceReviewed": "Evidence reviewed"
     },
     "MainJobListings": {
       "jobSingular": "job",

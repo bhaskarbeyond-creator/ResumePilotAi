@@ -12,7 +12,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const request = require('supertest');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
 const { InMemoryServiceAccountStore } = require('../enterprise/serviceAccountStore');
 const { InMemorySupportGrantStore } = require('../enterprise/supportAccessStore');
 const { TenantService } = require('../enterprise/tenantService');
@@ -35,6 +36,7 @@ function installService() {
   registry = new InMemoryTenantRegistry();
   app.set('tenantService', new TenantService({
     registry,
+    repository: new InMemoryEnterpriseRepository(),
     serviceAccountStore: new InMemoryServiceAccountStore(),
     supportGrantStore: new InMemorySupportGrantStore(),
   }));
@@ -314,23 +316,15 @@ test('tenant admin can create workspaces and teams through tenant.workspaces.man
 });
 
 test('server-side audit filters narrow by outcome, action, actor, and time window', async () => {
-  const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-  const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
-  const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
   const { freezeContext } = require('../enterprise/tenantContext');
-
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
-  const repository = new FirestoreEnterpriseRepository({
-    db, admin,
-    encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) }),
-  });
+  const repository = new InMemoryEnterpriseRepository();
   const tenantId = crypto.randomUUID();
   const workspaceId = crypto.randomUUID();
   const context = freezeContext({
     tenantId, workspaceId, principalId: crypto.randomUUID(), subjectId: 'auditor-1', identityIssuer: 'firebase',
-    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
+    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['TENANT_OWNER'] },
+    dataPlane: { id: 'mysql-primary', type: 'MYSQL', routingVersion: 1 },
     roles: ['TENANT_OWNER'], permissions: ['*'], workspaceScope: 'TENANT',
   });
 

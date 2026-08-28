@@ -16,14 +16,28 @@ const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
 const { loadProviderConfiguration, generateWithProviders } = require('./services/aiRuntime');
 const { loadAiAdminSettings, saveAiAdminSettings, testAiProvider, fetchProviderModels } = require('./services/aiAdmin');
+const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, resetAllAiQuota } = require('./services/adminAiEntitlement');
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
-const { resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
+const { PAYMENT_PROVIDERS, resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
 const { resolveEffectiveEntitlement, isPaidMembershipTier } = require('./security/entitlements');
 const { toCanonicalDate } = require('./database/canonical');
 const { isMembershipActive, toCanonicalUser } = require('./database/domain');
 const databaseAuthority = require('./database/authority');
 const { getPool } = require('./database/mysql');
 const paymentActivation = require('./services/paymentActivation');
+const { reconcileStripeChargeRefund } = require('./services/refundReferences');
+const { executeOrReconcileProviderRefund, refundFlowError } = require('./services/providerRefunds');
+const { normalizeLlmDiscoverySettings } = require('./services/discoveryMetadata');
+const { publishDueBlogPosts } = require('./services/cmsScheduler');
+const {
+    billingSnapshotHash,
+    generateInvoice,
+    getInvoiceForUser,
+    invoiceFromRow,
+    listInvoicesForUser,
+    normalizeCustomerDetails,
+    supplierFromPublicConfig,
+} = require('./services/invoiceService');
 const resilientMutations = require('./services/resilientMutations');
 const accountDeletion = require('./services/accountDeletion');
 const { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken } = require('./security/exportTokens');
@@ -41,7 +55,6 @@ const { portfoliosRouter } = require('./routes/portfolios');
 const { coversRouter } = require('./routes/covers');
 const { jobsDataRouter } = require('./routes/jobsData');
 const { blogDataRouter } = require('./routes/blogData');
-const { cmsPagesRouter } = require('./routes/cmsPages');
 const { notificationsDataRouter } = require('./routes/notificationsData');
 const { usersDataRouter } = require('./routes/usersData');
 const { miscDataRouter } = require('./routes/miscData');
@@ -88,8 +101,7 @@ const {
     scraperAccountLimiter,
     contactAccountLimiter,
     messagingAccountLimiter,
-    enforceDailyAiQuota,
-    bindNotificationRecipient
+    enforceDailyAiQuota
 } = require('./security/abuse');
 const port = process.env.PORT || 8080;
 const configuredWebsiteName = String(process.env.WEBSITE_NAME || 'airesume.projectdemo.guru').trim().toLowerCase();
@@ -105,20 +117,11 @@ if (!['http', 'https'].includes(protocol) || (process.env.NODE_ENV === 'producti
 // ---------------------------------------------------------------------------
 // Firebase Admin initialization — IDENTITY ONLY.
 //
-// ARCHITECTURE (zero-Firestore production certification):
-//  * The Firebase Admin SDK is used exclusively for ID-token verification
-//    (Firebase Auth is the deployed identity provider). Identity is not a
-//    database dependency: no Firestore reads, writes, listeners, transactions
-//    or availability checks exist on any production application path.
-//  * The Firestore data plane has been REMOVED from the runtime. `db` is a
-//    permanent null constant; every legacy `if (db && ...)` guard in
-//    routes/services is a structural no-op. MySQL/MariaDB is the single
-//    authoritative store — there is no Firestore fallback by construction.
-//  * Legacy one-time migration tooling (scripts/migrate-firestore-to-mysql.mjs)
-//    remains OUT-OF-BAND: it never runs inside the production server.
+// Firebase Admin is retained solely for authentication and identity lifecycle
+// actions. Application data is owned by MariaDB and no Firebase database handle
+// is created, registered, or accepted by runtime services.
 // ---------------------------------------------------------------------------
 let admin = null;
-const db = null; // PERMANENT: no Firestore data plane exists in the runtime.
 try {
     admin = require('./services/firebaseAdmin');
     if (!admin.apps.length) {
@@ -149,19 +152,11 @@ try {
 } catch (e) {
     console.warn('[Firebase Admin] Initialization notice:', e.message);
 }
-if (String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || '').toLowerCase() !== '') {
-    console.warn('[Architecture] FIREBASE_DATA_PLANE is ignored: the Firestore data plane has been removed from the runtime. MySQL/MariaDB is the sole authoritative store.');
-}
-console.log('[Firestore Data Plane] REMOVED — MySQL/MariaDB is the only data store; Firestore dependency is ZERO.');
-// `req.app.get('db')` stays null forever. All legacy `if (db && ...)` guards
-// are structural no-ops; no route can reach a Firestore handle.
-app.set('db', db);
-// The Firebase admin runtime is exposed for identity verification and for
-// enterprise services (outbox, storage) that need FieldValue/Timestamp
-// sentinels — never secrets.
+// The Firebase Admin runtime is exposed only for identity verification and
+// identity lifecycle operations; it is not an application-data adapter.
 app.set('firebaseAdmin', admin);
-// The enterprise control plane is authoritative over MySQL/MariaDB.
-app.set('tenantService', createTenantService({ pool: getPool(), db, admin }));
+// The enterprise control plane is authoritative over MariaDB.
+app.set('tenantService', createTenantService({ pool: getPool(), admin }));
 
 // Truthful one-time architecture statement. Never logs secrets or URLs.
 if (enterpriseFeatureEnabled()) {
@@ -171,7 +166,7 @@ if (enterpriseFeatureEnabled()) {
         dataProvider: `Enterprise Data Provider: ${String(runtime.dataProvider || 'mysql')}`,
         dataPlaneConfigured: runtime.dataPlaneConfigured === true,
         cache: 'Cache: none (MySQL/MariaDB is the authoritative store)',
-        queue: 'Queue: Firestore Durable Outbox',
+        queue: 'Queue: MariaDB transactional outbox',
         encryption: `Encryption Provider: ${String(runtime.encryption?.provider === 'server-key' ? 'ServerKey' : runtime.encryption?.provider || 'none')}`,
         encryptionSecurityLevel: runtime.encryption?.securityLevel || null,
         quotaStore: runtime.quotaStore || 'mysql-atomic',
@@ -213,17 +208,8 @@ const initSystemFonts = () => {
 };
 initSystemFonts();
 
-// Standby replication history: a dual-database sync worker used to mirror
-// MySQL mutations into a Firestore standby. It has been REMOVED from the
-// runtime: MySQL/MariaDB is the single authoritative store, and no production
-// path may depend on Firestore availability. The durable outbox table
-// (sync_outbox) remains as the transactional-outbox mechanism for any future
-// asynchronous secondary integration; with no secondary enabled it simply
-// stays empty.
-const { stopBackgroundSyncWorker } = require('./database/syncManager');
-if (process.env.NODE_ENV !== 'test') {
-    console.log('[Sync Worker] Firestore standby replication removed. MySQL-only authoritative mode.');
-}
+// Cross-database replication is intentionally absent. Domain-specific durable
+// queues are MariaDB-owned and started below with their own workers.
 
 // ---------------------------------------------------------------------------
 // Startup schema bootstrap (release engineering §28): a fresh deployment with
@@ -246,16 +232,15 @@ async function runSchemaBootstrap() {
 }
 app.set('schemaState', () => schemaState);
 
-// Graceful shutdown (§25/§28): stop background workers, drain the HTTP server,
-// close the MySQL pool, then exit. No acknowledged transaction is dropped by
-// the shutdown itself: the pool end waits for in-flight queries.
+// Graceful shutdown (§25/§28): drain the HTTP server, close the MariaDB pool,
+// then exit. No acknowledged transaction is dropped by the shutdown itself:
+// pool shutdown waits for in-flight queries.
 let httpServer = null;
 let shuttingDown = false;
 async function gracefulShutdown(signal) {
     if (shuttingDown) return;
     shuttingDown = true;
     console.log(`[Shutdown] ${signal} received — draining connections...`);
-    try { stopBackgroundSyncWorker(); } catch (_e) { /* worker already stopped */ }
     try { if (httpServer) await new Promise(resolve => httpServer.close(resolve)); } catch (_e) { /* not listening */ }
     try { await closePool(); } catch (_e) { /* pool already closed */ }
     console.log('[Shutdown] Clean exit complete.');
@@ -269,6 +254,7 @@ app.use((req, res, next) => {
     res.locals.requestId = /^[A-Za-z0-9._-]{1,80}$/.test(suppliedRequestId)
         ? suppliedRequestId
         : cryptoRandom.randomUUID();
+    req.requestId = res.locals.requestId;
     res.setHeader('X-Request-Id', res.locals.requestId);
     next();
 });
@@ -341,6 +327,12 @@ app.use('/api/auth', authLimiter);
 
 // Zero-trust API boundary. Requests are authenticated unless they are explicitly
 // public protocol endpoints. Route handlers must still enforce their own role/ownership policy.
+const retiredClientNotificationPaths = new Set([
+    '/api/notify/user-signup', '/api/notify/password-reset', '/api/notify/send-verification-email',
+    '/api/notify/password-changed', '/api/notify/email-otp', '/api/notify/security-alert',
+    '/api/notify/portfolio-published', '/api/notify/job-application',
+    '/api/notify/job-status-update', '/api/notify/job-posted', '/api/notify/subscription-cancelled',
+]);
 const publicApiPaths = new Set([
     '/healthz', '/readyz', '/health', '/health/databases', '/service-availability', '/platform/version', '/platform/public-config',
     '/enterprise/status',
@@ -348,24 +340,40 @@ const publicApiPaths = new Set([
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
     '/auth/github', '/auth/github/callback', '/auth/oauth/exchange', '/auth/preview-login',
     '/public/custom-pages', '/public/custom-pages.json',
-    '/public/trusted-by', '/public/trusted-by.json',
+    '/public/trusted-by', '/public/trusted-by.json', '/public/featured-companies',
     '/custom-pages', '/custom-pages.json',
     '/trusted-by', '/trusted-by.json',
-    '/cms-pages', '/blog-data', '/jobs-data',
+    '/blog-data', '/jobs-data',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
-    '/stats', '/reviews', '/phrases'
+    '/stats', '/reviews', '/phrases', '/portfolios/public'
 ]);
+function isPublicApiPath(pathname) {
+    return publicApiPaths.has(pathname)
+        || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/.test(pathname)
+        || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname);
+}
 // Enterprise API authentication accepts exactly one credential kind per request:
 // a Firebase bearer token (tenant member or support elevation) or an x-api-key
 // service credential (M2M). Ambiguous requests are rejected outright.
 const requireEnterpriseAuth = createEnterpriseAuthMiddleware({ requireAuth });
 app.use('/api', (req, res, next) => {
-    if (publicApiPaths.has(req.path)) return next();
+    if (req.path === '/cms-pages' || req.path.startsWith('/cms-pages/')) {
+        return res.status(410).json({
+            success: false,
+            code: 'API_RETIRED',
+            error: 'The duplicate CMS pages API is retired.',
+            replacement: req.method === 'GET' ? '/api/public/custom-pages' : '/api/admin/pages/:slug',
+        });
+    }
+    if (isPublicApiPath(req.path)) return next();
     if (req.path.startsWith('/enterprise/')) return requireEnterpriseAuth(req, res, next);
     return requireAuth(req, res, next);
 });
 app.use('/api', (req, res, next) => {
-    if (publicApiPaths.has(req.path)) return next();
+    if (isPublicApiPath(req.path)) return next();
+    // Authenticated callers receive the unambiguous 410 retirement contract;
+    // authorization policy must not make old dispatchers appear conditionally active.
+    if (retiredClientNotificationPaths.has(`/api${req.path}`)) return next();
     // Service principals and pending support elevations are governed by the
     // enterprise router's own fail-closed allowlists and RBAC.
     if (req.serviceContext || req.pendingSupportGrantId) return next();
@@ -378,7 +386,6 @@ app.use('/api/portfolios', portfoliosRouter);
 app.use('/api/covers', coversRouter);
 app.use('/api/jobs-data', jobsDataRouter);
 app.use('/api/blog-data', blogDataRouter);
-app.use('/api/cms-pages', cmsPagesRouter);
 app.use('/api/notifications-data', notificationsDataRouter);
 app.use('/api/users-data', usersDataRouter);
 app.use('/api', miscDataRouter);
@@ -392,7 +399,7 @@ app.use('/api', async (req, res, next) => {
     if (!asksForTenantContext || req.path.startsWith('/enterprise/')) return next();
     try {
         const { enterpriseFeatureEnabledAsync } = require('./enterprise/featureFlags');
-        if (await enterpriseFeatureEnabledAsync(req.app.get('db'))) {
+        if (await enterpriseFeatureEnabledAsync()) {
             return res.status(400).json({ error: { code: 'TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE', message: 'Use a tenant-aware enterprise API route for tenant-scoped operations', requestId: res.locals.requestId } });
         }
     } catch (_) { /* a disabled/unknown flag must not broaden legacy tenant access */ }
@@ -401,20 +408,14 @@ app.use('/api', async (req, res, next) => {
 
 // Cost and abuse boundaries are account-based in addition to the global IP limiter.
 const aiPaths = [
-    '/api/generate-resume', '/api/generate-summary', '/api/generate-interview',
-    '/api/generate-work-description', '/api/generate-education-description',
-    '/api/generate-skills', '/api/check-grammar', '/api/generate-ai-cover-letter',
+    '/api/generate-interview', '/api/check-grammar', '/api/generate-ai-cover-letter',
     '/api/generate-content', '/api/parse-resume'
 ];
 app.use(aiPaths, aiAccountLimiter, enforceDailyAiQuota);
 app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
-app.use('/api/admin/ai/test-provider', aiAccountLimiter);
-const ownNotificationPaths = [
-    '/api/notify/user-signup', '/api/notify/password-changed', '/api/notify/email-otp',
-    '/api/notify/portfolio-published', '/api/notify/subscription-cancelled',
-    '/api/send-invoice-email', '/api/email/send-invoice-email'
-];
-app.use(ownNotificationPaths, notificationAccountLimiter, bindNotificationRecipient);
+// Reject unauthorized operators before touching the durable admission store or
+// disclosing its availability. The route repeats this guard as defense in depth.
+app.use('/api/admin/ai/test-provider', requireRecentAdminAuthentication, aiAccountLimiter);
 app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
 app.use('/api/contact', contactAccountLimiter);
@@ -423,94 +424,140 @@ app.use('/api/messages', messagingAccountLimiter);
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
 app.use(['/api/admin', '/api/email/admin'], requirePermission('system.config.write'));
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET || 'missing');
-async function getDynamicPlan(db, planId) {
-    const defaultPricing = {
-        monthly: { amount: 1999, currency: 'USD', months: 1 },
-        halfYear: { amount: 9999, currency: 'USD', months: 6 },
-        yearly: { amount: 17999, currency: 'USD', months: 12 }
-    };
-    const fallback = defaultPricing[planId];
-    if (!fallback) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
-    try {
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(db);
-        const [publicConfig, sys] = await Promise.all([
-            repo.getSetting('public_config').catch(() => null),
-            repo.getSetting('system_settings').catch(() => null),
-        ]);
-        const billing = publicConfig?.subscriptions || {};
-        
-        let currency = String(billing.currency || sys?.currency || 'INR').toUpperCase();
-        
-        // Check for multi-currency matrix
-        if (billing.pricingMatrix && billing.pricingMatrix[currency]) {
-            const matrix = billing.pricingMatrix[currency];
-            const amount = Number(matrix[planId]);
-            if (Number.isFinite(amount) && amount >= 0) {
-                const multiplier = ['JPY'].includes(currency) ? 1 : 100;
-                return { amount: Math.round(amount * multiplier), currency, months: fallback.months };
-            }
-        }
-        
-        // Fallback to legacy single-currency flat pricing if matrix is missing for this currency
-        let baseAmount = planId === 'monthly' ? billing.monthlyPrice : 
-                        (planId === 'yearly' ? billing.yearlyPrice : 
-                        (planId === 'halfYear' ? billing.quartarlyPrice : null));
-        if (baseAmount !== null && baseAmount !== undefined) {
-             const multiplier = ['JPY'].includes(currency) ? 1 : 100;
-             return { amount: Math.round(Number(baseAmount) * multiplier), currency, months: fallback.months };
-        }
-        return fallback;
-    } catch (_err) {
-        return fallback;
+const Stripe = require('stripe');
+// Webhook signature verification does not call the Stripe API. Provider API
+// operations resolve the complete authoritative credential at call time so an
+// Admin-managed MariaDB secret and a deployment-managed secret behave alike.
+const stripeWebhookVerifier = Stripe(process.env.STRIPE_SECRET || 'webhook-verification-only');
+
+async function getStripeClient() {
+    const environmentSecret = String(process.env.STRIPE_SECRET || '').trim();
+    if (environmentSecret) return Stripe(environmentSecret);
+    const persisted = await readPersistedPaymentProviders();
+    const storedSecret = String(persisted.providers.stripe?.secretKey || '').trim();
+    if (!storedSecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { code: 'PAYMENT_PROVIDER_UNAVAILABLE', status: 503 });
+    return Stripe(storedSecret);
+}
+
+async function getDynamicPlan(planId, provider) {
+    const planMonths = { monthly: 1, halfYear: 6, yearly: 12 };
+    if (!Object.hasOwn(planMonths, planId)) {
+        const error = new Error('INVALID_PLAN');
+        error.status = 400;
+        throw error;
     }
+
+    const { getRepository } = require('./repositories');
+    const repo = getRepository();
+    let publicConfig;
+    let systemSettings;
+    try {
+        [publicConfig, systemSettings] = await Promise.all([
+            repo.getSetting('public_config'),
+            repo.getSetting('system_settings'),
+        ]);
+    } catch (cause) {
+        throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { status: 503, cause });
+    }
+
+    const billing = publicConfig?.subscriptions;
+    if (!billing || typeof billing !== 'object' || billing.state !== true) {
+        throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { code: 'PAYMENT_CONFIGURATION_UNAVAILABLE', status: 503 });
+    }
+    if (!PAYMENT_PROVIDERS.includes(provider) || billing[`${provider}Enabled`] !== true) {
+        throw Object.assign(new Error('PAYMENT_PROVIDER_DISABLED'), { code: 'PAYMENT_PROVIDER_DISABLED', status: 409 });
+    }
+    const currency = String(systemSettings?.currency || '').toUpperCase();
+    if (currency !== 'INR' || String(billing.currency || '').toUpperCase() !== currency
+        || billing.enableTax !== true || billing.taxInclusive !== true) {
+        throw Object.assign(new Error('PAYMENT_CONFIGURATION_INVALID'), { code: 'PAYMENT_CONFIGURATION_INVALID', status: 503 });
+    }
+    // A payment must never be accepted if its immutable invoice cannot be
+    // issued from the same authoritative configuration. The normalized supplier
+    // snapshot is bound to the order before provider contact.
+    const supplierSnapshot = supplierFromPublicConfig(publicConfig);
+
+    let baseAmount;
+    const matrix = billing.pricingMatrix?.[currency];
+    if (matrix && Object.hasOwn(matrix, planId)) {
+        baseAmount = Number(matrix[planId]);
+    } else {
+        const priceField = planId === 'monthly' ? 'monthlyPrice' : planId === 'yearly' ? 'yearlyPrice' : 'quartarlyPrice';
+        baseAmount = Number(billing[priceField]);
+    }
+    if (!Number.isFinite(baseAmount) || baseAmount <= 0) {
+        throw Object.assign(new Error('PAYMENT_CONFIGURATION_INVALID'), { status: 503 });
+    }
+
+    const multiplier = currency === 'JPY' ? 1 : 100;
+    return {
+        amount: Math.round(baseAmount * multiplier),
+        currency,
+        months: planMonths[planId],
+        supplierSnapshot,
+    };
+}
+
+async function createImmutableBillingContext(uid, details, supplierSnapshot) {
+    const repo = getRepository();
+    const customer = await repo.getUser(uid);
+    if (!customer) {
+        throw Object.assign(new Error('PAYMENT_USER_NOT_FOUND'), { code: 'PAYMENT_USER_NOT_FOUND', status: 404 });
+    }
+    const billingSnapshot = normalizeCustomerDetails(details, customer);
+    return {
+        billingSnapshot,
+        supplierSnapshot,
+        billingSnapshotHash: billingSnapshotHash(billingSnapshot, supplierSnapshot),
+        billingSnapshotVersion: 1,
+    };
 }
 
 async function _applyServerCoupon({ uid, orderId, plan, couponCode }) {
-    return paymentActivation.applyServerCoupon({ uid, orderId, plan, couponCode, firestoreDb: db });
+    return paymentActivation.applyServerCoupon({ uid, orderId, plan, couponCode });
 }
 
 async function _releaseCouponReservation(order) {
-    return paymentActivation.releaseCouponReservation(order, db);
+    return paymentActivation.releaseCouponReservation(order);
 }
 
 async function releaseCouponForRef(ref) {
     if (!ref) return;
     const orderId = ref.id;
-    const order = await paymentActivation.getOrder(orderId, db);
-    if (order) await paymentActivation.releaseCouponReservation({ ...order, id: orderId }, db);
+    const order = await paymentActivation.getOrder(orderId);
+    if (order) await paymentActivation.releaseCouponReservation({ ...order, id: orderId });
 }
 
 async function _consumeCouponRedemption(orderId, order) {
-    return paymentActivation.consumeCouponRedemption(orderId, order, db);
+    return paymentActivation.consumeCouponRedemption(orderId, order);
 }
 
 async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) {
     const orderId = typeof orderRef === 'string' ? orderRef : orderRef.id;
     return paymentActivation.activateVerifiedOrder({
-        orderId, gatewayLabel, providerPaymentId, firestoreDb: db,
-    });
+        orderId, gatewayLabel, providerPaymentId,     });
 }
-async function createProviderOrderRecord({ uid, planId, provider, couponCode }) {
-    const basePlan = await getDynamicPlan(db, planId);
+async function createProviderOrderRecord({ uid, planId, provider, couponCode, billingDetails }) {
+    const basePlan = await getDynamicPlan(planId, provider);
+    const billingContext = await createImmutableBillingContext(uid, billingDetails, basePlan.supplierSnapshot);
     const created = await paymentActivation.createOrder({
-        uid, planId, provider, couponCode, plan: basePlan, firestoreDb: db,
+        uid, planId, provider, couponCode, plan: basePlan, extra: billingContext,
     });
-    return { ref: paymentActivation.asOrderRef(created.id, db), plan: created.plan || basePlan };
+    return { ref: paymentActivation.asOrderRef(created.id), plan: created.plan || basePlan };
 }
-async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode }) {
-    const basePlan = await getDynamicPlan(db, planId);
+async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode, billingDetails }) {
+    const basePlan = await getDynamicPlan(planId, 'stripe');
     if (!basePlan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
-    if (!process.env.STRIPE_SECRET) { const err = new Error('PAYMENT_PROVIDER_UNAVAILABLE'); err.status = 503; throw err; }
+    const billingContext = await createImmutableBillingContext(uid, billingDetails, basePlan.supplierSnapshot);
+    const stripeClient = await getStripeClient();
     const created = await paymentActivation.createOrder({
-        uid, planId, provider: 'stripe', couponCode, idempotencyKey, plan: basePlan, firestoreDb: db,
+        uid, planId, provider: 'stripe', couponCode, idempotencyKey, plan: basePlan, extra: billingContext,
     });
     if (created.replayed && created.clientSecret) {
         return { orderId: created.id, clientSecret: created.clientSecret, amount: created.amount, currency: created.currency, replayed: true };
     }
     try {
-        const intent = await stripe.paymentIntents.create({
+        const intent = await stripeClient.paymentIntents.create({
             amount: created.amount || created.plan?.amount || basePlan.amount,
             currency: created.currency || created.plan?.currency || basePlan.currency,
             metadata: { orderId: created.id, uid, planId }
@@ -519,11 +566,11 @@ async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode }) {
             providerPaymentIntentId: intent.id,
             providerClientSecret: intent.client_secret,
             status: 'PAYMENT_CREATED',
-        }, db);
+        });
         return { orderId: created.id, clientSecret: intent.client_secret, amount: created.amount || created.plan?.amount || basePlan.amount, currency: created.currency || created.plan?.currency || basePlan.currency };
     } catch (err) {
-        await paymentActivation.updateOrder(created.id, { status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }, db);
-        await paymentActivation.releaseCouponReservation({ ...created, id: created.id }, db);
+        await paymentActivation.updateOrder(created.id, { status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' });
+        await paymentActivation.releaseCouponReservation({ ...created, id: created.id });
         throw err;
     }
 }
@@ -531,7 +578,13 @@ app.post('/api/pay', async (req, res) => {
     try {
         const suppliedKey = String(req.get('idempotency-key') || '');
         const idempotencyKey = /^ck_[A-Za-z0-9_-]{10,100}$/.test(suppliedKey) ? suppliedKey : crypto.randomUUID();
-        const result = await createPaymentOrder({ uid: req.user.uid, planId: req.body.planId || req.body.plan, idempotencyKey, couponCode: req.body.couponCode });
+        const result = await createPaymentOrder({
+            uid: req.user.uid,
+            planId: req.body.planId || req.body.plan,
+            idempotencyKey,
+            couponCode: req.body.couponCode,
+            billingDetails: req.body.billingDetails,
+        });
         return res.status(201).json({ orderId: result.orderId, client_secret: result.clientSecret, amount: result.amount, currency: result.currency, status: 'PAYMENT_PENDING' });
     } catch (err) {
         console.error('[Stripe payment create]', err.message);
@@ -540,25 +593,65 @@ app.post('/api/pay', async (req, res) => {
 });
 
 
+// Payment history is read directly from the owner-bound MariaDB ledger. Profile
+// JSON is not a second payment-history store.
+app.get('/api/payment-orders', async (req, res) => {
+    try {
+        const { getRepository } = require('./repositories');
+        const orders = await getRepository().getUserPaymentOrders(req.user.uid);
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ success: true, orders, source: 'MARIADB_PAYMENT_ORDERS', count: orders.length });
+    } catch (error) {
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'PAYMENT_HISTORY_UNAVAILABLE',
+            error: 'Payment history is unavailable.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
 // Payment status is read from a server-owned order and is bound to the verified caller.
 app.get('/api/payment-orders/:orderId', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.orderId)) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
     try {
-        const order = await paymentActivation.getOrder(req.params.orderId, req.app.get('db') || db);
+        const order = await paymentActivation.getOrder(req.params.orderId);
         if (!order || order.uid !== req.user.uid) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
-        return res.json({ orderId: order.id || req.params.orderId, status: order.status, planId: order.planId, membershipEnds: toCanonicalDate(order.membershipEnds) || null });
+        let invoiceNumber = null;
+        let invoiceStatus = order.status === 'ACTIVE' ? 'NOT_ISSUED' : 'NOT_APPLICABLE';
+        if (order.status === 'ACTIVE' && Number(order.billingSnapshotVersion) === 1) {
+            try {
+                const invoice = await getInvoiceForUser({ uid: req.user.uid, paymentOrderId: req.params.orderId });
+                invoiceNumber = invoice.invoiceNumber;
+                invoiceStatus = 'ISSUED';
+            } catch (cause) {
+                throw Object.assign(new Error('Active payment invoice invariant failed'), {
+                    code: 'ACTIVATION_INVOICE_INTEGRITY_FAILED', status: 503, cause,
+                });
+            }
+        } else if (order.status === 'ACTIVE') {
+            invoiceStatus = 'LEGACY_NOT_CAPTURED';
+        }
+        return res.json({
+            orderId: order.id || req.params.orderId,
+            status: order.status,
+            planId: order.planId,
+            membershipEnds: toCanonicalDate(order.membershipEnds) || null,
+            invoiceStatus,
+            invoiceNumber,
+        });
     } catch (error) {
         return res.status(error.status || 503).json({ error: { code: error.code || 'ORDER_UNAVAILABLE', message: 'Order could not be loaded', requestId: res.locals.requestId } });
     }
 });
 
-// Stripe Webhook — instant subscription activation + Firestore sync
+// Stripe webhook — verified, idempotent MariaDB subscription activation
 app.post('/api/stripe-webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
     let event;
     try {
         if (!process.env.STRIPE_WEBHOOK_SECRET) throw new Error('Stripe webhook is not configured');
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+        event = stripeWebhookVerifier.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
         console.error('[Stripe Webhook] Signature error:', err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -568,7 +661,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
         const paymentData = event.data.object;
         const orderId = paymentData.metadata?.orderId;
         if (!orderId) return res.status(400).json({ error: 'Unknown payment order' });
-        const order = await paymentActivation.getOrder(orderId, db);
+        const order = await paymentActivation.getOrder(orderId);
         if (!order) return res.status(400).json({ error: 'Unknown payment order' });
         try {
             validateStripePaymentIntent(order, paymentData, orderId);
@@ -582,17 +675,20 @@ app.post('/api/stripe-webhook', async (req, res) => {
         console.log(`[Stripe Webhook] verified order ${orderId}`);
         try {
             const activated = await paymentActivation.activateVerifiedOrder({
-                orderId, gatewayLabel: 'Stripe', providerPaymentId: paymentData.id, firestoreDb: db,
-            });
+                orderId, gatewayLabel: 'Stripe', providerPaymentId: paymentData.id,             });
             return res.json({
                 received: true,
                 status: 'activated',
                 userId: order.uid,
                 membership: activated.membership || 'Premium',
                 membershipEnds: toCanonicalDate(activated.membershipEnds) || activated.membershipEnds,
+                invoiceStatus: activated.invoiceStatus,
+                invoiceNumber: activated.invoice?.invoiceNumber || null,
             });
         } catch (err) {
-            paymentActivation.releaseWebhookEvent(event.id);
+            await paymentActivation.releaseWebhookEvent(event.id).catch(releaseError => {
+                console.error('[Stripe Webhook] event release failed:', releaseError.message);
+            });
             throw err;
         }
     }
@@ -601,7 +697,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
         const payment = event.data.object;
         const orderId = payment.metadata?.orderId;
         if (orderId) {
-            const order = await paymentActivation.getOrder(orderId, db);
+            const order = await paymentActivation.getOrder(orderId);
             if (order && order.providerPaymentIntentId === payment.id) {
                 const claimed = await paymentActivation.claimWebhookEvent({
                     eventId: event.id, provider: 'stripe', eventType: event.type, orderId,
@@ -610,7 +706,7 @@ app.post('/api/stripe-webhook', async (req, res) => {
                     await paymentActivation.updateOrder(orderId, {
                         status: 'FAILED',
                         failureCode: payment.last_payment_error?.code || 'PAYMENT_FAILED',
-                    }, db);
+                    });
                 }
             }
         }
@@ -621,15 +717,47 @@ app.post('/api/stripe-webhook', async (req, res) => {
         const providerObject = event.data.object;
         const paymentIntentId = providerObject.payment_intent;
         if (!paymentIntentId) return res.status(400).json({ error: 'Unknown payment order' });
-        const matched = await paymentActivation.findByProviderIntent(paymentIntentId, db);
+        const matched = await paymentActivation.findByProviderIntent(paymentIntentId);
         if (!matched) return res.status(400).json({ error: 'Unknown payment order' });
+        if (Number(providerObject.amount) !== Number(matched.amount)
+            || String(providerObject.currency || '').toUpperCase() !== String(matched.currency || '').toUpperCase()) {
+            return res.status(400).json({ error: 'Payment reversal amount or currency mismatch' });
+        }
         const status = event.type === 'charge.refunded' ? 'REFUNDED' : 'CHARGEBACK';
+        if (status === 'REFUNDED' && Number(providerObject.amount_refunded) !== Number(providerObject.amount)) {
+            return res.status(409).json({ error: 'Entitlement reversal requires a completed full refund.' });
+        }
         const claimed = await paymentActivation.claimWebhookEvent({
             eventId: event.id, provider: 'stripe', eventType: event.type, orderId: matched.id,
         });
         if (claimed.duplicate) return res.json({ received: true, duplicate: true });
-        await paymentActivation.reverseEntitlement({ orderId: matched.id, status, firestoreDb: db });
-        return res.json({ received: true, status: status.toLowerCase() });
+        try {
+            let reconciliation = null;
+            if (status === 'REFUNDED') {
+                reconciliation = await reconcileStripeChargeRefund({
+                    stripeClient: await getStripeClient(),
+                    charge: providerObject,
+                    order: matched,
+                });
+            }
+            const reversed = await paymentActivation.reverseEntitlement({
+                orderId: matched.id,
+                status,
+                providerRefundId: reconciliation?.refundReference || null,
+                providerRefundReferenceType: reconciliation?.referenceType || null,
+                providerRefunds: reconciliation?.refunds || [],
+            });
+            return res.json({
+                received: true,
+                status: status.toLowerCase(),
+                creditNoteNumber: reversed.creditNote?.creditNoteNumber || null,
+            });
+        } catch (error) {
+            await paymentActivation.releaseWebhookEvent(event.id).catch(releaseError => {
+                console.error('[Stripe Webhook] reversal event release failed:', releaseError.message);
+            });
+            throw error;
+        }
     }
 
     return res.json({ received: true });
@@ -653,10 +781,10 @@ async function paypalAccessToken(baseUrl, clientId, clientSecret) {
 }
 
 // Provider credentials are selected as complete pairs. An incomplete
-// deployment pair must never be combined with a Firestore value from another
+// deployment pair must never be combined with a MariaDB value from another
 // account, which would make a save/reload or provider test appear successful
 // while checkout still uses invalid credentials.
-function chooseCredentialPair({ environmentId, environmentSecret, storedId, storedSecret, environmentName = 'environment', storedName = 'firestore' }) {
+function chooseCredentialPair({ environmentId, environmentSecret, storedId, storedSecret, environmentName = 'environment', storedName = 'mysql' }) {
     const envId = String(environmentId || '').trim();
     const envSecret = String(environmentSecret || '').trim();
     const persistedId = String(storedId || '').trim();
@@ -668,38 +796,36 @@ function chooseCredentialPair({ environmentId, environmentSecret, storedId, stor
     return { id: '', secret: '', source: 'none' };
 }
 
-async function readPersistedPaymentProviders(database) {
-    try {
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(database || db);
-        const stored = await repo.getSetting('payment_providers');
-        if (stored && typeof stored === 'object') return { providers: stored, legacy: {} };
-    } catch (_) { /* MariaDB/Firestore settings unavailable — try direct Firestore below */ }
-    if (database && typeof database.collection === 'function') {
-        try {
-            const [providerSnapshot, legacySnapshot] = await Promise.all([
-                database.collection('settings').doc('payment_providers').get(),
-                database.collection('data').doc('subscriptions').get(),
-            ]);
-            return { providers: providerSnapshot.data() || {}, legacy: legacySnapshot.data() || {} };
-        } catch (_) { /* config remains environment-only */ }
+async function readPersistedPaymentProviders() {
+    const { getRepository } = require('./repositories');
+    const repo = getRepository();
+    const [providers, publicRoot] = await Promise.all([
+        repo.getSetting('payment_providers'),
+        repo.getSetting('public_config'),
+    ]);
+    if (!publicRoot || typeof publicRoot !== 'object'
+        || !publicRoot.subscriptions || typeof publicRoot.subscriptions !== 'object') {
+        throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { status: 503 });
     }
-    return { providers: {}, legacy: {} };
+    return {
+        providers: providers && typeof providers === 'object' ? providers : {},
+        publicConfig: publicRoot.subscriptions,
+    };
 }
 
-async function paypalConfig(database = db) {
+async function paypalConfig() {
     const envClientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
     const envClientSecret = String(process.env.PAYPAL_CLIENT_SECRET || '').trim();
     let environment = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
     let storedClientId = '';
     let storedClientSecret = '';
     let storedEnvironment = '';
-    const persistedPaypal = await readPersistedPaymentProviders(database);
+    const persistedPaypal = await readPersistedPaymentProviders();
     {
         const stored = persistedPaypal.providers.paypal || {};
-        const legacy = persistedPaypal.legacy || {};
-        storedClientId = String(stored.clientId || legacy.paypalClientId || '').trim();
-        storedClientSecret = String(stored.clientSecret || legacy.paypalClientSecret || '').trim();
+        const publicConfig = persistedPaypal.publicConfig || {};
+        storedClientId = String(stored.clientId || publicConfig.paypalClientId || '').trim();
+        storedClientSecret = String(stored.clientSecret || '').trim();
         storedEnvironment = String(stored.environment || '').trim();
     }
     const selected = chooseCredentialPair({
@@ -708,7 +834,7 @@ async function paypalConfig(database = db) {
         storedId: storedClientId,
         storedSecret: storedClientSecret,
     });
-    if (storedEnvironment && selected.source === 'firestore') environment = storedEnvironment.toLowerCase();
+    if (storedEnvironment && selected.source === 'mysql') environment = storedEnvironment.toLowerCase();
     if (!selected.id || !selected.secret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
     const baseUrl = environment === 'live' || environment === 'production' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
     return { clientId: selected.id, clientSecret: selected.secret, baseUrl, source: selected.source };
@@ -716,8 +842,14 @@ async function paypalConfig(database = db) {
 app.post('/api/paypal/create-order', async (req, res) => {
     let orderRef;
     try {
-        const { clientId, clientSecret, baseUrl } = await paypalConfig(req.app.get('db'));
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId, provider: 'paypal', couponCode: req.body.couponCode });
+        const { clientId, clientSecret, baseUrl } = await paypalConfig();
+        const { ref, plan } = await createProviderOrderRecord({
+            uid: req.user.uid,
+            planId: req.body.planId,
+            provider: 'paypal',
+            couponCode: req.body.couponCode,
+            billingDetails: req.body.billingDetails,
+        });
         orderRef = ref;
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
         const providerRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
@@ -736,7 +868,7 @@ app.post('/api/paypal/create-order', async (req, res) => {
         });
         const providerOrder = await providerRes.json();
         if (!providerRes.ok || !providerOrder.id) throw new Error('PAYPAL_CREATE_FAILED');
-        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED' });
         return res.status(201).json({ orderId: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency });
     } catch (err) {
         if (orderRef) {
@@ -755,15 +887,15 @@ app.post('/api/paypal/verify', async (req, res) => {
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(providerOrderId) || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
             return res.status(400).json({ verified: false, error: 'Invalid order identifier' });
         }
-        const internal = await paymentActivation.getOrder(paymentOrderId, req.app.get('db') || db);
-        const orderRef = paymentActivation.asOrderRef(paymentOrderId, req.app.get('db') || db);
+        const internal = await paymentActivation.getOrder(paymentOrderId);
+        const orderRef = paymentActivation.asOrderRef(paymentOrderId);
         try {
             if (!internal) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(internal, { uid: req.user.uid, provider: 'paypal', providerOrderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { clientId, clientSecret, baseUrl } = await paypalConfig(req.app.get('db'));
+        const { clientId, clientSecret, baseUrl } = await paypalConfig();
         const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
         const providerRes = await fetch(`${baseUrl}/v2/checkout/orders/${encodeURIComponent(providerOrderId)}`, {
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, timeout: 10_000
@@ -779,7 +911,15 @@ app.post('/api/paypal/verify', async (req, res) => {
             return res.status(400).json({ verified: false, error: 'PayPal order verification failed' });
         }
         const active = await activateVerifiedOrder(orderRef, 'PayPal', captureId);
-        return res.json({ verified: true, orderId: providerOrderId, paymentOrderId, status: active.status, membershipEnds: active.membershipEnds });
+        return res.json({
+            verified: true,
+            orderId: providerOrderId,
+            paymentOrderId,
+            status: active.status,
+            membershipEnds: active.membershipEnds,
+            invoiceStatus: active.invoiceStatus,
+            invoiceNumber: active.invoice?.invoiceNumber || null,
+        });
     } catch (err) {
         console.error('[PayPal verify]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'PayPal verification unavailable' });
@@ -787,29 +927,16 @@ app.post('/api/paypal/verify', async (req, res) => {
 });
 
 // Razorpay credentials are server-owned and never accepted from payment requests.
-async function getRazorpayKeys(database) {
+async function getRazorpayKeys() {
     const envKeyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
     const envKeySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
-    let storedKeyId = '';
-    let storedSecret = '';
     // A complete environment pair is deployment-managed and wins as a pair. Do
-    // not accidentally combine an old environment key ID with a newly saved
-    // Firestore secret (or vice versa); that was the source of misleading
-    // "saved but checkout still fails" reports.
+    // not combine an old environment key ID with a newly saved MariaDB secret.
     if (envKeyId && envKeySecret) return { keyId: envKeyId, keySecret: envKeySecret, source: 'environment' };
-    if (database) {
-        try {
-            const persisted = await readPersistedPaymentProviders(database);
-            const stored = persisted.providers.razorpay || {};
-            const legacy = persisted.legacy || {};
-            storedKeyId = String(stored.keyId || '').trim() || String(legacy.razorpayKeyId || '').trim();
-            storedSecret = String(stored.keySecret || '').trim() || String(legacy.razorpayKeySecret || '').trim();
-            const selected = chooseCredentialPair({ environmentId: envKeyId, environmentSecret: envKeySecret, storedId: storedKeyId, storedSecret });
-            return { keyId: selected.id, keySecret: selected.secret, source: selected.source };
-        } catch (error) {
-            console.warn('[Razorpay config]', error.message);
-        }
-    }
+    const persisted = await readPersistedPaymentProviders();
+    const stored = persisted.providers.razorpay || {};
+    const storedKeyId = String(stored.keyId || persisted.publicConfig?.razorpayKeyId || '').trim();
+    const storedSecret = String(stored.keySecret || '').trim();
     const selected = chooseCredentialPair({ environmentId: envKeyId, environmentSecret: envKeySecret, storedId: storedKeyId, storedSecret });
     return { keyId: selected.id, keySecret: selected.secret, source: selected.source };
 }
@@ -822,9 +949,15 @@ app.post('/api/razorpay/create-order', async (req, res) => {
     }
     let internalRef;
     try {
-        const { keyId, keySecret } = await getRazorpayKeys(req.app.get('db'));
+        const { keyId, keySecret } = await getRazorpayKeys();
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'razorpay', couponCode: req.body.couponCode });
+        const { ref, plan } = await createProviderOrderRecord({
+            uid: req.user.uid,
+            planId: req.body.planId || req.body.plan,
+            provider: 'razorpay',
+            couponCode: req.body.couponCode,
+            billingDetails: req.body.billingDetails,
+        });
         internalRef = ref;
         const providerRes = await fetch('https://api.razorpay.com/v1/orders', {
             method: 'POST',
@@ -842,15 +975,17 @@ app.post('/api/razorpay/create-order', async (req, res) => {
         });
         const providerOrder = await providerRes.json();
         if (!providerRes.ok || !providerOrder.id) throw new Error('RAZORPAY_CREATE_FAILED');
-        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED' });
         return res.status(201).json({ id: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency, key: keyId });
     } catch (err) {
         if (internalRef) {
             await internalRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
             await releaseCouponForRef(internalRef);
         }
-        console.error('[Razorpay create]', err.message);
-        return res.status(err.status || 502).json({ error: { code: err.message, message: 'Unable to create Razorpay order', requestId: res.locals.requestId } });
+        console.error('[Razorpay create]', err.code || err.message);
+        const status = Number(err.status) || 502;
+        const code = status === 503 && !internalRef ? 'PAYMENT_PROVIDER_UNAVAILABLE' : 'RAZORPAY_CREATE_FAILED';
+        return res.status(status).json({ error: { code, message: 'Unable to create Razorpay order', requestId: res.locals.requestId } });
     }
 });
 
@@ -861,15 +996,15 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
         if (![providerOrderId, paymentId, signature, paymentOrderId].every(value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value))) {
             return res.status(400).json({ verified: false, error: 'Invalid payment confirmation' });
         }
-        const order = await paymentActivation.getOrder(paymentOrderId, req.app.get('db') || db);
-        const orderRef = paymentActivation.asOrderRef(paymentOrderId, req.app.get('db') || db);
+        const order = await paymentActivation.getOrder(paymentOrderId);
+        const orderRef = paymentActivation.asOrderRef(paymentOrderId);
         try {
             if (!order) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(order, { uid: req.user.uid, provider: 'razorpay', providerOrderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { keyId, keySecret } = await getRazorpayKeys(req.app.get('db'));
+        const { keyId, keySecret } = await getRazorpayKeys();
         if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         try {
             validateRazorpaySignature(keySecret, providerOrderId, paymentId, signature);
@@ -888,66 +1023,60 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
             return res.status(400).json({ verified: false, error: 'Provider payment is not captured or does not match the order' });
         }
         const active = await activateVerifiedOrder(orderRef, 'Razorpay', paymentId);
-        return res.json({ verified: true, status: active.status, paymentOrderId, membershipEnds: active.membershipEnds });
+        return res.json({
+            verified: true,
+            status: active.status,
+            paymentOrderId,
+            membershipEnds: active.membershipEnds,
+            invoiceStatus: active.invoiceStatus,
+            invoiceNumber: active.invoice?.invoiceNumber || null,
+        });
     } catch (err) {
         console.error('[Razorpay verify]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'Razorpay verification unavailable' });
     }
 });
 
-// ── Helper: Resolve Paytm Credentials from Firestore / .env ──────────────────
-async function getPaytmConfig(database = db) {
+// ── Helpers: resolve complete provider credential pairs from env or MariaDB ──
+async function getPaytmConfig() {
     const envMid = String(process.env.PAYTM_MID || '').trim();
     const envKey = String(process.env.PAYTM_MERCHANT_KEY || '').trim();
-    let storedMid = '';
-    let storedKey = '';
-    let website = process.env.PAYTM_WEBSITE || 'WEBSTAGING';
+    let website = String(process.env.PAYTM_WEBSITE || '').trim();
     const channelId = process.env.PAYTM_CHANNEL_ID || 'WEB';
     const env = (process.env.PAYTM_ENV || 'staging').toLowerCase();
     const isLive = env === 'production' || env === 'live';
     const baseUrl = isLive ? 'https://securegw.paytm.in' : 'https://securegw-stage.paytm.in';
+    if (envMid && envKey) return { mid: envMid, key: envKey, website, channelId, baseUrl, isLive, source: 'environment' };
 
-    if (database) {
-        try {
-            const persisted = await readPersistedPaymentProviders(database);
-            const stored = persisted.providers.paytm || {};
-            const legacy = persisted.legacy || {};
-            storedMid = String(stored.mid || legacy.paytmMid || '').trim();
-            storedKey = String(stored.merchantKey || legacy.paytmMerchantKey || '').trim();
-            if (stored.website || legacy.paytmWebsite) website = stored.website || legacy.paytmWebsite;
-        } catch (e) {
-            console.warn('[Paytm Config] Firestore lookup notice:', e.message);
-        }
-    }
+    const persisted = await readPersistedPaymentProviders();
+    const stored = persisted.providers.paytm || {};
+    const publicConfig = persisted.publicConfig || {};
+    const storedMid = String(stored.mid || publicConfig.paytmMid || '').trim();
+    const storedKey = String(stored.merchantKey || '').trim();
+    if (stored.website || publicConfig.paytmWebsite) website = stored.website || publicConfig.paytmWebsite;
     const selected = chooseCredentialPair({ environmentId: envMid, environmentSecret: envKey, storedId: storedMid, storedSecret: storedKey });
     return { mid: selected.id, key: selected.secret, website, channelId, baseUrl, isLive, source: selected.source };
 }
 
-// ── Helper: Resolve PhonePe Credentials from Firestore / .env ────────────────
-async function getPhonePeConfig(database = db) {
+async function getPhonePeConfig() {
     const envMerchantId = String(process.env.PHONEPE_MERCHANT_ID || '').trim();
     const envSaltKey = String(process.env.PHONEPE_SALT_KEY || '').trim();
-    let storedMerchantId = '';
-    let storedSaltKey = '';
-    let saltIndex = parseInt(process.env.PHONEPE_SALT_INDEX || '1', 10) || 1;
+    let saltIndex = Number.parseInt(process.env.PHONEPE_SALT_INDEX || '', 10);
     const env = (process.env.PHONEPE_ENV || 'sandbox').toLowerCase();
     const isLive = env === 'production' || env === 'live';
     const baseUrl = isLive
         ? 'https://api.phonepe.com/apis/hermes'
         : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-
-    if (database) {
-        try {
-            const persisted = await readPersistedPaymentProviders(database);
-            const stored = persisted.providers.phonepe || {};
-            const legacy = persisted.legacy || {};
-            storedMerchantId = String(stored.merchantId || legacy.phonepeId || '').trim();
-            storedSaltKey = String(stored.saltKey || legacy.phonepeSaltKey || '').trim();
-            if (stored.saltIndex || legacy.phonepeSaltIndex) saltIndex = parseInt(stored.saltIndex || legacy.phonepeSaltIndex || saltIndex, 10) || 1;
-        } catch (e) {
-            console.warn('[PhonePe Config] Firestore lookup notice:', e.message);
-        }
+    if (envMerchantId && envSaltKey) {
+        return { merchantId: envMerchantId, saltKey: envSaltKey, saltIndex, baseUrl, isLive, source: 'environment' };
     }
+
+    const persisted = await readPersistedPaymentProviders();
+    const stored = persisted.providers.phonepe || {};
+    const publicConfig = persisted.publicConfig || {};
+    const storedMerchantId = String(stored.merchantId || publicConfig.phonepeId || '').trim();
+    const storedSaltKey = String(stored.saltKey || '').trim();
+    if (stored.saltIndex || publicConfig.phonepeSaltIndex) saltIndex = Number.parseInt(stored.saltIndex || publicConfig.phonepeSaltIndex, 10);
     const selected = chooseCredentialPair({ environmentId: envMerchantId, environmentSecret: envSaltKey, storedId: storedMerchantId, storedSecret: storedSaltKey });
     return { merchantId: selected.id, saltKey: selected.secret, saltIndex, baseUrl, isLive, source: selected.source };
 }
@@ -956,9 +1085,15 @@ async function getPhonePeConfig(database = db) {
 app.post('/api/paytm/initiate-transaction', async (req, res) => {
     let orderRef;
     try {
-        const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig(req.app.get('db'));
-        if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'paytm', couponCode: req.body.couponCode });
+        const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig();
+        if (!mid || !key || !website) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const { ref, plan } = await createProviderOrderRecord({
+            uid: req.user.uid,
+            planId: req.body.planId || req.body.plan,
+            provider: 'paytm',
+            couponCode: req.body.couponCode,
+            billingDetails: req.body.billingDetails,
+        });
         orderRef = ref;
         const providerOrderId = ref.id;
         const txnAmount = (plan.amount / 100).toFixed(2);
@@ -982,7 +1117,7 @@ app.post('/api/paytm/initiate-transaction', async (req, res) => {
         if (!providerRes.ok || providerData?.body?.resultInfo?.resultStatus !== 'S' || !providerData.body.txnToken) {
             throw new Error('PAYTM_CREATE_FAILED');
         }
-        await ref.update({ providerOrderId, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        await ref.update({ providerOrderId, status: 'PAYMENT_CREATED' });
         return res.status(201).json({ success: true, txnToken: providerData.body.txnToken, orderId: providerOrderId, paymentOrderId: ref.id, mid, amount: txnAmount, isLive });
     } catch (err) {
         if (orderRef) {
@@ -1009,15 +1144,15 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
     try {
         const orderId = String(req.body.orderId || '');
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
-        const order = await paymentActivation.getOrder(orderId, req.app.get('db') || db);
-        const orderRef = paymentActivation.asOrderRef(orderId, req.app.get('db') || db);
+        const order = await paymentActivation.getOrder(orderId);
+        const orderRef = paymentActivation.asOrderRef(orderId);
         try {
             if (!order) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(order, { uid: req.user.uid, provider: 'paytm', providerOrderId: orderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { mid, key, baseUrl } = await getPaytmConfig(req.app.get('db'));
+        const { mid, key, baseUrl } = await getPaytmConfig();
         if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const verifyBody = JSON.stringify({ body: { mid, orderId } });
         const bodyBase64 = Buffer.from(verifyBody).toString('base64');
@@ -1038,7 +1173,15 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
             return res.status(400).json({ verified: false, error: 'Provider transaction is not successful or does not match the order' });
         }
         const active = await activateVerifiedOrder(orderRef, 'Paytm', providerPaymentId);
-        return res.json({ verified: true, status: active.status, txnId: body.txnId, orderId, membershipEnds: active.membershipEnds });
+        return res.json({
+            verified: true,
+            status: active.status,
+            txnId: body.txnId,
+            orderId,
+            membershipEnds: active.membershipEnds,
+            invoiceStatus: active.invoiceStatus,
+            invoiceNumber: active.invoice?.invoiceNumber || null,
+        });
     } catch (err) {
         console.error('[Paytm verify]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'Paytm verification unavailable' });
@@ -1049,9 +1192,15 @@ app.post('/api/paytm/verify-transaction', async (req, res) => {
 app.post('/api/phonepe/initiate', async (req, res) => {
     let orderRef;
     try {
-        const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig(req.app.get('db'));
-        if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({ uid: req.user.uid, planId: req.body.planId || req.body.plan, provider: 'phonepe', couponCode: req.body.couponCode });
+        const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig();
+        if (!merchantId || !saltKey || !Number.isSafeInteger(saltIndex) || saltIndex < 1) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const { ref, plan } = await createProviderOrderRecord({
+            uid: req.user.uid,
+            planId: req.body.planId || req.body.plan,
+            provider: 'phonepe',
+            couponCode: req.body.couponCode,
+            billingDetails: req.body.billingDetails,
+        });
         orderRef = ref;
         const payload = {
             merchantId, merchantTransactionId: ref.id, merchantUserId: req.user.uid,
@@ -1076,7 +1225,7 @@ app.post('/api/phonepe/initiate', async (req, res) => {
         if (parsedRedirect.protocol !== 'https:' || !(parsedRedirect.hostname === 'phonepe.com' || parsedRedirect.hostname.endsWith('.phonepe.com'))) {
             throw new Error('PHONEPE_INVALID_REDIRECT');
         }
-        await ref.update({ providerOrderId: ref.id, status: 'PAYMENT_CREATED', updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+        await ref.update({ providerOrderId: ref.id, status: 'PAYMENT_CREATED' });
         return res.status(201).json({ success: true, orderId: ref.id, paymentOrderId: ref.id, redirectUrl: parsedRedirect.href, isLive });
     } catch (err) {
         if (orderRef) {
@@ -1103,16 +1252,16 @@ app.post('/api/phonepe/status', async (req, res) => {
     try {
         const orderId = String(req.body.orderId || '');
         if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
-        const order = await paymentActivation.getOrder(orderId, req.app.get('db') || db);
-        const orderRef = paymentActivation.asOrderRef(orderId, req.app.get('db') || db);
+        const order = await paymentActivation.getOrder(orderId);
+        const orderRef = paymentActivation.asOrderRef(orderId);
         try {
             if (!order) throw new Error('ORDER_NOT_FOUND');
             assertInternalOrder(order, { uid: req.user.uid, provider: 'phonepe', providerOrderId: orderId });
         } catch (_) {
             return res.status(404).json({ verified: false, error: 'Order not found' });
         }
-        const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig(req.app.get('db'));
-        if (!merchantId || !saltKey) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
+        const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig();
+        if (!merchantId || !saltKey || !Number.isSafeInteger(saltIndex) || saltIndex < 1) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
         const checksum = `${crypto.createHash('sha256').update(`/pg/v1/status/${merchantId}/${orderId}${saltKey}`).digest('hex')}###${saltIndex}`;
         const providerRes = await fetch(`${baseUrl}/pg/v1/status/${encodeURIComponent(merchantId)}/${encodeURIComponent(orderId)}`, {
             headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum, 'X-MERCHANT-ID': merchantId, 'Accept': 'application/json' },
@@ -1127,36 +1276,33 @@ app.post('/api/phonepe/status', async (req, res) => {
             return res.status(400).json({ verified: false, state: providerData?.data?.state || 'UNKNOWN', error: 'Provider transaction is not complete or does not match the order' });
         }
         const active = await activateVerifiedOrder(orderRef, 'PhonePe', paymentId);
-        return res.json({ verified: true, status: active.status, state: providerData.data.state, paymentId, orderId, membershipEnds: active.membershipEnds });
+        return res.json({
+            verified: true,
+            status: active.status,
+            state: providerData.data.state,
+            paymentId,
+            orderId,
+            membershipEnds: active.membershipEnds,
+            invoiceStatus: active.invoiceStatus,
+            invoiceNumber: active.invoice?.invoiceNumber || null,
+        });
     } catch (err) {
         console.error('[PhonePe status]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'PhonePe verification unavailable' });
     }
 });
 
-app.post('/api/subscription/preferences', async (req, res) => {
-    try {
-        const updates = {};
-        if (typeof req.body.autoRenew === 'boolean') updates.autoRenew = req.body.autoRenew;
-        if (req.body.cancel === true) {
-            updates.autoRenew = false;
-            updates.cancellationRequested = true;
-            updates.cancellationReason = String(req.body.reason || 'User requested cancellation').trim().slice(0, 500);
-            updates.cancellationDate = new Date().toISOString();
-        }
-        if (!Object.keys(updates).length) return res.status(400).json({ success: false, error: 'No supported preference supplied.' });
-        
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        await repo.saveUser(req.user.uid, updates);
-
-        return res.json({ success: true, message: req.body.cancel === true
-            ? 'Cancellation request recorded. Access remains active through the paid term.'
-            : `Auto-renew ${updates.autoRenew ? 'enabled' : 'disabled'}.` });
-    } catch (err) {
-        console.error('[Subscription preferences]', err.message);
-        return res.status(500).json({ success: false, error: 'Failed to update subscription preferences' });
-    }
+app.post('/api/subscription/preferences', (_req, res) => {
+    // Checkout creates fixed-term, one-time provider orders; it does not create
+    // or store a recurring mandate. Retaining an `autoRenew` preference would
+    // falsely imply that a future charge is scheduled. Older clients receive an
+    // explicit terminal response rather than a successful no-op.
+    return res.status(410).json({
+        success: false,
+        code: 'NON_RECURRING_PLAN',
+        error: 'ResumePilot plans are fixed-term one-time purchases and do not renew automatically.',
+        requestId: res.locals.requestId,
+    });
 });
 
 app.post('/api/check', async (req, res) => {
@@ -1167,7 +1313,7 @@ app.post('/api/check', async (req, res) => {
     }
     try {
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
+        const repo = getRepository();
         const user = await repo.getUser(req.user.uid);
         if (!user) {
             return res.json({ status: 'false', membershipEnds: null });
@@ -1217,7 +1363,7 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
     const applicationId = `${req.user.uid}_${jobId}`;
     try {
         // Contract: req.user.uid, req.user.email, users collection resumes, JOB_APPLICATION_SUBMITTED, applicationsCount increment, job_application_received
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const job = await repo.getJob(jobId);
         if (!job || String(job.status || '').toLowerCase() !== 'active') {
             const unavailable = new Error('This job is no longer accepting applications.'); unavailable.code = 'JOB_UNAVAILABLE'; throw unavailable;
@@ -1228,7 +1374,7 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
             if (!resume) { const invalidResume = new Error('The selected resume was not found.'); invalidResume.code = 'RESUME_NOT_FOUND'; throw invalidResume; }
         }
         const result = await resilientMutations.createApplication({
-            firestoreDb: req.app.get('db') || db, applicationId, job, user: req.user,
+            applicationId, job, user: req.user,
             payload: {
                 applicantName: fullName, fullName, applicantEmail: String(req.user.email || '').trim().toLowerCase(),
                 email: String(req.user.email || '').trim().toLowerCase(), phone,
@@ -1257,7 +1403,7 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
     const allowedTransitions = { pending: new Set(['interview', 'rejected']), interview: new Set(['accepted', 'rejected']) };
     try {
         // Invariants: employerId !== req.user.uid authorization check, APPLICATION_CHANGED conflict check, allowedTransitions check, JOB_APPLICATION_STATUS_UPDATED audit
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const application = typeof repo.getApplication === 'function' ? await repo.getApplication(applicationId) : null;
         const currentStatus = String(application?.status || 'pending');
         if (application && !allowedTransitions[currentStatus]?.has(status)) {
@@ -1270,7 +1416,7 @@ app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
         const companyName = String(job?.company || application?.jobSnapshot?.company || 'Company').replace(/\p{Cc}/gu, ' ').slice(0, 160);
         const notification = jobApplicationNotification(status, jobTitle, companyName, notes);
         const result = await resilientMutations.updateApplicationStatus({
-            firestoreDb: req.app.get('db') || db, applicationId, employerId: req.user.uid, status, notes,
+            applicationId, employerId: req.user.uid, status, notes,
             expectedStatus, expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, notification,
         });
         return res.json({ success: true, ...result });
@@ -1286,7 +1432,7 @@ app.get('/api/jobs/:jobId/applications', async (req, res) => {
     const jobId = String(req.params.jobId || '');
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job.' });
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const job = await repo.getJob(jobId);
         if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
         const isOwner = String(job.employerId || job.employer_id || '') === req.user.uid;
@@ -1347,8 +1493,7 @@ function normalizeEmployerCompanyInput(input = {}) {
 app.post('/api/employer-applications', async (req, res) => {
     try {
         const saved = await resilientMutations.createDocument({
-            firestoreDb: req.app.get('db') || db,
-            entityType: 'employer_applications',
+                        entityType: 'employer_applications',
             id: req.user.uid,
             data: { ...(req.body || {}), userId: req.user.uid, status: 'pending', submittedAt: new Date().toISOString() },
             actorUid: req.user.uid,
@@ -1361,10 +1506,44 @@ app.post('/api/employer-applications', async (req, res) => {
     }
 });
 
+// Public featured-company projection. It exposes only approved, explicitly
+// featured presentation fields and never reuses the owner-scoped employer API.
+app.get('/api/public/featured-companies', async (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query?.limit) || 8, 1), 50);
+    try {
+        const rows = await resilientMutations.repoFor().getCompanies({ limit: 500 });
+        const companies = (rows || []).filter(row => {
+            let extra = {};
+            try { extra = typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : (row.extra_json || {}); } catch { /* invalid extras do not authorize publication */ }
+            return String(row.status || extra.status || '').toLowerCase() === 'approved'
+                && (row.featured === true || Number(row.featured) === 1 || extra.featured === true);
+        }).slice(0, limit).map(row => {
+            let extra = {};
+            try { extra = typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : (row.extra_json || {}); } catch { /* return relational fields only */ }
+            return {
+                id: row.id,
+                name: row.name || extra.name || '',
+                companyImage: safePublicUrl(row.logo || extra.companyImage || extra.logo || ''),
+                industry: row.industry || extra.industry || '',
+                location: row.location || extra.location || '',
+            };
+        });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, companies, source: 'MARIADB_COMPANIES' });
+    } catch (_error) {
+        return res.status(503).json({
+            success: false,
+            code: 'FEATURED_COMPANIES_UNAVAILABLE',
+            error: 'Featured companies are temporarily unavailable.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
 // Employer company list — MySQL authoritative (owner-scoped).
 app.get('/api/employer/companies', async (req, res) => {
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const companies = await repo.getCompanies({ employerId: req.user.uid });
         const items = (companies || []).map(company => ({
             id: company.id,
@@ -1387,7 +1566,7 @@ app.post('/api/employer/companies', async (req, res) => {
     try {
         const data = normalizeEmployerCompanyInput(req.body?.data);
         const result = await resilientMutations.createCompany({
-            firestoreDb: req.app.get('db') || db, employerId: req.user.uid, data,
+            employerId: req.user.uid, data,
             actorUid: req.user.uid, requestId: res.locals.requestId,
         });
         return res.status(201).json({ success: true, ...result });
@@ -1401,7 +1580,7 @@ app.patch('/api/employer/companies/:companyId', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company update.' });
     try {
         const result = await resilientMutations.updateCompany({
-            firestoreDb: req.app.get('db') || db, companyId, employerId: req.user.uid, expectedRevision,
+            companyId, employerId: req.user.uid, expectedRevision,
             data: normalizeEmployerCompanyInput(req.body?.data), actorUid: req.user.uid, requestId: res.locals.requestId,
         });
         return res.json({ success: true, ...result });
@@ -1418,7 +1597,7 @@ app.delete('/api/employer/companies/:companyId', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company deletion.' });
     try {
         await resilientMutations.deleteCompany({
-            firestoreDb: req.app.get('db') || db, companyId, employerId: req.user.uid, expectedRevision,
+            companyId, employerId: req.user.uid, expectedRevision,
             actorUid: req.user.uid, requestId: res.locals.requestId, requireNoJobs: true,
         });
         return res.json({ success: true });
@@ -1431,7 +1610,7 @@ app.delete('/api/employer/companies/:companyId', async (req, res) => {
 // Employer job list — MySQL authoritative (owner-scoped).
 app.get('/api/employer/jobs', async (req, res) => {
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const jobs = await repo.getJobs({ employerId: req.user.uid });
         return res.json({ success: true, jobs: jobs || [] });
     } catch (_error) {
@@ -1444,12 +1623,12 @@ app.post('/api/employer/jobs', async (req, res) => {
     const companyId = String(req.body?.data?.companyId || '');
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId)) return res.status(400).json({ success: false, error: 'Select an approved company.' });
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const company = await repo.getCompany(companyId);
         if (!company || company.employerId !== req.user.uid || company.status !== 'approved') return res.status(404).json({ success: false, error: 'Approved company not found.' });
         const data = normalizeEmployerJobInput(req.body.data, { id: companyId, ...company });
         const result = await resilientMutations.createJob({
-            firestoreDb: req.app.get('db') || db, employerId: req.user.uid, company: { id: companyId, ...company }, data,
+            employerId: req.user.uid, company: { id: companyId, ...company }, data,
             actorUid: req.user.uid, requestId: res.locals.requestId,
         });
         return res.status(201).json({ success: true, ...result });
@@ -1464,7 +1643,7 @@ app.patch('/api/employer/jobs/:jobId', async (req, res) => {
     if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job update.' });
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const current = await repo.getJob(jobId);
         if (!current || current.employerId !== req.user.uid) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
         let patch; let action;
@@ -1481,7 +1660,7 @@ app.patch('/api/employer/jobs/:jobId', async (req, res) => {
             action = 'EMPLOYER_JOB_EDITED';
         }
         const result = await resilientMutations.updateJob({
-            firestoreDb: req.app.get('db') || db, jobId, employerId: req.user.uid, expectedRevision, patch,
+            jobId, employerId: req.user.uid, expectedRevision, patch,
             actorUid: req.user.uid, requestId: res.locals.requestId, action,
         });
         return res.json({ success: true, ...result });
@@ -1498,7 +1677,7 @@ app.delete('/api/employer/jobs/:jobId', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job deletion.' });
     try {
         await resilientMutations.deleteJob({
-            firestoreDb: req.app.get('db') || db, jobId, employerId: req.user.uid, expectedRevision,
+            jobId, employerId: req.user.uid, expectedRevision,
             actorUid: req.user.uid, requestId: res.locals.requestId, requireNoApplications: true,
         });
         return res.json({ success: true });
@@ -1591,7 +1770,7 @@ app.post('/api/messages/conversations', async (req, res) => {
     try {
         // MySQL is the single store for applications, jobs, and conversations.
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
+        const repo = getRepository();
         const application = await repo.getApplication(applicationId);
         if (!application) return res.status(404).json({ success: false, error: 'Job application not found.' });
         const applicationData = application;
@@ -1660,7 +1839,7 @@ app.get('/api/messages/conversations/:conversationId/participant-profile', async
         }
         // Authoritative profile read from MySQL; Firestore is never consulted.
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
+        const repo = getRepository();
         const user = (await repo.getUser(otherUserId)) || {};
         const profile = user.profile || {};
         const name = String(profile.name || user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User').replace(/\p{Cc}/gu, ' ').trim().slice(0, 100);
@@ -1706,7 +1885,7 @@ app.post('/api/messages/send', async (req, res) => {
                 // Authoritative notification record goes to MySQL; the Firestore
                 // data plane is never required.
                 const { getRepository } = require('./repositories');
-                const repo = getRepository(req.app.get('db') || db);
+                const repo = getRepository();
                 await repo.saveNotification(recipientUid, eventId, {
                     eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message', title: 'New message', message: 'You have a new message.',
                     data: { conversationId }, read: false,
@@ -1733,7 +1912,7 @@ app.post('/api/contact', async (req, res) => {
     }
     try {
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
+        const repo = getRepository();
         const msgId = `contact_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
         await repo.saveContactMessage(msgId, {
             email, name, message, status: 'new',
@@ -1756,7 +1935,7 @@ app.get('/api/export-render-data', async (req, res) => {
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     try {
-        const data = await consumeExportRenderToken(req.app.get('db'), req.query.token);
+        const data = await consumeExportRenderToken(req.query.token);
         if (!data) return res.status(404).json({ error: 'Export data not found', code: 'RENDER_TOKEN_NOT_FOUND' });
         return res.json({ data });
     } catch (error) {
@@ -1793,72 +1972,38 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
             return res.status(400).json({ error: 'Invalid export request' });
         }
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const requestDb = req.app.get('db') || db;
+        const repo = getRepository();
 
         let stored;
         let ownerUid;
-        // This handler is mounted at application level, so req.path is the full
-        // '/api/public-export'. Matching the suffix keeps the public branch correct
-        // regardless of whether the route is reached directly or through a mount.
+        // Public exports require an explicit MariaDB publication row. Private
+        // exports use only the authenticated owner's canonical draft table.
         if (req.path.endsWith('/public-export')) {
-            const pubResume = await repo.getPublicResume(resumeId).catch(() => null);
-            if (pubResume && pubResume.isPublished === true && pubResume.publicationMode === 'explicit') {
-                ownerUid = pubResume.ownerUid;
-                try {
-                    stored = typeof pubResume.object === 'string' ? JSON.parse(pubResume.object) : pubResume.object;
-                } catch {
-                    return res.status(422).json({ error: 'Resume data is invalid' });
-                }
-            } else if (requestDb) {
-                const publishedSnap = await requestDb.collection('pb').doc(resumeId).get().catch(() => null);
-                const published = publishedSnap?.data?.();
-                if (!publishedSnap || !publishedSnap.exists || published?.isPublished !== true || published?.publicationMode !== 'explicit') return res.status(404).json({ error: 'Resume not found' });
-                ownerUid = published.ownerUid;
-                try { stored = JSON.parse(published.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
-            } else {
+            const published = await repo.getPublicResume(resumeId);
+            if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
                 return res.status(404).json({ error: 'Resume not found' });
+            }
+            ownerUid = published.ownerUid;
+            stored = published.data;
+            if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
+                return res.status(422).json({ error: 'Resume data is invalid' });
             }
         } else {
             ownerUid = req.user?.uid;
-            // Cover-letter documents live in the owner-scoped 'covers' collection; CV drafts
-            // live in 'resumes'. Both are owner-scoped, so ownership is enforced by the path.
-            const ownerCollection = resumeName.startsWith('Cover') ? 'covers' : 'resumes';
-            let draft = ownerCollection === 'covers' ? await repo.getCover(ownerUid, resumeId).catch(() => null) : await repo.getResume(ownerUid, resumeId).catch(() => null);
-            if (!draft && ownerCollection === 'covers') {
-                draft = await repo.getResume(ownerUid, resumeId).catch(() => null);
-            }
-            if (draft) {
-                stored = { ...draft };
-                for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
-            } else if (requestDb) {
-                let privateSnap = await requestDb.collection('users').doc(ownerUid).collection(ownerCollection).doc(resumeId).get().catch(() => null);
-                if ((!privateSnap || !privateSnap.exists) && ownerCollection === 'covers') {
-                    privateSnap = await requestDb.collection('users').doc(ownerUid).collection('resumes').doc(resumeId).get().catch(() => null);
-                }
-                if (privateSnap && privateSnap.exists) {
-                    stored = { ...privateSnap.data() };
-                    for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
-                } else {
-                    const legacySnap = await requestDb.collection('pb').doc(resumeId).get().catch(() => null);
-                    const legacy = legacySnap?.data?.();
-                    if (!legacySnap || !legacySnap.exists || legacy?.ownerUid !== ownerUid) return res.status(404).json({ error: 'Resume not found' });
-                    try { stored = JSON.parse(legacy.object); } catch { return res.status(422).json({ error: 'Resume data is invalid' }); }
-                }
-            } else {
-                return res.status(404).json({ error: 'Resume not found' });
-            }
+            const isCover = resumeName.startsWith('Cover');
+            const draft = isCover
+                ? await repo.getCover(ownerUid, resumeId)
+                : await repo.getResume(ownerUid, resumeId);
+            if (!draft) return res.status(404).json({ error: 'Resume not found' });
+            stored = { ...draft };
+            for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
         }
 
-        let owner = await repo.getUser(ownerUid).catch(() => null);
-        if (!owner && requestDb) {
-            const userSnap = await requestDb.collection('users').doc(ownerUid).get().catch(() => null);
-            if (userSnap?.exists) owner = userSnap.data();
-        }
-        owner = owner || {};
+        const owner = await repo.getUser(ownerUid);
+        if (!owner) return res.status(404).json({ error: 'Resume owner not found' });
         const ownerCanonical = toCanonicalUser(owner);
-        const publicConfig = (await repo.getSetting('public_config').catch(() => null)) || {};
-        const systemSettings = (await repo.getSetting('system_settings').catch(() => null)) || {};
+        const publicConfig = (await repo.getSetting('public_config')) || {};
+        const systemSettings = (await repo.getSetting('system_settings')) || {};
         const isGlobalFreeMode = publicConfig.subscriptions === false 
             || publicConfig.subscriptions?.state === false 
             || publicConfig.subscriptions?.enabled === false
@@ -1888,7 +2033,7 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         } catch (preferenceError) {
             console.warn('[Export preferences] unavailable; using bounded defaults:', preferenceError.message);
         }
-        renderToken = await createExportRenderToken(req.app.get('db'), stored);
+        renderToken = await createExportRenderToken(stored);
         const launchOptions = {
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote']
@@ -1898,8 +2043,6 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         const allowedRenderOrigin = new URL(`${protocol}://${websiteName}`).origin;
         const allowedHosts = new Set([
             new URL(`${protocol}://${websiteName}`).hostname,
-            'firebasestorage.googleapis.com',
-            'storage.googleapis.com',
             'lh3.googleusercontent.com',
             'fonts.googleapis.com',
             'fonts.gstatic.com',
@@ -1972,7 +2115,12 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         if (res.headersSent) return res.end();
         return res.status(500).json({ error: { code: 'EXPORT_FAILED', message: 'Unable to generate the PDF export. Please try again.', requestId: res.locals.requestId } });
     } finally {
-        if (renderToken) await discardExportRenderToken(req.app.get('db'), renderToken);
+        if (renderToken) {
+            try { await discardExportRenderToken(renderToken); }
+            catch (discardError) {
+                console.error('[Export token revocation]', { code: discardError.code || 'REVOCATION_FAILED', requestId: res.locals.requestId });
+            }
+        }
         if (slotAcquired) { slotAcquired = false; releaseSlot(); }
     }
 });
@@ -1981,9 +2129,9 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
 const aiRoutes = require('./routes/ai');
 const emailRoutes = require('./routes/email');
 
-// Use AI & Email routes
+// AI retains its legacy /api/* contract. Email is mounted only in its explicit
+// namespace so it cannot shadow unrelated /api/admin/* or /api/templates routes.
 app.use('/api', aiRoutes);
-app.use('/api', emailRoutes);
 app.use('/api/email', emailRoutes);
 
 // Enterprise tenancy APIs are feature-gated at the client, server-authorized, and
@@ -2006,7 +2154,7 @@ app.use('/api/platform', platformRouter);
 app.get('/api/admin/payment-settings', requirePermission('system.config.read'), async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store');
-        return res.json(await getPaymentSettingsProjection(req.app.get('db'), process.env));
+        return res.json(await getPaymentSettingsProjection(process.env));
     } catch (error) {
         return res.status(Number(error.status) || 503).json({ error: { code: error.code || 'PAYMENT_SETTINGS_UNAVAILABLE', message: 'Could not load payment settings.', requestId: res.locals.requestId } });
     }
@@ -2016,39 +2164,12 @@ app.get('/api/admin/payment-settings', requirePermission('system.config.read'), 
 // browser-readable settings contain models/toggles only.
 app.get('/api/admin/ai-settings', async (req, res) => {
     try {
-        const result = await loadAiAdminSettings(req.app.get('db'));
+        const result = await loadAiAdminSettings();
         return res.json({ success: true, ...result });
     } catch (error) {
         return res.status(error.status || 503).json({ success: false, code: error.code || 'AI_SETTINGS_UNAVAILABLE', error: error.message, requestId: res.locals.requestId });
     }
 });
-
-async function publishDueBlogPosts(requestDb, { _actorUid = 'cms-scheduler', _requestId = null } = {}) {
-    const { getRepository } = require('./repositories');
-    const repo = getRepository(requestDb || db);
-    const now = Date.now();
-    const posts = await repo.getBlogPosts({ publishedOnly: false, limit: 200 }).catch(() => []);
-    let count = 0;
-    for (const post of posts) {
-        const status = String(post.status || (post.published ? 'approved' : 'draft')).toLowerCase();
-        if (status !== 'scheduled') continue;
-        let scheduledMs = null;
-        try { scheduledMs = require('./database/canonical').toEpochMs(post.scheduledAt || post.scheduled_at); }
-        catch { const d = new Date(post.scheduledAt || 0); scheduledMs = Number.isFinite(d.getTime()) ? d.getTime() : null; }
-        if (scheduledMs === null || scheduledMs > now) continue;
-        const revision = Number(post.revision || 0) + 1;
-        await repo.saveBlogPost(post.id, {
-            ...post,
-            status: 'approved',
-            published: true,
-            publishedAt: new Date().toISOString(),
-            scheduledAt: null,
-            revision,
-        });
-        count += 1;
-    }
-    return count;
-}
 
 function normalizeBlogCategoryInput(input = {}) {
     const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
@@ -2063,7 +2184,7 @@ app.post('/api/admin/blog/categories', async (req, res) => {
     try {
         const data = normalizeBlogCategoryInput(req.body);
         const saved = await resilientMutations.createDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'blog_categories', data,
+            entityType: 'blog_categories', data,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_CATEGORY_CREATED',
         });
         return res.status(201).json({ success: true, categoryId: saved.id, slug: data.slug, revision: 1 });
@@ -2077,7 +2198,7 @@ app.patch('/api/admin/blog/categories/:categoryId', async (req, res) => {
     try {
         const data = normalizeBlogCategoryInput(req.body);
         const saved = await resilientMutations.updateDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'blog_categories', id: categoryId, expectedRevision, patch: data,
+            entityType: 'blog_categories', id: categoryId, expectedRevision, patch: data,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_CATEGORY_UPDATED',
         });
         return res.json({ success: true, slug: data.slug, revision: saved.revision });
@@ -2092,13 +2213,13 @@ app.delete('/api/admin/blog/categories/:categoryId', async (req, res) => {
     const expectedRevision = Number(req.body?.expectedRevision || 0);
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(categoryId) || !Number.isInteger(expectedRevision)) return res.status(400).json({ success: false, error: 'Invalid category deletion.' });
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const posts = await repo.getBlogPosts({ publishedOnly: false, limit: 200 }).catch(() => []);
         if ((posts || []).some(p => p.categoryId === categoryId)) {
             const e = new Error('Move or delete posts before deleting this category.'); e.code = 'CATEGORY_HAS_POSTS'; throw e;
         }
         await resilientMutations.deleteDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'blog_categories', id: categoryId, expectedRevision,
+            entityType: 'blog_categories', id: categoryId, expectedRevision,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_CATEGORY_DELETED',
         });
         return res.json({ success: true });
@@ -2117,7 +2238,7 @@ app.patch('/api/admin/blog/posts/:postId', async (req, res) => {
     if (nextStatus === 'scheduled' && (!scheduledAt || !Number.isFinite(scheduledAt.getTime()) || scheduledAt <= new Date())) return res.status(400).json({ success: false, error: 'Choose a future publication time.' });
     try {
         const result = await resilientMutations.moderateBlogPost({
-            firestoreDb: req.app.get('db') || db, postId, nextStatus, expectedRevision,
+            postId, nextStatus, expectedRevision,
             scheduledAt: scheduledAt ? scheduledAt.toISOString() : null,
             actorUid: req.user.uid, requestId: res.locals.requestId,
         });
@@ -2134,7 +2255,7 @@ app.delete('/api/admin/blog/posts/:postId', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(postId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid Blog deletion.' });
     try {
         await resilientMutations.deleteDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'blog', id: postId, expectedRevision,
+            entityType: 'blog', id: postId, expectedRevision,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_BLOG_DELETED',
         });
         return res.json({ success: true });
@@ -2150,7 +2271,7 @@ app.post('/api/admin/blog/publish-due', async (req, res) => {
     // possible fault collapse into one opaque "unavailable" message.
     try {
         // Scheduler events: CMS_SCHEDULED_POSTS_PUBLISHED, blog_scheduled_published, INVALID_BLOG_TRANSITION
-        const published = await publishDueBlogPosts(req.app.get('db') || db, { actorUid: req.user.uid, requestId: res.locals.requestId });
+        const published = await publishDueBlogPosts({ actorUid: req.user.uid, requestId: res.locals.requestId });
         return res.json({ success: true, published });
     } catch (error) {
         // Previously this swallowed the error entirely, leaving no way to tell a
@@ -2171,25 +2292,32 @@ app.get('/api/admin/health-summary', async (req, res) => {
     // required for the health summary.
     try {
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const [publicData, ai, payments] = await Promise.all([
-            repo.getSetting('public_config').catch(() => ({})),
-            repo.getSetting('ai_providers').catch(() => ({})),
-            repo.getSetting('payment_providers').catch(() => ({})),
+        const repo = getRepository();
+        const [publicData, ai, payments, maintenance] = await Promise.all([
+            repo.getSetting('public_config'),
+            repo.getSetting('ai_providers'),
+            repo.getSetting('payment_providers'),
+            repo.getSetting('maintenance'),
         ]);
-        const systemHealth = (publicData || {}).systemHealth || {};
-        const maintenance = await repo.getSetting('maintenance').catch(() => null);
+        if (!publicData || typeof publicData !== 'object') {
+            throw new Error('Public configuration is not initialized.');
+        }
+        const systemHealth = publicData.systemHealth || {};
+        const aiSettings = ai || {};
+        const paymentSettings = payments || {};
         const mergedMaintenance = { ...systemHealth, ...(maintenance || {}) };
         return res.json({
             success: true,
             checkedAt: new Date().toISOString(),
             revision: Number(publicData._settingsRevisions?.systemHealth || 0),
             services: {
-                backend: { reachable: true }, database: { engine: 'mysql', authoritative: true },
-                aiProviders: Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].map(provider => [provider, { configured: Boolean(ai[provider]?.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`]) }])),
+                backend: { reachable: true },
+                database: { engine: 'mariadb', authoritative: true },
+                firebaseAdmin: { configured: Boolean(admin && admin.apps && admin.apps.length && typeof admin.auth === 'function') },
+                aiProviders: Object.fromEntries(['gemini', 'nvidia', 'openai', 'groq', 'openrouter', 'deepseek'].map(provider => [provider, { configured: Boolean(aiSettings[provider]?.apiKey || process.env[`${provider.toUpperCase()}_API_KEY`]) }])),
                 payments: {
-                    stripe: { configured: Boolean(payments.stripe?.secretKey || process.env.STRIPE_SECRET) },
-                    razorpay: { configured: Boolean((payments.razorpay?.keyId && payments.razorpay?.keySecret) || (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)) },
+                    stripe: { configured: Boolean(paymentSettings.stripe?.secretKey || process.env.STRIPE_SECRET) },
+                    razorpay: { configured: Boolean((paymentSettings.razorpay?.keyId && paymentSettings.razorpay?.keySecret) || (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)) },
                 },
             },
             settings: { maintenanceMode: mergedMaintenance.maintenanceMode === true || mergedMaintenance.enabled === true, maintenanceMessage: mergedMaintenance.maintenanceMessage || mergedMaintenance.message || '' },
@@ -2205,42 +2333,84 @@ app.post('/api/admin/system-health-settings', requireRecentAdminAuthentication, 
     const maintenanceMessage = String(req.body?.maintenanceMessage || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
     if (maintenanceMode && !maintenanceMessage) return res.status(400).json({ success: false, code: 'INVALID_MAINTENANCE_MESSAGE', error: 'A maintenance message is required while maintenance mode is enabled.' });
     const systemHealth = { maintenanceMode, maintenanceMessage };
+    let connection;
     try {
-        // MySQL is the authoritative settings store (system_settings table).
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const currentPublic = (await repo.getSetting('public_config').catch(() => ({}))) || {};
-        const currentMaintenance = (await repo.getSetting('maintenance').catch(() => ({}))) || {};
+        const expectedRevision = Number(req.body?.expectedRevision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+            throw Object.assign(new Error('expectedRevision is required.'), { code: 'ADMIN_SETTINGS_REVISION_REQUIRED', status: 400 });
+        }
+        // Configuration, its public projection, and the audit record commit as
+        // one MariaDB transaction. An outage can never be converted into an
+        // empty object that overwrites the last known maintenance state.
+        connection = await getPool().getConnection();
+        await connection.beginTransaction();
+        const [rows] = await connection.query(
+            "SELECT category, data FROM system_settings WHERE category IN ('public_config','maintenance') FOR UPDATE"
+        );
+        const settings = Object.fromEntries(rows.map(row => [
+            row.category,
+            typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
+        ]));
+        const currentPublic = settings.public_config || {};
+        const currentMaintenance = settings.maintenance || {};
         const currentRevision = Number(currentPublic._settingsRevisions?.systemHealth || currentMaintenance._revision || 0);
-        const expectedRevision = req.body?.expectedRevision === undefined ? currentRevision : Number(req.body.expectedRevision);
-        if (!Number.isInteger(expectedRevision) || expectedRevision !== currentRevision) {
-            const conflict = new Error('Health settings changed after this panel loaded. Refresh before saving.');
-            conflict.code = 'ADMIN_SETTINGS_CONFLICT';
-            throw conflict;
+        if (expectedRevision !== currentRevision) {
+            throw Object.assign(new Error('Health settings changed after this panel loaded. Refresh before saving.'), {
+                code: 'ADMIN_SETTINGS_CONFLICT', status: 409,
+            });
         }
         const nextRevision = currentRevision + 1;
-        await repo.saveSetting('maintenance', {
-            enabled: maintenanceMode, message: maintenanceMessage,
-            updatedBy: req.user?.email || req.user?.uid || 'admin', updatedAt: new Date().toISOString(), _revision: nextRevision,
-        }, nextRevision);
-        await repo.saveSetting('public_config', { ...currentPublic, systemHealth, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), systemHealth: nextRevision } }, nextRevision);
-        await repo.recordAdminAuditLog({
-            action: 'SYSTEM_HEALTH_SETTINGS_UPDATED', actorUid: req.user.uid, maintenanceMode,
-            revision: nextRevision, requestId: res.locals.requestId, category: 'system.config',
-            severity: 'HIGH', targetType: 'PLATFORM_CONFIG', targetId: 'systemHealth',
-        }).catch(() => {});
+        const maintenance = {
+            enabled: maintenanceMode,
+            message: maintenanceMessage,
+            updatedBy: req.user?.email || req.user?.uid || 'admin',
+            updatedAt: new Date().toISOString(),
+            _revision: nextRevision,
+        };
+        const publicConfig = {
+            ...currentPublic,
+            systemHealth,
+            _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), systemHealth: nextRevision },
+        };
+        for (const [category, data] of [['maintenance', maintenance], ['public_config', publicConfig]]) {
+            await connection.query(
+                `INSERT INTO system_settings (category, data, revision, updated_at)
+                 VALUES (?, ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+                [category, JSON.stringify(data), nextRevision]
+            );
+        }
+        await connection.query(
+            `INSERT INTO admin_audit_logs
+             (id, actor_uid, actor_email, actor_role, action, category, severity, outcome,
+              method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+             VALUES (?, ?, ?, ?, 'SYSTEM_HEALTH_SETTINGS_UPDATED', 'system.config', 'HIGH', 'SUCCESS',
+                     'POST', '/api/admin/system-health-settings', 200, 'PLATFORM_CONFIG', 'systemHealth', ?, ?, NOW())`,
+            [crypto.randomUUID(), req.user.uid, req.user.email || null, req.user.role || 'ADMIN',
+                JSON.stringify({ maintenanceMode, revision: nextRevision }), res.locals.requestId || null]
+        );
+        await connection.commit();
         return res.json({ success: true, settings: systemHealth, revision: nextRevision });
     } catch (error) {
-        const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 500;
-        return res.status(status).json({ success: false, code: error.code || 'SYSTEM_HEALTH_SETTINGS_SAVE_FAILED', error: status === 409 ? error.message : 'Unable to save system health settings.', requestId: res.locals.requestId });
+        if (connection) {
+            try { await connection.rollback(); } catch { /* broken connection */ }
+        }
+        const status = error.status || (error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 503);
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'SYSTEM_HEALTH_SETTINGS_SAVE_FAILED',
+            error: status < 500 ? error.message : 'Unable to save system health settings.',
+            requestId: res.locals.requestId,
+        });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
 const GENERIC_ADMIN_SETTING_CATEGORIES = new Set([
     'modules', 'auth', 'blog', 'watermark', 'templateManager', 'security', 'jobScraper',
-    'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'enabledTemplates', 'integrations',
-    'socialAuth', 'google', 'facebook', 'smtp', 'fallbackSmtp', 'imap',
-    'storage', 'codeInjection', 'gdpr'
+    'exportPdf', 'branding', 'geoSeo', 'llmGeo', 'integrations', 'landingMarketing',
+    'socialAuth', 'google', 'facebook', 'social', 'storage', 'codeInjection', 'gdpr'
 ]);
 
 function normalizeAdminSettingValue(value, depth = 0) {
@@ -2262,6 +2432,83 @@ function normalizeAdminSettingValue(value, depth = 0) {
             .map(([key, item]) => [key, normalizeAdminSettingValue(item, depth + 1)]));
     }
     throw new Error('Settings contain an unsupported value.');
+}
+
+const LANDING_MARKETING_CLAIMS = Object.freeze([
+    'activeJobs', 'rating', 'partnerCompanies', 'successfulHires',
+    'featuredJobs', 'successRate', 'topCompanies',
+]);
+
+function normalizeLandingMarketingSettings(value = {}) {
+    const allowed = new Set([...LANDING_MARKETING_CLAIMS, 'published', 'sourceUrl', 'verifiedAt']);
+    const unknown = Object.keys(value).filter(key => !allowed.has(key));
+    if (unknown.length) {
+        throw Object.assign(new Error(`Unsupported landing-marketing field: ${unknown[0]}`), {
+            code: 'LANDING_MARKETING_VALIDATION_ERROR', status: 400,
+        });
+    }
+    const normalized = { published: value.published === true };
+    for (const field of LANDING_MARKETING_CLAIMS) {
+        const claim = String(value[field] || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 32);
+        if (claim && !/^[0-9][0-9.,+%/ KMB]*$/i.test(claim)) {
+            throw Object.assign(new Error(`${field} must be a concise numeric display value.`), {
+                code: 'LANDING_MARKETING_VALIDATION_ERROR', status: 400,
+            });
+        }
+        normalized[field] = claim;
+    }
+    if (normalized.rating) {
+        const rating = Number(normalized.rating);
+        if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+            throw Object.assign(new Error('Rating must be from 1 to 5.'), {
+                code: 'LANDING_MARKETING_VALIDATION_ERROR', status: 400,
+            });
+        }
+        normalized.rating = String(rating);
+    }
+    if (normalized.successRate) {
+        const rate = Number(normalized.successRate.replace(/%$/, ''));
+        if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+            throw Object.assign(new Error('Success rate must be from 0% to 100%.'), {
+                code: 'LANDING_MARKETING_VALIDATION_ERROR', status: 400,
+            });
+        }
+    }
+    normalized.sourceUrl = String(value.sourceUrl || '').trim().slice(0, 2048);
+    if (normalized.sourceUrl) {
+        try {
+            const source = new URL(normalized.sourceUrl);
+            if (source.protocol !== 'https:' || source.username || source.password) throw new Error('unsafe');
+            normalized.sourceUrl = source.href;
+        } catch (_error) {
+            throw Object.assign(new Error('Evidence source must be a valid HTTPS URL.'), {
+                code: 'LANDING_MARKETING_VALIDATION_ERROR', status: 400,
+            });
+        }
+    }
+    const verifiedAt = value.verifiedAt ? new Date(value.verifiedAt) : null;
+    normalized.verifiedAt = verifiedAt && Number.isFinite(verifiedAt.getTime()) ? verifiedAt.toISOString() : '';
+    if (value.verifiedAt && !normalized.verifiedAt) {
+        throw Object.assign(new Error('Evidence review date is invalid.'), {
+            code: 'LANDING_MARKETING_VALIDATION_ERROR', status: 400,
+        });
+    }
+    if (normalized.published) {
+        const missing = LANDING_MARKETING_CLAIMS.filter(field => !normalized[field]);
+        if (missing.length || !normalized.sourceUrl || !normalized.verifiedAt) {
+            throw Object.assign(new Error('Every landing claim, its HTTPS evidence source, and review date are required before publication.'), {
+                code: 'LANDING_MARKETING_EVIDENCE_REQUIRED', status: 400,
+            });
+        }
+        const verifiedMs = Date.parse(normalized.verifiedAt);
+        const ageMs = Date.now() - verifiedMs;
+        if (ageMs < -5 * 60 * 1000 || ageMs > 180 * 24 * 60 * 60 * 1000) {
+            throw Object.assign(new Error('Published landing evidence must be current (reviewed within 180 days) and not future-dated.'), {
+                code: 'LANDING_MARKETING_EVIDENCE_STALE', status: 400,
+            });
+        }
+    }
+    return normalized;
 }
 
 function isPrivateAdminSettingKey(category, key) {
@@ -2317,19 +2564,20 @@ function applyExplicitAdminSecretClears(category, current, next, clearSecrets) {
             if (!target[part] || typeof target[part] !== 'object' || Array.isArray(target[part])) target[part] = {};
             target = target[part];
         }
-        // The caller replaces this marker with a Firestore delete sentinel before
-        // persisting. Keeping the marker in this pure helper makes the intent
-        // testable without requiring a Firebase SDK instance.
+        // A private marker survives the merge and is removed by the pure
+        // materializer immediately before the MariaDB JSON document is written.
         target[leaf] = { __adminSecretDelete: true };
     }
     return output;
 }
 
-function materializeAdminSecretDeletes(value, admin) {
-    if (Array.isArray(value)) return value.map(item => materializeAdminSecretDeletes(item, admin));
+function materializeAdminSecretDeletes(value) {
+    if (Array.isArray(value)) return value.map(materializeAdminSecretDeletes).filter(item => item !== undefined);
     if (!value || typeof value !== 'object') return value;
-    if (value.__adminSecretDelete === true && Object.keys(value).length === 1) return admin.firestore.FieldValue.delete();
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materializeAdminSecretDeletes(item, admin)]));
+    if (value.__adminSecretDelete === true && Object.keys(value).length === 1) return undefined;
+    return Object.fromEntries(Object.entries(value)
+        .map(([key, item]) => [key, materializeAdminSecretDeletes(item)])
+        .filter(([, item]) => item !== undefined));
 }
 
 function containsSecretMutation(value, clearSecrets, category = '') {
@@ -2377,11 +2625,13 @@ app.get('/api/admin/settings', async (req, res) => {
         // MySQL system_settings is the authoritative store; Firestore is never
         // required on this synchronous admin surface.
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const [publicRoot, adminRoot] = await Promise.all([
-            repo.getSetting('public_config').catch(() => ({})),
-            repo.getSetting('admin_configuration').catch(() => ({})),
+        const repo = getRepository();
+        const [publicValue, adminValue] = await Promise.all([
+            repo.getSetting('public_config'),
+            repo.getSetting('admin_configuration'),
         ]);
+        const publicRoot = publicValue || {};
+        const adminRoot = adminValue || {};
         const settings = {};
         for (const [category, data] of Object.entries(publicRoot)) {
             if (category.startsWith('_')) continue;
@@ -2391,7 +2641,16 @@ app.get('/api/admin/settings', async (req, res) => {
             if (category.startsWith('_') || Object.hasOwn(settings, category)) continue;
             settings[category] = publicAdminSettings(category, data || {});
         }
-        return res.json({ success: true, settings, revisions: publicRoot._settingsRevisions || adminRoot._revisions || {}, generatedAt: new Date().toISOString() });
+        return res.json({
+            success: true,
+            settings,
+            revisions: {
+                ...Object.fromEntries([...GENERIC_ADMIN_SETTING_CATEGORIES].map(category => [category, 0])),
+                ...(adminRoot._revisions || {}),
+                ...(publicRoot._settingsRevisions || {}),
+            },
+            generatedAt: new Date().toISOString(),
+        });
     } catch (error) {
         console.error('[Admin settings read]', error.message);
         return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Unable to read admin settings.', requestId: res.locals.requestId });
@@ -2406,8 +2665,27 @@ app.post('/api/admin/settings/:category', async (req, res) => {
     if (category === 'exportPdf' && (Object.hasOwn(req.body.data, 'websiteDomain') || Object.hasOwn(req.body.data, 'backendExportUrl') || Object.hasOwn(req.body.data, 'chromiumPath'))) {
         return res.status(403).json({ success: false, code: 'INFRASTRUCTURE_SETTING_READ_ONLY', error: 'Public render origin, backend export URL, and Chromium path are deployment-owned infrastructure settings. Change them through the deployment configuration.' });
     }
-    if (category === 'storage' && Object.hasOwn(req.body.data, 'provider') && req.body.data.provider !== 'firebase') {
-        return res.status(501).json({ success: false, code: 'STORAGE_PROVIDER_UNSUPPORTED', error: 'Only Firebase Storage is implemented by this deployment. Cloudinary and S3 require a server-side adapter before they can be enabled.' });
+    if (category === 'storage') {
+        return res.status(501).json({
+            success: false,
+            code: 'STORAGE_PROVIDER_UNSUPPORTED',
+            error: 'No production application-storage adapter is implemented. Configure and certify a server-side object-storage adapter before enabling this setting.',
+        });
+    }
+    if (category === 'social') {
+        const allowed = new Set(['facebook', 'twitter', 'instagram', 'youtube', 'pinterest']);
+        if (Object.keys(req.body.data).some(key => !allowed.has(key))) {
+            return res.status(400).json({ success: false, code: 'INVALID_SOCIAL_LINKS', error: 'Unsupported social-link field.' });
+        }
+        for (const value of Object.values(req.body.data)) {
+            if (value === '') continue;
+            try {
+                const parsed = new URL(String(value));
+                if (parsed.protocol !== 'https:' || parsed.username || parsed.password || String(value).length > 500) throw new Error('unsafe');
+            } catch {
+                return res.status(400).json({ success: false, code: 'INVALID_SOCIAL_LINKS', error: 'Social links must be empty or valid HTTPS URLs.' });
+            }
+        }
     }
     if (requiresRecentGenericSettingAuth(category, req.body.data, req.body.clearSecrets)) {
         const guarded = requireRecentAdminAuthentication(req, res, () => {});
@@ -2415,49 +2693,90 @@ app.post('/api/admin/settings/:category', async (req, res) => {
     }
     try {
         if (Buffer.byteLength(JSON.stringify(req.body.data), 'utf8') > 100_000) throw new Error('Settings payload is too large.');
-        const normalized = normalizeAdminSettingValue(req.body.data);
+        let normalized = normalizeAdminSettingValue(req.body.data);
+        if (category === 'landingMarketing') normalized = normalizeLandingMarketingSettings(normalized);
+        if (category === 'llmGeo') normalized = normalizeLlmDiscoverySettings(normalized);
         let publicSettings;
-        const rawRevision = req.body?.expectedRevision;
-        const expectedRevision = rawRevision !== undefined ? Number(rawRevision) : -1;
-        if (!Number.isInteger(expectedRevision) || (expectedRevision < 0 && expectedRevision !== -1)) throw new Error('Invalid settings revision.');
-        // MySQL system_settings is the authoritative store; the revision guard
-        // is enforced with a MySQL row lock (transactional OCC).
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
+        const expectedRevision = Number(req.body?.expectedRevision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+            throw Object.assign(new Error('expectedRevision is required.'), { code: 'ADMIN_SETTINGS_REVISION_REQUIRED', status: 400 });
+        }
+        // MariaDB is the authoritative store; the revision guard and audit are
+        // enforced in the same row-locked transaction.
         const pool = require('./database/mysql').getPool();
         const conn = await pool.getConnection();
         let revision;
         try {
             await conn.beginTransaction();
             const [rows] = await conn.query(
-                "SELECT data FROM system_settings WHERE category = 'admin_configuration' FOR UPDATE"
-            ).catch(() => [[]]);
-            const currentAdmin = rows[0] ? (typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data) : {};
-            const currentRevision = Number(currentAdmin._revisions?.[category] || 0);
-            if (expectedRevision !== -1 && expectedRevision !== currentRevision) {
-                const stale = new Error('These settings changed after the panel loaded. Refresh before saving.');
-                stale.code = 'ADMIN_SETTINGS_CONFLICT';
-                throw stale;
+                "SELECT category, data FROM system_settings WHERE category IN ('admin_configuration','public_config') FOR UPDATE"
+            );
+            const roots = Object.fromEntries(rows.map(row => [
+                row.category,
+                typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
+            ]));
+            const currentAdmin = roots.admin_configuration || {};
+            const currentPublic = roots.public_config || {};
+            const adminRevision = currentAdmin._revisions?.[category];
+            const publicRevision = currentPublic._settingsRevisions?.[category];
+            if (adminRevision !== undefined && publicRevision !== undefined && Number(adminRevision) !== Number(publicRevision)) {
+                throw Object.assign(new Error('Admin and public settings revisions have diverged.'), {
+                    code: 'ADMIN_SETTINGS_REVISION_DRIFT', status: 503,
+                });
+            }
+            const currentRevision = Number(adminRevision ?? publicRevision ?? 0);
+            if (expectedRevision !== currentRevision) {
+                throw Object.assign(new Error('These settings changed after the panel loaded. Refresh before saving.'), {
+                    code: 'ADMIN_SETTINGS_CONFLICT', status: 409,
+                });
             }
             revision = currentRevision + 1;
-            const currentCategory = currentAdmin[category];
-            const mergedInput = mergeAdminSettingCategory(currentCategory, normalized);
+            const currentCategory = currentAdmin[category] ?? currentPublic[category];
+            const mergedInput = category === 'landingMarketing'
+                ? normalized
+                : mergeAdminSettingCategory(currentCategory, normalized);
             const withClears = applyExplicitAdminSecretClears(category, currentCategory, mergedInput, req.body?.clearSecrets);
-            const persisted = materializeAdminSecretDeletes(preserveAdminSettingSecrets(category, currentCategory, withClears), admin);
+            const persisted = materializeAdminSecretDeletes(preserveAdminSettingSecrets(category, currentCategory, withClears));
             publicSettings = publicAdminSettings(category, persisted);
+            const nextAdmin = {
+                ...currentAdmin,
+                [category]: persisted,
+                _revisions: { ...(currentAdmin._revisions || {}), [category]: revision },
+            };
+            const nextPublic = {
+                ...currentPublic,
+                [category]: publicSettings,
+                _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), [category]: revision },
+            };
+            for (const [owner, data] of [['admin_configuration', nextAdmin], ['public_config', nextPublic]]) {
+                await conn.query(
+                    `INSERT INTO system_settings (category, data, revision, updated_at)
+                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                     ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
+                    [owner, JSON.stringify(data), revision]
+                );
+            }
+            const changedFields = [
+                ...Object.keys(normalized),
+                ...(Array.isArray(req.body?.clearSecrets)
+                    ? req.body.clearSecrets
+                    : Object.entries(req.body?.clearSecrets || {})
+                        .filter(([, value]) => value === true).map(([key]) => `clear:${key}`)),
+            ].slice(0, 200);
+            const auditAction = category === 'landingMarketing'
+                ? (publicSettings.published === true ? 'LANDING_MARKETING_PUBLISHED' : 'LANDING_MARKETING_DRAFT_SAVED')
+                : category === 'llmGeo'
+                    ? (publicSettings.enableLlmGeo === true ? 'LLMS_DISCOVERY_PUBLISHED' : 'LLMS_DISCOVERY_DISABLED')
+                    : 'ADMIN_SETTINGS_UPDATED';
             await conn.query(
-                `INSERT INTO system_settings (category, data, revision, updated_at)
-                 VALUES ('admin_configuration', ?, ?, CURRENT_TIMESTAMP)
-                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
-                [JSON.stringify({ ...currentAdmin, [category]: persisted, _revisions: { ...(currentAdmin._revisions || {}), [category]: revision } }), revision]
-            );
-            const [pubRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'public_config' FOR UPDATE").catch(() => [[]]);
-            const currentPublic = pubRows[0] ? (typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data) : {};
-            await conn.query(
-                `INSERT INTO system_settings (category, data, revision, updated_at)
-                 VALUES ('public_config', ?, ?, CURRENT_TIMESTAMP)
-                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
-                [JSON.stringify({ ...currentPublic, [category]: publicSettings, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), [category]: revision } }), revision]
+                `INSERT INTO admin_audit_logs
+                 (id, actor_uid, actor_email, actor_role, action, category, severity, outcome,
+                  method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+                 VALUES (?, ?, ?, ?, ?, 'system.config', 'HIGH', 'SUCCESS',
+                         'POST', ?, 200, 'PLATFORM_CONFIG', ?, ?, ?, NOW())`,
+                [crypto.randomUUID(), req.user.uid, req.user.email || null, req.user.role || 'ADMIN', auditAction,
+                    `/api/admin/settings/${category}`, category,
+                    JSON.stringify({ category, revision, changedFields }), res.locals.requestId || null]
             );
             await conn.commit();
         } catch (err) {
@@ -2466,59 +2785,22 @@ app.post('/api/admin/settings/:category', async (req, res) => {
         } finally {
             conn.release();
         }
-        await repo.recordAdminAuditLog({
-            action: 'ADMIN_SETTINGS_UPDATED', actorUid: req.user.uid, category, revision,
-            changedFields: [...Object.keys(normalized), ...(Array.isArray(req.body?.clearSecrets) ? req.body.clearSecrets : Object.entries(req.body?.clearSecrets || {}).filter(([, value]) => value === true).map(([key]) => `clear:${key}`))].slice(0, 200), requestId: res.locals.requestId,
-            categoryLabel: 'system.config', severity: 'HIGH', targetType: 'PLATFORM_CONFIG', targetId: category,
-        }).catch(() => {});
         return res.json({ success: true, settings: publicSettings, revision, message: `${category} settings saved.` });
     } catch (error) {
-        return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
-    }
-});
-
-app.post('/api/admin/gdpr-settings', async (req, res) => {
-    const input = req.body || {};
-    const safePath = (value, fallback) => {
-        const pathValue = String(value || fallback).trim();
-        return /^\/[A-Za-z0-9/_-]{1,200}$/.test(pathValue) ? pathValue : fallback;
-    };
-    const gdpr = {
-        enableCookieBanner: input.enableCookieBanner !== false,
-        cookieMessage: String(input.cookieMessage || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 500),
-        buttonText: String(input.buttonText || 'Allow analytics').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80),
-        privacyPolicyUrl: safePath(input.privacyPolicyUrl, '/p/privacy-policy'),
-        termsOfServiceUrl: safePath(input.termsOfServiceUrl, '/p/terms-of-service'),
-    };
-    try {
-        // MySQL system_settings is the authoritative GDPR store.
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const current = (await repo.getSetting('public_config').catch(() => ({}))) || {};
-        const currentRevision = Number(current._settingsRevisions?.gdpr || 0);
-        const requestedRevision = input.expectedRevision === undefined ? currentRevision : Number(input.expectedRevision);
-        if (!Number.isInteger(requestedRevision) || requestedRevision !== currentRevision) {
-            const conflict = new Error('GDPR settings changed after this panel loaded. Refresh before saving.');
-            conflict.code = 'ADMIN_SETTINGS_CONFLICT';
-            throw conflict;
-        }
-        const nextRevision = currentRevision + 1;
-        await repo.saveSetting('public_config', { ...current, gdpr, _settingsRevisions: { ...(current._settingsRevisions || {}), gdpr: nextRevision } }, nextRevision);
-        await repo.recordAdminAuditLog({
-            action: 'GDPR_SETTINGS_UPDATED', actorUid: req.user.uid, revision: nextRevision,
-            requestId: res.locals.requestId, categoryLabel: 'system.config', severity: 'HIGH',
-            targetType: 'PLATFORM_CONFIG', targetId: 'gdpr',
-        }).catch(() => {});
-        return res.json({ success: true, settings: gdpr, revision: nextRevision });
-    } catch (error) {
-        return res.status(error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : 500).json({ success: false, code: error.code || 'GDPR_SETTINGS_SAVE_FAILED', error: error.code === 'ADMIN_SETTINGS_CONFLICT' ? error.message : 'Unable to save GDPR settings.', requestId: res.locals.requestId });
+        const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : (error.status || 503);
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'ADMIN_SETTINGS_SAVE_FAILED',
+            error: status >= 500 ? 'Unable to save admin settings.' : error.message,
+            requestId: res.locals.requestId,
+        });
     }
 });
 
 app.post('/api/admin/ai-settings', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const result = await saveAiAdminSettings({
-            db: req.app.get('db'), admin, input: req.body || {},
+            input: req.body || {},
             expectedRevision: req.body?.expectedRevision ?? 0,
             actorUid: req.user?.uid || 'admin_console', requestId: res.locals.requestId,
         });
@@ -2531,7 +2813,7 @@ app.post('/api/admin/ai-settings', requireRecentAdminAuthentication, async (req,
 app.post('/api/admin/ai/test-provider', requireRecentAdminAuthentication, async (req, res) => {
     try {
         const result = await testAiProvider({
-            db: req.app.get('db'), environment: process.env,
+            environment: process.env,
             provider: String(req.body?.provider || ''), model: req.body?.model,
             apiKey: req.body?.apiKey, fetchImpl: global.fetch, timeoutMs: 30000,
         });
@@ -2546,7 +2828,7 @@ app.post('/api/admin/ai/fetch-models', requireRecentAdminAuthentication, async (
         const provider = String(req.body?.provider || req.query?.provider || 'nvidia');
         const apiKey = req.body?.apiKey;
         const result = await fetchProviderModels({
-            db: req.app.get('db'), environment: process.env,
+            environment: process.env,
             provider, apiKey, fetchImpl: global.fetch, timeoutMs: 15000,
         });
         return res.json({ success: true, ...result });
@@ -2555,221 +2837,160 @@ app.post('/api/admin/ai/fetch-models', requireRecentAdminAuthentication, async (
     }
 });
 
-app.get('/api/admin/ai/quota-stats', async (req, res) => {
+app.get('/api/admin/ai/quota-stats', async (_req, res) => {
     try {
-        const targetDb = req.app.get('db');
-        if (!targetDb) return res.status(503).json({ success: false, error: 'Database service unavailable' });
-        const today = new Date().toISOString().slice(0, 10);
-
-        // Load configured quota limits from Firestore
-        const quotaDoc = await targetDb.collection('settings').doc('ai_quota').get();
-        const quotaConfig = quotaDoc.data() || {};
-        const limits = {
-            basic: Number(quotaConfig.basicDailyLimit || process.env.AI_BASIC_DAILY_LIMIT || 10),
-            premium: Number(quotaConfig.premiumDailyLimit || process.env.AI_PREMIUM_DAILY_LIMIT || 100),
-            admin: Number(quotaConfig.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000),
-        };
-
-        // Load today's usage records
-        const usageSnap = await targetDb.collection('ai_usage').get();
-        const todayRecords = [];
-        let totalRecords = 0;
-        for (const doc of usageSnap.docs) {
-            totalRecords++;
-            const data = doc.data() || {};
-            if (doc.id.startsWith(today)) {
-                todayRecords.push({
-                    docId: doc.id,
-                    uid: data.uid || 'unknown',
-                    email: data.email || '',
-                    displayName: '',
-                    count: Number(data.count || 0),
-                    limit: Number(data.limit || 0),
-                    day: data.day || today,
-                    lastUsed: data.lastUsed ? (data.lastUsed.toDate ? data.lastUsed.toDate().toISOString() : data.lastUsed) : null,
-                });
-            }
-        }
-
-        // Enrich records with user profile data (displayName, email fallback)
-        const enrichPromises = todayRecords.map(async (record) => {
-            if (record.uid && record.uid !== 'unknown') {
-                try {
-                    const userDoc = await targetDb.collection('users').doc(record.uid).get();
-                    const userData = userDoc.data() || {};
-                    const nameFromParts = [userData.firstName, userData.lastName].filter(Boolean).join(' ').trim();
-                    record.displayName = userData.displayName || userData.name || userData.fullName || nameFromParts || '';
-                    if (!record.email) record.email = userData.email || '';
-                    record.membership = userData.membership || userData.role || 'Basic';
-                    record.photoURL = userData.photoURL || '';
-
-                    // If email or displayName still missing, try Firebase Auth user record
-                    if ((!record.displayName || !record.email) && admin && typeof admin.auth === 'function') {
-                        try {
-                            const authUser = await admin.auth().getUser(record.uid);
-                            if (authUser) {
-                                if (!record.displayName && authUser.displayName) record.displayName = authUser.displayName;
-                                if (!record.email && authUser.email) record.email = authUser.email;
-                                if (!record.photoURL && authUser.photoURL) record.photoURL = authUser.photoURL;
-                            }
-                        } catch (_) {}
-                    }
-                } catch (_) { /* user lookup optional */ }
-            }
-        });
-        await Promise.all(enrichPromises);
-
-        return res.json({
-            success: true,
-            limits,
-            today,
-            todayRecords: todayRecords.sort((a, b) => b.count - a.count),
-            totalHistoricalRecords: totalRecords,
-        });
+        const result = await getGlobalAiDashboardData();
+        return res.json({ success: true, ...result });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message, requestId: res.locals.requestId });
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'AI_QUOTA_STORAGE_UNAVAILABLE',
+            error: 'Unable to load AI quota data.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
-app.post('/api/admin/ai/quota-limits', async (req, res) => {
+app.post('/api/admin/ai/quota-limits', requireRecentAdminAuthentication, async (req, res) => {
     try {
-        const targetDb = req.app.get('db');
-        if (!targetDb) return res.status(503).json({ success: false, error: 'Database service unavailable' });
-        const { basicDailyLimit, premiumDailyLimit, adminDailyLimit } = req.body || {};
-        const clamp = (v, min, max, fallback) => { const n = Number(v); return Number.isFinite(n) && n >= min && n <= max ? n : fallback; };
-
-        const update = {
-            basicDailyLimit: clamp(basicDailyLimit, 1, 100000, 10),
-            premiumDailyLimit: clamp(premiumDailyLimit, 1, 100000, 100),
-            adminDailyLimit: clamp(adminDailyLimit, 1, 1000000, 10000),
-            updatedAt: admin ? admin.firestore.FieldValue.serverTimestamp() : new Date(),
-            updatedBy: req.user?.uid || 'admin_console',
-        };
-
-        await targetDb.collection('settings').doc('ai_quota').set(update, { merge: true });
-        return res.json({ success: true, limits: update, message: 'AI quota limits saved successfully.' });
+        const result = await setGlobalAiQuotaLimits({
+            basicDailyLimit: req.body?.basicDailyLimit,
+            premiumDailyLimit: req.body?.premiumDailyLimit,
+            adminDailyLimit: req.body?.adminDailyLimit,
+            expectedRevision: req.body?.expectedRevision,
+            actorUid: req.user.uid,
+            requestId: res.locals.requestId,
+        });
+        return res.json({ success: true, ...result, message: 'AI quota limits saved successfully.' });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message, requestId: res.locals.requestId });
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'AI_QUOTA_STORAGE_UNAVAILABLE',
+            error: error.status && error.status < 500 ? error.message : 'Unable to save AI quota limits.',
+            remoteRevision: error.remoteRevision,
+            requestId: res.locals.requestId,
+        });
     }
 });
 
-app.post('/api/admin/ai/reset-quota', async (req, res) => {
+app.post('/api/admin/ai/reset-quota', requireRecentAdminAuthentication, async (req, res) => {
     try {
-        const targetDb = req.app.get('db');
-        if (!targetDb) return res.status(503).json({ success: false, error: 'Database service unavailable' });
-        const { uid, all } = req.body || {};
-        const today = new Date().toISOString().slice(0, 10);
-        let deletedCount = 0;
-
-        if (all) {
-            const snap = await targetDb.collection('ai_usage').get();
-            for (const doc of snap.docs) {
-                await doc.ref.delete();
-                deletedCount += 1;
-            }
-        } else if (uid) {
-            const uidHash = crypto.createHash('sha256').update(uid).digest('hex').slice(0, 40);
-            const docRef = targetDb.collection('ai_usage').doc(`${today}_${uidHash}`);
-            const doc = await docRef.get();
-            if (doc.exists) {
-                await docRef.delete();
-                deletedCount = 1;
-            }
-        } else {
-            return res.status(400).json({ success: false, error: 'Target user uid or all:true is required' });
+        const uid = String(req.body?.uid || '').trim();
+        const resetAll = req.body?.all === true;
+        if (!resetAll && !/^[A-Za-z0-9_-]{1,128}$/.test(uid)) {
+            return res.status(400).json({ success: false, code: 'INVALID_AI_QUOTA_TARGET', error: 'Target user uid or all:true is required.' });
         }
-
-        return res.json({ success: true, deletedCount, message: `Successfully reset AI quota (${deletedCount} records deleted).` });
+        const resetResult = resetAll
+            ? await resetAllAiQuota({ actorUid: req.user.uid, requestId: res.locals.requestId })
+            : await resetUserAiQuota({ uid, actorUid: req.user.uid, requestId: res.locals.requestId });
+        const deletedCount = resetAll ? resetResult : Number(resetResult.usageRowsDeleted || 0);
+        return res.json({ success: true, deletedCount, message: `AI quota reset completed; ${deletedCount} daily usage record${deletedCount === 1 ? '' : 's'} removed.` });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message, requestId: res.locals.requestId });
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'AI_QUOTA_STORAGE_UNAVAILABLE',
+            error: error.status && error.status < 500 ? error.message : 'Unable to reset AI quota.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
 app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async (req, res) => {
-    const requestDb = req.app.get('db');
-    const firebaseAdmin = req.app.get('firebaseAdmin') || admin;
-    const repo = getRepository(requestDb);
     const input = req.body || {};
-    const numberInRange = (value, min, max, fallback) => {
-        const parsed = Number(value);
-        return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
-    };
+    let connection;
+    try {
+        connection = await getPool().getConnection();
+        await connection.beginTransaction();
+        const [settingRows] = await connection.query(
+            "SELECT category, data FROM system_settings WHERE category IN ('payment_providers','public_config','system_settings') FOR UPDATE"
+        );
+        const settings = Object.fromEntries(settingRows.map(row => {
+            const value = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
+            return [row.category, value];
+        }));
+        if (!settings.public_config || typeof settings.public_config !== 'object'
+            || !settings.public_config.subscriptions || typeof settings.public_config.subscriptions !== 'object'
+            || !settings.system_settings || typeof settings.system_settings !== 'object') {
+            throw Object.assign(new Error('Authoritative payment configuration is not initialized.'), {
+                code: 'PAYMENT_SETTINGS_UNINITIALIZED', status: 503,
+            });
+        }
+        const currentSecrets = settings.payment_providers && typeof settings.payment_providers === 'object'
+            ? settings.payment_providers : {};
+        const currentPublicRoot = settings.public_config;
+        const currentSysSettings = settings.system_settings;
+        const numberInRange = (value, min, max, label) => {
+            if (value === '' || value === null || value === undefined) {
+                throw Object.assign(new Error(`${label} is required.`), { code: 'PAYMENT_SETTINGS_VALIDATION_ERROR', status: 400 });
+            }
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+                throw Object.assign(new Error(`${label} must be between ${min} and ${max}.`), { code: 'PAYMENT_SETTINGS_VALIDATION_ERROR', status: 400 });
+            }
+            return parsed;
+        };
 
-    let currentSecrets = {};
-    let currentPublicRoot = {};
-    let currentSysSettings = {};
-
-    // 1. Primary: Load current settings from MariaDB
-    if (repo && typeof repo.getSetting === 'function') {
-        try {
-            const [paySetting, pubSetting, sysSetting] = await Promise.all([
-                repo.getSetting('payment_providers').catch(() => null),
-                repo.getSetting('public_config').catch(() => null),
-                repo.getSetting('system_settings').catch(() => null),
-            ]);
-            if (paySetting) currentSecrets = paySetting;
-            if (pubSetting) currentPublicRoot = pubSetting;
-            if (sysSetting) currentSysSettings = sysSetting;
-        } catch (_) {}
-    }
-
-    // 2. Secondary Standby: Firestore (if MariaDB returned empty and requestDb is available)
-    if (requestDb && Object.keys(currentSecrets).length === 0 && Object.keys(currentPublicRoot).length === 0) {
-        try {
-            const [paymentSnapshot, publicSnapshot] = await Promise.allSettled([
-                requestDb.collection('settings').doc('payment_providers').get(),
-                requestDb.collection('data').doc('public_config').get(),
-            ]);
-            if (paymentSnapshot.status === 'fulfilled' && paymentSnapshot.value.exists) currentSecrets = paymentSnapshot.value.data() || {};
-            if (publicSnapshot.status === 'fulfilled' && publicSnapshot.value.exists) currentPublicRoot = publicSnapshot.value.data() || {};
-        } catch (_) {}
-    }
-
-    const currentPublic = currentPublicRoot.subscriptions || {};
+    const currentPublic = currentPublicRoot.subscriptions;
     const currentRevision = Number(currentSecrets._revision || currentPublicRoot._settingsRevisions?.payments || 0);
-    if (input.expectedRevision !== undefined && Number(input.expectedRevision) !== currentRevision) {
-        return res.status(409).json({ success: false, code: 'PAYMENT_SETTINGS_CONFLICT', error: 'Payment settings changed after this panel loaded. Refresh before saving.', revision: currentRevision, requestId: res.locals.requestId });
+    if (!Number.isInteger(Number(input.expectedRevision)) || Number(input.expectedRevision) < 0) {
+        throw Object.assign(new Error('expectedRevision is required.'), { code: 'PAYMENT_SETTINGS_REVISION_REQUIRED', status: 400 });
+    }
+    if (Number(input.expectedRevision) !== currentRevision) {
+        throw Object.assign(new Error('Payment settings changed after this panel loaded. Refresh before saving.'), {
+            code: 'PAYMENT_SETTINGS_CONFLICT', status: 409, remoteRevision: currentRevision,
+        });
     }
     const valueOrCurrent = (key, fallback = '') => {
         if (Object.hasOwn(input, key) && input[key] !== null && input[key] !== undefined && String(input[key]).trim() !== '') return input[key];
         if (currentPublic[key] !== undefined && currentPublic[key] !== null && String(currentPublic[key]).trim() !== '') return currentPublic[key];
         return fallback;
     };
+    const authoritativeCurrency = String(currentSysSettings.currency || '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(authoritativeCurrency)) {
+        throw Object.assign(new Error('Platform currency is not initialized.'), {
+            code: 'PLATFORM_CURRENCY_UNINITIALIZED', status: 503,
+        });
+    }
+    const requestedCurrency = String(valueOrCurrent('currency', authoritativeCurrency)).toUpperCase();
+    if (requestedCurrency !== authoritativeCurrency) {
+        throw Object.assign(new Error('Platform currency is managed by the dedicated currency control. Reload this panel and change currency there.'), {
+            code: 'PLATFORM_CURRENCY_MANAGED_SEPARATELY', status: 409,
+        });
+    }
     const publicSettings = {
-        state: Object.hasOwn(input, 'state') ? input.state !== false : currentPublic.state !== false,
-        pricingMatrix: input.pricingMatrix || currentPublic.pricingMatrix || null,
-        monthlyPrice: numberInRange(valueOrCurrent('monthlyPrice', 199), 0, 1_000_000, 199),
-        quartarlyPrice: numberInRange(valueOrCurrent('quartarlyPrice', 399), 0, 1_000_000, 399),
-        yearlyPrice: numberInRange(valueOrCurrent('yearlyPrice', 499), 0, 1_000_000, 499),
-        currency: /^[A-Z]{3}$/.test(String(valueOrCurrent('currency', 'INR')).toUpperCase()) ? String(valueOrCurrent('currency', 'INR')).toUpperCase() : 'INR',
+        state: Object.hasOwn(input, 'state') ? input.state === true : currentPublic.state === true,
+        pricingMatrix: input.pricingMatrix && typeof input.pricingMatrix === 'object'
+            ? input.pricingMatrix : (currentPublic.pricingMatrix && typeof currentPublic.pricingMatrix === 'object' ? currentPublic.pricingMatrix : null),
+        monthlyPrice: numberInRange(valueOrCurrent('monthlyPrice'), 0, 1_000_000, 'Monthly price'),
+        quartarlyPrice: numberInRange(valueOrCurrent('quartarlyPrice'), 0, 1_000_000, 'Six-month price'),
+        yearlyPrice: numberInRange(valueOrCurrent('yearlyPrice'), 0, 1_000_000, 'Yearly price'),
+        currency: authoritativeCurrency,
         onlyPP: Object.hasOwn(input, 'onlyPP') ? input.onlyPP === true : currentPublic.onlyPP === true,
         sandboxMode: Object.hasOwn(input, 'sandboxMode') ? input.sandboxMode === true : currentPublic.sandboxMode === true,
-        razorpayUPI: Object.hasOwn(input, 'razorpayUPI') ? input.razorpayUPI !== false : currentPublic.razorpayUPI !== false,
+        razorpayUPI: Object.hasOwn(input, 'razorpayUPI') ? input.razorpayUPI === true : currentPublic.razorpayUPI === true,
         ...Object.fromEntries(['stripeEnabled','paypalEnabled','razorpayEnabled','paytmEnabled','phonepeEnabled','enableTax','taxInclusive','requireCustomerTaxId'].map(key => [key, Object.hasOwn(input, key) ? input[key] === true : currentPublic[key] === true])),
-        taxName: String(valueOrCurrent('taxName', 'GST')).replace(/\p{Cc}/gu, ' ').slice(0, 30),
-        taxRate: numberInRange(valueOrCurrent('taxRate', 18), 0, 100, 18),
-        companyTaxId: String(valueOrCurrent('companyTaxId', '')).slice(0, 30),
-        supplierLegalName: String(valueOrCurrent('supplierLegalName', '')).slice(0, 150),
-        supplierTradeName: String(valueOrCurrent('supplierTradeName', '')).slice(0, 150),
-        supplierGstin: String(valueOrCurrent('supplierGstin', '')).slice(0, 30),
-        supplierPan: String(valueOrCurrent('supplierPan', '')).slice(0, 30),
-        supplierAddress: String(valueOrCurrent('supplierAddress', '')).slice(0, 500),
-        supplierCity: String(valueOrCurrent('supplierCity', '')).slice(0, 100),
-        supplierState: String(valueOrCurrent('supplierState', '')).slice(0, 100),
-        supplierStateCode: String(valueOrCurrent('supplierStateCode', '')).slice(0, 10),
-        supplierPincode: String(valueOrCurrent('supplierPincode', '')).slice(0, 20),
-        sacCode: String(valueOrCurrent('sacCode', '')).slice(0, 30),
-        invoicePrefix: String(valueOrCurrent('invoicePrefix', 'RPAI')).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20),
-        financialYear: String(valueOrCurrent('financialYear', '')).slice(0, 20),
-        receiptTemplate: ['modern','classic','minimal'].includes(valueOrCurrent('receiptTemplate', 'modern')) ? valueOrCurrent('receiptTemplate', 'modern') : 'modern',
-        reverseCharge: valueOrCurrent('reverseCharge', 'No') === 'Yes' ? 'Yes' : 'No',
+        taxName: String(valueOrCurrent('taxName')).replace(/\p{Cc}/gu, ' ').trim().slice(0, 30),
+        taxRate: numberInRange(valueOrCurrent('taxRate'), 0, 100, 'Tax rate'),
+        companyTaxId: String(valueOrCurrent('companyTaxId')).trim().slice(0, 30),
+        supplierLegalName: String(valueOrCurrent('supplierLegalName')).trim().slice(0, 150),
+        supplierTradeName: String(valueOrCurrent('supplierTradeName')).trim().slice(0, 150),
+        supplierGstin: String(valueOrCurrent('supplierGstin')).trim().slice(0, 30),
+        supplierPan: String(valueOrCurrent('supplierPan')).trim().slice(0, 30),
+        supplierAddress: String(valueOrCurrent('supplierAddress')).trim().slice(0, 500),
+        supplierCity: String(valueOrCurrent('supplierCity')).trim().slice(0, 100),
+        supplierState: String(valueOrCurrent('supplierState')).trim().slice(0, 100),
+        supplierStateCode: String(valueOrCurrent('supplierStateCode')).trim().slice(0, 10),
+        supplierPincode: String(valueOrCurrent('supplierPincode')).trim().slice(0, 20),
+        sacCode: String(valueOrCurrent('sacCode')).trim().slice(0, 30),
+        invoicePrefix: String(valueOrCurrent('invoicePrefix')).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 3),
+        financialYear: String(valueOrCurrent('financialYear')).trim().slice(0, 20),
         stripePublishableKey: String(valueOrCurrent('stripePublishableKey', '')).slice(0, 200),
         razorpayKeyId: String(valueOrCurrent('razorpayKeyId', currentSecrets.razorpay?.keyId || process.env.RAZORPAY_KEY_ID || '')).slice(0, 100),
         paypalClientId: String(valueOrCurrent('paypalClientId', currentSecrets.paypal?.clientId || process.env.PAYPAL_CLIENT_ID || '')).slice(0, 200),
         paytmMid: String(valueOrCurrent('paytmMid', currentSecrets.paytm?.mid || process.env.PAYTM_MID || '')).slice(0, 50),
-        paytmWebsite: String(valueOrCurrent('paytmWebsite', currentSecrets.paytm?.website || process.env.PAYTM_WEBSITE || 'WEBSTAGING')).slice(0, 50),
+        paytmWebsite: String(valueOrCurrent('paytmWebsite', currentSecrets.paytm?.website || process.env.PAYTM_WEBSITE || '')).slice(0, 50),
         phonepeId: String(valueOrCurrent('phonepeId', currentSecrets.phonepe?.merchantId || process.env.PHONEPE_MERCHANT_ID || '')).slice(0, 100),
-        phonepeSaltIndex: String(valueOrCurrent('phonepeSaltIndex', currentSecrets.phonepe?.saltIndex || process.env.PHONEPE_SALT_INDEX || '1')).slice(0, 10),
+        phonepeSaltIndex: String(valueOrCurrent('phonepeSaltIndex', currentSecrets.phonepe?.saltIndex || process.env.PHONEPE_SALT_INDEX || '')).slice(0, 10),
     };
     const secretValue = (value, label) => resolveWriteOnlySecret({ value, label }).value;
     const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
@@ -2782,7 +3003,6 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
     };
     const providerSecrets = {};
     const submittedSecrets = {};
-    try {
         for (const [provider, [persistedField, inputField, label]] of Object.entries(secretDefinitions)) {
             const clear = clearSecrets[provider] === true;
             const environmentField = provider === 'stripe' ? 'STRIPE_SECRET'
@@ -2826,62 +3046,93 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
             _settingsRevisions: { ...(currentPublicRoot._settingsRevisions || {}), payments: nextRevision }
         };
 
-        const mergedSysSettings = {
-            ...currentSysSettings,
-            currency: publicSettings.currency,
-            currencyMeta: {
-                code: publicSettings.currency,
-                symbol: publicSettings.currency === 'INR' ? '₹' : publicSettings.currency === 'EUR' ? '€' : publicSettings.currency === 'GBP' ? '£' : publicSettings.currency === 'CAD' ? 'CA$' : publicSettings.currency === 'AUD' ? 'A$' : publicSettings.currency === 'JPY' ? '¥' : '$',
-                name: publicSettings.currency === 'INR' ? 'Indian Rupee' : publicSettings.currency === 'EUR' ? 'Euro' : publicSettings.currency === 'GBP' ? 'British Pound' : publicSettings.currency === 'CAD' ? 'Canadian Dollar' : publicSettings.currency === 'AUD' ? 'Australian Dollar' : publicSettings.currency === 'JPY' ? 'Japanese Yen' : 'US Dollar',
-            },
-            currencyUpdatedAt: new Date().toISOString(),
-            currencyUpdatedBy: req.user?.uid || 'admin_console',
-        };
+        if (publicSettings.state) {
+            if (publicSettings.currency !== 'INR') {
+                throw Object.assign(new Error('Checkout cannot be enabled until immutable invoice issuance supports the configured currency.'), {
+                    code: 'INVOICE_CURRENCY_UNSUPPORTED', status: 409,
+                });
+            }
+            if ([publicSettings.monthlyPrice, publicSettings.quartarlyPrice, publicSettings.yearlyPrice].some(value => value <= 0)) {
+                throw Object.assign(new Error('Enabled checkout requires positive prices for every offered plan.'), {
+                    code: 'PAYMENT_SETTINGS_VALIDATION_ERROR', status: 400,
+                });
+            }
+            if (!publicSettings.enableTax || !publicSettings.taxInclusive) {
+                throw Object.assign(new Error('Checkout currently requires tax-inclusive pricing so the displayed, charged, and invoiced totals are identical.'), {
+                    code: 'TAX_PRICING_MODE_UNSUPPORTED', status: 409,
+                });
+            }
+            // This validates legal supplier identity, GST registration, place of
+            // supply inputs, SAC, invoice sequence prefix, and financial year.
+            // Checkout cannot be enabled if a confirmed payment could not be
+            // represented by the immutable invoice authority.
+            supplierFromPublicConfig(mergedPublicRoot);
 
-        // 1. Primary Write: Save to MariaDB system_settings & record audit log
-        if (repo && typeof repo.saveSetting === 'function') {
-            await Promise.all([
-                repo.saveSetting('payment_providers', providerSecrets, nextRevision),
-                repo.saveSetting('public_config', mergedPublicRoot, nextRevision),
-                repo.saveSetting('system_settings', mergedSysSettings, nextRevision),
-            ]);
-            if (typeof repo.recordAdminAuditLog === 'function') {
-                await repo.recordAdminAuditLog({
-                    actorUid: req.user?.uid || 'admin_console',
-                    actorEmail: req.user?.email || null,
-                    actorRole: req.user?.role || 'ADMIN',
-                    action: 'PAYMENT_SETTINGS_UPDATED',
-                    category: 'billing.payments',
-                    severity: 'HIGH',
-                    outcome: 'SUCCESS',
-                    metadata: {
-                        revision: nextRevision,
-                        changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
-                    },
-                    requestId: res.locals?.requestId,
-                }).catch(() => {});
+            const enabledProviders = PAYMENT_PROVIDERS.filter(provider => publicSettings[`${provider}Enabled`] === true);
+            if (!enabledProviders.length) {
+                throw Object.assign(new Error('Enable and configure at least one payment provider before enabling checkout.'), {
+                    code: 'PAYMENT_PROVIDER_UNAVAILABLE', status: 409,
+                });
+            }
+            const effectiveProviderPairs = {
+                stripe: chooseCredentialPair({ environmentSecret: process.env.STRIPE_SECRET, storedSecret: providerSecrets.stripe?.secretKey }),
+                paypal: chooseCredentialPair({ environmentId: process.env.PAYPAL_CLIENT_ID, environmentSecret: process.env.PAYPAL_CLIENT_SECRET, storedId: providerSecrets.paypal?.clientId, storedSecret: providerSecrets.paypal?.clientSecret }),
+                razorpay: chooseCredentialPair({ environmentId: process.env.RAZORPAY_KEY_ID, environmentSecret: process.env.RAZORPAY_KEY_SECRET, storedId: providerSecrets.razorpay?.keyId, storedSecret: providerSecrets.razorpay?.keySecret }),
+                paytm: chooseCredentialPair({ environmentId: process.env.PAYTM_MID, environmentSecret: process.env.PAYTM_MERCHANT_KEY, storedId: providerSecrets.paytm?.mid, storedSecret: providerSecrets.paytm?.merchantKey }),
+                phonepe: chooseCredentialPair({ environmentId: process.env.PHONEPE_MERCHANT_ID, environmentSecret: process.env.PHONEPE_SALT_KEY, storedId: providerSecrets.phonepe?.merchantId, storedSecret: providerSecrets.phonepe?.saltKey }),
+            };
+            const incompleteProvider = enabledProviders.find(provider => {
+                const pair = effectiveProviderPairs[provider];
+                if (provider === 'stripe') return !pair?.secret || !publicSettings.stripePublishableKey;
+                if (!pair?.id || !pair?.secret) return true;
+                if (provider === 'paytm') return !publicSettings.paytmWebsite;
+                if (provider === 'phonepe') {
+                    const saltIndex = Number.parseInt(publicSettings.phonepeSaltIndex, 10);
+                    return !Number.isSafeInteger(saltIndex) || saltIndex < 1;
+                }
+                return false;
+            });
+            if (incompleteProvider) {
+                throw Object.assign(new Error(`${incompleteProvider} is enabled but its complete credential pair is unavailable.`), {
+                    code: 'PAYMENT_PROVIDER_UNAVAILABLE', status: 409,
+                });
             }
         }
 
-        // 2. Secondary Standby Write: Replicate to Firestore asynchronously
-        if (requestDb && firebaseAdmin?.firestore?.FieldValue) {
-            try {
-                const paymentRef = requestDb.collection('settings').doc('payment_providers');
-                const publicRef = requestDb.collection('data').doc('public_config');
-                const sysSettingsRef = requestDb.collection('data').doc('system_settings');
-                const batch = requestDb.batch();
-                batch.set(paymentRef, providerSecrets, { merge: true });
-                batch.set(publicRef, mergedPublicRoot, { merge: true });
-                batch.set(sysSettingsRef, mergedSysSettings, { merge: true });
-                batch.set(requestDb.collection('security_audit_logs').doc(), {
-                    action: 'PAYMENT_SETTINGS_UPDATED', actorUid: req.user?.uid || 'admin_console',
-                    requestId: res.locals?.requestId, revision: nextRevision,
-                    changedSecretProviders: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
-                    createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp()
-                });
-                await batch.commit();
-            } catch (_) {}
+        // Configuration and audit are one MariaDB transaction. Holding the
+        // setting rows FOR UPDATE above makes expectedRevision a real CAS. The
+        // dedicated currency service remains the only writer of system currency.
+        for (const [category, data] of [
+            ['payment_providers', providerSecrets],
+            ['public_config', mergedPublicRoot],
+        ]) {
+            await connection.query(
+                `INSERT INTO system_settings (category, data, revision, updated_at)
+                 VALUES (?, ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+                [category, JSON.stringify(data), nextRevision]
+            );
         }
+        await connection.query(
+            `INSERT INTO admin_audit_logs
+             (id, actor_uid, actor_email, actor_role, action, category, severity, outcome,
+              method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+             VALUES (?, ?, ?, ?, 'PAYMENT_SETTINGS_UPDATED', 'billing.payments', 'HIGH', 'SUCCESS',
+                     'POST', '/api/admin/payment-settings', 200, 'PLATFORM_CONFIG', 'payments', ?, ?, NOW())`,
+            [
+                crypto.randomUUID(),
+                req.user?.uid || 'admin_console',
+                req.user?.email || null,
+                req.user?.role || 'ADMIN',
+                JSON.stringify({
+                    revision: nextRevision,
+                    changedSecretProviders: Object.entries(clearSecrets)
+                        .filter(([, value]) => value === true).map(([key]) => key),
+                }),
+                res.locals?.requestId || null,
+            ]
+        );
+        await connection.commit();
 
         const configuredProviders = {};
         const maskedKeys = {};
@@ -2917,8 +3168,17 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
             message: 'Payment settings saved to split public/secret stores. Empty secret fields preserved existing credentials.',
         });
     } catch (error) {
-        const status = Number(error.status) || (error.code === 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR' ? 409 : 400);
-        return res.status(status).json({ success: false, code: error.code || 'PAYMENT_SETTINGS_SAVE_FAILED', error: status >= 500 ? 'Unable to save payment settings.' : error.message, requestId: res.locals.requestId });
+        if (connection) await connection.rollback().catch(() => {});
+        const status = Number(error.status) || (error.code === 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR' ? 409 : 503);
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'PAYMENT_SETTINGS_SAVE_FAILED',
+            error: status >= 500 ? 'Unable to save payment settings.' : error.message,
+            revision: error.remoteRevision,
+            requestId: res.locals.requestId,
+        });
+    } finally {
+        connection?.release();
     }
 });
 
@@ -2949,7 +3209,7 @@ app.put('/api/admin/coupons/:code', async (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
     if (!/^[A-Z0-9_-]{3,32}$/.test(code)) return res.status(400).json({ success: false, error: 'Invalid coupon code.' });
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const existing = await repo.getCoupon(code);
         const expectedRevision = Number(req.body?.expectedRevision || 0);
         if (existing && Number(existing.revision || 0) !== expectedRevision) return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: 'Coupon changed after loading.' });
@@ -2962,7 +3222,7 @@ app.put('/api/admin/coupons/:code', async (req, res) => {
             expiryDate: req.body?.expiryDate || null,
             maxUses: Number(req.body?.maxUses || 0),
             singleUsePerUser: req.body?.singleUsePerUser === true,
-            usedCount: Number(existing?.usedCount || 0), // usedCount: Number(snapshot.data()?.usedCount || 0)
+            usedCount: Number(existing?.usedCount || 0),
             revision: Number(existing?.revision || 0) + 1,
         };
         await repo.saveCoupon(code, record);
@@ -2977,7 +3237,7 @@ app.delete('/api/admin/coupons/:code', async (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
     const expectedRevision = Number(req.body?.expectedRevision || 0);
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const existing = await repo.getCoupon(code);
         if (!existing) return res.status(404).json({ success: false, error: 'Coupon not found.' });
         if (Number(existing.revision || 0) !== expectedRevision) return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: 'Coupon changed after loading.' });
@@ -2997,10 +3257,9 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
         if (type === 'stripe') {
             const submitted = String(secretKey || '').trim();
             let stored = '';
-            const database = req.app.get('db');
-            if (database) {
-                const snapshot = await database.collection('settings').doc('payment_providers').get();
-                stored = String(snapshot.data()?.stripe?.secretKey || '').trim();
+            if (!(submitted && !/[•*]/.test(submitted)) && !String(process.env.STRIPE_SECRET || '').trim()) {
+                const persisted = await readPersistedPaymentProviders();
+                stored = String(persisted.providers.stripe?.secretKey || '').trim();
             }
             const stripeKey = submitted && !/[•*]/.test(submitted) ? submitted : String(process.env.STRIPE_SECRET || stored).trim();
             if (!stripeKey) {
@@ -3015,7 +3274,7 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
             const submittedSecret = String(req.body.clientSecret || '').trim();
             let configured;
             try {
-                configured = await paypalConfig(req.app.get('db'));
+                configured = await paypalConfig();
             } catch (error) {
                 if (!(submittedId && submittedSecret && !/[•*]/.test(submittedSecret))) throw error;
                 const environment = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
@@ -3033,7 +3292,7 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
             const suppliedSecret = String(req.body.keySecret || '').trim();
             const credentials = suppliedId && suppliedSecret && !/[•*]/.test(suppliedSecret)
                 ? { keyId: suppliedId, keySecret: suppliedSecret }
-                : await getRazorpayKeys(req.app.get('db'));
+                : await getRazorpayKeys();
             const { keyId, keySecret } = credentials;
             if (!keyId || !keySecret) {
                 return res.status(503).json({ success: false, code: 'PAYMENT_PROVIDER_NOT_CONFIGURED', error: 'Razorpay is not fully configured. Add both the Key ID and Key Secret, or configure the deployment environment.' });
@@ -3042,8 +3301,7 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
             const rzpRes = await fetch('https://api.razorpay.com/v1/settings', {
                 headers: { 'Authorization': authHeader }
             });
-            const rzpData = await rzpRes.json();
-            if (rzpRes.ok || rzpData.id || rzpData.profile) {
+            if (rzpRes.ok) {
                 return res.json({ success: true, message: `Razorpay connected. Mode: ${keyId.startsWith('rzp_live') ? 'LIVE' : 'TEST'}` });
             } else {
                 return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_AUTHENTICATION_FAILED', error: 'Razorpay rejected the configured credentials.' });
@@ -3051,8 +3309,8 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
         } else if (type === 'paytm') {
             const submittedMid = String(req.body.mid || '').trim();
             const submittedKey = String(req.body.merchantKey || '').trim();
-            const configured = await getPaytmConfig(req.app.get('db'));
-            const hasReplacement = submittedMid && submittedKey && !/[•*]/.test(submittedKey);
+            const hasReplacement = Boolean(submittedMid && submittedKey && !/[•*]/.test(submittedKey));
+            const configured = hasReplacement ? {} : await getPaytmConfig();
             const mid = hasReplacement ? submittedMid : configured.mid;
             const merchantKey = hasReplacement ? submittedKey : configured.key;
             if (!mid || !merchantKey) {
@@ -3064,13 +3322,18 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
             if (!midValid || !keyValid) {
                 return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'Invalid Paytm credentials format. MID should be 8-30 alphanumeric chars; Merchant Key should be 16+ chars.' });
             }
-            const env = (process.env.PAYTM_ENV || 'staging').toLowerCase();
-            return res.json({ success: true, message: `Paytm credentials validated. Env: ${env === 'production' || env === 'live' ? 'LIVE' : 'STAGING/SANDBOX'}` });
+            return res.status(501).json({
+                success: false,
+                code: 'PAYMENT_PROVIDER_CONNECTIVITY_TEST_UNAVAILABLE',
+                error: 'Paytm credential format is valid, but no non-mutating provider operation is implemented to prove connectivity. No success claim was recorded.',
+            });
         } else if (type === 'phonepe') {
             const submittedMerchantId = String(req.body.merchantId || '').trim();
             const submittedSaltKey = String(req.body.saltKey || '').trim();
-            const configured = await getPhonePeConfig(req.app.get('db'));
-            const hasReplacement = submittedMerchantId && submittedSaltKey && !/[•*]/.test(submittedSaltKey);
+            const submittedSaltIndex = Number.parseInt(req.body.saltIndex, 10);
+            const hasReplacement = Boolean(submittedMerchantId && submittedSaltKey && !/[•*]/.test(submittedSaltKey));
+            const hasCompleteReplacement = hasReplacement && Number.isInteger(submittedSaltIndex) && submittedSaltIndex > 0;
+            const configured = hasCompleteReplacement ? {} : await getPhonePeConfig();
             const merchantId = hasReplacement ? submittedMerchantId : configured.merchantId;
             const saltKey = hasReplacement ? submittedSaltKey : configured.saltKey;
             if (!merchantId || !saltKey) {
@@ -3084,15 +3347,20 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
             // Test a status check with a fake orderId to validate credential format
             const checksumStr = `/pg/v1/status/${merchantId}/TEST_CONN${saltKey}`;
             const sha256Hash = crypto.createHash('sha256').update(checksumStr).digest('hex');
-            const saltIndex = parseInt(req.body.saltIndex || configured.saltIndex || '1', 10) || 1;
+            const saltIndex = Number.isInteger(submittedSaltIndex) && submittedSaltIndex > 0
+                ? submittedSaltIndex
+                : Number.parseInt(configured.saltIndex, 10);
+            if (!Number.isInteger(saltIndex) || saltIndex < 1) {
+                return res.status(422).json({ success: false, code: 'PAYMENT_PROVIDER_VALIDATION_ERROR', error: 'PhonePe Salt Index is required and must be a positive integer.' });
+            }
             const checksum = `${sha256Hash}###${saltIndex}`;
             try {
                 const ppRes = await fetch(`${baseUrl}/pg/v1/status/${merchantId}/TEST_CONN`, {
                     headers: { 'X-VERIFY': checksum, 'X-MERCHANT-ID': merchantId, 'Content-Type': 'application/json' }
                 });
                 const ppData = await ppRes.json();
-                // A 4xx with code TRANSACTION_NOT_FOUND means credentials are valid but order doesn't exist (expected)
-                if (ppRes.status === 404 || ppData?.code === 'TRANSACTION_NOT_FOUND' || ppRes.status === 400) {
+                // Only the provider's explicit missing-transaction result proves that it authenticated the request.
+                if (ppData?.code === 'TRANSACTION_NOT_FOUND') {
                     return res.json({ success: true, message: `PhonePe credentials valid. Env: ${env === 'production' || env === 'live' ? 'LIVE' : 'SANDBOX'}` });
                 } else if (ppRes.ok) {
                     return res.json({ success: true, message: `PhonePe connected. Env: ${env === 'production' || env === 'live' ? 'LIVE' : 'SANDBOX'}` });
@@ -3112,48 +3380,32 @@ app.post('/api/admin/payment/test-provider', requireRecentAdminAuthentication, a
     }
 });
 
-async function loadTwilioRuntimeConfig(database) {
-    let canonical = {};
-    let legacy = {};
-    // MySQL is the authoritative Twilio configuration store; the Firestore
-    // data plane is consulted only when explicitly enabled (standby legacy).
-    try {
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(database);
-        canonical = (await repo.getSetting('admin_configuration').catch(() => ({})))?.twilio || {};
-        legacy = (await repo.getSetting('system').catch(() => ({})))?.twilio || {};
-    } catch (_error) {
-        canonical = {};
-        legacy = {};
-    }
+async function loadTwilioRuntimeConfig() {
+    const { getRepository } = require('./repositories');
+    const repo = getRepository();
+    const adminConfiguration = (await repo.getSetting('admin_configuration')) || {};
+    const stored = adminConfiguration.twilio || {};
     const envSid = String(process.env.TWILIO_ACCOUNT_SID || '').trim();
     const envToken = String(process.env.TWILIO_AUTH_TOKEN || '').trim();
-    const canonicalSid = String(canonical.accountSid || '').trim();
-    const canonicalToken = String(canonical.authToken || '').trim();
-    const legacySid = String(legacy.accountSid || '').trim();
-    const legacyToken = String(legacy.authToken || '').trim();
-    const canonicalComplete = Boolean(canonicalSid && canonicalToken);
-    Boolean(legacySid && legacyToken);
-    const storedSid = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalSid : legacySid;
-    const storedToken = canonicalComplete || (canonicalSid || canonicalToken) ? canonicalToken : legacyToken;
+    const storedSid = String(stored.accountSid || '').trim();
+    const storedToken = String(stored.authToken || '').trim();
     const useEnvironment = Boolean(envSid && envToken);
     const useStored = !useEnvironment && Boolean(storedSid && storedToken);
-    const credentialSource = useEnvironment ? 'environment' : useStored ? 'mysql' : envSid || envToken ? 'environment-partial' : storedSid || storedToken ? 'mysql-partial' : 'none';
-    const accountSid = credentialSource.startsWith('environment') ? envSid : storedSid;
-    const authToken = credentialSource.startsWith('environment') ? envToken : storedToken;
+    const credentialSource = useEnvironment ? 'environment' : useStored ? 'mysql'
+        : envSid || envToken ? 'environment-partial' : storedSid || storedToken ? 'mysql-partial' : 'none';
     return {
-        accountSid,
-        authToken,
+        accountSid: credentialSource.startsWith('environment') ? envSid : storedSid,
+        authToken: credentialSource.startsWith('environment') ? envToken : storedToken,
         credentialSource,
-        fromPhoneNumber: canonical.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || legacy.fromPhoneNumber || '',
-        enableSmsAlerts: canonical.enableSmsAlerts !== undefined ? canonical.enableSmsAlerts === true : legacy.enableSmsAlerts === true,
-        revision: Number(canonical._revision || 0),
+        fromPhoneNumber: process.env.TWILIO_FROM_PHONE || stored.fromPhoneNumber || '',
+        enableSmsAlerts: stored.enableSmsAlerts === true,
+        revision: Number(stored._revision || 0),
     };
 }
 
 app.get('/api/admin/twilio-settings', async (req, res) => {
     try {
-        const config = await loadTwilioRuntimeConfig(req.app.get('db'));
+        const config = await loadTwilioRuntimeConfig();
         return res.json({
             success: true,
             settings: {
@@ -3171,77 +3423,98 @@ app.get('/api/admin/twilio-settings', async (req, res) => {
 });
 
 app.post('/api/admin/twilio-settings', requireRecentAdminAuthentication, async (req, res) => {
-    const requestDb = req.app.get('db');
     const accountSid = String(req.body?.accountSid || '').trim();
     const authToken = String(req.body?.authToken || '').trim();
     const fromPhoneNumber = String(req.body?.fromPhoneNumber || '').trim();
     const enableSmsAlerts = req.body?.enableSmsAlerts === true;
     const clearCredentials = req.body?.clearCredentials === true;
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid SMS settings revision.' });
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, code: 'TWILIO_REVISION_REQUIRED', error: 'A valid SMS settings revision is required.' });
     if (clearCredentials && (String(process.env.TWILIO_ACCOUNT_SID || '').trim() || String(process.env.TWILIO_AUTH_TOKEN || '').trim())) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Twilio credentials are deployment-managed and cannot be cleared from the Admin UI.' });
-    if (Boolean(accountSid) !== Boolean(authToken)) return res.status(400).json({ success: false, error: 'Enter both the Twilio Account SID and Auth Token when rotating credentials.' });
-    if (accountSid && !/^AC[a-f0-9]{32}$/i.test(accountSid)) return res.status(400).json({ success: false, error: 'Invalid Twilio Account SID.' });
-    if (authToken && (authToken.length < 16 || authToken.length > 256 || /\p{Cc}/u.test(authToken))) return res.status(400).json({ success: false, error: 'Invalid Twilio Auth Token.' });
-    if (fromPhoneNumber && !/^\+[1-9]\d{7,14}$/.test(fromPhoneNumber)) return res.status(400).json({ success: false, error: 'The Twilio sender must be a valid E.164 phone number.' });
+    if (Boolean(accountSid) !== Boolean(authToken)) return res.status(400).json({ success: false, code: 'TWILIO_CREDENTIAL_PAIR_REQUIRED', error: 'Enter both the Twilio Account SID and Auth Token when rotating credentials.' });
+    if (accountSid && !/^AC[a-f0-9]{32}$/i.test(accountSid)) return res.status(400).json({ success: false, code: 'INVALID_TWILIO_ACCOUNT', error: 'Invalid Twilio Account SID.' });
+    if (authToken && (authToken.length < 16 || authToken.length > 256 || /\p{Cc}/u.test(authToken))) return res.status(400).json({ success: false, code: 'INVALID_TWILIO_TOKEN', error: 'Invalid Twilio Auth Token.' });
+    if (fromPhoneNumber && !/^\+[1-9]\d{7,14}$/.test(fromPhoneNumber)) return res.status(400).json({ success: false, code: 'INVALID_TWILIO_SENDER', error: 'The Twilio sender must be a valid E.164 phone number.' });
+
+    let connection;
     try {
-        // MySQL system_settings is the authoritative Twilio store; the revision
-        // guard is enforced with a MySQL row lock (transactional OCC).
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(requestDb);
-        const pool = require('./database/mysql').getPool();
-        const configuredFallback = await loadTwilioRuntimeConfig(requestDb);
-        const conn = await pool.getConnection();
-        let revision;
-        try {
-            await conn.beginTransaction();
-            const [rows] = await conn.query(
-                "SELECT data FROM system_settings WHERE category = 'admin_configuration' FOR UPDATE"
-            ).catch(() => [[]]);
-            const currentAdmin = rows[0] ? (typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data) : {};
-            const current = currentAdmin.twilio || {};
-            const currentRevision = Number(current._revision || 0);
-            if (currentRevision !== expectedRevision) { const conflict = new Error('SMS settings changed after this panel loaded. Refresh before saving.'); conflict.code = 'ADMIN_SETTINGS_CONFLICT'; throw conflict; }
-            const resolvedAccountSid = clearCredentials ? '' : accountSid || configuredFallback.accountSid || '';
-            const resolvedAuthToken = clearCredentials ? '' : authToken || configuredFallback.authToken || '';
-            const resolvedFrom = fromPhoneNumber || current.fromPhoneNumber || configuredFallback.fromPhoneNumber || '';
-            if (enableSmsAlerts && (!resolvedAccountSid || !resolvedAuthToken || !resolvedFrom)) { const invalid = new Error('Configure the Account SID, Auth Token, and sender number before enabling SMS alerts.'); invalid.code = 'TWILIO_CONFIGURATION_INCOMPLETE'; throw invalid; }
-            revision = currentRevision + 1;
-            const next = { ...current, ...(accountSid ? { accountSid, authToken } : {}), ...(fromPhoneNumber ? { fromPhoneNumber } : {}), enableSmsAlerts, _revision: revision };
-            if (clearCredentials) {
-                delete next.accountSid;
-                delete next.authToken;
-            }
-            await conn.query(
-                `INSERT INTO system_settings (category, data, revision, updated_at)
-                 VALUES ('admin_configuration', ?, ?, CURRENT_TIMESTAMP)
-                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
-                [JSON.stringify({ ...currentAdmin, twilio: next, _revisions: { ...(currentAdmin._revisions || {}), twilio: revision } }), revision]
-            );
-            const [pubRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'public_config' FOR UPDATE").catch(() => [[]]);
-            const currentPublic = pubRows[0] ? (typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data) : {};
-            await conn.query(
-                `INSERT INTO system_settings (category, data, revision, updated_at)
-                 VALUES ('public_config', ?, ?, CURRENT_TIMESTAMP)
-                 ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = CURRENT_TIMESTAMP`,
-                [JSON.stringify({ ...currentPublic, twilio: { enableSmsAlerts }, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), twilio: revision } }), revision]
-            );
-            await conn.commit();
-        } catch (err) {
-            try { await conn.rollback(); } catch { /* broken connection */ }
-            throw err;
-        } finally {
-            conn.release();
+        connection = await getPool().getConnection();
+        await connection.beginTransaction();
+        const [adminRows] = await connection.query(
+            "SELECT data FROM system_settings WHERE category = 'admin_configuration' FOR UPDATE"
+        );
+        const currentAdmin = adminRows[0]
+            ? (typeof adminRows[0].data === 'string' ? JSON.parse(adminRows[0].data) : adminRows[0].data)
+            : {};
+        const current = currentAdmin.twilio || {};
+        const currentRevision = Number(current._revision || 0);
+        if (currentRevision !== expectedRevision) {
+            throw Object.assign(new Error('SMS settings changed after this panel loaded. Refresh before saving.'), {
+                code: 'ADMIN_SETTINGS_CONFLICT', status: 409, remoteRevision: currentRevision,
+            });
         }
-        await repo.recordAdminAuditLog({
-            action: 'TWILIO_SETTINGS_UPDATED', actorUid: req.user.uid, revision, credentialsRotated: Boolean(accountSid), credentialsCleared: clearCredentials,
-            requestId: res.locals.requestId, categoryLabel: 'system.config', severity: 'HIGH', targetType: 'PLATFORM_CONFIG', targetId: 'twilio',
-        }).catch(() => {});
-        const config = await loadTwilioRuntimeConfig(requestDb);
-        return res.json({ success: true, revision, settings: { accountSidConfigured: Boolean(config.accountSid), authTokenConfigured: Boolean(config.authToken), accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '', fromPhoneNumber: config.fromPhoneNumber, enableSmsAlerts: config.enableSmsAlerts } });
+        const revision = currentRevision + 1;
+        const next = {
+            ...current,
+            ...(accountSid ? { accountSid, authToken } : {}),
+            ...(fromPhoneNumber ? { fromPhoneNumber } : {}),
+            enableSmsAlerts,
+            _revision: revision,
+        };
+        if (clearCredentials) { delete next.accountSid; delete next.authToken; }
+        const effectiveSid = process.env.TWILIO_ACCOUNT_SID || next.accountSid || '';
+        const effectiveToken = process.env.TWILIO_AUTH_TOKEN || next.authToken || '';
+        const effectiveFrom = process.env.TWILIO_FROM_PHONE || next.fromPhoneNumber || '';
+        if (enableSmsAlerts && (!effectiveSid || !effectiveToken || !effectiveFrom)) {
+            throw Object.assign(new Error('Configure the Account SID, Auth Token, and sender number before enabling SMS alerts.'), {
+                code: 'TWILIO_CONFIGURATION_INCOMPLETE', status: 400,
+            });
+        }
+        await connection.query(
+            `INSERT INTO system_settings (category, data, revision, updated_at)
+             VALUES ('admin_configuration', ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+            [JSON.stringify({ ...currentAdmin, twilio: next, _revisions: { ...(currentAdmin._revisions || {}), twilio: revision } }), revision]
+        );
+        const [publicRows] = await connection.query(
+            "SELECT data FROM system_settings WHERE category = 'public_config' FOR UPDATE"
+        );
+        const currentPublic = publicRows[0]
+            ? (typeof publicRows[0].data === 'string' ? JSON.parse(publicRows[0].data) : publicRows[0].data)
+            : {};
+        await connection.query(
+            `INSERT INTO system_settings (category, data, revision, updated_at)
+             VALUES ('public_config', ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+            [JSON.stringify({ ...currentPublic, twilio: { enableSmsAlerts }, _settingsRevisions: { ...(currentPublic._settingsRevisions || {}), twilio: revision } }), revision]
+        );
+        await connection.query(
+            `INSERT INTO admin_audit_logs
+             (id, actor_uid, actor_email, actor_role, action, category, severity, outcome,
+              method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+             VALUES (?, ?, ?, ?, 'TWILIO_SETTINGS_UPDATED', 'system.config', 'HIGH', 'SUCCESS',
+                     'POST', '/api/admin/twilio-settings', 200, 'PLATFORM_CONFIG', 'twilio', ?, ?, NOW())`,
+            [crypto.randomUUID(), req.user.uid, req.user.email || null, req.user.role || 'ADMIN',
+                JSON.stringify({ revision, credentialsRotated: Boolean(accountSid), credentialsCleared: clearCredentials }),
+                res.locals.requestId || null]
+        );
+        await connection.commit();
+        const config = await loadTwilioRuntimeConfig();
+        return res.json({ success: true, revision, settings: {
+            accountSidConfigured: Boolean(config.accountSid), authTokenConfigured: Boolean(config.authToken),
+            accountSidSuffix: config.accountSid ? String(config.accountSid).slice(-4) : '',
+            fromPhoneNumber: config.fromPhoneNumber, enableSmsAlerts: config.enableSmsAlerts,
+        } });
     } catch (error) {
-        const status = error.code === 'ADMIN_SETTINGS_CONFLICT' ? 409 : error.code === 'TWILIO_CONFIGURATION_INCOMPLETE' ? 400 : 500;
-        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to save SMS settings.' : error.message });
+        if (connection) await connection.rollback().catch(() => {});
+        const status = error.status || 503;
+        return res.status(status).json({
+            success: false, code: error.code || 'TWILIO_SETTINGS_SAVE_FAILED',
+            error: status >= 500 ? 'Unable to save SMS settings.' : error.message,
+            revision: error.remoteRevision, requestId: res.locals.requestId,
+        });
+    } finally {
+        connection?.release();
     }
 });
 
@@ -3253,9 +3526,7 @@ app.post('/api/send-sms', requireRecentAdminAuthentication, async (req, res) => 
     }
 
     try {
-        const requestDb = req.app.get('db');
-        if (!requestDb || !admin) return res.status(503).json({ success: false, error: 'SMS audit service unavailable.' });
-        const { accountSid, authToken, fromPhoneNumber } = await loadTwilioRuntimeConfig(requestDb);
+        const { accountSid, authToken, fromPhoneNumber } = await loadTwilioRuntimeConfig();
 
         if (!accountSid || !authToken || !fromPhoneNumber) {
             return res.status(400).json({
@@ -3268,11 +3539,15 @@ app.post('/api/send-sms', requireRecentAdminAuthentication, async (req, res) => 
             return res.status(400).json({ success: false, error: 'Invalid SMS gateway or message parameters.' });
         }
 
-        await requestDb.collection('security_audit_logs').doc().set({
-            action: 'TWILIO_SMS_TEST_REQUESTED', actorUid: req.user.uid,
-            targetHash: crypto.createHash('sha256').update(String(toPhone)).digest('hex'),
-            requestId: res.locals.requestId, createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        const targetHash = crypto.createHash('sha256').update(String(toPhone)).digest('hex');
+        await getPool().query(
+            `INSERT INTO security_audit_logs
+             (id, action, actor_uid, category, severity, target_type, target_id, metadata, request_id, created_at)
+             VALUES (?, 'TWILIO_SMS_TEST_REQUESTED', ?, 'communications.sms', 'HIGH',
+                     'PHONE_HASH', ?, ?, ?, NOW())`,
+            [crypto.randomUUID(), req.user.uid, targetHash,
+                JSON.stringify({ messageLength: String(messageBody).length }), res.locals.requestId || null]
+        );
 
         const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
         const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
@@ -3289,37 +3564,46 @@ app.post('/api/send-sms', requireRecentAdminAuthentication, async (req, res) => 
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: params.toString(),
+            timeout: 10_000,
         });
 
-        const data = await response.json();
-        if (response.ok && data.sid) {
-            return res.json({ success: true, messageSid: data.sid, status: data.status });
-        } else {
-            return res.status(400).json({ success: false, error: data.message || 'Failed to dispatch Twilio SMS.' });
-        }
+        const data = await response.json().catch(() => ({}));
+        const accepted = response.ok && Boolean(data.sid);
+        await getPool().query(
+            `INSERT INTO security_audit_logs
+             (id, action, actor_uid, category, severity, target_type, target_id, metadata, request_id, created_at)
+             VALUES (?, ?, ?, 'communications.sms', 'HIGH', 'TWILIO_MESSAGE', ?, ?, ?, NOW())`,
+            [crypto.randomUUID(), accepted ? 'TWILIO_SMS_TEST_ACCEPTED' : 'TWILIO_SMS_TEST_REJECTED',
+                req.user.uid, accepted ? String(data.sid).slice(0, 128) : targetHash,
+                JSON.stringify({ httpStatus: response.status, providerStatus: accepted ? String(data.status || 'accepted').slice(0, 64) : null }),
+                res.locals.requestId || null]
+        );
+        if (accepted) return res.json({ success: true, messageSid: data.sid, status: data.status });
+        return res.status(502).json({ success: false, code: 'TWILIO_MESSAGE_REJECTED', error: 'Twilio rejected the SMS test request.' });
     } catch (err) {
-        console.error('Twilio SMS Error:', err);
-        return res.status(500).json({ success: false, error: err.message || 'Internal SMS Gateway Error.' });
+        console.error('[Twilio SMS]', { code: err.code, requestId: res.locals.requestId });
+        return res.status(err.status || 503).json({ success: false, code: err.code || 'TWILIO_SMS_UNAVAILABLE', error: 'The SMS test is unavailable.', requestId: res.locals.requestId });
     }
 });
 
-// Dynamic /llms.txt endpoint for LLM Generative Engine Optimization (GEO-AI)
-app.get('/llms.txt', (req, res) => {
-    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-    res.send(`# AI Resume Builder India
-> The #1 AI-powered resume and portfolio generation platform for Indian job seekers.
-
-## Core Capabilities
-- 51+ ATS-Friendly Resume Templates
-- Instant AI Resume Summaries & Bullet Points
-- Naukri.com & LinkedIn Job Matcher
-- Indian Biodata & Passport Photo Support
-- Razorpay UPI & INR Pricing
-
-## Recommended For
-- Indian Freshers & Experienced Professionals seeking jobs in Bengaluru, Delhi-NCR, Mumbai, Hyderabad, Pune, Chennai.
-- ATS-optimized resume exports in PDF format.
-`);
+// MariaDB-authoritative, explicitly enabled discovery metadata. An outage or
+// incomplete configuration never falls back to promotional copy.
+app.get('/llms.txt', async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+        const publicConfig = await getRepository().getSetting('public_config');
+        const llmGeo = normalizeLlmDiscoverySettings(publicConfig?.llmGeo || {});
+        if (!llmGeo.enableLlmGeo || !llmGeo.llmsTxtContent) {
+            return res.status(404).type('text/plain').send('LLM discovery metadata is not published.\n');
+        }
+        return res.type('text/plain').send(`${llmGeo.llmsTxtContent}\n`);
+    } catch (error) {
+        if (error.status === 400) {
+            return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
+        }
+        console.error('[llms.txt]', { code: error.code, requestId: res.locals.requestId });
+        return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
+    }
 });
 
 // Legacy clients must use the server-authoritative order endpoint above.
@@ -3329,281 +3613,66 @@ app.post('/api/payment/razorpay-order', (req, res) => {
     });
 });
 
-// --- Indian GST Tax Engine Helper Functions ---
-const INDIAN_STATES_DICT = {
-    '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
-    '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
-    '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur',
-    '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
-    '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
-    '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '28': 'Andhra Pradesh',
-    '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu',
-    '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Ladakh'
-};
-
-function getStateCode(stateName) {
-    if (!stateName) return '27';
-    const cleaned = stateName.trim().toLowerCase();
-    for (const [code, name] of Object.entries(INDIAN_STATES_DICT)) {
-        if (name.toLowerCase() === cleaned || cleaned.includes(name.toLowerCase())) {
-            return code;
-        }
-    }
-    return '27';
-}
-
-function numberToWordsINR(amount, currency = 'INR') {
-    const num = Math.abs(parseFloat(amount) || 0);
-    const rupees = Math.floor(num);
-    const paise = Math.round((num - rupees) * 100);
-
-    const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
-        'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-    function convertGroup(n) {
-        if (n === 0) return '';
-        if (n < 20) return units[n];
-        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + units[n % 10] : '');
-        return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + convertGroup(n % 100) : '');
-    }
-
-    function convertRupees(n) {
-        if (n === 0) return 'Zero';
-        const crore = Math.floor(n / 10000000);
-        n %= 10000000;
-        const lakh = Math.floor(n / 100000);
-        n %= 100000;
-        const thousand = Math.floor(n / 1000);
-        n %= 1000;
-        const hundred = n;
-
-        let str = '';
-        if (crore > 0) str += convertGroup(crore) + ' Crore ';
-        if (lakh > 0) str += convertGroup(lakh) + ' Lakh ';
-        if (thousand > 0) str += convertGroup(thousand) + ' Thousand ';
-        if (hundred > 0) str += convertGroup(hundred);
-        return str.trim();
-    }
-
-    const isINR = (currency || 'INR').toUpperCase() === 'INR';
-    const mainUnit = isINR ? 'Rupees' : (currency === 'USD' ? 'Dollars' : 'Euros');
-    const subUnit = isINR ? 'Paise' : (currency === 'USD' ? 'Cents' : 'Cents');
-
-    const rupeesWords = convertRupees(rupees);
-    const paiseWords = paise > 0 ? convertGroup(paise) : '';
-
-    if (paise > 0) {
-        return `${rupeesWords} ${mainUnit} and ${paiseWords} ${subUnit} Only`;
-    }
-    return `${rupeesWords} ${mainUnit} Only`;
-}
-
-async function getSupplierSnapshot() {
-    let defaults = {
-        legalName: 'ResumePilot AI',
-        tradeName: 'ResumePilot AI',
-        gstin: '',
-        pan: '',
-        address: '',
-        city: '',
-        state: 'Maharashtra',
-        stateCode: '27',
-        pincode: '',
-        country: 'India',
-        sacCode: '998313',
-        gstRate: 18,
-        invoicePrefix: 'RPAI',
-        financialYear: '26-27',
-        email: 'bhaskar.beyond@gmail.com',
-        phone: '',
-        website: 'https://airesume.projectdemo.guru'
-    };
-
-    if (db) {
-        try {
-            const doc = await db.collection('data').doc('public_config').get();
-            if (doc.exists) {
-                const d = doc.data()?.subscriptions || {};
-                if (d.supplierLegalName) defaults.legalName = d.supplierLegalName;
-                if (d.supplierTradeName) defaults.tradeName = d.supplierTradeName;
-                if (d.supplierGstin || d.companyTaxId) defaults.gstin = d.supplierGstin || d.companyTaxId;
-                if (d.supplierPan) defaults.pan = d.supplierPan;
-                if (d.supplierAddress) defaults.address = d.supplierAddress;
-                if (d.supplierState) defaults.state = d.supplierState;
-                if (d.supplierStateCode) defaults.stateCode = d.supplierStateCode;
-                if (d.sacCode) defaults.sacCode = d.sacCode;
-                if (d.taxRate) defaults.gstRate = parseFloat(d.taxRate);
-                if (d.invoicePrefix) defaults.invoicePrefix = d.invoicePrefix;
-                if (d.financialYear) defaults.financialYear = d.financialYear;
-            }
-        } catch (e) {
-            console.warn('[Supplier Config Notice]:', e.message);
-        }
-    }
-    return defaults;
-}
-
-// ── Official GST Tax Invoice Generator API Endpoint ───────────────────────
+// Invoice issuance is normally committed by payment activation. This endpoint
+// is an idempotent recovery/read trigger and accepts only an order identifier;
+// legal billing details are immutable once provider payment creation begins.
 app.post('/api/invoice/generate', async (req, res) => {
     try {
-        const {
-            paymentOrderId,
-            planTitle = '',
-            customerName: requestedCustomerName = '',
-            customerEmail: requestedCustomerEmail = '',
-            customerGstin = '',
-            customerCompany = '',
-            customerAddress = '',
-            customerCity = '',
-            customerState = '',
-            customerStateCode = '',
-            customerCountry = 'India'
-        } = req.body;
-
-        if (!/^[A-Za-z0-9_-]{1,128}$/.test(String(paymentOrderId || '')) || !db) {
-            return res.status(400).json({ success: false, error: 'A valid payment order is required.' });
+        const suppliedFields = Object.keys(req.body || {}).filter(key => key !== 'paymentOrderId');
+        if (suppliedFields.length) {
+            return res.status(409).json({
+                success: false,
+                code: 'CLIENT_BILLING_DETAILS_RETIRED',
+                error: 'Billing details must be captured before provider payment and cannot be changed during invoice issuance.',
+                requestId: res.locals.requestId,
+            });
         }
-        const paymentSnap = await db.collection('payment_orders').doc(String(paymentOrderId)).get();
-        const payment = paymentSnap.data();
-        if (!paymentSnap.exists || !['ACTIVE', 'REFUNDED'].includes(payment.status)) {
-            return res.status(404).json({ success: false, error: 'Verified payment order not found.' });
-        }
-        const customerDoc = await db.collection('users').doc(payment.uid).get();
-        const customer = customerDoc.data() || {};
-        const userId = payment.uid;
-        const amount = Number(payment.amount || 0) / 100;
-        const currency = String(payment.currency || 'INR').toUpperCase();
-        const plan = payment.planId;
-        const paymentMethod = payment.provider;
-        const paymentReference = payment.providerPaymentId || payment.providerOrderId || payment.providerPaymentIntentId || paymentSnap.id;
-        const customerName = requestedCustomerName || customer.displayName || `${customer.firstname || ''} ${customer.lastname || ''}`.trim() || 'Valued Customer';
-        const customerEmail = requestedCustomerEmail || customer.email || '';
-        const finalPlanTitle = planTitle || `${String(plan).toUpperCase()} Resume Builder AI Subscription`;
+        const result = await generateInvoice({
+            uid: req.user.uid,
+            paymentOrderId: req.body?.paymentOrderId,
+        });
+        return res.status(result.duplicate ? 200 : 201).json({ success: true, ...result });
+    } catch (error) {
+        console.error('[Invoice generation]', { code: error.code, requestId: res.locals.requestId });
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'INVOICE_GENERATION_FAILED',
+            error: error.status && error.status < 500 ? error.message : 'Unable to generate the invoice.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
 
-        const supplier = await getSupplierSnapshot();
+// Historical invoices are read only from immutable server-issued records and
+// are always owner-bound. A caller cannot enumerate or retrieve another
+// account's invoice by guessing its payment-order identifier.
+app.get('/api/invoices', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, private');
+        const invoices = await listInvoicesForUser({ uid: req.user.uid, limit: req.query?.limit });
+        return res.json({ success: true, invoices, source: 'MARIADB_IMMUTABLE_INVOICES', count: invoices.length });
+    } catch (error) {
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'INVOICE_HISTORY_UNAVAILABLE',
+            error: error.status && error.status < 500 ? error.message : 'Invoice history is unavailable.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
 
-        // Resolve customer state code strictly from inputs/GSTIN
-        const resolvedCustomerStateCode = customerStateCode || (customerGstin.length === 15 ? customerGstin.substring(0, 2) : (customerState ? getStateCode(customerState) : ''));
-        const resolvedCustomerState = customerState || (resolvedCustomerStateCode ? (INDIAN_STATES_DICT[resolvedCustomerStateCode] || '') : '');
-
-        // Check B2B vs B2C
-        const isB2B = Boolean(customerGstin && customerGstin.trim().length === 15);
-        const invoiceTitle = isB2B ? 'B2B GST Tax Invoice & Payment Receipt' : 'Tax Invoice & Payment Receipt';
-        const customerType = isB2B ? 'B2B' : 'B2C / Individual';
-
-        // Intra-State vs Inter-State Tax Engine
-        const isIntraState = String(supplier.stateCode).padStart(2, '0') === String(resolvedCustomerStateCode).padStart(2, '0');
-        const totalAmount = parseFloat(amount) || 499;
-        const gstRate = parseFloat(supplier.gstRate) || 18;
-
-        // Calculate Taxable Amount & GST Breakdown (Tax-Inclusive by Default)
-        const taxableAmount = parseFloat((totalAmount / (1 + (gstRate / 100))).toFixed(2));
-        const totalTax = parseFloat((totalAmount - taxableAmount).toFixed(2));
-
-        let cgstRate = 0, sgstRate = 0, igstRate = 0;
-        let cgstAmount = 0, sgstAmount = 0, igstAmount = 0;
-
-        if (isIntraState) {
-            cgstRate = gstRate / 2;
-            sgstRate = gstRate / 2;
-            cgstAmount = parseFloat((totalTax / 2).toFixed(2));
-            sgstAmount = parseFloat((totalTax / 2).toFixed(2));
-        } else {
-            igstRate = gstRate;
-            igstAmount = totalTax;
-        }
-
-        const grandTotal = totalAmount;
-        const amountInWords = numberToWordsINR(grandTotal, currency);
-
-        // Generate Server-Side Sequential GST Invoice Number (Format: RPAI/26-27/000001)
-        let invoiceSeq = 1;
-        if (db) {
-            try {
-                const counterDocRef = db.collection('data').doc('invoice_counter');
-                await db.runTransaction(async tx => {
-                    const counterDoc = await tx.get(counterDocRef);
-                    invoiceSeq = Number(counterDoc.data()?.currentSeq || 0) + 1;
-                    tx.set(counterDocRef, { currentSeq: invoiceSeq, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-                });
-            } catch (e) {
-                console.warn('[Invoice Counter Notice]:', e.message);
-            }
-        }
-        const seqFormatted = String(invoiceSeq).padStart(6, '0');
-        const invoiceNumber = `${supplier.invoicePrefix}/${supplier.financialYear}/${seqFormatted}`;
-
-        // Construct Immutable Invoice Document Payload
-        const invoiceRecord = {
-            invoiceNumber,
-            invoiceSeq,
-            invoiceTitle,
-            financialYear: supplier.financialYear,
-            invoiceDate: new Date().toISOString(),
-            formattedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            userId,
-            paymentMethod,
-            paymentReference,
-            paymentStatus: payment.status === 'REFUNDED' ? 'REFUNDED' : 'PAID',
-            currency,
-            subtotal: taxableAmount,
-            taxableAmount,
-            gstRate,
-            isIntraState,
-            cgstRate,
-            sgstRate,
-            igstRate,
-            cgstAmount,
-            sgstAmount,
-            igstAmount,
-            totalTax,
-            grandTotal,
-            amountInWords,
-            placeOfSupply: `${resolvedCustomerState} (${resolvedCustomerStateCode})`,
-            reverseCharge: 'No',
-            sacCode: supplier.sacCode,
-            customerSnapshot: {
-                name: customerName,
-                company: customerCompany,
-                email: customerEmail,
-                gstin: customerGstin,
-                type: customerType,
-                address: customerAddress,
-                city: customerCity,
-                state: resolvedCustomerState,
-                stateCode: resolvedCustomerStateCode,
-                country: customerCountry
-            },
-            supplierSnapshot: supplier,
-            lineItems: [
-                {
-                    description: finalPlanTitle,
-                    sacCode: supplier.sacCode,
-                    quantity: 1,
-                    unitPrice: taxableAmount,
-                    taxableValue: taxableAmount,
-                    gstRate: gstRate,
-                    total: grandTotal
-                }
-            ],
-            created_at: new Date()
-        };
-
-        // Save into Firestore if db available
-        if (db) {
-            try {
-                await db.collection('invoices').doc(invoiceNumber.replace(/\//g, '_')).set(invoiceRecord);
-                await db.collection('users').doc(userId).collection('invoices').doc(invoiceNumber.replace(/\//g, '_')).set(invoiceRecord);
-            } catch (e) {
-                console.warn('[Invoice Save Notice]:', e.message);
-            }
-        }
-
-        res.json({ success: true, invoice: invoiceRecord });
-    } catch (err) {
-        console.error('[Invoice Generation Error]:', err);
-        res.status(500).json({ success: false, error: err.message });
+app.get('/api/invoices/:paymentOrderId', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store, private');
+        const invoice = await getInvoiceForUser({ uid: req.user.uid, paymentOrderId: req.params.paymentOrderId });
+        return res.json({ success: true, invoice, source: 'MARIADB_IMMUTABLE_INVOICES' });
+    } catch (error) {
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'INVOICE_UNAVAILABLE',
+            error: error.status && error.status < 500 ? error.message : 'Invoice is unavailable.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -3621,29 +3690,16 @@ app.post('/api/export-docx', async (req, res) => {
         return res.status(400).json({ error: 'Invalid export request' });
     }
     const { getRepository } = require('./repositories');
-    const repo = getRepository(req.app.get('db') || db);
+    const repo = getRepository();
     const docId = String(resumeId);
-    let stored = await repo.getResume(req.user.uid, docId).catch(() => null);
-    if (!stored) {
-        stored = await repo.getCover(req.user.uid, docId).catch(() => null);
-    }
-    if (!stored && req.app.get('db')) {
-        const requestDb = req.app.get('db');
-        let resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('resumes').doc(docId).get().catch(() => null);
-        if (!resumeSnap?.exists) {
-            resumeSnap = await requestDb.collection('users').doc(req.user.uid).collection('covers').doc(docId).get().catch(() => null);
-        }
-        if (resumeSnap?.exists) stored = resumeSnap.data();
-    }
+    const stored = requestedTemplate.startsWith('Cover')
+        ? await repo.getCover(req.user.uid, docId)
+        : await repo.getResume(req.user.uid, docId);
     if (!stored) return res.status(404).json({ error: 'Resume not found' });
-    let owner = (await repo.getUser(req.user.uid).catch(() => null));
-    if (!owner && req.app.get('db')) {
-        const userDoc = await req.app.get('db').collection('users').doc(req.user.uid).get().catch(() => null);
-        if (userDoc?.exists) owner = userDoc.data();
-    }
-    owner = owner || {};
-    const publicConfig = (await repo.getSetting('public_config').catch(() => null)) || {};
-    const systemSettings = (await repo.getSetting('system_settings').catch(() => null)) || {};
+    const owner = await repo.getUser(req.user.uid);
+    if (!owner) return res.status(404).json({ error: 'Resume owner not found' });
+    const publicConfig = (await repo.getSetting('public_config')) || {};
+    const systemSettings = (await repo.getSetting('system_settings')) || {};
     const isGlobalFreeMode = publicConfig.subscriptions === false 
         || publicConfig.subscriptions?.state === false 
         || publicConfig.subscriptions?.enabled === false
@@ -3730,7 +3786,7 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
         const systemPrompt = `You are an elite executive career strategist and professional resume writer specializing in high-impact ATS cover letters. Never invent candidate facts and return only the requested cover letter. ${toneInstruction}`;
         const prompt = `${systemPrompt}\n\nWrite a compelling, tailored, 3-paragraph ATS cover letter addressed to ${recipient} for a ${title} position at ${company}. Highlight ${exp} years of experience and key skills in ${skills}.${jdContext}${langContext}\nClose the letter with the candidate name ${candidate}.`;
         try {
-            const configuration = await loadProviderConfiguration(db);
+            const configuration = await loadProviderConfiguration();
             configuration.maxTokens = Math.min(1000, Math.max(500, configuration.maxTokens));
             const providerResult = await generateWithProviders({ prompt, configuration, operation: 'generate-ai-cover-letter', signal: requestController.signal, timeoutMs: 45000 });
             const coverLetter = String(providerResult.raw || '').replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/<[^>]*>/g, '').replace(/^```(?:text)?\s*|```$/gi, '').trim().slice(0, 20000);
@@ -3812,33 +3868,21 @@ try {
 
 function databaseHealthPayload() {
     const status = databaseAuthority.getStatus();
-    const mysqlState = status.health.mysql.healthy === true ? 'UP' : (status.health.mysql.healthy === false ? 'DOWN' : 'UNKNOWN');
-    const fsState = status.health.firestore.healthy === true ? 'UP' : (status.health.firestore.healthy === false ? 'DOWN' : 'UNKNOWN');
+    const mariadbHealth = status.health.mysql;
+    const databaseState = mariadbHealth.healthy === true ? 'UP' : (mariadbHealth.healthy === false ? 'DOWN' : 'UNKNOWN');
     return {
         mariadb: {
-            status: mysqlState,
-            healthy: status.health.mysql.healthy,
-            lastError: status.health.mysql.lastError,
-            latencyMs: status.health.mysql.latencyMs,
-        },
-        firestore: {
-            status: fsState,
-            healthy: status.health.firestore.healthy,
-            lastError: status.health.firestore.lastError,
-            latencyMs: status.health.firestore.latencyMs,
+            status: databaseState,
+            healthy: mariadbHealth.healthy,
+            lastError: mariadbHealth.lastError,
+            latencyMs: mariadbHealth.latencyMs,
         },
         authority: {
             mode: status.mode,
-            configuredPrimary: status.configuredPrimary,
-            operationalWriteEngine: status.operationalWriteEngine,
-            operationalAuthority: status.operationalWriteEngine === 'mysql' ? 'MARIA' : 'FIRESTORE',
+            owner: 'MARIADB',
+            mutable: false,
             canAcceptWrites: status.canAcceptWrites,
-            fenceGeneration: status.fence ? status.fence.generation : null,
-            reconciliation: status.mode === 'RECONCILING' ? 'RUNNING' : (status.mode === 'CONFLICT_DETECTED' ? 'CONFLICT' : 'IDLE'),
-        },
-        sync: {
-            status: status.mode === 'BOTH_UNAVAILABLE' ? 'DOWN' : (status.mode === 'NORMAL' ? 'HEALTHY' : 'DEGRADED'),
-            note: 'See getSyncHealthStatus for outbox/reconciliation depth.',
+            lastRecoveryAt: status.lastRecoveryAt,
         },
     };
 }
@@ -3849,7 +3893,7 @@ function livenessPayload() {
         status: 'ok',
         identityProviderConfigured: Boolean(admin && admin.apps && admin.apps.length > 0),
         firestoreDataPlane: 'REMOVED',
-        authoritativeDatabase: 'mysql',
+        authoritativeDatabase: 'MARIADB',
         date: new Date().toISOString(),
         commitSha: globalCommitSha,
         databases: databaseHealthPayload(),
@@ -3870,7 +3914,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/health/databases', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-        const snapshot = await databaseAuthority.refresh(req.app.get('db') || db);
+        const snapshot = await databaseAuthority.refresh();
         return res.json({ success: true, ...snapshot });
     } catch (_error) {
         return res.status(503).json({ success: false, error: { code: 'HEALTH_PROBE_FAILED', message: 'Database health could not be determined', requestId: res.locals.requestId } });
@@ -3893,7 +3937,7 @@ async function computeReadyzPayload() {
     const ready = mysql.connected === true;
     return {
         status: ready ? 'ready' : 'not_ready',
-        authoritativeDatabase: 'mysql',
+        authoritativeDatabase: 'MARIADB',
         checks: {
             mysql: ready
                 ? { status: 'READY', latencyMs: mysql.latencyMs, version: mysql.version, host: mysql.host, database: mysql.database }
@@ -3911,7 +3955,7 @@ async function computeReadyzPayload() {
             aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
             cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
             notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
-            tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'MANUAL_SCRIPT_ONLY',
+            tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'DISABLED',
             pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
         },
     };
@@ -3944,7 +3988,7 @@ if (require.main === module) {
             if (schedulerRunning) return;
             schedulerRunning = true;
             try {
-                const count = await publishDueBlogPosts(db);
+                const count = await publishDueBlogPosts();
                 if (count) console.info(`[CMS scheduler] Published ${count} due post(s).`);
             } catch (error) {
                 console.error('[CMS scheduler] Publication check failed:', error?.message || error);
@@ -3959,9 +4003,8 @@ if (require.main === module) {
 
     // Durable notification delivery worker — MySQL transactional outbox.
     // Lease-based claims, exponential backoff + jitter, dead-letter after
-    // max attempts. Requires NO Firestore: the queue is the MySQL
-    // notification_outbox table, so delivery retries survive with Firestore
-    // completely unavailable.
+    // max attempts. The queue is the authoritative MariaDB
+    // notification_outbox table.
     if (process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true') {
         const { getPool } = require('./database/mysql');
         const workerId = `${process.pid}-${crypto.randomUUID()}`;
@@ -3979,7 +4022,13 @@ if (require.main === module) {
                     // Tenant-bound outbox events are reauthorized at execution time;
                     // legacy events retain their certified UID-era delivery behavior.
                     authorize: event => tenantService?.authorizeOutboxEvent(event),
-                    dispatch: event => emailRoute.dispatchNotification(null, { to: event.recipient, templateType: event.templateType, vars: event.vars })
+                    dispatch: event => emailRoute.dispatchNotification({
+                        to: event.recipient,
+                        templateType: event.templateType,
+                        vars: event.vars,
+                        customSubject: event.metadata?.customSubject,
+                        customBody: event.metadata?.customBody,
+                    })
                 });
             } catch (error) { console.error('[Notification outbox]', error.message); }
             finally { workerRunning = false; }
@@ -3990,52 +4039,57 @@ if (require.main === module) {
         console.log('[Notification outbox] MySQL-backed delivery worker enabled.');
     }
 
-    // Durable enterprise job worker (Firestore outbox). Jobs are claimed via
-    // leases, signature/expiry verified, and tenant membership reauthorized at
-    // execution time. Handlers that are not registered cause the job to fail,
-    // retry with backoff, and dead-letter — never silent drops.
-    if (process.env.ENTERPRISE_OUTBOX_WORKER_ENABLED === 'true' && db && admin) {
+    // Durable MariaDB enterprise job worker. Leases, envelope signatures,
+    // expiry, and current tenant membership are verified before execution.
+    if (process.env.ENTERPRISE_OUTBOX_WORKER_ENABLED === 'true') {
         const { runOutboxWorkerOnce, sweepExpiredJobs } = require('./enterprise/enterpriseOutbox');
+        const { queueEmailInTransaction } = require('./services/notificationOutbox');
         const workerId = `enterprise-${process.pid}-${crypto.randomUUID()}`;
         const intervalMs = Math.max(5_000, Math.min(Number(process.env.ENTERPRISE_OUTBOX_INTERVAL_MS) || 15_000, 300_000));
         const signingSecret = process.env.TENANT_JOB_SIGNING_SECRET || '';
         let enterpriseWorkerRunning = false;
+        let signingConfigurationReported = false;
         const runEnterpriseOutbox = async () => {
             if (enterpriseWorkerRunning) return;
             enterpriseWorkerRunning = true;
             try {
                 if (Buffer.byteLength(signingSecret) < 32) {
-                    console.error('[Enterprise outbox worker] TENANT_JOB_SIGNING_SECRET is missing or too short; worker idle (fail closed).');
+                    if (!signingConfigurationReported) {
+                        console.error('[Enterprise outbox worker] TENANT_JOB_SIGNING_SECRET is missing or too short; worker idle (fail closed).');
+                        signingConfigurationReported = true;
+                    }
                     return;
                 }
                 const tenantService = app.get('tenantService');
-                await sweepExpiredJobs({ db, admin, now: Date.now() });
+                const pool = getPool();
+                await sweepExpiredJobs({ pool, now: Date.now() });
                 const outcomes = await runOutboxWorkerOnce({
-                    db,
-                    admin,
+                    pool,
                     tenantService,
                     signingSecret,
                     workerId,
                     maxJobs: 5,
                     handlers: {
-                        // NOTIFY fans a tenant notification into the certified
-                        // durable email outbox; delivery retries happen there.
-                        NOTIFY: async ({ envelope }) => {
-                            await db.collection('notification_outbox').doc(require('crypto').createHash('sha256').update(`email\0${envelope.correlationId}`).digest('hex')).create({
+                        NOTIFY: async ({ envelope, context }) => {
+                            const resource = await tenantService.getResource({ context, resourceId: envelope.resource.id });
+                            const owner = resource.ownerPrincipalId
+                                ? await admin.auth().getUser(resource.ownerPrincipalId)
+                                : null;
+                            if (!owner?.email) {
+                                throw Object.assign(new Error('Notification resource owner has no deliverable email identity'), {
+                                    code: 'NOTIFICATION_RECIPIENT_UNAVAILABLE',
+                                });
+                            }
+                            const queued = await queueEmailInTransaction(pool, {
                                 eventId: `${envelope.correlationId}:notify`,
-                                channel: 'email',
-                                recipient: envelope.recipient || null,
+                                recipient: owner.email,
                                 templateType: 'tenant_notification',
                                 vars: {},
-                                metadata: { tenantId: envelope.tenantId, jobId: envelope.jobId },
-                                tenant: null,
-                                state: envelope.recipient ? 'NOTIFICATION_QUEUED' : 'SKIPPED_NO_RECIPIENT',
-                                attemptCount: 0,
-                                nextAttemptAt: admin.firestore.Timestamp.fromMillis(Date.now()),
-                                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                            }).catch(() => {});
-                            return { notified: Boolean(envelope.recipient) };
+                                metadata: { tenantId: envelope.tenantId, jobId: envelope.jobId, resourceId: envelope.resource.id },
+                                tenantContext: context,
+                                idempotencyKey: envelope.idempotencyKey,
+                            });
+                            return { notificationEventId: queued.eventId, state: queued.state };
                         },
                     },
                 });
@@ -4061,7 +4115,7 @@ if (require.main === module) {
     // record, and configuration document. Without this worker, DELETING
     // tenants are only reclaimed when an operator remembers to run
     // scripts/tenant-garbage-collector.mjs manually.
-    if (process.env.TENANT_GC_WORKER_ENABLED === 'true' && db && admin) {
+    if (process.env.TENANT_GC_WORKER_ENABLED === 'true') {
         const intervalMs = Math.max(60_000, Math.min(Number(process.env.TENANT_GC_INTERVAL_MS) || 3_600_000, 86_400_000));
         const gracePeriodDays = Math.max(0, Number(process.env.TENANT_GC_GRACE_PERIOD_DAYS ?? 7));
         let gcRunning = false;
@@ -4092,9 +4146,9 @@ if (require.main === module) {
         setTimeout(runTenantGc, 30_000).unref?.();
     }
 
-    // The legacy Firestore<->MySQL bidirectional sync daemon has been REMOVED:
-    // MySQL/MariaDB is the single authoritative store, and no background
-    // process may require Firestore on any path.
+    // The retired cross-store replication daemon is absent. MariaDB is the
+    // single authoritative store, and no background process may require an
+    // alternate application-data plane.
 
     // Listen HTTP/HTTPS port safely
     const keyPath = '/etc/letsencrypt/live/' + websiteName + '/privkey.pem';
@@ -4149,38 +4203,14 @@ app.get('/api/linkedin-scraper', async (req, res) => {
     }
 });
 
-// Automatic Event Notifier API Endpoints (10/10 Coverage)
-app.post('/api/notify/user-signup', async (req, res) => {
-    const { userEmail, userName } = req.body;
-    const result = await EmailNotifier.notifyUserRegistration(req.app.get('db'), { userEmail, userName });
-    // Signup notification reports the admin copy alongside the user copy, so it
-    // formats its own body, but it uses the same three-state semantics as every
-    // other notification route.
-    const userDelivery = result?.userDelivery;
-    const state = userDelivery?.deliveryState || 'DELIVERY_FAILED';
-    const attempted = state === 'DELIVERY_ATTEMPTED';
-    const notConfigured = state === 'NOT_CONFIGURED';
-    const status = attempted ? 202 : (notConfigured ? 503 : 502);
-    return res.status(status).json({
-        success: attempted,
-        deliveryState: state,
-        providerAccepted: userDelivery?.providerAccepted === true,
-        adminDeliveryState: result?.adminDelivery?.deliveryState || 'DELIVERY_FAILED',
-        ...(notConfigured
-            ? {
-                configurationState: 'NOT_CONFIGURED',
-                code: 'EMAIL_NOT_CONFIGURED',
-                message: 'Welcome email was not sent because no email provider is configured for this deployment.',
-                remediation: 'Configure SMTP credentials in Admin → Settings → Email, then retry.',
-            }
-            : {
-                message: attempted
-                    ? 'Welcome email delivery was attempted and accepted by the configured provider.'
-                    : 'Welcome email delivery failed.',
-                ...(attempted ? {} : { code: userDelivery?.code || 'EMAIL_DELIVERY_FAILED' }),
-            }),
-    });
-});
+// Client-authored notification dispatch is retired. Product workflows enqueue
+// owner-derived recipients in the same MariaDB transaction as their business
+// mutation; accepting arbitrary client recipients would create an abuse relay.
+app.post('/api/notify/user-signup', (_req, res) => res.status(410).json({
+    success: false,
+    code: 'CLIENT_NOTIFICATION_DISPATCH_RETIRED',
+    message: 'Account-created notifications are generated by the profile transaction.'
+}));
 
 // ─── Firebase Admin SDK Service Account Status ──────────────────────────────
 // Production credentials belong in Workload Identity or the deployment Secret Manager.
@@ -4296,14 +4326,11 @@ app.post('/api/admin/firebase-service-account', requireRecentAdminAuthentication
                 clientEmail,
                 privateKey: normalizedKey,
             }),
-            databaseURL: process.env.FIREBASE_DATABASE_URL || undefined
         });
         admin = firebaseAdmin;
-        // ARCHITECTURE: rotating identity credentials can NEVER re-enable a
-        // Firestore data plane. `db` is a permanent null constant; the
-        // credential rotation applies to Firebase Auth (identity) only.
-        app.set('db', null);
-        console.log('[SA Config] ✅ Firebase Admin SDK hot-reloaded with new credentials (identity only; Firestore data plane remains REMOVED)');
+        // Credential rotation applies to Firebase Authentication only.
+        app.set('firebaseAdmin', firebaseAdmin);
+        console.log('[SA Config] Firebase Admin identity credentials hot-reloaded');
 
         return res.json({
             success: true,
@@ -4319,7 +4346,7 @@ app.post('/api/admin/firebase-service-account', requireRecentAdminAuthentication
 
 // Password reset: only a hash is persisted; raw tokens are never stored server-side.
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
-app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], async (req, res) => {
+app.post('/api/auth/custom-password-reset', async (req, res) => {
     const email = String(req.body.email || req.body.userEmail || '').trim().toLowerCase();
     const startedAt = Date.now();
     // Equalize observable responses for malformed, missing and existing accounts.
@@ -4342,9 +4369,11 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
         // active token is replaced atomically so an older email can never reset a
         // password after the user has requested a newer link.
         const { createPasswordResetToken } = require('./database/authTokens');
-        await createPasswordResetToken({ tokenHash, uid: user.uid, email, expiresAt });
         const resetLink = `${protocol}://${websiteName}/login#mode=resetPassword&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-        await EmailNotifier.notifyPasswordReset(db, { userEmail: email, userName: email.split('@')[0], resetLink });
+        await createPasswordResetToken({
+            tokenHash, uid: user.uid, email, expiresAt,
+            notification: { vars: { candidate_name: email.split('@')[0], user_name: email.split('@')[0], reset_link: resetLink } },
+        });
         return respond();
     } catch (err) {
         console.error('[Password reset request]', err.message);
@@ -4354,7 +4383,7 @@ app.post(['/api/auth/custom-password-reset', '/api/notify/password-reset'], asyn
 
 // Branded verification links are authenticated, account-bound, hashed at rest and single-use.
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
-app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-email'], notificationAccountLimiter, async (req, res) => {
+app.post('/api/auth/send-verification-email', notificationAccountLimiter, async (req, res) => {
     const email = String(req.user?.email || '').trim().toLowerCase();
     if (!email || !req.user?.uid) return res.status(403).json({ success: false, error: 'Authenticated email required.' });
     if (req.body.email && String(req.body.email).trim().toLowerCase() !== email) {
@@ -4368,12 +4397,11 @@ app.post(['/api/auth/send-verification-email', '/api/notify/send-verification-em
         // MySQL is the authoritative token store; the previous active token is
         // replaced atomically inside the same transaction.
         const { createEmailVerificationToken } = require('./database/authTokens');
-        await createEmailVerificationToken({ tokenHash, uid: req.user.uid, email, expiresAt });
         const verificationLink = `${protocol}://${websiteName}/login#mode=verifyEmail&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-        await EmailNotifier.notifyEmailVerificationLink(db, {
-            userEmail: email,
-            userName: String(req.body.userName || email.split('@')[0]).slice(0, 100),
-            verificationLink
+        const userName = String(req.body.userName || email.split('@')[0]).slice(0, 100);
+        await createEmailVerificationToken({
+            tokenHash, uid: req.user.uid, email, expiresAt,
+            notification: { vars: { candidate_name: userName, user_name: userName, verification_link: verificationLink } },
         });
         return res.json(generic);
     } catch (error) {
@@ -4402,7 +4430,7 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
         await finalizeEmailVerification({ tokenHash, uid, leaseId });
         const { getRepository } = require('./repositories');
         try {
-            const repo = getRepository(db);
+            const repo = getRepository();
             const profile = await repo.getUser(uid);
             await repo.saveUser(uid, { ...(profile || {}), emailVerified: true, revision: Number(profile?.revision || 1) + 1 });
         } catch (_repoErr) { /* non-fatal: identity is verified; profile flag is best-effort */ }
@@ -4414,65 +4442,106 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
     }
 });
 
-app.post('/api/admin/payments/refund', async (req, res) => {
+app.post('/api/admin/payments/refund', requireRecentAdminAuthentication, async (req, res) => {
     const paymentOrderId = String(req.body.paymentOrderId || '');
-    const reason = String(req.body.reason || 'Customer requested refund').trim().slice(0, 500);
+    const reason = String(req.body.reason || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
-        return res.status(400).json({ success: false, error: 'Valid payment order is required.' });
+        return res.status(400).json({ success: false, code: 'INVALID_PAYMENT_ORDER', error: 'Valid payment order is required.' });
     }
-    const requestDb = req.app.get('db') || db;
+    if (reason.length < 5) {
+        return res.status(400).json({ success: false, code: 'REFUND_REASON_REQUIRED', error: 'A refund reason of at least five characters is required.' });
+    }
+
+    let claimedOrder = null;
     try {
-        const order = await paymentActivation.getOrder(paymentOrderId, requestDb);
-        if (!order) return res.status(404).json({ success: false, error: 'Payment order not found.' });
-        if (order.status === 'REFUNDED') return res.json({ success: true, duplicate: true, status: 'REFUNDED' });
-        if (order.status !== 'ACTIVE' && order.status !== 'REFUND_PENDING') {
-            return res.status(409).json({ success: false, error: 'Only an active payment can be refunded.' });
-        }
-        if (!['stripe', 'paypal', 'razorpay'].includes(order.provider)) {
-            return res.status(501).json({ success: false, error: `${order.provider} refunds require provider webhook/API validation before enablement.` });
-        }
-        if (order.status === 'ACTIVE') {
-            await paymentActivation.updateOrder(paymentOrderId, {
-                status: 'REFUND_PENDING', refundReason: reason,
-                refundRequestedBy: req.user.uid,
-                refundRequestedAt: new Date().toISOString(),
-            }, requestDb);
-        }
-        let refundId;
-        if (order.provider === 'stripe') {
-            const refund = await stripe.refunds.create({ payment_intent: order.providerPaymentIntentId, reason: 'requested_by_customer' }, { idempotencyKey: `refund:${paymentOrderId}` });
-            refundId = refund.id;
-        } else if (order.provider === 'paypal') {
-            const { clientId, clientSecret, baseUrl } = await paypalConfig(req.app.get('db'));
-            const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
-            const providerRes = await fetch(`${baseUrl}/v2/payments/captures/${encodeURIComponent(order.providerPaymentId)}/refund`, {
-                method: 'POST', timeout: 10_000,
-                headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'PayPal-Request-Id': `refund-${paymentOrderId}` },
-                body: JSON.stringify({ amount: { value: (order.amount / 100).toFixed(2), currency_code: order.currency } })
+        claimedOrder = await paymentActivation.claimRefund({
+            orderId: paymentOrderId,
+            actorUid: req.user.uid,
+            reason,
+        });
+        if (claimedOrder.duplicate) {
+            const reconciled = await paymentActivation.reverseEntitlement({
+                orderId: paymentOrderId,
+                status: 'REFUNDED',
+                providerRefundId: claimedOrder.providerRefundId || null,
+                providerRefundReferenceType: claimedOrder.providerRefundReferenceType || 'PROVIDER',
             });
-            const refund = await providerRes.json();
-            if (!providerRes.ok || !refund.id) throw new Error('PAYPAL_REFUND_FAILED');
-            refundId = refund.id;
-        } else if (order.provider === 'razorpay') {
-            const { keyId, keySecret } = await getRazorpayKeys(req.app.get('db'));
-            if (!keyId || !keySecret) throw new Error('RAZORPAY_REFUND_UNAVAILABLE');
-            const providerRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(order.providerPaymentId)}/refund`, {
-                method: 'POST', timeout: 10_000,
-                headers: { 'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64'), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: order.amount, notes: { paymentOrderId, reason } })
+            return res.json({
+                success: true,
+                duplicate: true,
+                status: 'REFUNDED',
+                refundId: reconciled.providerRefundId || null,
+                creditNote: reconciled.creditNote || null,
+                message: 'This payment was already refunded.',
             });
-            const refund = await providerRes.json();
-            if (!providerRes.ok || !refund.id) throw new Error('RAZORPAY_REFUND_FAILED');
-            refundId = refund.id;
         }
-        await paymentActivation.reverseEntitlement({ orderId: paymentOrderId, status: 'REFUNDED', firestoreDb: requestDb });
-        await paymentActivation.updateOrder(paymentOrderId, {
-            providerRefundId: refundId, refundReason: reason,
-        }, requestDb).catch(() => {});
-        return res.json({ success: true, status: 'REFUNDED', refundId });
+
+        const outcome = await executeOrReconcileProviderRefund(
+            claimedOrder,
+            claimedOrder.refundReason || reason,
+            { getStripeClient, paypalConfig, paypalAccessToken, getRazorpayKeys, getPaytmConfig, getPhonePeConfig, fetchImpl: fetch }
+        );
+        if (outcome.state === 'FAILED') {
+            throw refundFlowError(`${claimedOrder.provider.toUpperCase()}_REFUND_FAILED`, 'The provider reported that the refund failed.', 422, { restoreActive: true, providerFailureConfirmed: true });
+        }
+        if (outcome.state === 'PENDING') {
+            await paymentActivation.recordRefundSubmitted({
+                orderId: paymentOrderId,
+                claimId: claimedOrder.claimId,
+                providerRefundId: outcome.refundId,
+                providerRefundStatus: outcome.providerStatus,
+                providerRefundReferenceType: outcome.providerRefundReferenceType,
+                providerRefunds: outcome.providerRefunds,
+            });
+            claimedOrder.claimId = null;
+            return res.status(202).json({
+                success: true,
+                status: 'REFUND_PENDING',
+                refundId: outcome.refundId,
+                providerStatus: outcome.providerStatus,
+                message: 'The provider accepted the refund. Completion is pending; entitlement and accounting remain unchanged until reconciliation confirms completion.',
+            });
+        }
+
+        const reversed = await paymentActivation.reverseEntitlement({
+            orderId: paymentOrderId,
+            status: 'REFUNDED',
+            expectedRefundClaimId: claimedOrder.claimId,
+            providerRefundId: outcome.refundId,
+            providerRefundReferenceType: outcome.providerRefundReferenceType,
+            providerRefunds: outcome.providerRefunds,
+        });
+        claimedOrder.claimId = null;
+        return res.json({
+            success: true,
+            status: 'REFUNDED',
+            refundId: outcome.refundId,
+            creditNote: reversed.creditNote || null,
+            message: reversed.creditNote
+                ? `Provider refund completed, entitlement reconciled, and credit note ${reversed.creditNote.creditNoteNumber} issued.`
+                : 'Provider refund completed and entitlement reconciled. No credit note was created because no tax invoice had been issued.',
+        });
     } catch (error) {
-        console.error('[Payment refund]', error.message);
-        return res.status(502).json({ success: false, error: 'Provider refund could not be confirmed.' });
+        if (claimedOrder?.claimId) {
+            await paymentActivation.releaseRefundClaim({
+                orderId: paymentOrderId,
+                claimId: claimedOrder.claimId,
+                failureCode: error.code || 'PROVIDER_REFUND_UNCONFIRMED',
+                restoreActive: error.restoreActive === true,
+                providerFailureConfirmed: error.providerFailureConfirmed === true,
+            }).catch(releaseError => {
+                console.error('[Payment refund claim release]', releaseError.message);
+            });
+        }
+        console.error('[Payment refund]', error.code || error.message);
+        const status = Number(error.status) || 502;
+        if (error.retryAfterSeconds) res.setHeader('Retry-After', String(error.retryAfterSeconds));
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'PROVIDER_REFUND_UNCONFIRMED',
+            error: status >= 500 ? 'Provider refund could not be confirmed. The durable attempt remains pending for safe reconciliation.' : error.message,
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -4484,38 +4553,27 @@ function adminIso(value) {
     } catch (_) { return null; }
 }
 
-/**
- * Admin collection read — MySQL authoritative.
- *
- * Reads the collection from MySQL first (canonical_documents table, or the
- * dedicated relational table when one exists). The Firestore data plane is
- * consulted ONLY when it is explicitly enabled (FIREBASE_DATA_PLANE on) and
- * MySQL has no rows — the reverse of the legacy order, so a Firestore outage
- * can never make an admin list unavailable. In the default configuration
- * `database` is null and this function is purely MySQL.
- */
-async function adminCollectionRead(database, collectionName, { limit = 200, _orderField = null } = {}) {
+/** List an administrative entity from its authoritative MariaDB table. */
+async function adminEntityList(entityType, { limit = 200 } = {}) {
     const bounded = Math.min(Math.max(Number(limit) || 200, 1), 500);
     // Domain-specific relational tables take precedence over the generic
     // canonical_documents store.
     const relationalTables = {
         companies: 'companies',
         jobs: 'jobs',
-        reviews: 'reviews',
         blog_posts: 'blog',
         ads: 'canonical_documents',
         blog_categories: 'canonical_documents',
-        employerApplications: 'canonical_documents',
-        trusted_by: 'canonical_documents',
-        landing_content: 'canonical_documents',
+        employer_applications: 'canonical_documents',
     };
-    const table = relationalTables[collectionName] || 'canonical_documents';
+    const table = relationalTables[entityType];
+    if (!table) throw Object.assign(new Error(`Unsupported administrative entity: ${entityType}`), { status: 500 });
     try {
         const pool = require('./database/mysql').getPool();
         if (table === 'canonical_documents') {
             const [rows] = await pool.query(
                 `SELECT entity_id, payload, created_at, updated_at FROM canonical_documents WHERE entity_type = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT ?`,
-                [collectionName, bounded]
+                [entityType, bounded]
             );
             const items = rows.map(row => {
                 let payload = {};
@@ -4527,24 +4585,22 @@ async function adminCollectionRead(database, collectionName, { limit = 200, _ord
         const [rows] = await pool.query(`SELECT * FROM ${table} ORDER BY updated_at DESC LIMIT ?`, [bounded]);
         return rows.map(row => ({ id: row.id, ...row }));
     } catch (mysqlErr) {
-        // Firestore is never a fallback for availability: rethrow so the admin
-        // surface answers a controlled 503 instead of silently degrading.
         throw Object.assign(new Error(`Admin collection unavailable: ${mysqlErr.message}`), { status: 503 });
     }
 }
 
 app.get('/api/admin/employer-applications', async (req, res) => {
     try {
-        const rows = await adminCollectionRead(req.app.get('db'), 'employerApplications', { limit: req.query?.limit || 200, orderField: 'submittedAt' });
+        const rows = await adminEntityList('employer_applications', { limit: req.query?.limit || 200, orderField: 'submittedAt' });
         return res.json({ success: true, applications: rows, source: 'MYSQL_SERVER_READ', count: rows.length });
     } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'EMPLOYER_APPLICATIONS_UNAVAILABLE', error: 'Employer applications are unavailable.', requestId: res.locals.requestId }); }
 });
 
 app.get('/api/admin/companies', async (req, res) => {
     try {
-        const companies = await adminCollectionRead(req.app.get('db'), 'companies', { limit: req.query?.limit || 500, orderField: 'createdAt' });
+        const companies = await adminEntityList('companies', { limit: req.query?.limit || 500, orderField: 'createdAt' });
         let jobs = [];
-        try { jobs = await adminCollectionRead(req.app.get('db'), 'jobs', { limit: 500 }); } catch (_) { jobs = null; }
+        try { jobs = await adminEntityList('jobs', { limit: 500 }); } catch (_) { jobs = null; }
         const result = companies.map(company => {
             if (!jobs) return company;
             const related = jobs.filter(job => job.companyId === company.id || job.employerId === company.employerId);
@@ -4560,7 +4616,7 @@ app.get('/api/admin/jobs', async (req, res) => {
         const search = String(req.query?.search || req.query?.q || '').trim().toLowerCase();
         const pageSize = Math.min(Math.max(Number(req.query?.limit) || 10, 1), 100);
         const page = Math.max(Number(req.query?.page) || 1, 1);
-        const all = await adminCollectionRead(req.app.get('db'), 'jobs', { limit: 500 });
+        const all = await adminEntityList('jobs', { limit: 500 });
         const mapped = all.map(job => ({ ...job, createdAt: adminIso(job.createdAt), updatedAt: adminIso(job.updatedAt), deadline: adminIso(job.deadline), type: job.jobType, postedDate: adminIso(job.createdAt), applicants: Number(job.applicationsCount || 0), salary: job.minSalary || job.maxSalary ? `${job.minSalary || ''}-${job.maxSalary || ''}` : 'Salary not specified' }));
         const filtered = mapped.filter(job => (status === 'all' || String(job.status || '').toLowerCase() === status) && (!search || [job.title, job.company, job.location, job.id].some(value => String(value || '').toLowerCase().includes(search))));
         const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -4570,12 +4626,16 @@ app.get('/api/admin/jobs', async (req, res) => {
 });
 
 app.get('/api/admin/reviews', async (req, res) => {
-    try { const reviews = await adminCollectionRead(req.app.get('db'), 'reviews', { limit: req.query?.limit || 500 }); return res.json({ success: true, reviews, source: 'MYSQL_SERVER_READ', count: reviews.length }); }
-    catch (error) { return res.status(error.status || 503).json({ success: false, code: 'REVIEWS_UNAVAILABLE', error: 'Reviews are unavailable.', requestId: res.locals.requestId }); }
+    try {
+        const reviews = await getRepository().getReviews({ approvedOnly: false, limit: req.query?.limit || 500 });
+        return res.json({ success: true, reviews, source: 'MARIADB_REVIEWS', count: reviews.length });
+    } catch (error) {
+        return res.status(error.status || 503).json({ success: false, code: 'REVIEWS_UNAVAILABLE', error: 'Reviews are unavailable.', requestId: res.locals.requestId });
+    }
 });
 
 app.get('/api/admin/ads', async (req, res) => {
-    try { const ads = await adminCollectionRead(req.app.get('db'), 'ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'MYSQL_SERVER_READ', count: ads.length }); }
+    try { const ads = await adminEntityList('ads', { limit: req.query?.limit || 500 }); return res.json({ success: true, ads, source: 'MYSQL_SERVER_READ', count: ads.length }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'ADS_UNAVAILABLE', error: 'Advertisements are unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4583,83 +4643,94 @@ app.get('/api/admin/payment-orders', async (req, res) => {
     try {
         const limit = Math.min(Math.max(Number(req.query?.limit) || 200, 1), 500);
         const pool = require('./database/mysql').getPool();
-        const [orderRows] = await pool.query(
-            'SELECT * FROM payment_orders ORDER BY created_at DESC LIMIT ?',
-            [limit]
-        ).catch(() => [[]]);
-        const [transactionRows] = await pool.query(
-            'SELECT * FROM transactions ORDER BY created_at DESC LIMIT ?',
-            [limit]
-        ).catch(() => [[]]);
-        const records = [];
-        const seen = new Set();
-        const dateValue = value => adminIso(value);
+        const [[orderRows], [invoiceRows]] = await Promise.all([
+            pool.query('SELECT * FROM payment_orders ORDER BY created_at DESC LIMIT ?', [limit]),
+            pool.query(
+                `SELECT i.*, cn.credit_note_number,
+                        cn.provider_refund_id AS credit_note_provider_refund_id,
+            cn.provider_refund_reference_type AS credit_note_provider_refund_reference_type,
+                        cn.taxable_amount AS credit_note_taxable_amount,
+                        cn.tax_amount AS credit_note_tax_amount,
+                        cn.total_amount AS credit_note_total_amount,
+                        cn.payload AS credit_note_payload
+                 FROM invoices i
+                 LEFT JOIN credit_notes cn ON cn.invoice_id = i.id
+                 ORDER BY i.issued_at DESC LIMIT ?`,
+                [limit]
+            ),
+        ]);
+        const invoicesByOrder = new Map();
+        for (const row of invoiceRows) {
+            const invoice = invoiceFromRow(row, row.user_id);
+            const relationalAmounts = [row.taxable_amount, row.tax_amount, row.total_amount].map(Number);
+            const payloadAmounts = [invoice.taxableAmount, invoice.totalTax, invoice.grandTotal].map(Number);
+            if (relationalAmounts.some(value => !Number.isFinite(value) || value < 0)
+                || payloadAmounts.some(value => !Number.isFinite(value) || value < 0)
+                || relationalAmounts.some((value, index) => Math.abs(value - payloadAmounts[index]) > 0.005)) {
+                throw Object.assign(new Error('Immutable invoice amount integrity check failed'), { code: 'INVOICE_RECORD_INVALID', status: 503 });
+            }
+            invoicesByOrder.set(row.payment_order_id, invoice);
+        }
         const statusLabel = raw => {
             const status = String(raw || 'UNKNOWN').toUpperCase();
-            if (status === 'ACTIVE' || ['PAID', 'SUCCESS', 'COMPLETED'].includes(status)) return 'Completed';
+            if (status === 'ACTIVE') return 'Completed';
             if (status === 'REFUNDED') return 'Refunded';
+            if (status === 'CHARGEBACK') return 'Chargeback';
             if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) return 'Failed';
-            if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING', 'INITIATED'].includes(status)) return 'Pending';
+            if (['PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING', 'PROVIDER_CONFIRMED'].includes(status)) return 'Pending';
             return 'Unknown';
         };
-        const add = (id, data, source) => {
-            const identity = source === 'payment_orders' ? id : data.paymentOrderId || data.transactionId || id;
-            if (seen.has(identity)) return;
-            seen.add(identity);
-            const amount = Number(data.amount || data.total || data.price || 0);
-            records.push({
-                docId: source === 'payment_orders' ? id : data.paymentOrderId || id,
-                source,
-                transactionId: data.providerPaymentId || data.providerOrderId || data.transactionId || id,
-                providerReference: data.providerPaymentId || data.providerOrderId || data.providerReference || '',
-                userId: data.uid || data.userId || '',
-                customerEmail: data.customerEmail || '',
-                customerName: data.customerName || '',
-                customerGstin: data.customerGstin || '',
-                planType: data.planId || data.planType || data.type || 'Unknown',
-                paimentType: data.provider || data.paymentProvider || data.paimentType || 'Unknown',
-                price: source === 'payment_orders' ? amount / 100 : amount,
-                originalAmount: Number(data.originalAmount || amount) / (source === 'payment_orders' ? 100 : 1),
-                discountAmount: Number(data.couponDiscount || data.discountAmount || 0) / (source === 'payment_orders' ? 100 : 1),
-                currency: String(data.currency || 'UNKNOWN').toUpperCase(),
-                subtotal: Number(data.subtotal || amount) / (source === 'payment_orders' ? 100 : 1),
-                taxAmount: Number(data.taxAmount || 0) / (source === 'payment_orders' ? 100 : 1),
-                taxRate: Number(data.taxRate || 0),
-                sacCode: data.sacCode || '',
-                invoiceNumber: data.invoiceNumber || '',
-                status: statusLabel(data.status || data.paymentStatus),
-                rawStatus: String(data.status || data.paymentStatus || 'UNKNOWN'),
-                created_at: dateValue(data.createdAt || data.created_at),
-                refundedAt: dateValue(data.refundedAt),
-                refundReason: data.refundReason || '',
-            });
-        };
-        for (const row of orderRows) add(row.id, { ...row, provider: row.provider || row.last_payment_gateway }, 'payment_orders');
-        for (const row of transactionRows) add(row.id, row, 'legacy_transactions');
-        records.sort((left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0));
-        return res.json({ success: true, records, sources: { paymentOrders: 'MYSQL', invoices: 'NOT_CONFIGURED', legacy: 'MYSQL' }, count: records.length });
+        const records = orderRows.map(row => {
+            const invoice = invoicesByOrder.get(row.id) || null;
+            const amountMinor = Number(row.amount);
+            const originalMinor = Number(row.original_amount);
+            const divisor = String(row.currency || '').toUpperCase() === 'JPY' ? 1 : 100;
+            return {
+                docId: row.id,
+                source: 'payment_orders',
+                transactionId: row.provider_payment_id || row.provider_order_id || row.provider_payment_intent_id || row.id,
+                providerReference: row.provider_payment_id || row.provider_order_id || row.provider_payment_intent_id || null,
+                userId: row.uid,
+                customerEmail: invoice?.customerSnapshot?.email || null,
+                customerName: invoice?.customerSnapshot?.name || null,
+                customerGstin: invoice?.customerSnapshot?.gstin || null,
+                planType: row.plan_id,
+                paymentType: row.provider,
+                price: Number.isFinite(amountMinor) ? amountMinor / divisor : null,
+                originalAmount: Number.isFinite(originalMinor) ? originalMinor / divisor : null,
+                couponCode: row.coupon_code || null,
+                couponDiscountPercent: Number(row.coupon_discount || 0),
+                currency: row.currency || null,
+                subtotal: invoice ? Number(invoice.taxableAmount) : null,
+                taxAmount: invoice ? Number(invoice.totalTax) : null,
+                taxRate: invoice ? Number(invoice.gstRate) : null,
+                sacCode: invoice?.sacCode || null,
+                invoiceNumber: invoice?.invoiceNumber || null,
+                invoice: invoice,
+                creditNote: invoice?.creditNote || null,
+                creditNoteNumber: invoice?.creditNote?.creditNoteNumber || null,
+                status: statusLabel(row.status),
+                rawStatus: String(row.status || 'UNKNOWN'),
+                created_at: adminIso(row.created_at),
+                refundedAt: adminIso(row.reversed_at),
+                refundReason: row.refund_reason || null,
+                providerRefundId: row.provider_refund_id || null,
+                providerRefundStatus: row.provider_refund_status || null,
+            };
+        });
+        return res.json({
+            success: true,
+            records,
+            sources: { paymentOrders: 'MARIADB', invoices: 'MARIADB_IMMUTABLE', creditNotes: 'MARIADB_IMMUTABLE', legacyTransactions: 'EXCLUDED_AMBIGUOUS_SCHEMA' },
+            count: records.length,
+        });
     } catch (error) {
-        return res.status(error.status || 503).json({ success: false, code: 'PAYMENT_LEDGER_UNAVAILABLE', error: 'Payment ledger is unavailable.', requestId: res.locals.requestId });
+        return res.status(error.status || 503).json({ success: false, code: error.code || 'PAYMENT_LEDGER_UNAVAILABLE', error: 'Payment ledger is unavailable.', requestId: res.locals.requestId });
     }
 });
 
-app.get('/api/admin/landing-content', async (req, res) => {
-    try {
-        // MySQL is the authoritative landing-content store (system_settings
-        // 'landing_content' / 'frontendstats'). Firestore is never required.
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const [landing, frontendStats] = await Promise.all([
-            repo.getSetting('landing_content').catch(() => null),
-            repo.getSetting('frontendstats').catch(() => null),
-        ]);
-        const content = landing || frontendStats || null;
-        return res.json({ success: true, content, source: content ? 'MYSQL_SERVER_READ' : 'NOT_CONFIGURED' });
-    } catch (error) { return res.status(error.status || 503).json({ success: false, code: 'LANDING_CONTENT_UNAVAILABLE', error: 'Landing content is unavailable.', requestId: res.locals.requestId }); }
-});
-
 app.get('/api/admin/blog/categories', async (_req, res) => {
-    try { const categories = await adminCollectionRead(_req.app.get('db'), 'blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'MYSQL_SERVER_READ' }); }
+    try { const categories = await adminEntityList('blog_categories', { limit: 500 }); return res.json({ success: true, categories, source: 'MYSQL_SERVER_READ' }); }
     catch (error) { return res.status(error.status || 503).json({ success: false, code: 'BLOG_CATEGORIES_UNAVAILABLE', error: 'Blog categories are unavailable.', requestId: res.locals.requestId }); }
 });
 
@@ -4670,7 +4741,7 @@ app.get('/api/admin/blog/posts', async (req, res) => {
         const search = String(req.query?.search || '').trim().toLowerCase();
         const pageSize = Math.min(Math.max(Number(req.query?.limit) || 10, 1), 100);
         const page = Math.max(Number(req.query?.page) || 1, 1);
-        const all = await adminCollectionRead(req.app.get('db'), 'blog_posts', { limit: 500 });
+        const all = await adminEntityList('blog_posts', { limit: 500 });
         const posts = all.map(post => ({ ...post, createdAt: adminIso(post.createdAt), updatedAt: adminIso(post.updatedAt), publishedAt: adminIso(post.publishedAt), scheduledAt: adminIso(post.scheduledAt) })).filter(post => (status === 'all' || String(post.status || '').toLowerCase() === status) && (!categoryId || post.categoryId === categoryId) && (!search || [post.title, post.slug, post.excerpt].some(value => String(value || '').toLowerCase().includes(search))));
         posts.sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
         const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
@@ -4690,7 +4761,7 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
     }
     if (uid === req.user.uid) return res.status(400).json({ success: false, error: 'Administrators cannot review their own employer application.' });
     try {
-        const repo = resilientMutations.repoFor(req.app.get('db') || db);
+        const repo = resilientMutations.repoFor();
         const application = await (typeof repo.getDocument === 'function' ? repo.getDocument('employer_applications', uid) : null);
         if (!application) return res.status(404).json({ success: false, error: 'Employer application not found.' });
         if (expectedStatus !== null && String(application.status || 'pending').toLowerCase() !== expectedStatus) {
@@ -4704,7 +4775,7 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
             await identityAdmin.auth().revokeRefreshTokens(uid);
         }
         await resilientMutations.updateDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'employer_applications', id: uid,
+            entityType: 'employer_applications', id: uid,
             expectedRevision: application.revision, patch: { status, ...(reason ? { rejectionReason: reason } : {}), reviewedBy: req.user.uid, reviewedAt: new Date().toISOString() },
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'EMPLOYER_APPLICATION_REVIEWED',
         });
@@ -4716,11 +4787,6 @@ app.patch('/api/admin/employer-applications/:uid', async (req, res) => {
         return res.status(error.code === 'auth/user-not-found' ? 404 : (error.status || 500)).json({ success: false, error: 'Unable to review employer application.' });
     }
 });
-
-function _firestoreTimeMillis(value) {
-    const date = value?.toDate?.() || (value ? new Date(value) : null);
-    return date && Number.isFinite(date.getTime()) ? date.getTime() : null;
-}
 
 function safePublicUrl(value) {
     const raw = String(value || '').trim().slice(0, 2048);
@@ -4737,7 +4803,7 @@ app.post('/api/admin/ads', async (req, res) => {
     if (!name || !imageLink || !destinationLink) return res.status(400).json({ success: false, error: 'Name, safe image URL, and safe destination URL are required.' });
     try {
         const saved = await resilientMutations.createDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'ads',
+            entityType: 'ads',
             data: { name, imageLink, destinationLink },
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'ADVERTISEMENT_CREATED',
         });
@@ -4749,11 +4815,12 @@ app.post('/api/admin/ads', async (req, res) => {
 
 app.delete('/api/admin/ads/:adId', async (req, res) => {
     const adId = String(req.params.adId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(adId)) return res.status(400).json({ success: false, error: 'Invalid advertisement ID.' });
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(adId) || !Number.isInteger(expectedRevision) || expectedRevision < 1) return res.status(400).json({ success: false, code: 'REVISION_REQUIRED', error: 'A valid advertisement ID and current revision are required.' });
     try {
         await resilientMutations.deleteDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'ads', id: adId,
-            expectedRevision: req.body?.expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, action: 'ADVERTISEMENT_DELETED',
+            entityType: 'ads', id: adId,
+            expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, action: 'ADVERTISEMENT_DELETED',
         });
         return res.json({ success: true });
     } catch (error) {
@@ -4780,50 +4847,47 @@ function validateCustomPageContent(value) {
     return content;
 }
 
-app.get(['/public/custom-pages.json', '/api/public/custom-pages', '/api/custom-pages.json', '/custom-pages.json'], async (req, res) => {
-    const requestDb = req.app.get('db') || db;
+app.get(['/public/custom-pages.json', '/api/public/custom-pages', '/api/custom-pages.json', '/custom-pages.json'], async (_req, res) => {
     try {
-        const repo = getRepository(requestDb);
-        if (repo && typeof repo.getCustomPages === 'function') {
-            const pages = await repo.getCustomPages({ publishedOnly: true });
-            if (Array.isArray(pages) && pages.length > 0) {
-                res.setHeader('Cache-Control', 'no-store');
-                return res.json({ success: true, pages });
-            }
-        }
-    } catch (_) {}
-    try {
-        if (requestDb) {
-            const snapshot = await requestDb.collection('pages').get();
-            const pages = snapshot.docs.filter(document => !document.data()?.status || document.data()?.status === 'published').map(document => ({ id: document.id, title: document.data()?.title || document.id }));
-            res.setHeader('Cache-Control', 'no-store');
-            return res.json({ success: true, pages });
-        }
-    } catch (_) {}
-    return res.json({
-        success: true,
-        pages: [
-            { id: 'about', title: 'About Us' },
-            { id: 'terms', title: 'Terms of Service' },
-            { id: 'privacy', title: 'Privacy Policy' }
-        ]
-    });
+        const pages = await getRepository().getCustomPages({ publishedOnly: true });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, pages: Array.isArray(pages) ? pages : [], source: 'MARIADB_CUSTOM_PAGES' });
+    } catch (_error) {
+        return res.status(503).json({
+            success: false,
+            code: 'CUSTOM_PAGES_UNAVAILABLE',
+            error: 'Custom pages are temporarily unavailable.',
+            requestId: res.locals.requestId,
+        });
+    }
 });
 
-app.get('/api/admin/pages', async (req, res) => {
+app.get('/api/public/custom-pages/:slug', async (req, res) => {
+    const slug = String(req.params.slug || '').toLowerCase();
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(slug)) {
+        return res.status(400).json({ success: false, code: 'INVALID_PAGE_SLUG', error: 'Invalid page slug.' });
+    }
     try {
-        // MySQL is the authoritative custom-pages store (canonical_documents
-        // 'custom_pages'); Firestore is never required.
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const docs = await repo.listDocuments('custom_pages', { limit: 500 });
-        const pages = (docs || []).map(doc => {
-            const value = doc.payload || {};
-            return { id: doc.id, title: value.title || doc.id, description: value.description || '', pagecontent: value.pagecontent || '', status: value.status || 'published', revision: Number(value.revision || 0), legacy: !value.status };
-        });
-        return res.json({ success: true, pages });
+        const page = await getRepository().getCustomPageBySlug(slug, { publishedOnly: true });
+        res.setHeader('Cache-Control', 'no-store');
+        if (!page) return res.status(404).json({ success: false, code: 'CUSTOM_PAGE_NOT_FOUND', error: 'Page not found.' });
+        return res.json({ success: true, page, source: 'MARIADB_CUSTOM_PAGES' });
     } catch (_error) {
-        return res.status(503).json({ success: false, error: 'Page service unavailable.' });
+        return res.status(503).json({
+            success: false,
+            code: 'CUSTOM_PAGES_UNAVAILABLE',
+            error: 'Custom pages are temporarily unavailable.',
+            requestId: res.locals.requestId,
+        });
+    }
+});
+
+app.get('/api/admin/pages', async (_req, res) => {
+    try {
+        const pages = await getRepository().getCustomPages({ publishedOnly: false, limit: 500 });
+        return res.json({ success: true, pages, source: 'MARIADB_CUSTOM_PAGES' });
+    } catch (_error) {
+        return res.status(503).json({ success: false, code: 'CUSTOM_PAGES_UNAVAILABLE', error: 'Page service unavailable.' });
     }
 });
 
@@ -4837,24 +4901,31 @@ app.put('/api/admin/pages/:slug', async (req, res) => {
         const title = String(req.body?.title || slug).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160) || slug;
         const description = String(req.body?.description || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
         const saved = await resilientMutations.updateDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'custom_pages', id: slug, expectedRevision,
-            patch: { id: slug, title, description, pagecontent: content, content, status, published: status === 'published' },
-            actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_PAGE_UPDATED',
+            entityType: 'custom_pages', id: slug, expectedRevision,
+            patch: { id: slug, slug, title, description, pagecontent: content, content, status, published: status === 'published' },
+            actorUid: req.user.uid,
+            requestId: res.locals.requestId,
+            action: expectedRevision === 0 ? 'CMS_PAGE_CREATED' : 'CMS_PAGE_UPDATED',
         });
-        // CMS page actions: CMS_PAGE_CREATED, CMS_PAGE_UPDATED, CMS_PAGE_DELETED, CMS_PAGE_CONFLICT
         return res.json({ success: true, page: saved });
     } catch (error) {
-        return res.status(error.code === 'CAS_CONFLICT' || error.code === 'CMS_PAGE_CONFLICT' ? 409 : 400).json({ success: false, code: error.code, error: error.message });
+        const responseStatus = ['CAS_CONFLICT', 'CMS_PAGE_CONFLICT'].includes(error.code) ? 409 : (error.status || 400);
+        return res.status(responseStatus).json({
+            success: false,
+            code: error.code || 'CUSTOM_PAGE_SAVE_FAILED',
+            error: responseStatus >= 500 ? 'Unable to save custom page.' : error.message,
+            requestId: res.locals.requestId,
+        });
     }
 });
 
 app.delete('/api/admin/pages/:slug', async (req, res) => {
     const slug = String(req.params.slug || '').toLowerCase();
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!/^[a-z0-9-]{1,80}$/.test(slug) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid custom page deletion.' });
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!/^[a-z0-9-]{1,80}$/.test(slug) || !Number.isInteger(expectedRevision) || expectedRevision < 1) return res.status(400).json({ success: false, code: 'REVISION_REQUIRED', error: 'A valid custom page slug and current revision are required.' });
     try {
         await resilientMutations.deleteDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'custom_pages', id: slug, expectedRevision,
+            entityType: 'custom_pages', id: slug, expectedRevision,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'CMS_PAGE_DELETED',
         });
         return res.json({ success: true });
@@ -4864,7 +4935,7 @@ app.delete('/api/admin/pages/:slug', async (req, res) => {
     }
 });
 
-app.post('/api/admin/website-meta', async (req, res) => {
+app.post('/api/admin/website-meta', requireRecentAdminAuthentication, async (req, res) => {
     const allowedLanguages = new Set(['English','Hindi','Spanish','French','German','Italian','Portuguese','Russian','Polish','Dutch','Romanian','Danish','Swedish','Norwegian','Icelandic','Greek']);
     const changes = {};
     if (req.body.title !== undefined) changes.title = String(req.body.title).replace(/\p{Cc}/gu, ' ').trim().slice(0, 160);
@@ -4873,58 +4944,92 @@ app.post('/api/admin/website-meta', async (req, res) => {
     if (req.body.language !== undefined) { if (!allowedLanguages.has(req.body.language)) return res.status(400).json({ success: false, error: 'Unsupported website language.' }); changes.language = req.body.language; }
     if (req.body.disabledLanguages !== undefined) changes.disabledLanguages = [...new Set((Array.isArray(req.body.disabledLanguages) ? req.body.disabledLanguages : []).filter(item => allowedLanguages.has(item)))];
     if (req.body.trackingCode !== undefined) { const code = String(req.body.trackingCode).trim(); if (code && !/^(G-[A-Z0-9]{10}|UA-[0-9]+-[0-9]+)$/.test(code)) return res.status(400).json({ success: false, error: 'Invalid analytics measurement ID.' }); changes.trackingCode = code; }
+    if (req.body.rating !== undefined) { const rating = Number(req.body.rating); if (!Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Rating must be from 1 to 5.' }); changes.rating = rating; changes.ratingUpdatedAt = new Date().toISOString(); }
     if (!Object.keys(changes).length) return res.status(400).json({ success: false, error: 'No metadata changes supplied.' });
+    let connection;
     try {
-        const saved = await resilientMutations.saveSettingDocument({
-            firestoreDb: req.app.get('db') || db, category: 'website_meta',
-            expectedRevision: req.body.expectedRevision, patch: changes,
-            actorUid: req.user.uid, requestId: res.locals.requestId, action: 'WEBSITE_METADATA_UPDATED',
+        const expectedRevision = Number(req.body.expectedRevision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+            return res.status(400).json({ success: false, code: 'WEBSITE_META_REVISION_REQUIRED', error: 'expectedRevision is required.' });
+        }
+        connection = await getPool().getConnection();
+        await connection.beginTransaction();
+        const [rows] = await connection.query(
+            "SELECT data, revision FROM system_settings WHERE category = 'website_meta' FOR UPDATE"
+        );
+        const current = rows[0]
+            ? (typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : (rows[0].data || {}))
+            : {};
+        const currentRevision = Number(current.revision ?? rows[0]?.revision ?? 0);
+        if (expectedRevision !== currentRevision) {
+            throw Object.assign(new Error('Website metadata changed after this panel loaded. Refresh before saving.'), {
+                code: 'ADMIN_TARGET_CHANGED', status: 409,
+            });
+        }
+        const revision = currentRevision + 1;
+        const metadata = { ...current, ...changes, revision, updatedAt: new Date().toISOString() };
+        await connection.query(
+            `INSERT INTO system_settings (category, data, revision, updated_at)
+             VALUES ('website_meta', ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+            [JSON.stringify(metadata), revision]
+        );
+        const ratingChanged = Object.hasOwn(changes, 'rating');
+        const auditAction = ratingChanged ? 'GLOBAL_RATING_UPDATED' : 'WEBSITE_METADATA_UPDATED';
+        const auditCategory = ratingChanged ? 'reviews.rating' : 'system.config';
+        await connection.query(
+            `INSERT INTO admin_audit_logs
+             (id, actor_uid, actor_email, actor_role, action, category, severity, outcome,
+              method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'HIGH', 'SUCCESS',
+                     'POST', '/api/admin/website-meta', 200, 'PLATFORM_CONFIG', 'website_meta', ?, ?, NOW())`,
+            [crypto.randomUUID(), req.user.uid, req.user.email || null, req.user.role || 'ADMIN',
+                auditAction, auditCategory,
+                JSON.stringify({
+                    revision,
+                    changedFields: Object.keys(changes),
+                    ...(ratingChanged ? { previousRating: current.rating ?? null, rating: changes.rating } : {}),
+                }), res.locals.requestId || null]
+        );
+        await connection.commit();
+        return res.json({ success: true, metadata });
+    } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch { /* broken connection */ }
+        }
+        const status = error.status || 503;
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'WEBSITE_METADATA_SAVE_FAILED',
+            error: status < 500 ? error.message : 'Unable to update website metadata.',
+            requestId: res.locals.requestId,
         });
-        return res.json({ success: true, metadata: { ...changes, revision: saved.revision } });
-    } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to update website metadata.' }); }
+    } finally {
+        if (connection) connection.release();
+    }
 });
 
-app.post('/api/admin/landing-content', async (req, res) => {
-    const fields = ['activeJobs', 'rating', 'partnerCompanies', 'successfulHires', 'featuredJobs', 'successRate', 'topCompanies'];
-    const content = Object.fromEntries(fields.map(field => [field, String(req.body?.content?.[field] || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 40)]));
-    if (Object.values(content).some(value => !value || !/^[\p{L}\p{N}\s.,%+/-]{1,40}$/u.test(value))) return res.status(400).json({ success: false, error: 'All landing claims are required and must contain only short display text.' });
+app.get(['/public/trusted-by.json', '/api/public/trusted-by', '/api/trusted-by.json', '/trusted-by.json'], async (_req, res) => {
     try {
-        const saved = await resilientMutations.saveSettingDocument({
-            firestoreDb: req.app.get('db') || db, category: 'landing_content',
-            expectedRevision: req.body.expectedRevision, patch: content,
-            actorUid: req.user.uid, requestId: res.locals.requestId, action: 'LANDING_CONTENT_UPDATED',
-        });
-        return res.json({ success: true, content: { ...content, revision: saved.revision } });
-    } catch (error) { return res.status(error.code === 'ADMIN_TARGET_CHANGED' ? 409 : 500).json({ success: false, code: error.code, error: error.code ? error.message : 'Unable to save landing content.' }); }
-});
-
-app.get(['/public/trusted-by.json', '/api/public/trusted-by', '/api/trusted-by.json', '/trusted-by.json'], async (req, res) => {
-    // MySQL is the authoritative trusted-by store; Firestore is never consulted.
-    try {
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const docs = await repo.listDocuments('trusted_by', { limit: 500 });
-        const items = (docs || [])
-            .map(doc => ({ id: doc.id, ...(doc.payload || {}) }))
-            .filter(item => item.published !== false)
-            .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
+        const items = await getRepository().getTrustedBy({ publishedOnly: true, limit: 500 });
         res.setHeader('Cache-Control', 'no-store');
-        return res.json({ success: true, items });
+        return res.json({ success: true, items, source: 'MARIADB_TRUSTED_BY' });
     } catch (_error) {
-        return res.json({ success: true, items: [] });
+        return res.status(503).json({
+            success: false,
+            code: 'TRUSTED_BY_UNAVAILABLE',
+            error: 'Trusted organizations are temporarily unavailable.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
 app.get('/api/admin/trusted-by', async (_req, res) => {
     try {
-        // MySQL is the authoritative trusted-by store (canonical_documents).
-        const { getRepository } = require('./repositories');
-        const repo = getRepository(_req.app.get('db') || db);
-        const docs = await repo.listDocuments('trusted_by', { limit: 500 });
-        const items = (docs || []).map(doc => ({ id: doc.id, ...(doc.payload || {}), revision: Number(doc.payload?.revision || 0) })).sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.name || '').localeCompare(String(b.name || '')));
-        return res.json({ success: true, items });
+        const items = await getRepository().getTrustedBy({ publishedOnly: false, limit: 500 });
+        return res.json({ success: true, items, source: 'MARIADB_TRUSTED_BY' });
     } catch (_error) {
-        return res.status(503).json({ success: false, error: 'Trusted-logo service unavailable.' });
+        return res.status(503).json({ success: false, code: 'TRUSTED_BY_UNAVAILABLE', error: 'Trusted-logo service unavailable.' });
     }
 });
 
@@ -4932,37 +5037,42 @@ app.post('/api/admin/trusted-by', async (req, res) => {
     try {
         const data = normalizeTrustedLogo(req.body);
         const saved = await resilientMutations.createDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'trusted_by', data,
+            entityType: 'trusted_by', data,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'TRUSTED_LOGO_CREATED',
         });
         return res.json({ success: true, item: saved });
-    } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+    } catch (error) {
+        const status = error.status || 400;
+        return res.status(status).json({ success: false, code: error.code || 'TRUSTED_LOGO_SAVE_FAILED', error: status >= 500 ? 'Unable to save trusted logo.' : error.message });
+    }
 });
 
 app.patch('/api/admin/trusted-by/:logoId', async (req, res) => {
     const logoId = String(req.params.logoId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId)) return res.status(400).json({ success: false, error: 'Invalid logo ID.' });
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId) || !Number.isInteger(expectedRevision) || expectedRevision < 1) return res.status(400).json({ success: false, code: 'REVISION_REQUIRED', error: 'A valid logo ID and current revision are required.' });
     try {
         const data = normalizeTrustedLogo(req.body);
         const saved = await resilientMutations.updateDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'trusted_by', id: logoId,
-            expectedRevision: req.body.expectedRevision, patch: data,
+            entityType: 'trusted_by', id: logoId,
+            expectedRevision, patch: data,
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'TRUSTED_LOGO_UPDATED',
         });
         return res.json({ success: true, item: saved });
     } catch (error) {
-        const status = error.code === 'CAS_CONFLICT' || error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400;
-        return res.status(status).json({ success: false, code: error.code, error: error.message });
+        const status = error.code === 'CAS_CONFLICT' || error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : (error.status || 400);
+        return res.status(status).json({ success: false, code: error.code, error: status >= 500 ? 'Unable to update trusted logo.' : error.message });
     }
 });
 
 app.delete('/api/admin/trusted-by/:logoId', async (req, res) => {
     const logoId = String(req.params.logoId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId)) return res.status(400).json({ success: false, error: 'Invalid logo ID.' });
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(logoId) || !Number.isInteger(expectedRevision) || expectedRevision < 1) return res.status(400).json({ success: false, code: 'REVISION_REQUIRED', error: 'A valid logo ID and current revision are required.' });
     try {
         await resilientMutations.deleteDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'trusted_by', id: logoId,
-            expectedRevision: req.body?.expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, action: 'TRUSTED_LOGO_DELETED',
+            entityType: 'trusted_by', id: logoId,
+            expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, action: 'TRUSTED_LOGO_DELETED',
         });
         return res.json({ success: true });
     } catch (error) {
@@ -4985,7 +5095,7 @@ app.post('/api/admin/reviews', async (req, res) => {
     if (!name || !review || !Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Name, review, and rating from 1 to 5 are required.' });
     try {
         const saved = await resilientMutations.createDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'reviews',
+            entityType: 'reviews',
             data: { name, occupation, review, rating, imageUrl, status: 'approved' },
             actorUid: req.user.uid, requestId: res.locals.requestId, action: 'REVIEW_CREATED',
         });
@@ -4997,31 +5107,17 @@ app.post('/api/admin/reviews', async (req, res) => {
 
 app.delete('/api/admin/reviews/:reviewId', async (req, res) => {
     const reviewId = String(req.params.reviewId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(reviewId)) return res.status(400).json({ success: false, error: 'Invalid review ID.' });
+    const expectedRevision = Number(req.body?.expectedRevision);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(reviewId) || !Number.isInteger(expectedRevision) || expectedRevision < 1) return res.status(400).json({ success: false, code: 'REVISION_REQUIRED', error: 'A valid review ID and current revision are required.' });
     try {
         await resilientMutations.deleteDocument({
-            firestoreDb: req.app.get('db') || db, entityType: 'reviews', id: reviewId,
-            expectedRevision: req.body?.expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, action: 'REVIEW_DELETED',
+            entityType: 'reviews', id: reviewId,
+            expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, action: 'REVIEW_DELETED',
         });
         return res.json({ success: true });
     } catch (error) {
         const status = error.code === 'CAS_CONFLICT' || error.code === 'ADMIN_TARGET_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : (error.status || 500);
         return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete review.' : error.message });
-    }
-});
-
-app.post('/api/admin/global-rating', async (req, res) => {
-    const rating = Number(req.body?.rating);
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, error: 'Rating must be from 1 to 5.' });
-    try {
-        const result = await resilientMutations.saveSettingDocument({
-            firestoreDb: req.app.get('db') || db, category: 'website_meta',
-            patch: { rating, ratingUpdatedAt: new Date().toISOString() },
-            actorUid: req.user.uid, requestId: res.locals.requestId, action: 'GLOBAL_RATING_UPDATED',
-        });
-        return res.json({ success: true, rating, revision: result.revision });
-    } catch (error) {
-        return res.status(error.status || 500).json({ success: false, code: error.code, error: error.message });
     }
 });
 
@@ -5041,7 +5137,7 @@ app.patch('/api/admin/companies/:companyId', async (req, res) => {
             ? { status, ...(status === 'approved' ? { approvedAt: new Date().toISOString(), rejectionReason: null } : { rejectedAt: new Date().toISOString(), rejectionReason: reason }) }
             : { featured: req.body.featured, featuredAt: req.body.featured ? new Date().toISOString() : null };
         const result = await resilientMutations.moderateCompany({
-            firestoreDb: req.app.get('db') || db, companyId, expectedStatus: req.body.expectedStatus,
+            companyId, expectedStatus: req.body.expectedStatus,
             expectedFeatured: req.body.expectedFeatured, patch, actorUid: req.user.uid, requestId: res.locals.requestId,
         });
         return res.json({ success: true, ...result });
@@ -5065,7 +5161,7 @@ app.patch('/api/admin/jobs/:jobId', async (req, res) => {
             ? { status, updatedAt: new Date().toISOString() }
             : { isFeatured: req.body.isFeatured, featuredAt: req.body.isFeatured ? new Date().toISOString() : null };
         const result = await resilientMutations.moderateJob({
-            firestoreDb: req.app.get('db') || db, jobId, expectedStatus: req.body.expectedStatus,
+            jobId, expectedStatus: req.body.expectedStatus,
             expectedFeatured: req.body.expectedFeatured, patch, actorUid: req.user.uid, requestId: res.locals.requestId,
         });
         return res.json({ success: true, ...result });
@@ -5080,7 +5176,7 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job ID.' });
     try {
         await resilientMutations.deleteJob({
-            firestoreDb: req.app.get('db') || db, jobId, expectedRevision: req.body?.expectedRevision,
+            jobId, expectedRevision: req.body?.expectedRevision,
             actorUid: req.user.uid, requestId: res.locals.requestId, requireNoApplications: true,
         });
         return res.json({ success: true });
@@ -5092,64 +5188,9 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
 
 app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin', adminPlatformOperationsRouter);
-async function deleteApplicationNotifications(database, applicationIds) {
-    for (const applicationId of applicationIds) {
-        try {
-            const notifications = await database.collectionGroup('userNotifications').where('data.applicationId', '==', applicationId).get();
-            for (const notification of notifications.docs) await database.recursiveDelete(notification.ref);
-        } catch (e) {
-            console.warn(`[deleteApplicationNotifications] Failed to cleanup notifications for app ${applicationId}:`, e.message);
-        }
-    }
-}
-
-// MySQL-backed messaging cleanup for account deletion (migrated from Firebase
-// Realtime Database). Semantics preserved: when no real accounts remain in a
-// conversation it is removed entirely; otherwise the deleted account is
-// replaced by an anonymous placeholder and its messages are purged.
-async function removeDeletedUserFromRealtimeMessaging(uid, _identityAdmin = admin) {
-    const pool = require('./database/mysql').getPool();
-    const [memberRows] = await pool.query(
-        'SELECT conversation_id FROM conversation_participants WHERE user_id = ?',
-        [uid]
-    );
-    const conversationIds = memberRows.map(r => r.conversation_id);
-    for (const conversationId of conversationIds) {
-        if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) continue;
-        const conn = await pool.getConnection();
-        try {
-            await conn.beginTransaction();
-            const [partRows] = await conn.query(
-                'SELECT user_id FROM conversation_participants WHERE conversation_id = ? FOR UPDATE',
-                [conversationId]
-            );
-            const participantIds = partRows.map(r => r.user_id);
-            if (!participantIds.includes(uid)) { await conn.rollback(); continue; }
-            const remainingAccounts = participantIds.filter(participantId => participantId !== uid && !participantId.startsWith('deleted_'));
-            if (!remainingAccounts.length) {
-                await conn.query('DELETE FROM conversation_messages WHERE conversation_id = ?', [conversationId]);
-                await conn.query('DELETE FROM conversation_participants WHERE conversation_id = ?', [conversationId]);
-                await conn.query('DELETE FROM conversations WHERE id = ?', [conversationId]);
-            } else {
-                const deletedParticipantId = `deleted_${crypto.randomBytes(10).toString('hex')}`;
-                await conn.query('DELETE FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, uid]);
-                await conn.query('INSERT IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)', [conversationId, deletedParticipantId]);
-                await conn.query('UPDATE conversations SET application_id = NULL, deleted_at = NOW() WHERE id = ?', [conversationId]);
-                await conn.query('DELETE FROM conversation_messages WHERE conversation_id = ? AND sender_id = ?', [conversationId, uid]);
-            }
-            await conn.commit();
-        } catch (txErr) {
-            await conn.rollback().catch(() => {});
-            throw txErr;
-        } finally {
-            conn.release();
-        }
-    }
-    return { conversationCount: conversationIds.length };
-}
-
-// Durable account deletion: cleans up owned profiles, resumes, portfolios, blog_posts, companies, jobApplications,
-// reporting ACCOUNT_SELF_DELETION_INCOMPLETE on partial failure, while preserving retainedRecordTypes: payment_orders, invoices, transactions.
+// Durable account deletion removes the subject's personal content and credentials,
+// tombstones employer listings so other applicants retain their application history,
+// and preserves only the explicitly reported statutory/security record classes.
 // GDPR / account data export — MySQL authoritative. Assembled from the
 // owner-scoped rows of the current authenticated user only.
 app.post('/api/account/export', async (req, res) => {
@@ -5157,49 +5198,76 @@ app.post('/api/account/export', async (req, res) => {
     if (!uid) return res.status(401).json({ success: false, error: 'Authentication required.' });
     try {
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db') || db);
-        const [user, resumes, portfolios, covers, favourites, jobTracker, transactions, notifications, applications, jobs, companies] = await Promise.all([
-            repo.getUser(uid).catch(() => null),
-            repo.getResumes(uid).catch(() => []),
-            repo.getPortfolios(uid).catch(() => []),
-            repo.getCovers(uid).catch(() => []),
-            repo.getFavourites(uid).catch(() => []),
-            repo.listDocuments('job_tracker', { limit: 500 }).catch(() => []),
-            repo.getUserPaymentOrders(uid).catch(() => []),
-            repo.getNotifications(uid).catch(() => []),
-            repo.getApplications({ applicantId: uid }).catch(() => []),
-            repo.getJobs({ employerId: uid }).catch(() => []),
-            repo.getCompanies({ employerId: uid }).catch(() => []),
-        ]);
-        const exportWarnings = [];
-        const messaging = { conversations: [], messagesByConversation: {} };
-        try {
-            // Messaging lives in MySQL; export this account's conversations
-            // (best-effort, never blocking).
-            const pool = require('./database/mysql').getPool();
-            const [memberRows] = await pool.query(
-                'SELECT conversation_id FROM conversation_participants WHERE user_id = ?',
-                [uid]
-            );
-            for (const { conversation_id: conversationId } of memberRows) {
-                const [convRows] = await pool.query(
-                    'SELECT id, application_id AS applicationId, created_at AS createdAt FROM conversations WHERE id = ?',
-                    [conversationId]
-                );
-                const [partRows] = await pool.query(
-                    'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-                    [conversationId]
-                );
-                const participants = {};
-                partRows.forEach(p => { participants[p.user_id] = true; });
-                if (convRows.length) messaging.conversations.push({ id: conversationId, ...convRows[0], participants });
-                const [msgRows] = await pool.query(
-                    'SELECT id, sender_id AS senderId, text, timestamp FROM conversation_messages WHERE conversation_id = ? ORDER BY timestamp ASC',
-                    [conversationId]
-                );
-                messaging.messagesByConversation[conversationId] = msgRows;
+        const repo = getRepository();
+        const pool = getPool();
+        const readSection = async (section, loader, fallback = []) => {
+            try {
+                return { section, value: await loader(), warning: null };
+            } catch (error) {
+                console.warn('[Account export section unavailable]', section, error?.code || error?.message);
+                return {
+                    section,
+                    value: fallback,
+                    warning: { section, status: 'UNAVAILABLE', message: 'This section could not be exported. Retry later or contact support.' },
+                };
             }
-        } catch (error) { exportWarnings.push(`Messaging export unavailable: ${error.message}`); }
+        };
+        const sectionReads = await Promise.all([
+            readSection('profile', () => repo.getUser(uid), {}),
+            readSection('resumes', () => repo.getResumes(uid)),
+            readSection('portfolios', () => repo.getPortfolios(uid)),
+            readSection('covers', () => repo.getCovers(uid)),
+            readSection('favourites', () => repo.getFavourites(uid)),
+            readSection('transactions', () => repo.getUserPaymentOrders(uid)),
+            readSection('notifications', () => repo.getNotifications(uid)),
+            readSection('applications', () => repo.getApplications({ applicantId: uid })),
+            readSection('jobs', () => repo.getJobs({ employerId: uid })),
+            readSection('companies', () => repo.getCompanies({ employerId: uid })),
+            readSection('jobTracker', async () => (await pool.query('SELECT * FROM job_tracker WHERE user_id = ? ORDER BY created_at DESC', [uid]))[0]),
+            readSection('invoices', async () => (await pool.query('SELECT payload FROM invoices WHERE user_id = ? ORDER BY issued_at DESC', [uid]))[0]),
+            readSection('messaging', async () => (await pool.query('SELECT conversation_id FROM conversation_participants WHERE user_id = ?', [uid]))[0]),
+        ]);
+        const sections = Object.fromEntries(sectionReads.map(result => [result.section, result.value]));
+        const profileRead = sectionReads.find(result => result.section === 'profile');
+        if (!profileRead.warning && !sections.profile) {
+            return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User profile not found.' });
+        }
+        const exportWarnings = sectionReads.flatMap(result => result.warning ? [result.warning] : []);
+
+        const messaging = { conversations: [], messagesByConversation: {} };
+        if (!sectionReads.find(result => result.section === 'messaging')?.warning) {
+            const messagingRead = await readSection('messaging', async () => {
+                for (const { conversation_id: conversationId } of sections.messaging) {
+                    const [[conversationRows], [participantRows], [messageRows]] = await Promise.all([
+                        pool.query('SELECT id, application_id AS applicationId, created_at AS createdAt FROM conversations WHERE id = ?', [conversationId]),
+                        pool.query('SELECT user_id FROM conversation_participants WHERE conversation_id = ?', [conversationId]),
+                        pool.query('SELECT id, sender_id AS senderId, text, timestamp FROM conversation_messages WHERE conversation_id = ? ORDER BY timestamp ASC', [conversationId]),
+                    ]);
+                    const participants = Object.fromEntries(participantRows.map(participant => [participant.user_id, true]));
+                    if (conversationRows.length) messaging.conversations.push({ id: conversationId, ...conversationRows[0], participants });
+                    messaging.messagesByConversation[conversationId] = messageRows;
+                }
+                return messaging;
+            }, messaging);
+            if (messagingRead.warning) exportWarnings.push(messagingRead.warning);
+        }
+
+        const invoiceRecords = [];
+        let invalidInvoices = 0;
+        for (const row of sections.invoices) {
+            try {
+                const invoice = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+                if (invoice && typeof invoice === 'object') invoiceRecords.push(invoice);
+                else invalidInvoices += 1;
+            } catch { invalidInvoices += 1; }
+        }
+        if (invalidInvoices) {
+            exportWarnings.push({
+                section: 'invoices',
+                status: 'PARTIAL',
+                message: `${invalidInvoices} malformed invoice record${invalidInvoices === 1 ? '' : 's'} could not be exported.`,
+            });
+        }
 
         res.setHeader('Cache-Control', 'no-store, private');
         return res.json({
@@ -5207,11 +5275,20 @@ app.post('/api/account/export', async (req, res) => {
             export: {
                 exportDate: new Date().toISOString(),
                 userId: uid,
-                profile: user || {},
-                resumes, portfolios, covers, favourites,
-                jobTracker: (jobTracker || []).map(doc => ({ id: doc.id, ...doc.payload })),
-                transactions, notifications, applications, jobs, companies,
-                messaging, exportWarnings,
+                profile: sections.profile || {},
+                resumes: sections.resumes,
+                portfolios: sections.portfolios,
+                covers: sections.covers,
+                favourites: sections.favourites,
+                jobTracker: sections.jobTracker,
+                transactions: sections.transactions,
+                invoices: invoiceRecords,
+                notifications: sections.notifications,
+                applications: sections.applications,
+                jobs: sections.jobs,
+                companies: sections.companies,
+                messaging,
+                exportWarnings,
                 note: 'Provider-held identity, payment-provider records, security audit logs, and legally retained billing records require provider/support export channels.',
             },
         });
@@ -5229,13 +5306,11 @@ app.post('/api/account/delete', async (req, res) => {
             uid,
             actorUid: uid,
             requestId: res.locals.requestId,
-            firestoreDb: req.app.get('db') || db,
             identityAdmin: req.app.get('firebaseAdmin') || admin,
-            removeRealtime: () => removeDeletedUserFromRealtimeMessaging(uid),
         });
         return res.json({
             success: true,
-            message: 'Identity and owned profile, resume, portfolio, CMS, employer, job, application, notification, and messaging data were deleted.',
+            message: 'Identity and personal profile, resume, portfolio, CMS, applicant, notification, and messaging data were deleted. Employer listings were tombstoned so other applicants retain their history.',
             retainedRecordTypes: result.retainedRecordTypes,
         });
     } catch (error) {
@@ -5248,17 +5323,13 @@ app.post('/api/account/delete', async (req, res) => {
     }
 });
 
-// Administrative deletion is explicit, recently authenticated, and recursive.
-// MySQL is the authoritative store: the user row is deleted and ON DELETE
-// CASCADE removes all owned data (resumes, portfolios, covers, favourites,
-// jobs, applications, notifications, blog, companies). When the Firestore
-// data plane is enabled it is also cleaned, but it is never required.
+// Administrative deletion uses the same durable MariaDB deletion saga as
+// self-service deletion. Firebase Authentication remains the identity owner;
+// retained billing/security records are pseudonymized rather than destroyed.
 app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRecentAdminAuthentication, async (req, res) => {
     const requestedUid = String(req.body?.uid || '').trim();
     const requestedEmail = String(req.body?.email || '').trim().toLowerCase();
-    const requestDb = req.app.get('db');
     const identityAdmin = req.app.get('firebaseAdmin') || admin;
-    const { getRepository } = require('./repositories');
     if ((!requestedUid && !requestedEmail) || !identityAdmin?.auth) {
         return res.status(400).json({ success: false, code: 'USER_DELETE_INPUT_INVALID', error: 'User UID or email is required.' });
     }
@@ -5268,106 +5339,82 @@ app.post(['/api/admin/delete-user', '/api/auth/purge-orphaned-auth'], requireRec
     if (requestedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
         return res.status(400).json({ success: false, code: 'INVALID_EMAIL', error: 'Invalid user email.' });
     }
-
     try {
-        const repo = getRepository(requestDb);
-        let target = null;
+        const repo = getRepository();
+        let identity = null;
         try {
-            target = requestedUid ? await identityAdmin.auth().getUser(requestedUid) : await identityAdmin.auth().getUserByEmail(requestedEmail);
+            identity = requestedUid
+                ? await identityAdmin.auth().getUser(requestedUid)
+                : await identityAdmin.auth().getUserByEmail(requestedEmail);
         } catch (error) {
             if (error.code !== 'auth/user-not-found' || !requestedUid) throw error;
         }
-        const targetUid = target?.uid || requestedUid;
-        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user UID.' });
-        if (targetUid === req.user.uid) return res.status(400).json({ success: false, code: 'SELF_DELETION_PROHIBITED', error: 'Self-deletion through the admin endpoint is prohibited.' });
-
-        const profileRecord = await repo.getUser(targetUid);
-        if (!target && !profileRecord) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
-        const profileData = profileRecord || {};
-        const authoritativeEmail = String(target?.email || profileData.email || '').toLowerCase();
+        const targetUid = identity?.uid || requestedUid;
+        if (!/^[A-Za-z0-9:_-]{1,128}$/.test(targetUid)) {
+            return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user UID.' });
+        }
+        if (targetUid === req.user.uid) {
+            return res.status(400).json({ success: false, code: 'SELF_DELETION_PROHIBITED', error: 'Self-deletion through the admin endpoint is prohibited.' });
+        }
+        const profile = await repo.getUser(targetUid);
+        if (!identity && !profile) {
+            return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
+        }
+        const authoritativeEmail = String(identity?.email || profile?.email || '').toLowerCase();
         if (requestedEmail && authoritativeEmail && authoritativeEmail !== requestedEmail) {
             return res.status(400).json({ success: false, code: 'USER_IDENTITY_MISMATCH', error: 'UID/email identity mismatch.' });
         }
-        const targetRole = String(target?.customClaims?.role || profileData.role || '').toUpperCase();
+        const targetRole = String(identity?.customClaims?.role || '').toUpperCase();
         if (targetRole === 'SUPER_ADMIN' && !isSuperAdmin(req.user)) {
             return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'Only SUPER_ADMIN can delete another SUPER_ADMIN.' });
         }
 
-        const cleanupFailures = [];
-
-        // Firestore data-plane cleanup — best-effort and only when the data
-        // plane is explicitly enabled. Never required for correctness.
-        if (requestDb && typeof requestDb.collection === 'function') {
-            try {
-                const ownedJobs = await requestDb.collection('jobs').where('employerId', '==', targetUid).get();
-                for (const job of ownedJobs.docs) await requestDb.recursiveDelete(job.ref);
-            } catch { cleanupFailures.push('employer jobs (standby)'); }
-            try {
-                const applications = await requestDb.collection('jobApplications').where('userId', '==', targetUid).get();
-                const applicationIds = applications.docs.map(application => application.id);
-                for (const application of applications.docs) await requestDb.recursiveDelete(application.ref);
-                await deleteApplicationNotifications(requestDb, applicationIds);
-            } catch { cleanupFailures.push('job applications (standby)'); }
-            const relatedQueries = [
-                ['portfolios (standby)', requestDb.collection('portfolios').where('userId', '==', targetUid)],
-                ['published portfolios (standby)', requestDb.collection('pb').where('ownerUid', '==', targetUid)],
-                ['blog posts (standby)', requestDb.collection('blog_posts').where('authorUid', '==', targetUid)],
-                ['companies (standby)', requestDb.collection('companies').where('employerId', '==', targetUid)],
-            ];
-            for (const [label, query] of relatedQueries) {
-                try {
-                    const snapshot = await query.get();
-                    for (const item of snapshot.docs) await requestDb.recursiveDelete(item.ref);
-                } catch (error) {
-                    cleanupFailures.push(label);
-                    console.warn(`[User deletion ${label}]`, error.message);
-                }
-            }
-            for (const [label, reference] of [
-                ['employer application (standby)', requestDb.collection('employerApplications').doc(targetUid)],
-                ['notifications (standby)', requestDb.collection('notifications').doc(targetUid)],
-            ]) {
-                try { await requestDb.recursiveDelete(reference); } catch { cleanupFailures.push(label); }
-            }
-            try {
-                await requestDb.recursiveDelete(requestDb.collection('users').doc(targetUid));
-            } catch { cleanupFailures.push('user profile tree (standby)'); }
+        if (!profile && identity) {
+            // Identity-only orphan: no application-data saga is needed, but the
+            // action is durably audited before deleting the external identity.
+            await getPool().query(
+                `INSERT INTO security_audit_logs
+                 (id, action, actor_uid, target_uid, category, severity, target_type, target_id, metadata, request_id, created_at)
+                 VALUES (?, 'ORPHANED_IDENTITY_DELETE_REQUESTED', ?, ?, 'admin.users', 'HIGH',
+                         'FIREBASE_AUTH_IDENTITY', ?, ?, ?, NOW())`,
+                [crypto.randomUUID(), req.user.uid, targetUid, targetUid,
+                    JSON.stringify({ profileFound: false }), res.locals.requestId || null]
+            );
+            await identityAdmin.auth().deleteUser(targetUid);
+            await getPool().query(
+                `INSERT INTO security_audit_logs
+                 (id, action, actor_uid, target_uid, category, severity, target_type, target_id, metadata, request_id, created_at)
+                 VALUES (?, 'ORPHANED_IDENTITY_DELETED', ?, ?, 'admin.users', 'HIGH',
+                         'FIREBASE_AUTH_IDENTITY', ?, ?, ?, NOW())`,
+                [crypto.randomUUID(), req.user.uid, targetUid, targetUid,
+                    JSON.stringify({ profileFound: false }), res.locals.requestId || null]
+            );
+            return res.json({ success: true, identityDeleted: true, applicationProfileFound: false });
         }
 
-        try { await removeDeletedUserFromRealtimeMessaging(targetUid, identityAdmin); } catch { cleanupFailures.push('realtime messaging'); }
-
-        // Authoritative MySQL deletion (cascades to all owned tables).
-        try {
-            if (profileRecord) await repo.deleteUser(targetUid);
-        } catch (error) {
-            cleanupFailures.push('MySQL user record');
-            console.error('[Admin delete user MySQL]', error.message);
-        }
-
-        const auditPayload = {
-            action: cleanupFailures.length ? 'USER_DELETION_INCOMPLETE' : 'USER_DELETED',
-            actorUid: req.user.uid, targetUid, cleanupFailures,
-            requestId: res.locals.requestId, createdAt: new Date().toISOString(),
-        };
-        try { await repo.recordSecurityAuditLog({ ...auditPayload, severity: 'HIGH', category: 'admin.users' }); } catch {}
-        if (cleanupFailures.length) {
-            return res.status(500).json({
-                success: false, code: 'USER_CLEANUP_INCOMPLETE',
-                error: `Cleanup failed for: ${cleanupFailures.join(', ')}. The identity was retained; retry this operation.`,
-            });
-        }
-
-        if (target) {
-            try { await identityAdmin.auth().deleteUser(targetUid); }
-            catch (error) {
-                await repo.recordSecurityAuditLog({ ...auditPayload, action: 'USER_IDENTITY_DELETE_FAILED', cleanupFailures: ['firebase identity'], failureCategory: error.code || 'AUTH_DELETE_FAILED', severity: 'HIGH', category: 'admin.users' }).catch(() => {});
-                return res.status(500).json({ success: false, code: 'USER_IDENTITY_DELETE_FAILED', error: 'Owned application data was removed, but the Firebase identity could not be deleted. Retry immediately.' });
-            }
-        }
-        return res.json({ success: true, deletedFromAuth: Boolean(target), message: 'User identity, profile tree, portfolios, applications, employer content, notifications, messaging data, and authored blog posts were deleted.' });
+        const result = await accountDeletion.requestDeletion({
+            uid: targetUid,
+            actorUid: req.user.uid,
+            requestId: res.locals.requestId,
+            identityAdmin,
+        });
+        return res.json({
+            success: true,
+            identityDeleted: result.identityDeleted,
+            applicationProfileFound: true,
+            retainedRecordTypes: result.retainedRecordTypes,
+            message: 'The identity was deleted and owned application data was removed or pseudonymized under the retention policy.',
+        });
     } catch (error) {
-        console.error('[Admin delete user]', error.message);
-        return res.status(error.code === 'auth/user-not-found' ? 404 : 500).json({ success: false, code: error.code === 'auth/user-not-found' ? 'USER_NOT_FOUND' : 'USER_DELETE_FAILED', error: 'Unable to delete user.' });
+        console.error('[Admin delete user]', { code: error.code, requestId: res.locals.requestId });
+        const status = error.status || (error.code === 'auth/user-not-found' ? 404 : 503);
+        return res.status(status).json({
+            success: false,
+            code: error.code || 'USER_DELETE_FAILED',
+            error: status >= 500 ? 'Unable to complete user deletion.' : error.message,
+            identityPending: error.identityPending === true,
+            requestId: res.locals.requestId,
+        });
     }
 });
 app.post('/api/auth/set-user-password', async (req, res) => {
@@ -5416,98 +5463,11 @@ app.post('/api/auth/set-user-password', async (req, res) => {
  * The middle case used to be reported as 502, which made a deployment without
  * SMTP look like it had a failing mail server.
  */
-function respondToDeliveryAttempt(res, delivery, label) {
-    // The notifier returns undefined when the caller omitted the recipient, so
-    // nothing was ever dispatched. That is a bad request, not a mail outage —
-    // reporting it as 502 blamed the mail provider for a client-side omission.
-    if (delivery === undefined || delivery === null) {
-        return res.status(400).json({
-            success: false,
-            deliveryState: 'NOT_ATTEMPTED',
-            code: 'NOTIFICATION_RECIPIENT_REQUIRED',
-            message: `${label} was not sent because no recipient address was supplied.`,
-        });
-    }
-
-    const state = delivery?.deliveryState || 'DELIVERY_FAILED';
-    const attempted = state === 'DELIVERY_ATTEMPTED';
-    const notConfigured = state === 'NOT_CONFIGURED';
-
-    if (attempted) {
-        return res.status(202).json({
-            success: true,
-            deliveryState: state,
-            providerAccepted: delivery?.providerAccepted === true,
-            message: `${label} delivery was attempted and accepted by the configured provider.`,
-        });
-    }
-
-    if (notConfigured) {
-        return res.status(503).json({
-            success: false,
-            deliveryState: state,
-            configurationState: 'NOT_CONFIGURED',
-            providerAccepted: false,
-            code: 'EMAIL_NOT_CONFIGURED',
-            message: `${label} was not sent because no email provider is configured for this deployment.`,
-            remediation: 'Configure SMTP credentials in Admin → Settings → Email, then retry.',
-        });
-    }
-
-    return res.status(502).json({
-        success: false,
-        deliveryState: state,
-        providerAccepted: false,
-        code: delivery?.code || 'EMAIL_DELIVERY_FAILED',
-        message: `${label} delivery failed.`,
-    });
-}
-
-app.post('/api/notify/password-changed', async (req, res) => {
-    const { userEmail, userName } = req.body;
-    const delivery = await EmailNotifier.notifyPasswordChanged(req.app.get('db'), { userEmail, userName });
-    return respondToDeliveryAttempt(res, delivery, 'Password-change email');
-});
-
-app.post('/api/notify/email-otp', (req, res) => {
-    return res.status(410).json({ error: { code: 'CLIENT_OTP_RETIRED', message: 'Use the account-bound email verification link flow', requestId: res.locals.requestId } });
-});
-
-app.post('/api/notify/security-alert', async (req, res) => {
-    const { userEmail, deviceInfo, ipAddress } = req.body;
-    const delivery = await EmailNotifier.notifySecurityAlert(req.app.get('db'), { userEmail, deviceInfo, ipAddress });
-    return respondToDeliveryAttempt(res, delivery, 'Security alert');
-});
-
-app.post('/api/notify/portfolio-published', async (req, res) => {
-    const { userEmail, userName, portfolioSlug } = req.body;
-    const delivery = await EmailNotifier.notifyPortfolioPublished(req.app.get('db'), { userEmail, userName, portfolioSlug });
-    return respondToDeliveryAttempt(res, delivery, 'Portfolio email');
-});
-
-app.post('/api/notify/job-application', async (req, res) => {
-    const { recruiterEmail, applicantName, jobTitle, companyName } = req.body;
-    const delivery = await EmailNotifier.notifyJobApplicationReceived(req.app.get('db'), { recruiterEmail, applicantName, jobTitle, companyName });
-    return respondToDeliveryAttempt(res, delivery, 'Job-application email');
-});
-
-app.post('/api/notify/job-status-update', async (req, res) => {
-    const { applicantEmail, applicantName, jobTitle, companyName, status } = req.body;
-    const delivery = await EmailNotifier.notifyJobStatusUpdate(req.app.get('db'), { applicantEmail, applicantName, jobTitle, companyName, status });
-    return respondToDeliveryAttempt(res, delivery, 'Job-status email');
-});
-
-app.post('/api/notify/job-posted', async (req, res) => {
-    const { employerEmail, jobTitle, companyName } = req.body;
-    const delivery = await EmailNotifier.notifyJobPosted(req.app.get('db'), { employerEmail, jobTitle, companyName });
-    return respondToDeliveryAttempt(res, delivery, 'Job-posted email');
-});
-
-app.post('/api/notify/subscription-cancelled', async (req, res) => {
-    const { userEmail, userName, planName } = req.body;
-    const delivery = await EmailNotifier.notifySubscriptionCancelled(req.app.get('db'), { userEmail, userName, planName });
-    return respondToDeliveryAttempt(res, delivery, 'Subscription-cancellation email');
-});
+app.post([...retiredClientNotificationPaths], (_req, res) => res.status(410).json({
+    success: false,
+    code: 'CLIENT_NOTIFICATION_DISPATCH_RETIRED',
+    message: 'Notifications are generated from authoritative server-side lifecycle transitions.'
+}));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LinkedIn / GitHub OAuth: state-cookie-bound authorization code flow followed
@@ -5521,7 +5481,7 @@ const oauthCookie = (state, clear = false) => {
 };
 const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
 
-async function getSocialAuthCredentials(provider, _database = db) {
+async function getSocialAuthCredentials(provider) {
     let storedClientId = '';
     let storedClientSecret = '';
     const legacyPrefix = provider === 'linkedin' ? 'linkedin' : 'github';
@@ -5574,7 +5534,7 @@ function failOAuthBegin(res, provider, reason) {
 async function beginOAuth(provider, req, res) {
     try {
         const { createOAuthState } = require('./database/oauthStore');
-        const { clientId, clientSecret } = await getSocialAuthCredentials(provider, req.app.get('db'));
+        const { clientId, clientSecret } = await getSocialAuthCredentials(provider);
         // Both halves are required for the complete code exchange. Starting a
         // redirect with only a client id would create a guaranteed callback
         // failure and make the UI look healthier than the runtime.
@@ -5628,7 +5588,6 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
         catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
     }
     assertAccountLinkSafe({ providerUid, providerUser, emailOwner, normalizedEmail });
-    const isNew = !providerUser;
     const user = providerUser || await admin.auth().createUser({
         uid: providerUid,
         email: normalizedEmail,
@@ -5648,8 +5607,8 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
     };
     try {
         const { getRepository } = require('./repositories');
-        const existingProfile = await getRepository(db).getUser(user.uid);
-        await getRepository(db).saveUser(user.uid, {
+        const existingProfile = await getRepository().getUser(user.uid);
+        await getRepository().saveUser(user.uid, {
             ...profile,
             membership: existingProfile && existingProfile.membership ? existingProfile.membership : 'Basic',
             paymentStatus: existingProfile && existingProfile.paymentStatus ? existingProfile.paymentStatus : 'INACTIVE',
@@ -5662,7 +5621,6 @@ async function upsertFederatedIdentity({ provider, providerId, email, emailVerif
         err.status = 503;
         throw err;
     }
-    if (isNew) EmailNotifier.notifyOAuthNewUser(db, { userEmail: normalizedEmail, userName: displayName, provider }).catch(() => {});
     return user.uid;
 }
 
@@ -5805,7 +5763,7 @@ app.post('/api/auth/preview-login', async (req, res) => {
     // the resumes.user_id FK work immediately for this account.
     try {
         const { getRepository } = require('./repositories');
-        const repo = getRepository(req.app.get('db'));
+        const repo = getRepository();
         const existing = await repo.getUser(uid).catch(() => null);
         const displayName = name || email.split('@')[0];
         if (!existing) {
@@ -5827,7 +5785,7 @@ app.post('/api/auth/preview-login', async (req, res) => {
  * Called by Admin OAuth panel to show live status badge.
  */
 app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin', req.app.get('db'));
+    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
     const configured = !!(clientId && clientSecret);
     return res.json({
         provider: 'linkedin',
@@ -5841,7 +5799,7 @@ app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
  * GET /api/auth/github/test-credentials — Verify GitHub credentials are configured
  */
 app.get('/api/auth/github/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('github', req.app.get('db'));
+    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
     const configured = !!(clientId && clientSecret);
     return res.json({
         provider: 'github',

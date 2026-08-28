@@ -5,15 +5,12 @@ import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
 import GridBackground from '../Dashboard2/elements/GridBackground';
 import JobsLandingHero from './JobsLandingHero';
 import LandingJobTopCompanies from './LandingJobTopCompanies';
-import LandingJobsProcess from './LandingJobsProcess';
 import LandingJobsFeatured from './LandingJobsFeatured';
-import LandingJobsCategories from './LandingJobsCategories';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { motion, AnimatePresence } from 'framer-motion';
 import fire from '../../conf/fire';
 
 const JobsLanding = () => {
-    const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_APP_GOOGLE_MAPS_API_KEY;
     const user = useContext(AuthContext);
     const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -48,9 +45,7 @@ const JobsLanding = () => {
                     user={user}
                 />
                 <LandingJobTopCompanies />
-                <LandingJobsProcess />
                 <LandingJobsFeatured />
-                {/* <LandingJobsCategories /> */}
                 <HomepageFooter />
             </div>
             

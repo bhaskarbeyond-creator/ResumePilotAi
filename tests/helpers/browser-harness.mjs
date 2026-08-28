@@ -7,6 +7,7 @@
  */
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
+import { rejectFirebaseDataPlaneRequests } from './firebase-data-plane-guard.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -104,9 +105,7 @@ export async function createViteServer(extraDefines = {}) {
       'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'),
       'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
       'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
-      'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
       'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
-      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
       'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
       'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
       ...extraDefines,
@@ -180,7 +179,7 @@ export async function setupFirebaseIntercepts(page) {
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ users: [{ localId: 'test-user', email: 'test@example.com', emailVerified: true, displayName: 'Test User', providerUserInfo: [] }] }),
   }));
-  await page.route('**/*firestore.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+  await rejectFirebaseDataPlaneRequests(page);
   await page.route('**/googleapis.com/identitytoolkit/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
   await page.route('**/www.google-analytics.com/**', route => route.abort());
   await page.route('**/www.googletagmanager.com/**', route => route.abort());

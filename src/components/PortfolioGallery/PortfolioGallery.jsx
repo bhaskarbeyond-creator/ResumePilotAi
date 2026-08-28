@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getPublicPortfolios } from '../../firestore/dbOperations';
+import { getPublicPortfolios } from '../../services/api/platform';
 import modernMinimalPreview from '../../assets/portfolioPreview/modern-minimal.png';
 import executivePreview from '../../assets/portfolioPreview/executive.png';
 import creativeDarkPreview from '../../assets/portfolioPreview/creative-dark.png';

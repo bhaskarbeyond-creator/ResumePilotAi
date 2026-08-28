@@ -1,67 +1,45 @@
+process.env.NODE_ENV = 'test';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   buildLegacyPrompt,
   buildResumeParsingPrompt,
+  clearProviderConfigurationCache,
   executeContentOperation,
   executeResumeParsing,
+  groundResumeExtraction,
   loadProviderConfiguration,
   parseAiResponse,
   providerOrder,
   requestProvider,
 } = require('../services/aiRuntime');
 
-function fakeDb({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
-  return {
-    collection(name) {
-      return {
-        doc(id) {
-          return {
-            async get() {
-              if (name === 'settings' && id === 'ai_providers') return { exists: true, data: () => secrets };
-              if (name === 'data' && id === 'public_config') return { exists: true, data: () => ({ ai: publicAi }) };
-              if (name === 'data' && id === 'system_settings') return { exists: true, data: () => ({ ai: legacyAi }) };
-              return { exists: false, data: () => ({}) };
-            },
-          };
-        },
-      };
-    },
-  };
-}
-
-
-// MySQL seed helper: seeds the authoritative AI settings store.
-const { getPool } = require('../database/mysql');
-const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 async function seedRuntimeSettings({ secrets = {}, publicAi = {}, legacyAi = {} } = {}) {
-  const pool = getPool();
-  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
-  if (Object.keys(secrets).length) {
-    await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify(secrets)]);
-  }
-  if (Object.keys(publicAi).length) {
-    await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify({ ai: publicAi })]);
-  }
-  if (Object.keys(legacyAi).length) {
-    await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('system_settings', ?, 1) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = 1", [JSON.stringify({ ai: legacyAi })]);
-  }
+  const settings = {
+    ai_providers: secrets,
+    public_config: { ai: publicAi },
+    system_settings: { ai: legacyAi },
+  };
+  require('../repositories').setRepositoryForTests({
+    async getSetting(category) { return settings[category] || null; },
+  });
   clearProviderConfigurationCache();
-  return null;
 }
 
 const okJson = body => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
-test('restored prompts preserve old contextual product instructions and response contracts', () => {
+test('content prompts require source evidence and distinguish recommendations from candidate claims', () => {
   const work = buildLegacyPrompt('generate-work-description', {
     jobTitle: 'Platform Engineer', employer: 'Acme', city: 'Vijayawada',
-    existingText: 'Migrated the billing API to containers', focusTone: 'Technical depth', language: 'en',
+    existingText: 'Migrated the billing API to containers', focusTone: 'technical', language: 'en',
   }, { sessionId: 'fixture' }).prompt;
-  assert.match(work, /Fortune 500 Senior Executive Resume Writer/);
+  assert.match(work, /factual resume copy editor/i);
   assert.match(work, /Migrated the billing API to containers/);
-  assert.match(work, /Focus Area: Technical depth/);
-  assert.match(work, /STRICT FACTUAL MANDATE/);
-  assert.match(work, /"suggestions"/);
+  assert.match(work, /Tone preference: technical/);
+  assert.match(work, /SOURCE-OF-TRUTH RULES \(MANDATORY\)/);
+  assert.match(work, /"sourceExcerpt"/);
+  assert.doesNotMatch(work, /Fortune 500|invent|placeholder metrics/i);
 
   const summary = buildLegacyPrompt('generate-summary', {
     name: 'Asha Rao', jobTitle: 'Engineer', experience: '6+ years',
@@ -69,19 +47,25 @@ test('restored prompts preserve old contextual product instructions and response
     certifications: ['AWS'], projects: 'Payments modernization', language: 'en',
   }, { sessionId: 'fixture' }).prompt;
   for (const context of ['Asha Rao', '6+ years', 'Engineer at Acme', 'M.Tech', 'React, Node.js', 'AWS', 'Payments modernization']) assert.match(summary, new RegExp(context.replace(/[+.]/g, '\\$&')));
-  assert.match(summary, /3 complete, rich sentences/);
-  assert.match(summary, /45-65 words total/);
-  assert.match(summary, /RESUME SUMMARY, NOT a cover letter/);
+  assert.match(summary, /using only the candidate-provided facts/i);
+  assert.match(summary, /"sourceExcerpts"/);
+  assert.doesNotMatch(summary, /45-65 words|complete, rich sentences/i);
 
   const skills = buildLegacyPrompt('generate-skills', {
-    occupation: 'Engineer', workHistory: 'APIs', education: 'M.Tech', projects: 'Compiler', existingSkills: ['JavaScript'],
+    occupation: 'Engineer', existingSkills: ['JavaScript'],
   }, { sessionId: 'fixture' }).prompt;
-  assert.match(skills, /12 high-demand/);
-  assert.match(skills, /Existing Skills Already Added: JavaScript/);
+  assert.match(skills, /career-exploration suggestions, not claims/i);
+  assert.match(skills, /"category":"recommended"/);
+  assert.match(skills, /JavaScript/);
+  assert.match(skills, /Do not include[^.]*proficiency levels[^.]*"mandatory" claims/i);
 
-  const autocomplete = buildLegacyPrompt('autocomplete', { type: 'certificationIssuer', query: 'Ama' }, { sessionId: 'fixture' }).prompt;
-  assert.match(autocomplete, /official certification issuing organizations/);
-  assert.match(autocomplete, /"Ama"/);
+  const autocomplete = buildLegacyPrompt('autocomplete', { type: 'skill', query: 'Rea' }, { sessionId: 'fixture' }).prompt;
+  assert.match(autocomplete, /taxonomy value/);
+  assert.match(autocomplete, /"Rea"/);
+  assert.throws(
+    () => buildLegacyPrompt('autocomplete', { type: 'certificationIssuer', query: 'Ama' }),
+    error => error.code === 'INVALID_AI_INPUT'
+  );
 });
 
 test('response normalization preserves UI contracts across markdown, aliases, and cleanup', () => {
@@ -91,15 +75,16 @@ test('response normalization preserves UI contracts across markdown, aliases, an
   assert.deepEqual(parseAiResponse('generate-summary', '{"description":"Engineer with distributed systems experience."}'), {
     summary: 'Engineer with distributed systems experience.',
   });
-  assert.deepEqual(parseAiResponse('generate-skills', '{"keywords":["React (e.g. React.js)",{"skill":"Docker","type":"recommended"}]}'), {
+  assert.deepEqual(parseAiResponse('generate-skills', '{"keywords":["React (e.g. React.js)",{"skill":"Docker","type":"mandatory"}]}'), {
     skills: [
-      { name: 'React', category: 'mandatory' },
+      { name: 'React', category: 'recommended' },
       { name: 'Docker', category: 'recommended' },
     ],
   });
-  assert.deepEqual(parseAiResponse('generate-certifications', '{"certs":[{"name":"AWS Certified Developer","organization":"Amazon Web Services"}]}'), {
-    certifications: [{ title: 'AWS Certified Developer', issuer: 'Amazon Web Services', category: 'mandatory' }],
-  });
+  assert.throws(
+    () => parseAiResponse('generate-certifications', '{"certs":[{"name":"AWS Certified Developer"}]}'),
+    error => error.code === 'INVALID_AI_RESPONSE'
+  );
   assert.deepEqual(parseAiResponse('enhance-single-bullet', 'Leveraged automation to reduce deployment time.'), {
     enhancedBullet: 'Used automation to reduce deployment time.',
   });
@@ -143,7 +128,7 @@ test('server configuration preserves primary provider, model, controls, and fall
     },
     publicAi: { provider: 'nvidia', enableNvidia: true, enableGemini: true, enableOpenai: false, enableFallback: true, temperature: 0.4, maxTokens: 1337 },
   });
-  const configuration = await loadProviderConfiguration(null, {});
+  const configuration = await loadProviderConfiguration({});
   assert.equal(configuration.primary, 'nvidia');
   assert.equal(configuration.providers.nvidia.model, 'meta/custom-model');
   assert.equal(configuration.temperature, 0.4);
@@ -154,10 +139,10 @@ test('server configuration preserves primary provider, model, controls, and fall
 
 test('provider configuration cache avoids cross-request mutation of generation controls', async () => {
   await seedRuntimeSettings({ secrets: { gemini: { apiKey: 'gemini-test-key-12345' } }, publicAi: { temperature: 0.4, maxTokens: 1337 } });
-  const first = await loadProviderConfiguration(null, {});
+  const first = await loadProviderConfiguration({});
   first.temperature = 0.1;
   first.maxTokens = 4096;
-  const second = await loadProviderConfiguration(null, {});
+  const second = await loadProviderConfiguration({});
   assert.equal(second.temperature, 0.4);
   assert.equal(second.maxTokens, 1337);
 });
@@ -166,7 +151,7 @@ test('legacy server-side provider settings remain migration-compatible without r
   await seedRuntimeSettings({
     legacyAi: { provider: 'groq', groqApiKey: 'legacy-groq-key-12345', groqModel: 'legacy/model', enableGroq: true },
   });
-  const configuration = await loadProviderConfiguration(null, {});
+  const configuration = await loadProviderConfiguration({});
   assert.equal(configuration.primary, 'groq');
   assert.equal(configuration.providers.groq.enabled, true);
   assert.equal(configuration.providers.groq.model, 'legacy/model');
@@ -177,21 +162,22 @@ test('provider failure falls back in configured order and returns the original n
   const fetchImpl = async (url, options) => {
     calls.push({ url, options: JSON.parse(options.body) });
     if (url.includes('nvidia.com')) return new Response(JSON.stringify({ error: { message: 'busy' } }), { status: 503 });
-    return okJson({ candidates: [{ content: { parts: [{ text: '```json\n{"summary":"Platform engineer focused on reliable APIs."}\n```' }] } }] });
+    return okJson({ candidates: [{ content: { parts: [{ text: '```json\n{"summary":"Platform Engineer. Built and maintained APIs.","sourceExcerpts":["Built and maintained APIs"]}\n```' }] } }] });
   };
   await seedRuntimeSettings({
     secrets: { nvidia: { apiKey: 'nvidia-test-key-12345' }, gemini: { apiKey: 'gemini-test-key-12345' } },
     publicAi: { provider: 'nvidia', enableFallback: true },
   });
   const result = await executeContentOperation({
-    operation: 'generate-summary', payload: { name: 'Asha', jobTitle: 'Platform Engineer', workHistory: 'Built APIs' },
-    db: null, environment: {}, fetchImpl, requestId: 'fixture',
+    operation: 'generate-summary', payload: { name: 'Asha', jobTitle: 'Platform Engineer', workHistory: 'Built and maintained APIs' },
+    environment: {}, fetchImpl, requestId: 'fixture',
   });
   assert.equal(result.provider, 'gemini');
-  assert.deepEqual(result.data, { summary: 'Platform engineer focused on reliable APIs.' });
+  assert.deepEqual(result.data, { summary: 'Platform Engineer. Built and maintained APIs.' });
+  assert.equal(result.grounding, 'source-validated');
   assert.equal(calls.length, 2);
   assert.match(calls[0].options.messages[0].content, /Asha/);
-  assert.match(calls[1].options.contents[0].parts[0].text, /Built APIs/);
+  assert.match(calls[1].options.contents[0].parts[0].text, /Built and maintained APIs/);
 });
 
 test('disabled fallback fails after the selected provider and never spends against another provider', async () => {
@@ -200,7 +186,7 @@ test('disabled fallback fails after the selected provider and never spends again
     secrets: { nvidia: { apiKey: 'nvidia-test-key-12345' }, gemini: { apiKey: 'gemini-test-key-12345' } },
     publicAi: { provider: 'nvidia', enableFallback: false },
   });
-  const configuration = await loadProviderConfiguration(null, {});
+  const configuration = await loadProviderConfiguration({});
   await assert.rejects(() => require('../services/aiRuntime').generateWithProviders({
     prompt: 'fixture', operation: 'generate-summary', configuration,
     fetchImpl: async () => { calls += 1; return new Response('{}', { status: 503 }); },
@@ -208,13 +194,14 @@ test('disabled fallback fails after the selected provider and never spends again
   assert.equal(calls, 1);
 });
 
-test('resume extraction keeps the old schema/context and supports deterministic provider output', async () => {
+test('resume extraction returns only source-contained values with grounding metadata', async () => {
+  await seedRuntimeSettings({ secrets: { openai: { apiKey: 'openai-test-key-12345' } }, publicAi: { provider: 'openai' } });
   const prompt = buildResumeParsingPrompt('Asha Rao\nasha@example.com\nPlatform Engineer at Acme');
-  assert.match(prompt, /Separate jobTitle and employer/);
+  assert.match(prompt, /Extract, but do not generate or rewrite/);
+  assert.match(prompt, /Every non-empty value must be copied verbatim/);
   assert.match(prompt, /asha@example.com/);
   const result = await executeResumeParsing({
     rawText: 'Asha Rao\nasha@example.com\nPlatform Engineer at Acme',
-    db: fakeDb({ secrets: { openai: { apiKey: 'openai-test-key-12345' } }, publicAi: { provider: 'openai' } }),
     environment: {},
     fetchImpl: async (_url, options) => {
       const request = JSON.parse(options.body);
@@ -225,6 +212,85 @@ test('resume extraction keeps the old schema/context and supports deterministic 
   });
   assert.equal(result.data.firstname, 'Asha');
   assert.equal(result.data.employments[0].employer, 'Acme');
+  assert.equal(result.data._grounding, 'source-extracted');
+  assert.equal(result.grounding, 'source-extracted');
+});
+
+test('grounded factual responses reject uncited and lexically unsupported wording', () => {
+  const payload = {
+    jobTitle: 'Platform Engineer',
+    employer: 'Acme',
+    existingText: 'Reviewed APIs for deployment readiness',
+  };
+  assert.deepEqual(
+    parseAiResponse(
+      'generate-work-description',
+      '{"suggestions":[{"text":"Reviewed APIs for deployment readiness","sourceExcerpt":"Reviewed APIs for deployment readiness"}]}',
+      { payload, requireGrounding: true }
+    ),
+    { suggestions: ['Reviewed APIs for deployment readiness'] }
+  );
+  assert.throws(
+    () => parseAiResponse(
+      'generate-work-description',
+      '{"suggestions":[{"text":"Reviewed elegant APIs for deployment readiness","sourceExcerpt":"Reviewed APIs for deployment readiness"}]}',
+      { payload, requireGrounding: true }
+    ),
+    error => error.code === 'UNGROUNDED_AI_RESPONSE'
+  );
+  assert.throws(
+    () => parseAiResponse(
+      'generate-work-description',
+      '{"suggestions":[{"text":"Reviewed APIs for deployment readiness","sourceExcerpt":"unrelated evidence"}]}',
+      { payload, requireGrounding: true }
+    ),
+    error => error.code === 'UNGROUNDED_AI_RESPONSE'
+  );
+});
+
+test('resume grounding drops hallucinations, unsupported associations, and implicit proficiency', () => {
+  const source = [
+    'Asha Rao',
+    'asha@example.com',
+    'Engineer | Acme | 2021 - Present',
+    'Built APIs',
+    'Skills: React 85%; Docker',
+    'Languages: English Fluent',
+  ].join('\n');
+  const grounded = groundResumeExtraction({
+    firstname: 'Asha', lastname: 'Mallory', email: 'asha@example.com',
+    occupation: 'Senior Engineer', summary: 'Award-winning global leader', isAdmin: true,
+    employments: [{
+      jobTitle: 'Engineer', employer: 'Evil Corp', startDate: '2021', endDate: 'Present',
+      city: 'Vijayawada', description: 'Built APIs\nLed global teams',
+    }],
+    educations: [{ school: 'Imaginary University', degree: 'M.Tech' }],
+    skills: [
+      { name: 'React', rating: 85 },
+      { name: 'Docker', rating: 99 },
+      { name: 'Kubernetes', rating: 100 },
+    ],
+    languages: [
+      { name: 'English', level: 'Fluent' },
+      { name: 'Telugu', level: 'Native' },
+    ],
+  }, source);
+
+  assert.equal(grounded.firstname, 'Asha');
+  assert.equal(grounded.lastname, '');
+  assert.equal(grounded.occupation, '');
+  assert.equal(grounded.summary, '');
+  assert.deepEqual(grounded.employments, [{
+    jobTitle: 'Engineer', employer: '', city: '', startDate: '2021', endDate: 'Present', description: 'Built APIs',
+  }]);
+  assert.deepEqual(grounded.educations, []);
+  assert.deepEqual(grounded.skills, [
+    { skillName: 'React', rating: 85 },
+    { skillName: 'Docker', rating: null },
+  ]);
+  assert.deepEqual(grounded.languages, [{ language: 'English', level: 'Fluent' }]);
+  assert.equal(grounded._grounding, 'source-extracted');
+  assert.equal(Object.hasOwn(grounded, 'isAdmin'), false);
 });
 
 test('provider requests honor cancellation and bounded timeout controls', async () => {
@@ -239,54 +305,48 @@ test('provider requests honor cancellation and bounded timeout controls', async 
   await assert.rejects(promise, error => error.name === 'AbortError');
 });
 
-test('getContentOperationFallback returns deterministic role-aware fallbacks for generate-content operations', () => {
+test('getContentOperationFallback preserves candidate source or returns empty recommendations', () => {
   const { getContentOperationFallback } = require('../services/aiRuntime');
 
-  // Certifications fallback
-  const certsFallback = getContentOperationFallback('generate-certifications', { jobTitle: 'Cybersecurity Analyst' });
-  assert.ok(Array.isArray(certsFallback.certifications));
-  assert.ok(certsFallback.certifications.length >= 4);
-  assert.equal(certsFallback._source, 'fallback');
-  assert.ok(certsFallback.certifications.some(c => c.title.includes('CISSP') || c.title.includes('Security+')));
+  assert.throws(
+    () => getContentOperationFallback('generate-certifications', { jobTitle: 'Cybersecurity Analyst' }),
+    error => error.code === 'UNSUPPORTED_AI_OPERATION'
+  );
 
-  // Bullet enhancement fallback (returns original bullet unchanged)
-  const bulletFallback = getContentOperationFallback('enhance-single-bullet', { bullet: 'Wrote unit tests' });
-  assert.equal(bulletFallback.enhancedBullet, 'Wrote unit tests');
-  assert.equal(bulletFallback._source, 'fallback');
+  const bulletFallback = getContentOperationFallback('enhance-single-bullet', { bullet: 'Spearheaded unit tests' });
+  assert.equal(bulletFallback.enhancedBullet, 'Spearheaded unit tests');
+  assert.equal(bulletFallback._source, 'source-preserving-fallback');
 
-  // Autocomplete fallback (returns empty array)
-  const autoFallback = getContentOperationFallback('autocomplete', { query: 're' });
+  const autoFallback = getContentOperationFallback('autocomplete', { type: 'skill', query: 're' });
   assert.deepEqual(autoFallback.suggestions, []);
-  assert.equal(autoFallback._source, 'fallback');
+  assert.equal(autoFallback._source, 'empty-fallback');
 
-  // Skills fallback
   const skillsFallback = getContentOperationFallback('generate-skills', { occupation: 'Frontend Developer' });
-  assert.ok(Array.isArray(skillsFallback.skills));
-  assert.equal(skillsFallback._source, 'fallback');
-  assert.ok(skillsFallback.skills.some(s => s.name === 'React' || s.name === 'JavaScript'));
+  assert.deepEqual(skillsFallback.skills, []);
+  assert.equal(skillsFallback.requiresUserConfirmation, true);
+  assert.equal(skillsFallback._source, 'empty-fallback');
 });
 
 test('executeContentOperation gracefully falls back on provider failure without throwing 502', async () => {
+  await seedRuntimeSettings({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } });
   const failingFetch = async () => new Response('{"error":"All providers down"}', { status: 503 });
 
-  // Certifications operation returns fallback on provider failure
-  const certResult = await executeContentOperation({
-    operation: 'generate-certifications',
-    payload: { jobTitle: 'DevOps Engineer' },
-    db: fakeDb({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } }),
+  // A factual operation returns only submitted source when every provider fails.
+  const summaryResult = await executeContentOperation({
+    operation: 'generate-summary',
+    payload: { jobTitle: 'DevOps Engineer', workHistory: 'Maintained deployment pipelines and incident runbooks' },
     environment: {},
     fetchImpl: failingFetch,
-    requestId: 'test-fallback-cert',
+    requestId: 'test-fallback-summary',
   });
-  assert.equal(certResult.provider, 'fallback');
-  assert.ok(Array.isArray(certResult.data.certifications));
-  assert.ok(certResult.data.certifications.some(c => c.title.includes('AWS') || c.title.includes('Kubernetes')));
+  assert.equal(summaryResult.provider, 'fallback');
+  assert.equal(summaryResult.grounding, 'source-preserving-fallback');
+  assert.equal(summaryResult.data.summary, 'DevOps Engineer. Maintained deployment pipelines and incident runbooks');
 
   // Enhance single bullet returns original bullet on provider failure
   const bulletResult = await executeContentOperation({
     operation: 'enhance-single-bullet',
     payload: { bullet: 'Managed a team of 5' },
-    db: fakeDb({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } }),
     environment: {},
     fetchImpl: failingFetch,
     requestId: 'test-fallback-bullet',
@@ -299,8 +359,7 @@ test('executeContentOperation gracefully falls back on provider failure without 
     () => executeContentOperation({
       operation: 'enhance-single-bullet',
       payload: {}, // Missing required bullet field
-      db: fakeDb({ secrets: { gemini: { apiKey: 'test-key' } }, publicAi: { provider: 'gemini' } }),
-      environment: {},
+        environment: {},
       fetchImpl: failingFetch,
     }),
     error => error.status === 400

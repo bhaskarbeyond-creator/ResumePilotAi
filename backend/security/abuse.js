@@ -1,33 +1,51 @@
 const crypto = require('crypto');
 const { resolveEffectiveEntitlement } = require('./entitlements');
 
-const buckets = new Map();
+let injectedCounterStore = null;
+
+function counterStore() {
+  if (injectedCounterStore) return injectedCounterStore;
+  const { MySqlAtomicCounterStore } = require('../enterprise/mysqlAtomicCounterStore');
+  injectedCounterStore = new MySqlAtomicCounterStore({ pool: require('../database/mysql').getPool() });
+  return injectedCounterStore;
+}
+
+function configureAbuseCounterStoreForTests(store = null) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Rate-limit store injection is forbidden in production');
+  }
+  injectedCounterStore = store;
+}
 
 function identityKey(req) {
   return req.user?.uid || req.ip || 'unknown';
 }
 
-/**
- * Lightweight per-account limiter for the legacy consumer plane. The enterprise
- * plane enforces its durable limits through the Firestore TenantQuotaGuard;
- * there is no Redis store in this architecture.
- */
+/** Every account/IP burst limit is an atomic MariaDB counter across instances. */
 function accountRateLimit({ namespace, limit, windowMs }) {
-  return (req, res, next) => {
-    const now = Date.now();
-    const key = `${namespace}:${identityKey(req)}`;
-    let bucket = buckets.get(key);
-    if (!bucket || bucket.resetAt <= now) bucket = { count: 0, resetAt: now + windowMs };
-    bucket.count += 1;
-    buckets.set(key, bucket);
-    res.setHeader('RateLimit-Limit', String(limit));
-    res.setHeader('RateLimit-Remaining', String(Math.max(0, limit - bucket.count)));
-    res.setHeader('RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
-    if (bucket.count > limit) {
-      res.setHeader('Retry-After', String(Math.ceil((bucket.resetAt - now) / 1000)));
-      return res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests', requestId: res.locals.requestId } });
+  const boundedLimit = Number(limit);
+  const boundedWindow = Number(windowMs);
+  if (!/^[a-z0-9:-]{1,64}$/i.test(namespace) || !Number.isSafeInteger(boundedLimit) || boundedLimit < 1
+    || !Number.isSafeInteger(boundedWindow) || boundedWindow < 1000) {
+    throw new Error(`Invalid durable rate-limit configuration: ${namespace}`);
+  }
+  return async (req, res, next) => {
+    try {
+      const result = await counterStore().increment(`consumer-rate:${namespace}:${identityKey(req)}`, { ttlMs: boundedWindow });
+      const count = Number(result.count);
+      const resetAt = Number(result.expiresAt);
+      res.setHeader('RateLimit-Limit', String(boundedLimit));
+      res.setHeader('RateLimit-Remaining', String(Math.max(0, boundedLimit - count)));
+      res.setHeader('RateLimit-Reset', String(Math.ceil(resetAt / 1000)));
+      if (count > boundedLimit) {
+        res.setHeader('Retry-After', String(Math.max(0, Math.ceil((resetAt - Date.now()) / 1000))));
+        return res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests', requestId: res.locals.requestId } });
+      }
+      return next();
+    } catch (error) {
+      console.error('[Rate limit store]', error.message);
+      return res.status(503).json({ error: { code: 'RATE_LIMIT_UNAVAILABLE', message: 'Request admission is temporarily unavailable', requestId: res.locals.requestId } });
     }
-    return next();
   };
 }
 
@@ -75,12 +93,9 @@ function dayKey(now = new Date()) {
  * Durable daily AI quota — MySQL authoritative.
  * The MySQL row lock (SELECT ... FOR UPDATE) prevents concurrent requests
  * bypassing the counter. A request is charged before provider invocation
- * (including provider errors). Firestore is never consulted on this path;
- * when the standby data plane is explicitly enabled, the count is mirrored
- * asynchronously (best-effort, non-blocking).
+ * (including provider errors). MariaDB is the only quota ledger; failures fail closed.
  */
 async function enforceDailyAiQuota(req, res, next) {
-  const db = req.app.get('db');
   try {
     const uidHash = crypto.createHash('sha256').update(req.user.uid).digest('hex').slice(0, 40);
     const day = dayKey();
@@ -90,11 +105,12 @@ async function enforceDailyAiQuota(req, res, next) {
     let count = 0;
     try {
       await conn.beginTransaction();
-      const [userRows] = await conn.query('SELECT * FROM users WHERE id = ? LIMIT 1', [req.user.uid]).catch(() => [[]]);
+      const [userRows] = await conn.query('SELECT * FROM users WHERE id = ? LIMIT 1', [req.user.uid]);
       const userData = userRows[0] || {};
-      const [quotaRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1").catch(() => [[]]);
-      let quotaConfig = {};
-      try { quotaConfig = quotaRows[0] ? (typeof quotaRows[0].data === 'string' ? JSON.parse(quotaRows[0].data) : quotaRows[0].data) : {}; } catch { /* ignore */ }
+      const [quotaRows] = await conn.query("SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1");
+      const quotaConfig = quotaRows[0]
+        ? (typeof quotaRows[0].data === 'string' ? JSON.parse(quotaRows[0].data) : quotaRows[0].data)
+        : {};
       const entitlement = resolveEffectiveEntitlement(userData, {
         userClaims: req.user || {},
         tenantData: req.tenantContext?.tenant || null,
@@ -123,18 +139,6 @@ async function enforceDailyAiQuota(req, res, next) {
       throw err;
     } finally {
       conn.release();
-    }
-    // Optional standby mirror (Firestore data plane enabled) — non-blocking.
-    if (db && typeof db.collection === 'function') {
-      Promise.resolve(db.collection('ai_usage').doc(`${day}_${uidHash}`).set({
-        uid: req.user.uid,
-        email: req.user?.email || '',
-        day,
-        count,
-        limit,
-        lastUsed: new Date(),
-        updatedAt: new Date(),
-      }, { merge: true })).catch(() => {});
     }
     res.setHeader('X-AI-Daily-Limit', String(limit));
     res.setHeader('X-AI-Daily-Remaining', String(Math.max(0, limit - count)));
@@ -167,6 +171,7 @@ function bindNotificationRecipient(req, res, next) {
 
 module.exports = {
   accountRateLimit,
+  configureAbuseCounterStoreForTests,
   aiAccountLimiter,
   notificationAccountLimiter,
   exportAccountLimiter,
@@ -175,5 +180,4 @@ module.exports = {
   messagingAccountLimiter,
   enforceDailyAiQuota,
   bindNotificationRecipient,
-  _buckets: buckets
 };

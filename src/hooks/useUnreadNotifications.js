@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getUnreadNotifications, subscribeUnreadNotifications } from '../firestore/dbOperations';
+import { getUnreadNotifications, subscribeUnreadNotifications } from '../services/api/platform';
 import fire from '../conf/fire';
 
 export const useUnreadNotifications = () => {

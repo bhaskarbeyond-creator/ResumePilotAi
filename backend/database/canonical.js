@@ -3,10 +3,9 @@
 /**
  * Canonical domain normalization.
  *
- * Database-specific representations (Firestore Timestamp, MariaDB Date,
- * ISO strings, epoch seconds/millis, {seconds,nanoseconds}) MUST be
- * converted here before they reach business logic, API responses, or
- * the React application.
+ * Timestamp-like objects, MariaDB Date values, ISO strings, epoch
+ * seconds/millis, and {seconds,nanoseconds} values MUST be converted here
+ * before they reach business logic, API responses, or the React application.
  *
  * Canonical date contract: ISO-8601 UTC string or null.
  * Example: "2026-09-25T00:00:00.000Z"
@@ -173,18 +172,16 @@ function createMutationId(prefix = 'sync') {
     return `${prefix}_${time}_${rand}`;
 }
 
-function isFirestoreSentinel(value) {
+function isTimestampLike(value) {
     if (!value || typeof value !== 'object') return false;
     if (typeof value.toDate === 'function' || typeof value.toMillis === 'function') return true;
-    if (value.seconds !== undefined || value._seconds !== undefined) return true;
-    if (value._methodName || value._delegate) return true;
-    return false;
+    return value.seconds !== undefined || value._seconds !== undefined;
 }
 
 function canonicalizeValue(value, fieldName = '') {
     if (value === undefined) return undefined;
     if (value === null) return null;
-    if (DATE_FIELD_NAMES.includes(fieldName) || isFirestoreSentinel(value)) {
+    if (DATE_FIELD_NAMES.includes(fieldName) || isTimestampLike(value)) {
         const iso = toCanonicalDate(value);
         if (iso !== null) return iso;
         if (DATE_FIELD_NAMES.includes(fieldName)) return null;
@@ -214,7 +211,7 @@ function canonicalizeRecord(record, extraDateFields = []) {
     const out = {};
     for (const [k, v] of Object.entries(record)) {
         if (k === '__dbMeta' || k === '_meta') continue;
-        if (extra.has(k) || DATE_FIELD_NAMES.includes(k) || isFirestoreSentinel(v)) {
+        if (extra.has(k) || DATE_FIELD_NAMES.includes(k) || isTimestampLike(v)) {
             out[k] = toCanonicalDate(v);
         } else {
             out[k] = canonicalizeValue(v, k);
@@ -223,19 +220,17 @@ function canonicalizeRecord(record, extraDateFields = []) {
     return out;
 }
 
-function withReadMetadata(record, meta) {
+function withDatabaseMetadata(record, meta) {
     if (record === null || record === undefined) return record;
     if (Array.isArray(record)) {
-        return record.map((item) => withReadMetadata(item, meta));
+        return record.map((item) => withDatabaseMetadata(item, meta));
     }
     if (typeof record !== 'object') return record;
     Object.defineProperty(record, '__dbMeta', {
         value: Object.freeze({
             dataSource: meta.dataSource || 'unknown',
             dataVersion: meta.dataVersion ?? null,
-            lastSyncedAt: meta.lastSyncedAt || null,
-            stale: meta.stale === true,
-            failover: meta.failover === true,
+            readAt: meta.readAt || null,
         }),
         enumerable: false,
         configurable: true,
@@ -268,9 +263,9 @@ module.exports = {
     toCanonicalPaymentStatus,
     isPaidMembershipTier,
     createMutationId,
-    isFirestoreSentinel,
+    isTimestampLike,
     canonicalizeValue,
     canonicalizeRecord,
-    withReadMetadata,
+    withDatabaseMetadata,
     stripInternalMeta,
 };

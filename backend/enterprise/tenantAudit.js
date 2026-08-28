@@ -34,20 +34,19 @@ function buildTenantAuditEvent({ context, action, category, resource = null, sev
   });
 }
 
-async function writeTenantAuditEvent(db, admin, event) {
-  if (!db || !admin?.firestore?.FieldValue) {
+async function writeTenantAuditEvent(repository, event) {
+  if (!repository?.appendAuditEvent) {
     const error = new Error('Tenant audit store is unavailable');
     error.code = 'TENANT_AUDIT_UNAVAILABLE';
     error.status = 503;
     throw error;
   }
-  // Canonical location: the tenant-partitioned audit collection. Structural
-  // partitioning keeps one tenant's audit trail physically inaccessible from
-  // another tenant's context.
-  await db.collection(`tenants/${event.tenantId}/audit_events`).doc(event.id).set({
-    ...event,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  await repository.appendAuditEvent({
+    tenantId: event.tenantId,
+    workspaceId: event.workspaceId || null,
+    workspaceScope: event.workspaceScope || 'TENANT',
+    principalId: event.principalId,
+  }, event);
   return event;
 }
 

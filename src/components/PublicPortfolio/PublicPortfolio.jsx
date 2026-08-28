@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Render } from '@puckeditor/core';
-import { getPortfolioBySlug, incrementPortfolioViews } from '../../firestore/dbOperations';
+import { getPortfolioBySlug, incrementPortfolioViews } from '../../services/api/platform';
 import { normalizePublishedPortfolio } from '../PortfolioBuilder/portfolioSanitization';
 import WebCvRenderer from '../PortfolioTemplates/WebCvRenderer';
 import { displayNameFromCanonical, normalizePortfolioData } from '../../utils/portfolioData';

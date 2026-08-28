@@ -1,6 +1,6 @@
 import { sanitizeImageUrl, sanitizeUrl } from '../../../utils/sanitizeHtml';
 import React, { Component } from 'react';
-import { getAds, addAds, removeAd } from '../../../firestore/dbOperations';
+import { getAds, addAds, removeAd } from '../../../services/api/platform';
 import { FaCheck, FaTimes, FaBullhorn, FaTrash, FaPlus, FaImage, FaLink, FaEye, FaExternalLinkAlt } from 'react-icons/fa';
 
 class AdsSettings extends Component {

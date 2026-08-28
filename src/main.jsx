@@ -151,7 +151,7 @@ const AuthWrapper = () => {
     const [resetOobCode, setResetOobCode] = useState(null);
     const [directResetEmail, setDirectResetEmail] = useState(null);
     const [verificationBanner, setVerificationBanner] = useState(null);
-    const [maintenance, setMaintenance] = useState({ loading: true, enabled: false, message: '', admin: false });
+    const [maintenance, setMaintenance] = useState({ loading: true, enabled: false, title: '', message: '', admin: false });
     const previousUserUid = useRef(null);
 
     useEffect(() => {
@@ -224,18 +224,10 @@ const AuthWrapper = () => {
                 const nameParts = (u.displayName || '').trim().split(' ');
                 const firstName = nameParts[0] || 'User';
                 const lastName = nameParts.slice(1).join(' ') || '';
-                import('./firestore/auth').then(({ default: addUser, updateUserOnLogin }) => {
+                import('./services/api/users').then(({ default: addUser, updateUserOnLogin }) => {
                     addUser(u.uid, firstName, lastName, u.email, { authProvider, photoURL: u.photoURL || null }).then((userRes) => {
-                        if (userRes && userRes.isNewUser) {
-                            try {
-                                fetch('/api/notify/user-signup', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ userEmail: u.email, userName: u.displayName || firstName })
-                                }).catch(() => {});
-                            } catch (_e) {}
-                        } else {
-                            // Returning user — keep provider and avatar fresh
+                        // New-account mail is enqueued atomically by the profile-create transaction.
+                        if (!userRes?.isNewUser) {
                             updateUserOnLogin(u.uid, { photoURL: u.photoURL, displayName: u.displayName, authProvider }).catch(() => {});
                         }
                     });
@@ -266,47 +258,75 @@ const AuthWrapper = () => {
     // App-shell relay for server-confirmed module configuration.
     // Fetches from the backend REST API (/api/platform/public-config),
     // eliminating any direct browser network dependency on Firestore.
-    // Contract: onSnapshot({ includeMetadataChanges: true }, (snapshot) => { const settings = settingsFromSnapshot(snapshot); if (settings._settingsSource !== 'remote') return; window.dispatchEvent(new CustomEvent('systemSettingsUpdated', { detail: { source: 'firestore-server', modules: settings.modules } })); });
+    // Server configuration updates are propagated through the API-backed application event.
     useEffect(() => {
         let active = true;
         fetch('/api/platform/public-config')
-            .then(r => r.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Public configuration is unavailable.');
+                return response.json();
+            })
             .then(settings => {
-                if (!active || !settings) return;
+                if (!active) return;
+                if (!/^mariadb(?:$|-)/.test(String(settings?._settingsSource || ''))) {
+                    throw new Error('Public configuration is not MariaDB-authoritative.');
+                }
+                if (!settings?.modules || typeof settings.modules !== 'object') return;
                 window.dispatchEvent(new CustomEvent('systemSettingsUpdated', {
                     detail: {
                         source: 'backend-api',
-                        modules: settings.modules || {},
+                        modules: settings.modules,
                         settings,
                     },
                 }));
             })
-            .catch(() => {});
+            .catch(() => {
+                if (active) window.dispatchEvent(new CustomEvent('systemSettingsUnavailable', {
+                    detail: {
+                        scope: 'public',
+                        source: 'unavailable',
+                        message: 'Authoritative MariaDB public configuration is unavailable.',
+                    },
+                }));
+            });
 
         return () => { active = false; };
     }, []);
 
-    // In the dual-database architecture, public configuration and maintenance state
-    // are fetched from the backend REST API, eliminating raw Firestore quota limits.
+    // Public configuration and maintenance state come from the backend REST API;
+    // MariaDB is the sole application-data owner and Firebase remains identity-only.
     useEffect(() => {
         if (authLoading) return undefined;
         let active = true;
 
         Promise.all([
-            fetch('/api/health').then(r => r.json()).catch(() => ({})),
+            fetch('/api/platform/public-config', { cache: 'no-store' })
+                .then(async response => response.ok ? response.json() : null)
+                .catch(() => null),
             user?.getIdTokenResult?.().catch(() => null) || Promise.resolve(null),
-        ]).then(([healthData, token]) => {
+        ]).then(([publicConfig, token]) => {
             if (!active) return;
-            const config = healthData?.systemHealth || {};
             const role = String(token?.claims?.role || '').toUpperCase();
+            const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(role);
+            const authoritative = /^mariadb(?:$|-)/.test(String(publicConfig?._settingsSource || ''));
+            if (!authoritative) {
+                setMaintenance({
+                    loading: false,
+                    enabled: true,
+                    title: 'Service temporarily unavailable',
+                    message: 'Authoritative platform configuration is temporarily unavailable. Please try again later.',
+                    admin: isAdmin,
+                });
+                return;
+            }
+            const config = publicConfig.systemHealth || {};
             setMaintenance({
                 loading: false,
                 enabled: config.maintenanceMode === true,
+                title: 'Scheduled maintenance',
                 message: String(config.maintenanceMessage || 'Scheduled maintenance is in progress.'),
-                admin: ['ADMIN', 'SUPER_ADMIN'].includes(role)
+                admin: isAdmin,
             });
-        }).catch(() => {
-            if (active) setMaintenance({ loading: false, enabled: false, message: '', admin: false });
         });
 
         return () => { active = false; };
@@ -339,7 +359,7 @@ const AuthWrapper = () => {
 
     const emergencyPath = window.location.pathname === '/login' || window.location.pathname.startsWith('/adm');
     if (maintenance.enabled && !maintenance.admin && !emergencyPath) {
-        return <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white"><div className="max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-8 text-center shadow-2xl" role="status"><h1 className="text-2xl font-bold">Scheduled maintenance</h1><p className="mt-4 text-slate-300">{maintenance.message}</p><p className="mt-6 text-sm text-slate-400">Administrators can use the protected console during maintenance.</p><a href="/login" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Administrator sign in</a></div></main>;
+        return <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white"><div className="max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-8 text-center shadow-2xl" role="status"><h1 className="text-2xl font-bold">{maintenance.title || 'Scheduled maintenance'}</h1><p className="mt-4 text-slate-300">{maintenance.message}</p><p className="mt-6 text-sm text-slate-400">Administrators can use the protected console during maintenance.</p><a href="/login" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Administrator sign in</a></div></main>;
     }
 
     return (

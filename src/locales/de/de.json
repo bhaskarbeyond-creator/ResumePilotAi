@@ -211,7 +211,7 @@
     "unlimitedResumes": "Unbegrenzte Lebensläufe",
     "nonRecuring": "Nicht wiederkehrende Zahlung.",
     "upgradeAndDownload": "Upgrade und Download",
-    "payment1": "Holen Sie sich Ihren Traumjob",
+    "payment1": "Lebenslauf erstellen",
     "payment2": "Zahlung über einen vertrauenswürdigen Zahlungsdienst",
     "payment3": "SSL Sicher / 256-Bit SSL-gesicherte Kasse",
     "payment4": "7-Tage Geld-zurück-Garantie",
@@ -243,7 +243,7 @@
     "featuresNav": "Funktionen",
     "resumeBuilderFeatures": "Funktionen des Lebenslauf-Builders",
     "featureTagline": "Alles, was Sie für den perfekten Lebenslauf brauchen",
-    "userCount": "50K+ Benutzer",
+    "userCount": "Funktionsübersicht",
     "exploreFeatures": "Alle Funktionen erkunden",
     "freeToTry": "Kostenlos testen",
     "startBuilding": "Mit dem Erstellen beginnen",
@@ -345,12 +345,12 @@
       "sentence5": "Bestehen Sie Interviews mit KI-Vorbereitungstools"
     },
     "badge": "KI-gestützter Lebenslauf-Builder",
-    "description": "Erstellen Sie beeindruckende, ATS-freundliche Lebensläufe und Anschreiben mit KI-Unterstützung. Wählen Sie aus professionellen Vorlagen, erhalten Sie Feedback in Echtzeit und landen Sie Ihren Traumjob schneller.",
+    "description": "Erstellen und bearbeiten Sie Lebensläufe und Anschreiben mit geführten Werkzeugen, anpassbaren Vorlagen, Live-Vorschau und optionaler KI-Unterstützung.",
     "createResume": "Lebenslauf erstellen",
     "createCoverLetter": "Anschreiben erstellen",
     "stats": {
-      "users": "Über 5.000 zufriedene Benutzer",
-      "rating": "4.9/5"
+      "users": "Geführte Lebenslauf-Tools",
+      "rating": "Live-Vorschau"
     },
     "features": {
       "freeToStart": "Kostenloser Start",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "BEWÄHRTE ERGEBNISSE • ÜBER 50.000 PROFESSIONELLE VERTRAUEN UNS",
+    "badge": "GEFÜHRTE LEBENSLAUFERSTELLUNG",
     "title": {
       "part1": "Verwandeln Sie",
       "part2": "Ihre Karriere",
       "part3": "Reise"
     },
-    "description": "Schließen Sie sich Tausenden von Fachleuten an, die ihre Karriere mit unserem KI-gestützten Lebenslauf-Builder beschleunigt haben. Machen Sie auf sich aufmerksam, erhalten Sie Vorstellungsgespräche und sichern Sie sich Ihren Traumjob schneller als je zuvor.",
+    "description": "Nutzen Sie geführte Abschnitte, anpassbare Layouts, Vorschauen und optionale KI-Unterstützung, um einen Lebenslauf zu erstellen und zu prüfen.",
     "benefits": [
       {
         "title": "Mehr Vorstellungsgespräche erhalten",
         "description": "Unsere ATS-optimierten Vorlagen und KI-gestützten Inhaltsvorschläge helfen Ihrem Lebenslauf, automatisierte Screening-Systeme zu überwinden und in die Hände von Personalverantwortlichen zu gelangen.",
-        "detail": "Schließen Sie sich Tausenden von Fachleuten an, die ihre Interviewrate durch die Verwendung unseres bewährten Systems um das Dreifache erhöht haben."
+        "detail": "Prüfen und bearbeiten Sie jeden Vorschlag, bevor Sie ihn in einer Bewerbung verwenden."
       },
       {
         "title": "Heben Sie sich von der Konkurrenz ab",
@@ -396,24 +396,6 @@
         "title": "Bauen Sie Selbstvertrauen in Ihrer Jobsuche auf",
         "description": "Präsentieren Sie sich von Ihrer besten beruflichen Seite mit einem ausgefeilten, fehlerfreien Lebenslauf, der Ihr wahres Potenzial und Ihre beruflichen Erfolge widerspiegelt.",
         "detail": "Fühlen Sie sich sicher, da Sie wissen, dass Ihre Bewerbungsunterlagen professionell erstellt und branchenkonform sind."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Zufriedene Benutzer"
-      },
-      {
-        "number": "98.7%",
-        "label": "Erfolgsquote"
-      },
-      {
-        "number": "50+",
-        "label": "Vorlagen"
-      },
-      {
-        "number": "24 Std.",
-        "label": "Durchschnittliche Zeit"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Bereit, Ihren Traumjob zu landen?",
-      "description": "Schließen Sie sich über 50.000 Fachleuten an, die ihre Karriere verändert haben. Beginnen Sie noch heute, Ihren erfolgreichen Lebenslauf zu erstellen.",
+      "title": "Bereit, Ihren Lebenslauf zu erstellen?",
+      "description": "Erstellen, prüfen und exportieren Sie Ihren Lebenslauf mit dem geführten Editor.",
       "button": "Starten Sie Ihre Erfolgsgeschichte",
       "noCredit": "✨ Keine Kreditkarte erforderlich • Kostenlose Vorlagen enthalten"
     }
@@ -440,7 +422,7 @@
       "part2": "Benutzer",
       "part3": "sagen"
     },
-    "description": "Schließen Sie sich Tausenden zufriedener Jobsuchender an, die mit unserem KI-gestützten Lebenslauf-Builder ihren Traumjob gelandet haben.",
+    "description": "Lesen Sie freigegebenes Kundenfeedback aus dem Bewertungsworkflow der Plattform.",
     "navigation": {
       "previous": "Zurück",
       "next": "Weiter",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Benötigen Sie noch Hilfe?",
-      "description": "Unser Support-Team ist rund um die Uhr für Sie da, um Ihnen zum Erfolg zu verhelfen",
+      "description": "Nutzen Sie das Kontaktformular für Fragen zu Konto oder Produkt. Antwortzeiten werden nicht garantiert.",
       "contactButton": "Support kontaktieren",
-      "docsButton": "Dokumentation durchsuchen"
+      "docsButton": "Karriereartikel"
     },
     "cta": {
       "badge": "Bereit, Ihren Lebenslauf zu erstellen?",
-      "title": "Verwandeln Sie Ihre Karriere mit KI-gestützten Lebensläufen",
-      "description": "Schließen Sie sich Tausenden von Fachleuten an, die in Sekundenschnelle beeindruckende Lebensläufe erstellt haben. Beginnen Sie Ihre Karriere mit unserer intelligenten Designplattform.",
+      "title": "Lebenslauf erstellen und prüfen",
+      "description": "Lesen Sie häufige Fragen oder beginnen Sie einen Lebenslauf im geführten Editor.",
       "button": "Kostenlos erstellen starten",
-      "freeCredits": "3 kostenlose Credits • Keine Kreditkarte erforderlich",
-      "support": "24/7 Support",
-      "secure": "Sicher & privat",
-      "instant": "Sofortige Ergebnisse"
+      "freeCredits": "",
+      "support": "Kontobasierte Entwürfe",
+      "secure": "Vor dem Export prüfen",
+      "instant": "Optionale KI-Unterstützung"
     },
     "trustIndicators": {
-      "secure": "Sicher & privat",
-      "instant": "Sofortige Ergebnisse",
-      "support": "24/7 Support"
+      "secure": "Vor dem Export prüfen",
+      "instant": "Optionale KI-Unterstützung",
+      "support": "Kontobasierte Entwürfe"
     },
     "q1": {
-      "question": "Wie starte ich mit der KI-Lebenslauferstellung?",
-      "answer": "Der Einstieg ist denkbar einfach! Registrieren Sie sich kostenlos, geben Sie Ihre Daten ein und lassen Sie unsere KI in Sekundenschnelle beeindruckende Lebensläufe erstellen."
+      "question": "Wie beginne ich mit dem Lebenslauf-Editor?",
+      "answer": "Erstellen Sie ein Konto, öffnen Sie den Lebenslauf-Editor, geben Sie geprüfte Informationen ein, wählen Sie ein Layout und prüfen Sie die Vorschau vor dem Speichern oder Exportieren. KI-Unterstützung ist optional und kann deaktiviert sein."
     },
     "q2": {
-      "question": "Wie schnell ist der Erstellungsprozess?",
-      "answer": "Unsere KI erstellt mehrere Lebenslauf-Varianten in unter 5 Minuten! Das geht blitzschnell und unkompliziert."
+      "question": "Garantiert die KI-Unterstützung ein Vorstellungsgespräch oder eine Stelle?",
+      "answer": "Nein. KI-Ausgaben können unvollständig oder falsch sein und garantieren weder ATS-Akzeptanz noch Vorstellungsgespräch oder Beschäftigung. Prüfen und bearbeiten Sie jeden Vorschlag."
     },
     "q3": {
-      "question": "Was ist im kostenlosen Tarif enthalten?",
-      "answer": "Neue Benutzer erhalten kostenlose Credits, um Lebensläufe sofort zu erstellen und als PDF oder Word herunterzuladen."
+      "question": "Wo sehe ich aktuelle Tarifgrenzen und Preise?",
+      "answer": "Auf der Preisseite finden Sie die aktuellen, vom Server bereitgestellten Tarife, Berechtigungen, Steuern und Zahlungsoptionen. Die Verfügbarkeit kann je nach Konto und Konfiguration variieren."
     },
     "q4": {
-      "question": "Kann ich die erstellten Lebensläufe anpassen?",
-      "answer": "Ja! Sie können jederzeit verschiedene Stile, Farben und Layouts anpassen."
+      "question": "Kann ich meinen Lebenslauf anpassen?",
+      "answer": "Ja. Sie können Abschnitte bearbeiten, ein verfügbares Layout wählen und die gerenderte Vorschau prüfen. KI-Vorschläge bleiben bearbeitbar und müssen auf Richtigkeit geprüft werden."
     },
     "q5": {
-      "question": "Welche Dateiformate werden bereitgestellt?",
-      "answer": "Alle Lebensläufe sind in hochwertigen PDF- und Word-Formaten verfügbar."
+      "question": "Welche Exportformate sind verfügbar?",
+      "answer": "PDF- und DOCX-Exporte werden angeboten, wenn die entsprechende Exportfunktion und Kontoberechtigung verfügbar sind. Prüfen Sie die heruntergeladene Datei vor dem Einreichen."
     },
     "q6": {
-      "question": "Wie funktioniert das Credit-System?",
-      "answer": "Jede Erstellung verbraucht 1 Credit. Credits verfallen nie und können jederzeit aufgestockt werden."
+      "question": "Wie werden Entwürfe und Kontodaten gespeichert?",
+      "answer": "Firebase Authentication verwaltet die Identität. Entwürfe und andere Anwendungsdaten werden über die MariaDB-gestützte API gespeichert. Weitere Informationen finden Sie in der Datenschutzrichtlinie sowie den Export- und Löschfunktionen."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Auf dem Laufenden bleiben",
       "securePayments": "Sichere Zahlungen"
     },
-    "aboutText": "Wir helfen Arbeitssuchenden, in wenigen Minuten professionelle Lebensläufe zu erstellen. Unsere Mission ist es, Menschen dabei zu unterstützen, ihren Traumjob mit hochwertigen, KI-erstellten Bewerbungsunterlagen zu finden.",
+    "aboutText": "ResumePilot AI bietet Werkzeuge zum Erstellen, Prüfen und Exportieren von Lebensläufen und zugehörigen Karrieredokumenten.",
     "links": {
       "pricing": "Preise",
       "contact": "Kontakt"
@@ -1146,8 +1128,8 @@
       "clickToView": "Klicken zum Anzeigen in voller Größe",
       "changeTemplate": "Vorlage ändern",
       "viewFullSize": "Vollbild anzeigen",
-      "trustedBy": "Vertrauen Sie über 50.000 Fachleuten",
-      "joinSuccess": "Werden Sie Teil der Erfolgsgeschichten",
+      "trustedBy": "Vorschau vor dem Export",
+      "joinSuccess": "Inhalt und Formatierung prüfen",
       "resumePdf": "Lebenslauf.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Ausstellungsdatum",
         "placeholder": "z. B. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "KI-Zertifizierungsempfehlungen",
-      "recommend": "Zertifizierungen empfehlen (KI)",
-      "tooltip": "KI-Zertifizierungsempfehlungen basierend auf Ihrem Profil generieren",
-      "generating": "Analysieren & Generieren...",
-      "tailoredSubtitle": "Anerkannte Branchenzertifikate zugeschnitten auf {{role}}",
-      "genericSubtitle": "Top-akkreditierte Branchenzertifikate basierend auf Ihren Fähigkeiten",
-      "promptTitle": "Stärken Sie Ihren Lebenslauf mit Zertifizierungen",
-      "promptDescRole": "Lassen Sie die KI Ihre Erfahrung als {{role}} analysieren und Top-Zertifizierungen vorschlagen.",
-      "promptDescGeneric": "Generieren Sie anerkannte Branchenzertifikate für Ihren Bereich zur Optimierung Ihrer Bewerbung.",
-      "generateNow": "KI-Empfehlungen jetzt generieren",
-      "refresh": "Empfehlungen aktualisieren",
-      "getRecommendations": "Empfehlungen abrufen",
-      "addAll": "Alle empfohlenen hinzufügen",
-      "added": "Hinzugefügt",
-      "addedBadge": "Hinzugefügt",
-      "add": "Hinzufügen",
-      "mandatoryBadge": "Branchenstandard",
-      "recommendedBadge": "Empfohlen"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Finden Sie noch heute Ihren Traumjob",
+        "sentence1": "Aktuelle Stellenangebote prüfen",
         "sentence2": "Vernetzen Sie sich mit Top-Arbeitgebern",
         "sentence3": "Fördern Sie Ihre Karriere",
         "sentence4": "Entdecken Sie Remote-Möglichkeiten",
@@ -1935,83 +1897,40 @@
       "resources": "Ressourcen",
       "resourcesDesc": "Karriereberatung & Tipps",
       "stats": {
-        "jobs": "10.000+ aktive Jobs",
-        "rating": "4.8/5 Bewertung"
+        "jobs": "Aktuelle Stellenangebote",
+        "rating": "Geprüfte Stellendetails"
       },
       "features": {
         "freeToApply": "Kostenlos bewerben",
-        "verifiedEmployers": "Verifizierte Arbeitgeber"
+        "verifiedEmployers": "Moderierte Arbeitgeber"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Top-Arbeitgeber",
-      "title": "Treten Sie führenden Unternehmen bei",
-      "description": "Entdecken Sie Möglichkeiten bei Weltklasse-Unternehmen, die aktiv einstellen. Von Startups bis zu Fortune 500 – finden Sie Ihre perfekte Übereinstimmung.",
+      "badge": "Vorgestellte Arbeitgeber",
+      "title": "Arbeitgeberprofile durchsuchen",
+      "description": "Durchsuchen Sie vorgestellte Arbeitgeberprofile mit aktiven Stellenangeboten. Öffnen Sie das Jobportal, um aktuelle Rollen und Bewerbungsdetails zu prüfen.",
       "featured": "Vorgestellt",
       "viewAll": "Alle Unternehmen anzeigen",
       "stats": {
-        "companies": "Partnerunternehmen",
+        "companies": "Vorgestellte Unternehmen",
         "jobs": "Aktive Jobs",
         "hires": "Erfolgreiche Einstellungen"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "So funktioniert's",
-      "title": "Finden Sie Ihren Traumjob in",
-      "titleHighlight": "4 einfachen Schritten",
-      "description": "Unser optimierter Prozess macht die Jobsuche mühelos. Von der Entdeckung bis zur Einstellung begleiten wir Sie bei jedem Schritt, um sicherzustellen, dass Sie die perfekte Gelegenheit finden.",
-      "featuresTitle": "Warum unsere Plattform wählen?",
-      "featuresDescription": "Wir bieten modernste Tools und Funktionen, um Ihre Jobsuche effektiver und effizienter zu gestalten.",
-      "steps": {
-        "0": {
-          "title": "Suchen & Entdecken",
-          "description": "Durchsuchen Sie Tausende von Stellenangeboten führender Unternehmen. Nutzen Sie unsere erweiterten Filter, um die perfekte Übereinstimmung für Ihre Fähigkeiten und Vorlieben zu finden."
-        },
-        "1": {
-          "title": "Profil erstellen",
-          "description": "Erstellen Sie Ihr berufliches Profil mit unserem Lebenslauf-Generator. Zeigen Sie Ihre Fähigkeiten, Erfahrungen und Erfolge, um sich von der Masse abzuheben."
-        },
-        "2": {
-          "title": "Sofort bewerben",
-          "description": "Bewerben Sie sich mit einem Klick auf mehrere Jobs. Unser intelligentes Bewerbungssystem passt Ihr Profil automatisch an jede Position an."
-        },
-        "3": {
-          "title": "Angestellt werden",
-          "description": "Vernetzen Sie sich mit Personalverantwortlichen, vereinbaren Sie Vorstellungsgespräche und finden Sie Ihren Traumjob. Wir unterstützen Sie während des gesamten Prozesses."
-        }
       },
-      "features": {
-        "0": {
-          "title": "KI-gestützte Matching",
-          "description": "Unser intelligenter Algorithmus bringt Sie mit relevanten Möglichkeiten zusammen"
-        },
-        "1": {
-          "title": "Lebenslauf-Optimierung",
-          "description": "Optimieren Sie Ihren Lebenslauf automatisch für jede Bewerbung"
-        },
-        "2": {
-          "title": "Verifizierte Unternehmen",
-          "description": "Alle Arbeitgeber sind auf Echtheit und Qualität geprüft"
-        }
-      },
-      "cta": {
-        "title": "Bereit für Ihre Reise?",
-        "description": "Schließen Sie sich Tausenden von Fachkräften an, die ihren Traumjob über unsere Plattform gefunden haben. Ihre nächste Gelegenheit ist nur einen Klick entfernt.",
-        "searchButton": "Jobsuche starten",
-        "profileButton": "Profil erstellen"
-      }
+      "empty": "Derzeit sind keine Arbeitgeber vorgestellt.",
+      "unavailable": "Vorgestellte Arbeitgeber sind vorübergehend nicht verfügbar.",
+      "evidenceReviewed": "Nachweis geprüft"
     },
     "LandingJobsFeatured": {
       "badge": "Ausgewählte Jobs",
-      "title": "Entdecken Sie Ihre nächste",
-      "titleHighlight": "Traumgelegenheit",
+      "title": "Vorgestellte",
+      "titleHighlight": "Stellenangebote",
       "description": "Entdecken Sie handverlesene Möglichkeiten von Top-Unternehmen. Diese ausgewählten Positionen bieten außergewöhnliches Karrierewachstum, wettbewerbsfähige Vergütung und erstaunliche Arbeitsumgebungen.",
-      "statsTitle": "Schließen Sie sich Tausenden erfolgreicher Fachkräfte an",
-      "statsDescription": "Unsere Plattform hat unzähligen Fachkräften geholfen, ihren Traumjob in Top-Unternehmen weltweit zu finden.",
+      "statsTitle": "Veröffentlichte Plattformübersicht",
+      "statsDescription": "Diese Anzeigewerte sind versioniert und mit den vom Plattformadministrator geprüften Nachweisen verknüpft.",
       "stats": {
         "jobs": "Ausgewählte Jobs",
         "success": "Erfolgsquote",
-        "companies": "Top-Unternehmen"
+        "companies": "Vorgestellte Unternehmen"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Jetzt bewerben"
         }
       },
-      "viewAll": "Alle Jobs anzeigen"
+      "viewAll": "Alle Jobs anzeigen",
+      "empty": "Derzeit sind keine Stellen vorgestellt.",
+      "evidenceReviewed": "Nachweis geprüft"
     },
     "MainJobListings": {
       "jobSingular": "Job",

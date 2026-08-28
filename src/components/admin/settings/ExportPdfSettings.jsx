@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaFilePdf, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 
 const ExportPdfSettings = () => {
@@ -15,7 +15,7 @@ const ExportPdfSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.exportPdf) {
                 setExportConfig({ ...exportConfig, ...settings.exportPdf });
             }

@@ -73,7 +73,7 @@ test('admin user mutation surface is wired to the authoritative PATCH endpoint',
   const [route, drawer, ops] = await Promise.all([
     fs.readFile('backend/routes/adminUsers.js', 'utf8'),
     fs.readFile('src/components/admin/usersManager/User360Drawer.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
   ]);
   // The server owns suspend / role / membership mutations.
   assert.match(route, /router\.patch\('\/:uid'/);

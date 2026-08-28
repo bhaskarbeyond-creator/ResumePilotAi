@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { getPages } from "../../../firestore/dbOperations";
+import { getPages } from "../../../services/api/platform";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -104,37 +104,14 @@ useEffect(() => {
           </div>
           <div className="space-y-6">
             <h4 className="text-lg font-semibold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent pb-1 inline-block border-b border-purple-500/30">
-              {t('HomepageFooter.headings.stayUpdated')}
+              {t('navbar.blog')}
             </h4>
-            <p className="text-gray-400">
-              {t('HomepageFooter.newsletter.description')}
-            </p>
-            <div className="relative">
-              <input
-                placeholder={t('HomepageFooter.newsletter.placeholder')}
-                className="w-full px-4 py-3 bg-[#1a1c21]/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300 border border-gray-700/30 hover:border-purple-500/30 placeholder-gray-500"
-                type="email"
-              />
-              <button className="absolute right-1.5 top-1.5 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg transition-all duration-300 text-sm font-medium shadow-glow-sm hover:shadow-glow-md">
-                {t('HomepageFooter.newsletter.buttonText')}
-              </button>
-            </div>
-            <div className="flex items-center text-sm text-gray-500">
-              <svg
-                className="w-4 h-4 mr-2 text-purple-500/70"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                ></path>
-              </svg>
-              {t('HomepageFooter.newsletter.privacyNote')}
-            </div>
+            <Link
+              to="/blog"
+              className="inline-flex items-center rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-glow-sm transition hover:from-purple-500 hover:to-indigo-500"
+            >
+              {t('navbar.blog')}
+            </Link>
           </div>
           <div className="space-y-6">
             <h4 className="text-lg font-semibold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent pb-1 border-b border-purple-500/30 flex items-center gap-2">

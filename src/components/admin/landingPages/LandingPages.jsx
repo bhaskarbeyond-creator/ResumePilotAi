@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { getFrontendStats, setFrontendStats } from '../../../firestore/dbOperations';
+import { getFrontendStats, setFrontendStats } from '../../../services/api/platform';
 import { FiSave, FiRefreshCw, FiEye } from 'react-icons/fi';
 import PagesSettings from '../settings/pagesSettings';
 
 const LandingPages = () => {
     const [activeTab, setActiveTab] = useState('jobs');
     const [stats, setStats] = useState({
-        // Jobs Landing Hero
-        activeJobs: '10,000+',
-        rating: '4.8',
-        
-        // Jobs Landing Top Companies
-        partnerCompanies: '500+',
-        successfulHires: '50,000+',
-        
-        // Jobs Landing Featured
-        featuredJobs: '2,500+',
-        successRate: '95',
-        topCompanies: '500+',
+        activeJobs: '',
+        rating: '',
+        partnerCompanies: '',
+        successfulHires: '',
+        featuredJobs: '',
+        successRate: '',
+        topCompanies: '',
+        sourceUrl: '',
+        verifiedAt: '',
+        published: false,
+        revision: 0,
     });
     
     const [loading, setLoading] = useState(true);
@@ -42,7 +41,7 @@ const LandingPages = () => {
     const fetchStats = async () => {
         try {
             setLoading(true);
-            const fetchedStats = await getFrontendStats();
+            const fetchedStats = await getFrontendStats({ admin: true });
             if (fetchedStats) {
                 setStats(current => ({ ...current, ...fetchedStats }));
             }
@@ -74,8 +73,9 @@ const LandingPages = () => {
                 if (result.code === 'ADMIN_TARGET_CHANGED') { setConfirmSave(false); await fetchStats(); }
             }
         } catch (error) {
-            console.error('Error saving stats:', error);
-            setMessage('Error saving stats');
+            console.error('Error saving landing marketing content:', error);
+            setMessage(`Error: ${error.message || 'Landing content could not be saved.'}`);
+            setConfirmSave(false);
         } finally {
             setSaving(false);
         }
@@ -95,7 +95,7 @@ const LandingPages = () => {
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
-            {confirmSave && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !saving) setConfirmSave(false); }}><div role="alertdialog" aria-modal="true" aria-labelledby="landing-save-title" className="w-full max-w-md rounded-lg bg-white p-6"><h2 id="landing-save-title" className="text-lg font-bold">Publish landing display content?</h2><p className="mt-2 text-sm text-gray-600">These are marketing display claims, not measured operational metrics. Saving publishes all fields immediately and creates an audit record.</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => setConfirmSave(false)} disabled={saving} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={handleSave} disabled={saving} className="rounded bg-blue-700 px-4 py-2 text-white">{saving ? 'Publishing…' : 'Publish content'}</button></div></div></div>}
+            {confirmSave && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onKeyDown={event => { if (event.key === 'Escape' && !saving) setConfirmSave(false); }}><div role="alertdialog" aria-modal="true" aria-labelledby="landing-save-title" className="w-full max-w-md rounded-lg bg-white p-6"><h2 id="landing-save-title" className="text-lg font-bold">{stats.published ? 'Publish verified landing claims?' : 'Save landing claims as a draft?'}</h2><p className="mt-2 text-sm text-gray-600">{stats.published ? 'All values will become public. The evidence URL and review date are required, publication is revision-guarded, and the change is audited.' : 'Draft values remain private and will not render on the public landing page.'}</p><div className="mt-6 flex justify-end gap-3"><button type="button" autoFocus onClick={() => setConfirmSave(false)} disabled={saving} className="rounded border px-4 py-2">Cancel</button><button type="button" onClick={handleSave} disabled={saving} className="rounded bg-blue-700 px-4 py-2 text-white">{saving ? 'Saving…' : stats.published ? 'Publish verified claims' : 'Save draft'}</button></div></div></div>}
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Landing Pages Management</h1>
@@ -144,7 +144,7 @@ const LandingPages = () => {
                                     value={stats.activeJobs}
                                     onChange={(e) => handleInputChange('activeJobs', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 10,000+"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">Displayed as "{stats.activeJobs} Active Jobs"</p>
                             </div>
@@ -157,7 +157,7 @@ const LandingPages = () => {
                                     value={stats.rating}
                                     onChange={(e) => handleInputChange('rating', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 4.8"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">Displayed as "{stats.rating}/5 Rating"</p>
                             </div>
@@ -177,7 +177,7 @@ const LandingPages = () => {
                                     value={stats.partnerCompanies}
                                     onChange={(e) => handleInputChange('partnerCompanies', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 500+"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                             </div>
                             <div>
@@ -189,7 +189,7 @@ const LandingPages = () => {
                                     value={stats.activeJobs}
                                     onChange={(e) => handleInputChange('activeJobs', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 10,000+"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                             </div>
                             <div>
@@ -201,7 +201,7 @@ const LandingPages = () => {
                                     value={stats.successfulHires}
                                     onChange={(e) => handleInputChange('successfulHires', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 50,000+"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                             </div>
                         </div>
@@ -220,7 +220,7 @@ const LandingPages = () => {
                                     value={stats.featuredJobs}
                                     onChange={(e) => handleInputChange('featuredJobs', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 2,500+"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                             </div>
                             <div>
@@ -232,7 +232,7 @@ const LandingPages = () => {
                                     value={stats.successRate}
                                     onChange={(e) => handleInputChange('successRate', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 95"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">Displayed as "{stats.successRate}%"</p>
                             </div>
@@ -245,20 +245,48 @@ const LandingPages = () => {
                                     value={stats.topCompanies}
                                     onChange={(e) => handleInputChange('topCompanies', e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="e.g., 500+"
+                                    placeholder="Enter evidence-backed display value"
                                 />
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
 
-            {/* Resume Builder Tab (Placeholder) */}
-            {activeTab === 'resume' && (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                    <div className="text-center py-12">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Resume Builder Landing Page</h2>
-                        <p className="text-gray-600">This section will be available in a future update.</p>
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Evidence &amp; publication</h2>
+                        <p className="mb-5 text-sm text-gray-600">Public claims fail closed unless every value has current, reviewable evidence. Evidence must be reviewed again within 180 days.</p>
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Evidence URL
+                                <input
+                                    type="url"
+                                    value={stats.sourceUrl}
+                                    onChange={(event) => handleInputChange('sourceUrl', event.target.value)}
+                                    className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="https://…"
+                                    required={stats.published}
+                                />
+                            </label>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Evidence reviewed on
+                                <input
+                                    type="date"
+                                    value={stats.verifiedAt ? String(stats.verifiedAt).slice(0, 10) : ''}
+                                    onChange={(event) => handleInputChange('verifiedAt', event.target.value)}
+                                    className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required={stats.published}
+                                />
+                            </label>
+                        </div>
+                        <label className="mt-5 flex items-start gap-3 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                            <input
+                                type="checkbox"
+                                checked={stats.published === true}
+                                onChange={(event) => handleInputChange('published', event.target.checked)}
+                                className="mt-0.5"
+                            />
+                            <span><strong>Publish these verified claims.</strong> Clear this checkbox to keep the revision as a private draft.</span>
+                        </label>
+                        <p className="mt-3 text-xs text-gray-500">Current revision: {Number(stats.revision || 0)}</p>
                     </div>
                 </div>
             )}

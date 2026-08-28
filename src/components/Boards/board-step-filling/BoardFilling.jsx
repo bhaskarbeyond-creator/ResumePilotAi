@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import Canvas from '../canvas/Canvas';
 // Toasts
 import Toasts from '../../Toasts/Toats';
-import { setResumePropertyPerUser, addEmployments, addEducations, IncrementDownloads, addSkills, addLanguages, setJsonPb, getResumeById, addCoverLetter, addOneToNumberOfDocumentsGenerated, addOneToNumberOfDocumentsDownloaded } from '../../../firestore/dbOperations';
+import { setResumePropertyPerUser, addEmployments, addEducations, IncrementDownloads, addSkills, addLanguages, setJsonPb, getResumeById, addCoverLetter, addOneToNumberOfDocumentsGenerated, addOneToNumberOfDocumentsDownloaded } from '../../../services/api/platform';
 // Animation Library
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';

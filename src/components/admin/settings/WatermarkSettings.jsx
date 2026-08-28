@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaStamp, FaCheck, FaTimes, FaSpinner, FaEye } from 'react-icons/fa';
 
 const WatermarkSettings = () => {
@@ -14,7 +14,7 @@ const WatermarkSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.watermark) {
                 setWatermarkConfig((prev) => ({ ...prev, ...settings.watermark }));
             }

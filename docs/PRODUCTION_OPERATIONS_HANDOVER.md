@@ -1,5 +1,8 @@
 # ResumePilot AI — Production Operations Handover
 
+> [!CAUTION]
+> The direct-SCP procedure formerly documented here is retired. Standard releases and rollbacks must use the restricted, approval-gated process in [`SAFE_PRODUCTION_WORKFLOW.md`](./SAFE_PRODUCTION_WORKFLOW.md); that runbook also defines the restricted break-glass exception. Never use a key shared in chat, `sshpass`, trust-on-first-use, or direct extraction into live directories.
+
 ## 1. Executive Summary & Certified Release Baseline
 
 - **Authoritative Certified Baseline SHA**: `86b0197118d0761ed32061fcbdcb3da3daa7bdcb`
@@ -20,44 +23,15 @@
 
 ## 2. Deployment Procedure
 
-To deploy a verified and certified release:
+Use **Actions → Production release** from `main`, select `deploy`, provide the current full `main` SHA, and type `DEPLOY`. The protected `production` environment supplies reviewer approval and the dedicated forced-command SSH identity. The workflow repeats tests, builds with environment-managed public frontend configuration, stages the release, and verifies production independently.
 
-```bash
-# 1. Ensure working directory is clean
-git status --short
-
-# 2. Run product regression test suites (373 tests)
-npm test
-
-# 3. Run cryptographic anti-fraud mutation suite
-node --test tests/evidence-engine-anti-fraud.test.mjs
-
-# 4. Build Vite production bundle
-npm run build
-
-# 5. Execute full real-browser execution & acceptance audit
-node scripts/independent-acceptance-audit.mjs
-
-# 6. Commit and push clean change set to GitHub
-git push origin main
-
-# 7. Verify live production deployment
-curl -fsSL https://airesume.projectdemo.guru/api/healthz
-curl -fsSL https://airesume.projectdemo.guru/api/service-availability
-```
+Bootstrap, key rotation, required settings, and break-glass instructions are in [`SAFE_PRODUCTION_WORKFLOW.md`](./SAFE_PRODUCTION_WORKFLOW.md).
 
 ---
 
 ## 3. Rollback Procedure & Emergency Instructions
 
-If a production anomaly or unforeseen infrastructure failure occurs:
-
-```bash
-# Emergency rollback to previous certified stable baseline (3b87761)
-git checkout 3b87761
-npm run build
-# Deploy previous dist/ bundle to production web root
-```
+Use the same **Production release** workflow, select `rollback`, provide a known-good full SHA already in `main` history, and type `ROLLBACK`. Current trusted delivery tooling rebuilds the historical app revision. Do not check out and directly copy an old `dist/` tree into the webroot.
 
 ---
 

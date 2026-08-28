@@ -8,14 +8,14 @@ import ProfileDisplay from '../ProfileDisplay/ProfileDisplay';
 import Spinner from '../../Spinner/Spinner';
 import { FaBars, FaEnvelope, FaCheckCircle, FaTimes, FaRedo } from 'react-icons/fa';
 
-import { getFullName, getAds } from '../../../firestore/dbOperations';
+import { getFullName, getAds } from '../../../services/api/platform';
 // Animation Library
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { trackEvent, trackUserLogin, trackEngagement } from '../../../utils/ga4';
 import signOutUser from '../../../utils/signOut';
 
-import { getWebsiteData } from '../../../firestore/dbOperations';
+import { getWebsiteData } from '../../../services/api/platform';
 
 import DashboardToast from '../DashboardToast/DashboardToast';
 
@@ -133,7 +133,7 @@ class DashboardMain extends Component {
 
                 const isEmailProvider = user.providerData?.some(provider => provider.providerId === 'password');
                 if (isEmailProvider && !user.emailVerified) {
-                    const { getSystemSettings } = await import('../../../firestore/dbOperations');
+                    const { getSystemSettings } = await import('../../../services/api/platform');
                     const settings = await getSystemSettings();
                     if (!this._isMounted || generation !== this._authGeneration || fire.auth().currentUser?.uid !== user.uid) return;
                     if (settings?.modules?.enableEmailVerification === true) this.setState({ showVerifyBanner: true });

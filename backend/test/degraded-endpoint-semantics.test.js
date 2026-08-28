@@ -54,61 +54,18 @@ test('OAuth begin redirects with an explanatory reason instead of a blank 503', 
  * Notifications: not-configured vs failed vs bad request
  * ------------------------------------------------------------------ */
 
-test('a notification with no recipient is a 400, not a mail-provider failure', async () => {
+test('legacy client-authored notification dispatchers are permanently retired', async () => {
   const cases = [
-    '/api/notify/job-posted',
-    '/api/notify/job-application',
-    '/api/notify/job-status-update',
+    ['/api/notify/user-signup', { userEmail: 'super@example.com' }],
+    ['/api/notify/job-posted', { employerEmail: 'employer@example.com' }],
+    ['/api/notify/job-application', { recruiterEmail: 'recruiter@example.com' }],
+    ['/api/notify/job-status-update', { applicantEmail: 'applicant@example.com' }],
   ];
-  for (const route of cases) {
-    const res = await request(app).post(route).set('Authorization', sa()).send({});
-    assert.equal(res.status, 400, `${route} should reject a missing recipient with 400, got ${res.status}`);
-    assert.equal(res.body.code, 'NOTIFICATION_RECIPIENT_REQUIRED');
-    assert.equal(res.body.deliveryState, 'NOT_ATTEMPTED');
-    assert.ok(res.body.message, 'a 400 must still explain itself');
-  }
-});
-
-test('an unconfigured mail provider reports NOT_CONFIGURED (503), never DELIVERY_FAILED (502)', async () => {
-  const cases = [
-    ['/api/notify/job-posted', { employerEmail: 'employer@example.com', jobTitle: 'T', companyName: 'C' }],
-    ['/api/notify/job-application', { recruiterEmail: 'recruiter@example.com', applicantName: 'A', jobTitle: 'T', companyName: 'C' }],
-  ];
-
   for (const [route, body] of cases) {
     const res = await request(app).post(route).set('Authorization', sa()).send(body);
-
-    if (res.status === 202 || res.status === 502) {
-      assert.ok([202, 502].includes(res.status), 'configured email provider responded to delivery attempt');
-    } else {
-      assert.equal(res.status, 503, `${route} should be 503 NOT_CONFIGURED, got ${res.status}`);
-      assert.equal(res.body.deliveryState, 'NOT_CONFIGURED');
-      assert.equal(res.body.configurationState, 'NOT_CONFIGURED');
-      assert.equal(res.body.code, 'EMAIL_NOT_CONFIGURED');
-      assert.equal(res.body.providerAccepted, false);
-
-      // The operator has to be told what to do about it.
-      assert.ok(res.body.remediation, `${route} must carry remediation guidance`);
-      assert.match(res.body.message, /no email provider is configured/i);
-
-      // And it must not be described as a delivery failure.
-      assert.notEqual(res.body.deliveryState, 'DELIVERY_FAILED');
-    }
-  }
-});
-
-test('the signup notification uses the same three-state semantics', async () => {
-  // Recipient must match the authenticated account, so use the caller's email.
-  const res = await request(app)
-    .post('/api/notify/user-signup')
-    .set('Authorization', sa())
-    .send({ userEmail: 'super@example.com', userName: 'Super' });
-
-  assert.ok([202, 502, 503].includes(res.status), `expected 202, 502 or 503, got ${res.status}`);
-  if (res.status === 503) {
-    assert.equal(res.body.deliveryState, 'NOT_CONFIGURED');
-    assert.equal(res.body.code, 'EMAIL_NOT_CONFIGURED');
-    assert.ok(res.body.remediation);
+    assert.equal(res.status, 410, `${route} must not remain a conditional mail relay`);
+    assert.equal(res.body.code, 'CLIENT_NOTIFICATION_DISPATCH_RETIRED');
+    assert.ok(res.body.message, 'retirement response must explain the authoritative lifecycle replacement');
   }
 });
 

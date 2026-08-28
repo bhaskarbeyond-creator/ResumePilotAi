@@ -3,23 +3,27 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 test('Blog taxonomy and Trusted By mutations are backend-owned and public lists are published-only', async () => {
-  const [backend, operations, rules, trusted] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'), fs.readFile('src/components/Dashboard2/elements/HomepageTrustedBy.jsx', 'utf8'),
+  const [backend, operations, repository, policy, migration, trusted] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('backend/repositories/MySQLRepository.js', 'utf8'), fs.readFile('backend/security/policy.js', 'utf8'),
+    fs.readFile('backend/database/migrations/013_cms_relational_authority.sql', 'utf8'),
+    fs.readFile('src/components/Dashboard2/elements/HomepageTrustedBy.jsx', 'utf8'),
   ]);
   assert.match(backend, /CMS_CATEGORY_CREATED/);
   assert.match(backend, /CMS_CATEGORY_UPDATED/);
   assert.match(backend, /CATEGORY_HAS_POSTS/);
   assert.match(operations, /\/api\/admin\/blog\/categories/);
   assert.match(operations, /\/api\/public\/trusted-by/);
-  assert.match(backend, /item\.published !== false/);
+  assert.match(backend, /getTrustedBy\(\{ publishedOnly: true/);
+  assert.match(repository, /FROM trusted_by|SELECT \* FROM trusted_by/);
+  assert.doesNotMatch(backend, /listDocuments\('trusted_by'/);
   assert.match(trusted, /let active = true/);
   assert.match(trusted, /role="status"/);
-  const categoryRules = rules.slice(rules.indexOf('match /blog_categories'), rules.indexOf('match /pages'));
-  assert.match(categoryRules, /allow write: if false/);
-  const trustedRules = rules.slice(rules.indexOf('match /trustedBy'), rules.indexOf('match /contact'));
-  assert.match(trustedRules, /resource\.data\.published == true/);
-  assert.match(trustedRules, /allow write: if false/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
+  assert.match(policy, /system\.config\.write/);
+  assert.match(migration, /INSERT INTO trusted_by/);
+  assert.match(migration, /entity_type = 'trusted_by'/);
+  assert.match(repository, /WHERE active = 1/);
 });
 
 test('missing public Portfolio metadata is noindex and private Resume shares stay noindex', async () => {

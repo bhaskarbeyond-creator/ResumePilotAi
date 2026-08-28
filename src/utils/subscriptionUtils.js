@@ -25,8 +25,8 @@ export const isGlobalSubscriptionDisabled = (subscriptionsStatus) => {
 
 /**
  * Convert any supported date representation to epoch milliseconds, or null.
- * Handles Firestore Timestamp, Date, ISO/RFC strings, unix seconds, unix ms,
- * {seconds,nanoseconds}, {_seconds,_nanoseconds}, null, undefined, invalid.
+ * Handles timestamp-like objects, Date, ISO/RFC strings, unix seconds, unix ms,
+ * {seconds,nanoseconds}, {_seconds,_nanoseconds}, null, undefined, and invalid values.
  * Never throws.
  */
 export const toEpochMs = (val) => {

@@ -9,8 +9,8 @@
  *  - Firebase Auth remains the identity provider (login, ID tokens). It is
  *    an identity service, not a database; the application data plane is
  *    MySQL/MariaDB via the backend API.
- *  - When no VITE_FIREBASE_* configuration is present (Firestore-OFF / no
- *    Firebase environments) the app still boots: `fire.auth()` returns a
+ *  - When no Firebase Authentication client configuration is present, the
+ *    app still boots: `fire.auth()` returns a
  *    null-auth stub whose API mirrors Firebase Auth and whose operations
  *    fail with controlled `auth/not-configured` errors instead of throwing
  *    synchronously or hanging.
@@ -33,8 +33,6 @@ if (hasFirebaseConfig()) {
             apiKey: import.meta.env.VITE_FIREBASE_KEY,
             authDomain: import.meta.env.VITE_FIREBASE_DOMAIN,
             projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-            storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-            messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID,
             appId: import.meta.env.VITE_FIREBASE_APP_ID,
         };
         fire = firebase.initializeApp(config);
@@ -44,7 +42,7 @@ if (hasFirebaseConfig()) {
         fire = null;
     }
 } else {
-    console.info('[Firebase] No VITE_FIREBASE_* configuration present; running in no-Firebase mode (MySQL data plane, API auth).');
+    console.info('[Firebase Auth] Client identity configuration is absent; authentication features are unavailable while the MariaDB application-data API remains independent.');
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -231,16 +229,6 @@ const fireProxy = new Proxy({}, {
             return () => {
                 if (!fire) return localAuth || createNullAuth();
                 try { return fire.auth(); } catch (_error) { return localAuth || createNullAuth(); }
-            };
-        }
-        if (prop === 'firestore') {
-            // Deliberately unavailable: the frontend has no Firestore data plane.
-            // All application data flows through the backend API (MySQL).
-            return () => {
-                throw Object.assign(
-                    new Error('Firestore is not available in the browser. Use the backend API (MySQL authoritative).'),
-                    { code: 'firestore/unavailable' }
-                );
             };
         }
         if (prop === 'initializeApp' || prop === 'app') {

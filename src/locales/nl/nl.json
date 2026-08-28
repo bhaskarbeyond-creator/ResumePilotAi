@@ -211,7 +211,7 @@
     "unlimitedResumes": "Onbeperkt Cv's",
     "nonRecuring": "Niet-terugkerende betaling.",
     "upgradeAndDownload": "Upgraden en Downloaden",
-    "payment1": "Krijg je droombaan",
+    "payment1": "Maak je cv",
     "payment2": "Betaling via een vertrouwde betalingsdienst",
     "payment3": "SSL Beveiligd / 256-bit SSL beveiligde checkout",
     "payment4": "7 dagen geld-terug-garantie",
@@ -243,7 +243,7 @@
     "featuresNav": "Functies",
     "resumeBuilderFeatures": "Cv Maker Functies",
     "featureTagline": "Alles wat je nodig hebt voor het perfecte cv",
-    "userCount": "50K+ gebruikers",
+    "userCount": "Functieoverzicht",
     "exploreFeatures": "Ontdek Alle Functies",
     "freeToTry": "Gratis te proberen",
     "startBuilding": "Begin met bouwen",
@@ -345,12 +345,12 @@
       "sentence5": "Uitblinken in sollicitatiegesprekken met AI-voorbereidingstools"
     },
     "badge": "AI-gestuurde Cv Maker",
-    "description": "Maak verbluffende, ATS-vriendelijke cv's en motivatiebrieven met AI-assistentie. Kies uit professionele sjablonen, krijg realtime feedback en land je droombaan sneller.",
+    "description": "Maak en bewerk cv's en motivatiebrieven met begeleide hulpmiddelen, instelbare sjablonen, live voorbeeld en optionele AI-ondersteuning.",
     "createResume": "Cv Maken",
     "createCoverLetter": "Motivatiebrief Maken",
     "stats": {
-      "users": "5.000+ tevreden gebruikers",
-      "rating": "4.9/5"
+      "users": "Begeleide cv-hulpmiddelen",
+      "rating": "Live voorbeeld"
     },
     "features": {
       "freeToStart": "Gratis om te beginnen",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "BEWEZEN RESULTATEN • VERTROUWD DOOR 50K+ PROFESSIONALS",
+    "badge": "BEGELEID EEN CV MAKEN",
     "title": {
       "part1": "Transformeer",
       "part2": "Je Carrière",
       "part3": "Reis"
     },
-    "description": "Sluit je aan bij duizenden professionals die hun carrière hebben versneld met onze AI-gestuurde cv maker. Word opgemerkt, krijg sollicitatiegesprekken en verzeker je droombaan sneller dan ooit tevoren.",
+    "description": "Gebruik begeleide secties, instelbare lay-outs, voorbeelden en optionele AI-hulp om een cv voor te bereiden en te controleren.",
     "benefits": [
       {
         "title": "Krijg Meer Sollicitatiegesprekken",
         "description": "Onze ATS-geoptimaliseerde sjablonen en AI-gestuurde inhoudssuggesties helpen je cv langs geautomatiseerde screeningsystemen te komen en in handen te komen van wervingsmanagers.",
-        "detail": "Sluit je aan bij duizenden professionals die hun interviewpercentage met 3x hebben verhoogd met ons bewezen systeem."
+        "detail": "Controleer en pas elke suggestie aan voordat je deze in een sollicitatie gebruikt."
       },
       {
         "title": "Onderscheid Je Van De Concurrentie",
@@ -396,24 +396,6 @@
         "title": "Bouw Vertrouwen Op In Je Zoektocht Naar Werk",
         "description": "Presenteer je beste professionele zelf met een gepolijst, foutloos cv dat je ware potentieel en professionele prestaties weerspiegelt.",
         "detail": "Voel je zelfverzekerd wetende dat je sollicitatiedocumenten professioneel zijn opgesteld en voldoen aan de branchestandaarden."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Tevreden Gebruikers"
-      },
-      {
-        "number": "98.7%",
-        "label": "Succespercentage"
-      },
-      {
-        "number": "50+",
-        "label": "Sjablonen"
-      },
-      {
-        "number": "24 uur",
-        "label": "Gem. Tijd"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Klaar Om Je Droombaan Te Vinden?",
-      "description": "Sluit je aan bij meer dan 50.000 professionals die hun carrière hebben getransformeerd. Begin vandaag nog met het bouwen van je winnende cv.",
+      "title": "Klaar om je cv te maken?",
+      "description": "Maak, controleer en exporteer je cv met de begeleide editor.",
       "button": "Start Je Succesverhaal",
       "noCredit": "✨ Geen creditcard vereist • Inclusief gratis sjablonen"
     }
@@ -440,7 +422,7 @@
       "part2": "Gebruikers",
       "part3": " Zeggen"
     },
-    "description": "Sluit je aan bij duizenden tevreden werkzoekenden die hun droombaan hebben gevonden met onze AI-gestuurde cv maker.",
+    "description": "Lees goedgekeurde klantfeedback die via het beoordelingsproces van het platform is gepubliceerd.",
     "navigation": {
       "previous": "Vorige",
       "next": "Volgende",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Nog steeds hulp nodig?",
-      "description": "Ons ondersteuningsteam staat 24/7 voor je klaar om je te helpen slagen",
+      "description": "Gebruik het contactformulier voor vragen over je account of het product. Reactietijden worden niet gegarandeerd.",
       "contactButton": "Contacteer Ondersteuning",
-      "docsButton": "Blader door Docs"
+      "docsButton": "Carrièreartikelen"
     },
     "cta": {
       "badge": "Klaar om je cv te maken?",
-      "title": "Transformeer Je Carrière met AI-gestuurde Cv's",
-      "description": "Sluit je aan bij duizenden professionals die in enkele seconden verbluffende cv's hebben gemaakt. Begin vandaag nog met je carrière met ons intelligente ontwerpplatform.",
+      "title": "Maak en controleer je cv",
+      "description": "Bekijk veelgestelde vragen of begin een cv met de begeleide editor.",
       "button": "Begin Gratis Met Maken",
-      "freeCredits": "3 gratis credits • Geen creditcard vereist",
-      "support": "24/7 Ondersteuning",
-      "secure": "Veilig en Privé",
-      "instant": "Directe Resultaten"
+      "freeCredits": "",
+      "support": "Accountgebonden concepten",
+      "secure": "Controleer vóór export",
+      "instant": "Optionele AI-ondersteuning"
     },
     "trustIndicators": {
-      "secure": "Veilig en Privé",
-      "instant": "Directe Resultaten",
-      "support": "24/7 Ondersteuning"
+      "secure": "Controleer vóór export",
+      "instant": "Optionele AI-ondersteuning",
+      "support": "Accountgebonden concepten"
     },
     "q1": {
-      "question": "Hoe begin ik met AI-cv-generatie?",
-      "answer": "Meld je gratis aan, vul je gegevens in en zie hoe onze AI binnen enkele seconden een prachtig cv maakt."
+      "question": "Hoe begin ik met de cv-editor?",
+      "answer": "Maak een account, open de cv-editor, voer gecontroleerde informatie in, kies een lay-out en bekijk het voorbeeld voordat je opslaat of exporteert. AI-ondersteuning is optioneel en kan uitgeschakeld zijn."
     },
     "q2": {
-      "question": "Hoe snel is het cv-generatieproces?",
-      "answer": "Onze AI genereert meerdere cv-variaties in minder dan 5 minuten!"
+      "question": "Garandeert AI-ondersteuning een gesprek of baan?",
+      "answer": "Nee. AI-uitvoer kan onvolledig of onjuist zijn en garandeert geen ATS-acceptatie, gesprek of baan. Controleer en bewerk elke suggestie."
     },
     "q3": {
-      "question": "Wat is inbegrepen in het gratis abonnement?",
-      "answer": "Nieuwe gebruikers krijgen gratis credits om cv's te maken en te downloaden in PDF- en Word-formaat."
+      "question": "Waar zie ik de actuele planlimieten en prijzen?",
+      "answer": "De prijspagina toont de actuele plannen, rechten, belastingen en betaalopties van de server. Beschikbaarheid kan per account en configuratie verschillen."
     },
     "q4": {
-      "question": "Kan ik het gegenereerde cv aanpassen?",
-      "answer": "Ja! Je kunt eenvoudigstijlen, kleuren en lay-outs aanpassen."
+      "question": "Kan ik mijn cv aanpassen?",
+      "answer": "Ja. Je kunt secties bewerken, een beschikbare lay-out kiezen en het gerenderde voorbeeld controleren. AI-suggesties blijven bewerkbaar en moeten worden gecontroleerd."
     },
     "q5": {
-      "question": "Welke bestandsindelingen bieden jullie aan?",
-      "answer": "Alle cv's zijn beschikbaar in hoogwaardige PDF- en Word-indelingen."
+      "question": "Welke exportformaten zijn beschikbaar?",
+      "answer": "PDF- en DOCX-export is beschikbaar wanneer de relevante exportroute en het accountrecht beschikbaar zijn. Controleer het bestand altijd vóór verzending."
     },
     "q6": {
-      "question": "Hoe werkt het creditsysteem?",
-      "answer": "Elke generatie kost 1 credit. Credits verlopen nooit."
+      "question": "Hoe worden concepten en accountgegevens opgeslagen?",
+      "answer": "Firebase Authentication beheert identiteit. Concepten en andere applicatiegegevens worden opgeslagen via de MariaDB-ondersteunde API. Bekijk het privacybeleid en de opties voor accountexport of -verwijdering."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Blijf Op De Hoogte",
       "securePayments": "Veilige Betalingen"
     },
-    "aboutText": "We helpen werkzoekenden binnen enkele minuten professionele cv's te maken. Onze missie is om individuen in staat te stellen hun droombaan te vinden met hoogwaardige, door AI gemaakte sollicitatiedocumenten.",
+    "aboutText": "ResumePilot AI biedt hulpmiddelen voor het maken, controleren en exporteren van cv’s en gerelateerde carrièredocumenten.",
     "links": {
       "pricing": "Prijzen",
       "contact": "Contact"
@@ -1146,8 +1128,8 @@
       "clickToView": "Klik om op ware grootte te bekijken",
       "changeTemplate": "Wijzig Sjabloon",
       "viewFullSize": "Volledige Grootte Weergeven",
-      "trustedBy": "Vertrouwd door 50K+ professionals",
-      "joinSuccess": "Word lid van de succesverhalen",
+      "trustedBy": "Voorbeeld vóór export",
+      "joinSuccess": "Controleer inhoud en opmaak",
       "resumePdf": "CV.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Datum van Uitgifte",
         "placeholder": "bijv. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "AI Certificering Aanbevelingen",
-      "recommend": "Certificeringen aanbevelen (AI)",
-      "tooltip": "Genereer AI-certificeringsaanbevelingen afgestemd op uw profiel",
-      "generating": "Analyseren en genereren...",
-      "tailoredSubtitle": "Erkende branchecertificeringen afgestemd op {{role}}",
-      "genericSubtitle": "Beste geaccrediteerde branchecertificeringen op basis van uw vaardigheden",
-      "promptTitle": "Versterk uw CV met gevalideerde certificeringen",
-      "promptDescRole": "Laat AI uw ervaring als {{role}} analyseren en de meest gewaardeerde certificeringen aanbevelen.",
-      "promptDescGeneric": "Genereer industriestandaard certificeringen die passen bij uw vakgebied voor een betere ATS-score.",
-      "generateNow": "Nu AI-aanbevelingen genereren",
-      "refresh": "Aanbevelingen vernieuwen",
-      "getRecommendations": "Aanbevelingen ophalen",
-      "addAll": "Alle aanbevolen toevoegen",
-      "added": "Toegevoegd",
-      "addedBadge": "Toegevoegd",
-      "add": "Toevoegen",
-      "mandatoryBadge": "Industriestandaard",
-      "recommendedBadge": "Aanbevolen"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Vind vandaag nog uw droombaan",
+        "sentence1": "Bekijk actuele vacatures",
         "sentence2": "Maak contact met topwerkgevers",
         "sentence3": "Geef uw carrière een boost",
         "sentence4": "Ontdek remote mogelijkheden",
@@ -1935,83 +1897,40 @@
       "resources": "Bronnen",
       "resourcesDesc": "Carrièrebegeleiding & tips",
       "stats": {
-        "jobs": "10.000+ actieve vacatures",
-        "rating": "4.8/5 beoordeling"
+        "jobs": "Actuele vacatures",
+        "rating": "Geverifieerde vacaturegegevens"
       },
       "features": {
         "freeToApply": "Gratis solliciteren",
-        "verifiedEmployers": "Geverifieerde werkgevers"
+        "verifiedEmployers": "Gemodereerde werkgevers"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Topwerkgevers",
-      "title": "Sluit u aan bij toonaangevende bedrijven",
-      "description": "Ontdek mogelijkheden bij bedrijven van wereldklasse die actief aanwerven. Van startups tot Fortune 500, vind uw perfecte match.",
+      "badge": "Uitgelichte werkgevers",
+      "title": "Bekijk werkgeversprofielen",
+      "description": "Bekijk uitgelichte werkgeversprofielen met actieve vacatures. Open het vacatureportaal om actuele functies en sollicitatiegegevens te bekijken.",
       "featured": "Uitgelicht",
       "viewAll": "Bekijk alle bedrijven",
       "stats": {
-        "companies": "Partnerbedrijven",
+        "companies": "Uitgelichte bedrijven",
         "jobs": "Actieve vacatures",
         "hires": "Succesvolle aanwervingen"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Hoe het werkt",
-      "title": "Vind uw droombaan in",
-      "titleHighlight": "4 eenvoudige stappen",
-      "description": "Ons gestroomlijnde proces maakt het zoeken naar werk moeiteloos. Van ontdekking tot aanwerving, wij begeleiden u bij elke stap om ervoor te zorgen dat u de perfecte kans vindt.",
-      "featuresTitle": "Waarom kiezen voor ons platform?",
-      "featuresDescription": "Wij bieden geavanceerde tools en functies om uw zoektocht naar werk effectiever en efficiënter te maken.",
-      "steps": {
-        "0": {
-          "title": "Zoeken & Ontdekken",
-          "description": "Blader door duizenden vacatures van topbedrijven. Gebruik onze geavanceerde filters om de perfecte match te vinden voor uw vaardigheden en voorkeuren."
-        },
-        "1": {
-          "title": "Profiel aanmaken",
-          "description": "Bouw uw professionele profiel op met onze CV-bouwer. Presenteer uw vaardigheden, ervaring en prestaties om u te onderscheiden van de massa."
-        },
-        "2": {
-          "title": "Direct solliciteren",
-          "description": "Solliciteer met één klik op meerdere vacatures. Ons slimme sollicitatiesysteem past uw profiel automatisch aan elke functie aan."
-        },
-        "3": {
-          "title": "Aangenomen worden",
-          "description": "Maak contact met wervingsmanagers, plan interviews en vind uw droombaan. Wij ondersteunen u gedurende het hele proces."
-        }
       },
-      "features": {
-        "0": {
-          "title": "AI-gestuurde matching",
-          "description": "Ons intelligente algoritme matcht u met relevante mogelijkheden"
-        },
-        "1": {
-          "title": "CV-optimalisatie",
-          "description": "Optimaliseer automatisch uw CV voor elke sollicitatie"
-        },
-        "2": {
-          "title": "Geverifieerde bedrijven",
-          "description": "Alle werkgevers zijn geverifieerd op authenticiteit en kwaliteit"
-        }
-      },
-      "cta": {
-        "title": "Klaar om uw reis te beginnen?",
-        "description": "Sluit u aan bij duizenden professionals die hun droombaan hebben gevonden via ons platform. Uw volgende kans is slechts één klik verwijderd.",
-        "searchButton": "Start zoektocht naar werk",
-        "profileButton": "Profiel aanmaken"
-      }
+      "empty": "Er zijn momenteel geen werkgevers uitgelicht.",
+      "unavailable": "Uitgelichte werkgevers zijn tijdelijk niet beschikbaar.",
+      "evidenceReviewed": "Bewijs beoordeeld"
     },
     "LandingJobsFeatured": {
       "badge": "Uitgelichte vacatures",
-      "title": "Ontdek uw volgende",
-      "titleHighlight": "Droomkans",
+      "title": "Bekijk uitgelichte",
+      "titleHighlight": "Vacatures",
       "description": "Ontdek zorgvuldig geselecteerde kansen van topbedrijven. Deze uitgelichte posities bieden uitzonderlijke carrièregroei, competitieve compensatie en geweldige werkomgevingen.",
-      "statsTitle": "Sluit u aan bij duizenden succesvolle professionals",
-      "statsDescription": "Ons platform heeft talloze professionals geholpen hun droombaan te vinden bij topbedrijven wereldwijd.",
+      "statsTitle": "Gepubliceerd platformoverzicht",
+      "statsDescription": "Deze weergavewaarden hebben revisies en zijn gekoppeld aan bewijs dat door de platformbeheerder is beoordeeld.",
       "stats": {
         "jobs": "Uitgelichte vacatures",
         "success": "Succespercentage",
-        "companies": "Topbedrijven"
+        "companies": "Uitgelichte bedrijven"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Nu solliciteren"
         }
       },
-      "viewAll": "Bekijk alle vacatures"
+      "viewAll": "Bekijk alle vacatures",
+      "empty": "Er zijn momenteel geen vacatures uitgelicht.",
+      "evidenceReviewed": "Bewijs beoordeeld"
     },
     "MainJobListings": {
       "jobSingular": "vacature",

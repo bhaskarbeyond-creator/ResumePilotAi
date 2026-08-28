@@ -37,6 +37,6 @@ export function validateBlogTransition(currentStatus, nextStatus, { isAdmin = fa
     return ['draft', 'pending', 'rejected'].includes(currentStatus) && ['draft', 'pending'].includes(nextStatus);
 }
 
-export function blogPostFitsFirestore(input) {
+export function blogPostFitsStorageLimit(input) {
     return new Blob([JSON.stringify(input || {})]).size <= 900_000;
 }

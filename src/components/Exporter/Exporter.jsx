@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getJsonById } from '../../firestore/dbOperations';
+import { getJsonById } from '../../services/api/platform';
 import { isKnownTemplate } from '../../utils/templateRegistry';
 import TemplateRenderer from '../TemplateRenderer';
 import { readRenderToken } from './exportAccess';

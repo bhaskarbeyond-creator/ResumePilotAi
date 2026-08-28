@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaPaintBrush, FaCheck, FaTimes, FaSpinner, FaImage, FaUserCircle, FaMoon, FaSun, FaGlobe, FaRedo } from 'react-icons/fa';
 
 const BrandingSettings = () => {
@@ -15,7 +15,7 @@ const BrandingSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.branding) {
                 setBrandingConfig((prev) => ({
                     ...prev,

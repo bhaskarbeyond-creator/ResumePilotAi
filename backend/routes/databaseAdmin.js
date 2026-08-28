@@ -1,292 +1,198 @@
+'use strict';
+
 const express = require('express');
-const { getActiveEngine, testEngineConnectivity, switchActiveEngine, getSwitchAuditLogs, getEngineStateConsistency } = require('../database/engineManager');
-const { initializeSchema, getPool } = require('../database/mysql');
-const { 
-    getSyncHealthStatus, 
-    processSyncQueue, 
-    flushAndVerifyBeforeSwitch,
-    computeContinuousParity,
-    pruneSyncedOutboxEvents,
-    pruneFirestoreOutboxEvents
-} = require('../database/syncManager');
+const { getMigrationStatus, initializeSchema, getPool, testConnection } = require('../database/mysql');
+const { getEngineStateConsistency } = require('../database/engineManager');
 const { requirePermission, requireRecentAdminAuthentication } = require('../security/auth');
 
 const router = express.Router();
-
-// Super Admin / Admin access gate for all database control plane endpoints
 router.use(requirePermission('system.config.write'));
 
-/**
- * GET /api/admin/database-settings
- * Returns the current active database engine, live health checks, sync metrics, and audit history.
- */
-router.get('/', async (req, res) => {
-    try {
-        const activeEngine = 'mysql';
-
-        // Perform live MySQL connectivity & outbox status checks
-        const [mysqlStatus, syncHealth, recentAudits, engineStateConsistency] = await Promise.all([
-            testEngineConnectivity('mysql', null),
-            getSyncHealthStatus(),
-            getSwitchAuditLogs(),
-            getEngineStateConsistency(),
-        ]);
-
-        let tablesCount = 53;
+async function queueCounts() {
+    const pool = getPool();
+    const count = async (table, stateColumn, activeStates, deadState = 'DEAD_LETTER') => {
         try {
-            const p = getPool();
-            const [tables] = await p.query('SHOW TABLES');
-            tablesCount = tables.length;
-        } catch (_) {}
+            const placeholders = activeStates.map(() => '?').join(',');
+            const [rows] = await pool.query(
+                `SELECT
+                   SUM(CASE WHEN \`${stateColumn}\` IN (${placeholders}) THEN 1 ELSE 0 END) AS active_count,
+                   SUM(CASE WHEN \`${stateColumn}\` = ? THEN 1 ELSE 0 END) AS dead_count
+                 FROM \`${table}\``,
+                [...activeStates, deadState]
+            );
+            return {
+                configured: true,
+                active: Number(rows[0]?.active_count || 0),
+                deadLetter: Number(rows[0]?.dead_count || 0),
+            };
+        } catch (error) {
+            if (error.code === 'ER_NO_SUCH_TABLE') return { configured: false, active: null, deadLetter: null };
+            throw error;
+        }
+    };
+    const [notifications, enterpriseJobs] = await Promise.all([
+        count('notification_outbox', 'state', ['NOTIFICATION_QUEUED', 'DELIVERY_ATTEMPTED', 'RETRYING']),
+        count('enterprise_outbox', 'status', ['QUEUED', 'PROCESSING', 'RETRYING']),
+    ]);
+    return { notifications, enterpriseJobs };
+}
 
+router.get('/', async (_req, res) => {
+    try {
+        const [database, consistency, queues] = await Promise.all([
+            testConnection(),
+            getEngineStateConsistency(),
+            queueCounts().catch(() => ({ error: 'Queue telemetry is unavailable.' })),
+        ]);
+        let tablesCount = null;
+        let migrations = null;
+        if (database.connected) {
+            const [tables] = await getPool().query('SHOW TABLES');
+            tablesCount = tables.length;
+            const status = await getMigrationStatus();
+            migrations = {
+                appliedCount: status.applied.length,
+                pending: status.pending,
+                mismatches: status.mismatches,
+                unknownApplied: status.unknownApplied,
+                current: status.pending.length === 0 && status.mismatches.length === 0 && status.unknownApplied.length === 0,
+            };
+        }
         return res.json({
             success: true,
             activeEngine: 'mysql',
-            authoritativeDatabase: 'mysql',
-            firestoreDataPlane: 'REMOVED',
-            firebaseAuth: 'IDENTITY_ONLY',
-            engineDetails: {
-                current: 'mysql',
-                mysql: mysqlStatus,
-                firestore: {
-                    connected: false,
-                    status: 'DECOMMISSIONED',
-                    role: 'ZERO_DATA_PLANE',
-                    note: 'All application entities reside natively in MariaDB / MySQL. Firebase Auth is retained exclusively for identity verification.'
-                },
-                auth: {
-                    status: 'ACTIVE',
-                    role: 'IDENTITY_ONLY',
-                    providers: ['google', 'facebook', 'github', 'linkedin', 'password']
-                }
-            },
+            authoritativeDatabase: 'mariadb',
+            ownershipMutable: false,
+            identityProvider: 'firebase-auth',
+            database,
             tablesCount,
-            engineStateConsistency,
-            syncHealth,
-            recentAudits,
+            migrations,
+            consistency,
+            queues,
+            backupVerification: { status: 'NOT VERIFIED', reason: 'No live restore evidence is attached to this runtime.' },
             timestamp: new Date().toISOString(),
         });
-    } catch (err) {
-        console.error('[DatabaseAdmin] Failed to load settings:', err.message);
-        return res.status(500).json({
+    } catch (_error) {
+        return res.status(503).json({
             success: false,
-            error: { code: 'DATABASE_SETTINGS_ERROR', message: err.message, requestId: res.locals?.requestId }
+            error: { code: 'DATABASE_SETTINGS_UNAVAILABLE', message: 'Database telemetry is unavailable.', requestId: res.locals?.requestId },
         });
     }
 });
 
-/**
- * GET /api/admin/database-settings/sync-status
- * Returns granular sync metrics, lag, outbox counts, and conflict counters.
- */
-router.get('/sync-status', async (req, res) => {
-    try {
-        const status = await getSyncHealthStatus();
-        return res.json({ success: true, ...status });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
+const retiredDatabaseControl = (_req, res) => res.status(410).json({
+    success: false,
+    error: {
+        code: 'LEGACY_DATABASE_CONTROL_RETIRED',
+        message: 'Cross-database replication controls are not part of the single-owner architecture.',
+    },
 });
+router.get('/sync-status', retiredDatabaseControl);
+for (const path of ['/sync-now', '/verify-parity']) router.post(path, requireRecentAdminAuthentication, retiredDatabaseControl);
 
-/**
- * POST /api/admin/database-settings/sync-now
- * Manually flushes and processes pending outbox synchronization items.
- */
-router.post('/sync-now', requireRecentAdminAuthentication, async (req, res) => {
-    try {
-        const firestoreDb = req.app.get('db');
-        const result = await processSyncQueue(50, firestoreDb);
-        const health = await getSyncHealthStatus();
-        return res.json({ success: true, ...result, currentHealth: health });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-/**
- * POST /api/admin/database-settings/prune-outbox
- * Safely prunes completed SYNCED outbox records older than retentionDays.
- */
 router.post('/prune-outbox', requireRecentAdminAuthentication, async (req, res) => {
+    const retentionDays = Number(req.body?.retentionDays);
+    if (!Number.isInteger(retentionDays) || retentionDays < 1 || retentionDays > 365) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_OUTBOX_RETENTION', message: 'Retention must be a whole number from 1 to 365 days.' } });
+    }
+    const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60_000);
+    const connection = await getPool().getConnection();
     try {
-        const retentionDays = Number(req.body.retentionDays) || 7;
-        const firestoreDb = req.app.get('db');
-        const [mysqlPrune, fsPrune] = await Promise.all([
-            pruneSyncedOutboxEvents(retentionDays),
-            pruneFirestoreOutboxEvents(firestoreDb, retentionDays)
-        ]);
-
+        await connection.beginTransaction();
+        // Preserve the last terminal invitation delivery state before its outbox
+        // row ages out; live rows remain authoritative through the join.
+        await connection.query(
+            `UPDATE enterprise_membership_invitations i
+             JOIN notification_outbox o ON o.id = i.notificationId
+             SET i.deliveryState = o.state,
+                 i.deliveredAt = CASE WHEN o.state = 'DELIVERED' THEN COALESCE(i.deliveredAt, o.provider_accepted_at) ELSE i.deliveredAt END,
+                 i.lastDeliveryError = o.last_error,
+                 i.updated_at = NOW(6)
+             WHERE o.state IN ('DELIVERED', 'DEAD_LETTER', 'CANCELLED') AND o.updated_at < ?`,
+            [cutoff]
+        );
+        const [notifications] = await connection.query(
+            `DELETE FROM notification_outbox
+             WHERE state IN ('DELIVERED', 'DEAD_LETTER', 'CANCELLED') AND updated_at < ?
+             LIMIT 1000`,
+            [cutoff]
+        );
+        const [enterpriseJobs] = await connection.query(
+            `DELETE FROM enterprise_outbox
+             WHERE status IN ('COMPLETED', 'REJECTED', 'DEAD_LETTER') AND updated_at < ?
+             LIMIT 1000`,
+            [cutoff]
+        );
+        await connection.commit();
         return res.json({
             success: true,
             retentionDays,
-            mysql: mysqlPrune,
-            firestore: fsPrune,
-            timestamp: new Date().toISOString()
+            pruned: {
+                notifications: Number(notifications?.affectedRows || 0),
+                enterpriseJobs: Number(enterpriseJobs?.affectedRows || 0),
+            },
         });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
+    } catch (_error) {
+        await connection.rollback().catch(() => {});
+        return res.status(503).json({ success: false, error: { code: 'OUTBOX_PRUNE_FAILED', message: 'Terminal outbox records could not be pruned.' } });
+    } finally {
+        connection.release();
     }
 });
 
-/**
- * POST /api/admin/database-settings/verify-parity
- * Deep continuous parity verification comparing all 13 canonical entities across Firestore and MySQL.
- */
-router.post('/verify-parity', async (req, res) => {
+router.get('/conflicts', retiredDatabaseControl);
+
+router.get('/dead-letter', async (_req, res) => {
     try {
-        const firestoreDb = req.app.get('db');
-        const parity = await computeContinuousParity(firestoreDb);
-        
-        // Format legacy-compatible parityTable alongside rich continuous telemetry
-        const parityTable = Object.entries(parity.entities || {}).map(([entity, info]) => ({
-            entity,
-            firestore: info.firestoreCount,
-            mysql: info.mysqlCount,
-            diff: info.difference,
-            match: info.isSynchronized,
-            parityPercentage: info.parityPercentage
-        }));
-
-        return res.json({
-            success: true,
-            parityPercentage: parity.overallParityPercentage,
-            status: parity.status,
-            totalCheckedEntities: parity.totalCheckedEntities,
-            divergentEntitiesCount: parity.divergentEntitiesCount,
-            parityTable,
-            details: parity.entities,
-            timestamp: parity.checkedAt || new Date().toISOString()
-        });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
+        const [notifications, enterpriseJobs] = await Promise.all([
+            getPool().query("SELECT id, event_id, state, attempt_count, last_error, updated_at FROM notification_outbox WHERE state = 'DEAD_LETTER' ORDER BY updated_at DESC LIMIT 50").then(([rows]) => rows),
+            getPool().query("SELECT id AS job_id, tenantId AS tenant_id, jobType AS job_type, status, attemptCount AS attempt_count, lastError AS last_error, updated_at FROM enterprise_outbox WHERE status = 'DEAD_LETTER' ORDER BY updated_at DESC LIMIT 50").then(([rows]) => rows),
+        ]);
+        return res.json({ success: true, deadLetters: { notifications, enterpriseJobs } });
+    } catch (_error) {
+        return res.status(503).json({ success: false, error: { code: 'DEAD_LETTER_UNAVAILABLE', message: 'Dead-letter telemetry is unavailable.' } });
     }
 });
 
-/**
- * GET /api/admin/database-settings/conflicts
- * Returns active conflict records from sync_conflicts ledger.
- */
-router.get('/conflicts', async (req, res) => {
-    try {
-        const pool = getPool();
-        const [rows] = await pool.query('SELECT * FROM sync_conflicts WHERE resolution = "PENDING" ORDER BY created_at DESC LIMIT 50');
-        return res.json({ success: true, conflicts: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
+router.post('/retry-dead-letter', requireRecentAdminAuthentication, (_req, res) => res.status(400).json({
+    success: false,
+    error: { code: 'BULK_REPLAY_FORBIDDEN', message: 'Dead letters must be reviewed and replayed individually with an idempotency key.' },
+}));
 
-/**
- * GET /api/admin/database-settings/dead-letter
- * Returns dead-letter outbox records.
- */
-router.get('/dead-letter', async (req, res) => {
-    try {
-        const pool = getPool();
-        const [rows] = await pool.query('SELECT * FROM sync_outbox WHERE status = "DEAD_LETTER" ORDER BY updated_at DESC LIMIT 50');
-        return res.json({ success: true, deadLetters: rows });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-/**
- * POST /api/admin/database-settings/retry-dead-letter
- * Resets dead-letter records to PENDING.
- */
-router.post('/retry-dead-letter', requireRecentAdminAuthentication, async (req, res) => {
-    try {
-        const pool = getPool();
-        const [result] = await pool.query('UPDATE sync_outbox SET status = "PENDING", retry_count = 0 WHERE status = "DEAD_LETTER"');
-        return res.json({ success: true, requeued: result.affectedRows });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-/**
- * POST /api/admin/database-settings/test-connection
- * Tests connectivity to a specific backend without switching.
- */
 router.post('/test-connection', async (req, res) => {
-    try {
-        const targetEngine = String(req.body.engine || '').trim().toLowerCase();
-        if (targetEngine !== 'firestore' && targetEngine !== 'mysql') {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'INVALID_ENGINE', message: "Engine must be 'firestore' or 'mysql'." }
-            });
-        }
-
-        const firestoreDb = req.app.get('db');
-        const result = await testEngineConnectivity(targetEngine, firestoreDb);
-        return res.json({ success: true, engine: targetEngine, result });
-    } catch (err) {
-        return res.status(500).json({
+    const target = String(req.body?.engine || '').trim().toLowerCase();
+    if (!['mysql', 'mariadb'].includes(target)) {
+        return res.status(400).json({
             success: false,
-            error: { code: 'TEST_CONNECTION_FAILED', message: err.message }
+            error: { code: 'DATABASE_ENGINE_UNSUPPORTED', message: 'Only the authoritative MariaDB connection can be tested.' },
         });
     }
+    const result = await testConnection();
+    return res.status(result.connected ? 200 : 503).json({ success: result.connected, engine: 'mysql', result });
 });
 
-/**
- * POST /api/admin/database-settings/initialize-schema
- * Initializes or verifies the MySQL database schema.
- */
 router.post('/initialize-schema', requireRecentAdminAuthentication, async (req, res) => {
-    try {
-        const result = await initializeSchema();
-        if (!result.success) {
-            return res.status(500).json({ success: false, error: result.error });
-        }
-        return res.json({ success: true, message: 'MySQL schema successfully initialized / verified.' });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-/**
- * POST /api/admin/database-settings
- * Handles database administration actions and rejects switching to decommissioned Firestore.
- */
-router.post('/', requireRecentAdminAuthentication, async (req, res) => {
-    try {
-        const targetEngine = String(req.body.engine || '').trim().toLowerCase();
-
-        if (targetEngine === 'firestore') {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: 'FIRESTORE_DATA_PLANE_DECOMMISSIONED',
-                    message: 'Google Cloud Firestore has been decommissioned as an application data plane. MariaDB / MySQL is 100% authoritative for all user and application data. Firebase is used exclusively for Identity & Authentication.'
-                }
-            });
-        }
-
-        if (targetEngine !== 'mysql') {
-            return res.status(400).json({
-                success: false,
-                error: { code: 'INVALID_ENGINE', message: "Authoritative engine must be 'mysql'." }
-            });
-        }
-
-        return res.json({
-            success: true,
-            engine: 'mysql',
-            message: 'MariaDB / MySQL is currently active and 100% authoritative.'
-        });
-    } catch (err) {
-        console.error('[DatabaseAdmin] Engine switch rejected:', err.message);
-        return res.status(err.status || 500).json({
+    if (req.body?.confirmation !== 'APPLY CHECKSUMMED MIGRATIONS') {
+        return res.status(400).json({
             success: false,
-            error: {
-                code: 'DATABASE_ADMIN_ERROR',
-                message: err.message,
-                requestId: res.locals?.requestId,
-            }
+            error: { code: 'MIGRATION_CONFIRMATION_REQUIRED', message: 'Explicit migration confirmation is required.' },
         });
     }
+    const result = await initializeSchema({ mode: 'apply' });
+    return res.status(result.success ? 200 : (result.code === 'PRODUCTION_MIGRATION_BACKUP_REQUIRED' ? 412 : 500)).json(result.success
+        ? { success: true, message: 'MariaDB migrations applied and verified.', applied: result.applied }
+        : { success: false, error: { code: result.code, message: result.error, migration: result.migration } });
 });
 
-module.exports = { databaseAdminRouter: router };
+router.post('/', requireRecentAdminAuthentication, (req, res) => {
+    const target = String(req.body?.engine || '').trim().toLowerCase();
+    if (['mysql', 'mariadb'].includes(target)) {
+        return res.json({ success: true, engine: 'mysql', unchanged: true, ownershipMutable: false });
+    }
+    return res.status(409).json({
+        success: false,
+        error: { code: 'DATABASE_OWNER_IMMUTABLE', message: 'MariaDB ownership cannot be switched at runtime.' },
+    });
+});
 
+module.exports = { databaseAdminRouter: router, queueCounts };

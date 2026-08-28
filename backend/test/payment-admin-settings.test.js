@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.NODE_ENV = 'test';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
@@ -27,19 +29,17 @@ test('payment status exposes only configuration state and a non-reversible mask'
   assert.equal(maskWriteOnlySecret(''), '');
 });
 
-test('payment projection reads legacy identifiers without mixing incomplete sources or returning secrets', async () => {
-  // Seed the authoritative MySQL store (public_config / payment_providers /
-  // subscriptions system_settings rows) and project through it.
-  const { getPool } = require('../database/mysql');
-  const pool = getPool();
-  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','payment_providers','subscriptions')");
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)", [JSON.stringify({ subscriptions: { razorpayKeyId: '' } })]);
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('payment_providers', ?, 1)", [JSON.stringify({ razorpay: { keySecret: 'stored-secret-value' }, paypal: { clientId: 'paypal-client', clientSecret: 'paypal-secret-value' } })]);
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('subscriptions', ?, 1)", [JSON.stringify({ razorpayKeyId: 'rzp_test_legacy', razorpayKeySecret: 'legacy-secret-value' })]);
-  const projection = await getPaymentSettingsProjection(null, { RAZORPAY_KEY_ID: 'rzp_test_env_only', RAZORPAY_KEY_SECRET: '', PAYPAL_CLIENT_ID: '', PAYPAL_CLIENT_SECRET: '' });
-  assert.equal(projection.publicKeys.razorpayKeyId, 'rzp_test_legacy');
-  assert.equal(projection.configuredProviders.razorpay, true);
+test('payment projection ignores retired legacy settings and never mixes incomplete credential sources', async () => {
+  const settings = {
+    public_config: { subscriptions: { razorpayKeyId: '' } },
+    payment_providers: { razorpay: { keySecret: 'stored-secret-value' }, paypal: { clientId: 'paypal-client', clientSecret: 'paypal-secret-value' } },
+    subscriptions: { razorpayKeyId: 'rzp_test_legacy', razorpayKeySecret: 'legacy-secret-value' },
+  };
+  require('../repositories').setRepositoryForTests({ async getSetting(category) { return settings[category] || null; } });
+  const projection = await getPaymentSettingsProjection({ RAZORPAY_KEY_ID: 'rzp_test_env_only', RAZORPAY_KEY_SECRET: '', PAYPAL_CLIENT_ID: '', PAYPAL_CLIENT_SECRET: '' });
+  assert.equal(projection.publicKeys.razorpayKeyId, 'rzp_test_env_only');
+  assert.equal(projection.configuredProviders.razorpay, false);
   assert.equal(projection.configuredProviders.paypal, true);
-  assert.equal(projection.credentialSources.razorpay, 'mysql');
-  assert.doesNotMatch(JSON.stringify(projection), /stored-secret-value|legacy-secret-value|paypal-secret-value/);
+  assert.equal(projection.credentialSources.razorpay, 'environment-partial');
+  assert.doesNotMatch(JSON.stringify(projection), /rzp_test_legacy|stored-secret-value|legacy-secret-value|paypal-secret-value/);
 });

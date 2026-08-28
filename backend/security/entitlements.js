@@ -17,32 +17,18 @@ const { isMembershipActive } = require('../database/domain');
  * 4. Basic / Free User -> Basic tier, 10 requests/day, standard templates.
  */
 
-const ADMIN_EMAILS = Object.freeze([
-  'admin@airesume.guru',
-  'bhaskarbeyond@gmail.com',
-]);
-
-function isUserAdmin(userData = {}, userClaims = {}) {
-  const email = String(userClaims?.email || userData?.email || '').trim().toLowerCase();
-  const role = String(userClaims?.role || userData?.role || '').toUpperCase();
-  const membership = String(userData?.membership || '').toUpperCase();
-  return Boolean(
-    userClaims?.admin ||
-    userClaims?.superAdmin ||
-    role === 'ADMIN' ||
-    role === 'SUPER_ADMIN' ||
-    userData?.isAdmin ||
-    membership === 'ADMIN' ||
-    ADMIN_EMAILS.includes(email)
-  );
+function isUserAdmin(_userData = {}, userClaims = {}) {
+  const claims = userClaims?.claims && typeof userClaims.claims === 'object'
+    ? userClaims.claims
+    : userClaims;
+  const role = String(claims?.role || '').toUpperCase();
+  return Boolean(claims?.admin === true || claims?.superAdmin === true || role === 'ADMIN' || role === 'SUPER_ADMIN');
 }
 
-function resolveActiveTenantMembership(userData = {}) {
-  const memberships = Array.isArray(userData?.tenantMemberships) ? userData.tenantMemberships : [];
-  return memberships.find(item => {
-    const status = String(item?.status || '').toUpperCase();
-    return status === 'ACTIVE';
-  }) || null;
+function resolveActiveTenantMembership(_userData = {}) {
+  // Enterprise membership is resolved by the MariaDB tenant registry and must
+  // be supplied as validated tenantData/context, never inferred from profile JSON.
+  return null;
 }
 
 /**
@@ -57,14 +43,14 @@ function resolveActiveTenantMembership(userData = {}) {
  */
 function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantData = null, quotaConfig = {} } = {}) {
   const admin = isUserAdmin(userData, userClaims);
-  const activeTenantMembership = resolveActiveTenantMembership(userData);
-  const isEnterprise = Boolean(activeTenantMembership || tenantData);
+  const activeTenantMembership = null;
+  const isEnterprise = Boolean(tenantData);
   
-  // B2C Consumer Subscription Check — Premium, Pro, and Enterprise (string
-  // membership on the user record) are paid tiers. Dates are canonicalized so
-  // Firestore Timestamps, ISO strings, and epoch values all work.
+  // B2C consumer subscription state is owned by MariaDB billing/profile data.
+  // Enterprise rights are never inferred from this string; they require a
+  // validated MariaDB tenant context.
   const membership = toCanonicalMembership(userData?.membership || 'Basic');
-  const isPremiumB2C = isPaidMembershipTier(membership);
+  const isPremiumB2C = ['Premium', 'Pro'].includes(membership);
   const membershipEnd = toCanonicalDateObject(userData?.membershipEnds);
   const paymentOk = ['ACTIVE', 'ADMIN_GRANTED', 'PAID', 'SUCCESS', 'COMPLETED', 'CANCELLED', 'CANCELED'].includes(
     String(userData?.paymentStatus || '').toUpperCase()

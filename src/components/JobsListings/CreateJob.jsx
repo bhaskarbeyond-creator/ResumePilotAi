@@ -3,7 +3,7 @@ import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers
 import HomepageNavbar from '../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
 import { AuthContext } from '../../main';
-import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../firestore/dbOperations';
+import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../services/api/platform';
 import EmployerApplicationForm from './EmployerApplicationForm';
 import countries from './countries';
 

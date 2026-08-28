@@ -19,7 +19,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
     }, [resumeData.summary]);
     const [charCount, setCharCount] = useState(0);
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-    const [selectedTone, setSelectedTone] = useState('executive');
+    const [selectedTone, setSelectedTone] = useState('balanced');
     const [error, setError] = useState(null);
     const aiRequestControllerRef = useRef(null);
     useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
@@ -33,133 +33,98 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
     };
 
     const generateAISummary = async (toneToUse = selectedTone) => {
-        setIsGeneratingAI(true);
         setError(null);
+        if (!resumeData.occupation?.trim()) {
+            setError('Enter your target occupation in Personal Info before requesting a summary rewrite.');
+            return;
+        }
 
-        // Check if occupation exists and show error if not
-        if (!resumeData.occupation) {
-            setError('Please fill in your occupation in the Personal Info step first to generate an AI summary.');
-            setIsGeneratingAI(false);
+        const cleanText = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const name = [resumeData.firstname, resumeData.lastname].map(cleanText).filter(Boolean).join(' ');
+        const jobTitle = cleanText(resumeData.occupation);
+        const yearsExp = calculateYearsOfExperience(resumeData.employments || []);
+        const skills = (resumeData.skills || [])
+            .map(skill => cleanText(typeof skill === 'string' ? skill : skill?.skillName || skill?.name))
+            .filter(Boolean).slice(0, 20).join(', ');
+        const workHistory = (resumeData.employments || []).map(emp => {
+            const role = cleanText(emp?.jobTitle || emp?.position);
+            const employer = cleanText(emp?.employer || emp?.company);
+            const start = cleanText(emp?.begin || emp?.startDate);
+            const end = emp?.current ? 'Present' : cleanText(emp?.end || emp?.endDate);
+            const description = cleanText(emp?.description);
+            const heading = [role, employer ? `${role ? 'at ' : ''}${employer}` : ''].filter(Boolean).join(' ');
+            const dates = [start, end].filter(Boolean).join(' to ');
+            return [heading, dates ? `Dates: ${dates}` : '', description].filter(Boolean).join('; ');
+        }).filter(Boolean).join(' | ');
+        const education = (resumeData.educations || []).map(edu => {
+            const degree = cleanText(edu?.degree);
+            const school = cleanText(edu?.school);
+            const start = cleanText(edu?.started || edu?.startDate);
+            const end = cleanText(edu?.finished || edu?.endDate);
+            const description = cleanText(edu?.description);
+            return [degree, school ? `${degree ? 'at ' : ''}${school}` : '', [start, end].filter(Boolean).join(' to '), description]
+                .filter(Boolean).join('; ');
+        }).filter(Boolean).join(' | ');
+        const certifications = (resumeData.certifications || [])
+            .map(cert => cleanText(typeof cert === 'string' ? cert : [cert?.title || cert?.name, cert?.issuer].filter(Boolean).join(' — ')))
+            .filter(Boolean).join(', ');
+        const projects = (resumeData.projects || [])
+            .map(project => [cleanText(project?.title || project?.name), cleanText(project?.description)].filter(Boolean).join(': '))
+            .filter(Boolean).join(' | ');
+        const achievements = (resumeData.achievements || [])
+            .map(item => [cleanText(item?.title || item?.name), cleanText(item?.description)].filter(Boolean).join(': '))
+            .filter(Boolean).join(' | ');
+        const existingText = cleanText(summary);
+        const substantiveSource = [existingText, yearsExp, workHistory, education, skills, certifications, projects, achievements]
+            .filter(Boolean).join(' ');
+        if (substantiveSource.length < 20) {
+            setError('Add verified experience, skills, education, project, achievement, or existing-summary facts before asking AI to rewrite them.');
             return;
         }
 
         aiRequestControllerRef.current?.abort();
         const requestController = new AbortController();
         aiRequestControllerRef.current = requestController;
+        setIsGeneratingAI(true);
         try {
-            // Extract data from resumeData for AI generation
-            const name = `${resumeData.firstname || ''} ${resumeData.lastname || ''}`.trim() || 'Professional';
-            const jobTitle = resumeData.occupation || 'Professional';
-
-            // Calculate precise experience based on employment history date intervals
-            const yearsExp = calculateYearsOfExperience(resumeData.employments || []);
-
-            // Extract skills (handling both string arrays and object arrays)
-            const skills = Array.isArray(resumeData.skills) && resumeData.skills.length > 0
-                ? resumeData.skills
-                      .map((skill) => (typeof skill === 'string' ? skill : skill.skillName || skill.name || ''))
-                      .filter(Boolean)
-                      .slice(0, 10)
-                      .join(', ')
-                : '';
-
-            // Extract work history text with actual dates and details
-            const workHistory = (resumeData.employments || [])
-                .map((emp) => `${emp.jobTitle || emp.position || 'Role'} at ${emp.employer || emp.company || 'Company'} (${emp.begin || emp.startDate || ''} - ${emp.current ? 'Present' : (emp.end || emp.endDate || '')})${emp.description ? ': ' + emp.description : ''}`)
-                .filter((line) => line.trim().length > 3)
-                .join('; ');
-
-            // Extract education details
-            const education = (resumeData.educations || [])
-                .map((edu) => `${edu.degree || 'Degree'} from ${edu.school || 'Institution'} (${edu.started || edu.startDate || ''} - ${edu.finished || edu.endDate || ''})`)
-                .filter((line) => line.trim().length > 3)
-                .join('; ');
-
-            // Extract certifications
-            const certifications = (resumeData.certifications || [])
-                .map((c) => (typeof c === 'string' ? c : `${c?.title || c?.name || ''}${c?.issuer ? ' (' + c.issuer + ')' : ''}`))
-                .filter(Boolean)
-                .join(', ');
-
-            // Extract projects
-            const projects = (resumeData.projects || [])
-                .map((p) => `${p?.title || p?.name || 'Project'}${p?.description ? ': ' + p.description : ''}`)
-                .filter(Boolean)
-                .join('; ');
-
-            // Extract a key achievement from work history
-            let achievement = 'delivering high-impact solutions';
-            if (resumeData.employments && resumeData.employments.length > 0) {
-                const latestJob = resumeData.employments[0];
-                if (latestJob.description && latestJob.description.trim()) {
-                    const descLines = latestJob.description.split('\n');
-                    const firstLine = descLines.find((line) => line.trim().length > 0);
-                    if (firstLine) {
-                        achievement = firstLine.replace(/^[•\-*]\s*/, '').trim();
-                    }
-                }
-            }
-
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
-
             const data = await generateUserAiContent('generate-summary', {
-                name: name,
-                jobTitle: jobTitle,
+                name,
+                jobTitle,
                 occupation: jobTitle,
                 experience: yearsExp,
-                skills: skills || 'industry-standard competencies',
-                workHistory: workHistory,
-                education: education,
-                certifications: certifications,
-                projects: projects,
-                achievement: achievement,
-                summaryType: toneToUse,
+                skills,
+                workHistory,
+                education,
+                certifications,
+                projects,
+                achievement: achievements,
+                existingText,
                 tone: toneToUse,
                 language: preferredLanguage,
             }, { signal: requestController.signal });
-
-            const generatedSummary = data?.summary || data?.description || data?.text || data?.data?.summary || (typeof data === 'string' ? data : null);
-
-            if (generatedSummary && typeof generatedSummary === 'string' && generatedSummary.trim().length > 0) {
-                const cleanSummary = generatedSummary.trim();
-                setSummary(cleanSummary);
-                setCharCount(cleanSummary.length);
-                setError(null);
-                updateResumeData({ summary: cleanSummary });
-            } else {
-                throw new Error('AI provider returned an unexpected summary format');
+            const generatedSummary = data?.summary;
+            if (typeof generatedSummary !== 'string' || !generatedSummary.trim()) {
+                throw new Error('No source-supported summary was returned');
+            }
+            const cleanSummary = generatedSummary.trim();
+            setSummary(cleanSummary);
+            setCharCount(cleanText(cleanSummary).length);
+            updateResumeData({ summary: cleanSummary });
+            if (data?._source === 'source-preserving-fallback') {
+                setError('The AI provider was unavailable, so only your supplied facts were preserved. Review the wording before saving.');
             }
         } catch (error) {
             if (error?.name === 'AbortError') return;
-            console.error('Error generating AI summary:', error);
-
+            console.error('Error rewriting summary:', error);
             const friendlyMessage = error.code === 'EMAIL_VERIFICATION_REQUIRED'
-                ? 'Please verify your email address to use AI generation features.'
+                ? 'Verify your email address to use AI rewriting.'
                 : error.code === 'AUTH_REQUIRED'
-                ? 'Please sign in to generate an AI summary.'
-                : error.code === 'AI_PROVIDER_UNAVAILABLE'
-                ? 'AI generation service is temporarily busy. A smart draft summary has been created for you.'
-                : (error.message || 'Failed to generate AI summary. A smart draft has been created for you.');
-
+                    ? 'Sign in to use AI rewriting.'
+                    : error.code === 'INVALID_AI_INPUT'
+                        ? error.message
+                        : 'Your current summary was not changed because a source-supported rewrite is unavailable.';
             setError(friendlyMessage);
-
-            // Dynamic fallback summary generation based on language & resume data (ATS-optimized 3-sentence formula)
-            const profession = resumeData.occupation || (resumeData.employments?.[0]?.jobTitle) || 'Professional';
-            const skillsList = (resumeData.skills || []).map(s => typeof s === 'string' ? s : s.name || s.skillName).filter(Boolean).slice(0, 4).join(', ');
-            const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
-
-            let fallbackSummary;
-            if (preferredLanguage === 'es') {
-                fallbackSummary = `${profession} con sólida trayectoria técnica y experiencia en ${skillsList || 'desarrollo de soluciones avanzadas'}. Especializado en optimizar el rendimiento de sistemas, liderar iniciativas clave y entregar valor medible en entornos colaborativos. Comprometido con la excelencia operativa y el cumplimiento de objetivos estratégicos.`;
-            } else if (preferredLanguage === 'fr') {
-                fallbackSummary = `${profession} avec une solide expertise technique et une expérience avérée en ${skillsList || 'développement de solutions innovantes'}. Spécialisé dans l'optimisation des performances, la direction de projets clés et la livraison de valeur mesurable. Engagé dans l'excellence opérationnelle et les méthodes agiles.`;
-            } else {
-                fallbackSummary = `${profession} with a strong track record architecting and delivering high-impact solutions${skillsList ? ` specializing in ${skillsList}` : ''}. Experienced in optimizing production workflows, collaborating across cross-functional teams, and driving measurable outcomes. Proficient in modern industry methodologies, performance tuning, and technical problem-solving.`;
-            }
-
-            setSummary(fallbackSummary);
-            setCharCount(fallbackSummary.length);
-            updateResumeData({ summary: fallbackSummary });
         } finally {
             if (aiRequestControllerRef.current === requestController) {
                 aiRequestControllerRef.current = null;
@@ -308,20 +273,17 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                         {/* AI Generation & Tone Selection Section */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Tone:</span>
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Rewrite tone:</span>
                                 {[
-                                    { id: 'executive', label: 'Executive' },
+                                    { id: 'balanced', label: 'Balanced' },
+                                    { id: 'concise', label: 'Concise' },
                                     { id: 'technical', label: 'Technical' },
-                                    { id: 'metric-focused', label: 'Metrics' },
-                                    { id: 'creative', label: 'Creative' }
+                                    { id: 'executive', label: 'Executive' }
                                 ].map((tone) => (
                                     <button
                                         key={tone.id}
                                         type="button"
-                                        onClick={() => {
-                                            setSelectedTone(tone.id);
-                                            if (!isGeneratingAI) generateAISummary(tone.id);
-                                        }}
+                                        onClick={() => setSelectedTone(tone.id)}
                                         className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all border ${
                                             selectedTone === tone.id
                                                 ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
@@ -353,6 +315,9 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                                 )}
                             </button>
                         </div>
+                        <p className="text-xs text-slate-500">
+                            AI rewrites only facts already entered in this resume. Add factual source details first and review the result before saving.
+                        </p>
 
                         {/* Error Message */}
                         {error && (

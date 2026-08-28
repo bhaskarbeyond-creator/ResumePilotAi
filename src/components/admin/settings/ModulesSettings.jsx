@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { FaCubes, FaDownload, FaBriefcase, FaGlobe, FaFileAlt, FaMagic, FaChartLine, FaShareAlt, FaCheckCircle, FaSave, FaSpinner, FaInfoCircle, FaTag, FaGoogle, FaFacebook, FaLinkedin, FaGithub, FaEnvelope, FaShieldAlt, FaComments, FaClipboardList } from 'react-icons/fa';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { buildModuleSettingsPatch } from '../../../utils/moduleFlags';
 
 const ModulesSettings = () => {
     const [modulesConfig, setModulesConfig] = useState({
-        enableGoogleAuthModule: true,
-        enableFacebookAuthModule: true,
-        enableLinkedinAuthModule: true,
-        enableGithubAuthModule: true,
+        enableGoogleAuthModule: false,
+        enableFacebookAuthModule: false,
+        enableLinkedinAuthModule: false,
+        enableGithubAuthModule: false,
         enableImportModule: false, // Default OFF as requested
         enableEmailVerification: false, // Default OFF — preserves current behavior
-        enableJobScraperModule: true,
+        enableJobScraperModule: false,
         enablePortfolioModule: false, // Default OFF
         enableMessagesModule: false, // Default OFF
         enableJobTrackerModule: false, // Default OFF
         enableAppliedJobsModule: false, // Default OFF
-        enableCoverLetterModule: true,
-        enableAiSuggestionsModule: true,
-        enableAtsScoreModule: true,
-        enablePublicSharingModule: true,
-        enableCouponsModule: true,
-        enableSalesTaxModule: true,
+        enableCoverLetterModule: false,
+        enableAiSuggestionsModule: false,
+        enableAtsScoreModule: false,
+        enablePublicSharingModule: false,
+        enableCouponsModule: false,
+        enableSalesTaxModule: false,
     });
 
     const [loading, setLoading] = useState(true);
@@ -31,33 +31,33 @@ const ModulesSettings = () => {
     const [settingsHydrated, setSettingsHydrated] = useState(false);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             const mods = (settings && settings.modules) || {};
             const ai = (settings && settings.ai) || {};
             const sa = (settings && settings.socialAuth) || {};
 
             setModulesConfig({
-                enableGoogleAuthModule: mods.enableGoogleAuthModule !== undefined ? mods.enableGoogleAuthModule : true,
-                enableFacebookAuthModule: mods.enableFacebookAuthModule !== undefined ? mods.enableFacebookAuthModule : true,
-                enableLinkedinAuthModule: mods.enableLinkedinAuthModule !== undefined ? mods.enableLinkedinAuthModule : (mods.enableLinkedinLogin !== undefined ? mods.enableLinkedinLogin : (sa.enableLinkedinLogin !== undefined ? sa.enableLinkedinLogin : true)),
-                enableGithubAuthModule: mods.enableGithubAuthModule !== undefined ? mods.enableGithubAuthModule : (mods.enableGithubLogin !== undefined ? mods.enableGithubLogin : (sa.enableGithubLogin !== undefined ? sa.enableGithubLogin : true)),
+                enableGoogleAuthModule: mods.enableGoogleAuthModule !== undefined ? mods.enableGoogleAuthModule : false,
+                enableFacebookAuthModule: mods.enableFacebookAuthModule !== undefined ? mods.enableFacebookAuthModule : false,
+                enableLinkedinAuthModule: mods.enableLinkedinAuthModule !== undefined ? mods.enableLinkedinAuthModule : (mods.enableLinkedinLogin !== undefined ? mods.enableLinkedinLogin : (sa.enableLinkedinLogin !== undefined ? sa.enableLinkedinLogin : false)),
+                enableGithubAuthModule: mods.enableGithubAuthModule !== undefined ? mods.enableGithubAuthModule : (mods.enableGithubLogin !== undefined ? mods.enableGithubLogin : (sa.enableGithubLogin !== undefined ? sa.enableGithubLogin : false)),
                 enableImportModule: mods.enableImportModule !== undefined
                     ? mods.enableImportModule
                     : (ai.enableImportModule !== undefined ? ai.enableImportModule : false),
                 enableEmailVerification: mods.enableEmailVerification !== undefined ? mods.enableEmailVerification : false,
-                enableJobScraperModule: mods.enableJobScraperModule !== undefined ? mods.enableJobScraperModule : true,
+                enableJobScraperModule: mods.enableJobScraperModule !== undefined ? mods.enableJobScraperModule : false,
                 enablePortfolioModule: mods.enablePortfolioModule !== undefined ? mods.enablePortfolioModule : false,
                 enableMessagesModule: mods.enableMessagesModule !== undefined ? mods.enableMessagesModule : false,
                 enableJobTrackerModule: mods.enableJobTrackerModule !== undefined ? mods.enableJobTrackerModule : false,
                 enableAppliedJobsModule: mods.enableAppliedJobsModule !== undefined ? mods.enableAppliedJobsModule : false,
-                enableCoverLetterModule: mods.enableCoverLetterModule !== undefined ? mods.enableCoverLetterModule : true,
-                enableAiSuggestionsModule: mods.enableAiSuggestionsModule !== undefined ? mods.enableAiSuggestionsModule : true,
-                enableAtsScoreModule: mods.enableAtsScoreModule !== undefined ? mods.enableAtsScoreModule : true,
-                enablePublicSharingModule: mods.enablePublicSharingModule !== undefined ? mods.enablePublicSharingModule : true,
-                enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : true,
-                enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : true,
+                enableCoverLetterModule: mods.enableCoverLetterModule !== undefined ? mods.enableCoverLetterModule : false,
+                enableAiSuggestionsModule: mods.enableAiSuggestionsModule !== undefined ? mods.enableAiSuggestionsModule : false,
+                enableAtsScoreModule: mods.enableAtsScoreModule !== undefined ? mods.enableAtsScoreModule : false,
+                enablePublicSharingModule: mods.enablePublicSharingModule !== undefined ? mods.enablePublicSharingModule : false,
+                enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : false,
+                enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : false,
             });
-            const isAuthoritative = settings?._settingsSource === 'remote' || settings?._settingsSource === 'cache';
+            const isAuthoritative = settings?._settingsSource === 'remote' && settings?._settingsStale !== true;
             setSettingsHydrated(isAuthoritative);
             setLoading(false);
             if (!isAuthoritative) {

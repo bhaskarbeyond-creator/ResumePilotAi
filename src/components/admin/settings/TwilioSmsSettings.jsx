@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { sendSmsNotification } from '../../../firestore/dbOperations';
+import { sendSmsNotification } from '../../../services/api/platform';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { useAdminSession } from '../AdminContext';
 import { FaCommentAlt, FaCheck, FaTimes, FaSpinner, FaPhoneAlt, FaEye, FaEyeSlash, FaPaperPlane } from 'react-icons/fa';

@@ -1,7 +1,7 @@
 import { FaPen } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
 import Checkimage from '../../../assets/check.png';
-import { getSubscriptionStatus } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus } from '../../../services/api/platform';
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -12,6 +12,8 @@ const HomepagePricing = ({ nextStep, t }) => {
         quartarly: null,
         yearly: null,
         isLoading: true,
+        enabled: false,
+        error: '',
     });
 
     const navigate = useNavigate();
@@ -32,15 +34,44 @@ const HomepagePricing = ({ nextStep, t }) => {
     useEffect(() => {
         // Fetch pricing data directly in this component
         getSubscriptionStatus().then((data) => {
+            const authoritative = data?._settingsSource === 'remote' && data?._settingsStale !== true;
+            const prices = [data?.monthlyPrice, data?.quartarlyPrice, data?.yearlyPrice].map(Number);
+            if (!authoritative || data?.state !== true || prices.some(value => !Number.isFinite(value) || value < 0)) {
+                setPricingData(current => ({
+                    ...current,
+                    isLoading: false,
+                    enabled: false,
+                    error: authoritative && data?.state !== true
+                        ? t('HomepagePricing.unavailable', { defaultValue: 'Paid plans are not currently available.' })
+                        : t('HomepagePricing.configurationUnavailable', { defaultValue: 'Verified pricing is temporarily unavailable.' }),
+                }));
+                return;
+            }
+            const code = String(data.currency || '').toUpperCase();
+            const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥' };
             setPricingData({
-                monthly: data.monthlyPrice || 199,
-                quartarly: data.quartarlyPrice || 399,
-                yearly: data.yearlyPrice || 499,
-                currency: data.currency === 'USD' ? '$' : (data.currency === 'EUR' ? '€' : (data.currency === 'GBP' ? '£' : '₹')),
+                monthly: prices[0],
+                quartarly: prices[1],
+                yearly: prices[2],
+                currency: data.currencySymbol || symbols[code] || code,
                 isLoading: false,
+                enabled: true,
+                error: '',
             });
-        });
-    }, []);
+        }).catch(() => setPricingData(current => ({
+            ...current,
+            isLoading: false,
+            enabled: false,
+            error: t('HomepagePricing.configurationUnavailable', { defaultValue: 'Verified pricing is temporarily unavailable.' }),
+        })));
+    }, [t]);
+
+    if (pricingData.isLoading) {
+        return <section id="pricing" className="py-20 text-center" role="status">Loading verified pricing…</section>;
+    }
+    if (!pricingData.enabled) {
+        return <section id="pricing" className="px-4 py-20 text-center" role="status"><div className="mx-auto max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 p-8 text-amber-950"><h2 className="text-2xl font-bold">{t('HomepagePricing.header')}</h2><p className="mt-3">{pricingData.error}</p></div></section>;
+    }
 
     const { currency, monthly, quartarly, yearly } = pricingData;
     return (
@@ -240,7 +271,7 @@ const HomepagePricing = ({ nextStep, t }) => {
                                 {/* Enhanced button */}
                                 <div className="mb-6">
                                     <button
-                                        onClick={() => nextStep('halfYear')}
+                                        onClick={() => handlePlanSelection('halfYear')}
                                         className="w-full py-4 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 ring-2 ring-purple-500/20 hover:ring-purple-500/40">
                                         {t('HomepagePricing.upgradeButtonStar')}
                                     </button>

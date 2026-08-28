@@ -13,7 +13,7 @@ import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { createBlogPost, updateBlogPost, listBlogCategories, getUserBlogPosts, getBlogPostByIdForAuthor, deleteBlogPost } from '../../../firestore/dbOperations';
+import { createBlogPost, updateBlogPost, listBlogCategories, getUserBlogPosts, getBlogPostByIdForAuthor, deleteBlogPost } from '../../../services/api/platform';
 import { AuthContext } from '../../../main';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';

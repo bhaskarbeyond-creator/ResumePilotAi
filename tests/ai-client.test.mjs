@@ -2,14 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAiRequest, generateUserAiContent } from '../src/services/aiService.js';
 
-test('AI client preserves legacy operation payloads behind one same-origin backend contract', () => {
+test('AI client uses the consolidated contract and rejects retired generation operations', () => {
   assert.deepEqual(buildAiRequest('generate-summary', { name: 'Asha', workHistory: 'Acme' }), {
     url: '/api/generate-content',
     body: { operation: 'generate-summary', payload: { name: 'Asha', workHistory: 'Acme' } },
   });
-  assert.deepEqual(buildAiRequest('generate-resume', { occupation: 'Engineer' }), {
-    url: '/api/generate-resume', body: { occupation: 'Engineer' },
-  });
+  assert.throws(() => buildAiRequest('generate-resume', { occupation: 'Engineer' }), /Unsupported AI operation/);
+  assert.throws(() => buildAiRequest('generate-certifications', { occupation: 'Engineer' }), /Unsupported AI operation/);
   assert.throws(() => buildAiRequest('arbitrary-provider-call', {}), /Unsupported AI operation/);
 });
 

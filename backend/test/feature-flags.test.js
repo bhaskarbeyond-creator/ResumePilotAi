@@ -13,7 +13,67 @@ const {
 } = require('../services/featureFlagService');
 const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { setTokenVerifierForTests } = require('../security/auth');
-const { getPool } = require('../database/mysql');
+const { setPoolForTests } = require('../database/mysql');
+
+class FeatureFlagMariaDbPool {
+  constructor() { this.reset(); }
+  reset() { this.setting = null; this.auditRows = []; this.quota = new Map(); }
+  async query(sql, _params = []) {
+    const normalized = String(sql).replace(/\s+/g, ' ').trim();
+    if (/^SELECT data FROM system_settings WHERE category = \??/i.test(normalized)) {
+      return [[this.setting ? { data: this.setting.data } : null].filter(Boolean), []];
+    }
+    if (/^DELETE FROM system_settings WHERE category = 'feature_flags'$/i.test(normalized)) {
+      this.setting = null; return [{ affectedRows: 1 }, []];
+    }
+    if (/^SELECT action, actor_uid, metadata, request_id FROM security_audit_logs/i.test(normalized)) {
+      return [this.auditRows.filter(row => row.action === 'FEATURE_FLAG_CHANGED' && row.request_id === 'req-test-123'), []];
+    }
+    if (/^DELETE FROM security_audit_logs/i.test(normalized)) {
+      this.auditRows = this.auditRows.filter(row => row.request_id !== 'req-test-123');
+      return [{ affectedRows: 1 }, []];
+    }
+    if (/^INSERT INTO admin_audit_logs /i.test(normalized)) return [{ affectedRows: 1 }, []];
+    throw new Error(`Unexpected feature-flag SQL query: ${normalized}`);
+  }
+  async getConnection() {
+    const pool = this;
+    return {
+      beginTransaction: async () => {}, commit: async () => {}, rollback: async () => {}, release() {},
+      async query(sql, params = []) {
+        const normalized = String(sql).replace(/\s+/g, ' ').trim();
+        if (/^SELECT data, revision FROM system_settings WHERE category = \? FOR UPDATE$/i.test(normalized)) {
+          return [[pool.setting ? { ...pool.setting } : null].filter(Boolean), []];
+        }
+        if (/^INSERT INTO system_settings /i.test(normalized)) {
+          pool.setting = { data: params[1], revision: params[2] };
+          return [{ affectedRows: 1 }, []];
+        }
+        if (/^INSERT INTO security_audit_logs /i.test(normalized)) {
+          pool.auditRows.push({
+            action: 'FEATURE_FLAG_CHANGED', actor_uid: params[1], metadata: params[2], request_id: params[3],
+          });
+          return [{ affectedRows: 1 }, []];
+        }
+        if (/^SELECT count, expiresAt FROM enterprise_quota_buckets/i.test(normalized)) {
+          const row = pool.quota.get(params[0]); return [[row ? { ...row } : null].filter(Boolean), []];
+        }
+        if (/^INSERT INTO enterprise_quota_buckets /i.test(normalized)) {
+          pool.quota.set(params[0], { count: params[2], expiresAt: params[3] }); return [{ affectedRows: 1 }, []];
+        }
+        if (/^UPDATE enterprise_quota_buckets /i.test(normalized)) {
+          pool.quota.set(params[2], { count: params[0], expiresAt: params[1] }); return [{ affectedRows: 1 }, []];
+        }
+        throw new Error(`Unexpected feature-flag transaction query: ${normalized}`);
+      },
+    };
+  }
+  async end() {}
+}
+
+const testPool = new FeatureFlagMariaDbPool();
+setPoolForTests(testPool);
+const getPool = () => testPool;
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
@@ -29,9 +89,7 @@ const bearer = token => ({ Authorization: `Bearer ${token}` });
 // Test isolation: flags live in MySQL system_settings; restore the category
 // before and after this file so parallel suites see no cross-talk.
 async function resetFlagStore() {
-  try {
-    await getPool().query("DELETE FROM system_settings WHERE category = 'feature_flags'");
-  } catch (_e) { /* schema may not exist yet in degenerate environments */ }
+  testPool.reset();
 }
 
 test.before(async () => { await resetFlagStore(); });
@@ -55,31 +113,31 @@ test('feature flags: definition contract and default values', () => {
 
 test('feature flags: getFlagValue priority resolution (MySQL > Env > Default)', async () => {
   // MySQL override wins: set via the audited writer (also invalidates cache).
-  await setFlagValue(null, null, 'PDF_RENDERER_ISOLATED', true, 'super-1', 'req-priority');
-  const valWithDb = await getFlagValue(null, 'PDF_RENDERER_ISOLATED');
+  await setFlagValue('PDF_RENDERER_ISOLATED', true, 'super-1', 'req-priority');
+  const valWithDb = await getFlagValue('PDF_RENDERER_ISOLATED');
   assert.equal(valWithDb, true);
 
   const prevEnv = process.env.CMS_SCHEDULER_ENABLED;
   try {
     process.env.CMS_SCHEDULER_ENABLED = 'true';
-    const envVal = await getFlagValue(null, 'CMS_SCHEDULER_ENABLED');
+    const envVal = await getFlagValue('CMS_SCHEDULER_ENABLED');
     assert.equal(envVal, true);
 
     delete process.env.CMS_SCHEDULER_ENABLED;
-    const defaultVal = await getFlagValue(null, 'CMS_SCHEDULER_ENABLED');
+    const defaultVal = await getFlagValue('CMS_SCHEDULER_ENABLED');
     assert.equal(defaultVal, false);
   } finally {
     if (prevEnv !== undefined) process.env.CMS_SCHEDULER_ENABLED = prevEnv;
     else delete process.env.CMS_SCHEDULER_ENABLED;
   }
 
-  const unknown = await getFlagValue(null, 'NON_EXISTENT_FLAG');
+  const unknown = await getFlagValue('NON_EXISTENT_FLAG');
   assert.equal(unknown, undefined);
 });
 
 test('feature flags: getAllFlags returns structured metadata and effective source', async () => {
-  await setFlagValue(null, null, 'NOTIFICATION_OUTBOX_EXTERNAL_WORKER', true, 'super-admin-uid', 'req-meta');
-  const all = await getAllFlags(null);
+  await setFlagValue('NOTIFICATION_OUTBOX_EXTERNAL_WORKER', true, 'super-admin-uid', 'req-meta');
+  const all = await getAllFlags();
   assert.ok(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER);
   assert.equal(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.value, true);
   assert.equal(all.NOTIFICATION_OUTBOX_EXTERNAL_WORKER.source, 'mysql');
@@ -94,22 +152,22 @@ test('feature flags: getAllFlags returns structured metadata and effective sourc
 test('feature flags: setFlagValue validates parameters, persists to MySQL, and logs audit', async () => {
   // Validation errors
   await assert.rejects(
-    () => setFlagValue(null, null, 'INVALID_FLAG_KEY', true, 'super-1', 'req-1'),
+    () => setFlagValue('INVALID_FLAG_KEY', true, 'super-1', 'req-1'),
     { code: 'UNKNOWN_FEATURE_FLAG', status: 400 }
   );
 
   await assert.rejects(
-    () => setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', 'not-a-bool', 'super-1', 'req-1'),
+    () => setFlagValue('ENTERPRISE_TENANCY_ENABLED', 'not-a-bool', 'super-1', 'req-1'),
     { code: 'INVALID_FLAG_VALUE', status: 400 }
   );
 
   await assert.rejects(
-    () => setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', true, null, 'req-1'),
+    () => setFlagValue('ENTERPRISE_TENANCY_ENABLED', true, null, 'req-1'),
     { code: 'AUTH_REQUIRED', status: 401 }
   );
 
   // Successful mutation — durable in MySQL with an audit row in the same transaction.
-  const result = await setFlagValue(null, null, 'PDF_RENDERER_ISOLATED', false, 'super-1', 'req-test-123');
+  const result = await setFlagValue('PDF_RENDERER_ISOLATED', false, 'super-1', 'req-test-123');
   assert.equal(result.flag, 'PDF_RENDERER_ISOLATED');
   assert.equal(result.value, false);
   assert.equal(result.auditEvent, 'FEATURE_FLAG_CHANGED');
@@ -142,11 +200,11 @@ test('feature flags: enterpriseFeatureEnabled and enterpriseFeatureEnabledAsync 
   // The async helper reads the MySQL-backed override. Restore the flag after
   // the assertion so parallel suites never observe an enabled enterprise plane.
   try {
-    await setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', true, 'super-1', 'req-ent-helper');
+    await setFlagValue('ENTERPRISE_TENANCY_ENABLED', true, 'super-1', 'req-ent-helper');
     const asyncVal = await enterpriseFeatureEnabledAsync(null);
     assert.equal(asyncVal, true);
   } finally {
-    await setFlagValue(null, null, 'ENTERPRISE_TENANCY_ENABLED', false, 'super-1', 'req-ent-helper-off');
+    await setFlagValue('ENTERPRISE_TENANCY_ENABLED', false, 'super-1', 'req-ent-helper-off');
     const restored = await enterpriseFeatureEnabledAsync(null);
     assert.equal(restored, false);
   }

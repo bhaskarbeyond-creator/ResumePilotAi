@@ -22,7 +22,7 @@ test('AUTH-002: OAuth provider configuration and availability resolution', async
 });
 
 test('AUTH-003: OAuth registration and MySQL profile synchronization', async () => {
-  const authSrc = fs.readFileSync('src/firestore/auth.js', 'utf8');
+  const authSrc = fs.readFileSync('src/services/api/users.js', 'utf8');
   
   assert.match(authSrc, /authProvider/, 'Profile creation must store provider identity in authoritative MySQL store');
   assert.match(authSrc, /saveCurrentUserProfile/, 'Profile sync must execute through backend authoritative API');

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight } from 'react-icons/fa';
 import { FiBold, FiItalic, FiUnderline, FiList, FiHash } from 'react-icons/fi';
 import { AuthContext } from '../../main';
-import { getResumes, submitJobApplication } from '../../firestore/dbOperations';
+import { getResumes, submitJobApplication } from '../../services/api/platform';
 
 // Lexical imports
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
@@ -429,103 +429,65 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
         );
     };
 
-    // Generate CV data using actual document data with fallbacks (matching DashboardHomepage)
-    const generateSampleCvData = (document) => {
+    // Normalize only facts present on the selected resume. Preview rendering must
+    // never fill an incomplete resume with sample candidate claims.
+    const normalizeCvData = (document) => {
+        const item = document?.item || {};
         return {
-            // Basic personal information from document.item
-            firstname: document?.item?.firstname || 'John',
-            lastname: document?.item?.lastname || 'Doe',
-            occupation: document?.item?.occupation || 'Software Developer',
-            email: document?.item?.email || 'john.doe@example.com',
-            phone: document?.item?.phone || '+1 (555) 123-4567',
-            address: document?.item?.address || '123 Main St',
-            city: document?.item?.city || 'New York',
-            country: document?.item?.country || 'USA',
-            postalcode: document?.item?.postalcode || '10001',
-            photo: document?.item?.photo || null,
-            summary: document?.item?.summary || 'Experienced software developer with expertise in web technologies.',
-
-            // Use actual array data from document root (not document.item)
-            // Transform skills to ensure correct field names and structure
-            skills:
-                document.skills && document.skills.length > 0
-                    ? document.skills
-                          .filter((skill) => skill && (skill.skillName || skill.name || skill.skill)) // Filter out null/undefined
-                          .map((skill, index) => ({
-                              name: skill.skillName || skill.name || skill.skill || 'Unknown Skill',
-                              rating: skill.rating || 50,
-                              date: skill.date || index + 1,
-                          }))
-                    : [
-                          { name: 'JavaScript', rating: 90, date: 1 },
-                          { name: 'React', rating: 85, date: 2 },
-                          { name: 'Node.js', rating: 80, date: 3 },
-                      ],
-
-            // Transform languages to ensure correct field names
-            languages:
-                document.languages && document.languages.length > 0
-                    ? document.languages
-                          .filter((lang) => lang && (lang.name || lang.language)) // Filter out null/undefined elements
-                          .map((lang, index) => ({
-                              name: lang.name || lang.language || 'Unknown Language',
-                              level: lang.level || lang.proficiency || 'Intermediate',
-                              date: lang.date || index + 1,
-                          }))
-                    : [
-                          { name: 'English', level: 'Native', date: 1 },
-                          { name: 'Spanish', level: 'Intermediate', date: 2 },
-                      ],
-
-            // Transform employments to ensure correct field names
-            employments:
-                document.employments && document.employments.length > 0
-                    ? document.employments
-                          .filter((emp) => emp && (emp.jobTitle || emp.job_title)) // Filter out null/undefined
-                          .map((emp, index) => ({
-                              jobTitle: emp.jobTitle || emp.job_title || 'Position',
-                              employer: emp.employer || emp.company || 'Company',
-                              begin: emp.begin || emp.start_date || 'Start Date',
-                              end: emp.end || emp.end_date || 'End Date',
-                              description: emp.description || 'Job description',
-                              date: emp.date || index + 1,
-                          }))
-                    : [
-                          {
-                              jobTitle: 'Senior Developer',
-                              employer: 'Tech Corp',
-                              begin: 'Jan 2020',
-                              end: 'Present',
-                              description: 'Led development of web applications',
-                              date: 1,
-                          },
-                      ],
-
-            // Transform educations to ensure correct field names
-            educations:
-                document.educations && document.educations.length > 0
-                    ? document.educations
-                          .filter((edu) => edu && (edu.degree || edu.qualification)) // Filter out null/undefined
-                          .map((edu, index) => ({
-                              degree: edu.degree || edu.qualification || 'Degree',
-                              school: edu.school || edu.institution || 'Institution',
-                              started: edu.started || edu.start_year || 'Start Year',
-                              finished: edu.finished || edu.end_year || 'End Year',
-                              description: edu.description || 'Education description',
-                              date: edu.date || index + 1,
-                          }))
-                    : [
-                          {
-                              degree: 'Computer Science',
-                              school: 'University',
-                              started: '2016',
-                              finished: '2020',
-                              description: "Bachelor's degree in Computer Science",
-                              date: 1,
-                          },
-                      ],
-
-            colors: getTemplateColors(document?.template || document?.item?.template || 'Cv1'),
+            firstname: item.firstname || '',
+            lastname: item.lastname || '',
+            occupation: item.occupation || '',
+            email: item.email || '',
+            phone: item.phone || '',
+            address: item.address || '',
+            city: item.city || '',
+            country: item.country || '',
+            postalcode: item.postalcode || '',
+            photo: item.photo || null,
+            summary: item.summary || '',
+            skills: Array.isArray(document?.skills)
+                ? document.skills
+                    .filter(skill => skill && (skill.skillName || skill.name || skill.skill))
+                    .map((skill, index) => ({
+                        name: skill.skillName || skill.name || skill.skill,
+                        rating: typeof skill.rating === 'number' && Number.isFinite(skill.rating) ? skill.rating : null,
+                        date: skill.date ?? index + 1,
+                    }))
+                : [],
+            languages: Array.isArray(document?.languages)
+                ? document.languages
+                    .filter(lang => lang && (lang.name || lang.language))
+                    .map((lang, index) => ({
+                        name: lang.name || lang.language,
+                        level: lang.level || lang.proficiency || '',
+                        date: lang.date ?? index + 1,
+                    }))
+                : [],
+            employments: Array.isArray(document?.employments)
+                ? document.employments
+                    .filter(emp => emp && (emp.jobTitle || emp.job_title || emp.employer || emp.company))
+                    .map((emp, index) => ({
+                        jobTitle: emp.jobTitle || emp.job_title || '',
+                        employer: emp.employer || emp.company || '',
+                        begin: emp.begin || emp.start_date || '',
+                        end: emp.end || emp.end_date || '',
+                        description: emp.description || '',
+                        date: emp.date ?? index + 1,
+                    }))
+                : [],
+            educations: Array.isArray(document?.educations)
+                ? document.educations
+                    .filter(edu => edu && (edu.degree || edu.qualification || edu.school || edu.institution))
+                    .map((edu, index) => ({
+                        degree: edu.degree || edu.qualification || '',
+                        school: edu.school || edu.institution || '',
+                        started: edu.started || edu.start_year || '',
+                        finished: edu.finished || edu.end_year || '',
+                        description: edu.description || '',
+                        date: edu.date ?? index + 1,
+                    }))
+                : [],
+            colors: getTemplateColors(document?.template || item.template || 'Cv1'),
         };
     };
 
@@ -533,7 +495,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     const renderTemplatePreview = (document) => {
         const templateName = document?.template || document?.item?.template || 'Cv1';
         const TemplateComponent = loadedTemplates[templateName];
-        const cvData = generateSampleCvData(document);
+        const cvData = normalizeCvData(document);
 
         if (!TemplateComponent) {
             // Load template if not already loaded

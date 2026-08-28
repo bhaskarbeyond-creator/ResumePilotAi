@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.use((req, res, next) => {
     try {
-        req.repository = getRepository(req.app.get('db'));
+        req.repository = getRepository();
         next();
     } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });

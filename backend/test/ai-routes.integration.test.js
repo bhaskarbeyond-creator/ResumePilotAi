@@ -5,7 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { setTokenVerifierForTests } = require('../security/auth');
-const { _buckets } = require('../security/abuse');
+const { installAiRouteContract, resetAiRouteContract } = require('./helpers/aiRouteContract');
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
@@ -14,32 +14,11 @@ setTokenVerifierForTests(async token => {
   throw new Error('invalid token');
 });
 
+const aiContract = installAiRouteContract();
 const app = require('../index');
-const usage = new Map();
-// AI provider secrets are seeded in the authoritative MySQL system_settings
-// store (Firestore data plane is OFF). Seeded in a `before` hook so the
-// inserts are durable before any route is exercised.
-const { before } = require('node:test');
-const { getPool } = require('../database/mysql');
-before(async () => {
-  const pool = getPool();
-  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers')");
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('ai_providers', ?, 1)",
-    [JSON.stringify({ gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } })]);
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)",
-    [JSON.stringify({ ai: { provider: 'gemini', enableGemini: true, enableFallback: true, maxTokens: 2048 } })]);
-  // Premium user so the daily AI limit is 100 (resolveEffectiveEntitlement).
-  await pool.query(
-    "INSERT INTO users (id, email, membership, paymentStatus) VALUES ('owner-1', 'owner@example.com', 'Premium', 'ACTIVE') ON DUPLICATE KEY UPDATE membership = 'Premium', paymentStatus = 'ACTIVE'"
-  );
-});
-app.set('db', null);
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 
-test.beforeEach(() => {
-  _buckets.clear();
-  usage.clear();
-});
+test.beforeEach(() => aiContract.resetAdmission());
 
 test('AI generation requires a verified authenticated Firebase identity', async () => {
   const anonymous = await request(app).post('/api/generate-content').send({ operation: 'generate-summary', payload: { jobTitle: 'Engineer' } });
@@ -54,7 +33,7 @@ test('AI route preserves prompt context and response contract through the authen
   let providerRequest;
   global.fetch = async (url, options) => {
     providerRequest = { url, body: JSON.parse(options.body) };
-    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"summary":"Engineer focused on reliable payment APIs."}' }] } }] }), { status: 200 });
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"summary":"Engineer. Built payment APIs at Acme. Node.js.","sourceExcerpts":["Built payment APIs at Acme","Node.js"]}' }] } }] }), { status: 200 });
   };
   try {
     const response = await request(app).post('/api/generate-content').set(bearer('verified')).send({
@@ -62,8 +41,9 @@ test('AI route preserves prompt context and response contract through the authen
       payload: { name: 'Asha Rao', jobTitle: 'Engineer', workHistory: 'Built payment APIs at Acme', skills: ['Node.js'] },
     });
     assert.equal(response.status, 200);
-    assert.deepEqual(response.body, { summary: 'Engineer focused on reliable payment APIs.' });
+    assert.deepEqual(response.body, { summary: 'Engineer. Built payment APIs at Acme. Node.js.' });
     assert.equal(response.headers['x-ai-provider'], 'gemini');
+    assert.equal(response.headers['x-ai-grounding'], 'source-validated');
     assert.match(providerRequest.body.contents[0].parts[0].text, /Built payment APIs at Acme/);
     assert.match(providerRequest.url, /server-only-gemini-key/);
     assert.doesNotMatch(JSON.stringify(response.body), /server-only-gemini-key/);
@@ -73,23 +53,46 @@ test('AI route preserves prompt context and response contract through the authen
   }
 });
 
-test('complete resume generation preserves required sections and drops unexpected provider fields', async () => {
+test('ungrounded whole-resume generation is explicitly retired without calling a provider', async () => {
   const originalFetch = global.fetch;
-  global.fetch = async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: `\`\`\`json
-    {"firstname":"Asha","lastname":"Rao","occupation":"Engineer","summary":"<b>Reliable engineer</b>","employments":[{"jobTitle":"Engineer","employer":"Acme","description":"Built APIs"}],"educations":[{"school":"University","degree":"M.Tech"}],"skills":[{"name":"Node.js","rating":4}],"languages":[{"name":"English","level":"Fluent"}],"accountType":"Premium","__proto__":{"admin":true}}
-    \`\`\`` }] } }] }), { status: 200 });
+  let providerCalled = false;
+  global.fetch = async () => {
+    providerCalled = true;
+    throw new Error('provider must not be called');
+  };
   try {
     const response = await request(app).post('/api/generate-resume').set(bearer('verified')).send({
       occupation: 'Engineer', experienceLevel: 'mid-level', skills: ['Node.js'], education: ['M.Tech'], language: 'en',
     });
+    assert.equal(response.status, 410);
+    assert.equal(response.body.error.code, 'UNGROUNDED_AI_ENDPOINT_RETIRED');
+    assert.equal(providerCalled, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('resume parser strips provider hallucinations and exposes extraction grounding', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({
+    firstname: 'Asha', lastname: 'Mallory', occupation: 'Principal Engineer',
+    skills: [{ name: 'React', rating: 90 }],
+    languages: [{ name: 'English', level: 'Fluent' }],
+    accountType: 'ADMIN',
+  }) }] } }] }), { status: 200 });
+  try {
+    const response = await request(app).post('/api/parse-resume').set(bearer('verified')).send({
+      rawText: 'Asha Rao\nEngineer\nSkills: React\nLanguages: English',
+    });
     assert.equal(response.status, 200);
-    assert.equal(response.body.firstname, 'Asha');
-    assert.equal(response.body.summary, 'Reliable engineer');
-    assert.equal(response.body.employments[0].employer, 'Acme');
-    assert.equal(response.body.skills[0].name, 'Node.js');
-    assert.equal(response.body.accountType, undefined);
-    assert.equal(Object.hasOwn(response.body, '__proto__'), false);
-    assert.equal(response.body._source, 'ai');
+    assert.equal(response.headers['x-ai-grounding'], 'source-extracted');
+    assert.equal(response.body.data.firstname, 'Asha');
+    assert.equal(response.body.data.lastname, '');
+    assert.equal(response.body.data.occupation, '');
+    assert.deepEqual(response.body.data.skills, [{ skillName: 'React', rating: null }]);
+    assert.deepEqual(response.body.data.languages, [{ language: 'English', level: '' }]);
+    assert.equal(response.body.data.accountType, undefined);
+    assert.equal(response.body.data._grounding, 'source-extracted');
   } finally {
     global.fetch = originalFetch;
   }
@@ -109,23 +112,23 @@ test('AI route rejects client credentials, cross-account identity fields, and ov
   assert.equal(oversized.body.error.code, 'AI_INPUT_TOO_LARGE');
 });
 
-test('provider failures return a safe retryable error without leaking provider details', async () => {
+test('provider failures return source-preserving content without leaking provider details', async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => new Response(JSON.stringify({ error: { message: 'secret provider diagnostic' } }), { status: 503 });
   try {
-    const response = await request(app).post('/api/generate-content').set(bearer('verified')).send({ operation: 'generate-summary', payload: { jobTitle: 'Engineer' } });
-    assert.equal(response.status, 502);
-    assert.equal(response.body.error.code, 'AI_PROVIDER_ERROR');
-    assert.equal(response.body.error.message, 'AI generation is temporarily unavailable');
+    const response = await request(app).post('/api/generate-content').set(bearer('verified')).send({
+      operation: 'generate-summary',
+      payload: { jobTitle: 'Engineer', workHistory: 'Maintained payment APIs and deployment runbooks' },
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.summary, 'Engineer. Maintained payment APIs and deployment runbooks');
+    assert.equal(response.body._source, 'source-preserving-fallback');
+    assert.equal(response.headers['x-ai-provider'], 'fallback');
+    assert.equal(response.headers['x-ai-grounding'], 'source-preserving-fallback');
     assert.doesNotMatch(JSON.stringify(response.body), /secret provider diagnostic|server-only-gemini-key/);
   } finally {
     global.fetch = originalFetch;
   }
 });
 
-test.after(async () => {
-  try {
-    const { getPool } = require('../database/mysql');
-    await getPool().end();
-  } catch (_) {}
-});
+test.after(() => resetAiRouteContract());

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { FaLinkedin, FaGithub, FaFacebook, FaGoogle, FaCheck, FaTimes, FaSpinner, FaLock, FaEye, FaEyeSlash, FaInfoCircle, FaShieldAlt } from 'react-icons/fa';
 import { useAdminSession } from '../AdminContext';
@@ -29,7 +29,7 @@ const SocialAuthSettings = () => {
     const [clearSecrets, setClearSecrets] = useState({});
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             const sa = (settings && settings.socialAuth) || {};
             const fb = (settings && settings.facebook) || {};
             const g = (settings && settings.google) || {};

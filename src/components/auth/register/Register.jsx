@@ -4,7 +4,7 @@ import GoogleImage from '../../../assets/google.png';
 import FacebookImage from '../../../assets/facebook.png';
 import Input from '../../Form/simple-input/SimpleInput';
 // FIX: Import addUser from auth.js (deduplication + authProvider tracking) NOT dbOperations
-import addUser, { updateUserOnLogin } from '../../../firestore/auth';
+import addUser, { updateUserOnLogin } from '../../../services/api/users';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
 import Toast from '../../Toasts/Toats';
 import { withTranslation } from 'react-i18next';
@@ -83,7 +83,7 @@ class Register extends Component {
         // Surface a social sign-up that failed and redirected back here.
         this.readOAuthRedirectError();
 
-        import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
+        import('../../../services/api/platform').then(({ getSystemSettings }) => {
             getSystemSettings().then((settings) => {
                 try {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
@@ -124,7 +124,7 @@ class Register extends Component {
             ) {
                 return;
             }
-            const { checkIfAdmin } = await import('../../../firestore/dbOperations');
+            const { checkIfAdmin } = await import('../../../services/api/platform');
             const isAdmin = await checkIfAdmin(uid);
             if (isAdmin) {
                 window.location.href = '/adm/dashboard';
@@ -160,13 +160,8 @@ class Register extends Component {
             const firstName = nameParts[0] || 'User';
             const lastName = nameParts.slice(1).join(' ') || '';
             const result = await addUser(uid, firstName, lastName, email, { authProvider: provider, photoURL });
-            if (result && result.isNewUser) {
-                fetch('/api/notify/user-signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userEmail: email, userName: displayName || firstName })
-                }).catch(() => {});
-            } else {
+            // New-account mail is part of the server-side profile-create transaction.
+            if (!result?.isNewUser) {
                 updateUserOnLogin(uid, { photoURL, displayName, authProvider: provider }).catch(() => {});
             }
         } catch (err) {
@@ -315,20 +310,12 @@ class Register extends Component {
             const u = await fire.auth().createUserWithEmailAndPassword(email, this.state.password);
             const userName = email.split('@')[0];
             // Uses auth.js addUser for deduplication + metadata tracking
-            const userRes = await addUser(u.user.uid, userName, '', email, { authProvider: 'email' });
-
-            // Send welcome email ONLY for new user registrations
-            if (userRes && userRes.isNewUser) {
-                fetch('/api/notify/user-signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userEmail: email, userName })
-                }).catch(e => console.warn('Signup email notice:', e.message));
-            }
+            await addUser(u.user.uid, userName, '', email, { authProvider: 'email' });
+            // Welcome mail is durably enqueued by the server-side profile-create transaction.
 
             // Send branded crypto verification link email if Admin has enabled Email Verification Module
             try {
-                const { getSystemSettings } = await import('../../../firestore/dbOperations');
+                const { getSystemSettings } = await import('../../../services/api/platform');
                 const settings = await getSystemSettings();
                 const emailVerificationEnabled = settings?.modules?.enableEmailVerification === true;
                 if (emailVerificationEnabled && u.user && !u.user.emailVerified) {

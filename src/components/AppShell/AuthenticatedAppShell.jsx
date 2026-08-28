@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AuthContext } from '../../main';
 import ProfileDisplay from '../Dashboard/ProfileDisplay/ProfileDisplay';
-import { getFullName } from '../../firestore/dbOperations';
+import { getFullName } from '../../services/api/platform';
 import { resolveApplicationShell } from './applicationShell';
 import './AuthenticatedAppShell.scss';
 

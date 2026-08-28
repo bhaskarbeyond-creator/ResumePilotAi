@@ -211,7 +211,7 @@
     "unlimitedResumes": "CV-uri nelimitate",
     "nonRecuring": "Plată nerecurentă.",
     "upgradeAndDownload": "Actualizează și descarcă",
-    "payment1": "Obține jobul visurilor tale",
+    "payment1": "Creează-ți CV-ul",
     "payment2": "Plată prin intermediul unui serviciu de plată de încredere",
     "payment3": "SSL securizat / Checkout securizat SSL de 256 de biți",
     "payment4": "Garanție de returnare a banilor în 7 zile",
@@ -243,7 +243,7 @@
     "featuresNav": "Funcționalități",
     "resumeBuilderFeatures": "Funcționalități ale constructorului de CV-uri",
     "featureTagline": "Tot ce îți trebuie pentru un CV perfect",
-    "userCount": "Peste 50.000 de utilizatori",
+    "userCount": "Prezentarea funcțiilor",
     "exploreFeatures": "Explorează Toate Funcționalitățile",
     "freeToTry": "Gratis pentru a încerca",
     "startBuilding": "Începe construcția",
@@ -345,12 +345,12 @@
       "sentence5": "Reușește la interviuri cu instrumente de pregătire AI"
     },
     "badge": "Constructor de CV-uri asistat de AI",
-    "description": "Creează CV-uri și scrisori de intenție uimitoare, compatibile cu ATS, cu asistență AI. Alege din șabloane profesionale, obține feedback în timp real și obține mai repede jobul visurilor tale.",
+    "description": "Creează și editează CV-uri și scrisori de intenție cu instrumente ghidate, șabloane configurabile, previzualizare în timp real și asistență AI opțională.",
     "createResume": "Creează CV",
     "createCoverLetter": "Creează Scrisoare de Intenție",
     "stats": {
-      "users": "+5.000 utilizatori mulțumiți",
-      "rating": "4.9/5"
+      "users": "Instrumente ghidate pentru CV",
+      "rating": "Previzualizare în timp real"
     },
     "features": {
       "freeToStart": "Gratuit pentru a începe",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "REZULTATE DOVEDITE • DE ÎNCREDERE PENTRU PESTE 50.000 DE PROFESIONIȘTI",
+    "badge": "CREAREA GHIDATĂ A CV-ULUI",
     "title": {
       "part1": "Transformă-ți",
       "part2": "Călătoria",
       "part3": "Carierei"
     },
-    "description": "Alătură-te miilor de profesioniști care și-au accelerat cariera cu constructorul nostru de CV-uri asistat de AI. Fii remarcat, obține interviuri și asigură-ți jobul visurilor mai repede ca niciodată.",
+    "description": "Folosește secțiuni ghidate, aspecte configurabile, previzualizări și asistență AI opțională pentru a pregăti și verifica un CV.",
     "benefits": [
       {
         "title": "Obține Mai Multe Interviuri De Angajare",
         "description": "Șabloanele noastre optimizate pentru ATS și sugestiile de conținut asistate de AI ajută CV-ul tău să treacă de sistemele automate de screening și să ajungă în mâinile managerilor de angajare.",
-        "detail": "Alătură-te miilor de profesioniști care și-au crescut rata de interviuri de 3 ori folosind sistemul nostru dovedit."
+        "detail": "Verifică și adaptează fiecare sugestie înainte de a o folosi într-o candidatură."
       },
       {
         "title": "Distinge-te De Concurență",
@@ -396,24 +396,6 @@
         "title": "Construiește Încredere În Căutarea Ta De Loc De Muncă",
         "description": "Prezintă-ți cea mai bună versiune profesională cu un CV șlefuit, fără erori, care reflectă adevăratul tău potențial și realizările profesionale.",
         "detail": "Simte-te încrezător știind că materialele tale de aplicație sunt create profesional și sunt conforme cu standardele industriei."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Utilizatori Mulțumiți"
-      },
-      {
-        "number": "98.7%",
-        "label": "Rata de succes"
-      },
-      {
-        "number": "50+",
-        "label": "Șabloane"
-      },
-      {
-        "number": "24 ore",
-        "label": "Timp mediu"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Ești Gata să Obții Jobul Visurilor Tale?",
-      "description": "Alătură-te celor peste 50.000 de profesioniști care și-au transformat cariera. Începe astăzi să construiești CV-ul tău câștigător.",
+      "title": "Ești gata să îți creezi CV-ul?",
+      "description": "Creează, verifică și exportă CV-ul cu editorul ghidat.",
       "button": "Începe Povestea Ta de Succes",
       "noCredit": "✨ Nu necesită card de credit • Șabloane gratuite incluse"
     }
@@ -440,7 +422,7 @@
       "part2": "Utilizatorii",
       "part3": " Noștri"
     },
-    "description": "Alătură-te miilor de persoane în căutare de locuri de muncă mulțumite care și-au obținut locurile de muncă de vis cu constructorul nostru de CV-uri asistat de AI.",
+    "description": "Citește feedbackul aprobat al clienților publicat prin procesul de recenzii al platformei.",
     "navigation": {
       "previous": "Anterior",
       "next": "Următorul",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Mai ai nevoie de ajutor?",
-      "description": "Echipa noastră de suport este aici 24/7 pentru a te ajuta să ai succes",
+      "description": "Folosește formularul de contact pentru întrebări despre cont sau produs. Timpul de răspuns nu este garantat.",
       "contactButton": "Contactați Suportul",
-      "docsButton": "Răsfoiește documente"
+      "docsButton": "Articole despre carieră"
     },
     "cta": {
       "badge": "Ești gata să-ți creezi CV-ul?",
-      "title": "Transformă-ți cariera cu CV-uri asistate de AI",
-      "description": "Alătură-te miilor de profesioniști care au creat CV-uri uimitoare în câteva secunde. Începe-ți călătoria în carieră astăzi cu platforma noastră inteligentă de design.",
+      "title": "Creează și verifică CV-ul",
+      "description": "Consultă întrebările frecvente sau începe un CV cu editorul ghidat.",
       "button": "Începe să creezi gratis",
-      "freeCredits": "3 credite gratuite • Nu este necesar card de credit",
-      "support": "Suport 24/7",
-      "secure": "Securizat și privat",
-      "instant": "Rezultate instantanee"
+      "freeCredits": "",
+      "support": "Schițe asociate contului",
+      "secure": "Verifică înainte de export",
+      "instant": "Asistență AI opțională"
     },
     "trustIndicators": {
-      "secure": "Securizat și privat",
-      "instant": "Rezultate instantanee",
-      "support": "Suport 24/7"
+      "secure": "Verifică înainte de export",
+      "instant": "Asistență AI opțională",
+      "support": "Schițe asociate contului"
     },
     "q1": {
-      "question": "Cum încep generarea CV-ului cu IA?",
-      "answer": "Înregistrați-vă gratuit, introduceți datele și urmăriți cum IA creează un CV excelent în câteva secunde."
+      "question": "Cum încep să folosesc editorul de CV?",
+      "answer": "Creează un cont, deschide editorul, introdu informații verificate, alege un aspect și verifică previzualizarea înainte de salvare sau export. Asistența AI este opțională și poate fi dezactivată."
     },
     "q2": {
-      "question": "Cât de rapid este procesul de generare?",
-      "answer": "IA noastră generează variante de CV în mai puțin de 5 minute!"
+      "question": "Asistența AI garantează un interviu sau un loc de muncă?",
+      "answer": "Nu. Rezultatul AI poate fi incomplet sau inexact și nu garantează acceptarea ATS, un interviu sau angajarea. Verifică și editează fiecare sugestie."
     },
     "q3": {
-      "question": "Ce este inclus în planul gratuit?",
-      "answer": "Utilizatorii noi primesc credite gratuite pentru a descărca CV-uri în format PDF și Word."
+      "question": "Unde văd limitele și prețurile actuale ale planurilor?",
+      "answer": "Pagina de prețuri afișează planurile, drepturile, taxele și opțiunile de plată actuale furnizate de server. Disponibilitatea poate varia după cont și configurare."
     },
     "q4": {
-      "question": "Pot personaliza CV-ul generat?",
-      "answer": "Da! Puteți ajusta stilurile, culorile și aspectul după preferințe."
+      "question": "Îmi pot personaliza CV-ul?",
+      "answer": "Da. Poți edita secțiunile, alege un aspect disponibil și verifica previzualizarea. Sugestiile AI rămân editabile și trebuie verificate."
     },
     "q5": {
-      "question": "Ce formate de fișiere oferiți?",
-      "answer": "Toate CV-urile sunt disponibile în formate PDF și Word de înaltă calitate."
+      "question": "Ce formate de export sunt disponibile?",
+      "answer": "Exporturile PDF și DOCX sunt oferite când ruta de export și dreptul contului sunt disponibile. Verifică întotdeauna fișierul înainte de trimitere."
     },
     "q6": {
-      "question": "Cum funcționează sistemul de credite?",
-      "answer": "Fiecare generare consumă 1 credit. Creditele nu expiră niciodată."
+      "question": "Cum sunt stocate schițele și datele contului?",
+      "answer": "Firebase Authentication gestionează identitatea. Schițele și alte date ale aplicației sunt stocate prin API-ul bazat pe MariaDB. Consultă politica de confidențialitate și opțiunile de export sau ștergere a contului."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Rămâneți la curent",
       "securePayments": "Plăți securizate"
     },
-    "aboutText": "Ajutăm persoanele în căutare de locuri de muncă să creeze CV-uri profesionale în câteva minute. Misiunea noastră este de a permite persoanelor să obțină locurile de muncă de vis cu documente de candidatură de înaltă calitate, create de AI.",
+    "aboutText": "ResumePilot AI oferă instrumente pentru crearea, verificarea și exportarea CV-urilor și a documentelor profesionale asociate.",
     "links": {
       "pricing": "Prețuri",
       "contact": "Contact"
@@ -1146,8 +1128,8 @@
       "clickToView": "Faceți clic pentru a vizualiza la scară completă",
       "changeTemplate": "Schimbă Șablonul",
       "viewFullSize": "Vizualizare la Scară Completă",
-      "trustedBy": "Având încrederea a peste 50.000 de profesioniști",
-      "joinSuccess": "Alăturați-vă poveștilor de succes",
+      "trustedBy": "Previzualizare înainte de export",
+      "joinSuccess": "Verifică textul și formatarea",
       "resumePdf": "CV.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Data Emiterii",
         "placeholder": "de ex. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "Recomandări de Certificări cu AI",
-      "recommend": "Recomandă Certificări (AI)",
-      "tooltip": "Generează recomandări de certificări cu AI adaptate profilului tău",
-      "generating": "Se analizează și se generează...",
-      "tailoredSubtitle": "Certificări recunoscute în domeniu adaptate pentru {{role}}",
-      "genericSubtitle": "Cele mai bune acreditări din industrie bazate pe abilitățile tale",
-      "promptTitle": "Consolidează-ți CV-ul cu Certificări Validate",
-      "promptDescRole": "Lasă AI-ul să analizeze experiența ta ca {{role}} și să recomande cele mai apreciate certificări.",
-      "promptDescGeneric": "Generează certificări standard din industrie potrivite domeniului tău pentru a crește scorul ATS.",
-      "generateNow": "Generează Recomandări AI Acum",
-      "refresh": "Actualizează Recomandările",
-      "getRecommendations": "Obține Recomandări",
-      "addAll": "Adaugă Toate Recomandatele",
-      "added": "Adăugat",
-      "addedBadge": "Adăugat",
-      "add": "Adaugă",
-      "mandatoryBadge": "Standard din Industrie",
-      "recommendedBadge": "Recomandat"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Găsește-ți jobul visurilor tale astăzi",
+        "sentence1": "Consultă locurile de muncă actuale",
         "sentence2": "Conectează-te cu angajatori de top",
         "sentence3": "Avancează-ți cariera",
         "sentence4": "Descoperă oportunități de la distanță",
@@ -1935,83 +1897,40 @@
       "resources": "Resurse",
       "resourcesDesc": "Consultanță și sfaturi pentru carieră",
       "stats": {
-        "jobs": "Peste 10.000 de locuri de muncă active",
-        "rating": "Evaluare 4.8/5"
+        "jobs": "Locuri de muncă actuale",
+        "rating": "Detalii verificate despre post"
       },
       "features": {
         "freeToApply": "Gratuit de aplicat",
-        "verifiedEmployers": "Angajatori verificați"
+        "verifiedEmployers": "Angajatori moderați"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Angajatori de top",
-      "title": "Alătură-te companiilor de top",
-      "description": "Descoperiți oportunități la companii de clasă mondială care angajează activ. De la startup-uri la Fortune 500, găsiți potrivirea perfectă.",
+      "badge": "Angajatori evidențiați",
+      "title": "Răsfoiește profilurile angajatorilor",
+      "description": "Răsfoiește profilurile de angajatori evidențiate cu anunțuri active. Deschide portalul de locuri de muncă pentru roluri și detalii despre candidatură.",
       "featured": "Recomandate",
       "viewAll": "Vezi toate companiile",
       "stats": {
-        "companies": "Companii partenere",
+        "companies": "Companii evidențiate",
         "jobs": "Locuri de muncă active",
         "hires": "Angajări de succes"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Cum funcționează",
-      "title": "Obține-ți jobul visurilor tale în",
-      "titleHighlight": "4 pași simpli",
-      "description": "Procesul nostru simplificat face căutarea unui loc de muncă fără efort. De la descoperire la angajare, vă ghidăm la fiecare pas pentru a vă asigura că găsiți oportunitatea perfectă.",
-      "featuresTitle": "De ce să alegi platforma noastră?",
-      "featuresDescription": "Oferim instrumente și funcționalități de ultimă generație pentru a face căutarea unui loc de muncă mai eficientă și mai productivă.",
-      "steps": {
-        "0": {
-          "title": "Căută și descoperă",
-          "description": "Răsfoiți mii de oportunități de angajare de la companii de top. Folosește filtrele noastre avansate pentru a găsi potrivirea perfectă pentru abilitățile și preferințele tale."
-        },
-        "1": {
-          "title": "Creare profil",
-          "description": "Construiește-ți profilul profesional cu ajutorul constructorului nostru de CV-uri. Arată-ți abilitățile, experiența și realizările pentru a te evidenția din mulțime."
-        },
-        "2": {
-          "title": "Aplică instantaneu",
-          "description": "Aplică la mai multe locuri de muncă cu un singur clic. Sistemul nostru inteligent de aplicații îți adaptează automat profilul la fiecare poziție."
-        },
-        "3": {
-          "title": "Fii angajat",
-          "description": "Conectează-te cu managerii de angajare, programează interviuri și obține jobul visurilor tale. Te susținem pe tot parcursul procesului."
-        }
       },
-      "features": {
-        "0": {
-          "title": "Potrivire bazată pe inteligență artificială",
-          "description": "Algoritmul nostru inteligent te potrivește cu oportunități relevante"
-        },
-        "1": {
-          "title": "Optimizare CV",
-          "description": "Optimizează-ți automat CV-ul pentru fiecare aplicație"
-        },
-        "2": {
-          "title": "Companii verificate",
-          "description": "Toți angajatorii sunt verificați pentru autenticitate și calitate"
-        }
-      },
-      "cta": {
-        "title": "Ești gata să începi călătoria ta?",
-        "description": "Alătură-te miilor de profesioniști care și-au găsit jobul visurilor prin intermediul platformei noastre. Următoarea ta oportunitate este la doar un clic distanță.",
-        "searchButton": "Începe căutarea de locuri de muncă",
-        "profileButton": "Creare profil"
-      }
+      "empty": "Nu există angajatori evidențiați momentan.",
+      "unavailable": "Angajatorii evidențiați sunt temporar indisponibili.",
+      "evidenceReviewed": "Dovezi verificate"
     },
     "LandingJobsFeatured": {
       "badge": "Locuri de muncă recomandate",
-      "title": "Descoperă următoarea ta",
-      "titleHighlight": "Oportunitate de vis",
+      "title": "Răsfoiește",
+      "titleHighlight": "Locuri de muncă evidențiate",
       "description": "Explorează oportunități selectate de la companii de top. Aceste poziții recomandate oferă o creștere excepțională în carieră, compensații competitive și medii de lucru uimitoare.",
-      "statsTitle": "Alătură-te miilor de profesioniști de succes",
-      "statsDescription": "Platforma noastră a ajutat nenumărați profesioniști să-și găsească jobul visurilor la companii de top din întreaga lume.",
+      "statsTitle": "Rezumat publicat al platformei",
+      "statsDescription": "Aceste valori sunt versionate și legate de dovezi verificate de administratorul platformei.",
       "stats": {
         "jobs": "Locuri de muncă recomandate",
         "success": "Rată de succes",
-        "companies": "Companii de top"
+        "companies": "Companii evidențiate"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Aplică acum"
         }
       },
-      "viewAll": "Vezi toate locurile de muncă"
+      "viewAll": "Vezi toate locurile de muncă",
+      "empty": "Nu există locuri de muncă evidențiate momentan.",
+      "evidenceReviewed": "Dovezi verificate"
     },
     "MainJobListings": {
       "jobSingular": "loc de muncă",

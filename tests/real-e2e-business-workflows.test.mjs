@@ -128,7 +128,7 @@ describe('Real End-to-End Business Workflows & Data Integrity', () => {
     const slug = `systems-engineering-guide-${Date.now()}`;
 
     // 1. Draft post
-    await repo.saveBlogPost(blogId, { title: 'Mastering High-Scale Systems', slug, content: 'Deep dive into dual databases.', published: false });
+    await repo.saveBlogPost(blogId, { title: 'Mastering High-Scale Systems', slug, content: 'Deep dive into high-scale relational systems.', published: false });
     let post = await repo.getBlogPostBySlug(slug);
     assert.equal(post.published, false);
 

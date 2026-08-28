@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { getResumes, getFavourites, getProfileOfUser, getStatesOfUser, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getSystemSettings, getUserCoverLetters, deleteCoverLetter } from "../../../firestore/dbOperations";
+import { getResumes, getFavourites, getProfileOfUser, getStatesOfUser, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getSystemSettings, getUserCoverLetters, deleteCoverLetter } from "../../../services/api/platform";
 import fire from '../../../conf/fire';
 import { createResumeDraft, deleteResumeDraft, publishResume, saveResumeDraft } from '../../../services/resumePersistence';
 import { normalizeResumeData } from '../../../utils/resumeData';
@@ -45,7 +45,7 @@ class DashboardHomepage extends Component {
       hasDocuments: false,
       documentsError: null,
       enableImportModule: false,
-      enableCoverLetterModule: true,
+      enableCoverLetterModule: false,
       pagination: {
         totalItems: 0,
         totalPages: 0,
@@ -259,14 +259,14 @@ class DashboardHomepage extends Component {
         : settings?.ai?.enableImportModule === true;
       const coverEnabled = settings?.modules?.enableCoverLetterModule !== undefined
         ? settings.modules.enableCoverLetterModule === true
-        : true;
+        : false;
       this.setState((prev) => ({
         enableImportModule: enabled,
         enableCoverLetterModule: coverEnabled,
         activeTab: !coverEnabled && prev.activeTab === 'cover-letters' ? 'all' : prev.activeTab,
       }));
     }).catch(() => {
-      this.setState({ enableImportModule: false });
+      this.setState({ enableImportModule: false, enableCoverLetterModule: false });
     });
 
     this.handleSystemSettingsUpdated = (e) => {
@@ -277,7 +277,7 @@ class DashboardHomepage extends Component {
           : false;
         const coverEnabled = m.enableCoverLetterModule !== undefined
           ? m.enableCoverLetterModule === true
-          : true;
+          : false;
         this.setState((prev) => ({
           enableImportModule: enabled,
           enableCoverLetterModule: coverEnabled,
@@ -291,7 +291,7 @@ class DashboardHomepage extends Component {
           : settings?.ai?.enableImportModule === true;
         const coverEnabled = settings?.modules?.enableCoverLetterModule !== undefined
           ? settings.modules.enableCoverLetterModule === true
-          : true;
+          : false;
         this.setState((prev) => ({
           enableImportModule: enabled,
           enableCoverLetterModule: coverEnabled,
@@ -572,14 +572,14 @@ class DashboardHomepage extends Component {
         // Transform skills to match CV template expectations (skillName -> name)
         skills: (document.skills || []).map((skill, index) => ({
           name: skill.skillName || skill.name || skill.skill || "",
-          rating: skill.rating || 50,
+          rating: typeof skill.rating === 'number' && Number.isFinite(skill.rating) ? skill.rating : null,
           date: skill.date || index + 1,
         })),
 
         // Transform languages to ensure proper field names
         languages: (document.languages || []).map((lang, index) => ({
           name: lang.name || lang.language || "",
-          level: lang.level || lang.proficiency || "Intermediate",
+          level: lang.level || lang.proficiency || "",
           date: lang.date || index + 1,
         })),
 
@@ -707,12 +707,12 @@ class DashboardHomepage extends Component {
         })),
         skills: (document.skills || []).map((skill, index) => ({
           name: skill.skillName || skill.name || skill.skill || "",
-          rating: skill.rating || 50,
+          rating: typeof skill.rating === 'number' && Number.isFinite(skill.rating) ? skill.rating : null,
           date: skill.date || index + 1,
         })),
         languages: (document.languages || []).map((lang, index) => ({
           name: lang.name || lang.language || "",
-          level: lang.level || lang.proficiency || "Intermediate",
+          level: lang.level || lang.proficiency || "",
           date: lang.date || index + 1,
         })),
         template: templateName,

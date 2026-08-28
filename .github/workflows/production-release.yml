@@ -1,0 +1,334 @@
+name: Production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full 40-character commit SHA from main
+        required: true
+        type: string
+      mode:
+        description: Deploy current main, or deliberately redeploy an older main commit
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - rollback
+      confirmation:
+        description: Type DEPLOY for deploy mode or ROLLBACK for rollback mode
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resumepilot-production
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    name: Gated production release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      RUN_MARIADB_INTEGRATION: "true"
+      MARIADB_TEST_ALLOW_RESET: "true"
+      EXPECTED_MARIADB_MAJOR_MINOR: "11.4"
+      MARIADB_CI_IMAGE: mariadb@sha256:4f1d8d202fcf7bcb3902f63af09f9c1a050c2922a89652f22abaec0d4f015e83 # 11.4.12
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    steps:
+      # Delivery code always comes from current main. A rollback checks old app
+      # source out separately, so old/compromised deployment scripts never run.
+      - name: Check out trusted delivery tooling from main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: main
+          path: delivery-tooling
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate requested release
+        id: release
+        working-directory: delivery-tooling
+        env:
+          REQUESTED_SHA: ${{ inputs.release_sha }}
+          RELEASE_MODE: ${{ inputs.mode }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+            echo "Run this workflow from the main branch only." >&2
+            exit 2
+          }
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "release_sha must be a full lowercase 40-character SHA." >&2
+            exit 2
+          }
+          git fetch --no-tags origin main
+          git cat-file -e "$REQUESTED_SHA^{commit}"
+          CANONICAL_SHA="$(git rev-parse "$REQUESTED_SHA^{commit}")"
+          [[ "$CANONICAL_SHA" == "$REQUESTED_SHA" ]] || exit 2
+          git merge-base --is-ancestor "$REQUESTED_SHA" origin/main || {
+            echo "The requested commit is not in main history." >&2
+            exit 2
+          }
+          MAIN_SHA="$(git rev-parse origin/main)"
+          case "$RELEASE_MODE:$CONFIRMATION" in
+            deploy:DEPLOY)
+              [[ "$REQUESTED_SHA" == "$MAIN_SHA" ]] || {
+                echo "Deploy mode only accepts the current main SHA ($MAIN_SHA)." >&2
+                exit 2
+              }
+              ;;
+            rollback:ROLLBACK)
+              ;;
+            *)
+              echo "Confirmation does not match the selected release mode." >&2
+              exit 2
+              ;;
+          esac
+          printf 'sha=%s\n' "$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
+          printf 'main_sha=%s\n' "$MAIN_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Start isolated MariaDB with ephemeral credentials
+        working-directory: delivery-tooling
+        run: scripts/start-ci-mariadb.sh
+
+      - name: Check out reviewed application source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+          path: source
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+          cache-dependency-path: |
+            source/package-lock.json
+            source/backend/package-lock.json
+
+      - name: Install locked dependencies without lifecycle scripts
+        working-directory: source
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm --prefix backend ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify release migrations, rollback, constraints, and duplicate preflight
+        if: inputs.mode == 'deploy'
+        working-directory: source
+        run: node scripts/verify-mariadb-migrations.mjs
+
+      - name: Initialize isolated release-test database schema
+        working-directory: source
+        env:
+          NODE_ENV: test
+        run: |
+          node - <<'NODE'
+          const database = require('./backend/database/mysql');
+          database.initializeSchema()
+            .then((result) => {
+              if (!result.success) throw new Error(result.error || 'schema initialization failed');
+              return database.closePool();
+            })
+            .catch((error) => { console.error(error.message); process.exit(1); });
+          NODE
+
+      - name: Re-run application release quality gates
+        if: inputs.mode == 'deploy'
+        working-directory: source
+        env:
+          NODE_ENV: test
+        run: |
+          npm run lint
+          node --test \
+            tests/security-static.test.mjs \
+            tests/secret-scanner-efficacy.test.mjs \
+            tests/xss.test.mjs \
+            tests/mfa-static.test.mjs
+          npm --prefix backend test
+          npm run test:product
+          npm run audit:production
+
+      - name: Re-test historical rollback target
+        if: inputs.mode == 'rollback'
+        working-directory: source
+        env:
+          NODE_ENV: test
+        run: |
+          node --test \
+            tests/security-static.test.mjs \
+            tests/secret-scanner-efficacy.test.mjs \
+            tests/xss.test.mjs \
+            tests/mfa-static.test.mjs
+          npm --prefix backend test
+          npm run test:product
+
+      - name: Re-run current delivery control tests
+        run: |
+          node --test \
+            delivery-tooling/tests/production-delivery-security.test.mjs \
+            delivery-tooling/tests/production-delivery-integration.test.mjs
+
+      - name: Validate production frontend configuration
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          VITE_WEBSITE_URL: ${{ vars.VITE_WEBSITE_URL }}
+          VITE_FIREBASE_KEY: ${{ vars.VITE_FIREBASE_KEY }}
+          VITE_FIREBASE_DOMAIN: ${{ vars.VITE_FIREBASE_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_SENDER_ID: ${{ vars.VITE_FIREBASE_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+          VITE_ENTERPRISE_TENANCY_ENABLED: ${{ vars.VITE_ENTERPRISE_TENANCY_ENABLED }}
+        run: |
+          set -Eeuo pipefail
+          required=(
+            PRODUCTION_URL VITE_WEBSITE_URL VITE_FIREBASE_KEY
+            VITE_FIREBASE_DOMAIN VITE_FIREBASE_PROJECT_ID
+            VITE_FIREBASE_SENDER_ID VITE_FIREBASE_APP_ID
+            VITE_ENTERPRISE_TENANCY_ENABLED
+          )
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || { echo "Missing production variable: $name" >&2; exit 2; }
+          done
+          [[ "$PRODUCTION_URL" =~ ^https://[A-Za-z0-9.-]+$ ]] || {
+            echo "PRODUCTION_URL must be a plain HTTPS origin." >&2
+            exit 2
+          }
+          [[ "$VITE_WEBSITE_URL" == "$PRODUCTION_URL" ]] || {
+            echo "VITE_WEBSITE_URL must equal PRODUCTION_URL." >&2
+            exit 2
+          }
+          [[ "$VITE_ENTERPRISE_TENANCY_ENABLED" == "true" || "$VITE_ENTERPRISE_TENANCY_ENABLED" == "false" ]] || {
+            echo "VITE_ENTERPRISE_TENANCY_ENABLED must be true or false." >&2
+            exit 2
+          }
+
+      - name: Build production frontend
+        working-directory: source
+        env:
+          VITE_BUILD_SHA: ${{ steps.release.outputs.sha }}
+          VITE_WEBSITE_URL: ${{ vars.VITE_WEBSITE_URL }}
+          VITE_FIREBASE_KEY: ${{ vars.VITE_FIREBASE_KEY }}
+          VITE_FIREBASE_DOMAIN: ${{ vars.VITE_FIREBASE_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_SENDER_ID: ${{ vars.VITE_FIREBASE_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+          VITE_ENTERPRISE_TENANCY_ENABLED: ${{ vars.VITE_ENTERPRISE_TENANCY_ENABLED }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_APP_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_APP_GOOGLE_MAPS_API_KEY }}
+          VITE_MEASUREMENT_ID: ${{ vars.VITE_MEASUREMENT_ID }}
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.VITE_STRIPE_PUBLISHABLE_KEY }}
+          VITE_PAYPAL_CLIENT_ID: ${{ vars.VITE_PAYPAL_CLIENT_ID }}
+          VITE_RAZORPAY_KEY_ID: ${{ vars.VITE_RAZORPAY_KEY_ID }}
+        run: npm run build
+
+      - name: Create allow-listed release bundle
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_SOURCE_ROOT: ${{ github.workspace }}/source
+        run: |
+          mkdir -p .release
+          delivery-tooling/scripts/create-production-release.sh \
+            "$RELEASE_SHA" "$GITHUB_WORKSPACE/.release/resumepilot-${RELEASE_SHA}.tar.gz" \
+            | tee .release/build-receipt.txt
+
+      - name: Configure pinned SSH identity
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+          SIGNING_PRIVATE_KEY: ${{ secrets.PROD_RELEASE_SIGNING_PRIVATE_KEY }}
+          EXPECTED_KEY_FINGERPRINT: ${{ vars.PROD_SSH_KEY_FINGERPRINT }}
+          EXPECTED_SIGNING_PUBLIC_KEY_SHA256: ${{ vars.PROD_RELEASE_SIGNING_PUBLIC_KEY_SHA256 }}
+          PROD_SSH_HOST: ${{ vars.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ vars.PROD_SSH_PORT }}
+        run: |
+          set -Eeuo pipefail
+          for name in SSH_PRIVATE_KEY SSH_KNOWN_HOSTS SIGNING_PRIVATE_KEY EXPECTED_KEY_FINGERPRINT EXPECTED_SIGNING_PUBLIC_KEY_SHA256 PROD_SSH_HOST PROD_SSH_PORT; do
+            [[ -n "${!name:-}" ]] || { echo "Missing production SSH setting: $name" >&2; exit 2; }
+          done
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/resumepilot_deploy"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SIGNING_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/resumepilot_release_signing.pem"
+          chmod 600 "$HOME/.ssh/resumepilot_deploy" "$HOME/.ssh/known_hosts" "$HOME/.ssh/resumepilot_release_signing.pem"
+          ACTUAL_FINGERPRINT="$(ssh-keygen -lf "$HOME/.ssh/resumepilot_deploy" | awk '{print $2}')"
+          [[ "$ACTUAL_FINGERPRINT" == "$EXPECTED_KEY_FINGERPRINT" ]] || {
+            echo "Configured deployment key has an unexpected fingerprint." >&2
+            exit 2
+          }
+          ssh-keygen -F "[$PROD_SSH_HOST]:$PROD_SSH_PORT" -f "$HOME/.ssh/known_hosts" >/dev/null || {
+            echo "known_hosts does not pin the configured production endpoint." >&2
+            exit 2
+          }
+
+      - name: Stream release through restricted gateway
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_SOURCE_ROOT: ${{ github.workspace }}/source
+          PROD_SSH_HOST: ${{ vars.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ vars.PROD_SSH_PORT }}
+          PROD_SSH_USER: ${{ vars.PROD_SSH_USER }}
+          PROD_SSH_PRIVATE_KEY_FILE: /home/runner/.ssh/resumepilot_deploy
+          PROD_SSH_KNOWN_HOSTS_FILE: /home/runner/.ssh/known_hosts
+          PROD_SSH_KEY_FINGERPRINT: ${{ vars.PROD_SSH_KEY_FINGERPRINT }}
+          PROD_RELEASE_SIGNING_PRIVATE_KEY_FILE: /home/runner/.ssh/resumepilot_release_signing.pem
+          PROD_RELEASE_SIGNING_PUBLIC_KEY_SHA256: ${{ vars.PROD_RELEASE_SIGNING_PUBLIC_KEY_SHA256 }}
+        run: |
+          delivery-tooling/scripts/production-release-client.sh \
+            deploy "$RELEASE_SHA" ".release/resumepilot-${RELEASE_SHA}.tar.gz" \
+            | tee .release/deployment-receipt.txt
+
+      - name: Verify from an independent runner
+        working-directory: source
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: node ../delivery-tooling/scripts/verify-production-release.mjs "${{ steps.release.outputs.sha }}" "$PRODUCTION_URL"
+
+      - name: Record deployment summary
+        if: success()
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_MODE: ${{ inputs.mode }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          BUNDLE_SHA="$(sha256sum ".release/resumepilot-${RELEASE_SHA}.tar.gz" | awk '{print $1}')"
+          {
+            echo "## Production release complete"
+            echo
+            echo "- Mode: \`$RELEASE_MODE\`"
+            echo "- Commit: \`$RELEASE_SHA\`"
+            echo "- Bundle SHA-256: \`$BUNDLE_SHA\`"
+            echo "- URL: $PRODUCTION_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload non-secret release receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-receipts-${{ steps.release.outputs.sha }}
+          path: |
+            .release/build-receipt.txt
+            .release/deployment-receipt.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Remove ephemeral SSH material
+        if: always()
+        run: rm -f "$HOME/.ssh/resumepilot_deploy" "$HOME/.ssh/known_hosts" "$HOME/.ssh/resumepilot_release_signing.pem"
+
+      - name: Stop isolated MariaDB
+        if: always()
+        run: docker rm -f "$CI_MARIADB_CONTAINER" >/dev/null 2>&1 || true

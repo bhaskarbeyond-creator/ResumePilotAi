@@ -11,16 +11,19 @@ const SystemHealthSettings = () => {
     const [runningDiagnostics, setRunningDiagnostics] = useState(false);
     const [diagnosticsResult, setDiagnosticsResult] = useState(null);
     const [statusMessage, setStatusMessage] = useState(null);
-    const [revision, setRevision] = useState(0);
+    const [revision, setRevision] = useState(null);
+    const [authoritativeLoaded, setAuthoritativeLoaded] = useState(false);
 
     const loadSummary = async ({ diagnostics = false } = {}) => {
         if (diagnostics) setRunningDiagnostics(true); else setLoading(true);
+        setAuthoritativeLoaded(false);
         try {
             const { response, data: result } = await fetchAdminWithReauth('/api/admin/health-summary', { cache: 'no-store' });
             if (!response.ok || !result.success) throw new Error(result.error?.message || result.error || 'Health summary unavailable.');
             setRevision(Number(result.revision) || 0);
             setHealthConfig(current => ({ ...current, ...(result.settings || {}) }));
             setDiagnosticsResult(result);
+            setAuthoritativeLoaded(true);
         } catch (error) {
             setStatusMessage({ type: 'error', text: error.message });
             if (diagnostics) setDiagnosticsResult(null);
@@ -34,6 +37,10 @@ const SystemHealthSettings = () => {
 
     const handleSave = async event => {
         event.preventDefault();
+        if (!authoritativeLoaded || !Number.isInteger(revision)) {
+            setStatusMessage({ type: 'error', text: 'Reload verified MariaDB health configuration before saving.' });
+            return;
+        }
         setSaving(true);
         setStatusMessage(null);
         try {
@@ -84,7 +91,7 @@ const SystemHealthSettings = () => {
                 {diagnosticsResult?.checkedAt && <p className="mt-3 text-xs text-slate-500">Checked {new Date(diagnosticsResult.checkedAt).toLocaleString()}</p>}
             </section>
 
-            <div className="flex justify-end"><button type="submit" disabled={saving} className="flex items-center gap-2 rounded-md bg-slate-800 px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving && <FaSpinner className="animate-spin" aria-hidden="true" />}Save maintenance settings</button></div>
+            <div className="flex justify-end"><button type="submit" disabled={saving || !authoritativeLoaded} className="flex items-center gap-2 rounded-md bg-slate-800 px-5 py-2 text-sm font-medium text-white disabled:opacity-50">{saving && <FaSpinner className="animate-spin" aria-hidden="true" />}Save maintenance settings</button></div>
         </form>
     );
 };

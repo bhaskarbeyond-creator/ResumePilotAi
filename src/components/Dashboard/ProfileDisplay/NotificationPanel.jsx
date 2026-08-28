@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { FiX, FiBell, FiCheck, FiClock, FiUser, FiBriefcase, FiMail } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { markNotificationAsRead, subscribeUnreadNotifications } from '../../../firestore/dbOperations';
+import { markNotificationAsRead, subscribeUnreadNotifications } from '../../../services/api/platform';
 import { AuthContext } from '../../../main';
 import { parseSafeDate } from '../../../utils/subscriptionUtils.js';
 

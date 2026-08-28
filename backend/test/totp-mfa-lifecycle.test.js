@@ -72,61 +72,45 @@ setTokenVerifierForTests(async (token) => {
   throw new Error('INVALID_TOKEN');
 });
 
-function buildMockDb() {
-  const auditLogs = [];
-  const users = new Map([
-    ['users/target-user', { uid: 'target-user', email: 'target@example.com', status: 'ACTIVE', role: 'USER' }],
-  ]);
-  const _tenants = new Map([
-    ['enterprise_tenants/acme', { id: 'acme', displayName: 'Acme Corp', lifecycleState: 'ACTIVE' }],
-  ]);
-
-  return {
-    auditLogs,
-    collection(name) {
-      if (name === 'security_audit_logs' || name === 'admin_audit_logs') {
-        return {
-          doc: () => ({
-            set: async (entry) => { auditLogs.push(entry); },
-          }),
-        };
-      }
-      if (name === 'users') {
-        return {
-          doc: (id) => ({
-            get: async () => ({ exists: users.has(`users/${id}`), data: () => users.get(`users/${id}`) }),
-            set: async (val, opt) => {
-              const prev = users.get(`users/${id}`) || {};
-              users.set(`users/${id}`, opt?.merge ? { ...prev, ...val } : val);
-            },
-            delete: async () => { users.delete(`users/${id}`); },
-          }),
-        };
-      }
-      return {
-        doc: (_id) => ({
-          get: async () => ({ exists: false, data: () => null }),
-          set: async () => {},
-        }),
-      };
-    },
-    runTransaction: async (cb) => cb({
-      get: async (ref) => ref.get(),
-      set: (ref, val, opt) => ref.set(val, opt),
-      delete: (ref) => ref.delete(),
-    }),
-  };
+class MaintenanceMariaDbPool {
+  constructor() { this.revision = 0; this.setting = null; this.auditLogs = []; }
+  async query(sql) {
+    if (/INSERT INTO admin_audit_logs/i.test(String(sql))) return [{ affectedRows: 1 }, []];
+    throw new Error(`Unexpected maintenance SQL: ${String(sql).replace(/\s+/g, ' ')}`);
+  }
+  async getConnection() {
+    const pool = this;
+    return {
+      beginTransaction: async () => {}, commit: async () => {}, rollback: async () => {}, release() {},
+      async query(sql, params = []) {
+        const normalized = String(sql).replace(/\s+/g, ' ').trim();
+        if (/^SELECT revision FROM system_settings WHERE category = 'maintenance' FOR UPDATE$/i.test(normalized)) {
+          return [[pool.revision ? { revision: pool.revision } : null].filter(Boolean), []];
+        }
+        if (/^INSERT INTO system_settings /i.test(normalized)) {
+          pool.setting = JSON.parse(params[0]); pool.revision = Number(params[1]);
+          return [{ affectedRows: 1 }, []];
+        }
+        if (/^INSERT INTO admin_audit_logs /i.test(normalized)) {
+          pool.auditLogs.push({ action: 'PLATFORM_MAINTENANCE_UPDATED', metadata: JSON.parse(params[4]) });
+          return [{ affectedRows: 1 }, []];
+        }
+        throw new Error(`Unexpected maintenance transaction SQL: ${normalized}`);
+      },
+    };
+  }
+  async end() {}
 }
 
+const maintenancePool = new MaintenanceMariaDbPool();
+require('../database/mysql').setPoolForTests(maintenancePool);
 const app = require('../index');
-const mockDb = buildMockDb();
-app.set('db', mockDb);
 
 test('P0 TOTP MFA: Authenticated normal user CANNOT access Super Admin endpoints (AUTHENTICATED != MFA AUTHENTICATED)', async () => {
   const res = await request(app)
     .post('/api/platform/maintenance')
     .set('Authorization', 'Bearer normal-user')
-    .send({ enabled: true, message: 'Maintenance' });
+    .send({ enabled: true, message: 'Maintenance', expectedRevision: 0 });
 
   assert.equal(res.status, 403);
   assert.equal(res.body.error?.code, 'FORBIDDEN');
@@ -136,7 +120,7 @@ test('P0 TOTP MFA: Super Admin WITHOUT second factor is REJECTED with SUPER_ADMI
   const res = await request(app)
     .post('/api/platform/maintenance')
     .set('Authorization', 'Bearer superadmin-no-mfa')
-    .send({ enabled: true, message: 'Maintenance' });
+    .send({ enabled: true, message: 'Maintenance', expectedRevision: 0 });
 
   assert.equal(res.status, 403);
   assert.equal(res.body.error?.code, 'SUPER_ADMIN_MFA_REQUIRED');
@@ -147,7 +131,7 @@ test('P0 TOTP MFA: Super Admin with MFA but STALE auth_time is REJECTED with REC
   const res = await request(app)
     .post('/api/platform/maintenance')
     .set('Authorization', 'Bearer superadmin-stale-mfa')
-    .send({ enabled: true, message: 'Maintenance' });
+    .send({ enabled: true, message: 'Maintenance', expectedRevision: 0 });
 
   assert.equal(res.status, 403);
   assert.equal(res.body.error?.code, 'RECENT_AUTH_REQUIRED');
@@ -157,10 +141,10 @@ test('P0 TOTP MFA: Super Admin WITH valid TOTP MFA and recent auth SUCCEEDS and 
   const res = await request(app)
     .post('/api/platform/maintenance')
     .set('Authorization', 'Bearer superadmin-mfa')
-    .send({ enabled: true, message: 'Platform under maintenance' });
+    .send({ enabled: true, message: 'Platform under maintenance', expectedRevision: 0 });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
-  assert.equal(mockDb.auditLogs.length > 0, true);
-  assert.equal(mockDb.auditLogs.some(e => e.action === 'PLATFORM_MAINTENANCE_UPDATED'), true);
+  assert.equal(maintenancePool.auditLogs.length > 0, true);
+  assert.equal(maintenancePool.auditLogs.some(e => e.action === 'PLATFORM_MAINTENANCE_UPDATED'), true);
 });

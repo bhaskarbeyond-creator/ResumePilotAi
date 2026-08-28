@@ -3,15 +3,16 @@ import { FiStar, FiFileText, FiZap, FiTarget, FiTrendingUp, FiAward, FiUsers, Fi
 import { BiFile, BiPalette, BiShield } from 'react-icons/bi';
 import { useLottie } from "lottie-react";
 import { withTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import LoaderAnimation from '../../assets/animations/lottie-loader.json';
-import { getPages, getWebsiteData, getSocialLinks } from '../../firestore/dbOperations';
+import { getPages, getWebsiteData, getSocialLinks } from '../../services/api/platform';
 import HomepageFooter from '../../components/Dashboard2/elements/HomepageFooter';  
 import HomepageNavbar from '../../components/Dashboard2/elements/HomepageNavbar';
 import { AuthContext } from '../../main';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 
-const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
+const Features = ({ _t }) => {
   // Get user from AuthContext
   const user = useContext(AuthContext);
   const [state, setState] = useState({
@@ -97,9 +98,9 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
     {
       icon: FiFileText,
       title: "50+ Professional Templates",
-      description: "Choose from our extensive collection of industry-specific, ATS-friendly resume templates designed by career experts and recruiters.",
+      description: "Choose from registered resume layouts with configurable sections, typography, and ATS-conscious structure.",
       category: "Templates",
-      highlight: "Most Popular",
+      highlight: "Layout Library",
       stats: "50+ designs"
     },
     {
@@ -108,20 +109,20 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
       description: "Advanced artificial intelligence analyzes job descriptions and suggests optimized content, keywords, and phrasing to maximize your impact.",
       category: "AI Technology",
       highlight: "Smart Suggestions",
-      stats: "95% accuracy"
+      stats: "Writing suggestions"
     },
     {
       icon: FiTarget,
       title: "ATS-Optimization System",
-      description: "Built-in Applicant Tracking System compatibility ensures your resume passes automated screening and reaches human recruiters.",
+      description: "Optional checks review common resume structure, wording, and job-description keywords without promising an employer outcome.",
       category: "Optimization",
-      highlight: "ATS-Friendly",
-      stats: "98% pass rate"
+      highlight: "ATS checks",
+      stats: "Compatibility review"
     },
     {
       icon: FiEdit3,
       title: "Real-time Visual Editor",
-      description: "Intuitive drag-and-drop interface with live preview lets you see changes instantly as you build your perfect resume.",
+      description: "Guided editing controls and a live preview let you review changes while building your resume.",
       category: "Editor",
       highlight: "Live Preview",
       stats: "Instant updates"
@@ -148,7 +149,7 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
     {
       icon: BiPalette,
       title: "Advanced Customization",
-      description: "Fine-tune colors, fonts, spacing, and layouts with pixel-perfect precision",
+      description: "Adjust available colors, fonts, spacing, and layouts in the editor",
       category: "Design"
     },
     {
@@ -160,7 +161,7 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
     {
       icon: FiGlobe,
       title: "Multi-Language Support",
-      description: "Create resumes in 15+ languages with proper formatting and localization",
+      description: "Use the interface in the supported languages listed by the application",
       category: "Localization"
     },
     {
@@ -190,7 +191,7 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
     {
       icon: FiCloud,
       title: "Cloud Synchronization",
-      description: "Auto-save and sync across all devices with real-time backup protection",
+      description: "Save account-owned drafts through the server-backed resume API",
       category: "Storage"
     }
   ];
@@ -204,24 +205,24 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
       color: "from-blue-500 to-indigo-600"
     },
     { 
-      number: "250K+", 
-      label: "Successful Resumes", 
+      number: "AI", 
+      label: "Writing Assistance", 
       icon: FiUsers,
-      description: "Professionals hired",
+      description: "Optional content suggestions",
       color: "from-emerald-500 to-teal-600"
     },
     { 
-      number: "98%", 
-      label: "ATS Pass Rate", 
+      number: "ATS", 
+      label: "Compatibility Checks", 
       icon: FiTarget,
-      description: "Resume screening success",
+      description: "Structure and keyword review",
       color: "from-purple-500 to-violet-600"
     },
     { 
-      number: "24/7", 
-      label: "Expert Support", 
+      number: "GUIDED", 
+      label: "Editing Workflow", 
       icon: FiAward,
-      description: "Always here to help",
+      description: "Step-by-step resume sections",
       color: "from-orange-500 to-red-500"
     }
   ];
@@ -293,7 +294,7 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
             </h1>
             
             <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed mb-8">
-              Everything you need to create, customize, and share professional resumes that get you hired.
+              Tools to create, customize, preview, and export a professional resume.
             </p>
             
             {/* Clean CTA buttons matching Dashboard2 style */}
@@ -352,7 +353,7 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
             </h2>
             
             <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
-              Professional-grade tools designed by career experts to help you create resumes that get noticed by employers.
+              Resume-editing tools with guided sections, configurable layouts, previews, and export options.
             </p>
           </div>
 
@@ -522,45 +523,45 @@ const Features = ({ _t, goToResumeSelectionStep, goToCoverSelection }) => {
               {/* Clean CTA heading */}
               <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
                 <span className="bg-gradient-to-r from-[#4a6cf7] to-[#6366f1] bg-clip-text text-transparent">
-                  Start Building Your
+                  Start Creating Your
                 </span>
                 <span className="block text-gray-900">
-                  Dream Resume Today
+                  Resume Today
                 </span>
               </h2>
               
               {/* Simple supporting text */}
               <p className="text-gray-600 text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-                Join thousands of professionals who've transformed their careers with our AI-powered resume builder. Create, customize, and land your dream job.
+                Create, customize, preview, and export a resume. Review all content and optional AI suggestions before using them.
               </p>
               
               {/* CTA buttons - matching HomepageHero pattern */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
-                <button
-                  onClick={() => goToResumeSelectionStep && goToResumeSelectionStep()}
-                  className="group px-8 py-4 bg-[#4a6cf7] hover:bg-[#3b5af0] text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer">
+                <Link
+                  to="/build-resume/heading"
+                  className="group px-8 py-4 bg-[#4a6cf7] hover:bg-[#3b5af0] text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
                   <span className="flex items-center gap-2">
-                    Start Building Now
+                    Open Resume Builder
                     <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </span>
-                </button>
+                </Link>
                 
-                <button
-                  onClick={() => goToCoverSelection && goToCoverSelection()}
-                  className="group px-8 py-4 bg-white text-gray-900 font-semibold text-lg rounded-xl border-2 border-gray-200 hover:border-[#4a6cf7] hover:bg-[#4a6cf7]/5 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <Link
+                  to="/coverletter"
+                  className="group px-8 py-4 bg-white text-gray-900 font-semibold text-lg rounded-xl border-2 border-gray-200 hover:border-[#4a6cf7] hover:bg-[#4a6cf7]/5 shadow-md hover:shadow-lg transition-all duration-300">
                   <span className="flex items-center gap-2">
                     <FiFileText className="w-5 h-5" />
-                    Create Cover Letter
+                    Open Cover Letter Builder
                   </span>
-                </button>
+                </Link>
               </div>
               
               {/* Simple trust indicators */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                  { icon: FiUsers, label: "100,000+ Users", color: "text-emerald-600 bg-emerald-50" },
-                  { icon: FiShield, label: "Enterprise Security", color: "text-[#4a6cf7] bg-[#4a6cf7]/10" },
-                  { icon: FiAward, label: "Industry Leading", color: "text-purple-600 bg-purple-50" }
+                  { icon: FiUsers, label: "51 Registered Layouts", color: "text-emerald-600 bg-emerald-50" },
+                  { icon: FiShield, label: "Preview Before Export", color: "text-[#4a6cf7] bg-[#4a6cf7]/10" },
+                  { icon: FiAward, label: "Account-Based Drafts", color: "text-purple-600 bg-purple-50" }
                 ].map((item, index) => (
                   <div key={index} className={`group flex flex-col items-center p-4 rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-105 ${item.color}`}>
                     <item.icon className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform duration-300" />

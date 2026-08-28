@@ -1,106 +1,80 @@
 'use strict';
 
-/**
- * Database authority tests — MySQL/MariaDB authoritative architecture.
- *
- * ARCHITECTURE UNDER TEST:
- *  - MySQL is the ONLY synchronous store; Firestore is never a read/write
- *    fallback on the production path.
- *  - Automatic failover to Firestore is OFF by default (DB_AUTO_FAILOVER and
- *    ALLOW_FIRESTORE_FAILOVER both default to false). A MySQL outage degrades
- *    writes with controlled errors instead of silently switching the source
- *    of truth.
- *  - When an operator explicitly enables ALLOW_FIRESTORE_FAILOVER=true the
- *    standby path may be used; the recovery/conflict semantics below still
- *    apply to that opt-in configuration.
- */
-
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const authority = require('../database/authority');
 
-test('authority starts in NORMAL with mysql as default primary', () => {
-    authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: true, firestoreHealthy: true });
-    const status = authority.getStatus();
-    assert.equal(status.configuredPrimary, 'mysql');
-    assert.equal(status.configuredSecondary, 'firestore');
-    assert.equal(status.operationalWriteEngine, 'mysql');
-    assert.equal(status.canAcceptWrites, true);
-    // Synchronous reads are MySQL-only: Firestore is excluded from the read
-    // order unless an operator explicitly enables standby failover.
-    assert.deepEqual(status.readOrder, ['mysql']);
+const reset = () => authority.__resetForTests({ mysqlHealthy: true });
+
+test('authority starts NORMAL with MariaDB as the only application-data owner', () => {
+    reset();
+    const state = authority.getStatus();
+    assert.equal(state.mode, authority.MODES.NORMAL);
+    assert.equal(state.configuredPrimary, 'mysql');
+    assert.equal(state.configuredSecondary, null);
+    assert.equal(state.operationalWriteEngine, 'mysql');
+    assert.deepEqual(state.readOrder, ['mysql']);
+    assert.equal(state.autoFailover, false);
+    assert.equal(state.ownershipMutable, false);
 });
 
-test('consecutive MariaDB failures degrade writes — NO silent failover to Firestore', () => {
-    authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: true, firestoreHealthy: true });
-    authority.recordFailure('mysql', 'write', new Error('ECONNREFUSED'));
-    authority.recordFailure('mysql', 'write', new Error('ECONNREFUSED'));
-    const status = authority.getStatus();
-    // The authoritative store stays MySQL; writes are rejected, not rerouted.
-    assert.equal(status.operationalWriteEngine, 'mysql');
-    assert.equal(status.canAcceptWrites, false);
-    assert.equal(status.metrics.failovers, 0, 'no automatic failover without operator approval');
-    assert.equal(status.mode, 'MARIADB_DEGRADED');
+test('consecutive MariaDB failures reject writes without silent fallback', () => {
+    reset();
+    authority.recordFailure('mysql', 'write', new Error('connection unavailable'));
+    assert.equal(authority.getStatus().mode, authority.MODES.MARIADB_DEGRADED);
+    authority.recordFailure('mysql', 'write', new Error('connection unavailable'));
+    const state = authority.getStatus();
+    assert.equal(state.mode, authority.MODES.MARIADB_UNAVAILABLE);
+    assert.equal(state.canAcceptWrites, false);
+    assert.equal(state.operationalWriteEngine, 'mysql');
+    assert.equal(state.configuredSecondary, null);
+    assert.equal(state.metrics.writeFailures, 2);
 });
 
-test('Firestore-only outage keeps MariaDB as write authority', () => {
-    authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: true, firestoreHealthy: true });
-    authority.recordFailure('firestore', 'read', new Error('UNAVAILABLE'));
-    authority.recordFailure('firestore', 'read', new Error('UNAVAILABLE'));
-    const status = authority.getStatus();
-    assert.equal(status.operationalWriteEngine, 'mysql');
-    assert.equal(status.canAcceptWrites, true);
-    assert.equal(status.mode, 'FIRESTORE_DEGRADED');
+test('a report about an unsupported engine cannot alter MariaDB authority', () => {
+    reset();
+    authority.recordFailure('unsupported-secondary', 'write', new Error('down'));
+    const state = authority.getStatus();
+    assert.equal(state.mode, authority.MODES.NORMAL);
+    assert.equal(state.canAcceptWrites, true);
+    assert.equal(state.operationalWriteEngine, 'mysql');
+    assert.equal(state.metrics.writeFailures, 0);
 });
 
-test('both engines down reject writes (no fake success)', () => {
-    authority.__resetForTests({ configuredPrimary: 'mysql' });
-    authority.recordFailure('mysql', 'write', new Error('down'));
-    authority.recordFailure('mysql', 'write', new Error('down'));
-    authority.recordFailure('firestore', 'write', new Error('down'));
-    authority.recordFailure('firestore', 'write', new Error('down'));
-    const status = authority.getStatus();
-    assert.equal(status.mode, 'BOTH_UNAVAILABLE');
-    assert.equal(status.canAcceptWrites, false);
+test('authoritative outage never produces fake acceptance', () => {
+    reset();
+    authority.recordFailure('mysql', 'write', new Error('connection unavailable'));
+    authority.recordFailure('mysql', 'write', new Error('connection unavailable'));
+    assert.equal(authority.canAcceptWrites(), false);
+    authority.noteRejectedWrite();
+    const state = authority.getStatus();
+    assert.equal(state.metrics.rejectedWrites, 1);
+    assert.equal(state.lastFailoverAt, null);
 });
 
-test('recovery restores primary from a degraded state without Firestore', () => {
-    authority.__resetForTests({ configuredPrimary: 'mysql', mysqlHealthy: true, firestoreHealthy: true });
-    authority.recordFailure('mysql', 'write', new Error('down'));
-    authority.recordFailure('mysql', 'write', new Error('down'));
+test('recovery threshold restores the same owner and records the transition', () => {
+    reset();
+    authority.recordFailure('mysql', 'probe', new Error('connection unavailable'));
+    authority.recordFailure('mysql', 'probe', new Error('connection unavailable'));
+    authority.recordSuccess('mysql', 'probe');
+    assert.equal(authority.getStatus().mode, authority.MODES.MARIADB_UNAVAILABLE, 'one success is insufficient');
+    authority.recordSuccess('mysql', 'probe');
+    assert.equal(authority.getStatus().mode, authority.MODES.RECOVERED);
+    assert.ok(authority.getStatus().lastRecoveryAt);
+    authority.completeRecovery();
+    assert.equal(authority.getStatus().mode, authority.MODES.NORMAL);
     assert.equal(authority.getWriteEngine(), 'mysql');
-    authority.recordSuccess('mysql', 'probe');
-    authority.recordSuccess('mysql', 'probe');
-    const recovered = authority.completeRecovery({ conflicts: 0 });
-    assert.equal(recovered.operationalWriteEngine, 'mysql');
-    assert.equal(recovered.mode, 'RECOVERED');
-    assert.equal(recovered.metrics.recoveries >= 1, true);
 });
 
-test('conflicts during an operator-approved standby recovery do not blindly overwrite', () => {
-    // Standby-failover semantics apply only when an operator explicitly
-    // enables ALLOW_FIRESTORE_FAILOVER (opt-in; off by default).
-    const previous = process.env.ALLOW_FIRESTORE_FAILOVER;
-    process.env.ALLOW_FIRESTORE_FAILOVER = 'true';
-    try {
-        // Re-read the module flag (module reads env at load; emulate by resetting
-        // the module's memoized decision via a fresh require cache entry).
-        delete require.cache[require.resolve('../database/authority')];
-        const authorityOptedIn = require('../database/authority');
-        authorityOptedIn.__resetForTests({ configuredPrimary: 'mysql', operationalWriteEngine: 'firestore', mode: 'RECONCILING', mysqlHealthy: true, firestoreHealthy: true });
-        const result = authorityOptedIn.completeRecovery({ conflicts: 2 });
-        assert.equal(result.mode, 'CONFLICT_DETECTED');
-        assert.equal(result.operationalWriteEngine, 'firestore');
-    } finally {
-        process.env.ALLOW_FIRESTORE_FAILOVER = previous || '';
-        delete require.cache[require.resolve('../database/authority')];
-        require('../database/authority');
-    }
-});
-
-test.after(async () => {
-    try {
-        const { getPool } = require('../database/mysql');
-        await getPool().end();
-    } catch (_) {}
+test('runtime switching and secondary fallback are explicitly rejected', () => {
+    reset();
+    assert.throws(
+        () => authority.assertManualSwitchAllowed(),
+        error => error.code === 'DATABASE_OWNER_IMMUTABLE' && error.status === 409
+    );
+    assert.throws(
+        () => authority.noteSecondaryFallback(),
+        error => error.code === 'DATABASE_FALLBACK_FORBIDDEN' && error.status === 500
+    );
+    assert.equal(authority.getStatus().operationalWriteEngine, 'mysql');
 });

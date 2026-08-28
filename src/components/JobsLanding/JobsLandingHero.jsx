@@ -6,10 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../main';
 import { AnimatePresence } from 'framer-motion';
 import CustomLocationAutocomplete from '../JobsListings/CustomLocationAutocomplete';
-import { getFrontendStats } from '../../firestore/dbOperations';
+import { getFrontendStats } from '../../services/api/platform';
 
 // Job-focused sentences for the typing effect
-const defaultSentences = ['Find your dream job today', 'Connect with top employers', 'Advance your career journey', 'Discover remote opportunities', 'Join leading companies'];
+const defaultSentences = ['Search current job listings', 'Review participating employers', 'Filter roles by location', 'Discover remote opportunities', 'Apply to published openings'];
 
 const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
     const contextUser = useContext(AuthContext);
@@ -150,7 +150,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
 
                     {/* Description */}
                     <p className="text-sm sm:text-base md:text-md lg:text-md text-gray-600 w-full max-w-3xl mx-auto mb-6 sm:mb-8 md:mb-10 leading-relaxed font-light px-2 sm:px-4 md:px-0">
-                        {t('JobsUpdate.JobsLandingHero.description', "Discover thousands of job opportunities from top companies. Whether you're looking for remote work, career advancement, or your first job, we connect talented professionals with their perfect match.")}
+                        {t('JobsUpdate.JobsLandingHero.description', 'Search published job listings by keyword and location, review employer and role details, and apply through the jobs portal.')}
                     </p>
 
                     {/* Job Search Bar */}
@@ -199,9 +199,6 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                             className="cursor-pointer relative flex items-center justify-center gap-2 px-5 py-3 bg-[#4a6cf7] text-white rounded-lg hover:bg-[#3b5ce6] transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg min-w-[140px] group">
                             <FiBriefcase className="w-4 h-4" />
                             <span>{t('JobsUpdate.JobsLandingHero.browseJobs', 'Browse Jobs')}</span>
-                            <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none">
-                                {t('JobsUpdate.JobsLandingHero.hotBadge', 'HOT')}
-                            </span>
                         </button>
 
                         {/* Post a Job - Secondary */}
@@ -231,8 +228,8 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                         <span className="font-medium text-gray-600">{t('JobsUpdate.JobsLandingHero.resources', 'Resources')}</span> - {t('JobsUpdate.JobsLandingHero.resourcesDesc', 'Career guidance & tips')}
                     </div>
 
-                    {/* Social Proof - Mobile Responsive */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-gray-600 bg-white/80 backdrop-blur-sm p-3 sm:p-4 md:p-5 rounded-2xl shadow-sm border border-blue-100/50 hover:shadow-md transition-all duration-300 ease-out mx-2 sm:mx-auto w-auto max-w-3xl">
+                    {/* Evidence-backed social proof; hidden when authoritative content is unavailable. */}
+                    {(statsLoading || (frontendStats.activeJobs && frontendStats.rating)) && <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-gray-600 bg-white/80 backdrop-blur-sm p-3 sm:p-4 md:p-5 rounded-2xl shadow-sm border border-blue-100/50 hover:shadow-md transition-all duration-300 ease-out mx-2 sm:mx-auto w-auto max-w-3xl">
                         {/* Stats Section */}
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#4a6cf7] to-[#6366f1] flex items-center justify-center text-white shadow-md">
@@ -245,7 +242,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                                             <div className="h-4 bg-gray-200 rounded w-24 inline-block"></div>
                                         </div>
                                     ) : (
-                                        <>{frontendStats.activeJobs || '10,000+'} Active Jobs</>
+                                        <>{frontendStats.activeJobs} Active Jobs</>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -258,7 +255,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                                                 <div className="h-3 bg-gray-200 rounded w-16 inline-block"></div>
                                             </div>
                                         ) : (
-                                            <>{frontendStats.rating || '4.8'}/5 Rating</>
+                                            <>{frontendStats.rating}/5 Rating</>
                                         )}
                                     </span>
                                 </div>
@@ -278,7 +275,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                                 <span className="font-medium text-blue-700">{t('JobsUpdate.JobsLandingHero.features.verifiedEmployers', 'Verified Employers')}</span>
                             </div>
                         </div>
-                    </div>
+                    </div>}
                 </div>
             </div>
 

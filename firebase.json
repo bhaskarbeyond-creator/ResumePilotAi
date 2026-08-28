@@ -1,17 +1,7 @@
 {
-  "firestore": {
-    "rules": "SecurityRules.txt",
-    "indexes": "firestore.indexes.json"
-  },
-  "database": {
-    "rules": "Realtime_database_Security_rules.txt"
-  },
   "emulators": {
-    "firestore": {
-      "port": 8081
-    },
-    "database": {
-      "port": 9000
+    "auth": {
+      "port": 9099
     },
     "ui": {
       "enabled": true,

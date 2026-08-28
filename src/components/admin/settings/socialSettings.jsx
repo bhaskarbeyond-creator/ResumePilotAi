@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getSocialLinks, addSocial } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, addSocial } from '../../../services/api/platform';
 import { FaCheck, FaTimes, FaFacebook, FaTwitter, FaInstagram, FaPinterest, FaYoutube, FaLink } from 'react-icons/fa';
 
 class SocialSettings extends Component {
@@ -16,6 +16,7 @@ class SocialSettings extends Component {
             savedLinks: null,
             saving: false,
             saveError: null,
+            authoritativeLoaded: false,
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveWebsiteMetaData = this.saveWebsiteMetaData.bind(this);
@@ -29,17 +30,22 @@ class SocialSettings extends Component {
      * last saved values rather than merely blanking the form.
      */
     loadSocialLinks() {
-        return getSocialLinks().then((element) => {
-            if (element) {
-                const saved = {
-                    facebook: element.facebook || '',
-                    instagram: element.instagram || '',
-                    twitter: element.twitter || '',
-                    pinterest: element.pinterest || '',
-                    youtube: element.youtube || '',
-                };
-                this.setState({ ...saved, savedLinks: saved });
+        this.setState({ authoritativeLoaded: false, saveError: null });
+        return getAdminSystemSettings().then((settings) => {
+            if (settings?._settingsStale === true || settings?._settingsSource !== 'remote') {
+                throw new Error(settings?._settingsError || 'Authoritative social links are unavailable.');
             }
+            const element = settings.social || {};
+            const saved = {
+                facebook: element.facebook || '',
+                instagram: element.instagram || '',
+                twitter: element.twitter || '',
+                pinterest: element.pinterest || '',
+                youtube: element.youtube || '',
+            };
+            this.setState({ ...saved, savedLinks: saved, authoritativeLoaded: true });
+        }).catch((error) => {
+            this.setState({ savedLinks: null, authoritativeLoaded: false, saveError: error.message || 'Authoritative social links are unavailable.' });
         });
     }
 
@@ -82,6 +88,10 @@ class SocialSettings extends Component {
         // ignored the result, so a failed save still told the operator it had
         // worked. Now the outcome decides what is shown.
         if (this.state.saving) return;
+        if (!this.state.authoritativeLoaded) {
+            this.setState({ saveError: 'Reload authoritative social links before saving.' });
+            return;
+        }
         this.setState({ saving: true, saveError: null, isSuccesShowed: false });
         try {
             await addSocial(
@@ -295,7 +305,7 @@ class SocialSettings extends Component {
                         <button
                             type="button"
                             onClick={() => this.saveWebsiteMetaData()}
-                            disabled={this.state.saving}
+                            disabled={this.state.saving || !this.state.authoritativeLoaded}
                             className="px-6 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
                         >
                             <FaCheck className="w-4 h-4" />

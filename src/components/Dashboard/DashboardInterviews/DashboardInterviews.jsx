@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useReducer, useRef,
 import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaSave, FaSignOutAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserTie } from 'react-icons/fa';
 import { AuthContext } from '../../../main';
 import { generateUserAiContent } from '../../../services/aiService';
-import { getResumes } from '../../../firestore/dbOperations';
+import { getResumes } from '../../../services/api/platform';
 import { DIFFICULTIES, DURATION_PRESETS, EXPERIENCE_LEVELS, INTERVIEW_MODES, INTERVIEW_TYPES, PALETTE_META, appendHistory, buildInterviewReport, buildStarMarkdown, clearAllHistory, clearOwnerSession, consumesArrowKeys, copyTextToClipboard, downloadTextFile, formatClock, isTextEntryTarget, optionIndexFromKey, paletteStatus, readHistory, readOwnerSession, recentInterviewQuestions, remainingFromDeadline, removeHistoryEntry, resolveDurationSeconds, resolveStorageConflict, sanitizeJobDescription, sanitizeResumeFacts, scoreTrend, purgeStaleOwnerSession, timerAnnouncement, validateInterviewPayload, writeOwnerSession } from '../../../utils/interviewCoach';
 
 const POPULAR_ROLES = [

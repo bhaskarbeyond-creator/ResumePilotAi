@@ -1,131 +1,105 @@
 'use strict';
 
-/**
- * In-process enterprise observability.
- *
- * Metrics are computed from REAL request telemetry recorded by the enterprise
- * router middleware (latencies, status classes) plus the durable outbox state
- * exposed through /api/enterprise/queue/status. There is no Redis, PostgreSQL,
- * or external metrics service in this architecture, and no counter is reported
- * that is not actually incremented.
- */
-
 class EnterpriseObservability {
   constructor() {
     this.latencies = [];
-    this.errorCounts = {
-      clientErrors: 0,
-      serverErrors: 0,
-      authErrors: 0,
-      aiErrors: 0,
-      quotaErrors: 0,
-    };
-    this.durableDb = null;
-    this.admin = null;
+    this.errorCounts = this.emptyErrors();
+    this.pool = null;
     this.lastFlushTime = Date.now();
+    this.flushTimer = null;
   }
 
-  setDurableStore(db, admin) {
-    if (this.durableDb) return;
-    this.durableDb = db;
-    this.admin = admin;
-    const timer = setInterval(() => this.flushToDurableStore(), 1000 * 60 * 15);
-    timer.unref?.();
+  emptyErrors() {
+    return { clientErrors: 0, serverErrors: 0, authErrors: 0, aiErrors: 0, quotaErrors: 0 };
+  }
+
+  setDurableStore(pool) {
+    if (this.pool || !pool?.query) return;
+    this.pool = pool;
+    this.flushTimer = setInterval(() => {
+      this.flushToDurableStore().catch(error => {
+        console.error('[EnterpriseObservability] Durable flush failed:', error?.message || error);
+      });
+    }, 15 * 60_000);
+    this.flushTimer.unref?.();
   }
 
   async flushToDurableStore() {
-    if (!this.durableDb || !this.admin) return;
-    try {
-      const currentMetrics = this.getMetrics();
-      if (currentMetrics.sampleCount === 0) return;
-      
-      const payload = {
-        lastFlushedAt: this.admin.firestore.FieldValue.serverTimestamp(),
-        lifetimeSamples: this.admin.firestore.FieldValue.increment(currentMetrics.sampleCount),
-        errors: {
-          clientErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.clientErrors),
-          serverErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.serverErrors),
-          authErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.authErrors),
-          aiErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.aiErrors),
-          quotaErrors: this.admin.firestore.FieldValue.increment(this.errorCounts.quotaErrors),
-        }
-      };
-      await this.durableDb.collection('data').doc('observability').set(payload, { merge: true });
-      
-      // Reset after flush
-      this.latencies = [];
-      this.errorCounts = { clientErrors: 0, serverErrors: 0, authErrors: 0, aiErrors: 0, quotaErrors: 0 };
-      this.lastFlushTime = Date.now();
-    } catch (err) {
-      console.warn('[EnterpriseObservability] Failed to flush to durable store:', err.message);
-    }
+    if (!this.pool) return { flushed: false, reason: 'STORE_UNAVAILABLE' };
+    const sampleCount = this.latencies.length;
+    if (!sampleCount) return { flushed: false, reason: 'NO_SAMPLES' };
+    const metrics = this.getMetrics();
+    const errors = { ...this.errorCounts };
+    const windowStart = new Date(this.lastFlushTime);
+    const windowEnd = new Date();
+    await this.pool.query(
+      `INSERT INTO enterprise_observability_rollups
+       (id, lifetimeSamples, clientErrors, serverErrors, authErrors, aiErrors,
+        quotaErrors, lastP50Ms, lastP95Ms, lastP99Ms, windowStartedAt, windowEndedAt)
+       VALUES ('global', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         lifetimeSamples = lifetimeSamples + VALUES(lifetimeSamples),
+         clientErrors = clientErrors + VALUES(clientErrors),
+         serverErrors = serverErrors + VALUES(serverErrors),
+         authErrors = authErrors + VALUES(authErrors),
+         aiErrors = aiErrors + VALUES(aiErrors),
+         quotaErrors = quotaErrors + VALUES(quotaErrors),
+         lastP50Ms = VALUES(lastP50Ms), lastP95Ms = VALUES(lastP95Ms), lastP99Ms = VALUES(lastP99Ms),
+         windowStartedAt = VALUES(windowStartedAt), windowEndedAt = VALUES(windowEndedAt),
+         updated_at = CURRENT_TIMESTAMP`,
+      [sampleCount, errors.clientErrors, errors.serverErrors, errors.authErrors,
+        errors.aiErrors, errors.quotaErrors, metrics.p50, metrics.p95, metrics.p99,
+        windowStart, windowEnd]
+    );
+    // Remove only the samples included in this flush; concurrent arrivals stay.
+    this.latencies.splice(0, sampleCount);
+    for (const key of Object.keys(errors)) this.errorCounts[key] = Math.max(0, this.errorCounts[key] - errors[key]);
+    this.lastFlushTime = windowEnd.getTime();
+    return { flushed: true, sampleCount, windowStart: windowStart.toISOString(), windowEnd: windowEnd.toISOString() };
   }
 
   recordRequest({ requestId, correlationId, tenantId, workspaceId, method, path, status, durationMs, error = null }) {
     if (!Number.isFinite(Number(durationMs))) return;
     this.latencies.push(Number(durationMs));
-    if (this.latencies.length > 5000) {
-      this.latencies.shift();
-    }
-
+    if (this.latencies.length > 5_000) this.latencies.shift();
     if (status >= 400 && status < 500) {
-      this.errorCounts.clientErrors++;
-      if (status === 401 || status === 403) this.errorCounts.authErrors++;
-      if (status === 429) this.errorCounts.quotaErrors++;
+      this.errorCounts.clientErrors += 1;
+      if (status === 401 || status === 403) this.errorCounts.authErrors += 1;
+      if (status === 429) this.errorCounts.quotaErrors += 1;
     } else if (status >= 500) {
-      this.errorCounts.serverErrors++;
-      if (path && path.includes('/ai/')) this.errorCounts.aiErrors++;
+      this.errorCounts.serverErrors += 1;
+      if (path && path.includes('/ai/')) this.errorCounts.aiErrors += 1;
     }
-
-    // Structured JSON log line (no secrets; identifiers are truncated).
-    const logObject = {
-      timestamp: new Date().toISOString(),
-      level: status >= 500 ? 'ERROR' : (status >= 400 ? 'WARN' : 'INFO'),
-      requestId: requestId || 'anonymous',
-      correlationId: correlationId || 'anonymous',
-      tenantId: tenantId ? `tenant:${tenantId.slice(0, 8)}...` : 'public',
-      workspaceId: workspaceId ? `workspace:${workspaceId.slice(0, 8)}` : null,
-      method,
-      path,
-      status,
-      durationMs: Math.round(Number(durationMs)),
-      error: error ? error.message || String(error) : undefined,
-    };
-
     if (status >= 500) {
-      console.error('[Enterprise Request Audit]:', JSON.stringify(logObject));
+      console.error('[Enterprise Request Audit]:', JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'ERROR',
+        requestId: requestId || 'anonymous',
+        correlationId: correlationId || 'anonymous',
+        tenantId: tenantId ? `tenant:${tenantId.slice(0, 8)}...` : 'public',
+        workspaceId: workspaceId ? `workspace:${workspaceId.slice(0, 8)}` : null,
+        method, path, status, durationMs: Math.round(Number(durationMs)),
+        error: error ? String(error.message || error).slice(0, 300) : undefined,
+      }));
     }
   }
 
   getMetrics() {
-    if (this.latencies.length === 0) {
-      return {
-        sampleCount: 0,
-        p50: 0,
-        p95: 0,
-        p99: 0,
-        errors: { ...this.errorCounts },
-      };
-    }
-
-    const sorted = [...this.latencies].sort((a, b) => a - b);
-    const p50 = sorted[Math.floor(sorted.length * 0.50)];
-    const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
-    const p99 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.99))];
-
+    const sorted = [...this.latencies].sort((left, right) => left - right);
+    const percentile = fraction => sorted.length
+      ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))]
+      : null;
     return {
       sampleCount: sorted.length,
-      p50,
-      p95,
-      p99,
+      windowStartedAt: new Date(this.lastFlushTime).toISOString(),
+      measuredFrom: 'server request durations recorded in this process',
+      p50: percentile(0.50),
+      p95: percentile(0.95),
+      p99: percentile(0.99),
       errors: { ...this.errorCounts },
     };
   }
 }
 
 const enterpriseObservability = new EnterpriseObservability();
-
-module.exports = {
-  EnterpriseObservability,
-  enterpriseObservability,
-};
+module.exports = { EnterpriseObservability, enterpriseObservability };

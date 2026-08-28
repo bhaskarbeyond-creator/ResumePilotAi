@@ -5,7 +5,7 @@ import FacebookImage from '../../../assets/facebook.png'
 import Input from '../../Form/simple-input/SimpleInput'
 import firebase from 'firebase/compat/app';
 import fire, { googleProvider, facebookProvider } from '../../../conf/fire';
-import addUser from '../../../firestore/auth'
+import addUser from '../../../services/api/users'
 import { withTranslation } from 'react-i18next';
 import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
 import { describeOAuthRedirectError, stripOAuthRedirectError } from '../../../utils/oauthRedirectError';
@@ -101,7 +101,7 @@ class Login extends Component {
         // form with no explanation for why the provider did nothing.
         this.readOAuthRedirectError();
 
-        import('../../../firestore/dbOperations').then(({ getSystemSettings }) => {
+        import('../../../services/api/platform').then(({ getSystemSettings }) => {
             getSystemSettings().then(settings => {
                 try {
                     localStorage.setItem('system_settings', JSON.stringify(settings));
@@ -264,7 +264,7 @@ class Login extends Component {
             ) {
                 return;
             }
-            const { checkIfAdmin } = await import('../../../firestore/dbOperations');
+            const { checkIfAdmin } = await import('../../../services/api/platform');
             const isAdmin = await checkIfAdmin(uid);
             if (isAdmin) {
                 window.location.href = '/adm/dashboard';
@@ -299,15 +299,9 @@ class Login extends Component {
             const firstName = (displayName || '').split(' ')[0] || 'User';
             const lastName = (displayName || '').split(' ').slice(1).join(' ') || '';
             const res = await addUser(uid, firstName, lastName, email, { authProvider: provider, photoURL });
-            
-            if (res && res.isNewUser) {
-                fetch('/api/notify/user-signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userEmail: email, userName: displayName || firstName })
-                }).catch(() => {});
-            } else {
-                import('../../../firestore/auth').then(({ updateUserOnLogin }) => {
+            // New-account mail is durably enqueued by the profile-create transaction.
+            if (!res?.isNewUser) {
+                import('../../../services/api/users').then(({ updateUserOnLogin }) => {
                     updateUserOnLogin(uid, { photoURL, displayName, authProvider: provider }).catch(() => {});
                 }).catch(() => {});
             }

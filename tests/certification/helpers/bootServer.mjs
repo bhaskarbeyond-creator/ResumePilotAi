@@ -20,7 +20,11 @@ const BACKEND_ENTRY = path.join(ROOT, 'backend', 'index.js');
 
 export const CERT_SECRET = 'certification-hmac-secret-' + crypto.randomBytes(12).toString('hex');
 
-export function buildCertEnv({ port, extra = {}, db: dbEnv = {} } = {}) {
+export function buildCertEnv({ port, extra = {}, db: dbEnv } = {}) {
+  if (!dbEnv || !dbEnv.host || !dbEnv.port || !dbEnv.user || !dbEnv.name
+      || !Object.prototype.hasOwnProperty.call(dbEnv, 'password')) {
+    throw new Error('Certification server startup requires an explicit isolated MariaDB configuration');
+  }
   return {
     // Minimal inherited environment; deliberately NOT spreading process.env so
     // no ambient Firebase/Firestore configuration can leak into the server.
@@ -36,11 +40,11 @@ export function buildCertEnv({ port, extra = {}, db: dbEnv = {} } = {}) {
     //   / FIREBASE_DATA_PLANE are all intentionally ABSENT.
     FIREBASE_PROJECT_ID: 'firestore-unreachable-certification',
     // MySQL is the sole authoritative store.
-    DB_HOST: dbEnv.host || '127.0.0.1',
-    DB_PORT: dbEnv.port || '3306',
-    DB_USER: dbEnv.user || 'resumepilot',
-    DB_PASSWORD: dbEnv.password || 'resumepilot_sandbox_pw',
-    DB_NAME: dbEnv.name || 'ai_resume_builder',
+    DB_HOST: String(dbEnv.host),
+    DB_PORT: String(dbEnv.port),
+    DB_USER: String(dbEnv.user),
+    DB_PASSWORD: String(dbEnv.password),
+    DB_NAME: String(dbEnv.name),
     // Certification identity verifier (inert outside this process tree).
     TEST_AUTH_HMAC_SECRET: CERT_SECRET,
     REQUIRE_RECENT_AUTH_IN_TEST: 'true',

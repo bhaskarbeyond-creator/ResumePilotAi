@@ -41,8 +41,15 @@ const normalizeCollection = (field, value) => {
         }
         if (field === 'skills') {
             const name = text(source.name || source.skillName || source.skill || source.title || source.value);
-            const numericRating = Number(source.rating ?? source.level ?? 50);
-            return { ...base, name, skillName: name, value: name, rating: Number.isFinite(numericRating) ? Math.max(0, Math.min(100, numericRating)) : 50 };
+            const rawRating = source.rating ?? source.level;
+            const numericRating = rawRating === '' || rawRating === null || rawRating === undefined ? null : Number(rawRating);
+            return {
+                ...base,
+                name,
+                skillName: name,
+                value: name,
+                rating: Number.isFinite(numericRating) ? Math.max(0, Math.min(100, numericRating)) : null,
+            };
         }
         if (field === 'languages') {
             const name = text(source.name || source.language || source.title || source.value);
@@ -270,7 +277,7 @@ export function formatLanguages(langsData) {
 
     let langs = langsData;
 
-    // Convert object to array if needed (e.g. Firestore object maps)
+    // Convert keyed object maps to arrays when needed
     if (typeof langs === 'object' && !Array.isArray(langs)) {
         langs = Object.values(langs);
     }

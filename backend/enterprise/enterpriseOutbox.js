@@ -1,32 +1,14 @@
 'use strict';
 
 const crypto = require('crypto');
+const { getPool } = require('../database/mysql');
 const { validateTenantJobEnvelope } = require('./tenantJobs');
 const { assertUuid } = require('./tenantContext');
 
-/**
- * Durable enterprise job outbox backed by Firestore.
- *
- *   enqueue (Firestore transaction, idempotent document id)
- *     → enterprise_outbox/{jobId}  status=QUEUED
- *     → worker claims via lease transaction
- *     → signature + expiry verification
- *     → tenant/membership reauthorization at execution time
- *     → handler execution
- *     → COMPLETED | RETRYING (backoff) | DEAD_LETTER | REJECTED
- *
- * Durability: every state transition is a committed Firestore write. A worker
- * crash at any point leaves the lease to expire; an expired lease makes the job
- * reclaimable by any worker. No in-process array, timer, or memory is involved
- * in job correctness.
- *
- * Envelope integrity: jobs carry the HMAC-SHA256 signed envelope from
- * tenantJobs.js; tampering, expiry, suspension, or revoked membership are all
- * rejected without execution.
- */
-
-const OUTBOX_COLLECTION = 'enterprise_outbox';
+const OUTBOX_TABLE = 'enterprise_outbox';
 const CLAIMABLE_STATES = Object.freeze(['QUEUED', 'RETRYING', 'PROCESSING']);
+const TERMINAL_STATES = Object.freeze(['COMPLETED', 'DEAD_LETTER', 'REJECTED']);
+const ALL_STATES = Object.freeze([...CLAIMABLE_STATES, ...TERMINAL_STATES]);
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_BASE_BACKOFF_MS = 2_000;
 const MAX_BACKOFF_MS = 10 * 60_000;
@@ -34,286 +16,316 @@ const DEFAULT_LEASE_MS = 2 * 60_000;
 const DEFAULT_TTL_MS = 24 * 60 * 60_000;
 const DEFAULT_PAGE_LIMIT = 50;
 
+function resolvePool(pool) {
+  const resolved = pool || getPool();
+  if (!resolved?.query || resolved._closed) {
+    throw Object.assign(new Error('Enterprise outbox requires an available MariaDB pool'), {
+      code: 'ENTERPRISE_OUTBOX_UNAVAILABLE', status: 503,
+    });
+  }
+  return resolved;
+}
+
 function outboxDocumentId(tenantId, idempotencyKey) {
-  return crypto.createHash('sha256').update(`${assertUuid(tenantId, 'Tenant identifier')}\u0000${String(idempotencyKey || '')}`).digest('hex');
+  tenantId = assertUuid(tenantId, 'Tenant identifier');
+  const key = String(idempotencyKey || '').trim();
+  if (!key || key.length > 200) {
+    throw Object.assign(new Error('A bounded idempotency key is required'), { code: 'INVALID_TENANT_JOB', status: 400 });
+  }
+  return crypto.createHash('sha256').update(`${tenantId}\u0000${key}`).digest('hex');
 }
 
 function backoffDelayMs(attemptCount, { baseMs = DEFAULT_BASE_BACKOFF_MS, jitter = true } = {}) {
-  const exponential = Math.min(MAX_BACKOFF_MS, baseMs * (2 ** Math.max(0, attemptCount - 1)));
+  const boundedBase = Math.max(250, Math.min(Number(baseMs) || DEFAULT_BASE_BACKOFF_MS, MAX_BACKOFF_MS));
+  const exponential = Math.min(MAX_BACKOFF_MS, boundedBase * (2 ** Math.max(0, Number(attemptCount || 1) - 1)));
   if (!jitter) return exponential;
   return Math.max(250, Math.round(exponential * (0.8 + Math.random() * 0.4)));
 }
 
-function ts(admin, millis) {
-  return admin?.firestore?.Timestamp?.fromMillis?.(millis) || new Date(millis);
-}
-
-function tsMillis(value) {
+function toMillis(value) {
   if (!value) return 0;
-  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   const parsed = new Date(value).getTime();
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function assertDb(db) {
-  if (!db) throw Object.assign(new Error('Enterprise outbox requires a Firestore handle'), { code: 'ENTERPRISE_OUTBOX_UNAVAILABLE', status: 503 });
-  return db;
+function parseJson(value, fallback = null) {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'object') return value;
+  try { return JSON.parse(value); } catch { return fallback; }
 }
 
-/**
- * Idempotently enqueue a signed job envelope. The document id is derived from
- * (tenantId, idempotencyKey), so duplicate submissions collapse onto one
- * durable job instead of double-executing.
- */
-async function enqueueOutboxJob({ db, admin, envelope, now = Date.now(), maxAttempts = DEFAULT_MAX_ATTEMPTS, ttlMs = DEFAULT_TTL_MS }) {
-  assertDb(db);
-  if (!admin?.firestore?.FieldValue) throw Object.assign(new Error('Enterprise outbox requires the Firebase admin runtime'), { code: 'ENTERPRISE_OUTBOX_UNAVAILABLE', status: 503 });
-  const submittedAt = tsMillis(envelope?.submittedAt) || now;
-  const jobId = outboxDocumentId(envelope.tenantId, envelope.idempotencyKey);
-  const reference = db.collection(OUTBOX_COLLECTION).doc(jobId);
-  const document = {
-    jobId,
-    tenantId: envelope.tenantId,
+function boundedJson(value, maxBytes = 256_000) {
+  const serialized = JSON.stringify(value === undefined ? null : value);
+  if (Buffer.byteLength(serialized) > maxBytes) {
+    throw Object.assign(new Error('Enterprise outbox payload exceeds the durable queue limit'), {
+      code: 'ENTERPRISE_OUTBOX_PAYLOAD_TOO_LARGE', status: 413,
+    });
+  }
+  return serialized;
+}
+
+// Correlation, submission time, generated job id, and signature may legitimately
+// differ across delivery attempts. Every field that determines authorization,
+// routing, policy, data classification, or work performed is immutable for an
+// idempotency key.
+function immutableJobIntent(envelope = {}) {
+  return {
+    schemaVersion: Number(envelope.schemaVersion || 0),
+    jobType: envelope.jobType || null,
+    tenantId: envelope.tenantId || null,
     workspaceId: envelope.workspaceId || null,
-    principalId: envelope.principalId,
+    dataPlaneId: envelope.dataPlaneId || null,
+    routingVersion: Number(envelope.routingVersion || 0),
+    cacheProfile: envelope.cacheProfile || null,
+    queueProfile: envelope.queueProfile || null,
+    storageProfile: envelope.storageProfile || null,
+    aiProfile: envelope.aiProfile || null,
+    actorType: envelope.actorType || null,
+    principalId: envelope.principalId || null,
     subjectId: envelope.subjectId || null,
-    identityIssuer: envelope.identityIssuer,
-    actorType: envelope.actorType,
-    jobType: envelope.jobType,
-    resource: envelope.resource,
-    correlationId: envelope.correlationId,
-    idempotencyKey: envelope.idempotencyKey,
-    classification: envelope.classification,
-    envelope,
-    status: 'QUEUED',
-    attemptCount: 0,
-    maxAttempts: Math.max(1, Number(maxAttempts) || DEFAULT_MAX_ATTEMPTS),
-    nextAttemptAt: ts(admin, now),
-    expiresAt: ts(admin, submittedAt + Math.max(60_000, Number(ttlMs) || DEFAULT_TTL_MS)),
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    identityIssuer: envelope.identityIssuer || null,
+    resource: {
+      type: envelope.resource?.type || null,
+      id: envelope.resource?.id || null,
+      revision: Number(envelope.resource?.revision || 0),
+    },
+    policyVersion: Number(envelope.policyVersion || 0),
+    idempotencyKey: envelope.idempotencyKey || null,
+    classification: envelope.classification || 'PRIVATE',
   };
-  let duplicate = null;
-  await db.runTransaction(async transaction => {
-    const existing = await transaction.get(reference);
-    if (existing.exists) {
-      duplicate = { status: existing.data().status, jobId };
-      return;
-    }
-    transaction.create(reference, document);
-  });
-  if (duplicate) {
-    if (duplicate.status === 'COMPLETED') return { status: 'DUPLICATE_IGNORED', jobId: duplicate.jobId };
-    return { status: 'ALREADY_QUEUED', jobId: duplicate.jobId };
-  }
-  return { status: 'ENQUEUED', jobId, queueLength: null };
 }
 
-/**
- * Claim the next due job. A job is claimable when it is QUEUED/RETRYING (or
- * PROCESSING with an expired lease — worker crash recovery) and its scheduled
- * attempt time has arrived. Claiming is a lease transaction; concurrent
- * workers cannot claim the same job.
- */
-async function claimNextOutboxJob({ db, admin, workerId, now = Date.now(), leaseMs = DEFAULT_LEASE_MS }) {
-  assertDb(db);
-  let due;
+function mapJob(row) {
+  if (!row) return null;
+  return {
+    jobId: row.id,
+    tenantId: row.tenantId,
+    workspaceId: row.workspaceId || null,
+    principalId: row.principalId,
+    subjectId: row.subjectId || null,
+    identityIssuer: row.identityIssuer,
+    actorType: row.actorType,
+    jobType: row.jobType,
+    correlationId: row.correlationId || null,
+    idempotencyKey: row.idempotencyKey,
+    classification: row.classification,
+    envelope: parseJson(row.envelope, {}),
+    status: row.status,
+    attemptCount: Number(row.attemptCount || 0),
+    maxAttempts: Number(row.maxAttempts || DEFAULT_MAX_ATTEMPTS),
+    nextAttemptAt: row.nextAttemptAt,
+    expiresAt: row.expiresAt,
+    leaseOwner: row.leaseOwner || null,
+    leaseExpiresAt: row.leaseExpiresAt || null,
+    lastError: row.lastError || null,
+    rejectedReason: row.rejectedReason || null,
+    result: parseJson(row.result, null),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    completedAt: row.completedAt || null,
+  };
+}
+
+/** Idempotently enqueue a signed job envelope. */
+async function enqueueOutboxJob({ pool = null, connection = null, envelope, now = Date.now(), maxAttempts = DEFAULT_MAX_ATTEMPTS, ttlMs = DEFAULT_TTL_MS }) {
+  const executor = connection || resolvePool(pool);
+  const submittedAt = toMillis(envelope?.submittedAt) || now;
+  const jobId = outboxDocumentId(envelope?.tenantId, envelope?.idempotencyKey);
+  const max = Math.max(1, Math.min(Number(maxAttempts) || DEFAULT_MAX_ATTEMPTS, 25));
+  const expiresAt = new Date(submittedAt + Math.max(60_000, Number(ttlMs) || DEFAULT_TTL_MS));
+  const [result] = await executor.query(
+    `INSERT INTO enterprise_outbox
+      (id, tenantId, workspaceId, principalId, subjectId, identityIssuer, actorType,
+       jobType, correlationId, idempotencyKey, classification, envelope, status,
+       attemptCount, maxAttempts, nextAttemptAt, expiresAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'QUEUED', 0, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE id = VALUES(id)`,
+    [jobId, envelope.tenantId, envelope.workspaceId || null, envelope.principalId,
+      envelope.subjectId || null, envelope.identityIssuer, envelope.actorType,
+      envelope.jobType, envelope.correlationId || null, envelope.idempotencyKey,
+      envelope.classification || 'PRIVATE', boundedJson(envelope), max, new Date(now), expiresAt]
+  );
+  if (Number(result.affectedRows || 0) === 1) return { status: 'ENQUEUED', jobId, queueLength: null };
+  const [rows] = await executor.query(
+    'SELECT status, tenantId, workspaceId, principalId, jobType, classification, envelope FROM enterprise_outbox WHERE id = ?',
+    [jobId]
+  );
+  const existing = rows[0];
+  const storedEnvelope = parseJson(existing?.envelope, {});
+  const sameIntent = existing
+    && existing.tenantId === envelope.tenantId
+    && (existing.workspaceId || null) === (envelope.workspaceId || null)
+    && existing.principalId === envelope.principalId
+    && existing.jobType === envelope.jobType
+    && existing.classification === (envelope.classification || 'PRIVATE')
+    && JSON.stringify(immutableJobIntent(storedEnvelope)) === JSON.stringify(immutableJobIntent(envelope));
+  if (!sameIntent) {
+    throw Object.assign(new Error('Enterprise outbox idempotency key is already bound to a different job'), {
+      code: 'ENTERPRISE_OUTBOX_IDEMPOTENCY_CONFLICT', status: 409,
+    });
+  }
+  return { status: existing.status === 'COMPLETED' ? 'DUPLICATE_IGNORED' : 'ALREADY_QUEUED', jobId };
+}
+
+/** Atomically lease one due job; SKIP LOCKED permits concurrent workers. */
+async function claimNextOutboxJob({ pool = null, workerId, now = Date.now(), leaseMs = DEFAULT_LEASE_MS }) {
+  const resolvedPool = resolvePool(pool);
+  const owner = String(workerId || '').slice(0, 128);
+  if (!owner) throw Object.assign(new Error('Enterprise outbox worker id is required'), { code: 'ENTERPRISE_OUTBOX_WORKER_INVALID', status: 500 });
+  const connection = await resolvedPool.getConnection();
   try {
-    due = await db.collection(OUTBOX_COLLECTION)
-      .where('status', 'in', CLAIMABLE_STATES)
-      .where('nextAttemptAt', '<=', ts(admin, now))
-      .orderBy('nextAttemptAt')
-      .limit(10)
-      .get();
-  } catch (error) {
-    if (error.code === 9 || String(error.message || '').includes('requires an index')) {
-      const fallbackSnapshot = await db.collection(OUTBOX_COLLECTION)
-        .where('status', 'in', CLAIMABLE_STATES)
-        .limit(50)
-        .get();
-      const filtered = fallbackSnapshot.docs
-        .filter(doc => {
-          const val = doc.data() || {};
-          const leaseUntil = tsMillis(val.leaseExpiresAt);
-          const nextAttempt = tsMillis(val.nextAttemptAt);
-          const isClaimable = val.status === 'PROCESSING' ? (leaseUntil > 0 && leaseUntil <= now) : nextAttempt <= now;
-          return isClaimable;
-        })
-        .sort((a, b) => tsMillis(a.data()?.nextAttemptAt) - tsMillis(b.data()?.nextAttemptAt))
-        .slice(0, 10);
-      due = { docs: filtered };
-    } else {
-      throw error;
-    }
-  }
-  for (const candidate of due.docs) {
-    let claimed = null;
-    await db.runTransaction(async transaction => {
-      const snapshot = await transaction.get(candidate.ref);
-      const value = snapshot.data() || {};
-      const leaseUntil = tsMillis(value.leaseExpiresAt);
-      const claimable =
-        CLAIMABLE_STATES.includes(value.status) &&
-        (value.status === 'PROCESSING' ? leaseUntil <= now : tsMillis(value.nextAttemptAt) <= now);
-      if (!claimable) return;
-      transaction.update(candidate.ref, {
-        status: 'PROCESSING',
-        attemptCount: Number(value.attemptCount || 0) + 1,
-        leaseOwner: String(workerId),
-        leaseExpiresAt: ts(admin, now + leaseMs),
-        lastAttemptAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-      claimed = { ref: candidate.ref, jobId: candidate.id, ...value, leaseOwner: String(workerId), attemptCount: Number(value.attemptCount || 0) + 1 };
-    });
-    if (claimed) return claimed;
-  }
-  return null;
-}
-
-async function completeOutboxJob({ db, admin, job, workerId, result = null, now = Date.now() }) {
-  assertDb(db);
-  if (!job || !job.ref) return { status: 'INVALID_JOB' };
-  await db.runTransaction(async transaction => {
-    const snapshot = await transaction.get(job.ref);
-    const value = snapshot.data() || {};
-    if (value.leaseOwner !== workerId) return;
-    transaction.update(job.ref, {
-      status: 'COMPLETED',
-      result: result === undefined ? null : result,
-      completedAt: ts(admin, now),
-      leaseOwner: admin.firestore.FieldValue.delete(),
-      leaseExpiresAt: admin.firestore.FieldValue.delete(),
-      lastError: admin.firestore.FieldValue.delete(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  });
-  return { status: 'COMPLETED', jobId: job.jobId };
-}
-
-async function failOutboxJob({ db, admin, job, workerId, error, now = Date.now(), backoffBaseMs = DEFAULT_BASE_BACKOFF_MS, backoffJitter = true }) {
-  assertDb(db);
-  if (!job || !job.ref) return { status: 'INVALID_JOB' };
-  let outcome = null;
-  await db.runTransaction(async transaction => {
-    const snapshot = await transaction.get(job.ref);
-    const value = snapshot.data() || {};
-    if (value.leaseOwner !== workerId) { outcome = { status: 'LEASE_LOST', jobId: job.jobId }; return; }
-    const attemptCount = Number(value.attemptCount || 1);
-    const terminal = attemptCount >= Math.max(1, Number(value.maxAttempts || DEFAULT_MAX_ATTEMPTS));
-    const delay = backoffDelayMs(attemptCount, { baseMs: backoffBaseMs, jitter: backoffJitter });
-    transaction.update(job.ref, {
-      status: terminal ? 'DEAD_LETTER' : 'RETRYING',
-      lastError: String(error?.message || error || 'Job execution failed').slice(0, 500),
-      ...(terminal
-        ? { dlqAt: ts(admin, now) }
-        : { nextAttemptAt: ts(admin, now + delay) }),
-      leaseOwner: admin.firestore.FieldValue.delete(),
-      leaseExpiresAt: admin.firestore.FieldValue.delete(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    outcome = terminal
-      ? { status: 'DEAD_LETTER', jobId: job.jobId, attemptCount }
-      : { status: 'RETRY_SCHEDULED', jobId: job.jobId, attemptCount, backoffMs: delay, nextRunAt: now + delay };
-  });
-  return outcome;
-}
-
-/**
- * Deterministic rejections (invalid signature, expiry, suspended tenant,
- * revoked membership, tampering) terminate the job immediately: retrying a job
- * that can never succeed would only burn quota.
- */
-async function rejectOutboxJob({ db, admin, job, reason, now = Date.now() }) {
-  assertDb(db);
-  await db.runTransaction(async transaction => {
-    const snapshot = await transaction.get(job.ref);
-    if (!snapshot.exists) return;
-    transaction.update(job.ref, {
-      status: 'REJECTED',
-      rejectedReason: String(reason || 'JOB_REJECTED').slice(0, 200),
-      rejectedAt: ts(admin, now),
-      leaseOwner: admin.firestore.FieldValue.delete(),
-      leaseExpiresAt: admin.firestore.FieldValue.delete(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  });
-  return { status: 'REJECTED', jobId: job.jobId, reason };
-}
-
-/**
- * Replay a DEAD_LETTER job back into the queue. Requires a verified tenant
- * context with settings permission; the job must belong to that tenant.
- */
-async function replayDeadLetterJob({ db, admin, jobId, context, now = Date.now() }) {
-  assertDb(db);
-  if (!context?.tenantId) throw Object.assign(new Error('Verified tenant context is required to replay jobs'), { code: 'TENANT_CONTEXT_REQUIRED', status: 403 });
-  const reference = db.collection(OUTBOX_COLLECTION).doc(String(jobId || ''));
-  let replayed = false;
-  await db.runTransaction(async transaction => {
-    const snapshot = await transaction.get(reference);
-    if (!snapshot.exists) return;
-    const value = snapshot.data() || {};
-    if (value.tenantId !== context.tenantId) { replayed = false; return; }
-    if (value.status !== 'DEAD_LETTER') return;
-    transaction.update(reference, {
-      status: 'QUEUED',
-      attemptCount: 0,
-      nextAttemptAt: ts(admin, now),
-      replayedBy: context.principalId,
-      replayedAt: ts(admin, now),
-      dlqAt: admin.firestore.FieldValue.delete(),
-      lastError: admin.firestore.FieldValue.delete(),
-      leaseOwner: admin.firestore.FieldValue.delete(),
-      leaseExpiresAt: admin.firestore.FieldValue.delete(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    const auditId = crypto.randomUUID();
-    transaction.set(
-      db.collection(`tenants/${context.tenantId}/audit_events`).doc(auditId),
-      {
-        id: auditId,
-        tenantId: context.tenantId,
-        workspaceId: value.workspaceId || context.workspaceId || null,
-        principalId: context.principalId,
-        subjectId: context.subjectId || null,
-        actorType: context.actorType || 'user',
-        action: 'JOB_REPLAYED',
-        category: 'tenant.jobs',
-        severity: 'HIGH',
-        outcome: 'SUCCESS',
-        resourceType: value.jobType,
-        resourceId: String(jobId),
-        correlationId: context.correlationId || context.requestId || null,
-        metadata: { jobType: value.jobType || '' },
-        occurredAt: new Date(now).toISOString(),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      }
+    await connection.beginTransaction();
+    const [rows] = await connection.query(
+      `SELECT * FROM enterprise_outbox
+       WHERE expiresAt > ? AND (
+         (status IN ('QUEUED', 'RETRYING') AND nextAttemptAt <= ?)
+         OR (status = 'PROCESSING' AND leaseExpiresAt <= ?)
+       )
+       ORDER BY nextAttemptAt ASC, created_at ASC
+       LIMIT 1 FOR UPDATE SKIP LOCKED`,
+      [new Date(now), new Date(now), new Date(now)]
     );
-    replayed = true;
-  });
-  return replayed
-    ? { status: 'REPLAYED', jobId: String(jobId) }
-    : { status: 'NOT_FOUND', jobId: String(jobId) };
+    if (!rows.length) {
+      await connection.commit();
+      return null;
+    }
+    const row = rows[0];
+    const attemptCount = Number(row.attemptCount || 0) + 1;
+    await connection.query(
+      `UPDATE enterprise_outbox
+       SET status = 'PROCESSING', attemptCount = ?, leaseOwner = ?, leaseExpiresAt = ?,
+           lastAttemptAt = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [attemptCount, owner, new Date(now + Math.max(5_000, Number(leaseMs) || DEFAULT_LEASE_MS)), new Date(now), row.id]
+    );
+    await connection.commit();
+    return { ...mapJob(row), status: 'PROCESSING', attemptCount, leaseOwner: owner, leaseExpiresAt: new Date(now + leaseMs) };
+  } catch (error) {
+    await connection.rollback().catch(() => {});
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
-/**
- * Reauthorize the job at execution time: the tenant must still be active, the
- * principal's membership must still exist and be active, and the canonical
- * principal derived from the verified identity must match the envelope. This
- * closes the stale-authorization window between enqueue and execution.
- */
+async function completeOutboxJob({ pool = null, job, workerId, result = null, now = Date.now() }) {
+  if (!job?.jobId) return { status: 'INVALID_JOB' };
+  const [update] = await resolvePool(pool).query(
+    `UPDATE enterprise_outbox
+     SET status = 'COMPLETED', result = ?, completedAt = ?, leaseOwner = NULL,
+         leaseExpiresAt = NULL, lastError = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND status = 'PROCESSING' AND leaseOwner = ?`,
+    [boundedJson(result), new Date(now), job.jobId, String(workerId)]
+  );
+  return Number(update.affectedRows || 0) === 1
+    ? { status: 'COMPLETED', jobId: job.jobId }
+    : { status: 'LEASE_LOST', jobId: job.jobId };
+}
+
+async function failOutboxJob({ pool = null, job, workerId, error, now = Date.now(), backoffBaseMs = DEFAULT_BASE_BACKOFF_MS, backoffJitter = true }) {
+  if (!job?.jobId) return { status: 'INVALID_JOB' };
+  const resolvedPool = resolvePool(pool);
+  const connection = await resolvedPool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query('SELECT * FROM enterprise_outbox WHERE id = ? FOR UPDATE', [job.jobId]);
+    const row = rows[0];
+    if (!row || row.status !== 'PROCESSING' || row.leaseOwner !== String(workerId)) {
+      await connection.rollback();
+      return { status: 'LEASE_LOST', jobId: job.jobId };
+    }
+    const attemptCount = Number(row.attemptCount || 1);
+    const terminal = attemptCount >= Math.max(1, Number(row.maxAttempts || DEFAULT_MAX_ATTEMPTS));
+    const delay = backoffDelayMs(attemptCount, { baseMs: backoffBaseMs, jitter: backoffJitter });
+    await connection.query(
+      `UPDATE enterprise_outbox
+       SET status = ?, lastError = ?, nextAttemptAt = ?, dlqAt = ?,
+           leaseOwner = NULL, leaseExpiresAt = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [terminal ? 'DEAD_LETTER' : 'RETRYING',
+        String(error?.message || error || 'Job execution failed').slice(0, 500),
+        terminal ? row.nextAttemptAt : new Date(now + delay), terminal ? new Date(now) : null, row.id]
+    );
+    await connection.commit();
+    return terminal
+      ? { status: 'DEAD_LETTER', jobId: row.id, attemptCount }
+      : { status: 'RETRY_SCHEDULED', jobId: row.id, attemptCount, backoffMs: delay, nextRunAt: now + delay };
+  } catch (failure) {
+    await connection.rollback().catch(() => {});
+    throw failure;
+  } finally {
+    connection.release();
+  }
+}
+
+async function rejectOutboxJob({ pool = null, job, reason, now = Date.now() }) {
+  if (!job?.jobId) return { status: 'INVALID_JOB' };
+  const [update] = await resolvePool(pool).query(
+    `UPDATE enterprise_outbox
+     SET status = 'REJECTED', rejectedReason = ?, rejectedAt = ?, leaseOwner = NULL,
+         leaseExpiresAt = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND status NOT IN ('COMPLETED', 'REJECTED')`,
+    [String(reason || 'JOB_REJECTED').slice(0, 200), new Date(now), job.jobId]
+  );
+  return Number(update.affectedRows || 0) === 1
+    ? { status: 'REJECTED', jobId: job.jobId, reason: String(reason || 'JOB_REJECTED') }
+    : { status: 'NOT_FOUND', jobId: job.jobId };
+}
+
+async function replayDeadLetterJob({ pool = null, jobId, context, now = Date.now() }) {
+  if (!context?.tenantId || !context?.principalId) {
+    throw Object.assign(new Error('Verified tenant context is required to replay jobs'), { code: 'TENANT_CONTEXT_REQUIRED', status: 403 });
+  }
+  const resolvedPool = resolvePool(pool);
+  const connection = await resolvedPool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query(
+      'SELECT * FROM enterprise_outbox WHERE id = ? AND tenantId = ? FOR UPDATE',
+      [String(jobId || ''), context.tenantId]
+    );
+    const row = rows[0];
+    if (!row || row.status !== 'DEAD_LETTER') {
+      await connection.rollback();
+      return { status: 'NOT_FOUND', jobId: String(jobId || '') };
+    }
+    if (toMillis(row.expiresAt) <= now) {
+      await connection.rollback();
+      return { status: 'EXPIRED_NOT_REPLAYABLE', jobId: row.id };
+    }
+    await connection.query(
+      `UPDATE enterprise_outbox
+       SET status = 'QUEUED', attemptCount = 0, nextAttemptAt = ?, replayedBy = ?,
+           replayedAt = ?, dlqAt = NULL, lastError = NULL, leaseOwner = NULL,
+           leaseExpiresAt = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [new Date(now), context.principalId, new Date(now), row.id]
+    );
+    await connection.query(
+      `INSERT INTO enterprise_audit_events
+       (id, tenantId, workspaceId, actorPrincipalId, action, category, severity,
+        resourceType, resourceId, metadata, occurredAt)
+       VALUES (?, ?, ?, ?, 'JOB_REPLAYED', 'tenant.jobs', 'HIGH', ?, ?, ?, ?)`,
+      [crypto.randomUUID(), context.tenantId, row.workspaceId || context.workspaceId || null,
+        context.principalId, row.jobType, row.id, JSON.stringify({ jobType: row.jobType }), new Date(now)]
+    );
+    await connection.commit();
+    return { status: 'REPLAYED', jobId: row.id };
+  } catch (error) {
+    await connection.rollback().catch(() => {});
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 async function reauthorizeJobPrincipal({ tenantService, envelope }) {
   if (!tenantService?.resolveContext) {
     throw Object.assign(new Error('Enterprise worker requires a tenant service for reauthorization'), { code: 'ENTERPRISE_OUTBOX_UNAUTHORIZED', status: 403 });
   }
-  if (String(envelope.identityIssuer || '') !== 'firebase') {
-    // Only Firebase-subject reauthorization is implemented; service-issued
-    // envelopes must be validated by an issuer-aware resolver (future work).
-    throw Object.assign(new Error('Job identity issuer cannot be reauthorized by this worker'), { code: 'ENTERPRISE_OUTBOX_UNAUTHORIZED', status: 403 });
-  }
-  if (!envelope.subjectId) {
-    throw Object.assign(new Error('Job subject is required for reauthorization'), { code: 'ENTERPRISE_OUTBOX_UNAUTHORIZED', status: 403 });
+  if (String(envelope.identityIssuer || '') !== 'firebase' || !envelope.subjectId) {
+    throw Object.assign(new Error('Job identity cannot be reauthorized by this worker'), { code: 'ENTERPRISE_OUTBOX_UNAUTHORIZED', status: 403 });
   }
   const resolved = await tenantService.resolveContext({
     user: { uid: envelope.subjectId, email: null, emailVerified: true, claims: {} },
@@ -328,26 +340,14 @@ async function reauthorizeJobPrincipal({ tenantService, envelope }) {
 }
 
 const REJECT_ERROR_CODES = new Set([
-  'INVALID_TENANT_JOB',
-  'INVALID_TENANT_JOB_SIGNATURE',
-  'EXPIRED_TENANT_JOB',
-  'TENANT_INACTIVE',
-  'TENANT_MEMBERSHIP_INACTIVE',
-  'TENANT_MEMBERSHIP_NOT_FOUND',
-  'TENANT_NOT_FOUND',
-  'WORKSPACE_NOT_FOUND',
-  'WORKSPACE_MEMBERSHIP_NOT_FOUND',
-  'ENTERPRISE_OUTBOX_UNAUTHORIZED',
-  'TENANT_CONTEXT_REQUIRED',
+  'INVALID_TENANT_JOB', 'INVALID_TENANT_JOB_SIGNATURE', 'EXPIRED_TENANT_JOB',
+  'TENANT_INACTIVE', 'TENANT_MEMBERSHIP_INACTIVE', 'TENANT_MEMBERSHIP_NOT_FOUND',
+  'TENANT_NOT_FOUND', 'WORKSPACE_NOT_FOUND', 'WORKSPACE_MEMBERSHIP_NOT_FOUND',
+  'ENTERPRISE_OUTBOX_UNAUTHORIZED', 'TENANT_CONTEXT_REQUIRED',
 ]);
 
-/**
- * Run one worker pass: claim due jobs, verify, reauthorize, execute, finalize.
- * Returns per-job outcomes for observability and tests.
- */
 async function runOutboxWorkerOnce({
-  db,
-  admin,
+  pool = null,
   tenantService,
   signingSecret,
   handlers,
@@ -358,17 +358,17 @@ async function runOutboxWorkerOnce({
   backoffBaseMs = DEFAULT_BASE_BACKOFF_MS,
   backoffJitter = true,
 }) {
-  assertDb(db);
+  const resolvedPool = resolvePool(pool);
   if (!signingSecret || Buffer.byteLength(String(signingSecret)) < 32) {
     throw Object.assign(new Error('Enterprise outbox worker requires the tenant job signing secret'), { code: 'TENANT_JOB_SIGNING_UNAVAILABLE', status: 503 });
   }
   const outcomes = [];
-  for (let index = 0; index < Math.max(1, Number(maxJobs) || 1); index += 1) {
-    const job = await claimNextOutboxJob({ db, admin, workerId, now, leaseMs });
+  for (let index = 0; index < Math.max(1, Math.min(Number(maxJobs) || 1, 100)); index += 1) {
+    const job = await claimNextOutboxJob({ pool: resolvedPool, workerId, now, leaseMs });
     if (!job) break;
     try {
       const envelope = validateTenantJobEnvelope(job.envelope, signingSecret, { now });
-      if (tsMillis(job.expiresAt) && tsMillis(job.expiresAt) <= now) {
+      if (toMillis(job.expiresAt) <= now) {
         throw Object.assign(new Error('Tenant job is expired'), { code: 'EXPIRED_TENANT_JOB', status: 409 });
       }
       const context = await reauthorizeJobPrincipal({ tenantService, envelope });
@@ -377,81 +377,39 @@ async function runOutboxWorkerOnce({
         throw Object.assign(new Error(`No handler registered for job type ${envelope.jobType}`), { code: 'OUTBOX_HANDLER_MISSING', status: 500 });
       }
       const result = await handler({ envelope, context, job });
-      const completed = await completeOutboxJob({ db, admin, job, workerId, result, now });
-      outcomes.push(completed);
+      outcomes.push(await completeOutboxJob({ pool: resolvedPool, job, workerId, result, now }));
     } catch (error) {
       const code = String(error?.code || '');
-      if (REJECT_ERROR_CODES.has(code)) {
-        outcomes.push(await rejectOutboxJob({ db, admin, job, reason: code || 'JOB_REJECTED', now }));
-      } else {
-        outcomes.push(await failOutboxJob({ db, admin, job, workerId, error, now, backoffBaseMs, backoffJitter }));
-      }
+      outcomes.push(REJECT_ERROR_CODES.has(code)
+        ? await rejectOutboxJob({ pool: resolvedPool, job, reason: code || 'JOB_REJECTED', now })
+        : await failOutboxJob({ pool: resolvedPool, job, workerId, error, now, backoffBaseMs, backoffJitter }));
     }
   }
   return outcomes;
 }
 
-/**
- * Sweep jobs whose expiry passed while queued (e.g. tenant sat suspended).
- * Expired jobs are terminally rejected, never executed.
- */
-async function sweepExpiredJobs({ db, admin, now = Date.now(), limit = 50 }) {
-  assertDb(db);
-  let due;
-  try {
-    due = await db.collection(OUTBOX_COLLECTION)
-      .where('status', 'in', ['QUEUED', 'RETRYING'])
-      .where('expiresAt', '<=', ts(admin, now))
-      .limit(limit)
-      .get();
-  } catch (error) {
-    if (error.code === 9 || String(error.message || '').includes('requires an index')) {
-      const fallbackSnapshot = await db.collection(OUTBOX_COLLECTION)
-        .where('status', 'in', ['QUEUED', 'RETRYING'])
-        .limit(limit * 2)
-        .get();
-      const filtered = fallbackSnapshot.docs
-        .filter(doc => tsMillis(doc.data()?.expiresAt) <= now)
-        .slice(0, limit);
-      due = { docs: filtered };
-    } else {
-      throw error;
-    }
-  }
-  const rejected = [];
-  for (const document of due.docs) {
-    const outcome = await rejectOutboxJob({ db, admin, job: { ref: document.ref, jobId: document.id }, reason: 'EXPIRED_TENANT_JOB', now });
-    rejected.push(outcome);
-  }
-  return rejected;
+async function sweepExpiredJobs({ pool = null, now = Date.now(), limit = 50 }) {
+  const resolvedPool = resolvePool(pool);
+  const bounded = Math.max(1, Math.min(Number(limit) || 50, 500));
+  const [rows] = await resolvedPool.query(
+    `SELECT id FROM enterprise_outbox
+     WHERE status IN ('QUEUED', 'RETRYING') AND expiresAt <= ?
+     ORDER BY expiresAt ASC LIMIT ?`,
+    [new Date(now), bounded]
+  );
+  const outcomes = [];
+  for (const row of rows) outcomes.push(await rejectOutboxJob({ pool: resolvedPool, job: { jobId: row.id }, reason: 'EXPIRED_TENANT_JOB', now }));
+  return outcomes;
 }
 
-/**
- * Truthful durable status. Never reports healthy when the Firestore handle or
- * the signing secret is missing.
- */
-async function getOutboxStatus({ db, admin, signingSecret = null }) {
-  if (!db || !admin?.firestore?.FieldValue) {
-    return {
-      engine: 'firestore-durable-outbox',
-      durable: true,
-      configured: false,
-      healthy: false,
-      status: 'unavailable',
-      activeQueued: 0,
-      deadLetterCount: 0,
-      counts: {},
-      signingConfigured: Boolean(signingSecret && Buffer.byteLength(String(signingSecret)) >= 32),
-    };
-  }
-  const counts = {};
-  for (const status of ['QUEUED', 'PROCESSING', 'RETRYING', 'COMPLETED', 'DEAD_LETTER', 'REJECTED']) {
-    const snapshot = await db.collection(OUTBOX_COLLECTION).where('status', '==', status).limit(1_000).get();
-    counts[status] = snapshot.size;
-  }
+async function getOutboxStatus({ pool = null, signingSecret = null } = {}) {
+  const resolvedPool = resolvePool(pool);
+  const [rows] = await resolvedPool.query('SELECT status, COUNT(*) AS total FROM enterprise_outbox GROUP BY status');
+  const counts = Object.fromEntries(ALL_STATES.map(status => [status, 0]));
+  for (const row of rows) if (ALL_STATES.includes(row.status)) counts[row.status] = Number(row.total || 0);
   const signingConfigured = Boolean(signingSecret && Buffer.byteLength(String(signingSecret)) >= 32);
   return {
-    engine: 'firestore-durable-outbox',
+    engine: 'mariadb-transactional-outbox',
     durable: true,
     configured: true,
     healthy: signingConfigured,
@@ -463,43 +421,38 @@ async function getOutboxStatus({ db, admin, signingSecret = null }) {
   };
 }
 
-/**
- * Tenant-scoped job listing for the enterprise console (queue + DLQ views).
- * The tenantId predicate is enforced against the verified context.
- */
-async function listOutboxJobs({ db, context, status = null, limit = DEFAULT_PAGE_LIMIT }) {
-  assertDb(db);
-  if (!context?.tenantId) throw Object.assign(new Error('Verified tenant context is required to list jobs'), { code: 'TENANT_CONTEXT_REQUIRED', status: 403 });
-  let query = db.collection(OUTBOX_COLLECTION).where('tenantId', '==', context.tenantId);
-  if (status) query = query.where('status', '==', String(status).toUpperCase());
-  const snapshot = await query.orderBy('createdAt', 'desc').limit(Math.max(1, Math.min(Number(limit) || DEFAULT_PAGE_LIMIT, 100))).get();
-  return snapshot.docs.map(document => {
-    const value = document.data();
+async function listOutboxJobs({ pool = null, context, status = null, limit = DEFAULT_PAGE_LIMIT }) {
+  if (!context?.tenantId) {
+    throw Object.assign(new Error('Verified tenant context is required to list jobs'), { code: 'TENANT_CONTEXT_REQUIRED', status: 403 });
+  }
+  const normalizedStatus = status ? String(status).toUpperCase() : null;
+  if (normalizedStatus && !ALL_STATES.includes(normalizedStatus)) {
+    throw Object.assign(new Error('Enterprise job status is invalid'), { code: 'INVALID_ENTERPRISE_JOB_STATUS', status: 400 });
+  }
+  const bounded = Math.max(1, Math.min(Number(limit) || DEFAULT_PAGE_LIMIT, 100));
+  const sql = `SELECT * FROM enterprise_outbox WHERE tenantId = ?${normalizedStatus ? ' AND status = ?' : ''} ORDER BY created_at DESC LIMIT ?`;
+  const params = normalizedStatus ? [context.tenantId, normalizedStatus, bounded] : [context.tenantId, bounded];
+  const [rows] = await resolvePool(pool).query(sql, params);
+  return rows.map(row => {
+    const job = mapJob(row);
     return {
-      jobId: document.id,
-      jobType: value.jobType,
-      tenantId: value.tenantId,
-      workspaceId: value.workspaceId || null,
-      status: value.status,
-      attemptCount: Number(value.attemptCount || 0),
-      maxAttempts: Number(value.maxAttempts || DEFAULT_MAX_ATTEMPTS),
-      correlationId: value.correlationId || null,
-      lastError: value.lastError || null,
-      rejectedReason: value.rejectedReason || null,
-      createdAt: value.createdAt,
-      updatedAt: value.updatedAt,
-      completedAt: value.completedAt || null,
-      expiresAt: value.expiresAt || null,
+      jobId: job.jobId, jobType: job.jobType, tenantId: job.tenantId,
+      workspaceId: job.workspaceId, status: job.status, attemptCount: job.attemptCount,
+      maxAttempts: job.maxAttempts, correlationId: job.correlationId,
+      lastError: job.lastError, rejectedReason: job.rejectedReason,
+      createdAt: job.createdAt, updatedAt: job.updatedAt,
+      completedAt: job.completedAt, expiresAt: job.expiresAt,
     };
   });
 }
 
 module.exports = {
+  ALL_STATES,
   CLAIMABLE_STATES,
   DEFAULT_LEASE_MS,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_TTL_MS,
-  OUTBOX_COLLECTION,
+  OUTBOX_TABLE,
   REJECT_ERROR_CODES,
   backoffDelayMs,
   claimNextOutboxJob,

@@ -9,7 +9,7 @@ import UsersManager from './usersManager/UsersManager';
 import Phrases from './phrases/Phrases';
 import Messages from './messages/Messages';
 import fire from '../../conf/fire';
-import { checkIfAdmin } from '../../firestore/dbOperations';
+import { checkIfAdmin } from '../../services/api/platform';
 import signOutUser from '../../utils/signOut';
 import Reviews from './reviews/Reviews';
 import TrustedBy from './TrustedBy/TrustedBy';

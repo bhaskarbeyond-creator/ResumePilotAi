@@ -34,16 +34,16 @@ const FLAG_DEFINITIONS = {
     category: 'workers',
     securityRisk: 'low',
     defaultValue: false,
-    dependencies: ['MySQL blog table'],
+    dependencies: ['MariaDB blog table'],
   },
   NOTIFICATION_OUTBOX_WORKER_ENABLED: {
     description: 'Enable notification outbox local worker',
-    impact: 'When enabled, a background worker processes queued notifications (email, SMS) from the MySQL outbox.',
+    impact: 'When enabled, a background worker processes queued notifications (email, SMS) from the MariaDB outbox.',
     requiresRestart: true,
     category: 'workers',
     securityRisk: 'low',
     defaultValue: false,
-    dependencies: ['MySQL notification_outbox table', 'SMTP/Twilio configuration'],
+    dependencies: ['MariaDB notification_outbox table', 'SMTP/Twilio configuration'],
   },
   ENTERPRISE_OUTBOX_WORKER_ENABLED: {
     description: 'Enable Enterprise durable outbox worker',
@@ -101,28 +101,29 @@ const CACHE_TTL_MS = 30_000; // 30 seconds
  * @returns {Promise<Record<string, { value: boolean, changedAt: any, changedBy: string }>>}
  */
 async function _loadFromMysql() {
-  try {
-    const pool = getPool();
-    const [rows] = await pool.query(
-      'SELECT data FROM system_settings WHERE category = ?',
-      [FLAGS_CATEGORY]
-    );
-    if (!rows.length) return {};
-    const parsed = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : (rows[0].data || {});
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
+  const [rows] = await getPool().query(
+    'SELECT data FROM system_settings WHERE category = ?',
+    [FLAGS_CATEGORY]
+  );
+  if (!rows.length) return {};
+  const parsed = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : (rows[0].data || {});
+  return parsed && typeof parsed === 'object' ? parsed : {};
 }
 
 /**
  * Get the effective value of a single flag.
  * Priority: MySQL override > process.env > default.
- * The `db` argument is retained for signature compatibility and ignored.
  */
-async function getFlagValue(db, flagKey) {
+async function getFlagValue(flagKey) {
   const def = FLAG_DEFINITIONS[flagKey];
   if (!def) return undefined;
+
+  // Route/unit suites opt into explicit environment values and do not silently
+  // require a live database. Production always reads MariaDB first and fails
+  // closed when the authoritative flag store is unavailable.
+  if (process.env.NODE_ENV === 'test' && process.env[flagKey] !== undefined) {
+    return String(process.env[flagKey]).toLowerCase() === 'true';
+  }
 
   const now = Date.now();
   if (!_cache || (now - _cacheTime) > CACHE_TTL_MS) {
@@ -146,7 +147,7 @@ async function getFlagValue(db, flagKey) {
  * Get all flags with their effective values and metadata.
  * Used by the Super Admin Feature Flags UI.
  */
-async function getAllFlags(db) {
+async function getAllFlags() {
   const stored = await _loadFromMysql();
   const result = {};
 
@@ -186,10 +187,9 @@ async function getAllFlags(db) {
 /**
  * Set a flag value. Audited, SUPER_ADMIN only. MySQL/MariaDB is the
  * authoritative store; the flag override and its audit event commit in ONE
- * transaction. The `db`/`admin` arguments are retained for signature
- * compatibility and ignored.
+ * transaction.
  */
-async function setFlagValue(db, admin, flagKey, value, actorUid, requestId) {
+async function setFlagValue(flagKey, value, actorUid, requestId) {
   const def = FLAG_DEFINITIONS[flagKey];
   if (!def) throw Object.assign(new Error(`Unknown feature flag: ${flagKey}`), { code: 'UNKNOWN_FEATURE_FLAG', status: 400 });
   if (typeof value !== 'boolean') throw Object.assign(new Error('Flag value must be a boolean'), { code: 'INVALID_FLAG_VALUE', status: 400 });

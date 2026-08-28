@@ -32,8 +32,8 @@ test.before(() => {
   });
 });
 
-// The control-plane handlers fail closed with a structured 503 when Firestore /
-// Firebase Auth are unavailable (e.g. local runs without credentials). Assertions
+// The control-plane handlers fail closed with a structured 503 when MariaDB or
+// Firebase Authentication are unavailable. Assertions
 // therefore require the strict success shape only when the backing services are
 // present, while always asserting deterministic authorization/validation behavior.
 function assertSuccessOrUnavailable(res) {
@@ -76,16 +76,20 @@ test('Super Admin Platform Currency: returns platform currency configuration whe
 });
 
 test('Super Admin Platform Currency: updates platform currency when authorized', async () => {
+  const loaded = await request(app).get('/api/admin/platform/currency').set(bearer('super-admin'));
+  const expectedRevision = loaded.status === 200 ? loaded.body.currency.revision : 0;
   const res = await request(app)
     .put('/api/admin/platform/currency')
     .set(bearer('super-admin'))
-    .send({ currency: 'USD', allowMultiCurrency: true });
+    .send({ currency: 'USD', allowMultiCurrency: true, expectedRevision });
 
-  // Either 200 (if DB available) or structured error (if test DB offline / quota limited)
-  assert.ok([200, 429, 500, 503].includes(res.status), `unexpected status ${res.status}`);
+  assert.ok([200, 409, 503].includes(res.status), `unexpected status ${res.status}`);
   if (res.status === 200) {
     assert.equal(res.body.success, true);
     assert.equal(res.body.currency.code, 'USD');
+  } else {
+    assert.equal(res.body.success, false);
+    assert.ok(res.body.code);
   }
 });
 

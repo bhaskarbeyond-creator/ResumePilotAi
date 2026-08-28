@@ -211,7 +211,7 @@
     "unlimitedResumes": "Obegränsade CV:n",
     "nonRecuring": "Engångsbetalning.",
     "upgradeAndDownload": "Uppgradera och ladda ner",
-    "payment1": "Få ditt drömjobb",
+    "payment1": "Skapa ditt CV",
     "payment2": "Betalning via en betrodd betaltjänst",
     "payment3": "SSL-säker / 256-bitars SSL-säker utcheckning",
     "payment4": "7 dagars pengarna tillbaka-garanti",
@@ -243,7 +243,7 @@
     "featuresNav": "Funktioner",
     "resumeBuilderFeatures": "CV-byggare Funktioner",
     "featureTagline": "Allt du behöver för det perfekta CV:t",
-    "userCount": "50K+ användare",
+    "userCount": "Funktionsöversikt",
     "exploreFeatures": "Utforska alla funktioner",
     "freeToTry": "Gratis att prova",
     "startBuilding": "Börja bygga",
@@ -345,12 +345,12 @@
       "sentence5": "Lyckas med intervjuer med AI-förberedelseverktyg"
     },
     "badge": "AI-driven CV-byggare",
-    "description": "Skapa fantastiska, ATS-vänliga CV:n och personliga brev med AI-assistans. Välj bland professionella mallar, få feedback i realtid och landa ditt drömjobb snabbare.",
+    "description": "Skapa och redigera CV:n och personliga brev med guidade verktyg, konfigurerbara mallar, liveförhandsvisning och valfri AI-hjälp.",
     "createResume": "Skapa CV",
     "createCoverLetter": "Skapa personligt brev",
     "stats": {
-      "users": "5 000+ nöjda användare",
-      "rating": "4.9/5"
+      "users": "Guidade CV-verktyg",
+      "rating": "Liveförhandsvisning"
     },
     "features": {
       "freeToStart": "Gratis att starta",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "BEVISADE RESULTAT • TRUSTED BY 50K+ PROFESSIONALS",
+    "badge": "GUIDAT CV-SKAPANDE",
     "title": {
       "part1": "Förvandla",
       "part2": "Din Karriär",
       "part3": "Resa"
     },
-    "description": "Gå med tusentals yrkesverksamma som har accelererat sina karriärer med vår AI-drivna CV-byggare. Bli uppmärksammad, få intervjuer och säkra ditt drömjobb snabbare än någonsin tidigare.",
+    "description": "Använd guidade avsnitt, konfigurerbara layouter, förhandsvisningar och valfri AI-hjälp för att förbereda och granska ett CV.",
     "benefits": [
       {
         "title": "Land Fler Jobbintervjuer",
         "description": "Våra ATS-optimerade mallar och AI-drivna innehållsförslag hjälper ditt CV att ta sig förbi automatiserade screening-system och in i händerna på anställningschefer.",
-        "detail": "Gå med tusentals yrkesverksamma som har ökat sin intervju-frekvens med 3x med vårt bevisade system."
+        "detail": "Granska och anpassa varje förslag innan du använder det i en ansökan."
       },
       {
         "title": "Stå Ut Från Konkurrensen",
@@ -396,24 +396,6 @@
         "title": "Bygg Förtroende I Din Jobbjakt",
         "description": "Presentera ditt bästa professionella jag med ett polerat, felfritt CV som speglar din sanna potential och professionella prestationer.",
         "detail": "Känn dig trygg i vetskapen om att dina ansökningsmaterial är professionellt utformade och följer branschstandarder."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Nöjda användare"
-      },
-      {
-        "number": "98.7%",
-        "label": "Framgångsfrekvens"
-      },
-      {
-        "number": "50+",
-        "label": "Mallar"
-      },
-      {
-        "number": "24 timmar",
-        "label": "Genomsnittlig tid"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Redo att landa ditt drömjobb?",
-      "description": "Gå med över 50 000 yrkesverksamma som har förvandlat sina karriärer. Börja bygga ditt vinnande CV idag.",
+      "title": "Redo att skapa ditt CV?",
+      "description": "Skapa, granska och exportera ditt CV med den guidade redigeraren.",
       "button": "Starta din framgångssaga",
       "noCredit": "✨ Inget kreditkort krävs • Gratis mallar ingår"
     }
@@ -440,7 +422,7 @@
       "part2": "Användare",
       "part3": " Säger"
     },
-    "description": "Gå med tusentals nöjda arbetssökande som har landat sina drömjobb med vår AI-drivna CV-byggare.",
+    "description": "Läs godkänd kundfeedback som publicerats genom plattformens granskningsflöde.",
     "navigation": {
       "previous": "Föregående",
       "next": "Nästa",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Behöver du fortfarande hjälp?",
-      "description": "Vårt supportteam finns här dygnet runt för att hjälpa dig att lyckas",
+      "description": "Använd kontaktformuläret för frågor om kontot eller produkten. Svarstider garanteras inte.",
       "contactButton": "Kontakta support",
-      "docsButton": "Bläddra bland dokument"
+      "docsButton": "Karriärartiklar"
     },
     "cta": {
       "badge": "Redo att skapa ditt CV?",
-      "title": "Förvandla din karriär med AI-drivna CV:n",
-      "description": "Gå med tusentals yrkesverksamma som har skapat fantastiska CV:n på några sekunder. Börja din karriärresa idag med vår intelligenta designplattform.",
+      "title": "Skapa och granska ditt CV",
+      "description": "Se vanliga frågor eller börja skapa ett CV med den guidade redigeraren.",
       "button": "Börja skapa gratis",
-      "freeCredits": "3 gratis krediter • Inget kreditkort krävs",
-      "support": "Support dygnet runt",
-      "secure": "Säker och privat",
-      "instant": "Omedelbara resultat"
+      "freeCredits": "",
+      "support": "Kontokopplade utkast",
+      "secure": "Granska före export",
+      "instant": "Valfri AI-hjälp"
     },
     "trustIndicators": {
-      "secure": "Säker och privat",
-      "instant": "Omedelbara resultat",
-      "support": "Support dygnet runt"
+      "secure": "Granska före export",
+      "instant": "Valfri AI-hjälp",
+      "support": "Kontokopplade utkast"
     },
     "q1": {
-      "question": "Hur kommer jag igång med AI-CV-skapande?",
-      "answer": "Skapa ett gratiskonto, fyll i dina uppgifter och se vår AI skapa snygga CV:n på några sekunder."
+      "question": "Hur börjar jag använda CV-redigeraren?",
+      "answer": "Skapa ett konto, öppna redigeraren, ange uppgifter som du har kontrollerat, välj en layout och granska förhandsvisningen innan du sparar eller exporterar. AI-hjälp är valfri och kan vara avstängd."
     },
     "q2": {
-      "question": "Hur snabbt skapas CV:t?",
-      "answer": "Vår AI skapar flera CV-varianter på under 5 minuter!"
+      "question": "Garanterar AI-hjälp en intervju eller ett jobb?",
+      "answer": "Nej. AI-resultat kan vara ofullständiga eller felaktiga och garanterar inte ATS-godkännande, intervju eller anställning. Granska och redigera varje förslag."
     },
     "q3": {
-      "question": "Vad ingår i gratisplanen?",
-      "answer": "Nya användare får gratiskrediter för att ladda ner CV:n i PDF- och Word-format."
+      "question": "Var ser jag aktuella plangränser och priser?",
+      "answer": "Prissidan visar aktuella serverlevererade planer, rättigheter, skatter och betalningsalternativ. Tillgänglighet kan variera beroende på konto och konfiguration."
     },
     "q4": {
-      "question": "Kan jag anpassa det skapade CV:t?",
-      "answer": "Ja! Du kan enkelt ändra stilar, färger och layouter."
+      "question": "Kan jag anpassa mitt CV?",
+      "answer": "Ja. Du kan redigera avsnitt, välja en tillgänglig layout och granska förhandsvisningen. AI-förslag kan redigeras och bör kontrolleras."
     },
     "q5": {
-      "question": "Vilka filformat erbjuder ni?",
-      "answer": "Alla CV:n finns tillgängliga i högkvalitativa PDF- och Word-format."
+      "question": "Vilka exportformat är tillgängliga?",
+      "answer": "PDF- och DOCX-export erbjuds när relevant exportrutt och kontorättighet är tillgängliga. Kontrollera alltid filen innan du skickar den."
     },
     "q6": {
-      "question": "Hur fungerar kreditsystemet?",
-      "answer": "Varje skapande förbrukar 1 kredit. Krediter gå aldrig ut."
+      "question": "Hur lagras utkast och kontodata?",
+      "answer": "Firebase Authentication hanterar identitet. Utkast och andra programdata lagras via det MariaDB-baserade API:t. Läs integritetspolicyn och alternativen för export eller radering av konto."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Håll dig uppdaterad",
       "securePayments": "Säkra betalningar"
     },
-    "aboutText": "Vi hjälper arbetssökande att skapa professionella CV:n på några minuter. Vår mission är att möjliggöra för individer att landa sina drömjobb med högkvalitativa, AI-skapade ansökningshandlingar.",
+    "aboutText": "ResumePilot AI erbjuder verktyg för att skapa, granska och exportera CV:n och relaterade karriärdokument.",
     "links": {
       "pricing": "Priser",
       "contact": "Kontakt"
@@ -1146,8 +1128,8 @@
       "clickToView": "Klicka för att visa i full storlek",
       "changeTemplate": "Ändra Mall",
       "viewFullSize": "Visa Full Storlek",
-      "trustedBy": "Betrott av över 50K proffs",
-      "joinSuccess": "Gå med i framgångshistorierna",
+      "trustedBy": "Förhandsvisa före export",
+      "joinSuccess": "Granska innehåll och formatering",
       "resumePdf": "CV.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Utfärdandedatum",
         "placeholder": "t.ex. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "AI-certifieringsrekommendationer",
-      "recommend": "Rekommendera certifieringar (AI)",
-      "tooltip": "Generera AI-certifieringsrekommendationer anpassade efter din profil",
-      "generating": "Analyserar och genererar...",
-      "tailoredSubtitle": "Erkända branschcertifieringar anpassade för {{role}}",
-      "genericSubtitle": "Ledande ackrediterade certifieringar baserade på dina färdigheter och karriär",
-      "promptTitle": "Förstärk ditt CV med validerade certifieringar",
-      "promptDescRole": "Låt AI analysera din erfarenhet som {{role}} och rekommendera de mest efterfrågade certifieringarna.",
-      "promptDescGeneric": "Generera branschstandardcertifieringar anpassade till ditt område för att höja ditt ATS-betyg.",
-      "generateNow": "Generera AI-rekommendationer nu",
-      "refresh": "Uppdatera rekommendationer",
-      "getRecommendations": "Hämta rekommendationer",
-      "addAll": "Lägg till alla rekommenderade",
-      "added": "Tillagd",
-      "addedBadge": "Tillagd",
-      "add": "Lägg till",
-      "mandatoryBadge": "Branschstandard",
-      "recommendedBadge": "Rekommenderas"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Hitta ditt drömjobb idag",
+        "sentence1": "Granska aktuella jobbannonser",
         "sentence2": "Få kontakt med topparbetsgivare",
         "sentence3": "Främja din karriärresa",
         "sentence4": "Upptäck distansmöjligheter",
@@ -1935,83 +1897,40 @@
       "resources": "Resurser",
       "resourcesDesc": "Karriärvägledning & tips",
       "stats": {
-        "jobs": "10 000+ aktiva jobb",
-        "rating": "4.8/5 betyg"
+        "jobs": "Aktuella jobbannonser",
+        "rating": "Verifierade jobbdetaljer"
       },
       "features": {
         "freeToApply": "Gratis att ansöka",
-        "verifiedEmployers": "Verifierade arbetsgivare"
+        "verifiedEmployers": "Modererade arbetsgivare"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Topparbetsgivare",
-      "title": "Gå med i ledande företag",
-      "description": "Upptäck möjligheter hos världsledande företag som aktivt anställer. Från startups till Fortune 500, hitta din perfekta matchning.",
+      "badge": "Utvalda arbetsgivare",
+      "title": "Bläddra bland arbetsgivarprofiler",
+      "description": "Bläddra bland utvalda arbetsgivarprofiler med aktiva annonser. Öppna jobbportalen för att granska aktuella roller och ansökningsuppgifter.",
       "featured": "Utvalda",
       "viewAll": "Visa alla företag",
       "stats": {
-        "companies": "Partnerföretag",
+        "companies": "Utvalda företag",
         "jobs": "Aktiva jobb",
         "hires": "Framgångsrika anställningar"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Så fungerar det",
-      "title": "Få ditt drömjobb i",
-      "titleHighlight": "4 enkla steg",
-      "description": "Vår strömlinjeformade process gör jobbsökandet enkelt. Från upptäckt till anställning guidar vi dig varje steg på vägen för att säkerställa att du hittar den perfekta möjligheten.",
-      "featuresTitle": "Varför välja vår plattform?",
-      "featuresDescription": "Vi tillhandahåller toppmoderna verktyg och funktioner för att göra din jobbsökning mer effektiv och ändamålsenlig.",
-      "steps": {
-        "0": {
-          "title": "Sök och upptäck",
-          "description": "Bläddra bland tusentals jobbmöjligheter från toppföretag. Använd våra avancerade filter för att hitta den perfekta matchningen för dina färdigheter och preferenser."
-        },
-        "1": {
-          "title": "Skapa profil",
-          "description": "Bygg din professionella profil med vår CV-byggare. Visa upp dina färdigheter, erfarenheter och prestationer för att sticka ut från mängden."
-        },
-        "2": {
-          "title": "Ansök direkt",
-          "description": "Ansök till flera jobb med ett klick. Vårt smarta ansökningssystem anpassar automatiskt din profil till varje position."
-        },
-        "3": {
-          "title": "Bli anställd",
-          "description": "Få kontakt med rekryterande chefer, schemalägg intervjuer och få ditt drömjobb. Vi stöder dig under hela processen."
-        }
       },
-      "features": {
-        "0": {
-          "title": "AI-driven matchning",
-          "description": "Vår intelligenta algoritm matchar dig med relevanta möjligheter"
-        },
-        "1": {
-          "title": "CV-optimering",
-          "description": "Optimera ditt CV automatiskt för varje ansökan"
-        },
-        "2": {
-          "title": "Verifierade företag",
-          "description": "Alla arbetsgivare är verifierade för äkthet och kvalitet"
-        }
-      },
-      "cta": {
-        "title": "Redo att påbörja din resa?",
-        "description": "Gå med tusentals yrkesverksamma som har hittat sina drömjobb via vår plattform. Din nästa möjlighet är bara ett klick bort.",
-        "searchButton": "Börja jobbsökning",
-        "profileButton": "Skapa profil"
-      }
+      "empty": "Inga arbetsgivare är utvalda just nu.",
+      "unavailable": "Utvalda arbetsgivare är tillfälligt otillgängliga.",
+      "evidenceReviewed": "Underlag granskat"
     },
     "LandingJobsFeatured": {
       "badge": "Utvalda jobb",
-      "title": "Upptäck din nästa",
-      "titleHighlight": "Drömmöjlighet",
+      "title": "Bläddra bland utvalda",
+      "titleHighlight": "Jobbannonser",
       "description": "Utforska handplockade möjligheter från toppföretag. Dessa utvalda positioner erbjuder exceptionell karriärutveckling, konkurrenskraftig ersättning och fantastiska arbetsmiljöer.",
-      "statsTitle": "Gå med tusentals framgångsrika yrkesverksamma",
-      "statsDescription": "Vår plattform har hjälpt otaliga yrkesverksamma att hitta sina drömjobb hos toppföretag världen över.",
+      "statsTitle": "Publicerad plattformsöversikt",
+      "statsDescription": "Dessa visningsvärden är versionshanterade och länkade till underlag som granskats av plattformsadministratören.",
       "stats": {
         "jobs": "Utvalda jobb",
         "success": "Framgångsfrekvens",
-        "companies": "Toppföretag"
+        "companies": "Utvalda företag"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Ansök nu"
         }
       },
-      "viewAll": "Visa alla jobb"
+      "viewAll": "Visa alla jobb",
+      "empty": "Inga jobb är utvalda just nu.",
+      "evidenceReviewed": "Underlag granskat"
     },
     "MainJobListings": {
       "jobSingular": "jobb",

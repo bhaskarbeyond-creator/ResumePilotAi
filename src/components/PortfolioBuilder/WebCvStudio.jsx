@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../main';
-import { getPortfolioById, getResumes, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../firestore/dbOperations';
+import { getPortfolioById, getResumes, publishPortfolio, savePortfolioDraft, updateExistingPortfolio } from '../../services/api/platform';
 import { normalizeResumeData } from '../../utils/resumeData';
 import { PORTFOLIO_TEMPLATES, PORTFOLIO_TEMPLATE_IDS, buildPortfolioDocument, convertResumeToPortfolio, displayNameFromCanonical, emptyCanonicalPortfolio, extractCanonicalFromPuck, normalizePortfolioData, resolvePortfolioTemplate, sanitizeCanonicalPortfolio, switchPortfolioTemplate, themeForTemplate } from '../../utils/portfolioData';
 import WebCvRenderer from '../PortfolioTemplates/WebCvRenderer';
@@ -239,18 +239,8 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
             const url = `${window.location.origin}/portfolio/${result.slug}`;
             setPublishedUrl(url);
             setDirty(false);
+            // Publication and its email event commit atomically on the server.
             showToast('Success', 'Published');
-            if (user.email) {
-                fetch('/api/notify/portfolio-published', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userEmail: user.email,
-                        userName: user.displayName || user.email.split('@')[0],
-                        portfolioSlug: result.slug || 'my-portfolio',
-                    }),
-                }).catch(() => {});
-            }
         } catch (error) {
             if (error.code === 'PORTFOLIO_CONFLICT') setConflict(true);
             showToast('Error', error.message || 'Unable to publish');

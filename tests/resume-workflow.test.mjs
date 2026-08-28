@@ -71,7 +71,7 @@ test('builder persistence does not implicitly publish or write a cross-account g
   assert.match(source, /publishResume\(/);
   assert.match(source, /expectedPublicationRevision/);
   assert.match(source, /saveResumeDraft\(/);
-  const operations = await fs.promises.readFile('src/firestore/dbOperations.js', 'utf8');
+  const operations = await fs.promises.readFile('src/services/api/platform.js', 'utf8');
   assert.match(operations, /export async function setJsonPb/);
   const legacyWriter = operations.slice(operations.indexOf('export async function setJsonPb'), operations.indexOf('export async function checkIfResumeIdAvailable'));
   assert.doesNotMatch(legacyWriter, /collection\('pb'\)|isPublished|publicationMode/);

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getWebsiteData } from '../../firestore/dbOperations';
+import { getWebsiteData } from '../../services/api/platform';
 import MetaManager from './MetaManager';
 
 /**

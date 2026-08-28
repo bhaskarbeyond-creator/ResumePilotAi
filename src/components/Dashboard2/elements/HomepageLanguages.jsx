@@ -20,7 +20,7 @@ import RomaniaFlag from '../../../assets/countries/romania.png';
 import NetherlandFlag from '../../../assets/countries/netherlands.png';
 import IndiaFlag from '../../../assets/countries/india.png';
 
-import { getWebsiteData } from '../../../firestore/dbOperations';
+import { getWebsiteData } from '../../../services/api/platform';
 
 const HomepageLanguages = () => {
     const { i18n } = useTranslation();

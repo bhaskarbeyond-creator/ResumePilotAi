@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 const source = fs.readFileSync(new URL('../src/services/mfaService.js', import.meta.url), 'utf8');
 const settings = fs.readFileSync(new URL('../src/components/Dashboard/DashboardSettings/DashboardSettings.jsx', import.meta.url), 'utf8');
-const operations = fs.readFileSync(new URL('../src/firestore/dbOperations.js', import.meta.url), 'utf8');
+const applicationData = fs.readFileSync(new URL('../src/services/api/platform.js', import.meta.url), 'utf8');
 
 test('MFA uses Firebase native TOTP enrollment and sign-in assertions', () => {
   assert.match(source, /TotpMultiFactorGenerator\.generateSecret/);
@@ -21,8 +21,8 @@ test('MFA enrollment is authenticated, email-verified, and blocks custom-token O
   assert.match(source, /OAUTH|native Firebase OIDC/i);
 });
 
-test('TOTP secrets and reusable backup codes are not stored in Firestore', () => {
-  assert.doesNotMatch(operations, /totp2FA\s*:/);
+test('TOTP secrets and reusable backup codes are not stored in application data', () => {
+  assert.doesNotMatch(applicationData, /totp2FA\s*:/);
   assert.doesNotMatch(source, /firestore|localStorage|sessionStorage/);
   assert.doesNotMatch(source, /backupCodes|recoveryCodes|Math\.random/);
   assert.doesNotMatch(settings, /8392-1049|9401-2834|recovery codes copied/i);

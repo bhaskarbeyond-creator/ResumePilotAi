@@ -32,6 +32,7 @@ import FeatureFlagsSettings from './FeatureFlagsSettings';
 import PlatformConfigSettings from './PlatformConfigSettings';
 import PlatformCurrencySettings from './PlatformCurrencySettings';
 import { FaCircle } from 'react-icons/fa';
+import { getAdminSystemSettings } from '../../../services/api/platform';
 
 // All settings metadata
 const ALL_SETTINGS = [
@@ -41,7 +42,7 @@ const ALL_SETTINGS = [
     { key: 'geoSeoSettings', label: 'Indian Geo-SEO', group: 'General', description: 'Google India SEO & Geo tags' },
     { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', group: 'General', description: 'ChatGPT, Perplexity & llms.txt' },
     { key: 'firebaseSettings', label: 'Firebase Identity', group: 'General', description: 'Authentication & OAuth credentials' },
-    { key: 'databaseSettings', label: 'Database & Persistence Engine', group: 'General', description: 'Authoritative MySQL / MariaDB storage & outbox' },
+    { key: 'databaseSettings', label: 'Database & Persistence Engine', group: 'General', description: 'Authoritative MariaDB storage and durable outboxes' },
     { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', group: 'General', description: 'Facebook, LinkedIn & GitHub OAuth' },
     { key: 'emailSettings', label: 'Email & SMTP', group: 'General', description: 'Outbound SMTP, Inbound IMAP & Dynamic Templates' },
     { key: 'storageSettings', label: 'Cloud Storage', group: 'AI & Services', description: 'S3 & Cloudinary CDN' },
@@ -69,6 +70,38 @@ const ALL_SETTINGS = [
 ];
 
 class SettingsContent extends Component {
+    state = { configurationWarning: null };
+
+    handleConfigurationUnavailable = (event) => {
+        if (event?.detail?.scope !== 'admin') return;
+        this.setState({ configurationWarning: event.detail.message || 'Authoritative configuration is unavailable.' });
+    };
+
+    handleConfigurationAvailable = (event) => {
+        if (event?.detail?.scope !== 'admin') return;
+        this.setState({ configurationWarning: null });
+    };
+
+    componentDidMount() {
+        this._mounted = true;
+        window.addEventListener('systemSettingsUnavailable', this.handleConfigurationUnavailable);
+        window.addEventListener('systemSettingsAvailable', this.handleConfigurationAvailable);
+        getAdminSystemSettings().then((settings) => {
+            if (!this._mounted) return;
+            this.setState({ configurationWarning: settings?._settingsStale === true
+                ? (settings._settingsError || 'Authoritative configuration is unavailable.')
+                : null });
+        }).catch(() => {
+            if (this._mounted) this.setState({ configurationWarning: 'Authoritative MariaDB admin configuration is unavailable.' });
+        });
+    }
+
+    componentWillUnmount() {
+        this._mounted = false;
+        window.removeEventListener('systemSettingsUnavailable', this.handleConfigurationUnavailable);
+        window.removeEventListener('systemSettingsAvailable', this.handleConfigurationAvailable);
+    }
+
     render() {
         const step = this.props.activeTab || 'modulesSettings';
         const current = ALL_SETTINGS.find(s => s.key === step) || ALL_SETTINGS[0];
@@ -95,6 +128,12 @@ class SettingsContent extends Component {
                         </span>
                     </div>
                 </div>
+
+                {this.state.configurationWarning && (
+                    <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-950">
+                        {this.state.configurationWarning} Refresh after database recovery before making changes.
+                    </div>
+                )}
 
                 {/* Main Settings Form Container */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">

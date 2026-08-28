@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getConversations } from '../firestore/dbOperations';
+import { getConversations } from '../services/api/platform';
 import fire from '../conf/fire';
 
 export const useUnreadMessages = () => {

@@ -15,10 +15,11 @@
  */
 
 const { getPool } = require('./mysql');
+const { queueEmailInTransaction } = require('../services/notificationOutbox');
 
 const TOKEN_LEASE_MS = 60_000;
 
-async function createPasswordResetToken({ tokenHash, uid, email, expiresAt }) {
+async function createPasswordResetToken({ tokenHash, uid, email, expiresAt, notification }) {
     const pool = getPool();
     const conn = await pool.getConnection();
     try {
@@ -34,6 +35,17 @@ async function createPasswordResetToken({ tokenHash, uid, email, expiresAt }) {
              VALUES (?, ?, ?, ?)`,
             [tokenHash, uid, String(email).slice(0, 255), Number(expiresAt)]
         );
+        if (notification) {
+            await queueEmailInTransaction(conn, {
+                eventId: `password-reset:${uid}:${tokenHash}`,
+                recipient: email,
+                templateType: 'password_reset',
+                vars: notification.vars,
+                metadata: { source: 'password_reset_requested', uid },
+                idempotencyKey: `password-reset:${tokenHash}`,
+                sensitive: true,
+            });
+        }
         await conn.commit();
     } catch (err) {
         try { await conn.rollback(); } catch { /* broken connection */ }
@@ -127,7 +139,7 @@ async function releasePasswordResetLease({ tokenHash, leaseId }) {
     } catch { /* best-effort */ }
 }
 
-async function createEmailVerificationToken({ tokenHash, uid, email, expiresAt }) {
+async function createEmailVerificationToken({ tokenHash, uid, email, expiresAt, notification }) {
     const pool = getPool();
     const conn = await pool.getConnection();
     try {
@@ -143,6 +155,17 @@ async function createEmailVerificationToken({ tokenHash, uid, email, expiresAt }
              VALUES (?, ?, ?, ?)`,
             [tokenHash, uid, String(email).slice(0, 255), Number(expiresAt)]
         );
+        if (notification) {
+            await queueEmailInTransaction(conn, {
+                eventId: `email-verification:${uid}:${tokenHash}`,
+                recipient: email,
+                templateType: 'email_verification',
+                vars: notification.vars,
+                metadata: { source: 'email_verification_requested', uid },
+                idempotencyKey: `email-verification:${tokenHash}`,
+                sensitive: true,
+            });
+        }
         await conn.commit();
     } catch (err) {
         try { await conn.rollback(); } catch { /* broken connection */ }

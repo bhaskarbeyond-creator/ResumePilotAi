@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { editTrackingCode, getWebsiteData } from '../../../firestore/dbOperations';
+import { editTrackingCode, getWebsiteData } from '../../../services/api/platform';
 import { initGA, isGA4Initialized } from '../../../utils/ga4';
 import { FaCheck, FaTimes, FaGoogle, FaCode, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
 
@@ -10,18 +10,24 @@ class AnalyticsSettings extends Component {
             trackingCode: '',
             isSuccesShowed: false,
             isValidCode: true,
-            isGA4Active: false, saving: false, error: '',
+            isGA4Active: false, saving: false, error: '', authoritativeLoaded: false,
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveWebsiteMetaData = this.saveWebsiteMetaData.bind(this);
     }
     componentDidMount() {
         getWebsiteData().then((data) => {
+            if (!data || data._settingsStale === true || data._settingsSource !== 'remote') {
+                this.setState({ authoritativeLoaded: false, error: 'Authoritative analytics configuration is unavailable.' });
+                return;
+            }
             this.setState({
                 trackingCode: data.trackingCode || '',
-                isGA4Active: isGA4Initialized(),
+                isGA4Active: Boolean(data.trackingCode) && isGA4Initialized(),
+                authoritativeLoaded: true,
+                error: '',
             });
-        });
+        }).catch((error) => this.setState({ authoritativeLoaded: false, error: error.message || 'Authoritative analytics configuration is unavailable.' }));
     }
     handleChange(event, inputName) {
         switch (inputName) {
@@ -40,12 +46,18 @@ class AnalyticsSettings extends Component {
     }
     async saveWebsiteMetaData() {
         const trackingCode = this.state.trackingCode.trim();
+        if (!this.state.authoritativeLoaded || !this.state.isValidCode) {
+            this.setState({ error: 'Reload authoritative analytics configuration and correct validation errors before saving.' });
+            return;
+        }
 
         this.setState({ saving: true, error: '' });
         try {
             await editTrackingCode(trackingCode);
-            if (trackingCode && this.state.isValidCode) this.setState({ isGA4Active: initGA(trackingCode) || isGA4Initialized() });
-            this.setState({ isSuccesShowed: true });
+            this.setState({
+                isGA4Active: trackingCode ? (initGA(trackingCode) || isGA4Initialized()) : false,
+                isSuccesShowed: true,
+            });
         } catch (error) { this.setState({ error: error.message || 'Analytics settings could not be saved.' }); }
         finally { this.setState({ saving: false }); }
     }
@@ -61,8 +73,8 @@ class AnalyticsSettings extends Component {
                                 <FaCheck className="w-4 h-4 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-emerald-800">Analytics updated!</p>
-                                <p className="text-xs text-emerald-600 mt-1">Google Analytics tracking is now configured.</p>
+                                <p className="text-sm font-medium text-emerald-800">Analytics setting saved</p>
+                                <p className="text-xs text-emerald-600 mt-1">{this.state.trackingCode.trim() ? 'Google Analytics is configured.' : 'Google Analytics tracking is disabled.'}</p>
                             </div>
                         </div>
                         <button
@@ -194,10 +206,9 @@ class AnalyticsSettings extends Component {
                         <button
                             type="button"
                             onClick={() => this.saveWebsiteMetaData()}
-                            disabled={this.state.saving}
-                            disabled={!this.state.isValidCode || !this.state.trackingCode.trim()}
+                            disabled={this.state.saving || !this.state.isValidCode || !this.state.authoritativeLoaded}
                             className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors flex items-center space-x-2 ${
-                                this.state.isValidCode && this.state.trackingCode.trim()
+                                this.state.isValidCode && this.state.authoritativeLoaded
                                     ? 'text-white bg-slate-800 hover:bg-slate-700'
                                     : 'text-slate-400 bg-slate-100 cursor-not-allowed'
                             }`}

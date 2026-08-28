@@ -188,7 +188,7 @@ export default function FeatureFlagsSettings() {
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      flag.source === 'firestore' ? 'bg-indigo-50 text-indigo-700' :
+                      flag.source === 'mysql' ? 'bg-indigo-50 text-indigo-700' :
                       flag.source === 'environment' ? 'bg-slate-100 text-slate-600' :
                       'bg-slate-50 text-slate-400'
                     }`}>
@@ -229,7 +229,7 @@ export default function FeatureFlagsSettings() {
       {/* Last changed info */}
       {flagEntries.some(([, f]) => f.lastChangedAt) && (
         <div className="text-xs text-slate-400 px-1">
-          Last modified flags are stored in Firestore and override environment defaults.
+          Last modified flags are stored in MariaDB and override defaults according to each flag's runtime policy.
         </div>
       )}
 

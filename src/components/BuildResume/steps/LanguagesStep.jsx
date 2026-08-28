@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdDelete, MdAdd, MdCheck, MdTranslate, MdLanguage, MdSportsSoccer, MdClose } from 'react-icons/md';
+import { MdDelete, MdAdd, MdTranslate, MdLanguage, MdSportsSoccer, MdClose } from 'react-icons/md';
 import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
@@ -60,17 +60,17 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
         }
     }, [resumeData.languages, resumeData.hobbies]);
 
-    const createNewLanguage = (name = '', level = 'Native / Bilingual') => {
+    const createNewLanguage = (name = '', level = '') => {
         idCounter.current += 1;
         return {
             id: `lang_${Date.now()}_${idCounter.current}`,
-            name: name,
-            level: level,
+            name,
+            level,
             date: languages.length + 1,
         };
     };
 
-    const addLanguage = (name = '', level = 'Native / Bilingual') => {
+    const addLanguage = (name = '', level = '') => {
         const newLang = createNewLanguage(name, level);
         setLanguages((prev) => [...prev, newLang]);
     };
@@ -198,7 +198,7 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                             </p>
                             <button
                                 type="button"
-                                onClick={() => addLanguage('English', 'Native / Bilingual')}
+                                onClick={() => addLanguage()}
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm cursor-pointer"
                             >
                                 <MdAdd className="w-4 h-4" />
@@ -209,7 +209,7 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                         languages.map((lang, index) => {
                             const itemKey = lang.id || lang.date || `lang-${index}`;
                             const langName = lang.name || lang.language || '';
-                            const langLevel = lang.level || 'Native / Bilingual';
+                            const langLevel = lang.level || '';
 
                             return (
                                 <div
@@ -232,6 +232,9 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                                                 onChange={(e) => updateLanguage(itemKey, 'level', e.target.value)}
                                                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                             >
+                                                <option value="">
+                                                    {t('BuildResume.languages.selectLevel', 'Select a verified proficiency level')}
+                                                </option>
                                                 {PROFICIENCY_LEVELS.map((lvl) => (
                                                     <option key={lvl} value={lvl}>
                                                         {lvl}

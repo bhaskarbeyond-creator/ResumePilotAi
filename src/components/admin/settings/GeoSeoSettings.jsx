@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaGlobeAsia, FaCheck, FaTimes, FaSpinner, FaSearchLocation, FaCode } from 'react-icons/fa';
 
 const GeoSeoSettings = () => {
@@ -18,7 +18,7 @@ const GeoSeoSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.geoSeo) {
                 setGeoSeoConfig((prev) => ({ ...prev, ...settings.geoSeo }));
             }

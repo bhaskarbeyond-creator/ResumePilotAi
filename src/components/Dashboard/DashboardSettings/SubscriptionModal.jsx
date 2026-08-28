@@ -5,7 +5,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from '../../Billing/Plans/Checkout';
-import { getSubscriptionStatus, getAccountInfo } from '../../../firestore/dbOperations';
+import { getSubscriptionStatus, getAccountInfo } from '../../../services/api/platform';
 
 const stripePromise = (conf.stripe_publishable_key && conf.stripe_publishable_key.trim())
     ? loadStripe(conf.stripe_publishable_key.trim())

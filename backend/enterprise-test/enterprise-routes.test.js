@@ -6,7 +6,8 @@ process.env.ENTERPRISE_TENANCY_ENABLED = 'true';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
 const { InMemoryServiceAccountStore } = require('../enterprise/serviceAccountStore');
 const { InMemorySupportGrantStore } = require('../enterprise/supportAccessStore');
 const { TenantService } = require('../enterprise/tenantService');
@@ -26,9 +27,10 @@ function bearer(name) {
   return `Bearer ${name}`;
 }
 
-function installService({ serviceAccountStore = null, supportGrantStore = null } = {}) {
+function installService({ serviceAccountStore = null, supportGrantStore = null, repository = undefined } = {}) {
   const registry = new InMemoryTenantRegistry();
-  app.set('tenantService', new TenantService({ registry, serviceAccountStore, supportGrantStore }));
+  const effectiveRepository = repository === undefined ? new InMemoryEnterpriseRepository() : repository;
+  app.set('tenantService', new TenantService({ registry, repository: effectiveRepository, serviceAccountStore, supportGrantStore }));
   return registry;
 }
 
@@ -228,16 +230,21 @@ test('legacy APIs reject tenant headers rather than silently mixing UID and tena
   assert.equal(response.body.error.code, 'TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE');
 });
 
-test('tenant AI route rejects client-controlled scope and fails closed without an RLS-backed usage ledger', async () => {
+test('tenant AI route rejects client-controlled scope and fails closed without a MariaDB usage ledger', async () => {
+  installService({ repository: null });
   const forged = await request(app).post('/api/enterprise/ai/generate-content').set('Authorization', bearer('alice')).send({ operation: 'generate-summary', payload: { tenantId: '11111111-1111-4111-8111-111111111111' } });
   assert.equal(forged.status, 400);
   assert.equal(forged.body.error.code, 'CLIENT_AI_CONTEXT_REJECTED');
-  const unavailable = await request(app).post('/api/enterprise/ai/generate-content').set('Authorization', bearer('alice')).send({ operation: 'generate-summary', payload: { occupation: 'Engineer' } });
+  const unavailable = await request(app).post('/api/enterprise/ai/generate-content').set('Authorization', bearer('alice')).send({
+    operation: 'generate-summary',
+    payload: { occupation: 'Engineer', sourceFacts: 'Maintained verified deployment runbooks' },
+  });
   assert.equal(unavailable.status, 503);
   assert.equal(unavailable.body.error.code, 'TENANT_AI_METERING_UNAVAILABLE');
 });
 
 test('resource routes fail closed when no enterprise data-plane repository is configured', async () => {
+  installService({ repository: null });
   const response = await request(app).get('/api/enterprise/resources').set('Authorization', bearer('alice'));
   assert.equal(response.status, 503);
   assert.equal(response.body.error.code, 'ENTERPRISE_DATA_PLANE_UNAVAILABLE');

@@ -26,7 +26,7 @@ test('Admin shell mounts accessible reauthentication and generic persistence use
   const [admin, prompt, operations] = await Promise.all([
     fs.readFile('src/components/admin/Admin.jsx', 'utf8'),
     fs.readFile('src/components/admin/AdminReauthPrompt.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
   ]);
   assert.match(admin, /<AdminReauthPrompt \/>/);
   assert.match(prompt, /role="dialog"/);
@@ -41,7 +41,7 @@ test('email, payment and AI tests have distinct routes and email toggles wait fo
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
   ]);
   assert.match(email, /\/api\/email\/admin\/test-connection/);
-  const paymentOperations = await fs.readFile('src/firestore/dbOperations.js', 'utf8');
+  const paymentOperations = await fs.readFile('src/services/api/platform.js', 'utf8');
   assert.match(paymentOperations, /\/api\/admin\/payment\/test-provider/);
   assert.match(payment, /testPaymentProvider/);
   assert.match(ai, /\/api\/admin\/ai\/test-provider/);
@@ -51,14 +51,17 @@ test('email, payment and AI tests have distinct routes and email toggles wait fo
     fs.readFile('backend/routes/email.js', 'utf8'),
     fs.readFile('backend/security/policy.js', 'utf8'),
   ]);
-  assert.match(policy, /LEGACY_EMAIL_ADMIN_PATHS\.has\(pathname\)/);
+  assert.match(policy, /'\/email\/admin\/'/);
+  assert.match(policy, /ADMIN_PREFIXES\.some\(prefix => pathname\.startsWith\(prefix\)\)/);
   assert.match(email, /\/api\/email\/admin\/save-smtp/);
   assert.doesNotMatch(email, /\/api\/admin\/save-smtp/);
   assert.match(emailBackend, /passwordConfigured/);
   assert.match(emailBackend, /projectMailSection/);
   assert.match(emailBackend, /normalizedMailSection/);
   assert.match(emailBackend, /stored\.password/);
-  assert.match(emailBackend, /merged\.password = current\.password/);
+  assert.match(emailBackend, /else if \(currentRaw\?\.password\)/);
+  assert.match(emailBackend, /normalized\.password = currentRaw\.password/);
+  assert.match(emailBackend, /provider\.encryptValue\(replacement/);
 });
 
 test('generic backend settings preserve redacted secrets instead of replacing them with blanks', async () => {
@@ -86,9 +89,9 @@ test('OAuth Admin tests use recent-auth retry and runtime reads canonical secret
 });
 
 test('website metadata and analytics persistence is revisioned, audited, and confirmed', async () => {
-  const [backend, operations, website, analytics, rules] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('src/components/admin/settings/websiteSettings.jsx', 'utf8'), fs.readFile('src/components/admin/settings/anlyticsSettings.jsx', 'utf8'), fs.readFile('SecurityRules.txt', 'utf8'),
+  const [backend, operations, website, analytics] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('src/components/admin/settings/websiteSettings.jsx', 'utf8'), fs.readFile('src/components/admin/settings/anlyticsSettings.jsx', 'utf8'),
   ]);
   assert.match(backend, /WEBSITE_METADATA_UPDATED/);
   assert.match(backend, /ADMIN_TARGET_CHANGED/);
@@ -96,43 +99,39 @@ test('website metadata and analytics persistence is revisioned, audited, and con
   assert.doesNotMatch(operations, /collection\(['"]data['"]\)\.doc\(['"]meta['"]\)\.(?:set|update)/);
   assert.match(website, /await settWebsiteData/);
   assert.match(analytics, /await editTrackingCode/);
-  assert.match(rules, /id in \['meta','frontendstats','public_config'\]/);
 });
 
 test('coupon administration is backend-only, revisioned, and preserves authoritative usage', async () => {
-  const [backend, operations, view, rules] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'), fs.readFile('SecurityRules.txt', 'utf8'),
+  const [backend, operations, view] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
   ]);
   assert.match(backend, /COUPON_SAVED/);
   assert.match(backend, /COUPON_DELETED/);
-  assert.match(backend, /usedCount: Number\(snapshot\.data\(\)\?\.usedCount/);
+  assert.match(backend, /usedCount: Number\(existing\?\.usedCount/);
   assert.match(operations, /\/api\/admin\/coupons/);
   const couponAdmin = operations.slice(operations.indexOf('export async function getAllCouponsAdmin'), operations.indexOf('// Subscription preferences'));
   assert.doesNotMatch(couponAdmin, /collection\(['"]coupons['"]\)|recordTransaction|incrementCouponUsage/);
   assert.match(view, /revision: c\.revision/);
-  assert.match(rules, /match \/coupons\/\{id\} \{ allow read: if signedIn\(\); allow write: if false/);
 });
 
 test('Ads mutations are backend-only, revision checked, audited, validated and confirmation gated', async () => {
-  const [view, operations, backend, rules] = await Promise.all([
+  const [view, operations, backend] = await Promise.all([
     fs.readFile('src/components/admin/settings/adsSettings.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
   ]);
   assert.match(view, /role="alertdialog"/);
   assert.match(view, /sanitizeImageUrl/);
   assert.match(operations, /\/api\/admin\/ads/);
   assert.match(backend, /ADVERTISEMENT_CREATED/);
   assert.match(backend, /ADVERTISEMENT_DELETED/);
-  assert.match(rules, /match \/ads\/\{id\}[^\n]+allow write: if false/);
 });
 
 test('Twilio settings use a secret-free revisioned backend route and runtime namespace', async () => {
   const [view, operations, backend] = await Promise.all([
     fs.readFile('src/components/admin/settings/TwilioSmsSettings.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
   ]);
   assert.match(view, /\/api\/admin\/twilio-settings/);

@@ -32,6 +32,7 @@ function replyRepoError(res, err, fallbackMessage) {
         requestId: res.locals?.requestId,
     };
     if (err?.remoteRevision !== undefined) payload.remoteRevision = err.remoteRevision;
+    if (err?.remoteData && typeof err.remoteData === 'object') payload.remoteData = err.remoteData;
     return res.status(status).json(payload);
 }
 

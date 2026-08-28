@@ -22,6 +22,8 @@
  * is rejected outright (ambiguous credentials).
  */
 
+const crypto = require('crypto');
+const { getPool } = require('../database/mysql');
 const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('./tenantContext');
 
 const API_KEY_HEADER_MAX = 512;
@@ -121,17 +123,20 @@ async function recordM2mAuthFailure({ app, apiKey, code, requestId }) {
     if (now - last < FAILURE_THROTTLE_MS) return;
     failureThrottle.set(prefix, now);
     if (failureThrottle.size > 500) failureThrottle.clear();
-    const db = app?.get?.('db');
-    const admin = app?.get?.('firebaseAdmin') || app?.get?.('admin');
-    if (!db || !admin?.firestore?.FieldValue) return;
-    await db.collection('security_audit_logs').doc().set({
-      action: 'M2M_AUTH_FAILED',
-      keyPrefix: prefix,
-      reason: String(code || 'INVALID_SERVICE_API_KEY').slice(0, 80),
-      requestId: requestId || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  } catch { /* security telemetry is best-effort and must never break auth */ }
+    const pool = app?.get?.('mysqlPool') || getPool();
+    await pool.query(
+      `INSERT INTO security_audit_logs
+       (id, actor_uid, action, category, severity, target_type, metadata, request_id)
+       VALUES (?, ?, 'M2M_AUTH_FAILED', 'iam.service_accounts', 'HIGH', 'SERVICE_ACCOUNT', ?, ?)`,
+      [crypto.randomUUID(), `api-key:${prefix}`, JSON.stringify({
+        keyPrefix: prefix,
+        reason: String(code || 'INVALID_SERVICE_API_KEY').slice(0, 80),
+      }), requestId || null]
+    );
+  } catch (error) {
+    // Authentication remains fail-closed even if telemetry is impaired.
+    console.error('[EnterpriseAuth] Failed to persist M2M authentication failure:', error?.message || error);
+  }
 }
 
 /**

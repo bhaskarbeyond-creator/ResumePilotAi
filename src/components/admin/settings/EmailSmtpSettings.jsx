@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { normalizeAdminApiError } from '../../../services/adminAiSettings';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import { useAdminSession } from '../AdminContext';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
 import config from '../../../conf/configuration';
 import { FaEnvelope, FaCheck, FaTimes, FaSpinner, FaPaperPlane, FaEye, FaEyeSlash, FaServer, FaCode, FaSlidersH, FaFileInvoice, FaUserPlus, FaKey, FaExclamationTriangle, FaInbox, FaHistory, FaShieldAlt, FaRedo, FaSearch, FaCheckCircle, FaExclamationCircle, FaBriefcase, FaDesktop, FaMobileAlt, FaFilter } from 'react-icons/fa';
 
@@ -107,6 +106,7 @@ const EmailSmtpSettings = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(true);
     const [runtimeSettingsLoaded, setRuntimeSettingsLoaded] = useState(false);
+    const [emailRevision, setEmailRevision] = useState(null);
     const [saving, setSaving] = useState(false);
     const [testingSmtp, setTestingSmtp] = useState(false);
     const [testingFallbackSmtp, setTestingFallbackSmtp] = useState(false);
@@ -406,11 +406,9 @@ const EmailSmtpSettings = () => {
     const loadSettingsAndLogs = async () => {
         setLoading(true);
         setRuntimeSettingsLoaded(false);
+        setEmailRevision(null);
         try {
-            const [settings, runtime] = await Promise.all([
-                getSystemSettings(),
-                fetchAdminWithReauth(`${API_BASE}/api/email/admin/settings`),
-            ]);
+            const runtime = await fetchAdminWithReauth(`${API_BASE}/api/email/admin/settings`);
             if (!runtime.response.ok || !runtime.data.success) throw normalizeAdminApiError(runtime.response, runtime.data, 'Email runtime settings could not be loaded.');
             const sm = runtime.data.settings?.smtp || {};
             const fb = runtime.data.settings?.fallbackSmtp || {};
@@ -449,7 +447,8 @@ const EmailSmtpSettings = () => {
                 autoSync: im.autoSync !== undefined ? im.autoSync : true
             });
 
-            setEnabledTemplates((prev) => ({ ...prev, ...(settings?.enabledTemplates || {}), ...(runtime.data.settings?.enabledTemplates || {}) }));
+            setEnabledTemplates((prev) => ({ ...prev, ...(runtime.data.settings?.enabledTemplates || {}) }));
+            setEmailRevision(Number(runtime.data.settings?.revision ?? 0));
 
             setTestRecipientEmail(loadedSmtp.adminEmail);
             setRuntimeSettingsLoaded(true);
@@ -457,10 +456,9 @@ const EmailSmtpSettings = () => {
             // Logs are operational history, not configuration. A log failure must not
             // turn a successfully loaded configuration into an unsafe default state.
             try {
-                const logsRes = await fetch(`${API_BASE}/api/email/logs`);
-                const logsData = await logsRes.json().catch(() => ({}));
-                if (!logsRes.ok || !logsData.success) throw normalizeAdminApiError(logsRes, logsData, 'Email logs could not be loaded.');
-                setEmailLogs(logsData.logs || []);
+                const logsResult = await fetchAdminWithReauth(`${API_BASE}/api/email/logs`);
+                if (!logsResult.response.ok || !logsResult.data.success) throw normalizeAdminApiError(logsResult.response, logsResult.data, 'Email logs could not be loaded.');
+                setEmailLogs(logsResult.data.logs || []);
             } catch (logError) {
                 setStatusMessage({ type: 'error', text: logError.message || 'Email settings loaded, but outbox logs are unavailable.' });
             }
@@ -482,13 +480,13 @@ const EmailSmtpSettings = () => {
             [templateKey]: enabledTemplates[templateKey] === false ? true : false
         };
         try {
-            await saveSystemSettings('enabledTemplates', updated);
             const { response, data } = await fetchAdminWithReauth('/api/email/admin/save-smtp', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates: updated })
+                body: JSON.stringify({ enabledTemplates: updated, expectedRevision: emailRevision })
             });
             if (!response.ok || !data.success) throw normalizeAdminApiError(response, data, 'Template setting was not saved to the mail runtime.');
             setEnabledTemplates(updated);
+            setEmailRevision(Number(data.revision));
             setStatusMessage({ type: 'success', text: 'Template setting saved.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: error.message || 'Template setting could not be saved.' });
@@ -535,25 +533,31 @@ const EmailSmtpSettings = () => {
         }
         setSaving(true);
         try {
-            // Persist revisioned Admin metadata through trusted backend routes.
-            await saveSystemSettings('smtp', smtpConfig, { clearSecrets: { password: clearSecrets.smtp === true } });
-            await saveSystemSettings('fallbackSmtp', fallbackSmtp, { clearSecrets: { password: clearSecrets.fallbackSmtp === true } });
-            await saveSystemSettings('imap', imapConfig, { clearSecrets: { password: clearSecrets.imap === true } });
-            await saveSystemSettings('enabledTemplates', enabledTemplates);
-
-            // Persist the runtime mail configuration on the trusted backend and inspect its result.
             const { response, data: result } = await fetchAdminWithReauth('/api/email/admin/save-smtp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ smtp: smtpConfig, fallbackSmtp, imap: imapConfig, enabledTemplates, clearSecrets })
+                body: JSON.stringify({
+                    smtp: smtpConfig,
+                    fallbackSmtp,
+                    imap: imapConfig,
+                    enabledTemplates,
+                    clearSecrets,
+                    expectedRevision: emailRevision,
+                })
             });
             if (!response.ok || !result.success) throw normalizeAdminApiError(response, result, 'Runtime email configuration was not saved.');
-            setCredentialStatus(current => ({ smtp: current.smtp || Boolean(smtpConfig.password), fallbackSmtp: current.fallbackSmtp || Boolean(fallbackSmtp.password), imap: current.imap || Boolean(imapConfig.password) }));
+            setEmailRevision(Number(result.revision));
+            setCredentialStatus({
+                smtp: result.settings?.smtp?.passwordConfigured === true,
+                fallbackSmtp: result.settings?.fallbackSmtp?.passwordConfigured === true,
+                imap: result.settings?.imap?.passwordConfigured === true,
+            });
+            setClearSecrets({ smtp: false, fallbackSmtp: false, imap: false });
             setSmtpConfig(current => ({ ...current, password: '' }));
             setFallbackSmtp(current => ({ ...current, password: '' }));
             setImapConfig(current => ({ ...current, password: '' }));
 
-            setStatusMessage({ type: 'success', text: 'SMTP, fallback relay, IMAP, and template settings were saved to the trusted runtime.' });
+            setStatusMessage({ type: 'success', text: 'SMTP, fallback relay, IMAP, and template settings were saved to MariaDB.' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -637,7 +641,7 @@ const EmailSmtpSettings = () => {
         setStatusMessage(null);
         try {
             const spec = TEMPLATE_SPECS[selectedTemplate];
-            const response = await fetch(`${API_BASE}/api/send-email`, {
+            const { response, data } = await fetchAdminWithReauth(`${API_BASE}/api/email/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -647,10 +651,9 @@ const EmailSmtpSettings = () => {
                     vars: spec.sampleVars
                 })
             });
-            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw normalizeAdminApiError(response, data, 'Email operation failed.');
             if (data.success) {
-                setStatusMessage({ type: 'success', text: `Test "${spec.name}" template queued for dispatch to ${testRecipientEmail || smtpConfig.adminEmail}!` });
+                setStatusMessage({ type: 'success', text: `Test "${spec.name}" template was accepted by the configured provider for ${testRecipientEmail || smtpConfig.adminEmail}.` });
                 loadSettingsAndLogs();
             } else {
                 setStatusMessage({ type: 'error', text: `Template Dispatch Error: ${data.error}` });
@@ -665,18 +668,14 @@ const EmailSmtpSettings = () => {
     const handleResendEmail = async (logId) => {
         setResendingLogId(logId);
         try {
-            const res = await fetch(`${API_BASE}/api/email/resend`, {
+            const { response, data } = await fetchAdminWithReauth(`${API_BASE}/api/email/resend`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ logId })
             });
-            const data = await res.json();
-            if (data.success) {
-                setStatusMessage({ type: 'success', text: data.message });
-                loadSettingsAndLogs();
-            } else {
-                setStatusMessage({ type: 'error', text: `Resend Error: ${data.error}` });
-            }
+            if (!response.ok || !data.success) throw normalizeAdminApiError(response, data, 'Email could not be resent.');
+            setStatusMessage({ type: 'success', text: 'The configured provider accepted the resent email.' });
+            loadSettingsAndLogs();
         } catch (e) {
             setStatusMessage({ type: 'error', text: `Resend Connection Error: ${e.message}` });
         } finally {

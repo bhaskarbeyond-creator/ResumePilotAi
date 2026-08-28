@@ -16,11 +16,12 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { loadCertificationDatabase } from './helpers/databaseConfig.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const PORT = 8331;
-const dbConn = { host: '127.0.0.1', port: '3306', user: 'resumepilot', password: 'resumepilot_sandbox_pw', name: 'ai_resume_builder' };
+const dbConn = loadCertificationDatabase();
 const mysql = require(path.join(ROOT, 'backend', 'node_modules', 'mysql2', 'promise'));
 
 let server;

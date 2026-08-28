@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import './Action.scss';
-import ActionIntroduction from '../action-step-introduction/ActionIntroduction';
 import ActionStepSelection from '../action-step-selection/ActionSelection';
 import ActionFilling from '../action-step-filling/ActionFilling';
 import ActionCoverFilling from '../action-step-cover-filling/ActionCoverFilling';

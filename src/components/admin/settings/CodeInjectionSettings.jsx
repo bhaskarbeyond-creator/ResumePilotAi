@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaCode, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 
 const CodeInjectionSettings = () => {
@@ -12,7 +12,7 @@ const CodeInjectionSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.codeInjection) {
                 setCodeConfig({ ...codeConfig, ...settings.codeInjection });
             }

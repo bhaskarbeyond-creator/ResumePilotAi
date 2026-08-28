@@ -30,16 +30,18 @@ test('enterprise configuration separates browser UX flag from server-only data-p
   assert.match(frontend, /serverDisabled/);
 });
 
-test('tenant identity conventions distinguish external subject from canonical data-plane principal', () => {
+test('tenant identity conventions distinguish Firebase subject from canonical MariaDB principal', () => {
   const context = read('backend/enterprise/tenantContext.js');
   const service = read('backend/enterprise/tenantService.js');
-  const repository = read('backend/enterprise/firestoreEnterpriseRepository.js');
-  const registry = read('backend/enterprise/tenantRegistry.js');
+  const repository = read('backend/enterprise/mysqlEnterpriseRepository.js');
+  const registry = read('backend/enterprise/mysqlTenantRegistry.js');
   assert.match(context, /function canonicalPrincipalId/);
   assert.match(service, /subjectId: principalId/);
   assert.match(service, /principalId: resolved\.membership\.canonicalPrincipalId/);
   assert.match(repository, /assertContext\(context\)/);
   assert.match(registry, /TENANT_IDENTITY_MISMATCH/);
+  assert.doesNotMatch(repository, /firebase-admin\/firestore|admin\.firestore|\.collection\(/);
+  assert.doesNotMatch(registry, /firebase-admin\/firestore|admin\.firestore|\.collection\(/);
 });
 
 test('tenant-sensitive downstream paths consume canonical shared helpers rather than ambient identifiers', () => {

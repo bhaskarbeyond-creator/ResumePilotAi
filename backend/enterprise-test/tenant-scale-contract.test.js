@@ -4,7 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const { tenantCacheKey } = require('../enterprise/tenantCache');
-const { InMemoryAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
+const { InMemoryAtomicCounterStore } = require('../test/helpers/inMemoryAtomicCounterStore');
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
 
 function context(tenantId, principalId = 'load-principal') {
   return { tenantId, workspaceId: crypto.randomUUID(), principalId, dataPlane: { routingVersion: 1 } };

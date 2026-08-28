@@ -292,18 +292,24 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
                                         {(() => {
                                             const hasSchool = Boolean(education.school || education.institution);
                                             const hasDegree = Boolean(education.degree || education.qualification);
+                                            const hasSourceNotes = String(education.description || education.userNotes || education.coursework || '').replace(/<[^>]*>/g, ' ').trim().length >= 12;
+                                            const canRewrite = hasSchool && hasDegree && hasSourceNotes;
                                             return (
                                                 <button
                                                     onClick={() => openAiModal(education.id || education.date)}
-                                                    disabled={!hasSchool || !hasDegree}
+                                                    disabled={!canRewrite}
                                                     className={`flex items-center justify-center text-sm font-semibold px-3 py-2 rounded-lg shadow-sm ${
-                                                        hasSchool && hasDegree
+                                                        canRewrite
                                                             ? 'text-purple-700 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 cursor-pointer shadow-purple-100 hover:shadow-purple-200'
                                                             : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                                                     }`}
-                                                    title={!hasSchool || !hasDegree ? t('EducationStep.ai.tooltipDisabled') : t('EducationStep.ai.tooltip')}>
+                                                    title={!hasSchool || !hasDegree
+                                                        ? 'Enter the school and degree first.'
+                                                        : !hasSourceNotes
+                                                            ? 'Add at least 12 characters of verified education notes first.'
+                                                            : 'Rewrite only the facts in your notes.'}>
                                                     <MdLightbulb className="w-4 h-4 mr-2" />
-                                                    <span className="truncate">{t('EducationStep.ai.suggestions')}</span>
+                                                    <span className="truncate">Rewrite My Notes</span>
                                                 </button>
                                             );
                                         })()}
@@ -316,6 +322,7 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
                                             placeholder={t('EducationStep.fields.description.placeholder')}
                                             className={education.description && education.description.trim() !== '' ? 'border-green-300 bg-green-50' : ''}
                                         />
+                                        <p className="mt-2 text-xs text-slate-500">Enter verified coursework, projects, activities, or honors first. AI can rephrase these notes but cannot invent academic achievements.</p>
                                         {education.description && education.description.trim() !== '' && (
                                             <div className="absolute top-3 right-3 flex items-center pointer-events-none">
                                                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

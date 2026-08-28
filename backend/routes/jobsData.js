@@ -1,70 +1,203 @@
 'use strict';
 
 const express = require('express');
+const crypto = require('crypto');
 const { getRepository } = require('../repositories');
 const router = express.Router();
 
+function normalizeTrackerInput(input = {}, { partial = false } = {}) {
+    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
+    const has = key => Object.prototype.hasOwnProperty.call(input, key);
+    const statuses = new Set(['wishlist', 'applied', 'interview', 'offer', 'rejected']);
+    const normalized = {};
+
+    if (!partial || has('title')) normalized.title = text(input.title, 160);
+    if (!partial || has('company')) normalized.company = text(input.company, 160);
+    if (!partial || has('location')) normalized.location = text(input.location, 160);
+    if (!partial || has('notes')) normalized.notes = text(input.notes, 4000);
+    if (!partial || has('deadline')) normalized.deadline = text(input.deadline, 10);
+    if (!partial || has('status')) {
+        const status = String(input.status || (partial ? '' : 'wishlist')).toLowerCase();
+        if (!statuses.has(status)) {
+            throw Object.assign(new Error('Use a valid job tracker status.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+        }
+        normalized.status = status;
+    }
+    if (!partial || has('order')) {
+        normalized.order = Math.max(0, Math.min(Number.parseInt(input.order, 10) || 0, 1_000_000));
+    }
+    if (!partial || has('url')) {
+        let url = text(input.url, 1024);
+        if (url) {
+            try {
+                const parsed = new URL(url);
+                if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('unsupported scheme');
+                url = parsed.href;
+            } catch {
+                throw Object.assign(new Error('Use a valid HTTP or HTTPS web address.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+            }
+        }
+        normalized.url = url;
+    }
+    if ((!partial && (!normalized.title || !normalized.company))
+        || (has('title') && !normalized.title)
+        || (has('company') && !normalized.company)
+        || (normalized.deadline && !/^\d{4}-\d{2}-\d{2}$/.test(normalized.deadline))) {
+        throw Object.assign(new Error('Job title, company, and date must be valid.'), { code: 'JOB_TRACKER_VALIDATION_ERROR', status: 400 });
+    }
+    return normalized;
+}
+
+function replyTrackerError(res, error) {
+    const status = Number(error?.status || 500);
+    return res.status(status >= 400 && status < 600 ? status : 500).json({
+        success: false,
+        code: error?.code || 'JOB_TRACKER_ERROR',
+        error: status >= 500 ? 'The job tracker is temporarily unavailable.' : error.message,
+        remoteRevision: error?.remoteRevision,
+    });
+}
+
+function isPubliclyVisibleJob(job = {}, now = Date.now()) {
+    const status = String(job.status || '').trim().toLowerCase();
+    const tombstoned = Boolean(job.deleted_at || job.deletedAt || job.tombstoned || job.is_deleted || job.isDeleted);
+    const expiry = job.expires_at || job.expiresAt;
+    const expired = expiry ? Number.isFinite(new Date(expiry).getTime()) && new Date(expiry).getTime() <= now : false;
+    return status === 'active' && !tombstoned && !expired;
+}
+
 router.use((req, res, next) => {
     try {
-        req.repository = getRepository(req.app.get('db'));
+        // Tests may supply a scoped provider through app.locals; production never
+        // sets it and always resolves the canonical MariaDB repository factory.
+        const repositoryProvider = req.app.locals.jobsRepositoryProvider || getRepository;
+        req.repository = repositoryProvider();
         next();
     } catch (_err) {
-        return res.status(500).json({ error: 'Database layer unavailable' });
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
     }
 });
 
-// GET /api/jobs-data - List jobs (public read of active jobs; filters applied server-side)
+// GET /api/jobs-data - Public discovery is always active-only. An authenticated
+// owner may explicitly request their own inventory; a caller can never select a
+// different employer's drafts, paused records, or deletion markers.
 router.get('/', async (req, res) => {
     try {
         const filters = { ...req.query };
-        // Public job listing: only active jobs are exposed unless an
-        // authenticated employer asks for their own jobs.
-        if (!req.user) {
-            filters.status = 'active';
-        } else if (req.query.employerId && String(req.query.employerId) !== req.user.uid) {
+        const requestedEmployer = filters.employerId ? String(filters.employerId) : '';
+        const ownerInventory = Boolean(req.user?.uid && requestedEmployer === String(req.user.uid));
+        if (requestedEmployer && !ownerInventory) {
             return res.status(403).json({ success: false, error: 'Access denied' });
         }
+        if (!ownerInventory) {
+            delete filters.employerId;
+            delete filters.status;
+            filters.publicOnly = true;
+        }
         const jobs = await req.repository.getJobs(filters);
-        return res.json({ success: true, jobs });
+        const visibleJobs = ownerInventory ? jobs : jobs.filter(job => isPubliclyVisibleJob(job));
+        return res.json({ success: true, jobs: visibleJobs });
     } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to fetch jobs' });
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job listings are temporarily unavailable.' } });
     }
 });
 
-// GET /api/jobs-data/:id - Single job
+// Job tracker is a distinct owner-scoped MariaDB resource. It must never be
+// conflated with submitted job applications.
+router.get('/tracker', async (req, res) => {
+    try {
+        const jobs = await req.repository.getTrackedJobs(req.user.uid);
+        return res.json({ success: true, jobs });
+    } catch (error) { return replyTrackerError(res, error); }
+});
+
+router.post('/tracker', async (req, res) => {
+    try {
+        const job = await req.repository.createTrackedJob(
+            req.user.uid,
+            `tracker_${crypto.randomUUID()}`,
+            normalizeTrackerInput(req.body)
+        );
+        return res.status(201).json({ success: true, job });
+    } catch (error) { return replyTrackerError(res, error); }
+});
+
+router.patch('/tracker/:id', async (req, res) => {
+    try {
+        const expectedRevision = Number(req.body?.expectedRevision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 1) {
+            return res.status(400).json({ success: false, code: 'JOB_TRACKER_REVISION_REQUIRED', error: 'A valid expected revision is required.' });
+        }
+        const job = await req.repository.updateTrackedJob(
+            req.user.uid,
+            req.params.id,
+            normalizeTrackerInput(req.body, { partial: true }),
+            { expectedRevision }
+        );
+        return res.json({ success: true, job });
+    } catch (error) { return replyTrackerError(res, error); }
+});
+
+router.delete('/tracker/:id', async (req, res) => {
+    try {
+        const expectedRevision = Number(req.body?.expectedRevision);
+        if (!Number.isInteger(expectedRevision) || expectedRevision < 1) {
+            return res.status(400).json({ success: false, code: 'JOB_TRACKER_REVISION_REQUIRED', error: 'A valid expected revision is required.' });
+        }
+        await req.repository.deleteTrackedJob(req.user.uid, req.params.id, { expectedRevision });
+        return res.json({ success: true });
+    } catch (error) { return replyTrackerError(res, error); }
+});
+
+// GET /api/jobs-data/:id - Owners may inspect their own non-active records;
+// every other caller receives only a currently active, non-tombstoned record.
 router.get('/:id', async (req, res) => {
     try {
         const job = await req.repository.getJob(req.params.id);
         if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+        const ownerId = String(job.employerId || job.employer_id || '');
+        const ownsJob = Boolean(req.user?.uid && ownerId === String(req.user.uid));
+        if (!ownsJob && !isPubliclyVisibleJob(job)) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
         return res.json({ success: true, job });
     } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to fetch job' });
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
     }
 });
 
-// POST /api/jobs-data/:id - Save job (owner-scoped via authenticated employer)
+// POST /api/jobs-data/:id - Save job without permitting primary-key takeover.
 router.post('/:id', async (req, res) => {
     try {
+        const existing = await req.repository.getJob(req.params.id);
+        const existingOwner = String(existing?.employerId || existing?.employer_id || '');
+        if (existing && existingOwner !== String(req.user.uid)) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
         const jobData = { ...req.body, employerId: req.user.uid, employer_id: req.user.uid };
         const saved = await req.repository.saveJob(req.params.id, jobData);
         return res.json({ success: true, job: saved });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to save job' });
+    } catch (error) {
+        if (error?.status === 404 || error?.code === 'JOB_NOT_FOUND') {
+            return res.status(404).json({ success: false, error: 'Job not found' });
+        }
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
     }
 });
 
-// DELETE /api/jobs-data/:id - Delete job (owner-scoped)
+// DELETE /api/jobs-data/:id - Delete job (owner-scoped in both route and SQL).
 router.delete('/:id', async (req, res) => {
     try {
         const job = await req.repository.getJob(req.params.id);
         if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
-        if (String(job.employerId || job.employer_id || '') !== req.user.uid) {
-            return res.status(403).json({ success: false, error: 'Access denied' });
+        if (String(job.employerId || job.employer_id || '') !== String(req.user.uid)) {
+            return res.status(404).json({ success: false, error: 'Job not found' });
         }
-        await req.repository.deleteJob(req.params.id);
+        const deleted = await req.repository.deleteJob(req.params.id, req.user.uid);
+        if (!deleted) return res.status(404).json({ success: false, error: 'Job not found' });
         return res.json({ success: true });
     } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to delete job' });
+        return res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Job data is temporarily unavailable.' } });
     }
 });
 

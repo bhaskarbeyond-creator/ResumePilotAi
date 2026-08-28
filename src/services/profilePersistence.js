@@ -1,128 +1,69 @@
-import { normalizeProfileData, profileFitsFirestore } from '../utils/profileData.js';
+import { normalizeProfileData, profileFitsPersistenceLimit } from '../utils/profileData.js';
 import { apiFetch } from './api/client.js';
 
-/**
- * Profile persistence — MySQL authoritative via the backend API.
- *
- * ARCHITECTURE: profiles live in the MySQL `users` table (extra_data /
- * profile envelope). There is NO Firestore involvement: saves go through
- * POST /api/users-data/profile with an optimistic-concurrency revision guard
- * enforced server-side inside a MySQL transaction (PROFILE_CONFLICT 409).
- * The in-memory store below exists only for tests.
- */
-export function createInMemoryProfileStore(initial = {}) {
-  const state = { exists: Object.keys(initial || {}).length > 0, profile: normalizeProfileData(initial) };
+/** Profile persistence through the revision-guarded MariaDB API boundary. */
+function failure(error) {
   return {
-    state,
-    runTransaction: async callback => callback({
-      get: async () => ({ exists: state.exists, data: () => ({ profile: state.profile }) }),
-      set: (_reference, data) => {
-        state.exists = true;
-        state.profile = normalizeProfileData(data.profile);
-      },
-    }),
+    success: false,
+    error: error.message,
+    code: error.code,
+    remoteRevision: error.remoteRevision ?? error.details?.remoteRevision ?? error.details?.error?.remoteRevision,
+    remoteProfile: error.remoteProfile ?? error.details?.remoteProfile ?? error.details?.error?.remoteProfile,
   };
 }
 
-function failure(error) {
-  return { success: false, error: error.message, code: error.code, remoteRevision: error.remoteRevision, remoteProfile: error.remoteProfile };
+function profileFromResponse(data) {
+  const user = data?.user;
+  if (!user || typeof user !== 'object') throw Object.assign(new Error('Profile API returned an invalid response.'), { code: 'INVALID_PROFILE_RESPONSE' });
+  return normalizeProfileData(user.profile || user);
 }
 
-async function loadCurrentProfile(uid) {
-  const data = await apiFetch(`/api/users-data/${encodeURIComponent(uid)}`);
-  return data && data.user ? normalizeProfileData(data.user.profile || {}) : normalizeProfileData({});
+async function loadCurrentProfile(api) {
+  const data = await api('/api/users-data/profile');
+  return profileFromResponse(data);
 }
 
-async function saveProfileViaApi(uid, normalized, expectedRevision) {
-  const data = await apiFetch('/api/users-data/profile', {
+
+async function saveProfileViaApi(api, normalized, expectedRevision) {
+  const data = await api('/api/users-data/profile', {
     method: 'POST',
-    body: JSON.stringify({
-      ...(normalized || {}),
-      expectedRevision,
-      profile: normalized,
-    }),
+    body: JSON.stringify({ expectedRevision, profile: normalized }),
   });
-  const saved = data && data.user ? normalizeProfileData(data.user.profile || {}) : normalized;
-  return { success: true, revision: saved.revision || (Number(expectedRevision || 0) + 1), profile: saved };
+  const saved = profileFromResponse(data);
+  if (!Number.isInteger(Number(saved.revision)) || Number(saved.revision) <= Number(expectedRevision)) {
+    throw Object.assign(new Error('Profile API returned an invalid revision.'), { code: 'INVALID_PROFILE_REVISION' });
+  }
+  return { success: true, revision: Number(saved.revision), profile: saved };
 }
 
-export async function saveProfile(referenceFactory, uid, inputProfile, expectedRevision, { runTransaction } = {}) {
+export async function saveProfile(uid, inputProfile, expectedRevision, { api = apiFetch } = {}) {
   if (!uid) return { success: false, error: 'Sign in again before saving your profile.', code: 'AUTH_REQUIRED' };
-  if (!profileFitsFirestore(inputProfile)) return { success: false, error: 'Profile is too large to save.', code: 'PROFILE_TOO_LARGE' };
-
-  // Test-only injected store path (mirrors the previous transaction semantics).
-  // Production passes `null` and uses the MySQL-backed API path above.
-  if (referenceFactory && typeof referenceFactory.runTransaction === 'function') {
-    const tx = runTransaction || referenceFactory.runTransaction.bind(referenceFactory);
-    const reference = { id: uid };
-    let result;
-    try {
-      await tx(async transaction => {
-        const snapshot = await transaction.get(reference);
-        if (!snapshot.exists) throw Object.assign(new Error('Profile not found.'), { code: 'PROFILE_NOT_FOUND' });
-        const current = normalizeProfileData(snapshot.data()?.profile || {});
-        if (expectedRevision !== null && Number(expectedRevision) !== current.revision) {
-          throw Object.assign(new Error('Profile changed in another tab or device.'), {
-            code: 'PROFILE_CONFLICT',
-            remoteRevision: current.revision,
-            remoteProfile: current,
-          });
-        }
-        const normalized = normalizeProfileData(inputProfile);
-        normalized.revision = current.revision + 1;
-        transaction.set(reference, { profile: normalized }, { merge: true });
-        result = { success: true, revision: normalized.revision, profile: normalized };
-      });
-      return result;
-    } catch (error) {
-      return failure(error);
-    }
+  if (!Number.isInteger(Number(expectedRevision)) || Number(expectedRevision) < 0) {
+    return { success: false, error: 'A valid profile revision is required.', code: 'PROFILE_REVISION_REQUIRED' };
   }
-
+  if (!profileFitsPersistenceLimit(inputProfile)) {
+    return { success: false, error: 'Profile is too large to save.', code: 'PROFILE_TOO_LARGE' };
+  }
   try {
-    // Server-side guarded save (MySQL transaction, PROFILE_CONFLICT on mismatch).
-    return await saveProfileViaApi(uid, inputProfile, expectedRevision);
+    return await saveProfileViaApi(api, normalizeProfileData(inputProfile), Number(expectedRevision));
   } catch (error) {
     return failure(error);
   }
 }
 
-export async function saveProfileAvatar(referenceFactory, uid, selectedImage, expectedRevision, { runTransaction } = {}) {
+export async function saveProfileAvatar(uid, selectedImage, expectedRevision, { api = apiFetch } = {}) {
   if (!uid) return { success: false, error: 'Sign in again before uploading an avatar.', code: 'AUTH_REQUIRED' };
-
-  const normalizedImage = normalizeProfileData({ selectedImage }).selectedImage;
-  if (!normalizedImage) return { success: false, error: 'Avatar must be a bounded PNG, JPEG, or WebP image.', code: 'INVALID_AVATAR' };
-
-  if (referenceFactory && typeof referenceFactory.runTransaction === 'function') {
-    const tx = runTransaction || referenceFactory.runTransaction.bind(referenceFactory);
-    const reference = { id: uid };
-    let result;
-    try {
-      await tx(async transaction => {
-        const snapshot = await transaction.get(reference);
-        if (!snapshot.exists) throw Object.assign(new Error('Profile not found.'), { code: 'PROFILE_NOT_FOUND' });
-        const current = normalizeProfileData(snapshot.data()?.profile || {});
-        if (expectedRevision !== null && Number(expectedRevision) !== current.revision) {
-          throw Object.assign(new Error('Profile changed elsewhere. Reload before replacing the avatar.'), {
-            code: 'PROFILE_CONFLICT',
-            remoteRevision: current.revision,
-            remoteProfile: current,
-          });
-        }
-        const profile = { ...current, selectedImage: normalizedImage, revision: current.revision + 1 };
-        transaction.set(reference, { profile }, { merge: true });
-        result = { success: true, revision: profile.revision, selectedImage: normalizedImage };
-      });
-      return result;
-    } catch (error) {
-      return failure(error);
-    }
+  if (!Number.isInteger(Number(expectedRevision)) || Number(expectedRevision) < 0) {
+    return { success: false, error: 'A valid profile revision is required.', code: 'PROFILE_REVISION_REQUIRED' };
   }
-
+  const normalizedImage = normalizeProfileData({ selectedImage }).selectedImage;
+  if (!normalizedImage) {
+    return { success: false, error: 'Avatar must be a bounded PNG, JPEG, or WebP image.', code: 'INVALID_AVATAR' };
+  }
   try {
-    const current = await loadCurrentProfile(uid);
-    const profile = { ...current, selectedImage: normalizedImage, revision: (Number(current.revision) || 0) + 1 };
-    const saved = await saveProfileViaApi(uid, profile, expectedRevision);
+    const current = await loadCurrentProfile(api);
+    const profile = { ...current, selectedImage: normalizedImage };
+    const saved = await saveProfileViaApi(api, profile, Number(expectedRevision));
     return { success: true, revision: saved.revision, selectedImage: normalizedImage };
   } catch (error) {
     return failure(error);

@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Puck } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
 import { AuthContext } from '../../main';
-import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../firestore/dbOperations';
+import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../services/api/platform';
 import { NavbarCategory, HeroCategory, AboutCategory, SkillsCategory, ExperienceCategory, EducationCategory, ProjectsCategory, ServicesCategory, TestimonialsCategory, ResumeCategory, AwardsCategory, ContactCategory, FooterCategory, GridLayoutCategory, GridItemCategory, FlexLayoutCategory, FlexItemCategory, LayoutCategory } from './PortfolioComponents';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
 import TemplateSelector from './TemplateSelector';
@@ -617,20 +617,7 @@ const PortfolioBuilder = () => {
                 if (activeUserIdRef.current !== ownerId) return;
                 const portfolioUrl = `${window.location.origin}/portfolio/${result.slug}`;
 
-                // Automatically dispatch Web Portfolio Published Email to User
-                if (user && user.email) {
-                    try {
-                        fetch('/api/notify/portfolio-published', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                userEmail: user.email,
-                                userName: user.displayName || user.email.split('@')[0],
-                                portfolioSlug: result.slug || 'my-portfolio'
-                            })
-                        }).catch(e => console.warn('Portfolio email notice:', e.message));
-                    } catch (_e) {}
-                }
+                // Publication and its email event commit atomically on the server.
 
                 // Show success modal instead of toast
                 setPublishSuccessModal({

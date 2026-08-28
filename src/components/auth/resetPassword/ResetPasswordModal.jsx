@@ -88,7 +88,7 @@ const ResetPasswordModal = ({ oobCode, initialEmail, onClose }) => {
                 if (userCred && userCred.user) {
                     const u = userCred.user;
                     const nameParts = (u.displayName || email.split('@')[0] || 'User').split(' ');
-                    const { default: addUser } = await import('../../../firestore/auth');
+                    const { default: addUser } = await import('../../../services/api/users');
                     await addUser(u.uid, nameParts[0] || 'User', nameParts.slice(1).join(' ') || '', u.email);
                 }
             } catch (loginErr) {

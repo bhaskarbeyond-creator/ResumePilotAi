@@ -1,3 +1,7 @@
+'use strict';
+
+process.env.NODE_ENV = 'test';
+
 /**
  * Deliverability reporting must be measured, never asserted.
  *
@@ -18,34 +22,41 @@ const path = require('node:path');
 const express = require('express');
 const request = require('supertest');
 
-const CONFIG_FILE = path.join(__dirname, '..', 'email_config.json');
+const { setPoolForTests } = require('../database/mysql');
 
-/** Runs a request against the email router with a given stored SMTP config. */
+const settingsPool = {
+  sender: null,
+  async query(sql, params = []) {
+    assert.match(String(sql), /SELECT data, revision FROM system_settings WHERE category = \?/);
+    assert.equal(params[0], 'email_runtime');
+    if (!this.sender) return [[], []];
+    return [[{
+      data: JSON.stringify({ smtp: { username: this.sender, password: '' } }),
+      revision: 1,
+    }], []];
+  },
+  async end() {},
+};
+setPoolForTests(settingsPool);
+
+/** Runs a request against the MariaDB-owned SMTP projection. */
 async function withSenderDomain(sender, run) {
-  const had = fs.existsSync(CONFIG_FILE);
-  const previous = had ? fs.readFileSync(CONFIG_FILE, 'utf8') : null;
-
-  if (sender) {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ smtp: { user: sender } }));
-  } else if (had) {
-    try { fs.unlinkSync(CONFIG_FILE); } catch (_) {}
-  }
-
+  settingsPool.sender = sender;
+  const priorUser = process.env.SMTP_USER;
+  const priorPassword = process.env.SMTP_PASS;
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_PASS;
   try {
-    // Load the router fresh so it re-reads the config file.
     delete require.cache[require.resolve('../routes/email.js')];
     const router = require('../routes/email.js');
     const app = express();
     app.use(express.json());
-    app.set('db', null);
     app.use('/api/email', router);
     return await run(app);
   } finally {
-    if (previous !== null) {
-      try { fs.writeFileSync(CONFIG_FILE, previous); } catch (_) {}
-    } else if (fs.existsSync(CONFIG_FILE)) {
-      try { fs.unlinkSync(CONFIG_FILE); } catch (_) {}
-    }
+    settingsPool.sender = null;
+    if (priorUser === undefined) delete process.env.SMTP_USER; else process.env.SMTP_USER = priorUser;
+    if (priorPassword === undefined) delete process.env.SMTP_PASS; else process.env.SMTP_PASS = priorPassword;
     delete require.cache[require.resolve('../routes/email.js')];
   }
 }

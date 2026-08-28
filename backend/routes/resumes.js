@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.use((req, res, next) => {
     try {
-        req.repository = getRepository(req.app.get('db'));
+        req.repository = getRepository();
         next();
     } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
@@ -45,7 +45,13 @@ router.post('/:id', express.json({ limit: '5mb' }), async (req, res) => {
         return res.json({ success: true, resume: saved });
     } catch (err) {
         if (err.code === 'RESUME_CONFLICT') {
-            return res.status(409).json({ success: false, error: err.message, code: err.code, remoteRevision: err.remoteRevision });
+            return res.status(409).json({
+                success: false,
+                error: err.message,
+                code: err.code,
+                remoteRevision: err.remoteRevision,
+                remoteData: err.remoteData,
+            });
         }
         console.error('[Resumes API] saveResume error:', err.message);
         return replyRepoError(res, err, 'Failed to save resume');
@@ -77,7 +83,13 @@ router.post('/:id/publish', express.json({ limit: '5mb' }), async (req, res) => 
         return res.json({ success: true, ...result });
     } catch (err) {
         if (err.code === 'RESUME_CONFLICT' || err.code === 'RESUME_PUBLICATION_CONFLICT') {
-            return res.status(409).json({ success: false, error: err.message, code: err.code });
+            return res.status(409).json({
+                success: false,
+                error: err.message,
+                code: err.code,
+                remoteRevision: err.remoteRevision,
+                remoteData: err.remoteData,
+            });
         }
         return replyRepoError(res, err, 'Failed to publish resume');
     }

@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPaperPlane, FaTimes } from 'react-icons/fa';
-import { createConversation, sendMessage } from '../../../firestore/dbOperations';
+import { createConversation, sendMessage } from '../../../services/api/platform';
 import fire from '../../../conf/fire';
 
 const SendMessageDialog = ({ isOpen, onClose, applicationId, applicantName, showToast }) => {

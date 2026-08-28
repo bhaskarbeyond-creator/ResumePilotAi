@@ -3,30 +3,25 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
 const { freezeContext, canonicalPrincipalId } = require('../enterprise/tenantContext');
-const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
 const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { tenantCacheKey } = require('../enterprise/tenantCache');
 const { tenantObjectKey } = require('../enterprise/tenantStorage');
 const { createTenantArtifactToken, verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
 const { buildTenantAiOperation } = require('../enterprise/tenantAi');
 const { createTenantJobEnvelope, validateTenantJobEnvelope } = require('../enterprise/tenantJobs');
-const { buildPersonalResumeMigrationPlan, reconcileAggregate } = require('../enterprise/firebaseMigrationAdapter');
+const { canonicalize, checksum } = require('../enterprise/enterpriseBackup');
 
 test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t) => {
-  // 1. Canonical Firestore enterprise data plane (the PostgreSQL/RLS engine was
-  //    removed with the adapter; isolation is enforced by the repository itself).
-  const firestoreDb = new MemoryFirestore();
-  const firestoreAdmin = createMemoryAdmin({ db: firestoreDb });
-  const repository = new FirestoreEnterpriseRepository({
-    db: firestoreDb,
-    admin: firestoreAdmin,
+  // Explicit test double exercises the immutable MariaDB repository contract;
+  // production provider selection and SQL ownership are covered separately.
+  const repository = new InMemoryEnterpriseRepository({
     encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) }),
   });
 
-  // 2. Setup Controlled Multi-Tenant Organization Topology
+  // Setup controlled multi-tenant organization topology.
   new InMemoryTenantRegistry();
 
   const tenantA_Id = crypto.randomUUID();
@@ -57,7 +52,7 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     permissions: ['resource.read', 'resource.create', 'resource.update', 'admin.all'],
     tenant: { id: tenantA_Id, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['TENANT_ADMIN'] },
-    dataPlane: { type: 'FIRESTORE', routingVersion: 1 },
+    dataPlane: { id: 'mysql-primary', type: 'MYSQL', routingVersion: 1 },
   });
 
   const contextA1_Member = freezeContext({
@@ -71,7 +66,7 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     permissions: ['resource.read', 'resource.create'],
     tenant: { id: tenantA_Id, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['MEMBER'] },
-    dataPlane: { type: 'FIRESTORE', routingVersion: 1 },
+    dataPlane: { id: 'mysql-primary', type: 'MYSQL', routingVersion: 1 },
   });
 
   const contextB1_Admin = freezeContext({
@@ -85,14 +80,14 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     permissions: ['resource.read', 'resource.create', 'admin.all'],
     tenant: { id: tenantB_Id, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
     membership: { status: 'ACTIVE', roles: ['TENANT_ADMIN'] },
-    dataPlane: { type: 'FIRESTORE', routingVersion: 1 },
+    dataPlane: { id: 'mysql-primary', type: 'MYSQL', routingVersion: 1 },
   });
 
   const resA1 = crypto.randomUUID();
   const resB1 = crypto.randomUUID();
 
   // Test Step 1: Tenant A admin creates a resource; a workspace member reads it
-  await t.test('Firestore data plane: Tenant A1 Admin creates resource and Member queries it', async () => {
+  await t.test('MariaDB contract: Tenant A1 Admin creates resource and Member queries it', async () => {
     await repository.createResource(contextA1_Admin, { id: resA1, resourceType: 'RESUME', payload: { title: 'Acme Master Resume' } });
     const read = await repository.getResource(contextA1_Member, resA1);
     assert.equal(read.payload.title, 'Acme Master Resume');
@@ -100,19 +95,19 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
   });
 
   // Test Step 2: Tenant B isolation through the repository boundary
-  await t.test('Firestore data plane: Tenant B cannot read Tenant A documents and writes only to its own partition', async () => {
+  await t.test('MariaDB contract: Tenant B cannot read Tenant A documents and writes only to its own partition', async () => {
     // Tenant B sees nothing of tenant A.
-    assert.equal(await repository.getResource(contextB1_Admin, resA1), null, 'Tenant B must not read Tenant A resources');
+    await assert.rejects(() => repository.getResource(contextB1_Admin, resA1), error => error.code === 'TENANT_RESOURCE_NOT_FOUND');
 
     // Tenant B writes its own resource (into its own partition by construction).
     const beta = await repository.createResource(contextB1_Admin, { id: resB1, resourceType: 'RESUME', payload: { title: 'Beta Resume' } });
     assert.equal(beta.tenantId, tenantB_Id);
-    assert.ok(firestoreDb.documents.has(`tenants/${tenantB_Id}/resources/${resB1}`), 'the write must land in tenant B partition');
-    assert.ok(!firestoreDb.documents.has(`tenants/${tenantA_Id}/resources/${resB1}`), 'no document may appear in tenant A partition');
+    assert.ok(repository.resources.has(`${tenantB_Id}:${resB1}`), 'the write must land in tenant B partition');
+    assert.ok(!repository.resources.has(`${tenantA_Id}:${resB1}`), 'no row may appear in tenant A partition');
 
     // Spoofing tenant identity is structurally impossible: writes always go to
     // the verified context partition regardless of any client-supplied id.
-    assert.equal(await repository.getResource(contextA1_Admin, resB1), null, 'Tenant A must not observe Tenant B resources');
+    await assert.rejects(() => repository.getResource(contextA1_Admin, resB1), error => error.code === 'TENANT_RESOURCE_NOT_FOUND');
   });
 
   // Test Step 3: Cache Isolation with Identical Logical IDs
@@ -210,37 +205,16 @@ test('Enterprise End-to-End Pilot & Controlled Tenant Isolation Suite', async (t
     }, error => error.code === 'INVALID_TENANT_JOB_SIGNATURE');
   });
 
-  // Test Step 7: Reversible Data Migration Pilot
-  await t.test('Data Migration Pilot: Personal resume transforms reversibly with 100% checksum matching', () => {
-    const rawResume = {
-      name: 'Pilot User',
-      targetRole: 'Senior Platform Engineer',
-      basics: { name: 'Pilot User', email: 'pilot@example.com' },
-      work: [{ company: 'Cloud Corp', position: 'Lead SRE', startDate: '2022', isCurrent: true }],
-      education: [{ institution: 'Tech University', degree: 'BS CS' }],
-      skills: [{ name: 'Kubernetes' }, { name: 'PostgreSQL' }],
+  // Test Step 7: deterministic MariaDB logical-backup portability
+  await t.test('Data Portability: canonical backup values preserve a deterministic checksum', () => {
+    const source = {
+      id: 'legacy-pilot-resume-101', tenantId: tenantA_Id, workspaceId: workspaceA1_Id,
+      payload: { basics: { name: 'Pilot User' }, skills: ['Kubernetes', 'MariaDB'] },
+      updatedAt: new Date('2026-08-28T00:00:00.000Z'),
     };
-
-    const personalTenantId = crypto.randomUUID();
-    const personalWorkspaceId = crypto.randomUUID();
-
-    const plan = buildPersonalResumeMigrationPlan({
-      uid: 'user-pilot-101',
-      resumeId: 'legacy-pilot-resume-101',
-      source: rawResume,
-      personalTenantId,
-      personalWorkspaceId,
-    });
-
-    assert.equal(plan.ledger.sourceUid, 'user-pilot-101');
-    assert.equal(plan.ledger.sourcePath, 'users/user-pilot-101/resumes/legacy-pilot-resume-101');
-
-    const reconciled = reconcileAggregate({
-      source: rawResume,
-      target: rawResume,
-    });
-
-    assert.equal(reconciled.matches, true);
-    assert.equal(reconciled.sourceChecksum, reconciled.targetChecksum);
+    const portable = canonicalize(source);
+    const roundTrip = JSON.parse(JSON.stringify(portable));
+    assert.equal(checksum(portable), checksum(roundTrip));
+    assert.notEqual(checksum(portable), checksum({ ...roundTrip, tenantId: tenantB_Id }));
   });
 });

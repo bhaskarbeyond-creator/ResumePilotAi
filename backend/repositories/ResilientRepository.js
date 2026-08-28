@@ -3,30 +3,25 @@
 /**
  * Resilient repository — MySQL/MariaDB is the single authoritative store.
  *
- * Application code depends on this interface, not on MySQL or Firestore
- * adapters. Every read and every write goes to MySQL only. There is NO
- * Firestore fallback in this class: a Firestore handle is never consulted on
- * the synchronous path, so a Firestore outage (or its complete absence)
- * cannot affect application behavior.
+ * Application code depends on this interface, not on database-specific route
+ * code. Every read and every write goes to MariaDB only; there is no alternate
+ * owner, fallback, mirroring, or promotion path.
  *
  * MySQL outage semantics (mission §6):
  *  - failures are detected quickly (pool timeouts, connection errors)
  *  - reads/writes surface controlled 503 errors (code DATABASE_UNAVAILABLE /
  *    SERVICE_DEGRADED) — never fabricated success, never a silent switch to
  *    another database, never a lost acknowledged transaction
- *  - the durable sync_outbox (committed inside MySQL transactions by the
- *    adapter) keeps standby replication recoverable when it is enabled
  */
 
-const { canonicalizeRecord, withReadMetadata } = require('../database/canonical');
+const { canonicalizeRecord, withDatabaseMetadata } = require('../database/canonical');
 const { toCanonicalUser, toCanonicalResume } = require('../database/domain');
 const authority = require('../database/authority');
-const fencing = require('../database/fencing');
 
 const READ_METHODS = new Set([
     'getUser', 'getUserByEmail', 'getUsers',
     'getResume', 'getResumes', 'getPublicResume', 'getResumePublication',
-    'getPortfolio', 'getPortfolios',
+    'getPortfolio', 'getPortfolios', 'getPublishedPortfolioBySlug', 'getPublishedPortfolios',
     'getCover', 'getCovers',
     'getJob', 'getJobs', 'getApplications',
     'getBlogPosts', 'getBlogPostBySlug',
@@ -72,7 +67,7 @@ function classifyUnavailable(err) {
     if (['ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET', 'EPIPE', 'PROTOCOL_CONNECTION_LOST',
         'ER_CON_COUNT_ERROR', 'ER_SERVER_SHUTDOWN', 'ER_QUERY_INTERRUPTED', 'ER_NET_READ_ERROR',
         'ER_NET_WRITE_INTERRUPTED', 'ER_NET_ERROR_ON_WRITE', 'POOL_CLOSED'].includes(code)) return true;
-    return /unavailable|econnreset|etimedout|socket hang up|timeout|pool is closed|connect econnrefused|too many connections|server shutdown|shutdown in progress|mariadb|mysql/.test(msg);
+    return /(?:database|service|server) unavailable|econnreset|etimedout|socket hang up|(?:connect|connection).*timeout|pool is closed|connect econnrefused|too many connections|server shutdown|shutdown in progress|connection (?:lost|closed|terminated)|broken pipe/.test(msg);
 }
 
 function normalizeResult(method, result) {
@@ -93,21 +88,17 @@ function normalizeResult(method, result) {
 }
 
 class ResilientRepository {
-    constructor({ mysqlRepo, _firestoreRepo = null, _firestoreDb = null } = {}) {
+    constructor({ mysqlRepo } = {}) {
         if (!mysqlRepo) {
-            throw new Error('ResilientRepository requires a MySQL repository — MySQL is the authoritative database.');
+            throw new Error('ResilientRepository requires a MariaDB repository.');
         }
         this.mysqlRepo = mysqlRepo;
-        // The Firestore adapter is deliberately never used by this class. The
-        // parameter exists only to preserve constructor compatibility.
-        this.firestoreRepo = null;
-        this.firestoreDb = null;
         this._bindInterface();
     }
 
     async _invoke(method, args) {
         if (!this.mysqlRepo || typeof this.mysqlRepo[method] !== 'function') {
-            const err = new Error(`Repository method ${method} is not implemented on the MySQL repository`);
+            const err = new Error(`Repository method ${method} is not implemented on the MariaDB repository`);
             err.code = 'METHOD_NOT_IMPLEMENTED';
             throw err;
         }
@@ -119,11 +110,9 @@ class ResilientRepository {
             const raw = await this._invoke(method, args);
             authority.recordSuccess('mysql', 'read');
             const normalized = normalizeResult(method, raw);
-            return withReadMetadata(normalized, {
+            return withDatabaseMetadata(normalized, {
                 dataSource: 'mysql',
-                stale: false,
-                failover: false,
-                lastSyncedAt: new Date().toISOString(),
+                readAt: new Date().toISOString(),
                 dataVersion: normalized && typeof normalized === 'object' ? normalized.revision ?? null : null,
             });
         } catch (err) {
@@ -139,20 +128,22 @@ class ResilientRepository {
     async _write(method, args) {
         if (!authority.canAcceptWrites()) {
             authority.noteRejectedWrite();
-            const err = new Error('Service degraded: the authoritative MySQL database is unavailable. Write was not accepted.');
+            const err = new Error('Service degraded: the authoritative MariaDB database is unavailable. Write was not accepted.');
             err.code = 'SERVICE_DEGRADED';
             err.status = 503;
             throw err;
         }
-        const fenceGeneration = fencing.currentGeneration();
-        fencing.assertFence(fenceGeneration);
         try {
             const raw = await this._invoke(method, args);
             authority.recordSuccess('mysql', 'write');
             return normalizeResult(method, raw);
         } catch (err) {
-            authority.recordFailure('mysql', 'write', err);
+            // Validation, authorization, uniqueness, and optimistic-conflict
+            // errors do not indicate an authority outage. Counting them as
+            // transport failures could trip the circuit and reject unrelated
+            // writes after two ordinary 4xx responses.
             if (!classifyUnavailable(err)) throw err;
+            authority.recordFailure('mysql', 'write', err);
             authority.noteRejectedWrite();
             err.code = err.code || 'DATABASE_UNAVAILABLE';
             err.status = err.status || 503;

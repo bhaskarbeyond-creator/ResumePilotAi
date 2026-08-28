@@ -22,7 +22,6 @@ const endpoints = [
     { method: 'GET', path: '/api/platform/command-center', superAdmin: false },
     { method: 'POST', path: '/api/admin/settings/general', superAdmin: false, body: {} },
     { method: 'POST', path: '/api/admin/system-health-settings', superAdmin: false, body: {} },
-    { method: 'POST', path: '/api/admin/gdpr-settings', superAdmin: false, body: {} },
     { method: 'POST', path: '/api/admin/ai-settings', superAdmin: true, body: {} },
     { method: 'POST', path: '/api/admin/payment-settings', superAdmin: true, body: {} },
     { method: 'POST', path: '/api/admin/twilio-settings', superAdmin: true, body: {} },
@@ -31,11 +30,9 @@ const endpoints = [
     // Messages, Reviews, Trusted By
     { method: 'POST', path: '/api/admin/trusted-by', superAdmin: false, body: { items: [] } },
     { method: 'POST', path: '/api/admin/reviews', superAdmin: false, body: { items: [] } },
-    { method: 'POST', path: '/api/admin/global-rating', superAdmin: false, body: { rating: 5, totalReviews: 100 } },
     
     // CMS / Blog / Phrases
     { method: 'POST', path: '/api/admin/blog/categories', superAdmin: false, body: {} },
-    { method: 'POST', path: '/api/admin/landing-content', superAdmin: false, body: { items: [] } },
     { method: 'POST', path: '/api/admin/website-meta', superAdmin: false, body: {} },
 ];
 

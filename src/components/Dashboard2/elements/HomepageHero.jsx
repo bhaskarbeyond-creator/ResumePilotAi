@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useContext } from 'react';
-import { FiArrowUpRight, FiPlay, FiStar, FiUsers } from 'react-icons/fi';
+import { FiArrowUpRight, FiPlay } from 'react-icons/fi';
 import { BiFile, BiCheckCircle } from 'react-icons/bi';
 import GridBackground from './GridBackground';
 import { withTranslation } from 'react-i18next';
@@ -205,27 +205,8 @@ const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, _goToSte
                         <span className="font-medium text-purple-600">{t('HomepageHero.portfolio', 'Portfolio')}</span> - {t('HomepageHero.portfolioDesc', 'Drag & drop website builder')}
                     </div>
 
-                    {/* Social Proof - Mobile Responsive */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 text-gray-600 bg-white/80 backdrop-blur-sm p-3 sm:p-4 md:p-5 rounded-2xl shadow-sm border border-blue-100/50 hover:shadow-md transition-all duration-300 ease-out mx-2 sm:mx-auto w-auto max-w-3xl">
-                        {/* Stats Section */}
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#4a6cf7] to-[#6366f1] flex items-center justify-center text-white shadow-md">
-                                <FiUsers className="w-4 h-4 sm:w-5 sm:h-5" />
-                            </div>
-                            <div className="text-left">
-                                <div className="font-semibold text-gray-800 text-sm sm:text-md">{t('HomepageHero.stats.users')}</div>
-                                <div className="flex items-center gap-1">
-                                    {[...Array(5)].map((_, i) => (
-                                        <FiStar key={i} className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
-                                    ))}
-                                    <span className="ml-1 text-xs sm:text-md font-medium text-gray-700">{t('HomepageHero.stats.rating')}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="hidden sm:block h-10 w-px bg-gray-200 mx-2"></div>
-
-                        {/* Feature badges */}
+                    {/* Product conditions — factual, non-quantified, and mobile responsive. */}
+                    <div className="flex items-center justify-center text-gray-600 bg-white/80 backdrop-blur-sm p-3 sm:p-4 md:p-5 rounded-2xl shadow-sm border border-blue-100/50 hover:shadow-md transition-all duration-300 ease-out mx-2 sm:mx-auto w-auto max-w-3xl">
                         <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-md flex-wrap justify-center">
                             <div className="flex items-center gap-1.5 bg-green-50/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-green-100 hover:bg-green-100/80 transition-all duration-300 ease-out">
                                 <BiCheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />

@@ -1,26 +1,22 @@
 'use strict';
 
 /**
- * Platform operational health engine.
+ * MariaDB/Firebase-Auth operational health collector.
  *
- * Every descriptor returned by this module is derived from a real runtime
- * observation: an environment/Firestore configuration read, a Firestore probe,
- * a durable-outbox inspection, or an explicit provider test the operator
- * requested. Nothing here is hardcoded to "healthy", no counter is invented,
- * and an unreadable source is reported as UNKNOWN rather than zero.
- *
- * Secrets are never returned. Only booleans ("configured"), non-secret
- * hostnames, provider environment names, and counts cross the boundary.
+ * MariaDB is the only application-data plane. Firebase is probed exclusively
+ * through the Admin Authentication API. A state is derived from an observation,
+ * an explicit disable, or a configuration gap; an unreadable dependency is
+ * never promoted to OPERATIONAL. Provider configuration is not described as a
+ * live provider test.
  */
 
-const os = require('os');
 const fs = require('fs');
-const { enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
-const { selectPaymentPair } = require('./paymentAdmin');
-const { getActiveEngine } = require('../database/engineManager');
-const { getPool } = require('../database/mysql');
+const os = require('os');
+const nodemailer = require('nodemailer');
+const { getPool, getMigrationStatus } = require('../database/mysql');
+const { assertPublicNetworkTarget } = require('../security/network');
+const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
 
-/** Operational states surfaced to the Admin console. */
 const STATE = Object.freeze({
   OPERATIONAL: 'OPERATIONAL',
   DEGRADED: 'DEGRADED',
@@ -31,7 +27,6 @@ const STATE = Object.freeze({
   UNKNOWN: 'UNKNOWN',
 });
 
-/** Configuration postures, kept distinct from runtime state on purpose. */
 const CONFIG = Object.freeze({
   CONFIGURED: 'CONFIGURED',
   PARTIALLY_CONFIGURED: 'PARTIALLY_CONFIGURED',
@@ -41,56 +36,45 @@ const CONFIG = Object.freeze({
   UNKNOWN: 'UNKNOWN',
 });
 
-const GROUP = Object.freeze({
-  CORE: 'core',
-  INTEGRATIONS: 'integrations',
-  WORKERS: 'workers',
-});
-
+const GROUP = Object.freeze({ CORE: 'core', INTEGRATIONS: 'integrations', WORKERS: 'workers' });
 const SEVERITY_ORDER = Object.freeze({
-  [STATE.UNAVAILABLE]: 5,
-  [STATE.DEGRADED]: 4,
-  [STATE.UNKNOWN]: 3,
-  [STATE.NOT_CONFIGURED]: 2,
-  [STATE.DISABLED]: 1,
-  [STATE.NOT_SUPPORTED]: 0,
+  [STATE.UNAVAILABLE]: 6,
+  [STATE.DEGRADED]: 5,
+  [STATE.UNKNOWN]: 4,
+  [STATE.NOT_CONFIGURED]: 3,
+  [STATE.DISABLED]: 2,
+  [STATE.NOT_SUPPORTED]: 1,
   [STATE.OPERATIONAL]: 0,
 });
 
 const SNAPSHOT_TTL_MS = Number(process.env.PLATFORM_HEALTH_CACHE_MS || 15_000);
 const MIN_FORCED_INTERVAL_MS = Number(process.env.PLATFORM_HEALTH_MIN_INTERVAL_MS || 3_000);
-
+const TEST_RESULT_TTL_MS = 5 * 60_000;
 let cachedSnapshot = null;
 let cachedAt = 0;
 let inFlight = null;
+const recentTests = new Map();
 
-/* ────────────────────────────────────────────────────────────────────────────
-   Helpers
-   ──────────────────────────────────────────────────────────────────────────── */
-
-function nowIso() {
-  return new Date().toISOString();
+function nowIso() { return new Date().toISOString(); }
+function truthy(value) { return typeof value === 'string' ? value.trim().length > 0 : Boolean(value); }
+function booleanValue(value, fallback = false) {
+  if (value === true || String(value).toLowerCase() === 'true') return true;
+  if (value === false || String(value).toLowerCase() === 'false') return false;
+  return fallback;
+}
+function parseJson(value, fallback = {}) {
+  if (!value) return fallback;
+  if (typeof value === 'object') return value;
+  try { const parsed = JSON.parse(value); return parsed && typeof parsed === 'object' ? parsed : fallback; } catch { return fallback; }
 }
 
-function truthy(value) {
-  return typeof value === 'string' ? value.trim().length > 0 : Boolean(value);
-}
-
-function envFlag(name) {
-  return String(process.env[name] || '').toLowerCase() === 'true';
-}
-
-/** Runs a probe and never throws; the failure itself becomes observable data. */
 async function observe(label, probe) {
   const startedAt = Date.now();
   try {
-    const value = await probe();
-    return { ok: true, value, latencyMs: Date.now() - startedAt, label };
+    return { ok: true, value: await probe(), latencyMs: Date.now() - startedAt, label };
   } catch (error) {
     return {
-      ok: false,
-      value: null,
-      label,
+      ok: false, value: null, label,
       error: String(error?.message || error).slice(0, 240),
       code: error?.code ? String(error.code).slice(0, 80) : null,
       latencyMs: Date.now() - startedAt,
@@ -98,27 +82,33 @@ async function observe(label, probe) {
   }
 }
 
-function docData(result) {
-  if (!result?.ok || !result.value) return null;
-  if (typeof result.value.data === 'function') {
-    return result.value.exists === false ? {} : (result.value.data() || {});
-  }
-  return typeof result.value === 'object' ? result.value : {};
+function categorizeError(message) {
+  const value = String(message || '').toLowerCase();
+  if (!value) return 'DATA_UNAVAILABLE';
+  if (/timeout|etimedout|timed out/.test(value)) return 'TIMEOUT';
+  if (/econnrefused|enotfound|eai_again|socket|network|unreachable/.test(value)) return 'NETWORK_UNREACHABLE';
+  if (/auth|credential|invalid login|535|password/.test(value)) return 'AUTHENTICATION_REJECTED';
+  if (/configuration|not configured|missing|required/.test(value)) return 'CONFIGURATION_MISSING';
+  if (/quota|rate limit|429|throttl/.test(value)) return 'RATE_LIMITED';
+  if (/permission|forbidden|403/.test(value)) return 'AUTHORIZATION_DENIED';
+  if (/not found|404/.test(value)) return 'ROUTE_OR_RESOURCE_MISSING';
+  if (/certificate|tls|ssl/.test(value)) return 'TLS_FAILURE';
+  if (/index/.test(value)) return 'DATASTORE_INDEX_MISSING';
+  return 'PROVIDER_ERROR';
 }
 
-/** Normalizes a descriptor, filling defaults so the UI never has to guess. */
 function service(descriptor) {
   const state = descriptor.state || STATE.UNKNOWN;
   return Object.freeze({
     id: descriptor.id,
     name: descriptor.name,
-    group: descriptor.group,
+    group: descriptor.group || GROUP.CORE,
     state,
     support: descriptor.support || (state === STATE.NOT_SUPPORTED ? 'NOT_SUPPORTED' : 'SUPPORTED'),
     enabled: descriptor.enabled === undefined ? state !== STATE.DISABLED : descriptor.enabled === true,
     configuration: descriptor.configuration || CONFIG.UNKNOWN,
     critical: descriptor.critical === true,
-    reason: descriptor.reason || '',
+    reason: descriptor.reason || 'No observation is available.',
     dependency: descriptor.dependency || 'None',
     retryable: descriptor.retryable === true,
     errorCategory: descriptor.errorCategory || null,
@@ -134,1283 +124,365 @@ function service(descriptor) {
 }
 
 function worstState(states) {
-  let worst = STATE.OPERATIONAL;
-  for (const candidate of states) {
-    if ((SEVERITY_ORDER[candidate] ?? 0) > (SEVERITY_ORDER[worst] ?? 0)) worst = candidate;
-  }
-  return worst;
+  return states.reduce((worst, candidate) =>
+    (SEVERITY_ORDER[candidate] ?? 0) > (SEVERITY_ORDER[worst] ?? 0) ? candidate : worst,
+  STATE.OPERATIONAL);
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   Configuration resolution (no secret values leave this module)
-   ──────────────────────────────────────────────────────────────────────────── */
+function selectCredentialPair({ envId, envSecret, storedId, storedSecret, requiresId = true }) {
+  const environment = { id: String(envId || '').trim(), secret: String(envSecret || '').trim() };
+  const stored = { id: String(storedId || '').trim(), secret: String(storedSecret || '').trim() };
+  const complete = pair => Boolean(pair.secret && (!requiresId || pair.id));
+  if (complete(environment)) return { credentialed: true, partial: false, source: 'environment' };
+  if (complete(stored)) return { credentialed: true, partial: false, source: 'mariadb' };
+  if (environment.id || environment.secret) return { credentialed: false, partial: true, source: 'environment-partial' };
+  if (stored.id || stored.secret) return { credentialed: false, partial: true, source: 'mariadb-partial' };
+  return { credentialed: false, partial: false, source: 'none' };
+}
 
-function resolvePaymentProviders(providerDoc, legacySubscriptions, publicConfig) {
-  const stored = providerDoc || {};
-  const legacy = legacySubscriptions || {};
-  const publicSubs = publicConfig?.subscriptions || {};
-
-  const toggle = (key, fallback) => {
+function resolvePaymentProviders(providerDoc = {}, legacySubscriptions = {}, publicConfig = {}) {
+  const publicSubs = publicConfig.subscriptions || {};
+  const toggle = (key, fallback = false) => {
     if (publicSubs[key] !== undefined) return publicSubs[key] === true;
-    if (legacy[key] !== undefined) return legacy[key] === true;
+    if (legacySubscriptions[key] !== undefined) return legacySubscriptions[key] === true;
     return fallback;
   };
-  const select = ({ envId = '', envSecret = '', storedId = '', storedSecret = '', requiresId = true }) => {
-    const environmentId = String(envId || '').trim();
-    const environmentSecret = String(envSecret || '').trim();
-    const persistedId = String(storedId || '').trim();
-    const persistedSecret = String(storedSecret || '').trim();
-    if ((!requiresId || environmentId) && environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment' };
-    if ((!requiresId || persistedId) && persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore' };
-    if (environmentId || environmentSecret) return { id: environmentId, secret: environmentSecret, source: 'environment-partial' };
-    if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: 'firestore-partial' };
-    return { id: '', secret: '', source: 'none' };
-  };
-  const stripe = select({ envSecret: process.env.STRIPE_SECRET, storedSecret: stored.stripe?.secretKey, requiresId: false });
-  const paypal = select({
-    envId: process.env.PAYPAL_CLIENT_ID,
-    envSecret: process.env.PAYPAL_CLIENT_SECRET,
-    storedId: stored.paypal?.clientId || publicSubs.paypalClientId || legacy.paypalClientId,
-    storedSecret: stored.paypal?.clientSecret || legacy.paypalClientSecret,
-  });
-  const razorpay = select({
-    envId: process.env.RAZORPAY_KEY_ID,
-    envSecret: process.env.RAZORPAY_KEY_SECRET,
-    storedId: stored.razorpay?.keyId || publicSubs.razorpayKeyId || legacy.razorpayKeyId,
-    storedSecret: stored.razorpay?.keySecret || legacy.razorpayKeySecret,
-  });
-  const paytm = select({
-    envId: process.env.PAYTM_MID,
-    envSecret: process.env.PAYTM_MERCHANT_KEY,
-    storedId: stored.paytm?.mid || publicSubs.paytmMid || legacy.paytmMid,
-    storedSecret: stored.paytm?.merchantKey || legacy.paytmMerchantKey,
-  });
-  const phonepe = select({
-    envId: process.env.PHONEPE_MERCHANT_ID,
-    envSecret: process.env.PHONEPE_SALT_KEY,
-    storedId: stored.phonepe?.merchantId || publicSubs.phonepeId || legacy.phonepeId,
-    storedSecret: stored.phonepe?.saltKey || legacy.phonepeSaltKey,
-  });
-  const pairState = (pair, requiresId = true) => ({
-    credentialed: Boolean(pair.secret && (!requiresId || pair.id)),
-    partial: pair.source.endsWith('partial'),
-    source: pair.source,
-  });
-
   return {
     stripe: {
-      name: 'Stripe', ...pairState(stripe, false),
-      webhook: truthy(process.env.STRIPE_WEBHOOK_SECRET),
-      adminEnabled: toggle('stripeEnabled', true),
+      name: 'Stripe',
+      ...selectCredentialPair({ envSecret: process.env.STRIPE_SECRET, storedSecret: providerDoc.stripe?.secretKey, requiresId: false }),
+      webhook: truthy(process.env.STRIPE_WEBHOOK_SECRET) || truthy(providerDoc.stripe?.webhookSecret),
+      adminEnabled: toggle('stripeEnabled', providerDoc.stripe?.enabled === true),
       environment: String(process.env.STRIPE_SECRET || '').startsWith('sk_live') ? 'live' : 'test',
       apis: ['/api/pay', '/api/stripe-webhook'],
     },
     paypal: {
-      name: 'PayPal', ...pairState(paypal),
-      adminEnabled: toggle('paypalEnabled', true),
-      environment: String(process.env.PAYPAL_ENV || stored.paypal?.environment || 'sandbox').toLowerCase(),
+      name: 'PayPal',
+      ...selectCredentialPair({ envId: process.env.PAYPAL_CLIENT_ID, envSecret: process.env.PAYPAL_CLIENT_SECRET, storedId: providerDoc.paypal?.clientId, storedSecret: providerDoc.paypal?.clientSecret }),
+      adminEnabled: toggle('paypalEnabled', providerDoc.paypal?.enabled === true),
+      environment: String(process.env.PAYPAL_ENV || providerDoc.paypal?.environment || 'sandbox').toLowerCase(),
       apis: ['/api/paypal/create-order', '/api/paypal/verify'],
     },
     razorpay: {
-      name: 'Razorpay', ...pairState(razorpay),
-      adminEnabled: toggle('razorpayEnabled', true),
-      environment: String(razorpay.id || '').startsWith('rzp_live') ? 'live' : 'test',
+      name: 'Razorpay',
+      ...selectCredentialPair({ envId: process.env.RAZORPAY_KEY_ID, envSecret: process.env.RAZORPAY_KEY_SECRET, storedId: providerDoc.razorpay?.keyId, storedSecret: providerDoc.razorpay?.keySecret }),
+      adminEnabled: toggle('razorpayEnabled', providerDoc.razorpay?.enabled === true),
+      environment: String(process.env.RAZORPAY_KEY_ID || providerDoc.razorpay?.keyId || '').startsWith('rzp_live') ? 'live' : 'test',
       apis: ['/api/razorpay/create-order', '/api/razorpay/verify'],
     },
     paytm: {
-      name: 'PayTM', ...pairState(paytm),
-      adminEnabled: toggle('paytmEnabled', false),
-      environment: String(process.env.PAYTM_ENV || 'staging').toLowerCase(),
+      name: 'PayTM',
+      ...selectCredentialPair({ envId: process.env.PAYTM_MID, envSecret: process.env.PAYTM_MERCHANT_KEY, storedId: providerDoc.paytm?.mid, storedSecret: providerDoc.paytm?.merchantKey }),
+      adminEnabled: toggle('paytmEnabled', providerDoc.paytm?.enabled === true),
+      environment: String(process.env.PAYTM_ENV || providerDoc.paytm?.environment || 'staging').toLowerCase(),
       apis: ['/api/paytm/initiate-transaction', '/api/paytm/verify'],
     },
     phonepe: {
-      name: 'PhonePe', ...pairState(phonepe),
-      adminEnabled: toggle('phonepeEnabled', false),
-      environment: String(process.env.PHONEPE_ENV || 'sandbox').toLowerCase(),
+      name: 'PhonePe',
+      ...selectCredentialPair({ envId: process.env.PHONEPE_MERCHANT_ID, envSecret: process.env.PHONEPE_SALT_KEY, storedId: providerDoc.phonepe?.merchantId, storedSecret: providerDoc.phonepe?.saltKey }),
+      adminEnabled: toggle('phonepeEnabled', providerDoc.phonepe?.enabled === true),
+      environment: String(process.env.PHONEPE_ENV || providerDoc.phonepe?.environment || 'sandbox').toLowerCase(),
       apis: ['/api/phonepe/initiate-payment', '/api/phonepe/status'],
     },
   };
 }
 
-function resolveOAuthProviders(oauthDoc, adminConfiguration, legacySystemSettings, publicConfig) {
-  const secrets = oauthDoc || {};
-  const canonical = adminConfiguration?.socialAuth || {};
-  const legacy = legacySystemSettings?.socialAuth || {};
-  const modules = publicConfig?.modules || {};
-
-  const build = (provider, envPrefix, legacyPrefix, moduleKeys) => {
-    const envClientId = String(process.env[`${envPrefix}_CLIENT_ID`] || '').trim();
-    const envClientSecret = String(process.env[`${envPrefix}_CLIENT_SECRET`] || '').trim();
-    const storedClientId = String(secrets[provider]?.clientId || canonical[`${legacyPrefix}ClientId`] || legacy[`${legacyPrefix}ClientId`] || '').trim();
-    const storedClientSecret = String(secrets[provider]?.clientSecret || canonical[`${legacyPrefix}ClientSecret`] || legacy[`${legacyPrefix}ClientSecret`] || '').trim();
-    const completeEnvironment = Boolean(envClientId && envClientSecret);
-    const completeStored = Boolean(storedClientId && storedClientSecret);
-    const source = completeEnvironment ? 'environment' : completeStored ? 'firestore' : envClientId || envClientSecret ? 'environment-partial' : storedClientId || storedClientSecret ? 'firestore-partial' : 'none';
-    const clientId = source.startsWith('environment') ? envClientId : storedClientId;
-    const clientSecret = source.startsWith('environment') ? envClientSecret : storedClientSecret;
-    let adminEnabled = true;
+function resolveOAuthProviders(oauthDoc = {}, adminConfiguration = {}, systemSettings = {}, publicConfig = {}) {
+  const canonical = adminConfiguration.socialAuth || {};
+  const legacy = systemSettings.socialAuth || {};
+  const modules = publicConfig.modules || {};
+  const build = (provider, envPrefix, keyPrefix, moduleKeys) => {
+    const pair = selectCredentialPair({
+      envId: process.env[`${envPrefix}_CLIENT_ID`], envSecret: process.env[`${envPrefix}_CLIENT_SECRET`],
+      storedId: oauthDoc[provider]?.clientId || canonical[`${keyPrefix}ClientId`] || legacy[`${keyPrefix}ClientId`],
+      storedSecret: oauthDoc[provider]?.clientSecret || canonical[`${keyPrefix}ClientSecret`] || legacy[`${keyPrefix}ClientSecret`],
+    });
+    let explicit;
     for (const key of moduleKeys) {
-      if (modules[key] !== undefined) { adminEnabled = modules[key] === true; break; }
-      if (canonical[key] !== undefined) { adminEnabled = canonical[key] === true; break; }
+      if (modules[key] !== undefined) { explicit = modules[key] === true; break; }
+      if (canonical[key] !== undefined) { explicit = canonical[key] === true; break; }
     }
-    return {
-      credentialed: truthy(clientId) && truthy(clientSecret),
-      partial: source.endsWith('partial'),
-      source,
-      adminEnabled,
-    };
+    return { ...pair, adminEnabled: explicit === undefined ? pair.credentialed : explicit };
   };
-
   return {
     github: build('github', 'GITHUB', 'github', ['enableGithubAuthModule', 'enableGithubLogin']),
     linkedin: build('linkedin', 'LINKEDIN', 'linkedin', ['enableLinkedinAuthModule', 'enableLinkedinLogin']),
   };
 }
 
-function resolveSmtp(emailConfig) {
-  const smtp = emailConfig?.smtp || {};
-  const fallback = emailConfig?.fallbackSmtp || {};
+function resolveSmtp(systemSettings = {}) {
+  const stored = systemSettings.smtp || {};
+  const fallback = systemSettings.fallbackSmtp || {};
+  const username = process.env.SMTP_USER || stored.username || '';
+  const password = process.env.SMTP_PASS || stored.password || '';
   return {
-    host: String(smtp.host || '').slice(0, 120),
-    port: Number(smtp.port) || null,
-    encryption: String(smtp.encryption || '').toLowerCase() || null,
-    credentialed: truthy(smtp.username) && truthy(smtp.password),
-    partial: truthy(smtp.username) || truthy(smtp.password),
+    host: String(process.env.SMTP_HOST || stored.host || '').slice(0, 253),
+    port: Number(process.env.SMTP_PORT || stored.port || 0) || null,
+    encryption: String(process.env.SMTP_ENCRYPTION || stored.encryption || '').toLowerCase(),
+    usernameConfigured: truthy(username), passwordConfigured: truthy(password),
+    credentialed: truthy(username) && truthy(password),
+    partial: truthy(username) !== truthy(password),
     fallbackEnabled: fallback.enabled === true,
-    fallbackCredentialed: truthy(fallback.username) && truthy(fallback.password),
+    fallbackCredentialed: truthy(process.env.FALLBACK_SMTP_USER || fallback.username) && truthy(process.env.FALLBACK_SMTP_PASS || fallback.password),
   };
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   Outbox / queue inspection
-   ──────────────────────────────────────────────────────────────────────────── */
+function recentTest(id) {
+  const result = recentTests.get(id);
+  return result && Date.now() - result.recordedAt < TEST_RESULT_TTL_MS ? result : null;
+}
 
-const OUTBOX_SAMPLE_LIMIT = 200;
+function configuredProviderService(id, descriptor, checkedAt) {
+  const test = recentTest(id);
+  if (descriptor.adminEnabled === false) {
+    return service({ id, name: descriptor.name, group: GROUP.INTEGRATIONS, state: STATE.DISABLED, enabled: false,
+      configuration: CONFIG.DISABLED_BY_CONFIGURATION, reason: `${descriptor.name} is disabled by platform configuration.`,
+      dependency: `${descriptor.name} API`, affectedApis: descriptor.apis, checkedAt });
+  }
+  if (!descriptor.credentialed) {
+    return service({ id, name: descriptor.name, group: GROUP.INTEGRATIONS,
+      state: descriptor.partial ? STATE.DEGRADED : STATE.NOT_CONFIGURED,
+      configuration: descriptor.partial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_CONFIGURED,
+      reason: descriptor.partial ? `${descriptor.name} credentials are incomplete.` : `${descriptor.name} credentials are not configured.`,
+      dependency: `${descriptor.name} API`, errorCategory: 'CONFIGURATION_MISSING', affectedApis: descriptor.apis, checkedAt });
+  }
+  return service({ id, name: descriptor.name, group: GROUP.INTEGRATIONS,
+    state: test ? (test.passed ? STATE.OPERATIONAL : STATE.UNAVAILABLE) : STATE.UNKNOWN,
+    configuration: CONFIG.CONFIGURED,
+    reason: test ? test.detail : `${descriptor.name} is configured, but live provider reachability was not exercised by this snapshot.`,
+    dependency: `${descriptor.name} API`, retryable: true,
+    errorCategory: test?.passed === false ? test.errorCategory : (!test ? 'DATA_UNAVAILABLE' : null),
+    affectedApis: descriptor.apis, checkedAt });
+}
 
-async function inspectNotificationOutbox(db) {
-  if (!db) return { available: false, reason: 'Firestore is unavailable, so the outbox cannot be inspected.' };
-  const snapshot = await db.collection('notification_outbox').limit(OUTBOX_SAMPLE_LIMIT).get();
-  const stats = {
-    available: true,
-    inspected: 0,
-    queued: 0,
-    delivered: 0,
-    deadLetter: 0,
-    retrying: 0,
-    lastErrorCategory: null,
-    oldestQueuedAt: null,
-  };
-  snapshot.forEach(doc => {
-    const data = doc.data() || {};
-    stats.inspected += 1;
-    const attempts = Number(data.attemptCount || 0);
-    if (data.state === 'DEAD_LETTER' || attempts >= 5) {
-      stats.deadLetter += 1;
-      if (data.lastError && !stats.lastErrorCategory) stats.lastErrorCategory = categorizeError(String(data.lastError));
-    } else if (data.providerAccepted === true) {
-      stats.delivered += 1;
-    } else {
-      stats.queued += 1;
-      if (attempts > 0) stats.retrying += 1;
-      const created = data.createdAt?.toDate?.();
-      if (created && (!stats.oldestQueuedAt || created < stats.oldestQueuedAt)) stats.oldestQueuedAt = created;
+async function loadMariaSettings(pool) {
+  const [rows] = await pool.query('SELECT category, data FROM system_settings');
+  const settings = {};
+  for (const row of rows) settings[row.category] = parseJson(row.data, {});
+  return settings;
+}
+
+async function inspectNotificationOutbox(pool) {
+  const [rows] = await pool.query('SELECT state, COUNT(*) AS total, MIN(created_at) AS oldest FROM notification_outbox GROUP BY state');
+  const counts = {};
+  let oldestQueuedAt = null;
+  for (const row of rows) {
+    counts[row.state] = Number(row.total || 0);
+    if (['NOTIFICATION_QUEUED', 'RETRYING', 'PROCESSING'].includes(row.state) && row.oldest) {
+      const value = new Date(row.oldest);
+      if (!oldestQueuedAt || value < oldestQueuedAt) oldestQueuedAt = value;
     }
-  });
-  if (stats.oldestQueuedAt) stats.oldestQueuedAt = stats.oldestQueuedAt.toISOString();
-  return stats;
-}
-
-/** Maps a provider failure string onto a stable, secret-free error category. */
-function categorizeError(message) {
-  const value = String(message || '').toLowerCase();
-  if (/timeout|etimedout|timed out/.test(value)) return 'TIMEOUT';
-  if (/econnrefused|enotfound|eai_again|socket|network|unreachable/.test(value)) return 'NETWORK_UNREACHABLE';
-  if (/auth|credential|invalid login|535|password/.test(value)) return 'AUTHENTICATION_REJECTED';
-  if (/quota|rate limit|429|throttl/.test(value)) return 'RATE_LIMITED';
-  if (/permission|forbidden|403/.test(value)) return 'AUTHORIZATION_DENIED';
-  if (/not found|404/.test(value)) return 'ROUTE_OR_RESOURCE_MISSING';
-  if (/certificate|tls|ssl/.test(value)) return 'TLS_FAILURE';
-  if (/index/.test(value)) return 'DATASTORE_INDEX_MISSING';
-  return 'PROVIDER_ERROR';
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   Snapshot construction
-   ──────────────────────────────────────────────────────────────────────────── */
-
-async function loadEmailConfig(db) {
-  // Loaded lazily so the health module never participates in a require cycle.
-  const emailRoutes = require('../routes/email');
-  if (typeof emailRoutes.getEmailConfig !== 'function') throw new Error('Email configuration resolver is unavailable');
-  return emailRoutes.getEmailConfig(db);
+  }
+  return {
+    counts,
+    queued: Number(counts.NOTIFICATION_QUEUED || 0) + Number(counts.RETRYING || 0) + Number(counts.PROCESSING || 0),
+    delivered: Number(counts.DELIVERED || 0), deadLetter: Number(counts.DEAD_LETTER || 0),
+    oldestQueuedAt: oldestQueuedAt ? oldestQueuedAt.toISOString() : null,
+  };
 }
 
 async function buildServices(app) {
-  const db = app?.get?.('db') || null;
-  const admin = app?.get?.('firebaseAdmin') || null;
-  const tenantService = app?.get?.('tenantService') || null;
   const checkedAt = nowIso();
+  const pool = getPool();
+  const identityAdmin = app?.get?.('firebaseAdmin') || null;
+  const tenantService = app?.get?.('tenantService') || null;
 
-  const engine = getActiveEngine();
-  const isMySQL = engine === 'mysql';
-
-  let mysqlSettings = {};
-  if (isMySQL) {
-    try {
-      const pool = getPool();
-      const [rows] = await pool.query('SELECT category, data FROM system_settings');
-      rows.forEach(r => {
-        try {
-          mysqlSettings[r.category] = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
-        } catch (_) {
-          mysqlSettings[r.category] = r.data;
-        }
-      });
-    } catch (e) {
-      console.warn('[PlatformHealth] MySQL settings read error:', e.message);
-    }
-  }
-
-  // Read the same effective flag the Enterprise router uses. This keeps the
-  // command center honest after a Super Admin changes the runtime override.
-  const enterpriseEnabled = isMySQL ? true : await enterpriseFeatureEnabledAsync(db);
-
-  const [
-    dbPing,
-    authProbe,
-    paymentDoc,
-    aiProvidersDoc,
-    oauthDoc,
-    adminConfigDoc,
-    publicConfigDoc,
-    legacySystemDoc,
-    legacySubscriptionsDoc,
-    maintenanceDoc,
-    outbox,
-    emailConfig,
-    enterpriseOutbox,
-  ] = await Promise.all([
-    observe(isMySQL ? 'mysql.ping' : 'firestore.ping', async () => {
-      if (isMySQL) {
-        const pool = getPool();
-        await pool.query('SELECT 1 AS alive');
-        return { reachable: true, engine: 'mysql' };
-      }
-      if (!db) throw Object.assign(new Error('Firestore client is not initialized'), { code: 'FIRESTORE_UNINITIALIZED' });
-      await db.collection('settings').doc('system_ping_check').set(
-        { lastPing: admin?.firestore?.FieldValue?.serverTimestamp?.() || new Date() },
-        { merge: true },
-      );
-      return true;
+  const [databaseProbe, settingsProbe, migrationProbe, authProbe, notificationProbe, enterpriseQueueProbe] = await Promise.all([
+    observe('mariadb.select1', async () => { const [rows] = await pool.query('SELECT 1 AS alive, VERSION() AS version'); return rows[0]; }),
+    observe('mariadb.system_settings', () => loadMariaSettings(pool)),
+    observe('mariadb.migrations', () => getMigrationStatus()),
+    observe('firebase-auth.listUsers', async () => {
+      if (!identityAdmin?.auth) throw Object.assign(new Error('Firebase Authentication Admin adapter is not configured'), { code: 'AUTH_CONFIGURATION_MISSING' });
+      return identityAdmin.auth().listUsers(1);
     }),
-    observe('auth.probe', async () => {
-      if (!admin?.auth) throw Object.assign(new Error('Firebase Admin auth is not initialized'), { code: 'AUTH_UNINITIALIZED' });
-      const result = await admin.auth().listUsers(1);
-      return { reachable: true, sampled: Array.isArray(result?.users) ? result.users.length : 0 };
-    }),
-    observe('settings.payment_providers', () => (isMySQL ? Promise.resolve(mysqlSettings.payment_providers || {}) : (db ? db.collection('settings').doc('payment_providers').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('settings.ai_providers', () => (isMySQL ? Promise.resolve(mysqlSettings.ai_providers || {}) : (db ? db.collection('settings').doc('ai_providers').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('settings.oauth_providers', () => (isMySQL ? Promise.resolve(mysqlSettings.oauth_providers || {}) : (db ? db.collection('settings').doc('oauth_providers').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('settings.admin_configuration', () => (isMySQL ? Promise.resolve(mysqlSettings.admin_configuration || {}) : (db ? db.collection('settings').doc('admin_configuration').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('data.public_config', () => (isMySQL ? Promise.resolve(mysqlSettings.public_config || {}) : (db ? db.collection('data').doc('public_config').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('data.system_settings', () => (isMySQL ? Promise.resolve(mysqlSettings.system_settings || {}) : (db ? db.collection('data').doc('system_settings').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('data.subscriptions', () => (isMySQL ? Promise.resolve(mysqlSettings.subscriptions || {}) : (db ? db.collection('data').doc('subscriptions').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('settings.maintenance', () => (isMySQL ? Promise.resolve(mysqlSettings.maintenance || {}) : (db ? db.collection('settings').doc('maintenance').get() : Promise.reject(new Error('Firestore unavailable'))))),
-    observe('notification_outbox', async () => {
-      if (isMySQL) {
-        try {
-          const pool = getPool();
-          const [rows] = await pool.query("SELECT COUNT(*) as count, status FROM sync_outbox GROUP BY status");
-          let queued = 0, deadLetter = 0, delivered = 0, retrying = 0;
-          for (const r of rows) {
-            if (r.status === 'PENDING') queued += Number(r.count);
-            if (r.status === 'PROCESSING') queued += Number(r.count);
-            if (r.status === 'FAILED') deadLetter += Number(r.count);
-            if (r.status === 'SYNCED') delivered += Number(r.count);
-            if (r.status === 'RETRYING') retrying += Number(r.count);
-          }
-          return { available: true, inspected: queued + deadLetter + delivered + retrying, queued, delivered, deadLetter, retrying };
-        } catch (_e) {
-          return { available: true, inspected: 0, queued: 0, delivered: 0, deadLetter: 0, retrying: 0 };
-        }
-      }
-      return inspectNotificationOutbox(db);
-    }),
-    observe('email.config', () => (isMySQL ? Promise.resolve(mysqlSettings.email_config || {}) : loadEmailConfig(db))),
-    observe('enterprise.outbox', async () => {
-      if (isMySQL) {
-        return {
-          configured: true,
-          signingConfigured: true,
-          activeQueued: 0,
-          deadLetterCount: 0,
-          available: true,
-        };
-      }
-      const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
-      return getOutboxStatus({ db, admin, signingSecret: process.env.TENANT_JOB_SIGNING_SECRET || null });
-    }),
+    observe('mariadb.notification_outbox', () => inspectNotificationOutbox(pool)),
+    observe('mariadb.enterprise_outbox', () => getOutboxStatus({ pool, signingSecret: process.env.TENANT_JOB_SIGNING_SECRET || null })),
   ]);
 
-  const firestorePing = dbPing;
+  const settings = settingsProbe.ok ? settingsProbe.value : {};
+  const publicConfig = settings.public_config || {};
+  const flags = settings.feature_flags || {};
+  const flag = (key, fallback = false) => flags[key]?.value === true || flags[key]?.value === false
+    ? flags[key].value
+    : process.env[key] !== undefined ? booleanValue(process.env[key]) : fallback;
+  const enterpriseEnabled = flag('ENTERPRISE_TENANCY_ENABLED', false);
+  const notificationWorkerEnabled = flag('NOTIFICATION_OUTBOX_WORKER_ENABLED', false) || flag('NOTIFICATION_OUTBOX_EXTERNAL_WORKER', false);
+  const enterpriseWorkerEnabled = flag('ENTERPRISE_OUTBOX_WORKER_ENABLED', false);
+  const payments = resolvePaymentProviders(settings.payment_providers, settings.subscriptions, publicConfig);
+  const oauth = resolveOAuthProviders(settings.oauth_providers, settings.admin_configuration, settings.system_settings, publicConfig);
+  const smtp = resolveSmtp(settings.system_settings);
+  const runtime = tenantService?.describeRuntime?.() || {};
+  const encryption = runtime.encryption || {};
 
-  const publicConfig = docData(publicConfigDoc) || {};
-  const payments = resolvePaymentProviders(docData(paymentDoc), docData(legacySubscriptionsDoc), publicConfig);
-  const oauth = resolveOAuthProviders(docData(oauthDoc), docData(adminConfigDoc), docData(legacySystemDoc), publicConfig);
-  const smtp = emailConfig.ok ? resolveSmtp(emailConfig.value) : null;
-  const maintenance = docData(maintenanceDoc) || {};
-  const maintenanceKnown = Boolean(maintenanceDoc.ok || publicConfigDoc.ok);
-  const maintenanceEnabled = !maintenanceKnown ? null : (maintenance.enabled === true || publicConfig?.systemHealth?.maintenanceMode === true);
-  const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
-  const outboxStats = outbox.ok ? outbox.value : { available: false };
   const services = [];
-
-  /* ── Core platform ─────────────────────────────────────────────────────── */
-
-  const memory = process.memoryUsage();
-  const heapRatio = memory.heapTotal > 0 ? memory.heapUsed / memory.heapTotal : 0;
-  services.push(service({
-    id: 'backend-api',
-    name: 'Backend API',
-    group: GROUP.CORE,
-    critical: true,
-    state: heapRatio > 0.95 ? STATE.DEGRADED : STATE.OPERATIONAL,
-    configuration: CONFIG.CONFIGURED,
-    reason: heapRatio > 0.95
-      ? 'The API process is serving requests but heap utilisation is above 95%.'
-      : 'This response was produced by the API process, so the HTTP surface is serving requests.',
-    dependency: 'Node.js runtime',
-    remediation: heapRatio > 0.95 ? 'Inspect memory pressure and restart the PM2 process during a maintenance window.' : '',
+  services.push(service({ id: 'backend-api', name: 'Backend API', group: GROUP.CORE, state: STATE.OPERATIONAL,
+    configuration: CONFIG.CONFIGURED, critical: true,
+    reason: 'The health collector is executing inside the registered Express application.', dependency: 'Express process',
+    metrics: { uptimeSeconds: Math.floor(process.uptime()), commitSha: process.env.COMMIT_SHA || process.env.GITHUB_SHA || null }, checkedAt }));
+  services.push(service({ id: 'backend-process', name: 'Backend Process', group: GROUP.CORE, state: STATE.OPERATIONAL,
+    configuration: CONFIG.CONFIGURED, critical: true, reason: 'Runtime metrics were read from the current process.', dependency: 'Node.js runtime',
     metrics: {
-      nodeVersion: process.version,
-      uptimeSeconds: Math.floor(process.uptime()),
-      heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
-      heapTotalMb: Math.round(memory.heapTotal / 1024 / 1024),
-      rssMb: Math.round(memory.rss / 1024 / 1024),
-    },
-    affectedFeatures: ['Every authenticated API call'],
-    affectedUiModules: ['/adm', '/enterprise', '/dashboard'],
-    lastCheckedAt: checkedAt,
-  }));
-
-  const firebaseConfigured = Boolean((isMySQL || db) && admin);
-  services.push(service({
-    id: 'firebase',
-    name: 'Firebase Auth & Platform Services',
-    group: GROUP.CORE,
-    critical: true,
-    state: !admin ? STATE.UNAVAILABLE : (authProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE),
-    configuration: admin ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: !admin
-      ? 'The Firebase Admin SDK is not initialised, so no server-side Firebase call can succeed.'
-      : (authProbe.ok
-        ? 'The Firebase Admin SDK is initialised and Identity probes succeeded.'
-        : 'The Firebase Admin SDK is initialised, but Identity probe failed.'),
-    dependency: 'Firebase Admin credentials',
-    retryable: false,
-    errorCategory: admin ? null : 'CONFIGURATION_MISSING',
-    remediation: admin ? '' : 'Provide FIREBASE_USE_ADC or FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY to the backend and restart the process.',
-    affectedFeatures: ['Authentication', 'Token verification', 'Admin console data'],
-    affectedApis: ['/api/admin/*', '/api/platform/*', '/api/enterprise/*'],
-    affectedUiModules: ['/adm', '/enterprise', '/dashboard'],
-    metrics: { projectConfigured: Boolean(admin) },
-    lastCheckedAt: checkedAt,
-  }));
-
-  if (isMySQL) {
-    services.push(service({
-      id: 'database',
-      name: 'MySQL / MariaDB Database',
-      group: GROUP.CORE,
-      critical: true,
-      state: dbPing.ok ? (dbPing.latencyMs > 1500 ? STATE.DEGRADED : STATE.OPERATIONAL) : STATE.UNAVAILABLE,
-      configuration: CONFIG.CONFIGURED,
-      reason: dbPing.ok
-        ? `A query probe to MySQL (u727965524_airesume) succeeded in ${dbPing.latencyMs}ms.`
-        : `A query probe to MySQL failed: ${dbPing.error}`,
-      dependency: 'Hostinger MariaDB',
-      retryable: true,
-      testable: true,
-      errorCategory: dbPing.ok ? null : categorizeError(dbPing.error),
-      remediation: dbPing.ok ? '' : 'Verify MySQL credentials in .env and ensure database is accessible.',
-      affectedFeatures: ['Resumes', 'Users', 'Audit logs', 'Settings', 'Enterprise tenancy'],
-      affectedApis: ['/api/admin/*', '/api/platform/*', '/api/resumes/*'],
-      affectedUiModules: ['/adm', '/dashboard'],
-      metrics: { latencyMs: dbPing.ok ? dbPing.latencyMs : null, provider: 'MySQL / MariaDB' },
-      lastCheckedAt: checkedAt,
-    }));
-  } else {
-    services.push(service({
-      id: 'firestore',
-      name: 'Firestore',
-      group: GROUP.CORE,
-      critical: true,
-      state: dbPing.ok ? (dbPing.latencyMs > 1500 ? STATE.DEGRADED : STATE.OPERATIONAL) : STATE.UNAVAILABLE,
-      configuration: firebaseConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-      reason: dbPing.ok
-        ? (dbPing.latencyMs > 1500
-          ? `A write probe succeeded but took ${dbPing.latencyMs}ms, which is above the 1500ms threshold.`
-          : `A write probe to settings/system_ping_check succeeded in ${dbPing.latencyMs}ms.`)
-        : `A write probe to settings/system_ping_check failed: ${dbPing.error}`,
-      dependency: 'Google Cloud Firestore',
-      retryable: true,
-      testable: true,
-      errorCategory: dbPing.ok ? null : categorizeError(dbPing.error),
-      remediation: dbPing.ok ? '' : 'Verify Firestore rules, quota, and the service account IAM bindings for this project.',
-      affectedFeatures: ['Resumes', 'Users', 'Audit logs', 'Settings', 'Enterprise tenancy'],
-      affectedApis: ['/api/admin/*', '/api/platform/*'],
-      affectedUiModules: ['/adm', '/dashboard'],
-      metrics: { latencyMs: dbPing.ok ? dbPing.latencyMs : null, provider: 'Google Cloud Firestore' },
-      lastCheckedAt: checkedAt,
-    }));
-  }
-
-  services.push(service({
-    id: 'authentication',
-    name: 'Authentication',
-    group: GROUP.CORE,
-    critical: true,
-    state: authProbe.ok ? STATE.OPERATIONAL : (firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE),
-    configuration: firebaseConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: authProbe.ok
-      ? `Firebase Identity responded to a directory probe in ${authProbe.latencyMs}ms.`
-      : `The Firebase Identity directory probe failed: ${authProbe.error}`,
-    dependency: 'Firebase Authentication',
-    retryable: true,
-    testable: true,
+      uptimeSeconds: Math.floor(process.uptime()), nodeVersion: process.version, pid: process.pid, host: os.hostname(),
+      loadAverage1m: Number(os.loadavg()[0].toFixed(2)), systemFreeMemMb: Math.round(os.freemem() / 1048576),
+      systemTotalMemMb: Math.round(os.totalmem() / 1048576), rssMb: Math.round(process.memoryUsage().rss / 1048576),
+      heapUsedMb: Math.round(process.memoryUsage().heapUsed / 1048576),
+    }, checkedAt }));
+  services.push(service({ id: 'database', name: 'MariaDB', group: GROUP.CORE,
+    state: databaseProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE, configuration: CONFIG.CONFIGURED, critical: true,
+    reason: databaseProbe.ok ? `SELECT 1 completed in ${databaseProbe.latencyMs}ms.` : `MariaDB probe failed: ${databaseProbe.error}`,
+    dependency: 'MariaDB authoritative application-data store', retryable: !databaseProbe.ok,
+    errorCategory: databaseProbe.ok ? null : categorizeError(databaseProbe.error),
+    remediation: databaseProbe.ok ? '' : 'Restore MariaDB connectivity and verify credentials, TLS, schema, and network policy.',
+    affectedFeatures: ['All persisted application data'], affectedApis: ['/api/*'], affectedUiModules: ['/dashboard', '/adm'],
+    metrics: { latencyMs: databaseProbe.latencyMs, version: databaseProbe.ok ? databaseProbe.value?.version || null : null },
+    testable: true, checkedAt }));
+  const migrationCurrent = migrationProbe.ok
+    && (migrationProbe.value?.pending?.length || 0) === 0
+    && (migrationProbe.value?.mismatches?.length || 0) === 0
+    && (migrationProbe.value?.unknownApplied?.length || 0) === 0;
+  services.push(service({ id: 'database-migrations', name: 'Database Migrations', group: GROUP.CORE,
+    state: !migrationProbe.ok ? STATE.UNKNOWN : migrationCurrent ? STATE.OPERATIONAL : STATE.UNAVAILABLE,
+    configuration: migrationProbe.ok ? CONFIG.CONFIGURED : CONFIG.UNKNOWN, critical: true,
+    reason: !migrationProbe.ok ? `Migration ledger could not be verified: ${migrationProbe.error}`
+      : migrationCurrent ? 'The checksummed migration ledger matches every discovered migration.'
+        : `${migrationProbe.value?.pending?.length ?? 'One or more'} migration(s) are pending or inconsistent.`,
+    dependency: 'MariaDB schema_migrations ledger', retryable: true,
+    errorCategory: !migrationProbe.ok ? categorizeError(migrationProbe.error) : migrationCurrent ? null : 'DATA_UNAVAILABLE',
+    metrics: migrationProbe.ok ? { pendingCount: migrationProbe.value?.pending?.length || 0, appliedCount: migrationProbe.value?.applied?.length || 0 } : {}, checkedAt }));
+  services.push(service({ id: 'authentication', name: 'Firebase Authentication', group: GROUP.CORE,
+    state: authProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE,
+    configuration: identityAdmin?.auth ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED, critical: true,
+    reason: authProbe.ok ? `Identity directory listUsers(1) completed in ${authProbe.latencyMs}ms.` : `Identity probe failed: ${authProbe.error}`,
+    dependency: 'Firebase Authentication identity directory', retryable: true,
     errorCategory: authProbe.ok ? null : categorizeError(authProbe.error),
-    remediation: authProbe.ok ? '' : 'Confirm the service account holds the Firebase Authentication Admin role and that the Identity Toolkit API is enabled.',
-    affectedFeatures: ['Sign-in', 'Admin console access', 'Token verification', 'Custom claims'],
-    affectedApis: ['/api/auth/*', 'Every authenticated route'],
-    affectedUiModules: ['/login', '/adm', '/enterprise'],
-    metrics: { latencyMs: authProbe.ok ? authProbe.latencyMs : null, mfaRequiredForSuperAdmin: process.env.SUPER_ADMIN_MFA_REQUIRED === 'false' ? false : (process.env.SUPER_ADMIN_MFA_REQUIRED === 'true' || process.env.NODE_ENV === 'production') },
-    lastCheckedAt: checkedAt,
-  }));
+    affectedFeatures: ['Sign-in', 'OAuth', 'session verification', 'password reset', 'MFA'], affectedApis: ['/api/auth/*'], affectedUiModules: ['/login'],
+    metrics: { latencyMs: authProbe.latencyMs }, testable: true, checkedAt }));
+  services.push(service({ id: 'mfa', name: 'Multi-factor Authentication', group: GROUP.CORE,
+    state: authProbe.ok ? STATE.OPERATIONAL : STATE.UNAVAILABLE,
+    configuration: identityAdmin?.auth ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED, critical: true,
+    reason: authProbe.ok ? 'MFA uses the retained Firebase Authentication identity plane; the directory probe succeeded.' : 'MFA cannot be relied on while the identity probe is unavailable.',
+    dependency: 'Firebase Authentication MFA', affectedFeatures: ['Privileged authentication'], checkedAt }));
 
-  const encryption = enterpriseRuntime?.encryption || null;
-  const encryptionConfigured = encryption?.configured === true;
-  services.push(service({
-    id: 'encryption',
-    name: 'Encryption',
-    group: GROUP.CORE,
+  const tenancyReady = enterpriseEnabled && databaseProbe.ok && runtime.dataPlaneConfigured === true;
+  services.push(service({ id: 'enterprise-tenancy', name: 'Enterprise Tenancy', group: GROUP.CORE,
+    state: !enterpriseEnabled ? STATE.DISABLED : tenancyReady ? STATE.OPERATIONAL : STATE.UNAVAILABLE,
+    enabled: enterpriseEnabled,
+    configuration: !enterpriseEnabled ? CONFIG.DISABLED_BY_CONFIGURATION : runtime.dataPlaneConfigured === true ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
     critical: enterpriseEnabled,
-    state: encryptionConfigured ? STATE.OPERATIONAL : (enterpriseEnabled ? STATE.UNAVAILABLE : STATE.NOT_CONFIGURED),
-    configuration: encryptionConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    enabled: encryptionConfigured,
-    reason: encryptionConfigured
-      ? `Envelope encryption is active using the ${encryption.provider} provider (${encryption.securityLevel}).`
-      : 'No enterprise encryption key is configured; encrypted resource writes fail closed.',
-    dependency: 'ENTERPRISE_ENCRYPTION_KEY / ENTERPRISE_ENCRYPTION_KEYS',
-    retryable: false,
-    errorCategory: encryptionConfigured ? null : 'CONFIGURATION_MISSING',
-    remediation: encryptionConfigured ? '' : 'Generate a 32-byte base64 key and set ENTERPRISE_ENCRYPTION_KEY, then restart the backend.',
-    affectedFeatures: ['Enterprise resource payload encryption', 'Tenant data at rest'],
-    affectedApis: ['/api/enterprise/resources', '/api/platform/encryption'],
-    affectedUiModules: ['/enterprise', '/adm/operations'],
-    metrics: {
-      provider: encryption?.provider || 'none',
-      securityLevel: encryption?.securityLevel || 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED',
-      activeVersion: encryption?.activeVersion || null,
-    },
-    lastCheckedAt: checkedAt,
-  }));
-
-  const tenancyConfigured = enterpriseRuntime?.dataPlaneConfigured === true;
-  const enterpriseSecurityReady = encryptionConfigured === true;
-  services.push(service({
-    id: 'enterprise-tenancy',
-    name: 'Enterprise Tenancy',
-    group: GROUP.CORE,
-    critical: false,
-    state: !enterpriseEnabled
-      ? STATE.DISABLED
-      : (!dbPing.ok || !tenancyConfigured || !enterpriseSecurityReady ? STATE.UNAVAILABLE : STATE.OPERATIONAL),
+    reason: !enterpriseEnabled ? 'Enterprise tenancy is disabled by configuration.'
+      : tenancyReady ? 'Tenant service reports a configured MariaDB data plane and the database probe succeeded.'
+        : 'Enterprise tenancy is enabled, but its MariaDB runtime is not ready.',
+    dependency: 'MariaDB tenant repository', retryable: enterpriseEnabled && !tenancyReady,
+    errorCategory: enterpriseEnabled && !tenancyReady ? 'CONFIGURATION_MISSING' : null,
+    affectedFeatures: ['Tenant isolation', 'workspaces', 'enterprise IAM'], affectedApis: ['/api/enterprise/*'], affectedUiModules: ['/enterprise', '/adm/tenants'], checkedAt }));
+  services.push(service({ id: 'enterprise-encryption', name: 'Enterprise Encryption', group: GROUP.CORE,
+    state: !enterpriseEnabled ? STATE.DISABLED : encryption.configured === true ? STATE.OPERATIONAL : STATE.UNAVAILABLE,
     enabled: enterpriseEnabled,
-    configuration: !enterpriseEnabled
-      ? CONFIG.DISABLED_BY_CONFIGURATION
-      : (tenancyConfigured ? CONFIG.CONFIGURED : CONFIG.PARTIALLY_CONFIGURED),
-    reason: !enterpriseEnabled
-      ? 'ENTERPRISE_TENANCY_ENABLED is false, so every /api/enterprise route intentionally answers 404. This is a deliberate rollout gate, not an outage.'
-      : (!firestorePing.ok
-        ? `Enterprise tenancy is enabled but the Firestore probe failed: ${firestorePing.error}`
-        : (!tenancyConfigured
-          ? `Enterprise tenancy is enabled but the data plane is not constructed: ${enterpriseRuntime?.error || 'repository unavailable'}`
-          : (!enterpriseSecurityReady
-            ? 'Enterprise tenancy is constructed but encryption is unavailable; encrypted resource operations fail closed.'
-            : `The tenant control plane is constructed on the ${enterpriseRuntime.dataProvider} data provider.`))),
-    dependency: 'ENTERPRISE_TENANCY_ENABLED + Firestore tenant repository',
-    retryable: false,
-    errorCategory: !enterpriseEnabled ? null : (!firestorePing.ok ? categorizeError(firestorePing.error) : (!tenancyConfigured || !enterpriseSecurityReady ? 'CONFIGURATION_MISSING' : null)),
-    remediation: !enterpriseEnabled
-      ? 'Set ENTERPRISE_TENANCY_ENABLED=true (backend) and VITE_ENTERPRISE_TENANCY_ENABLED=true (frontend) once the rollout gates are approved.'
-      : (!firestorePing.ok
-        ? 'Restore Firestore connectivity before accepting Enterprise tenant traffic.'
-        : (!tenancyConfigured
-          ? 'Provide the Firestore tenant repository configuration and restart the backend.'
-          : (!enterpriseSecurityReady ? 'Configure the enterprise encryption key and restart the backend.' : ''))),
-    affectedFeatures: ['Tenant provisioning', 'Workspaces', 'Tenant memberships', 'Tenant audit'],
-    affectedApis: ['/api/enterprise/platform/tenants', '/api/enterprise/tenants', '/api/enterprise/memberships'],
-    affectedUiModules: ['/adm/tenants', '/enterprise'],
-    metrics: {
-      dataProvider: enterpriseRuntime?.dataProvider || 'unavailable',
-      dataPlaneConfigured: tenancyConfigured,
-      quotaStore: enterpriseRuntime?.quotaStore || 'unavailable',
-    },
-    lastCheckedAt: checkedAt,
-  }));
+    configuration: !enterpriseEnabled ? CONFIG.DISABLED_BY_CONFIGURATION : encryption.configured === true ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    critical: enterpriseEnabled,
+    reason: !enterpriseEnabled ? 'Enterprise tenancy is disabled.' : encryption.configured === true ? 'The tenant service reports a configured encryption provider.' : 'Enterprise encryption is not configured.',
+    dependency: 'Enterprise envelope-encryption key provider', errorCategory: enterpriseEnabled && encryption.configured !== true ? 'CONFIGURATION_MISSING' : null,
+    metrics: { provider: encryption.provider || null, securityLevel: encryption.securityLevel || null }, checkedAt }));
 
-  const consumerBlocked = maintenanceEnabled;
-  services.push(service({
-    id: 'consumer-platform',
-    name: 'Consumer Platform',
-    group: GROUP.CORE,
-    critical: true,
-    state: !firebaseConfigured || !firestorePing.ok || !authProbe.ok
-      ? STATE.UNAVAILABLE
-      : maintenanceEnabled === null ? STATE.UNKNOWN : consumerBlocked ? STATE.DEGRADED : STATE.OPERATIONAL,
-    configuration: CONFIG.CONFIGURED,
-    reason: !firebaseConfigured
-      ? 'The consumer product depends on Firebase, which is not initialised.'
-      : (!firestorePing.ok || !authProbe.ok)
-        ? 'The consumer data plane depends on Firestore and Firebase Authentication, and at least one probe failed.'
-        : maintenanceEnabled === null
-          ? 'Maintenance state could not be read, so consumer availability is unknown.'
-          : (consumerBlocked
-            ? 'Maintenance mode is enabled, so non-admin visitors are shown the maintenance banner instead of the product.'
-            : 'Maintenance mode is off and the consumer dependency probes succeeded.'),
-    dependency: 'Firebase + maintenance flag',
-    retryable: false,
-    remediation: !firebaseConfigured || !firestorePing.ok || !authProbe.ok
-      ? 'Restore the failed Firebase, Firestore, or Authentication dependency before relying on consumer traffic.'
-      : maintenanceEnabled === null
-        ? 'Re-run the health collector after the maintenance configuration source is available.'
-        : consumerBlocked ? 'Disable maintenance mode in Platform Operations when the window closes.' : '',
-    affectedFeatures: ['Resume builder', 'Portfolio', 'Job tracker', 'Checkout'],
-    affectedApis: ['/api/export', '/api/generate-resume'],
-    affectedUiModules: ['/dashboard', '/build-resume'],
-    metrics: { maintenanceMode: maintenanceEnabled },
-    lastCheckedAt: checkedAt,
-  }));
+  const notification = notificationProbe.value;
+  services.push(service({ id: 'notification-outbox', name: 'Notification Outbox', group: GROUP.WORKERS,
+    state: !notificationProbe.ok ? STATE.UNKNOWN : notification.deadLetter > 0 ? STATE.DEGRADED : STATE.OPERATIONAL,
+    configuration: notificationProbe.ok ? CONFIG.CONFIGURED : CONFIG.UNKNOWN,
+    reason: !notificationProbe.ok ? `Notification outbox could not be inspected: ${notificationProbe.error}`
+      : notification.deadLetter > 0 ? `${notification.deadLetter} notification(s) are dead-lettered.` : 'The MariaDB notification outbox was read and has no dead-letter item.',
+    dependency: 'MariaDB notification_outbox', retryable: true,
+    errorCategory: notificationProbe.ok ? null : categorizeError(notificationProbe.error),
+    metrics: notificationProbe.ok ? notification : {}, affectedUiModules: ['/adm/queues'], checkedAt }));
+  services.push(service({ id: 'notification-worker', name: 'Notification Worker', group: GROUP.WORKERS,
+    state: notificationWorkerEnabled ? STATE.UNKNOWN : STATE.DISABLED, enabled: notificationWorkerEnabled,
+    configuration: notificationWorkerEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
+    reason: notificationWorkerEnabled ? 'A notification worker is enabled, but no durable heartbeat is recorded; liveness is not inferred.' : 'Notification workers are disabled by configuration.',
+    dependency: 'Notification worker heartbeat (not implemented)', errorCategory: notificationWorkerEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));
+  const enterpriseQueue = enterpriseQueueProbe.value;
+  services.push(service({ id: 'enterprise-outbox', name: 'Enterprise Outbox', group: GROUP.WORKERS,
+    state: !enterpriseQueueProbe.ok ? STATE.UNKNOWN : enterpriseQueue.deadLetterCount > 0 || !enterpriseQueue.signingConfigured ? STATE.DEGRADED : STATE.OPERATIONAL,
+    configuration: !enterpriseQueueProbe.ok ? CONFIG.UNKNOWN : enterpriseQueue.signingConfigured ? CONFIG.CONFIGURED : CONFIG.PARTIALLY_CONFIGURED,
+    reason: !enterpriseQueueProbe.ok ? `Enterprise outbox could not be inspected: ${enterpriseQueueProbe.error}`
+      : !enterpriseQueue.signingConfigured ? 'The queue is durable, but its signing secret is missing or too short.'
+        : enterpriseQueue.deadLetterCount > 0 ? `${enterpriseQueue.deadLetterCount} enterprise job(s) are dead-lettered.` : 'The MariaDB enterprise outbox was read and has no dead-letter item.',
+    dependency: 'MariaDB enterprise_outbox', retryable: true,
+    errorCategory: enterpriseQueueProbe.ok ? null : categorizeError(enterpriseQueueProbe.error),
+    metrics: enterpriseQueueProbe.ok ? { activeQueued: enterpriseQueue.activeQueued, deadLetterCount: enterpriseQueue.deadLetterCount } : {}, checkedAt }));
+  services.push(service({ id: 'enterprise-worker', name: 'Enterprise Worker', group: GROUP.WORKERS,
+    state: enterpriseWorkerEnabled ? STATE.UNKNOWN : STATE.DISABLED, enabled: enterpriseWorkerEnabled,
+    configuration: enterpriseWorkerEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
+    reason: enterpriseWorkerEnabled ? 'The enterprise worker is enabled, but no durable heartbeat is recorded; liveness is not inferred.' : 'The enterprise worker is disabled by configuration.',
+    dependency: 'Enterprise worker heartbeat (not implemented)', errorCategory: enterpriseWorkerEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));
 
-  services.push(service({
-    id: 'admin-platform',
-    name: 'Admin Platform',
-    group: GROUP.CORE,
-    critical: true,
-    state: firestorePing.ok && authProbe.ok ? STATE.OPERATIONAL : (firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE),
-    configuration: CONFIG.CONFIGURED,
-    reason: firestorePing.ok && authProbe.ok
-      ? 'Administrative reads verified Firestore and the identity directory during this check.'
-      : 'One or more administrative dependencies (Firestore, identity directory) failed their probe.',
-    dependency: 'Firestore + Firebase Authentication custom claims',
-    retryable: true,
-    affectedFeatures: ['Users manager', 'Settings', 'Audit trail', 'Queue monitor'],
-    affectedApis: ['/api/admin/*', '/api/platform/*'],
-    affectedUiModules: ['/adm'],
-    metrics: { rbacModel: 'Firebase custom claims (ADMIN / SUPER_ADMIN / SUPPORT)' },
-    lastCheckedAt: checkedAt,
-  }));
+  const smtpTest = recentTest('email-smtp');
+  const smtpState = !smtp.credentialed ? (smtp.partial ? STATE.DEGRADED : STATE.NOT_CONFIGURED)
+    : smtpTest ? (smtpTest.passed ? STATE.OPERATIONAL : STATE.UNAVAILABLE) : STATE.UNKNOWN;
+  services.push(service({ id: 'email-smtp', name: 'Email (SMTP)', group: GROUP.INTEGRATIONS,
+    state: smtpState,
+    configuration: !smtp.credentialed ? (smtp.partial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_CONFIGURED) : CONFIG.CONFIGURED,
+    reason: !smtp.credentialed ? (smtp.partial ? 'SMTP credentials are incomplete.' : 'SMTP credentials are not configured in MariaDB or the deployment environment.')
+      : smtpTest ? smtpTest.detail : 'SMTP is configured, but a connection/authentication test has not run in the last five minutes.',
+    dependency: 'Encrypted SMTP relay', retryable: smtp.credentialed,
+    errorCategory: !smtp.credentialed ? 'CONFIGURATION_MISSING' : smtpTest?.passed === false ? smtpTest.errorCategory : (!smtpTest ? 'DATA_UNAVAILABLE' : null),
+    affectedFeatures: ['Transactional email', 'notification delivery'], affectedApis: ['/api/email/*'], affectedUiModules: ['/adm/email-logs'],
+    metrics: { host: smtp.host || null, port: smtp.port, encryption: smtp.encryption || null, fallbackConfigured: smtp.fallbackEnabled && smtp.fallbackCredentialed },
+    testable: true, checkedAt }));
 
-  const mfaEnforced = process.env.SUPER_ADMIN_MFA_REQUIRED === 'false'
-    ? false
-    : (process.env.SUPER_ADMIN_MFA_REQUIRED === 'true' || process.env.NODE_ENV === 'production');
-  services.push(service({
-    id: 'super-admin-platform',
-    name: 'Super Admin Platform',
-    group: GROUP.CORE,
-    critical: true,
-    state: dbPing.ok && authProbe.ok ? STATE.OPERATIONAL : (firebaseConfigured ? STATE.DEGRADED : STATE.UNAVAILABLE),
-    configuration: CONFIG.CONFIGURED,
-    reason: dbPing.ok && authProbe.ok
-      ? `Super Admin control-plane dependencies responded. Destructive operations ${mfaEnforced ? 'require' : 'do not currently require'} a second factor.`
-      : 'Super Admin control-plane dependencies did not all respond to their probes.',
-    dependency: 'Firebase Authentication second factor + MariaDB / MySQL',
-    retryable: true,
-    affectedFeatures: ['Tenant decommission', 'Operator role changes', 'Maintenance mode', 'DLQ replay'],
-    affectedApis: ['/api/platform/operators', '/api/platform/maintenance', '/api/platform/tenants/:id/decommission'],
-    affectedUiModules: ['/adm/operators', '/adm/operations', '/adm/tenants'],
-    metrics: { mfaEnforced },
-    lastCheckedAt: checkedAt,
-  }));
+  for (const [key, descriptor] of Object.entries(payments)) services.push(configuredProviderService(`payments-${key}`, descriptor, checkedAt));
+  for (const [key, descriptor] of Object.entries(oauth)) services.push(configuredProviderService(`${key}-oauth`, {
+    ...descriptor, name: `${key[0].toUpperCase()}${key.slice(1)} OAuth`, apis: [`/api/auth/${key}`],
+  }, checkedAt));
 
-  /* ── External integrations ─────────────────────────────────────────────── */
-
-  const emailAffectedFeatures = [
-    'Password reset emails',
-    'Email verification',
-    'Job application notifications',
-    'Security alerts',
-    'Invoice delivery',
-  ];
-  const emailAffectedApis = [
-    '/api/email/send-email',
-    '/api/notify/user-signup',
-    '/api/notify/job-application',
-    '/api/notify/security-alert',
-    '/api/send-invoice-email',
-  ];
-
-  if (!emailConfig.ok) {
-    services.push(service({
-      id: 'email-smtp',
-      name: 'Email / SMTP',
-      group: GROUP.INTEGRATIONS,
-      critical: true,
-      state: STATE.UNKNOWN,
-      configuration: CONFIG.UNKNOWN,
-      reason: `The SMTP configuration could not be read: ${emailConfig.error}`,
-      dependency: 'SMTP relay',
-      retryable: true,
-      testable: true,
-      errorCategory: categorizeError(emailConfig.error),
-      remediation: 'Check the backend email configuration source (Firestore data/system_settings or the local mail config file).',
-      affectedFeatures: emailAffectedFeatures,
-      affectedApis: emailAffectedApis,
-      affectedUiModules: ['/adm/settings?tab=emailSettings'],
-      lastCheckedAt: checkedAt,
-    }));
-  } else {
-    const deadLetters = outboxStats.available ? outboxStats.deadLetter : null;
-    let emailState = STATE.OPERATIONAL;
-    let emailReason = `SMTP credentials are configured for ${smtp.host}:${smtp.port} over ${smtp.encryption}. No dead-letter deliveries were found in the inspected outbox sample; an SMTP handshake is not claimed until the explicit test runs.`;
-    let emailCategory = null;
-    if (!smtp.credentialed) {
-      emailState = smtp.partial ? STATE.DEGRADED : STATE.NOT_CONFIGURED;
-      emailReason = smtp.partial
-        ? 'SMTP is partially configured: a username or password is missing, so authenticated delivery will fail.'
-        : 'No SMTP credentials are configured, so outbound mail cannot be delivered.';
-      emailCategory = 'CONFIGURATION_MISSING';
-    } else if (deadLetters === null) {
-      emailState = STATE.UNKNOWN;
-      emailReason = 'SMTP credentials are configured but the notification outbox could not be inspected, so delivery health is unknown.';
-      emailCategory = 'DATA_UNAVAILABLE';
-    } else if (deadLetters > 0) {
-      emailState = STATE.DEGRADED;
-      emailReason = `SMTP credentials are configured but ${deadLetters} notification(s) exhausted their retries in the inspected sample of ${outboxStats.inspected}.`;
-      emailCategory = outboxStats.lastErrorCategory || 'PROVIDER_ERROR';
-    }
-    services.push(service({
-      id: 'email-smtp',
-      name: 'Email / SMTP',
-      group: GROUP.INTEGRATIONS,
-      critical: true,
-      state: emailState,
-      configuration: smtp.credentialed ? CONFIG.CONFIGURED : (smtp.partial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_CONFIGURED),
-      enabled: smtp.credentialed,
-      reason: emailReason,
-      dependency: `SMTP relay (${smtp.host || 'not set'})`,
-      retryable: true,
-      testable: true,
-      errorCategory: emailCategory,
-      remediation: emailState === STATE.OPERATIONAL
-        ? ''
-        : (smtp.credentialed
-          ? 'Run the SMTP connection test, then replay dead-letter notifications from the Queue & DLQ monitor.'
-          : 'Add the SMTP host, port, username, and password in Admin → Settings → Email & SMTP.'),
-      affectedFeatures: emailAffectedFeatures,
-      affectedApis: emailAffectedApis,
-      affectedUiModules: ['/adm/settings?tab=emailSettings', '/adm/queues'],
-      metrics: {
-        host: smtp.host || null,
-        port: smtp.port,
-        encryption: smtp.encryption,
-        credentialsConfigured: smtp.credentialed,
-        fallbackRelayEnabled: smtp.fallbackEnabled,
-        fallbackRelayConfigured: smtp.fallbackCredentialed,
-        deadLetterSample: deadLetters,
-      },
-      lastCheckedAt: checkedAt,
-    }));
-  }
-
-  const dispatcherWorkerLocal = envFlag('NOTIFICATION_OUTBOX_WORKER_ENABLED');
-  const dispatcherWorkerExternal = envFlag('NOTIFICATION_OUTBOX_EXTERNAL_WORKER');
-  const dispatcherRunning = dispatcherWorkerLocal || dispatcherWorkerExternal;
-  let dispatcherState = STATE.DISABLED;
-  let dispatcherReason = 'No notification outbox worker is enabled in this deployment, so queued notifications are stored durably but never dispatched.';
-  if (dispatcherRunning && !outboxStats.available) {
-    dispatcherState = STATE.UNKNOWN;
-    dispatcherReason = 'A notification worker is declared but the outbox could not be inspected, so dispatch health is unknown.';
-  } else if (dispatcherRunning && outboxStats.deadLetter > 0) {
-    dispatcherState = STATE.DEGRADED;
-    dispatcherReason = `The dispatcher is enabled but ${outboxStats.deadLetter} notification(s) reached the dead-letter state in the inspected sample.`;
-  } else if (dispatcherRunning) {
-    dispatcherState = STATE.OPERATIONAL;
-    dispatcherReason = `The ${dispatcherWorkerLocal ? 'in-process' : 'external'} notification worker is enabled and no dead letters were found in the inspected sample.`;
-  }
-  services.push(service({
-    id: 'notification-dispatcher',
-    name: 'Notification Dispatcher',
-    group: GROUP.INTEGRATIONS,
-    critical: false,
-    state: dispatcherState,
-    enabled: dispatcherRunning,
-    configuration: dispatcherRunning ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
-    reason: dispatcherReason,
-    dependency: 'Firestore notification_outbox + SMTP',
-    retryable: dispatcherRunning,
-    errorCategory: dispatcherState === STATE.DEGRADED ? (outboxStats.lastErrorCategory || 'PROVIDER_ERROR') : null,
-    remediation: dispatcherRunning
-      ? 'Replay dead letters from the Queue & DLQ monitor after confirming the SMTP provider test passes.'
-      : 'Set NOTIFICATION_OUTBOX_WORKER_ENABLED=true on a worker-capable instance, or declare NOTIFICATION_OUTBOX_EXTERNAL_WORKER=true.',
-    affectedFeatures: ['Transactional email delivery', 'Retry and dead-letter handling'],
-    affectedApis: ['/api/notify/*', '/api/platform/queues'],
-    affectedUiModules: ['/adm/queues'],
-    metrics: {
-      localWorkerEnabled: dispatcherWorkerLocal,
-      externalWorkerDeclared: dispatcherWorkerExternal,
-      queued: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.queued : null,
-      delivered: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.delivered : null,
-      deadLetter: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.deadLetter : null,
-      inspected: (dispatcherState === STATE.OPERATIONAL && outboxStats.available) ? outboxStats.inspected : null,
-    },
-    lastCheckedAt: checkedAt,
-  }));
-
-  const oauthDescriptors = [
-    {
-      id: 'github-oauth', name: 'GitHub OAuth', key: 'github',
-      apis: ['/api/auth/github', '/api/auth/github/callback', '/api/auth/oauth/exchange'],
-      features: ['Continue with GitHub sign-in', 'GitHub account linking'],
-      ui: ['/login', '/register', '/adm/settings?tab=socialAuthSettings'],
-      envHint: 'GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET',
-    },
-    {
-      id: 'linkedin-oauth', name: 'LinkedIn OAuth', key: 'linkedin',
-      apis: ['/api/auth/linkedin', '/api/auth/linkedin/callback', '/api/auth/oauth/exchange'],
-      features: ['Continue with LinkedIn sign-in', 'LinkedIn account linking'],
-      ui: ['/login', '/register', '/adm/settings?tab=socialAuthSettings'],
-      envHint: 'LINKEDIN_CLIENT_ID / LINKEDIN_CLIENT_SECRET',
-    },
-  ];
-  for (const descriptor of oauthDescriptors) {
-    const provider = oauth[descriptor.key];
-    let state = STATE.OPERATIONAL;
-    let reason = 'Complete client credentials are configured and the provider is enabled. The read-only collector does not perform an external OAuth handshake.';
-    let configuration = CONFIG.CONFIGURED;
-    let category = null;
-    if (!provider.adminEnabled) {
-      state = STATE.DISABLED;
-      configuration = CONFIG.DISABLED_BY_CONFIGURATION;
-      reason = 'The provider is switched off in Admin → Settings → Social Sign-On, so the button is intentionally hidden from the sign-in UI.';
-    } else if (!provider.credentialed) {
-      state = STATE.NOT_CONFIGURED;
-      configuration = provider.partial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_CONFIGURED;
-      reason = provider.partial
-        ? 'Only one half of the OAuth client credential pair is present, so the authorization redirect will fail with 503.'
-        : 'No OAuth client credentials are configured, so the provider endpoint answers 503 and the button is hidden.';
-      category = 'CONFIGURATION_MISSING';
-    }
-    services.push(service({
-      id: descriptor.id,
-      name: descriptor.name,
-      group: GROUP.INTEGRATIONS,
-      critical: false,
-      state,
-      enabled: provider.adminEnabled,
-      configuration,
-      reason,
-      dependency: `${descriptor.name} authorization server`,
-      retryable: false,
-      errorCategory: category,
-      remediation: state === STATE.OPERATIONAL
-        ? ''
-        : (provider.adminEnabled
-          ? `Add ${descriptor.envHint} (or the equivalent Firestore oauth_providers entry) and restart the backend.`
-          : 'Enable the provider in Admin → Settings → Social Sign-On & OAuth if it should be offered to users.'),
-      affectedFeatures: descriptor.features,
-      affectedApis: descriptor.apis,
-      affectedUiModules: descriptor.ui,
-      metrics: { credentialsConfigured: provider.credentialed, credentialSource: provider.source, providerEnabled: provider.adminEnabled },
-      lastCheckedAt: checkedAt,
-    }));
-  }
-
-  for (const [key, provider] of Object.entries(payments)) {
-    let state = STATE.OPERATIONAL;
-    let configuration = CONFIG.CONFIGURED;
-    let reason = `Complete credentials are configured for the ${provider.environment} environment and the gateway is enabled for checkout. Provider connectivity is not claimed until an explicit test or transaction succeeds.`;
-    let category = null;
-    if (!provider.adminEnabled) {
-      state = STATE.DISABLED;
-      configuration = provider.credentialed ? CONFIG.DISABLED_BY_CONFIGURATION : CONFIG.NOT_CONFIGURED;
-      reason = provider.credentialed
-        ? 'The gateway is credentialed but switched off for checkout, so it is intentionally hidden from the payment UI.'
-        : 'The gateway is switched off for checkout and has no credentials configured.';
-    } else if (!provider.credentialed) {
-      state = STATE.NOT_CONFIGURED;
-      configuration = provider.partial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_CONFIGURED;
-      reason = provider.partial
-        ? 'The gateway is enabled but only part of its credential pair is present, so order creation returns 503.'
-        : 'The gateway is enabled for checkout but no credentials are configured, so order creation returns 503.';
-      category = 'CONFIGURATION_MISSING';
-    }
-    services.push(service({
-      id: `payments-${key}`,
-      name: provider.name,
-      group: GROUP.INTEGRATIONS,
-      critical: false,
-      state,
-      enabled: provider.adminEnabled,
-      configuration,
-      reason,
-      dependency: `${provider.name} payment gateway`,
-      retryable: false,
-      errorCategory: category,
-      remediation: state === STATE.OPERATIONAL
-        ? ''
-        : (provider.adminEnabled
-          ? `Add the ${provider.name} credentials in Admin → Settings → Subscriptions & Gateways.`
-          : `Enable ${provider.name} in Admin → Settings → Subscriptions & Gateways if it should be offered at checkout.`),
-      affectedFeatures: [`${provider.name} checkout`, 'Subscription upgrades', 'Invoice generation'],
-      affectedApis: provider.apis,
-      affectedUiModules: ['/plans', '/adm/settings?tab=subscriptionsSettings'],
-      metrics: {
-        credentialsConfigured: provider.credentialed,
-        credentialSource: provider.source,
-        gatewayEnabled: provider.adminEnabled,
-        environment: provider.environment,
-        webhookSecretConfigured: provider.webhook === undefined ? null : provider.webhook,
-      },
-      lastCheckedAt: checkedAt,
-    }));
-  }
-
-  const twilio = docData(adminConfigDoc)?.twilio || {};
-  const twilioLegacy = docData(legacySystemDoc)?.twilio || {};
-  const twilioPair = selectPaymentPair({
-    envId: process.env.TWILIO_ACCOUNT_SID,
-    envSecret: process.env.TWILIO_AUTH_TOKEN,
-    storedId: twilio.accountSid || twilioLegacy.accountSid,
-    storedSecret: twilio.authToken || twilioLegacy.authToken,
-  });
-  const twilioSender = truthy(twilio.fromPhoneNumber || process.env.TWILIO_FROM_PHONE || twilioLegacy.fromPhoneNumber);
-  const twilioCredentialed = Boolean(twilioPair.id && twilioPair.secret && twilioSender);
-  const twilioEnabled = twilio.enableSmsAlerts !== undefined ? twilio.enableSmsAlerts === true : twilioLegacy.enableSmsAlerts === true;
-  services.push(service({
-    id: 'twilio-sms',
-    name: 'Twilio SMS',
-    group: GROUP.INTEGRATIONS,
-    critical: false,
-    state: !twilioEnabled ? STATE.DISABLED : (twilioCredentialed ? STATE.OPERATIONAL : STATE.NOT_CONFIGURED),
-    enabled: twilioEnabled,
-    configuration: twilioCredentialed
-      ? (twilioEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION)
-      : CONFIG.NOT_CONFIGURED,
-    reason: !twilioEnabled
-      ? 'SMS alerts are switched off in Admin → Settings → Twilio SMS, so no message is dispatched.'
-      : (twilioCredentialed
-        ? 'Twilio credentials and a sender number are configured and SMS alerts are enabled. This read-only collector does not send a message.'
-        : 'SMS alerts are enabled but the Twilio Account SID, Auth Token, or sender number is missing.'),
-    dependency: 'Twilio Programmable Messaging',
-    retryable: false,
-    errorCategory: twilioEnabled && !twilioCredentialed ? 'CONFIGURATION_MISSING' : null,
-    remediation: twilioEnabled && !twilioCredentialed
-      ? 'Add the Account SID, Auth Token, and E.164 sender number in Admin → Settings → Twilio SMS.'
-      : '',
-    affectedFeatures: ['SMS security alerts'],
-    affectedApis: ['/api/send-sms'],
-    affectedUiModules: ['/adm/settings?tab=twilioSmsSettings'],
-    metrics: { credentialsConfigured: twilioCredentialed, credentialSource: twilioPair.source, senderConfigured: twilioSender, smsAlertsEnabled: twilioEnabled },
-    lastCheckedAt: checkedAt,
-  }));
-
-  services.push(service({
-    id: 'naukri-ingestion',
-    name: 'Naukri Job Ingestion',
-    group: GROUP.INTEGRATIONS,
-    critical: false,
-    state: STATE.NOT_CONFIGURED,
-    enabled: false,
-    configuration: CONFIG.NOT_CONFIGURED,
-    reason: 'No Naukri ingestion credential or partner feed is configured. /api/jobs/naukri deliberately answers 501 rather than returning fabricated listings.',
-    dependency: 'Naukri partner feed',
-    retryable: false,
-    errorCategory: 'CONFIGURATION_MISSING',
-    remediation: 'Configure a licensed Naukri partner feed before enabling job ingestion. No demo listings are generated.',
-    affectedFeatures: ['External job ingestion'],
-    affectedApis: ['/api/jobs/naukri'],
-    affectedUiModules: ['/adm/settings?tab=jobScraperSettings', '/adm/jobs-manager'],
-    metrics: { documentedResponse: '501 SCRAPER_NOT_CONFIGURED' },
-    lastCheckedAt: checkedAt,
-  }));
-
-  const cloudflareToken = truthy(process.env.CLOUDFLARE_API_TOKEN);
-  const cloudflareZone = truthy(process.env.CLOUDFLARE_ZONE_ID);
-  const cloudflareConfigured = cloudflareToken && cloudflareZone;
-  const cloudflarePartial = cloudflareToken || cloudflareZone;
-  services.push(service({
-    id: 'cloudflare',
-    name: 'Cloudflare',
-    group: GROUP.INTEGRATIONS,
-    critical: false,
-    state: cloudflareConfigured ? STATE.OPERATIONAL : cloudflarePartial ? STATE.NOT_CONFIGURED : STATE.NOT_SUPPORTED,
-    support: cloudflarePartial ? 'SUPPORTED' : 'NOT_SUPPORTED',
-    enabled: cloudflareConfigured,
-    configuration: cloudflareConfigured ? CONFIG.CONFIGURED : cloudflarePartial ? CONFIG.PARTIALLY_CONFIGURED : CONFIG.NOT_APPLICABLE,
-    reason: cloudflareConfigured
-      ? 'Cloudflare API token and zone identifier are present in the backend environment.'
-      : cloudflarePartial
-        ? 'Cloudflare integration is partially configured; both CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID are required before an API operation can run.'
-        : 'This deployment does not integrate with the Cloudflare API. Edge caching and DNS, if used, are managed outside the application.',
-    dependency: 'Cloudflare API',
-    retryable: false,
-    errorCategory: cloudflarePartial && !cloudflareConfigured ? 'CONFIGURATION_MISSING' : null,
-    remediation: cloudflarePartial && !cloudflareConfigured ? 'Provide the missing Cloudflare API token or zone identifier through the deployment secret manager.' : '',
-    affectedFeatures: [],
-    affectedApis: [],
-    affectedUiModules: [],
-    metrics: { integrationPresent: cloudflareConfigured, tokenConfigured: cloudflareToken, zoneConfigured: cloudflareZone },
-    lastCheckedAt: checkedAt,
-  }));
-
-  const aiProviders = [
-    ['gemini', 'Google Gemini', 'GEMINI_API_KEY'],
-    ['openai', 'OpenAI', 'OPENAI_API_KEY'],
-    ['nvidia', 'NVIDIA NIM', 'NVIDIA_API_KEY'],
-    ['groq', 'Groq', 'GROQ_API_KEY'],
-    ['openrouter', 'OpenRouter', 'OPENROUTER_API_KEY'],
-    ['deepseek', 'DeepSeek', 'DEEPSEEK_API_KEY'],
-  ];
-  const configuredAi = aiProviders.filter(([key, , envKey]) => truthy(process.env[envKey]) || truthy(docData(aiProvidersDoc)?.[key]?.apiKey));
-  services.push(service({
-    id: 'ai-providers',
-    name: 'AI Providers',
-    group: GROUP.INTEGRATIONS,
-    critical: false,
-    state: configuredAi.length > 0 ? STATE.OPERATIONAL : STATE.NOT_CONFIGURED,
-    enabled: configuredAi.length > 0,
-    configuration: configuredAi.length > 0 ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: configuredAi.length > 0
-      ? `${configuredAi.length} of ${aiProviders.length} supported AI providers hold a server-side API key. Provider reachability is not claimed until an explicit test or generation succeeds.`
-      : 'No AI provider API key is configured, so generation endpoints fall back to deterministic non-AI behaviour or return 503.',
-    dependency: 'Third-party AI inference APIs',
-    retryable: true,
-    testable: true,
-    errorCategory: configuredAi.length > 0 ? null : 'CONFIGURATION_MISSING',
-    remediation: configuredAi.length > 0 ? '' : 'Add at least one provider key in Admin → Settings → AI & Gemini.',
-    affectedFeatures: ['Resume generation', 'Summary rewriting', 'Interview coach', 'Cover letters', 'ATS scoring'],
-    affectedApis: ['/api/generate-resume', '/api/generate-summary', '/api/ai/*'],
-    affectedUiModules: ['/build-resume', '/adm/settings?tab=aiSettings'],
-    metrics: {
-      configuredProviders: configuredAi.map(([, label]) => label),
-      supportedProviders: aiProviders.map(([, label]) => label),
-    },
-    lastCheckedAt: checkedAt,
-  }));
-
-  /* ── Workers & infrastructure ──────────────────────────────────────────── */
-
-  const load = os.loadavg?.() || [0, 0, 0];
-  services.push(service({
-    id: 'backend-process',
-    name: 'PM2 / Backend Process',
-    group: GROUP.WORKERS,
-    critical: true,
-    state: STATE.OPERATIONAL,
-    configuration: CONFIG.CONFIGURED,
-    reason: `Process ${process.pid} has been serving for ${Math.floor(process.uptime())}s. Process liveness alone is not treated as platform health.`,
-    dependency: 'PM2 process manager',
-    retryable: false,
-    affectedFeatures: ['All backend processing'],
-    affectedApis: [],
-    affectedUiModules: [],
-    metrics: {
-      pid: process.pid,
-      uptimeSeconds: Math.floor(process.uptime()),
-      platform: process.platform,
-      arch: process.arch,
-      loadAverage1m: Math.round(load[0] * 100) / 100,
-      systemFreeMemMb: Math.round(os.freemem() / 1024 / 1024),
-      systemTotalMemMb: Math.round(os.totalmem() / 1024 / 1024),
-    },
-    lastCheckedAt: checkedAt,
-  }));
-
-  services.push(service({
-    id: 'notification-outbox',
-    name: 'Notification Outbox',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: !outboxStats.available
-      ? STATE.UNKNOWN
-      : (outboxStats.deadLetter > 0 ? STATE.DEGRADED : STATE.OPERATIONAL),
-    configuration: CONFIG.CONFIGURED,
-    reason: !outboxStats.available
-      ? `The durable outbox could not be inspected: ${outbox.ok ? outboxStats.reason : outbox.error}`
-      : (outboxStats.deadLetter > 0
-        ? `${outboxStats.deadLetter} of ${outboxStats.inspected} inspected notifications exhausted their retries.`
-        : `${outboxStats.inspected} notification(s) inspected; none exhausted their retries.`),
-    dependency: 'MariaDB notification_outbox table',
-    retryable: true,
-    errorCategory: outboxStats.available && outboxStats.deadLetter > 0 ? (outboxStats.lastErrorCategory || 'PROVIDER_ERROR') : (outboxStats.available ? null : 'DATA_UNAVAILABLE'),
-    remediation: outboxStats.available && outboxStats.deadLetter > 0 ? 'Open the Queue & DLQ monitor and replay the dead-letter jobs after the provider test passes.' : '',
-    affectedFeatures: ['Transactional email durability'],
-    affectedApis: ['/api/platform/queues', '/api/platform/queues/retry'],
-    affectedUiModules: ['/adm/queues'],
-    metrics: outboxStats.available
-      ? { inspected: outboxStats.inspected, queued: outboxStats.queued, delivered: outboxStats.delivered, deadLetter: outboxStats.deadLetter, retrying: outboxStats.retrying, oldestQueuedAt: outboxStats.oldestQueuedAt }
-      : {},
-    lastCheckedAt: checkedAt,
-  }));
-
-  services.push(service({
-    id: 'queue',
-    name: 'Queue',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: !outboxStats.available
-      ? STATE.UNKNOWN
-      : (outboxStats.queued > 0 && !dispatcherRunning ? STATE.DEGRADED : STATE.OPERATIONAL),
-    configuration: CONFIG.CONFIGURED,
-    reason: !outboxStats.available
-      ? 'Queue depth could not be read from MariaDB.'
-      : (outboxStats.queued > 0 && !dispatcherRunning
-        ? `${outboxStats.queued} job(s) are queued but no dispatcher worker is enabled to drain them.`
-        : `${outboxStats.queued} job(s) are currently queued for delivery.`),
-    dependency: 'MariaDB transactional outbox',
-    retryable: true,
-    errorCategory: outboxStats.available ? null : 'DATA_UNAVAILABLE',
-    remediation: outboxStats.available && outboxStats.queued > 0 && !dispatcherRunning
-      ? 'Enable a notification outbox worker so queued jobs are dispatched.'
-      : '',
-    affectedFeatures: ['Asynchronous notification delivery'],
-    affectedApis: ['/api/platform/queues'],
-    affectedUiModules: ['/adm/queues'],
-    metrics: outboxStats.available ? { queued: outboxStats.queued, retrying: outboxStats.retrying } : {},
-    lastCheckedAt: checkedAt,
-  }));
-
-  services.push(service({
-    id: 'dlq',
-    name: 'Dead Letter Queue',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: !outboxStats.available
-      ? STATE.UNKNOWN
-      : (outboxStats.deadLetter > 0 ? STATE.DEGRADED : STATE.OPERATIONAL),
-    configuration: CONFIG.CONFIGURED,
-    reason: !outboxStats.available
-      ? 'Dead-letter depth could not be read from MariaDB.'
-      : (outboxStats.deadLetter > 0
-        ? `${outboxStats.deadLetter} job(s) are parked in the dead-letter state and require an operator decision.`
-        : 'No jobs are parked in the dead-letter state in the inspected sample.'),
-    dependency: 'MariaDB dead-letter store',
-    retryable: true,
-    errorCategory: outboxStats.available && outboxStats.deadLetter > 0 ? (outboxStats.lastErrorCategory || 'PROVIDER_ERROR') : (outboxStats.available ? null : 'DATA_UNAVAILABLE'),
-    remediation: outboxStats.available && outboxStats.deadLetter > 0 ? 'Replay or reject the parked jobs from the Queue & DLQ monitor.' : '',
-    affectedFeatures: ['Failed notification recovery'],
-    affectedApis: ['/api/platform/queues/retry'],
-    affectedUiModules: ['/adm/queues'],
-    metrics: outboxStats.available ? { deadLetter: outboxStats.deadLetter, sampleSize: outboxStats.inspected } : {},
-    lastCheckedAt: checkedAt,
-  }));
-
-  const entQueue = enterpriseOutbox.ok ? enterpriseOutbox.value : null;
-  let enterpriseOutboxState = STATE.UNKNOWN;
-  let enterpriseOutboxReason = `The enterprise outbox status could not be read: ${enterpriseOutbox.error || 'unknown error'}`;
-  if (!enterpriseEnabled) {
-    enterpriseOutboxState = STATE.DISABLED;
-    enterpriseOutboxReason = 'Enterprise tenancy is disabled, so no tenant job is produced or consumed.';
-  } else if (entQueue) {
-    if (!entQueue.configured) {
-      enterpriseOutboxState = STATE.UNAVAILABLE;
-      enterpriseOutboxReason = 'The enterprise durable outbox is not configured in MariaDB.';
-    } else if (!entQueue.signingConfigured) {
-      enterpriseOutboxState = STATE.DEGRADED;
-      enterpriseOutboxReason = 'The enterprise outbox is durable but TENANT_JOB_SIGNING_SECRET is missing or shorter than 32 bytes, so job envelopes cannot be signed.';
-    } else if (entQueue.deadLetterCount > 0) {
-      enterpriseOutboxState = STATE.DEGRADED;
-      enterpriseOutboxReason = `${entQueue.deadLetterCount} enterprise job(s) are in the dead-letter state.`;
-    } else {
-      enterpriseOutboxState = STATE.OPERATIONAL;
-      enterpriseOutboxReason = `The enterprise durable outbox is online with ${entQueue.activeQueued} active job(s) and no dead letters.`;
-    }
-  }
-  services.push(service({
-    id: 'enterprise-outbox',
-    name: 'Enterprise Outbox',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: enterpriseOutboxState,
-    enabled: enterpriseEnabled,
-    configuration: !enterpriseEnabled ? CONFIG.DISABLED_BY_CONFIGURATION : (entQueue?.configured ? CONFIG.CONFIGURED : CONFIG.PARTIALLY_CONFIGURED),
-    reason: enterpriseOutboxReason,
-    dependency: 'MariaDB enterprise outbox + TENANT_JOB_SIGNING_SECRET',
-    retryable: enterpriseEnabled,
-    errorCategory: enterpriseOutboxState === STATE.DEGRADED ? 'CONFIGURATION_MISSING' : null,
-    remediation: enterpriseOutboxState === STATE.DEGRADED
-      ? 'Set a 32-byte TENANT_JOB_SIGNING_SECRET, or replay the parked tenant jobs from the Enterprise console.'
-      : '',
-    affectedFeatures: ['Tenant background jobs', 'Tenant exports'],
-    affectedApis: ['/api/platform/enterprise-queue', '/api/enterprise/jobs'],
-    affectedUiModules: ['/adm/operations', '/enterprise'],
-    metrics: entQueue ? {
-      engine: entQueue.engine,
-      status: entQueue.status,
-      activeQueued: enterpriseOutboxState === STATE.OPERATIONAL ? entQueue.activeQueued : null,
-      deadLetterCount: enterpriseOutboxState === STATE.OPERATIONAL ? entQueue.deadLetterCount : null,
-      signingConfigured: entQueue.signingConfigured,
-    } : {},
-    lastCheckedAt: checkedAt,
-  }));
-
-  const enterpriseWorkerEnabled = envFlag('ENTERPRISE_OUTBOX_WORKER_ENABLED');
-  const anyWorkerEnabled = enterpriseWorkerEnabled || dispatcherWorkerLocal;
-  services.push(service({
-    id: 'background-workers',
-    name: 'Background Workers',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: anyWorkerEnabled ? STATE.OPERATIONAL : STATE.DISABLED,
-    enabled: anyWorkerEnabled,
-    configuration: anyWorkerEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
-    reason: anyWorkerEnabled
-      ? `In-process workers enabled: ${[enterpriseWorkerEnabled && 'enterprise outbox', dispatcherWorkerLocal && 'notification outbox'].filter(Boolean).join(', ')}.`
-      : 'No in-process background worker is enabled on this instance. Queues stay durable but are drained elsewhere or not at all.',
-    dependency: 'Backend worker flags',
-    retryable: false,
-    remediation: anyWorkerEnabled ? '' : 'Enable ENTERPRISE_OUTBOX_WORKER_ENABLED / NOTIFICATION_OUTBOX_WORKER_ENABLED on a worker-capable instance.',
-    affectedFeatures: ['Queue draining', 'Retry scheduling'],
-    affectedApis: [],
-    affectedUiModules: ['/adm/queues'],
-    metrics: { enterpriseOutboxWorker: enterpriseWorkerEnabled, notificationOutboxWorker: dispatcherWorkerLocal },
-    lastCheckedAt: checkedAt,
-  }));
-
-  const schedulerEnabled = envFlag('CMS_SCHEDULER_ENABLED');
-  services.push(service({
-    id: 'scheduled-jobs',
-    name: 'Scheduled Jobs',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: schedulerEnabled ? (firebaseConfigured ? STATE.OPERATIONAL : STATE.UNAVAILABLE) : STATE.DISABLED,
-    enabled: schedulerEnabled,
-    configuration: schedulerEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
-    reason: schedulerEnabled
-      ? (firebaseConfigured
-        ? `The CMS publication scheduler runs every ${Math.max(60_000, Math.min(Number(process.env.CMS_SCHEDULER_INTERVAL_MS) || 300_000, 3_600_000)) / 1000}s on this instance.`
-        : 'The CMS scheduler is enabled but Firebase is unavailable, so scheduled publication cannot run.')
-      : 'The CMS publication scheduler is disabled, so scheduled blog posts stay unpublished until an admin publishes them.',
-    dependency: 'CMS_SCHEDULER_ENABLED + Firestore',
-    retryable: schedulerEnabled,
-    remediation: schedulerEnabled ? '' : 'Enable CMS_SCHEDULER_ENABLED on exactly one worker-capable instance to publish due posts automatically.',
-    affectedFeatures: ['Scheduled blog publication'],
-    affectedApis: ['/api/admin/blog/publish-due'],
-    affectedUiModules: ['/adm/blog-management'],
-    metrics: { schedulerEnabled, intervalMs: Number(process.env.CMS_SCHEDULER_INTERVAL_MS) || 300_000 },
-    lastCheckedAt: checkedAt,
-  }));
-
-  services.push(service({
-    id: 'cache',
-    name: 'Cache',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: STATE.NOT_SUPPORTED,
-    support: 'NOT_SUPPORTED',
-    enabled: false,
-    configuration: CONFIG.NOT_APPLICABLE,
-    reason: 'No external cache tier (Redis or Memcached) is deployed. The enterprise runtime derives deterministic cache keys but Firestore remains the system of record, so there is no cache to be healthy or unhealthy.',
-    dependency: 'None',
-    retryable: false,
-    remediation: '',
-    affectedFeatures: [],
-    affectedApis: [],
-    affectedUiModules: [],
-    metrics: { keyDerivation: 'in-process (tenantCache)', externalCacheTier: false },
-    lastCheckedAt: checkedAt,
-  }));
-
-  const storageProvider = String(process.env.ENTERPRISE_STORAGE_PROVIDER || 'firebase-storage');
-  const storageBucket = process.env.ENTERPRISE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET || '';
-  const storageSupported = storageProvider === 'firebase-storage';
-  services.push(service({
-    id: 'object-storage',
-    name: 'Object Storage',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: !storageSupported
-      ? STATE.NOT_SUPPORTED
-      : (truthy(storageBucket) && firebaseConfigured ? STATE.OPERATIONAL : STATE.NOT_CONFIGURED),
-    support: storageSupported ? 'SUPPORTED' : 'NOT_SUPPORTED',
-    enabled: storageSupported && truthy(storageBucket),
-    configuration: truthy(storageBucket) ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
-    reason: !storageSupported
-      ? `ENTERPRISE_STORAGE_PROVIDER is set to "${storageProvider}", which is an extension point with no implemented adapter; artifact writes fail closed.`
-      : (truthy(storageBucket) && firebaseConfigured
-        ? 'Firebase Storage is selected and a bucket is configured for tenant artifacts.'
-        : 'Firebase Storage is selected but no bucket is configured, so artifact persistence fails closed.'),
-    dependency: 'Firebase Storage / Google Cloud Storage',
-    retryable: false,
-    errorCategory: storageSupported && !truthy(storageBucket) ? 'CONFIGURATION_MISSING' : null,
-    remediation: storageSupported && !truthy(storageBucket)
-      ? 'Set ENTERPRISE_STORAGE_BUCKET to the project storage bucket and restart the backend.'
-      : '',
-    affectedFeatures: ['Tenant artifact export', 'Signed artifact downloads'],
-    affectedApis: ['/api/enterprise/artifacts'],
-    affectedUiModules: ['/enterprise'],
-    metrics: { provider: storageProvider, bucketConfigured: truthy(storageBucket) },
-    lastCheckedAt: checkedAt,
-  }));
+  const aiStored = settings.ai_providers || {};
+  const aiEnvKeys = ['NVIDIA_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'DEEPSEEK_API_KEY'];
+  const configuredAiCount = aiEnvKeys.filter(key => truthy(process.env[key])).length
+    + Object.values(aiStored).filter(value => truthy(value?.apiKey || value?.key)).length;
+  services.push(service({ id: 'ai-providers', name: 'AI Providers', group: GROUP.INTEGRATIONS,
+    state: configuredAiCount > 0 ? STATE.UNKNOWN : STATE.NOT_CONFIGURED,
+    configuration: configuredAiCount > 0 ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    reason: configuredAiCount > 0 ? `${configuredAiCount} provider credential source(s) are configured, but no billable inference is run by health collection.` : 'No AI provider credential is configured.',
+    dependency: 'Configured AI provider APIs', retryable: false,
+    errorCategory: configuredAiCount > 0 ? 'DATA_UNAVAILABLE' : 'CONFIGURATION_MISSING',
+    affectedFeatures: ['AI writing', 'grammar', 'resume parsing'], affectedApis: ['/api/generate-*', '/api/ai/*'], affectedUiModules: ['/dashboard'], checkedAt }));
 
   const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROMIUM_PATH || '';
-  let chromiumPresent = null;
-  if (chromiumPath) {
-    try { chromiumPresent = fs.existsSync(chromiumPath); } catch { chromiumPresent = null; }
-  }
-  const pdfIsolated = envFlag('PDF_RENDERER_ISOLATED');
-  services.push(service({
-    id: 'pdf-service',
-    name: 'PDF Export Service',
-    group: GROUP.WORKERS,
-    critical: false,
-    state: chromiumPresent === false ? STATE.UNAVAILABLE : (pdfIsolated ? STATE.OPERATIONAL : STATE.DEGRADED),
-    enabled: true,
-    configuration: chromiumPath ? CONFIG.CONFIGURED : CONFIG.PARTIALLY_CONFIGURED,
-    reason: chromiumPresent === false
-      ? 'The configured Chromium executable path does not exist on this host, so PDF export cannot render.'
-      : (pdfIsolated
-        ? 'PDF rendering is declared to run in an isolated non-root worker.'
-        : 'PDF rendering runs in the API process. PDF_RENDERER_ISOLATED is false, so renders are not sandboxed in a dedicated worker.'),
-    dependency: 'Headless Chromium',
-    retryable: true,
-    errorCategory: chromiumPresent === false ? 'CONFIGURATION_MISSING' : (pdfIsolated ? null : 'HARDENING_GAP'),
-    remediation: chromiumPresent === false
-      ? 'Install Chromium on the host or correct PUPPETEER_EXECUTABLE_PATH.'
-      : (pdfIsolated ? '' : 'Deploy the renderer in a dedicated non-root sandboxed worker and set PDF_RENDERER_ISOLATED=true.'),
-    affectedFeatures: ['Resume PDF export', 'Invoice PDF'],
-    affectedApis: ['/api/export', '/api/public-export'],
-    affectedUiModules: ['/build-resume', '/dashboard'],
-    metrics: { isolatedWorkerDeclared: pdfIsolated, executablePathConfigured: Boolean(chromiumPath) },
-    lastCheckedAt: checkedAt,
-  }));
+  const chromiumPresent = chromiumPath ? fs.existsSync(chromiumPath) : false;
+  services.push(service({ id: 'pdf-service', name: 'PDF Renderer', group: GROUP.INTEGRATIONS,
+    state: chromiumPresent ? STATE.UNKNOWN : STATE.NOT_CONFIGURED,
+    configuration: chromiumPresent ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    reason: chromiumPresent ? 'A renderer executable exists, but no document render is performed by passive health collection.' : 'No configured Chromium renderer executable was found.',
+    dependency: 'Chromium/Puppeteer', errorCategory: chromiumPresent ? 'DATA_UNAVAILABLE' : 'CONFIGURATION_MISSING',
+    affectedFeatures: ['PDF exports'], affectedApis: ['/api/export*'], checkedAt }));
+  services.push(service({ id: 'twilio-sms', name: 'SMS', group: GROUP.INTEGRATIONS,
+    state: STATE.NOT_SUPPORTED, support: 'NOT_SUPPORTED', enabled: false, configuration: CONFIG.NOT_APPLICABLE,
+    reason: 'No durable SMS delivery adapter is certified in this deployment.', dependency: 'None', checkedAt }));
+  const cmsEnabled = flag('CMS_SCHEDULER_ENABLED', false);
+  services.push(service({ id: 'cms-scheduler', name: 'CMS Scheduler', group: GROUP.WORKERS,
+    state: cmsEnabled ? STATE.UNKNOWN : STATE.DISABLED, enabled: cmsEnabled,
+    configuration: cmsEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
+    reason: cmsEnabled ? 'The scheduler is enabled, but no durable heartbeat is recorded; liveness is not inferred.' : 'The CMS scheduler is disabled by configuration.',
+    dependency: 'CMS scheduler heartbeat (not implemented)', errorCategory: cmsEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));
 
-  return { services, checkedAt, sources: buildSources({ firestorePing, authProbe, outbox, emailConfig, enterpriseOutbox, publicConfigDoc, paymentDoc, aiProvidersDoc, oauthDoc }) };
+  return {
+    services,
+    checkedAt,
+    sources: {
+      mariadb: databaseProbe.ok ? 'ok' : 'unavailable', settings: settingsProbe.ok ? 'ok' : 'unavailable',
+      migrations: migrationProbe.ok ? 'ok' : 'unavailable', firebaseAuthentication: authProbe.ok ? 'ok' : 'unavailable',
+      notificationOutbox: notificationProbe.ok ? 'ok' : 'unavailable', enterpriseOutbox: enterpriseQueueProbe.ok ? 'ok' : 'unavailable',
+    },
+  };
 }
-
-function buildSources(results) {
-  const map = {};
-  for (const [key, result] of Object.entries(results)) {
-    map[key] = result?.ok ? 'ok' : 'unavailable';
-  }
-  return map;
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   API health matrix — derived from the live Express routing table
-   ──────────────────────────────────────────────────────────────────────────── */
 
 const MOUNTED_ROUTERS = Object.freeze([
-  { prefix: '/api', module: () => require('../routes/ai'), name: 'ai' },
-  { prefix: '/api', module: () => require('../routes/email'), name: 'email' },
-  { prefix: '/api/email', module: () => require('../routes/email'), name: 'email' },
-  { prefix: '/api/enterprise/m2m', module: () => require('../routes/enterpriseM2m').enterpriseM2mRouter || require('../routes/enterpriseM2m'), name: 'enterprise' },
-  { prefix: '/api/enterprise', module: () => require('../routes/enterprise').enterpriseRouter, name: 'enterprise' },
-  { prefix: '/api/admin', module: () => require('../routes/adminAudit').adminAuditRouter, name: 'admin' },
-  { prefix: '/api/platform', module: () => require('../routes/platform').platformRouter, name: 'platform' },
+  { prefix: '/api', module: () => require('../routes/ai') },
+  { prefix: '/api', module: () => require('../routes/email') },
+  { prefix: '/api/email', module: () => require('../routes/email') },
+  { prefix: '/api/enterprise/m2m', module: () => require('../routes/enterpriseM2m').enterpriseM2mRouter || require('../routes/enterpriseM2m') },
+  { prefix: '/api/enterprise', module: () => require('../routes/enterprise').enterpriseRouter },
+  { prefix: '/api/admin', module: () => require('../routes/adminAudit').adminAuditRouter },
+  { prefix: '/api/platform', module: () => require('../routes/platform').platformRouter },
 ]);
-
 const PUBLIC_API_PATHS = new Set([
   '/api/healthz', '/api/health', '/api/readyz', '/healthz', '/readyz', '/health', '/api/platform/version',
   '/api/stripe-webhook', '/api/public-export', '/api/export-render-data', '/api/contact',
@@ -1418,26 +490,15 @@ const PUBLIC_API_PATHS = new Set([
   '/api/auth/linkedin', '/api/auth/linkedin/callback', '/api/auth/github', '/api/auth/github/callback',
   '/api/auth/oauth/exchange', '/api/service-availability',
 ]);
-
-/** Maps an endpoint path onto the health service it functionally depends on. */
 const DEPENDENCY_RULES = Object.freeze([
-  [/^\/api\/paypal\//, 'payments-paypal'],
-  [/^\/api\/paytm\//, 'payments-paytm'],
-  [/^\/api\/phonepe\//, 'payments-phonepe'],
-  [/^\/api\/razorpay\//, 'payments-razorpay'],
-  [/^\/api\/(pay|stripe-webhook)/, 'payments-stripe'],
-  [/^\/api\/auth\/github/, 'github-oauth'],
-  [/^\/api\/auth\/linkedin/, 'linkedin-oauth'],
-  [/^\/api\/(notify|send-invoice-email)/, 'notification-dispatcher'],
-  [/^\/api\/email/, 'email-smtp'],
-  [/^\/api\/send-email/, 'email-smtp'],
-  [/^\/api\/send-sms/, 'twilio-sms'],
-  [/^\/api\/jobs\/naukri/, 'naukri-ingestion'],
-  [/^\/api\/linkedin-scraper/, 'naukri-ingestion'],
-  [/^\/api\/enterprise/, 'enterprise-tenancy'],
-  [/^\/api\/(generate-|check-grammar|ai\/|parse-resume)/, 'ai-providers'],
-  [/^\/api\/(export|public-export|export-docx)/, 'pdf-service'],
-  [/^\/api\/(healthz|health|readyz)/, 'backend-api'],
+  [/^\/api\/paypal\//, 'payments-paypal'], [/^\/api\/paytm\//, 'payments-paytm'],
+  [/^\/api\/phonepe\//, 'payments-phonepe'], [/^\/api\/razorpay\//, 'payments-razorpay'],
+  [/^\/api\/(pay|stripe-webhook)/, 'payments-stripe'], [/^\/api\/auth\/github/, 'github-oauth'],
+  [/^\/api\/auth\/linkedin/, 'linkedin-oauth'], [/^\/api\/(notify|send-invoice-email)/, 'notification-outbox'],
+  [/^\/api\/email/, 'email-smtp'], [/^\/api\/send-email/, 'email-smtp'], [/^\/api\/send-sms/, 'twilio-sms'],
+  [/^\/api\/enterprise/, 'enterprise-tenancy'], [/^\/api\/(generate-|check-grammar|ai\/|parse-resume)/, 'ai-providers'],
+  [/^\/api\/(export|public-export|export-docx)/, 'pdf-service'], [/^\/api\/(healthz|health|readyz)/, 'backend-api'],
+  [/^\/api\/auth\//, 'authentication'],
 ]);
 
 function moduleForPath(pathname) {
@@ -1455,7 +516,6 @@ function moduleForPath(pathname) {
   if (pathname.startsWith('/api/account') || pathname.startsWith('/api/profile')) return 'account';
   return 'core';
 }
-
 function authRequirementFor(pathname) {
   if (PUBLIC_API_PATHS.has(pathname)) return 'PUBLIC';
   if (pathname.startsWith('/api/platform') || pathname.startsWith('/api/admin')) return 'ADMIN';
@@ -1463,144 +523,85 @@ function authRequirementFor(pathname) {
   if (pathname.startsWith('/api/enterprise')) return 'TENANT_MEMBER';
   return 'AUTHENTICATED';
 }
-
 function dependencyFor(pathname) {
-  for (const [pattern, id] of DEPENDENCY_RULES) {
-    if (pattern.test(pathname)) return id;
-  }
+  for (const [pattern, id] of DEPENDENCY_RULES) if (pattern.test(pathname)) return id;
   return null;
 }
-
 function collectRoutes(app) {
   const seen = new Set();
   const endpoints = [];
-
   const addLayerStack = (prefix, stack) => {
     for (const layer of stack || []) {
       if (!layer.route) continue;
-      const routePaths = Array.isArray(layer.route.path) ? layer.route.path : [layer.route.path];
-      for (const routePath of routePaths) {
+      for (const routePath of (Array.isArray(layer.route.path) ? layer.route.path : [layer.route.path])) {
         if (typeof routePath !== 'string') continue;
         const fullPath = `${prefix}${routePath}`.replace(/\/{2,}/g, '/');
         for (const method of Object.keys(layer.route.methods || {})) {
           if (method === '_all') continue;
           const key = `${method.toUpperCase()} ${fullPath}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          endpoints.push({ method: method.toUpperCase(), path: fullPath });
+          if (!seen.has(key)) { seen.add(key); endpoints.push({ method: method.toUpperCase(), path: fullPath }); }
         }
       }
     }
   };
-
-  const appRouter = app?.router || app?._router;
-  addLayerStack('', appRouter?.stack);
-
+  addLayerStack('', (app?.router || app?._router)?.stack);
   for (const mount of MOUNTED_ROUTERS) {
-    let router = null;
-    try { router = mount.module(); } catch { router = null; }
-    if (router?.stack) addLayerStack(mount.prefix, router.stack);
+    try { const router = mount.module(); if (router?.stack) addLayerStack(mount.prefix, router.stack); } catch { /* unavailable modules are absent, not invented */ }
   }
-
-  endpoints.sort((a, b) => (a.path === b.path ? a.method.localeCompare(b.method) : a.path.localeCompare(b.path)));
-  return endpoints;
+  return endpoints.sort((a, b) => a.path === b.path ? a.method.localeCompare(b.method) : a.path.localeCompare(b.path));
 }
 
-/**
- * Endpoint state is inferred from the dependency the endpoint actually calls.
- * An endpoint whose provider is intentionally switched off is DISABLED, not broken.
- */
 function buildApiMatrix(app, servicesById) {
   const endpoints = collectRoutes(app).map(endpoint => {
     const dependencyId = dependencyFor(endpoint.path);
-    const dependency = dependencyId ? servicesById.get(dependencyId) : null;
-    let state = STATE.OPERATIONAL;
-    let reason = 'The route is registered and depends only on core platform services that passed their probe.';
-
-    const core = servicesById.get('backend-api');
-    const firestore = servicesById.get('firestore');
-    if (core?.state === STATE.UNAVAILABLE) {
-      state = STATE.UNAVAILABLE;
-      reason = 'The API process is not serving requests.';
-    } else if (dependency) {
-      state = dependency.state === STATE.NOT_SUPPORTED ? STATE.DISABLED : dependency.state;
-      reason = dependency.reason;
-    } else if (firestore && firestore.state !== STATE.OPERATIONAL && authRequirementFor(endpoint.path) !== 'PUBLIC') {
-      state = firestore.state === STATE.UNAVAILABLE ? STATE.UNAVAILABLE : STATE.DEGRADED;
-      reason = firestore.reason;
-    }
-
+    const explicit = dependencyId ? servicesById.get(dependencyId) : null;
+    const database = servicesById.get('database');
+    const authentication = servicesById.get('authentication');
+    const requirement = authRequirementFor(endpoint.path);
+    const dependencies = explicit ? [explicit] : requirement === 'PUBLIC' ? [servicesById.get('backend-api')] : [database, authentication];
+    const states = dependencies.filter(Boolean).map(item => item.state);
+    const state = states.length ? worstState(states) : STATE.UNKNOWN;
     return {
-      method: endpoint.method,
-      path: endpoint.path,
-      module: moduleForPath(endpoint.path),
-      authentication: authRequirementFor(endpoint.path),
-      dependency: dependency ? dependency.name : 'Core platform',
-      dependencyId: dependencyId || null,
-      externalDependency: Boolean(dependency && dependency.group === GROUP.INTEGRATIONS),
-      state,
-      reason,
+      method: endpoint.method, path: endpoint.path, module: moduleForPath(endpoint.path), authentication: requirement,
+      dependency: explicit ? explicit.name : requirement === 'PUBLIC' ? 'Backend API' : 'MariaDB + Firebase Authentication',
+      dependencyId: dependencyId || (requirement === 'PUBLIC' ? 'backend-api' : 'database'),
+      externalDependency: Boolean(explicit && explicit.group === GROUP.INTEGRATIONS), state,
+      reason: explicit ? explicit.reason : 'State reflects registered-route dependency posture only; this endpoint was not request-exercised by health collection.',
+      verification: 'DEPENDENCY_ONLY_NOT_REQUEST_EXERCISED',
     };
   });
-
-  const counts = endpoints.reduce((accumulator, endpoint) => {
-    accumulator[endpoint.state] = (accumulator[endpoint.state] || 0) + 1;
-    return accumulator;
-  }, {});
-
+  const counts = endpoints.reduce((all, endpoint) => ({ ...all, [endpoint.state]: (all[endpoint.state] || 0) + 1 }), {});
   return {
-    total: endpoints.length,
-    counts,
-    operationalOrExpected: endpoints.filter(item => item.state === STATE.OPERATIONAL || item.state === STATE.DISABLED || item.state === STATE.NOT_CONFIGURED).length,
+    total: endpoints.length, counts,
+    operationalOrExpected: endpoints.filter(item => [STATE.OPERATIONAL, STATE.DISABLED, STATE.NOT_CONFIGURED].includes(item.state)).length,
     degraded: endpoints.filter(item => item.state === STATE.DEGRADED).length,
     unavailable: endpoints.filter(item => item.state === STATE.UNAVAILABLE).length,
+    unknown: endpoints.filter(item => item.state === STATE.UNKNOWN).length,
     endpoints,
   };
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   Snapshot assembly
-   ──────────────────────────────────────────────────────────────────────────── */
-
 function summarize(services) {
-  const counts = {
-    [STATE.OPERATIONAL]: 0,
-    [STATE.DEGRADED]: 0,
-    [STATE.UNAVAILABLE]: 0,
-    [STATE.DISABLED]: 0,
-    [STATE.NOT_CONFIGURED]: 0,
-    [STATE.NOT_SUPPORTED]: 0,
-    [STATE.UNKNOWN]: 0,
-  };
+  const counts = Object.fromEntries(Object.values(STATE).map(state => [state, 0]));
   for (const item of services) counts[item.state] = (counts[item.state] || 0) + 1;
-
-  const criticalStates = services.filter(item => item.critical).map(item => item.state);
-  const criticalUnavailable = criticalStates.includes(STATE.UNAVAILABLE);
-  const anyDegraded = services.some(item => item.state === STATE.DEGRADED);
-  const anyUnknown = services.some(item => item.state === STATE.UNKNOWN);
-
+  const critical = services.filter(item => item.critical);
   let overall = 'OPERATIONAL';
-  if (criticalUnavailable) overall = 'CRITICAL';
-  else if (services.some(item => item.state === STATE.UNAVAILABLE) || anyDegraded) overall = 'DEGRADED';
-  else if (anyUnknown) overall = 'PARTIAL';
-
-  const indicator = overall === 'CRITICAL' ? 'red' : overall === 'OPERATIONAL' ? 'green' : 'amber';
-
-  return { overall, indicator, counts, total: services.length, worstState: worstState(services.map(item => item.state)) };
+  if (critical.some(item => item.state === STATE.UNAVAILABLE)) overall = 'CRITICAL';
+  else if (services.some(item => [STATE.UNAVAILABLE, STATE.DEGRADED].includes(item.state))) overall = 'DEGRADED';
+  else if (services.some(item => item.state === STATE.UNKNOWN)) overall = 'PARTIAL';
+  return {
+    overall,
+    indicator: overall === 'CRITICAL' ? 'red' : overall === 'OPERATIONAL' ? 'green' : 'amber',
+    counts, total: services.length, worstState: worstState(services.map(item => item.state)),
+  };
 }
 
 async function computeSnapshot(app) {
   const { services, checkedAt, sources } = await buildServices(app);
   const servicesById = new Map(services.map(item => [item.id, item]));
-  const apiMatrix = buildApiMatrix(app, servicesById);
-  const summary = summarize(services);
-
   return {
-    checkedAt,
-    summary,
-    sources,
-    services,
-    apiMatrix,
+    checkedAt, summary: summarize(services), sources, services,
+    apiMatrix: buildApiMatrix(app, servicesById),
     groups: {
       [GROUP.CORE]: services.filter(item => item.group === GROUP.CORE).map(item => item.id),
       [GROUP.INTEGRATIONS]: services.filter(item => item.group === GROUP.INTEGRATIONS).map(item => item.id),
@@ -1609,177 +610,85 @@ async function computeSnapshot(app) {
   };
 }
 
-/**
- * Returns a snapshot, reusing the cached one inside the TTL so the dashboard's
- * auto-refresh cannot hammer Firestore or third-party providers.
- */
 async function getHealthSnapshot(app, { force = false } = {}) {
   const age = Date.now() - cachedAt;
-  const usableCache = cachedSnapshot && (force ? age < MIN_FORCED_INTERVAL_MS : age < SNAPSHOT_TTL_MS);
-  if (usableCache) return { ...cachedSnapshot, cached: true, cacheAgeMs: age };
+  if (cachedSnapshot && (force ? age < MIN_FORCED_INTERVAL_MS : age < SNAPSHOT_TTL_MS)) return { ...cachedSnapshot, cached: true, cacheAgeMs: age };
   if (inFlight) return inFlight;
-
   inFlight = (async () => {
     try {
       const snapshot = await computeSnapshot(app);
-      cachedSnapshot = snapshot;
-      cachedAt = Date.now();
+      cachedSnapshot = snapshot; cachedAt = Date.now();
       return { ...snapshot, cached: false, cacheAgeMs: 0 };
-    } finally {
-      inFlight = null;
-    }
+    } finally { inFlight = null; }
   })();
-
   return inFlight;
 }
+function resetHealthCache() { cachedSnapshot = null; cachedAt = 0; inFlight = null; }
 
-function resetHealthCache() {
-  cachedSnapshot = null;
-  cachedAt = 0;
-  inFlight = null;
-}
-
-/** Public, secret-free availability projection used by the consumer UI. */
 async function getServiceAvailability(app) {
   const snapshot = await getHealthSnapshot(app);
   const byId = new Map(snapshot.services.map(item => [item.id, item]));
-  const usable = id => {
-    const entry = byId.get(id);
-    return Boolean(entry && entry.state === STATE.OPERATIONAL);
-  };
+  const usable = id => byId.get(id)?.state === STATE.OPERATIONAL;
   return {
     checkedAt: snapshot.checkedAt,
-    auth: {
-      github: usable('github-oauth'),
-      linkedin: usable('linkedin-oauth'),
-    },
+    auth: { github: usable('github-oauth'), linkedin: usable('linkedin-oauth') },
     payments: {
-      stripe: usable('payments-stripe'),
-      paypal: usable('payments-paypal'),
-      razorpay: usable('payments-razorpay'),
-      paytm: usable('payments-paytm'),
-      phonepe: usable('payments-phonepe'),
+      stripe: usable('payments-stripe'), paypal: usable('payments-paypal'), razorpay: usable('payments-razorpay'),
+      paytm: usable('payments-paytm'), phonepe: usable('payments-phonepe'),
     },
     enterpriseTenancy: usable('enterprise-tenancy'),
   };
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   Operator-initiated provider tests (safe, read-only reachability checks)
-   ──────────────────────────────────────────────────────────────────────────── */
-
-const TESTABLE_SERVICES = Object.freeze(['firestore', 'authentication', 'email-smtp', 'ai-providers']);
-
+const TESTABLE_SERVICES = Object.freeze(['database', 'authentication', 'email-smtp']);
 async function runServiceTest(app, serviceId) {
-  const db = app?.get?.('db') || null;
-  const admin = app?.get?.('firebaseAdmin') || null;
-
   if (!TESTABLE_SERVICES.includes(serviceId)) {
-    const error = new Error('This service does not expose a safe operator test');
-    error.status = 400;
-    error.code = 'SERVICE_TEST_UNSUPPORTED';
-    throw error;
+    throw Object.assign(new Error('This service does not expose a safe automated test'), { code: 'SERVICE_TEST_UNSUPPORTED', status: 400 });
   }
-
-  if (serviceId === 'firestore') {
-    const probe = await observe('firestore.test', async () => {
-      if (!db) throw new Error('Firestore client is not initialized');
-      await db.collection('settings').doc('system_ping_check').set(
-        { lastPing: admin?.firestore?.FieldValue?.serverTimestamp?.() || new Date() },
-        { merge: true },
-      );
-      return true;
+  let probe;
+  if (serviceId === 'database') {
+    probe = await observe('mariadb.test', () => getPool().query('SELECT 1 AS alive'));
+  } else if (serviceId === 'authentication') {
+    const identityAdmin = app?.get?.('firebaseAdmin');
+    probe = await observe('firebase-auth.test', async () => {
+      if (!identityAdmin?.auth) throw new Error('Firebase Authentication Admin adapter is not configured');
+      return identityAdmin.auth().listUsers(1);
     });
-    return {
-      serviceId,
-      passed: probe.ok,
-      latencyMs: probe.latencyMs,
-      detail: probe.ok ? `Write probe succeeded in ${probe.latencyMs}ms.` : `Write probe failed: ${probe.error}`,
-      errorCategory: probe.ok ? null : categorizeError(probe.error),
-    };
-  }
-
-  if (serviceId === 'authentication') {
-    const probe = await observe('auth.test', async () => {
-      if (!admin?.auth) throw new Error('Firebase Admin auth is not initialized');
-      await admin.auth().listUsers(1);
-      return true;
-    });
-    return {
-      serviceId,
-      passed: probe.ok,
-      latencyMs: probe.latencyMs,
-      detail: probe.ok ? `Identity directory responded in ${probe.latencyMs}ms.` : `Identity directory probe failed: ${probe.error}`,
-      errorCategory: probe.ok ? null : categorizeError(probe.error),
-    };
-  }
-
-  if (serviceId === 'email-smtp') {
-    const probe = await observe('smtp.verify', async () => {
-      const config = await loadEmailConfig(db);
-      const smtp = config?.smtp || {};
-      if (!truthy(smtp.username) || !truthy(smtp.password)) {
-        throw Object.assign(new Error('SMTP credentials are not configured'), { code: 'CONFIGURATION_MISSING' });
-      }
-      const nodemailer = require('nodemailer');
-      const { assertPublicNetworkTarget } = require('../security/network');
-      const target = await assertPublicNetworkTarget(smtp.host);
-      const transporter = nodemailer.createTransport({
-        host: target.addresses[0],
-        port: Number(smtp.port),
-        secure: smtp.encryption === 'ssl' || Number(smtp.port) === 465,
-        auth: { user: smtp.username, pass: smtp.password },
-        tls: { rejectUnauthorized: true, servername: smtp.host },
-        connectionTimeout: 5000,
-        greetingTimeout: 4000,
-        socketTimeout: 8000,
+  } else {
+    const settingsProbe = await observe('mariadb.smtp-settings', () => loadMariaSettings(getPool()));
+    if (!settingsProbe.ok) probe = settingsProbe;
+    else {
+      const smtp = resolveSmtp(settingsProbe.value.system_settings || {});
+      probe = await observe('smtp.verify', async () => {
+        if (!smtp.credentialed || !smtp.host || !smtp.port) throw Object.assign(new Error('SMTP configuration is missing'), { code: 'CONFIGURATION_MISSING' });
+        if (!['ssl', 'tls', 'starttls'].includes(smtp.encryption)) throw Object.assign(new Error('Encrypted SMTP transport is required'), { code: 'CONFIGURATION_MISSING' });
+        const target = await assertPublicNetworkTarget(smtp.host);
+        const secure = smtp.encryption === 'ssl' || smtp.port === 465;
+        const systemSettings = settingsProbe.value.system_settings || {};
+        const stored = systemSettings.smtp || {};
+        const transporter = nodemailer.createTransport({
+          host: target.addresses[0], port: smtp.port, secure, requireTLS: !secure,
+          auth: { user: process.env.SMTP_USER || stored.username, pass: process.env.SMTP_PASS || stored.password },
+          tls: { rejectUnauthorized: true, servername: smtp.host, minVersion: 'TLSv1.2' },
+          connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 15_000,
+        });
+        return transporter.verify();
       });
-      // verify() authenticates without sending mail, so this stays a safe probe.
-      await transporter.verify();
-      transporter.close?.();
-      return true;
-    });
-    return {
-      serviceId,
-      passed: probe.ok,
-      latencyMs: probe.latencyMs,
-      detail: probe.ok
-        ? `SMTP handshake and authentication succeeded in ${probe.latencyMs}ms. No message was sent.`
-        : `SMTP verification failed: ${probe.error}`,
-      errorCategory: probe.ok ? null : categorizeError(probe.error),
-    };
+    }
   }
-
-  // ai-providers: configuration reachability only; no paid inference call is made.
-  const { loadProviderConfiguration } = require('./aiRuntime');
-  const configuration = await loadProviderConfiguration(db, process.env);
-  const configured = Object.entries(configuration.providers || {})
-    .filter(([, provider]) => truthy(provider?.key))
-    .map(([provider]) => provider);
-  return {
-    serviceId,
-    passed: configured.length > 0,
-    latencyMs: 0,
-    detail: configured.length > 0
-      ? `${configured.length} provider credential(s) are available to the server runtime (${configured.join(', ')}). No billable inference call was made by this test.`
-      : 'No AI provider credential is available to the server runtime.',
-    errorCategory: configured.length > 0 ? null : 'CONFIGURATION_MISSING',
+  const result = {
+    serviceId, passed: probe.ok, latencyMs: probe.latencyMs,
+    detail: probe.ok ? `${serviceId} non-destructive probe succeeded in ${probe.latencyMs}ms.` : `${serviceId} probe failed: ${probe.error}`,
+    errorCategory: probe.ok ? null : categorizeError(probe.error || probe.code),
   };
+  recentTests.set(serviceId, { ...result, recordedAt: Date.now() });
+  resetHealthCache();
+  return result;
 }
 
 module.exports = {
-  STATE,
-  CONFIG,
-  GROUP,
-  TESTABLE_SERVICES,
-  buildApiMatrix,
-  categorizeError,
-  collectRoutes,
-  computeSnapshot,
-  getHealthSnapshot,
-  getServiceAvailability,
-  resetHealthCache,
-  runServiceTest,
-  summarize,
+  STATE, CONFIG, GROUP, TESTABLE_SERVICES,
+  buildApiMatrix, categorizeError, collectRoutes, computeSnapshot, getHealthSnapshot,
+  getServiceAvailability, resetHealthCache, runServiceTest, summarize,
   __internal: { resolvePaymentProviders, resolveOAuthProviders, resolveSmtp, dependencyFor, moduleForPath, authRequirementFor, worstState },
 };

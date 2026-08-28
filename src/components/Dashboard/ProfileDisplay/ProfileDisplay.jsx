@@ -7,7 +7,7 @@ import { FaListCheck } from 'react-icons/fa6';
 import logo from '../../../assets/logo/logo.png';
 import userPlaceholder from '../../../assets/user.png';
 import { Link, useLocation } from 'react-router-dom';
-import { checkIsEmployer, getSystemSettings } from '../../../firestore/dbOperations';
+import { checkIsEmployer, getSystemSettings } from '../../../services/api/platform';
 import { AuthContext } from '../../../main';
 import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
@@ -22,8 +22,8 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     const [showNotifications, setShowNotifications] = useState(false);
     const [modulesConfig, setModulesConfig] = useState({
         enablePortfolioModule: false,
-        enableJobScraperModule: true,
-        enableCoverLetterModule: true,
+        enableJobScraperModule: false,
+        enableCoverLetterModule: false,
         enableMessagesModule: false,
         enableJobTrackerModule: false,
         enableAppliedJobsModule: false,
@@ -120,24 +120,24 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             if (event?.detail?.modules) {
                 const m = event.detail.modules;
                 setModulesConfig({
-                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : false,
-                    enableJobScraperModule: m.enableJobScraperModule !== undefined ? m.enableJobScraperModule : true,
-                    enableCoverLetterModule: m.enableCoverLetterModule !== undefined ? m.enableCoverLetterModule : true,
-                    enableMessagesModule: m.enableMessagesModule !== undefined ? m.enableMessagesModule : false,
-                    enableJobTrackerModule: m.enableJobTrackerModule !== undefined ? m.enableJobTrackerModule : false,
-                    enableAppliedJobsModule: m.enableAppliedJobsModule !== undefined ? m.enableAppliedJobsModule : false,
+                    enablePortfolioModule: m.enablePortfolioModule === true,
+                    enableJobScraperModule: m.enableJobScraperModule === true,
+                    enableCoverLetterModule: m.enableCoverLetterModule === true,
+                    enableMessagesModule: m.enableMessagesModule === true,
+                    enableJobTrackerModule: m.enableJobTrackerModule === true,
+                    enableAppliedJobsModule: m.enableAppliedJobsModule === true,
                 });
                 return;
             }
             getSystemSettings().then((settings) => {
                 const m = settings?.modules || {};
                 setModulesConfig({
-                    enablePortfolioModule: m.enablePortfolioModule !== undefined ? m.enablePortfolioModule : false,
-                    enableJobScraperModule: m.enableJobScraperModule !== undefined ? m.enableJobScraperModule : true,
-                    enableCoverLetterModule: m.enableCoverLetterModule !== undefined ? m.enableCoverLetterModule : true,
-                    enableMessagesModule: m.enableMessagesModule !== undefined ? m.enableMessagesModule : false,
-                    enableJobTrackerModule: m.enableJobTrackerModule !== undefined ? m.enableJobTrackerModule : false,
-                    enableAppliedJobsModule: m.enableAppliedJobsModule !== undefined ? m.enableAppliedJobsModule : false,
+                    enablePortfolioModule: m.enablePortfolioModule === true,
+                    enableJobScraperModule: m.enableJobScraperModule === true,
+                    enableCoverLetterModule: m.enableCoverLetterModule === true,
+                    enableMessagesModule: m.enableMessagesModule === true,
+                    enableJobTrackerModule: m.enableJobTrackerModule === true,
+                    enableAppliedJobsModule: m.enableAppliedJobsModule === true,
                 });
             }).catch(() => {});
         };

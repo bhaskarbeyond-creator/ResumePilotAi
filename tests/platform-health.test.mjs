@@ -55,9 +55,11 @@ test('the health engine models every distinguishable operational state', async (
 test('service state is probed, never assumed from process liveness', async () => {
   const engine = await source('engine');
   // Real probes against real dependencies.
-  assert.match(engine, /settings.*system_ping_check|system_ping_check/);
+  assert.match(engine, /SELECT 1 AS alive, VERSION\(\) AS version/);
+  assert.match(engine, /SELECT category, data FROM system_settings/);
   assert.match(engine, /listUsers\(1\)/);
-  assert.match(engine, /getEmailConfig/);
+  assert.match(engine, /loadMariaSettings/);
+  assert.match(engine, /inspectNotificationOutbox/);
   assert.match(engine, /getOutboxStatus/);
   // Probe failures are categorised rather than swallowed into "healthy".
   assert.match(engine, /categorizeError/);

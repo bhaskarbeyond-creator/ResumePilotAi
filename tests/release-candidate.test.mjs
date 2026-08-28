@@ -98,14 +98,19 @@ test('installable CI templates run the authoritative RC gate and CodeQL with lea
 });
 
 test('operational contracts expose worker, PDF isolation, TTL, and recovery requirements truthfully', async () => {
-  const [backend, indexes, runbook] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('firestore.indexes.json', 'utf8'), fs.readFile('docs/archive/OPERATIONS_RUNBOOK.md', 'utf8'),
+  const [backend, tokenService, migration, runbook] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/security/exportTokens.js', 'utf8'),
+    fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
+    fs.readFile('docs/PRODUCTION_RUNBOOK.md', 'utf8'),
   ]);
   assert.match(backend, /NOTIFICATION_OUTBOX_EXTERNAL_WORKER/);
   assert.match(backend, /REQUIRES_ISOLATED_WORKER/);
-  const parsed = JSON.parse(indexes);
-  assert.ok(parsed.fieldOverrides.some(item => item.collectionGroup === 'export_render_tokens' && item.fieldPath === 'expiresAt' && item.ttl === true));
-  assert.match(runbook, /Backup and restore/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS export_render_tokens/);
+  assert.match(migration, /INDEX idx_export_tokens_expiry \(expires_at\)/);
+  assert.match(tokenService, /DELETE FROM export_render_tokens WHERE expires_at < \? LIMIT 500/);
+  assert.match(tokenService, /SELECT payload, expires_at FROM export_render_tokens WHERE token_hash = \? FOR UPDATE/);
+  assert.match(runbook, /backup/i);
   assert.match(runbook, /dead-letter/i);
   assert.match(runbook, /Workload Identity/);
 });
@@ -118,5 +123,6 @@ test('readiness reports unmeasured dependencies as NOT_CHECKED and RC runner exp
   assert.match(backend, /aiProviders: 'NOT_CHECKED'/);
   assert.match(runner, /NOT EXECUTED \/ ENVIRONMENT BLOCKED/);
   assert.match(runner, /Production dependency audit/);
-  assert.match(runner, /Firebase rules emulators/);
+  assert.match(runner, /Zero-Firestore static and outage certification/);
+  assert.match(runner, /Browser and live PDF journeys/);
 });

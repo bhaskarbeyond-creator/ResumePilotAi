@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
-import { getBlogSettings, updateBlogSettings, listBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCategory } from '../../../firestore/dbOperations';
+import { getBlogSettings, updateBlogSettings, listBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCategory } from '../../../services/api/platform';
 import { FiSave, FiPlus, FiEdit3, FiTrash2, FiCheck, FiX, FiSettings, FiTag, FiBookOpen } from 'react-icons/fi';
 
 const BlogSettings = () => {

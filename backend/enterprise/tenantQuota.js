@@ -1,96 +1,81 @@
 'use strict';
 
-const crypto = require('crypto');
 const { tenantRateLimitKey } = require('./tenantCache');
 
-class FirestoreAtomicCounterStore {
-  constructor({ db, admin, now = () => Date.now() }) {
-    this.db = db;
-    this.admin = admin;
-    this.now = now;
-  }
-
-  assertAvailable() {
-    if (!this.db || !this.admin?.firestore?.FieldValue) {
-      throw Object.assign(new Error('Tenant quota store is unavailable'), { code: 'TENANT_QUOTA_UNAVAILABLE', status: 503 });
-    }
-  }
-
-  async increment(key, { ttlMs }) {
-    this.assertAvailable();
-    const now = this.now();
-    const id = crypto.createHash('sha256').update(String(key)).digest('hex');
-    const reference = this.db.collection('enterprise_quota_buckets').doc(id);
-    let result;
-    await this.db.runTransaction(async transaction => {
-      const snapshot = await transaction.get(reference);
-      const current = snapshot.exists ? snapshot.data() || {} : {};
-      const currentExpiry = current.expiresAt?.toMillis?.() || new Date(current.expiresAt || 0).getTime();
-      const active = Number(currentExpiry) > now;
-      const count = active ? Number(current.count || 0) + 1 : 1;
-      const expiresAt = active ? currentExpiry : now + ttlMs;
-      transaction.set(reference, {
-        keyHash: id,
-        count,
-        expiresAt: new Date(expiresAt),
-        updatedAt: this.admin.firestore.FieldValue.serverTimestamp(),
-      }, { merge: false });
-      result = { count, expiresAt };
-    });
-    return result;
-  }
-}
-
-class InMemoryAtomicCounterStore {
-  constructor({ now = () => Date.now() } = {}) {
-    this.now = now;
-    this.records = new Map();
-  }
-
-  async increment(key, { ttlMs }) {
-    const now = this.now();
-    let record = this.records.get(key);
-    if (!record || record.expiresAt <= now) record = { count: 0, expiresAt: now + ttlMs };
-    record.count += 1;
-    this.records.set(key, record);
-    return { count: record.count, expiresAt: record.expiresAt };
-  }
-}
+const SAFE_METRIC = /^[A-Za-z0-9._:-]{1,80}$/;
 
 class TenantQuotaGuard {
-  constructor({ store, now = () => Date.now() }) {
-    if (!store?.increment) throw new Error('Tenant quota guard requires an atomic shared counter store');
+  constructor({ store }) {
+    if (!store || typeof store.increment !== 'function') {
+      throw Object.assign(new Error('A durable atomic quota store is required'), {
+        code: 'TENANT_QUOTA_STORE_REQUIRED',
+        status: 503,
+      });
+    }
     this.store = store;
-    this.now = now;
   }
 
   async consume({ context, metric, limit, windowMs, principalScoped = true }) {
-    const boundedLimit = Number(limit);
-    const boundedWindow = Number(windowMs);
-    if (!Number.isInteger(boundedLimit) || boundedLimit < 1 || !Number.isInteger(boundedWindow) || boundedWindow < 1_000) {
-      throw Object.assign(new Error('Tenant quota policy is invalid'), { code: 'INVALID_TENANT_QUOTA', status: 500 });
+    const tenantId = String(context?.tenantId || '');
+    const principalId = principalScoped
+      ? String(context?.subjectId || context?.principalId || '')
+      : 'tenant-wide';
+    const normalizedMetric = String(metric || '');
+    const normalizedLimit = Number(limit);
+    const normalizedWindowMs = Number(windowMs);
+
+    if (!tenantId || !principalId) {
+      throw Object.assign(new Error('Tenant and principal context are required'), {
+        code: 'TENANT_CONTEXT_REQUIRED',
+        status: 400,
+      });
     }
-    const window = `${metric}:${Math.floor(this.now() / boundedWindow)}`;
+    if (!SAFE_METRIC.test(normalizedMetric)) {
+      throw Object.assign(new Error('Invalid quota metric'), { code: 'INVALID_QUOTA_METRIC', status: 400 });
+    }
+    if (!Number.isSafeInteger(normalizedLimit) || normalizedLimit < 1 || normalizedLimit > 10_000_000) {
+      throw Object.assign(new Error('Invalid quota limit'), { code: 'INVALID_QUOTA_LIMIT', status: 400 });
+    }
+    if (!Number.isSafeInteger(normalizedWindowMs) || normalizedWindowMs < 1_000 || normalizedWindowMs > 31 * 24 * 60 * 60 * 1000) {
+      throw Object.assign(new Error('Invalid quota window'), { code: 'INVALID_QUOTA_WINDOW', status: 400 });
+    }
+
     const key = tenantRateLimitKey({
-      tenantId: context.tenantId,
-      principalId: principalScoped ? context.principalId : 'tenant',
-      operation: metric,
-      window,
+      tenantId,
+      principalId,
+      operation: normalizedMetric,
+      window: String(normalizedWindowMs),
     });
-    const result = await this.store.increment(key, { ttlMs: boundedWindow });
-    if (result.count > boundedLimit) {
+    const result = await this.store.increment(key, { ttlMs: normalizedWindowMs });
+    const used = Number(result?.count || 0);
+    const resetsAt = Number(result?.expiresAt || 0);
+    if (!Number.isSafeInteger(used) || used < 1 || !Number.isFinite(resetsAt)) {
+      throw Object.assign(new Error('Quota store returned an invalid counter result'), {
+        code: 'TENANT_QUOTA_STORE_INVALID_RESPONSE',
+        status: 503,
+      });
+    }
+    if (used > normalizedLimit) {
       const error = new Error('Tenant quota exceeded');
       error.code = 'TENANT_QUOTA_EXCEEDED';
       error.status = 429;
-      error.retryAfterSeconds = Math.max(1, Math.ceil((result.expiresAt - this.now()) / 1000));
+      error.limit = normalizedLimit;
+      error.used = used;
+      error.remaining = 0;
+      error.resetsAt = resetsAt;
+      error.retryAfterMs = Math.max(0, resetsAt - Date.now());
       throw error;
     }
-    return { key, limit: boundedLimit, used: result.count, remaining: Math.max(0, boundedLimit - result.count), expiresAt: result.expiresAt };
+    return {
+      tenantId,
+      metric: normalizedMetric,
+      limit: normalizedLimit,
+      used,
+      remaining: Math.max(0, normalizedLimit - used),
+      resetsAt,
+      scope: principalScoped ? 'PRINCIPAL' : 'TENANT',
+    };
   }
 }
 
-module.exports = {
-  FirestoreAtomicCounterStore,
-  InMemoryAtomicCounterStore,
-  TenantQuotaGuard,
-};
+module.exports = { TenantQuotaGuard };

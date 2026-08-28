@@ -1,4 +1,4 @@
-import { getWebsiteData } from '../firestore/dbOperations';
+import { getWebsiteData } from '../services/api/platform';
 
 // Compatibility helper for callers that need the current analytics configuration.
 export async function Analytics() {

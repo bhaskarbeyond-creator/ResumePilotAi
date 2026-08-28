@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCalendar, FiUser, FiTag, FiClock, FiEye, FiExternalLink } from 'react-icons/fi';
 import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
-import { listBlogCategories } from '../../../firestore/dbOperations';
+import { listBlogCategories } from '../../../services/api/platform';
 import '../../../components/Blog/BlogPost/BlogContent.css';
 
 const BlogPreviewModal = ({ post, onClose, isOpen }) => {

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getCovers, removeCover } from '../../../firestore/dbOperations';
+import { getCovers, removeCover } from '../../../services/api/platform';
 import { Link } from 'react-router-dom';
 import addResumesImage from '../../../assets/undraw_add_document_0hek.svg';
 import fire from '../../../conf/fire';

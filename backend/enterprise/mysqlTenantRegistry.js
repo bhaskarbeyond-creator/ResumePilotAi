@@ -1,10 +1,10 @@
 'use strict';
 
 const crypto = require('crypto');
+const { queueEmailInTransaction } = require('../services/notificationOutbox');
 const {
   DATA_PLANE_TYPES,
   ISOLATION_TIERS,
-  LEGACY_DATA_PLANE_TYPES,
   MEMBERSHIP_STATES,
   PERMISSIONS,
   TENANT_LIFECYCLE_STATES,
@@ -39,6 +39,14 @@ function compact(value, max = 160) {
   }).join('').trim().slice(0, max);
 }
 
+function normalizeInvitationEmail(value) {
+  const email = compact(value, 254).toLowerCase();
+  if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,189}$/.test(email)) {
+    throw Object.assign(new Error('A valid invitation email address is required'), { code: 'INVALID_INVITATION_EMAIL', status: 400 });
+  }
+  return email;
+}
+
 function normalizeTier(value) {
   const tier = String(value || 'STANDARD').toUpperCase();
   if (!ISOLATION_TIERS.includes(tier)) throw Object.assign(new Error('Unsupported isolation tier'), { code: 'INVALID_TENANT_TIER', status: 400 });
@@ -46,11 +54,13 @@ function normalizeTier(value) {
 }
 
 function normalizeDataPlane(input = {}) {
-  const rawType = String(input.type || DEFAULT_DATA_PLANE.type).toUpperCase();
-  const type = LEGACY_DATA_PLANE_TYPES.includes(rawType) ? DEFAULT_DATA_PLANE.type : rawType;
-  const planeId = LEGACY_DATA_PLANE_TYPES.includes(rawType)
-    ? DEFAULT_DATA_PLANE.id
-    : compact(input.id || DEFAULT_DATA_PLANE.id, 120);
+  const type = String(input.type || DEFAULT_DATA_PLANE.type).toUpperCase();
+  const planeId = compact(input.id || DEFAULT_DATA_PLANE.id, 120);
+  if (!DATA_PLANE_TYPES.includes(type) || planeId !== DEFAULT_DATA_PLANE.id) {
+    throw Object.assign(new Error('Enterprise data ownership is immutable and assigned to MariaDB'), {
+      code: 'ENTERPRISE_DATA_OWNER_IMMUTABLE', status: 409,
+    });
+  }
   return {
     id: planeId,
     type,
@@ -118,52 +128,84 @@ function defaultTenantConfiguration(tenantId) {
     securityPolicy: { requireMfaForAdmins: false, supportAccessRequiresApproval: true },
     identityPolicy: { ssoMode: 'NONE', scimEnabled: false, sessionMaxMinutes: 480 },
     customRoles: {},
+    commercials: null,
   };
 }
 
 function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTenantConfiguration(tenantId)) {
   tenantId = assertUuid(tenantId, 'Tenant identifier');
-  const aiPolicy = input.aiPolicy && typeof input.aiPolicy === 'object' ? input.aiPolicy : existing.aiPolicy;
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw Object.assign(new Error('Tenant configuration must be an object'), { code: 'INVALID_TENANT_CONFIGURATION', status: 400 });
+  }
+  const hasAiPolicy = Object.hasOwn(input, 'aiPolicy');
+  const aiPolicy = hasAiPolicy && input.aiPolicy && typeof input.aiPolicy === 'object' ? input.aiPolicy : existing.aiPolicy;
+  if (Object.hasOwn(aiPolicy || {}, 'customProviderKeys')) {
+    throw Object.assign(new Error('Tenant provider credentials require the encrypted credential store'), { code: 'TENANT_PROVIDER_CREDENTIALS_UNSUPPORTED', status: 501 });
+  }
   const allowedProviders = Array.isArray(aiPolicy.allowedProviders)
     ? [...new Set(aiPolicy.allowedProviders.map(provider => String(provider).toLowerCase()).filter(provider => /^[a-z0-9_-]{2,40}$/.test(provider)))].slice(0, 10)
     : [...(existing.aiPolicy?.allowedProviders || [])];
   const allowedModels = Array.isArray(aiPolicy.allowedModels)
     ? [...new Set(aiPolicy.allowedModels.map(model => String(model).trim()).filter(model => /^[A-Za-z0-9._:/-]{2,150}$/.test(model)))].slice(0, 25)
     : [...(existing.aiPolicy?.allowedModels || [])];
-  const quotaPolicy = input.quotaPolicy && typeof input.quotaPolicy === 'object' ? input.quotaPolicy : existing.quotaPolicy;
+  const hasQuotaPolicy = Object.hasOwn(input, 'quotaPolicy');
+  const quotaPolicy = hasQuotaPolicy && input.quotaPolicy && typeof input.quotaPolicy === 'object' ? input.quotaPolicy : existing.quotaPolicy;
   const bounded = (value, fallback, min, max) => Number.isInteger(Number(value)) ? Math.max(min, Math.min(max, Number(value))) : fallback;
-  const retentionPolicy = input.retentionPolicy && typeof input.retentionPolicy === 'object' ? input.retentionPolicy : existing.retentionPolicy;
-  const securityPolicy = input.securityPolicy && typeof input.securityPolicy === 'object' ? input.securityPolicy : existing.securityPolicy;
-  const identityPolicy = input.identityPolicy && typeof input.identityPolicy === 'object' ? input.identityPolicy : existing.identityPolicy;
+  const hasRetentionPolicy = Object.hasOwn(input, 'retentionPolicy');
+  const retentionPolicy = hasRetentionPolicy && input.retentionPolicy && typeof input.retentionPolicy === 'object' ? input.retentionPolicy : existing.retentionPolicy;
+  const hasSecurityPolicy = Object.hasOwn(input, 'securityPolicy');
+  const securityPolicy = hasSecurityPolicy && input.securityPolicy && typeof input.securityPolicy === 'object' ? input.securityPolicy : existing.securityPolicy;
+  const hasIdentityPolicy = Object.hasOwn(input, 'identityPolicy');
+  const identityPolicy = hasIdentityPolicy && input.identityPolicy && typeof input.identityPolicy === 'object' ? input.identityPolicy : existing.identityPolicy;
   const ssoMode = ['NONE', 'OIDC', 'SAML'].includes(String(identityPolicy.ssoMode || '').toUpperCase())
     ? String(identityPolicy.ssoMode).toUpperCase()
     : String(existing.identityPolicy?.ssoMode || 'NONE').toUpperCase();
-  const primaryModel = /^[A-Za-z0-9._/-]{2,120}$/.test(String(aiPolicy.primaryModel || '').trim())
+  const primaryModel = /^[A-Za-z0-9._:/-]{2,150}$/.test(String(aiPolicy.primaryModel || '').trim())
     ? String(aiPolicy.primaryModel || '').trim()
     : String(existing.aiPolicy?.primaryModel || '');
+
+  let commercials = existing.commercials || null;
+  if (Object.hasOwn(input, 'commercials')) {
+    const candidate = input.commercials;
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      throw Object.assign(new Error('Tenant commercial settings must be an object'), { code: 'INVALID_TENANT_COMMERCIALS', status: 400 });
+    }
+    const plan = compact(candidate.plan, 120);
+    const seatLimit = Number(candidate.seatLimit);
+    const currency = String(candidate.currency || '').trim().toUpperCase();
+    const billingStatus = String(candidate.billingStatus || '').trim().toUpperCase();
+    if (plan.length < 2 || !Number.isInteger(seatLimit) || seatLimit < 1 || seatLimit > 100_000 || !/^[A-Z]{3}$/.test(currency) || !['TRIAL', 'ACTIVE', 'PAST_DUE', 'SUSPENDED', 'CANCELLED'].includes(billingStatus)) {
+      throw Object.assign(new Error('Tenant commercial settings are invalid'), { code: 'INVALID_TENANT_COMMERCIALS', status: 400 });
+    }
+    commercials = { plan, seatLimit, currency, billingStatus };
+  }
+
   return {
     tenantId,
     revision: Number(existing.revision || 0) + 1,
-    aiPolicy: { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders, allowedModels, primaryModel },
-    quotaPolicy: {
+    aiPolicy: hasAiPolicy
+      ? { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders, allowedModels, primaryModel }
+      : { ...(existing.aiPolicy || {}) },
+    quotaPolicy: hasQuotaPolicy ? {
       aiRequestsPerMinute: bounded(quotaPolicy.aiRequestsPerMinute, existing.quotaPolicy?.aiRequestsPerMinute || 12, 1, 10_000),
       aiRequestsPerDay: bounded(quotaPolicy.aiRequestsPerDay, existing.quotaPolicy?.aiRequestsPerDay || 100, 1, 10_000_000),
       renderConcurrency: bounded(quotaPolicy.renderConcurrency, existing.quotaPolicy?.renderConcurrency || 2, 1, 100),
-    },
-    retentionPolicy: {
+    } : { ...(existing.quotaPolicy || {}) },
+    retentionPolicy: hasRetentionPolicy ? {
       aiMemoryEnabled: retentionPolicy.aiMemoryEnabled === true,
       retentionDays: bounded(retentionPolicy.retentionDays, existing.retentionPolicy?.retentionDays || 30, 1, 3650),
-    },
-    securityPolicy: {
+    } : { ...(existing.retentionPolicy || {}) },
+    securityPolicy: hasSecurityPolicy ? {
       requireMfaForAdmins: securityPolicy.requireMfaForAdmins === true,
       supportAccessRequiresApproval: securityPolicy.supportAccessRequiresApproval !== false,
-    },
-    identityPolicy: {
+    } : { ...(existing.securityPolicy || {}) },
+    identityPolicy: hasIdentityPolicy ? {
       ssoMode,
       scimEnabled: ssoMode !== 'NONE' && identityPolicy.scimEnabled === true,
       sessionMaxMinutes: bounded(identityPolicy.sessionMaxMinutes, existing.identityPolicy?.sessionMaxMinutes || 480, 15, 10_080),
-    },
-    customRoles: normalizeCustomRoles(input.customRoles, existing),
+    } : { ...(existing.identityPolicy || {}) },
+    customRoles: Object.hasOwn(input, 'customRoles') ? normalizeCustomRoles(input.customRoles, existing) : { ...(existing.customRoles || {}) },
+    commercials,
   };
 }
 
@@ -212,6 +254,14 @@ function validateMembership(record, principalId) {
     })(),
     personalTenant: Boolean(record.personalTenant || record.personal_tenant),
     revision: Number(record.revision || 1),
+    invitationEmail: record.invitationEmail || null,
+    invitedAt: record.invitedAt || null,
+    acceptedAt: record.acceptedAt || null,
+    invitationExpiresAt: record.invitationExpiresAt || null,
+    invitationState: record.invitationState || null,
+    invitationDeliveryState: record.invitationDeliveryState || null,
+    invitationNotificationId: record.invitationNotificationId || null,
+    invitationQueueRevision: record.invitationQueueRevision == null ? null : Number(record.invitationQueueRevision),
     createdAt: record.createdAt || record.created_at || null,
     updatedAt: record.updatedAt || record.updated_at || null,
   };
@@ -267,7 +317,7 @@ class MySqlTenantRegistry {
   async ensurePersonalTenant(principalId, profile = {}) {
     this.assertAvailable();
     principalId = assertPrincipalId(principalId);
-    
+
     // Check if principal already has personal tenant
     const [idRows] = await this.pool.query(
       'SELECT personalTenantId, defaultWorkspaceId FROM enterprise_principal_tenants WHERE principalId = ?',
@@ -506,60 +556,80 @@ class MySqlTenantRegistry {
     return validateTenantRecord(rows[0]);
   }
 
-  async getTenantConfiguration(tenantId) {
-    this.assertAvailable();
-    tenantId = assertUuid(tenantId, 'Tenant identifier');
+  _mapTenantConfiguration(tenantId, row = null) {
     const defaults = defaultTenantConfiguration(tenantId);
-    const [rows] = await this.pool.query('SELECT * FROM enterprise_tenant_configurations WHERE tenantId = ?', [tenantId]);
-    if (rows.length === 0) return defaults;
-    const r = rows[0];
+    if (!row) return defaults;
     return {
       ...defaults,
       tenantId,
-      revision: Number(r.revision || 1),
-      customRoles: parseJsonField(r.customRoles, defaults.customRoles),
-      aiPolicy: parseJsonField(r.aiPolicy, defaults.aiPolicy),
-      quotaPolicy: parseJsonField(r.quotaPolicy, defaults.quotaPolicy),
-      retentionPolicy: parseJsonField(r.retentionPolicy, defaults.retentionPolicy),
-      securityPolicy: parseJsonField(r.securityPolicy, defaults.securityPolicy),
-      identityPolicy: parseJsonField(r.identityPolicy, defaults.identityPolicy),
-      commercials: parseJsonField(r.commercials, null),
+      revision: Number(row.revision || 1),
+      customRoles: parseJsonField(row.customRoles, defaults.customRoles),
+      aiPolicy: parseJsonField(row.aiPolicy, defaults.aiPolicy),
+      quotaPolicy: parseJsonField(row.quotaPolicy, defaults.quotaPolicy),
+      retentionPolicy: parseJsonField(row.retentionPolicy, defaults.retentionPolicy),
+      securityPolicy: parseJsonField(row.securityPolicy, defaults.securityPolicy),
+      identityPolicy: parseJsonField(row.identityPolicy, defaults.identityPolicy),
+      commercials: parseJsonField(row.commercials, null),
     };
   }
 
-  async updateTenantConfiguration({ tenantId, input = {}, expectedRevision = null }) {
+  async getTenantConfiguration(tenantId) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
-    const existing = await this.getTenantConfiguration(tenantId);
-    if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== Number(existing.revision)) {
-      throw Object.assign(new Error('Tenant configuration revision conflict'), { code: 'CONFIGURATION_REVISION_CONFLICT', status: 409 });
+    const [rows] = await this.pool.query('SELECT * FROM enterprise_tenant_configurations WHERE tenantId = ?', [tenantId]);
+    return this._mapTenantConfiguration(tenantId, rows[0]);
+  }
+
+  async updateTenantConfiguration({ tenantId, input = {}, expectedRevision }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    if (!Number.isInteger(Number(expectedRevision)) || Number(expectedRevision) < 1) {
+      throw Object.assign(new Error('Expected tenant configuration revision is required'), { code: 'EXPECTED_REVISION_REQUIRED', status: 428 });
     }
-    const normalized = normalizeTenantConfiguration(tenantId, input, existing);
-    await this.pool.query(
-      `INSERT INTO enterprise_tenant_configurations (tenantId, revision, customRoles, aiPolicy, quotaPolicy, retentionPolicy, securityPolicy, identityPolicy, commercials)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         revision = VALUES(revision),
-         customRoles = VALUES(customRoles),
-         aiPolicy = VALUES(aiPolicy),
-         quotaPolicy = VALUES(quotaPolicy),
-         retentionPolicy = VALUES(retentionPolicy),
-         securityPolicy = VALUES(securityPolicy),
-         identityPolicy = VALUES(identityPolicy),
-         commercials = VALUES(commercials)`,
-      [
-        tenantId,
-        normalized.revision,
-        JSON.stringify(normalized.customRoles),
-        JSON.stringify(normalized.aiPolicy),
-        JSON.stringify(normalized.quotaPolicy),
-        JSON.stringify(normalized.retentionPolicy),
-        JSON.stringify(normalized.securityPolicy),
-        JSON.stringify(normalized.identityPolicy),
-        input.commercials ? JSON.stringify(input.commercials) : null,
-      ]
-    );
-    return normalized;
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [tenantRows] = await connection.query('SELECT id FROM enterprise_tenants WHERE id = ? FOR UPDATE', [tenantId]);
+      if (!tenantRows.length) {
+        throw Object.assign(new Error('Tenant was not found'), { code: 'TENANT_NOT_FOUND', status: 404 });
+      }
+      const [rows] = await connection.query('SELECT * FROM enterprise_tenant_configurations WHERE tenantId = ? FOR UPDATE', [tenantId]);
+      const existing = this._mapTenantConfiguration(tenantId, rows[0]);
+      if (Number(expectedRevision) !== Number(existing.revision)) {
+        throw Object.assign(new Error('Tenant configuration revision conflict'), {
+          code: 'CONFIGURATION_REVISION_CONFLICT', status: 409, currentRevision: existing.revision,
+        });
+      }
+      const normalized = normalizeTenantConfiguration(tenantId, input, existing);
+      await connection.query(
+        `INSERT INTO enterprise_tenant_configurations
+           (tenantId, revision, customRoles, aiPolicy, quotaPolicy, retentionPolicy, securityPolicy, identityPolicy, commercials)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           revision = VALUES(revision), customRoles = VALUES(customRoles), aiPolicy = VALUES(aiPolicy),
+           quotaPolicy = VALUES(quotaPolicy), retentionPolicy = VALUES(retentionPolicy),
+           securityPolicy = VALUES(securityPolicy), identityPolicy = VALUES(identityPolicy),
+           commercials = VALUES(commercials)`,
+        [
+          tenantId,
+          normalized.revision,
+          JSON.stringify(normalized.customRoles),
+          JSON.stringify(normalized.aiPolicy),
+          JSON.stringify(normalized.quotaPolicy),
+          JSON.stringify(normalized.retentionPolicy),
+          JSON.stringify(normalized.securityPolicy),
+          JSON.stringify(normalized.identityPolicy),
+          normalized.commercials ? JSON.stringify(normalized.commercials) : null,
+        ]
+      );
+      await connection.commit();
+      return normalized;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 
   async updateTenantProfile({ tenantId, displayName }) {
@@ -571,7 +641,7 @@ class MySqlTenantRegistry {
     return this.getTenant(tenantId);
   }
 
-  async setTenantLifecycleState({ tenantId, nextState, reason = null }) {
+  async setTenantLifecycleState({ tenantId, nextState }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const current = await this.getTenant(tenantId);
@@ -610,7 +680,7 @@ class MySqlTenantRegistry {
     }).filter(Boolean);
   }
 
-  async resolveMembership({ principalId, requestedTenantId = null, requestedWorkspaceId = null, profile = {} }) {
+  async resolveMembership({ principalId, requestedTenantId = null, requestedWorkspaceId = null, profile = {}, identityEmail = null, emailVerified = false }) {
     this.assertAvailable();
     principalId = assertPrincipalId(principalId);
     const tenantId = normalizeRequestedTenantId(requestedTenantId);
@@ -621,7 +691,15 @@ class MySqlTenantRegistry {
       if (tenant.lifecycleState !== 'ACTIVE') {
         throw Object.assign(new Error('Tenant is inactive'), { code: 'TENANT_INACTIVE', status: 403 });
       }
-      const membership = await this.getMembership(tenant.id, principalId);
+      let membership = await this.getMembership(tenant.id, principalId);
+      if (membership.status === 'INVITED') {
+        membership = await this.acceptMembershipInvitation({
+          tenantId: tenant.id,
+          principalId,
+          identityEmail,
+          emailVerified,
+        });
+      }
       if (membership.status !== 'ACTIVE') {
         throw Object.assign(new Error('Tenant membership is inactive'), { code: 'TENANT_MEMBERSHIP_INACTIVE', status: 403 });
       }
@@ -648,9 +726,15 @@ class MySqlTenantRegistry {
     this.assertAvailable();
     principalId = assertPrincipalId(principalId);
     const [rows] = await this.pool.query(
-      `SELECT m.*, t.displayName, t.slug, t.lifecycleState as tenantLifecycleState
+      `SELECT m.*, t.displayName, t.slug, t.lifecycleState AS tenantLifecycleState,
+              i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+              i.expiresAt AS invitationExpiresAt, i.invitationState,
+              COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+              i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
        FROM enterprise_memberships m
        JOIN enterprise_tenants t ON m.tenantId = t.id
+       LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+       LEFT JOIN notification_outbox o ON o.id = i.notificationId
        WHERE m.principalId = ?`,
       [principalId]
     );
@@ -673,7 +757,14 @@ class MySqlTenantRegistry {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const [rows] = await this.pool.query(
-      'SELECT * FROM enterprise_memberships WHERE tenantId = ?',
+      `SELECT m.*, i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+              i.expiresAt AS invitationExpiresAt, i.invitationState,
+              COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+              i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+       FROM enterprise_memberships m
+       LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+       LEFT JOIN notification_outbox o ON o.id = i.notificationId
+       WHERE m.tenantId = ?`,
       [tenantId]
     );
     return rows.map(r => {
@@ -690,7 +781,14 @@ class MySqlTenantRegistry {
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
     const [rows] = await this.pool.query(
-      'SELECT * FROM enterprise_memberships WHERE tenantId = ? AND principalId = ?',
+      `SELECT m.*, i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+              i.expiresAt AS invitationExpiresAt, i.invitationState,
+              COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+              i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+       FROM enterprise_memberships m
+       LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+       LEFT JOIN notification_outbox o ON o.id = i.notificationId
+       WHERE m.tenantId = ? AND m.principalId = ?`,
       [tenantId, principalId]
     );
     if (rows.length === 0) {
@@ -699,47 +797,433 @@ class MySqlTenantRegistry {
     return validateMembership(rows[0], principalId);
   }
 
-  async grantMembership({ tenantId, principalId, roles = ['ENTERPRISE_MEMBER'], status = 'ACTIVE' }) {
+  async grantMembership({
+    tenantId,
+    principalId,
+    workspaceId,
+    roles = ['ENTERPRISE_MEMBER'],
+    status = 'ACTIVE',
+    invitation = null,
+    allowedRoles = [],
+  }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
+    workspaceId = assertUuid(workspaceId, 'Workspace identifier');
     const membershipId = membershipDocumentId(tenantId, principalId);
-    const normalizedRoles = normalizeRoles(roles);
+    const workspaceMembershipId = workspaceMembershipDocumentId(workspaceId, principalId);
+    const normalizedRoles = normalizeRoles(roles, allowedRoles);
     const stat = String(status || 'ACTIVE').toUpperCase();
-    if (!MEMBERSHIP_STATES.includes(stat)) throw Object.assign(new Error('Invalid membership status'), { code: 'INVALID_MEMBERSHIP_STATUS', status: 400 });
+    if (!MEMBERSHIP_STATES.includes(stat)) {
+      throw Object.assign(new Error('Invalid membership status'), { code: 'INVALID_MEMBERSHIP_STATUS', status: 400 });
+    }
+    if ((stat === 'INVITED') !== Boolean(invitation)) {
+      throw Object.assign(new Error('Invited memberships require one bound invitation payload'), { code: 'INVALID_MEMBERSHIP_INVITATION', status: 400 });
+    }
 
-    await this.pool.query(
-      `INSERT INTO enterprise_memberships (id, tenantId, principalId, canonicalPrincipalId, status, roles, revision, personalTenant)
-       VALUES (?, ?, ?, ?, ?, ?, 1, FALSE)
-       ON DUPLICATE KEY UPDATE
-         status = VALUES(status),
-         roles = VALUES(roles),
-         revision = revision + 1,
-         updated_at = CURRENT_TIMESTAMP`,
-      [membershipId, tenantId, principalId, canonicalPrincipalId(principalId), stat, JSON.stringify(normalizedRoles)]
-    );
+    let invitationData = null;
+    if (invitation) {
+      const recipientEmail = normalizeInvitationEmail(invitation.recipientEmail);
+      const expiresAt = new Date(invitation.expiresAt || 0);
+      const now = Date.now();
+      if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= now || expiresAt.getTime() > now + (30 * 24 * 60 * 60 * 1000)) {
+        throw Object.assign(new Error('Invitation expiry must be within the next 30 days'), { code: 'INVALID_INVITATION_EXPIRY', status: 400 });
+      }
+      if (!invitation.notification || typeof invitation.notification !== 'object') {
+        throw Object.assign(new Error('Invitation notification payload is required'), { code: 'INVALID_MEMBERSHIP_INVITATION', status: 400 });
+      }
+      invitationData = {
+        recipientEmail,
+        invitedByPrincipalId: assertPrincipalId(invitation.invitedByPrincipalId),
+        expiresAt,
+        notification: invitation.notification,
+        tenantContext: invitation.tenantContext || null,
+      };
+    }
 
-    return this.getMembership(tenantId, principalId);
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [workspaces] = await connection.query(
+        'SELECT id, lifecycleState FROM enterprise_workspaces WHERE id = ? AND tenantId = ? FOR UPDATE',
+        [workspaceId, tenantId]
+      );
+      if (!workspaces.length) {
+        throw Object.assign(new Error('Workspace was not found in this tenant'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+      }
+      if (String(workspaces[0].lifecycleState || '').toUpperCase() !== 'ACTIVE') {
+        throw Object.assign(new Error('Workspace is not active'), { code: 'WORKSPACE_INACTIVE', status: 409 });
+      }
+
+      const [existingRows] = await connection.query(
+        'SELECT id, principalId, revision FROM enterprise_memberships WHERE id = ? FOR UPDATE',
+        [membershipId]
+      );
+      if (existingRows[0] && existingRows[0].principalId !== principalId) {
+        throw Object.assign(new Error('Membership identity collision detected'), { code: 'TENANT_IDENTITY_MISMATCH', status: 409 });
+      }
+      const nextRevision = Number(existingRows[0]?.revision || 0) + 1;
+
+      await connection.query(
+        `INSERT INTO enterprise_memberships
+           (id, tenantId, principalId, canonicalPrincipalId, workspaceId, status, roles, revision, personalTenant)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, FALSE)
+         ON DUPLICATE KEY UPDATE
+           canonicalPrincipalId = VALUES(canonicalPrincipalId),
+           workspaceId = VALUES(workspaceId),
+           status = VALUES(status),
+           roles = VALUES(roles),
+           revision = VALUES(revision),
+           updated_at = CURRENT_TIMESTAMP`,
+        [membershipId, tenantId, principalId, canonicalPrincipalId(principalId), workspaceId, stat, JSON.stringify(normalizedRoles), nextRevision]
+      );
+
+      await connection.query(
+        `INSERT INTO enterprise_workspace_memberships (id, tenantId, workspaceId, principalId, status)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE tenantId = VALUES(tenantId), workspaceId = VALUES(workspaceId),
+           principalId = VALUES(principalId), status = VALUES(status), updated_at = CURRENT_TIMESTAMP`,
+        [workspaceMembershipId, tenantId, workspaceId, principalId, stat]
+      );
+
+      if (invitationData) {
+        const eventId = `enterprise-invitation:${membershipId}:${nextRevision}`;
+        const idempotencyKey = `enterprise-invite:${crypto.createHash('sha256').update(eventId).digest('hex')}`;
+        const notificationId = await queueEmailInTransaction(connection, {
+          eventId,
+          recipient: invitationData.recipientEmail,
+          templateType: invitationData.notification.templateType || 'enterprise-invitation',
+          vars: invitationData.notification.vars || {},
+          metadata: {
+            ...(invitationData.notification.metadata || {}),
+            membershipId,
+            invitationRevision: nextRevision,
+          },
+          tenantContext: invitationData.tenantContext,
+          idempotencyKey,
+        });
+        await connection.query(
+          `INSERT INTO enterprise_membership_invitations
+             (id, membershipId, tenantId, principalId, workspaceId, recipientEmail,
+              invitedByPrincipalId, invitationState, deliveryState, notificationId,
+              notificationEventId, queueRevision, expiresAt, invitedAt, lastQueuedAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', 'NOTIFICATION_QUEUED', ?, ?, ?, ?, NOW(6), NOW(6))
+           ON DUPLICATE KEY UPDATE
+             workspaceId = VALUES(workspaceId), recipientEmail = VALUES(recipientEmail),
+             invitedByPrincipalId = VALUES(invitedByPrincipalId), invitationState = 'PENDING',
+             deliveryState = 'NOTIFICATION_QUEUED', notificationId = VALUES(notificationId),
+             notificationEventId = VALUES(notificationEventId), queueRevision = VALUES(queueRevision),
+             expiresAt = VALUES(expiresAt), invitedAt = NOW(6), lastQueuedAt = NOW(6),
+             acceptedAt = NULL, revokedAt = NULL, updated_at = NOW(6)`,
+          [membershipId, membershipId, tenantId, principalId, workspaceId,
+            invitationData.recipientEmail, invitationData.invitedByPrincipalId,
+            notificationId, eventId, nextRevision, invitationData.expiresAt]
+        );
+      } else if (stat === 'ACTIVE') {
+        await connection.query(
+          `UPDATE enterprise_membership_invitations
+           SET invitationState = 'ACCEPTED', acceptedAt = COALESCE(acceptedAt, NOW(6)), updated_at = NOW(6)
+           WHERE membershipId = ? AND invitationState = 'PENDING'`,
+          [membershipId]
+        );
+      }
+
+      const [resultRows] = await connection.query(
+        `SELECT m.*, i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+                i.expiresAt AS invitationExpiresAt, i.invitationState,
+                COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+                i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+         FROM enterprise_memberships m
+         LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+         LEFT JOIN notification_outbox o ON o.id = i.notificationId
+         WHERE m.id = ?`,
+        [membershipId]
+      );
+      const result = validateMembership(resultRows[0], principalId);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 
-  async updateTenantMembership({ tenantId, principalId, roles, status }) {
+  async queueMembershipInvitation({ tenantId, principalId, invitedByPrincipalId, notification, tenantContext = null }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     principalId = assertPrincipalId(principalId);
-    const current = await this.getMembership(tenantId, principalId);
+    invitedByPrincipalId = assertPrincipalId(invitedByPrincipalId);
+    if (!notification || typeof notification !== 'object') {
+      throw Object.assign(new Error('Invitation notification payload is required'), { code: 'INVALID_MEMBERSHIP_INVITATION', status: 400 });
+    }
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.query(
+        `SELECT m.id, m.status, m.revision, i.recipientEmail, i.notificationId, i.queueRevision, i.invitationState
+         FROM enterprise_memberships m
+         JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+         WHERE m.tenantId = ? AND m.principalId = ?
+         FOR UPDATE`,
+        [tenantId, principalId]
+      );
+      if (!rows.length) {
+        throw Object.assign(new Error('Pending invitation was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+      }
+      const current = rows[0];
+      if (String(current.status).toUpperCase() !== 'INVITED' || String(current.invitationState).toUpperCase() !== 'PENDING') {
+        throw Object.assign(new Error('Only a pending invitation can be resent'), { code: 'INVITATION_NOT_PENDING', status: 409 });
+      }
+      const recipientEmail = normalizeInvitationEmail(current.recipientEmail);
+      if (current.notificationId) {
+        await connection.query(
+          `UPDATE notification_outbox
+           SET state = 'CANCELLED', next_attempt_at = 0, lease_owner = NULL, lease_expires_at = 0,
+               last_error = 'Superseded by invitation resend', updated_at = NOW(6)
+           WHERE id = ? AND provider_accepted = 0 AND state IN ('NOTIFICATION_QUEUED', 'RETRYING', 'DELIVERY_ATTEMPTED')`,
+          [current.notificationId]
+        );
+      }
+      const queueRevision = Number(current.queueRevision || 0) + 1;
+      const eventId = `enterprise-invitation:${current.id}:resend:${queueRevision}`;
+      const notificationId = await queueEmailInTransaction(connection, {
+        eventId,
+        recipient: recipientEmail,
+        templateType: notification.templateType || 'enterprise-invitation',
+        vars: notification.vars || {},
+        metadata: { ...(notification.metadata || {}), membershipId: current.id, invitationRevision: queueRevision },
+        tenantContext,
+        idempotencyKey: `enterprise-invite:${crypto.createHash('sha256').update(eventId).digest('hex')}`,
+      });
+      await connection.query(
+        `UPDATE enterprise_membership_invitations
+         SET invitedByPrincipalId = ?, deliveryState = 'NOTIFICATION_QUEUED', notificationId = ?,
+             notificationEventId = ?, queueRevision = ?, expiresAt = DATE_ADD(NOW(6), INTERVAL 7 DAY),
+             lastQueuedAt = NOW(6), updated_at = NOW(6)
+         WHERE membershipId = ?`,
+        [invitedByPrincipalId, notificationId, eventId, queueRevision, current.id]
+      );
+      const [resultRows] = await connection.query(
+        `SELECT m.*, i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+                i.expiresAt AS invitationExpiresAt, i.invitationState,
+                COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+                i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+         FROM enterprise_memberships m
+         JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+         LEFT JOIN notification_outbox o ON o.id = i.notificationId
+         WHERE m.id = ?`,
+        [current.id]
+      );
+      const result = validateMembership(resultRows[0], principalId);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 
-    const nextRoles = roles ? normalizeRoles(roles) : current.roles;
-    const nextStatus = status ? String(status).toUpperCase() : current.status;
-    if (!MEMBERSHIP_STATES.includes(nextStatus)) throw Object.assign(new Error('Invalid membership status'), { code: 'INVALID_MEMBERSHIP_STATUS', status: 400 });
+  async acceptMembershipInvitation({ tenantId, principalId, identityEmail, emailVerified }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    const verifiedEmail = normalizeInvitationEmail(identityEmail);
+    if (emailVerified !== true) {
+      throw Object.assign(new Error('Verify the invited email address before accepting this invitation'), { code: 'INVITATION_EMAIL_UNVERIFIED', status: 403 });
+    }
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.query(
+        `SELECT m.id, m.workspaceId, m.status, i.recipientEmail, i.invitationState,
+                i.expiresAt, i.notificationId
+         FROM enterprise_memberships m
+         JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+         WHERE m.tenantId = ? AND m.principalId = ?
+         FOR UPDATE`,
+        [tenantId, principalId]
+      );
+      if (!rows.length) {
+        throw Object.assign(new Error('Pending invitation was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+      }
+      const invitation = rows[0];
+      if (String(invitation.status).toUpperCase() !== 'INVITED' || String(invitation.invitationState).toUpperCase() !== 'PENDING') {
+        throw Object.assign(new Error('Invitation is no longer pending'), { code: 'INVITATION_NOT_PENDING', status: 409 });
+      }
+      if (normalizeInvitationEmail(invitation.recipientEmail) !== verifiedEmail) {
+        throw Object.assign(new Error('Signed-in identity does not match the invitation recipient'), { code: 'INVITATION_IDENTITY_MISMATCH', status: 403 });
+      }
+      if (!invitation.expiresAt || new Date(invitation.expiresAt).getTime() <= Date.now()) {
+        throw Object.assign(new Error('Invitation has expired; request a new invitation'), { code: 'INVITATION_EXPIRED', status: 410 });
+      }
+      const workspaceId = assertUuid(invitation.workspaceId, 'Workspace identifier');
+      const [workspaces] = await connection.query(
+        'SELECT lifecycleState FROM enterprise_workspaces WHERE id = ? AND tenantId = ? FOR UPDATE',
+        [workspaceId, tenantId]
+      );
+      if (!workspaces.length || String(workspaces[0].lifecycleState).toUpperCase() !== 'ACTIVE') {
+        throw Object.assign(new Error('Invitation workspace is unavailable'), { code: 'WORKSPACE_INACTIVE', status: 409 });
+      }
 
-    await this.pool.query(
-      `UPDATE enterprise_memberships
-       SET roles = ?, status = ?, revision = revision + 1, updated_at = CURRENT_TIMESTAMP
-       WHERE tenantId = ? AND principalId = ?`,
-      [JSON.stringify(nextRoles), nextStatus, tenantId, principalId]
+      await connection.query(
+        `UPDATE enterprise_memberships
+         SET status = 'ACTIVE', revision = revision + 1, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND status = 'INVITED'`,
+        [invitation.id]
+      );
+      await connection.query(
+        `INSERT INTO enterprise_workspace_memberships (id, tenantId, workspaceId, principalId, status)
+         VALUES (?, ?, ?, ?, 'ACTIVE')
+         ON DUPLICATE KEY UPDATE status = 'ACTIVE', updated_at = CURRENT_TIMESTAMP`,
+        [workspaceMembershipDocumentId(workspaceId, principalId), tenantId, workspaceId, principalId]
+      );
+      await connection.query(
+        `UPDATE enterprise_membership_invitations
+         SET invitationState = 'ACCEPTED', acceptedAt = NOW(6), updated_at = NOW(6)
+         WHERE membershipId = ? AND invitationState = 'PENDING'`,
+        [invitation.id]
+      );
+      if (invitation.notificationId) {
+        await connection.query(
+          `UPDATE notification_outbox
+           SET state = 'CANCELLED', next_attempt_at = 0, lease_owner = NULL, lease_expires_at = 0,
+               last_error = 'Invitation accepted before delivery', updated_at = NOW(6)
+           WHERE id = ? AND provider_accepted = 0 AND state IN ('NOTIFICATION_QUEUED', 'RETRYING', 'DELIVERY_ATTEMPTED')`,
+          [invitation.notificationId]
+        );
+      }
+      const [resultRows] = await connection.query(
+        `SELECT m.*, i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+                i.expiresAt AS invitationExpiresAt, i.invitationState,
+                COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+                i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+         FROM enterprise_memberships m
+         JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+         LEFT JOIN notification_outbox o ON o.id = i.notificationId
+         WHERE m.id = ?`,
+        [invitation.id]
+      );
+      const result = validateMembership(resultRows[0], principalId);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async isInvitationDeliverable({ tenantId, membershipId, notificationId }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const [rows] = await this.pool.query(
+      `SELECT 1
+       FROM enterprise_membership_invitations i
+       JOIN enterprise_memberships m ON m.id = i.membershipId
+       WHERE i.tenantId = ? AND i.membershipId = ? AND i.notificationId = ?
+         AND i.invitationState = 'PENDING' AND i.expiresAt > NOW(6) AND m.status = 'INVITED'
+       LIMIT 1`,
+      [tenantId, String(membershipId || ''), String(notificationId || '')]
     );
+    return rows.length === 1;
+  }
 
-    return this.getMembership(tenantId, principalId);
+  async updateTenantMembership({ tenantId, principalId, roles, status, workspaceId = null, allowedRoles = [] }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    principalId = assertPrincipalId(principalId);
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.query(
+        'SELECT * FROM enterprise_memberships WHERE tenantId = ? AND principalId = ? FOR UPDATE',
+        [tenantId, principalId]
+      );
+      if (!rows.length) {
+        throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
+      }
+      const current = validateMembership(rows[0], principalId);
+      const nextRoles = roles ? normalizeRoles(roles, allowedRoles) : current.roles;
+      const nextStatus = status ? String(status).toUpperCase() : current.status;
+      if (!MEMBERSHIP_STATES.includes(nextStatus)) {
+        throw Object.assign(new Error('Invalid membership status'), { code: 'INVALID_MEMBERSHIP_STATUS', status: 400 });
+      }
+      const nextWorkspaceId = workspaceId
+        ? assertUuid(workspaceId, 'Workspace identifier')
+        : assertUuid(current.workspaceId, 'Workspace identifier');
+      const [workspaces] = await connection.query(
+        'SELECT id, lifecycleState FROM enterprise_workspaces WHERE id = ? AND tenantId = ? FOR UPDATE',
+        [nextWorkspaceId, tenantId]
+      );
+      if (!workspaces.length) {
+        throw Object.assign(new Error('Workspace was not found in this tenant'), { code: 'WORKSPACE_NOT_FOUND', status: 404 });
+      }
+      if (nextStatus === 'ACTIVE' && String(workspaces[0].lifecycleState || '').toUpperCase() !== 'ACTIVE') {
+        throw Object.assign(new Error('Workspace is not active'), { code: 'WORKSPACE_INACTIVE', status: 409 });
+      }
+
+      await connection.query(
+        `UPDATE enterprise_memberships
+         SET roles = ?, status = ?, workspaceId = ?, revision = revision + 1, updated_at = CURRENT_TIMESTAMP
+         WHERE tenantId = ? AND principalId = ?`,
+        [JSON.stringify(nextRoles), nextStatus, nextWorkspaceId, tenantId, principalId]
+      );
+
+      if (current.workspaceId && current.workspaceId !== nextWorkspaceId) {
+        await connection.query(
+          'DELETE FROM enterprise_workspace_memberships WHERE tenantId = ? AND workspaceId = ? AND principalId = ?',
+          [tenantId, current.workspaceId, principalId]
+        );
+      }
+      const workspaceMembershipId = workspaceMembershipDocumentId(nextWorkspaceId, principalId);
+      await connection.query(
+        `INSERT INTO enterprise_workspace_memberships (id, tenantId, workspaceId, principalId, status)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP`,
+        [workspaceMembershipId, tenantId, nextWorkspaceId, principalId, nextStatus]
+      );
+
+      if (current.status === 'INVITED' && nextStatus === 'ACTIVE') {
+        await connection.query(
+          `UPDATE enterprise_membership_invitations
+           SET invitationState = 'ACCEPTED', acceptedAt = COALESCE(acceptedAt, NOW(6)), updated_at = NOW(6)
+           WHERE membershipId = ? AND invitationState = 'PENDING'`,
+          [current.id]
+        );
+      } else if (nextStatus === 'REMOVED') {
+        await connection.query(
+          `UPDATE enterprise_membership_invitations
+           SET invitationState = 'REVOKED', revokedAt = COALESCE(revokedAt, NOW(6)), updated_at = NOW(6)
+           WHERE membershipId = ? AND invitationState = 'PENDING'`,
+          [current.id]
+        );
+      }
+
+      const [resultRows] = await connection.query(
+        `SELECT m.*, i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+                i.expiresAt AS invitationExpiresAt, i.invitationState,
+                COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+                i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+         FROM enterprise_memberships m
+         LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+         LEFT JOIN notification_outbox o ON o.id = i.notificationId
+         WHERE m.tenantId = ? AND m.principalId = ?`,
+        [tenantId, principalId]
+      );
+      const result = validateMembership(resultRows[0], principalId);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 
   async removeTenantMembership({ tenantId, principalId }) {
@@ -749,6 +1233,24 @@ class MySqlTenantRegistry {
     const conn = await this.pool.getConnection();
     try {
       await conn.beginTransaction();
+      const [invitations] = await conn.query(
+        `SELECT i.notificationId
+         FROM enterprise_membership_invitations i
+         JOIN enterprise_memberships m ON m.id = i.membershipId
+         WHERE m.tenantId = ? AND m.principalId = ?
+         FOR UPDATE`,
+        [tenantId, principalId]
+      );
+      for (const invitation of invitations) {
+        if (!invitation.notificationId) continue;
+        await conn.query(
+          `UPDATE notification_outbox
+           SET state = 'CANCELLED', next_attempt_at = 0, lease_owner = NULL, lease_expires_at = 0,
+               last_error = 'Invitation membership was removed', updated_at = NOW(6)
+           WHERE id = ? AND provider_accepted = 0 AND state IN ('NOTIFICATION_QUEUED', 'RETRYING', 'DELIVERY_ATTEMPTED')`,
+          [invitation.notificationId]
+        );
+      }
       await conn.query('DELETE FROM enterprise_memberships WHERE tenantId = ? AND principalId = ?', [tenantId, principalId]);
       await conn.query('DELETE FROM enterprise_workspace_memberships WHERE tenantId = ? AND principalId = ?', [tenantId, principalId]);
       await conn.query('DELETE FROM enterprise_team_members WHERE tenantId = ? AND principalId = ?', [tenantId, principalId]);
@@ -818,7 +1320,7 @@ class MySqlTenantRegistry {
     workspaceId = assertUuid(workspaceId, 'Workspace identifier');
     const cleanName = compact(name, 120);
     if (cleanName.length < 2) throw Object.assign(new Error('Workspace name is invalid'), { code: 'INVALID_WORKSPACE', status: 400 });
-    
+
     await this.getWorkspaceAnyState(workspaceId, tenantId);
     await this.pool.query('UPDATE enterprise_workspaces SET name = ? WHERE id = ? AND tenantId = ?', [cleanName, workspaceId, tenantId]);
     return this.getWorkspaceAnyState(workspaceId, tenantId);
@@ -984,28 +1486,72 @@ class MySqlTenantRegistry {
     return rows;
   }
 
-  async purgeTenantRecords(tenantId) {
+  async purgeTenantRecords(tenantId, { requestId = null } = {}) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
     const conn = await this.pool.getConnection();
     try {
       await conn.beginTransaction();
+      const [tenantRows] = await conn.query(
+        'SELECT lifecycleState FROM enterprise_tenants WHERE id = ? FOR UPDATE',
+        [tenantId]
+      );
+      if (!tenantRows.length) {
+        await conn.commit();
+        return { success: true, alreadyPurged: true };
+      }
+      if (String(tenantRows[0].lifecycleState).toUpperCase() !== 'DELETING') {
+        throw Object.assign(new Error('Only a tenant in DELETING state can be hard-purged'), {
+          code: 'TENANT_PURGE_STATE_INVALID', status: 409,
+        });
+      }
+
+      // Lock and cancel undelivered invitation notifications before removing
+      // their relational bindings. The notification rows are deleted below in
+      // the same transaction, so no worker can deliver after a committed purge.
+      await conn.query(
+        `UPDATE notification_outbox o
+         JOIN enterprise_membership_invitations i ON i.notificationId = o.id
+         SET o.state = 'CANCELLED', o.next_attempt_at = 0, o.lease_owner = NULL,
+             o.lease_expires_at = 0, o.last_error = 'Tenant was purged', o.updated_at = NOW(6)
+         WHERE i.tenantId = ? AND o.provider_accepted = 0
+           AND o.state IN ('NOTIFICATION_QUEUED', 'RETRYING', 'DELIVERY_ATTEMPTED')`,
+        [tenantId]
+      );
+
+      // Delete dependants before workspace/tenant owners. This ordering is
+      // compatible with migration 006's tenant+workspace AI foreign key.
+      await conn.query('DELETE FROM enterprise_membership_invitations WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_team_members WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_teams WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_workspace_memberships WHERE tenantId = ?', [tenantId]);
-      await conn.query('DELETE FROM enterprise_workspaces WHERE tenantId = ?', [tenantId]);
-      await conn.query('DELETE FROM enterprise_memberships WHERE tenantId = ?', [tenantId]);
-      await conn.query('DELETE FROM enterprise_tenant_configurations WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_resources WHERE tenantId = ?', [tenantId]);
-      await conn.query('DELETE FROM enterprise_audit_events WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_ai_usage WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_service_accounts WHERE tenantId = ?', [tenantId]);
       await conn.query('DELETE FROM enterprise_support_grants WHERE tenantId = ?', [tenantId]);
+      await conn.query('DELETE FROM enterprise_outbox WHERE tenantId = ?', [tenantId]);
+      await conn.query('DELETE FROM notification_outbox WHERE tenant_id = ?', [tenantId]);
+      await conn.query('DELETE FROM enterprise_audit_events WHERE tenantId = ?', [tenantId]);
+      await conn.query('DELETE FROM enterprise_memberships WHERE tenantId = ?', [tenantId]);
+      await conn.query('DELETE FROM enterprise_principal_tenants WHERE personalTenantId = ?', [tenantId]);
+      await conn.query('DELETE FROM enterprise_tenant_configurations WHERE tenantId = ?', [tenantId]);
+      await conn.query('DELETE FROM enterprise_workspaces WHERE tenantId = ?', [tenantId]);
+
+      // Retain one non-tenant-owned platform audit record for incident and
+      // deletion-accountability purposes; never recreate a tenant audit row
+      // after the tenant partition has been erased.
+      await conn.query(
+        `INSERT INTO security_audit_logs
+         (id, actor_uid, action, category, severity, target_type, target_id, metadata, request_id)
+         VALUES (?, 'system:tenant-gc', 'PLATFORM_TENANT_HARD_DELETED', 'enterprise.tenancy',
+                 'HIGH', 'TENANT', ?, ?, ?)`,
+        [crypto.randomUUID(), tenantId, JSON.stringify({ tenantId, purgeMode: 'hard-delete' }), requestId ? String(requestId).slice(0, 128) : null]
+      );
       await conn.query('DELETE FROM enterprise_tenants WHERE id = ?', [tenantId]);
       await conn.commit();
-      return { success: true };
+      return { success: true, alreadyPurged: false };
     } catch (err) {
-      await conn.rollback();
+      await conn.rollback().catch(() => {});
       throw err;
     } finally {
       conn.release();

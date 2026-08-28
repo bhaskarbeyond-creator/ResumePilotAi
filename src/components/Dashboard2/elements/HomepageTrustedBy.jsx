@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getTrustedBy } from '../../../firestore/dbOperations';
+import { getTrustedBy } from '../../../services/api/platform';
 import { useTranslation } from 'react-i18next';
 import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaFacebook, FaCheck, FaTimes, FaSpinner, FaKey, FaUserLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const FacebookAuthSettings = () => {
@@ -16,7 +16,7 @@ const FacebookAuthSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.facebook) {
                 const fb = settings.facebook;
                 const hasAppId = !!(fb.facebookAppId && fb.facebookAppId.trim());

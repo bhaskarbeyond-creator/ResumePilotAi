@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.use(async (req, res, next) => {
   try {
-    if (!await enterpriseFeatureEnabledAsync(req.app.get('db'))) {
+    if (!await enterpriseFeatureEnabledAsync()) {
       return res.status(404).json({ error: { code: 'ENTERPRISE_DISABLED', message: 'Enterprise tenancy is disabled for this deployment.', configurationState: 'DISABLED', requestId: res.locals?.requestId } });
     }
     return next();

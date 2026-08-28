@@ -211,7 +211,7 @@
     "unlimitedResumes": "Ótakmarkaðir ferilskrár",
     "nonRecuring": "Ekki endurtekin greiðsla.",
     "upgradeAndDownload": "Uppfæra og sækja",
-    "payment1": "Fáðu draumastarfið þitt",
+    "payment1": "Búðu til ferilskrána",
     "payment2": "Greiðsla í gegnum trausta greiðsluþjónustu",
     "payment3": "SSL öruggt / 256-bita SSL örugg úttekt",
     "payment4": "7 daga endurgreiðsluréttur",
@@ -243,7 +243,7 @@
     "featuresNav": "Eiginleikar",
     "resumeBuilderFeatures": "Eiginleikar ferilskrágerðarmanns",
     "featureTagline": "Allt sem þú þarft fyrir fullkomna ferilskrá",
-    "userCount": "50K+ notendur",
+    "userCount": "Yfirlit eiginleika",
     "exploreFeatures": "Skoða alla eiginleika",
     "freeToTry": "Ókeypis að prófa",
     "startBuilding": "Byrja að byggja",
@@ -345,12 +345,12 @@
       "sentence5": "Náðu árangri í viðtölum með gervigreindar undirbúningsverkfærum"
     },
     "badge": "Gervigreindar-knúinn ferilskrábyggingarmaður",
-    "description": "Búðu til glæsilegar, ATS-vænar ferilskrár og fylgibréf með gervigreindar aðstoð. Veldu úr faglegum sniðmátum, fáðu endurgjöf í rauntíma, og landaðu draumastarfi þínu hraðar.",
+    "description": "Búðu til og breyttu ferilskrám og fylgibréfum með leiðbeindum verkfærum, stillanlegum sniðmátum, lifandi forskoðun og valfrjálsri gervigreindaraðstoð.",
     "createResume": "Búa til ferilskrá",
     "createCoverLetter": "Búa til fylgibréf",
     "stats": {
-      "users": "5.000+ ánægðir notendur",
-      "rating": "4.9/5"
+      "users": "Leiðbeind ferilskrárverkfæri",
+      "rating": "Lifandi forskoðun"
     },
     "features": {
       "freeToStart": "Ókeypis að byrja",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "SANNUÐ NIÐURSTÖÐUR • 50 ÞÚSUND+ FAGMENN TREYSTIR",
+    "badge": "LEIÐBEIND GERÐ FERILSKRÁR",
     "title": {
       "part1": "Umbreyttu",
       "part2": "ferðalagi þínu",
       "part3": "í starfsferlinum"
     },
-    "description": "Vertu með í þúsundum fagaðila sem hafa hraðað feril sinn með gervigreindar-knúna ferilskráagerðarmanni okkar. Vertu áberandi, fáðu viðtöl og tryggðu þér draumastarfið hraðar en nokkru sinni fyrr.",
+    "description": "Notaðu leiðbeinda hluta, stillanleg útlit, forskoðun og valfrjálsa gervigreindaraðstoð til að undirbúa og yfirfara ferilskrá.",
     "benefits": [
       {
         "title": "Fáðu fleiri atvinnuviðtöl",
         "description": "Okkar ATS-bjartsýnu sniðmát og gervigreindar-knúin innihaldstillögur hjálpa ferilskránni þinni að komast framhjá sjálfvirkum skimunarkerfum og í hendur ráðningastjóra.",
-        "detail": "Vertu með í þúsundum fagaðila sem hafa aukið viðtölsprósentu sína um 3x með því að nota sannað kerfi okkar."
+        "detail": "Yfirfarðu og lagaðu hverja tillögu áður en hún er notuð í umsókn."
       },
       {
         "title": "Skerðu þig úr keppninni",
@@ -396,24 +396,6 @@
         "title": "Byggðu sjálfstraust í atvinnuleitinni",
         "description": "Kynntu þig frá þinni bestu hlið með fáðu, villulausu ferilskrá sem endurspeglar þitt sanna potential og faglegar afreksverk.",
         "detail": "Finndu fyrir öryggi með því að vita að umsóknargögnin þín eru fagmannlega útfærð og samkvæmt iðnaðarstöðlum."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Ánægðir notendur"
-      },
-      {
-        "number": "98.7%",
-        "label": "Árangursprósenta"
-      },
-      {
-        "number": "50+",
-        "label": "Sniðmát"
-      },
-      {
-        "number": "24 klst.",
-        "label": "Meðaltími"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Tilbúinn til að landa draumastarfinu þínu?",
-      "description": "Sláðu þig saman við yfir 50.000 fagfólk sem hefur breytt ferli sínum. Byrjaðu að byggja upp vinnandi ferilskrána þína í dag.",
+      "title": "Tilbúin(n) að búa til ferilskrána?",
+      "description": "Búðu til, yfirfarðu og flyttu út ferilskrána með leiðbeinda ritlinum.",
       "button": "Byrjaðu þína velgengnisögu",
       "noCredit": "✨ Engin kreditkort nauðsynleg • Ókeypis sniðmát innifalin"
     }
@@ -440,7 +422,7 @@
       "part2": "notendur",
       "part3": "segja"
     },
-    "description": "Sláðu þig saman við þúsundir ánægðra atvinnuleitenda sem hafa landað draumastarfi sínu með ferilskrárbyggingarmanninum okkar með gervigreind.",
+    "description": "Lestu samþykktar umsagnir viðskiptavina sem birtar eru í gegnum umsagnarferli kerfisins.",
     "navigation": {
       "previous": "Fyrri",
       "next": "Næsta",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Þarftu ennþá hjálp?",
-      "description": "Stuðningsteymi okkar er til staðar allan sólarhringinn til að hjálpa þér að ná árangri",
+      "description": "Notaðu tengiliðaformið fyrir spurningar um reikning eða vöru. Svartími er ekki tryggður.",
       "contactButton": "Hafa samband við stuðning",
-      "docsButton": "Skoða skjöl"
+      "docsButton": "Starfsferilsgreinar"
     },
     "cta": {
       "badge": "Tilbúinn til að búa til ferilskrána þína?",
-      "title": "Umbreyttu ferli þínum með gervigreindar-knúnum ferilskrám",
-      "description": "Vertu með í þúsundum fagaðila sem hafa búið til glæsilegar ferilskrár á nokkrum sekúndum. Byrjaðu ferilferðalagið þitt í dag með snjalla hönnunar vettvangi okkar.",
+      "title": "Búðu til og yfirfarðu ferilskrána",
+      "description": "Skoðaðu algengar spurningar eða byrjaðu ferilskrá í leiðbeinda ritlinum.",
       "button": "Byrjaðu að búa til ókeypis",
-      "freeCredits": "3 ókeypis einingar • Engin kreditkort nauðsynleg",
-      "support": "Stuðningur 24/7",
-      "secure": "Öruggt og persónulegt",
-      "instant": "Augnabliks niðurstöður"
+      "freeCredits": "",
+      "support": "Drög tengd reikningi",
+      "secure": "Yfirfara fyrir útflutning",
+      "instant": "Valfrjáls gervigreindaraðstoð"
     },
     "trustIndicators": {
-      "secure": "Öruggt og persónulegt",
-      "instant": "Augnabliks niðurstöður",
-      "support": "Stuðningur 24/7"
+      "secure": "Yfirfara fyrir útflutning",
+      "instant": "Valfrjáls gervigreindaraðstoð",
+      "support": "Drög tengd reikningi"
     },
     "q1": {
-      "question": "Hvernig byrja ég að búa til ferilskrá með gervigreind?",
-      "answer": "Nýskráðu þig ókeypis, sláðu inn upplýsingar og sjáðu gervigreindina búa til glæsilega ferilskrá á nokkrum sekúndum."
+      "question": "Hvernig byrja ég í ferilskrárritlinum?",
+      "answer": "Stofnaðu reikning, opnaðu ritilinn, sláðu inn upplýsingar sem þú hefur staðfest, veldu útlit og yfirfarðu forskoðun áður en þú vistar eða flytur út. Gervigreindaraðstoð er valfrjáls og gæti verið óvirk."
     },
     "q2": {
-      "question": "Hversu hratt er ferlið?",
-      "answer": "Gervigreindin okkar býr til margar ferilskrár á minna en 5 mínútum!"
+      "question": "Tryggir gervigreindaraðstoð viðtal eða starf?",
+      "answer": "Nei. Úttak gervigreindar getur verið ófullkomið eða rangt og tryggir hvorki ATS-samþykki, viðtal né starf. Yfirfarðu og breyttu öllum tillögum."
     },
     "q3": {
-      "question": "Hvað er innifalið í ókeypis áætluninni?",
-      "answer": "Nýir notendur fá ókeypis inneignir til að hlaða niður ferilskrám á PDF og Word sniði."
+      "question": "Hvar sé ég núverandi takmörk og verð áætlana?",
+      "answer": "Verðsíðan sýnir núverandi áætlanir, réttindi, skatta og greiðslumöguleika frá þjóninum. Framboð getur verið mismunandi eftir reikningi og stillingum."
     },
     "q4": {
       "question": "Get ég sérsniðið ferilskrána?",
-      "answer": "Já! Þú getur auðveldlega breytt stílum, litum og útliti."
+      "answer": "Já. Þú getur breytt hlutum, valið tiltækt útlit og yfirfarið forskoðunina. Tillögur gervigreindar eru breytanlegar og þarf að sannreyna."
     },
     "q5": {
-      "question": "Hvaða skráarsnið bjóðið þið upp á?",
-      "answer": "Allar ferilskrár eru í boði í hágæða PDF og Word sniði."
+      "question": "Hvaða útflutningssnið eru í boði?",
+      "answer": "PDF- og DOCX-útflutningur er í boði þegar viðeigandi útflutningsleið og reikningsréttindi eru tiltæk. Yfirfarðu alltaf skrána áður en hún er send."
     },
     "q6": {
-      "question": "Hvernig virkar inneignarkerfið?",
-      "answer": "Hver kynning notar 1 inneign. Inneignir renna aldrei út."
+      "question": "Hvernig eru drög og reikningsgögn geymd?",
+      "answer": "Firebase Authentication sér um auðkenni. Drög og önnur forritsgögn eru geymd í gegnum API sem styðst við MariaDB. Skoðaðu persónuverndarstefnu og stjórntæki fyrir útflutning eða eyðingu reiknings."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Fylgstu með",
       "securePayments": "Öruggar greiðslur"
     },
-    "aboutText": "Við hjálpum atvinnuleitendum að búa til faglegar ferilskrár á nokkrum mínútum. Verkefni okkar er að styrkja einstaklinga til að landa draumastarfi sínu með hágæða, gervigreindar-smíðuðum umsóknargögnum.",
+    "aboutText": "ResumePilot AI býður verkfæri til að búa til, yfirfara og flytja út ferilskrár og tengd starfsskjöl.",
     "links": {
       "pricing": "Verðlagning",
       "contact": "Hafa samband"
@@ -1146,8 +1128,8 @@
       "clickToView": "Smelltu til að skoða í fullri stærð",
       "changeTemplate": "Breyta Sniðmáti",
       "viewFullSize": "Skoða Full Stærð",
-      "trustedBy": "Treyst af yfir 50K fagfólki",
-      "joinSuccess": "Vertu hluti af velgengnissögum",
+      "trustedBy": "Forskoða fyrir útflutning",
+      "joinSuccess": "Yfirfara efni og snið",
       "resumePdf": "CV.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Útgáfudagur",
         "placeholder": "t.d. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "AI Vottunarráðleggingar",
-      "recommend": "Mæla með vottunum (AI)",
-      "tooltip": "Búa til AI vottunarráðleggingar sniðnar að þínum prófíl",
-      "generating": "Greinir og býr til...",
-      "tailoredSubtitle": "Viðurkenndar vottanir sniðnar fyrir {{role}}",
-      "genericSubtitle": "Helstu viðurkenndu vottanir byggðar á færni þinni og ferli",
-      "promptTitle": "Styrktu ferilskrána þína með staðfestum vottunum",
-      "promptDescRole": "Leyfðu AI að greina reynslu þína sem {{role}} og mæla með eftirsóttustu vottununum.",
-      "promptDescGeneric": "Búðu til viðurkenndar faggildingar sem henta þínu sviði til að hækka ATS einkunn.",
-      "generateNow": "Búa til AI tillögur núna",
-      "refresh": "Endurnýja tillögur",
-      "getRecommendations": "Fá tillögur",
-      "addAll": "Bæta við öllum tillögum",
-      "added": "Bætt við",
-      "addedBadge": "Bætt við",
-      "add": "Bæta við",
-      "mandatoryBadge": "Iðnaðarstaðall",
-      "recommendedBadge": "Mælt með"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Finndu draumastarfið þitt í dag",
+        "sentence1": "Skoða núverandi atvinnuauglýsingar",
         "sentence2": "Tengstu bestu vinnuveitendum",
         "sentence3": "Fremja feril þinn",
         "sentence4": "Uppgötvaðu fjarvinnu tækifæri",
@@ -1935,83 +1897,40 @@
       "resources": "Auðlindir",
       "resourcesDesc": "Starfsráðgjöf og ráð",
       "stats": {
-        "jobs": "10.000+ virk störf",
-        "rating": "4.8/5 Einkunn"
+        "jobs": "Núverandi atvinnuauglýsingar",
+        "rating": "Staðfestar starfsupplýsingar"
       },
       "features": {
         "freeToApply": "Frítt að sækja um",
-        "verifiedEmployers": "Staðfestir vinnuveitendur"
+        "verifiedEmployers": "Yfirfarnir vinnuveitendur"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Helstu vinnuveitendur",
-      "title": "Vertu með í leiðandi fyrirtækjum",
-      "description": "Uppgötvaðu tækifæri hjá fyrirtækjum í heimsklassa sem eru virk í ráðningum. Allt frá nýsköpunarfyrirtækjum til Fortune 500, finndu hið fullkomna starf fyrir þig.",
+      "badge": "Valdir vinnuveitendur",
+      "title": "Skoða vinnuveitendasnið",
+      "description": "Skoðaðu valin vinnuveitendasnið með virkum auglýsingum. Opnaðu atvinnugáttina til að skoða núverandi störf og umsóknarupplýsingar.",
       "featured": "Valin",
       "viewAll": "Skoða öll fyrirtæki",
       "stats": {
-        "companies": "Samstarfsfyrirtæki",
+        "companies": "Valin fyrirtæki",
         "jobs": "Virk störf",
         "hires": "Árangursríkar ráðningar"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Hvernig það virkar",
-      "title": "Fáðu draumastarfið þitt í",
-      "titleHighlight": "4 einföldum skrefum",
-      "description": "Straumlínulagað ferli okkar gerir atvinnuleit áreynslulausa. Frá uppgötvun til ráðningar leiðbeinum við þér á hverju skrefi til að tryggja að þú finnir hið fullkomna tækifæri.",
-      "featuresTitle": "Hvers vegna að velja okkar vettvang?",
-      "featuresDescription": "Við bjóðum upp á framsækin verkfæri og eiginleika til að gera atvinnuleit þína skilvirkari og árangursríkari.",
-      "steps": {
-        "0": {
-          "title": "Leita og uppgötva",
-          "description": "Skoðaðu þúsundir atvinnutækifæra frá bestu fyrirtækjum. Notaðu háþróaða síur okkar til að finna hið fullkomna starf fyrir færni þína og óskir."
-        },
-        "1": {
-          "title": "Búa til prófíl",
-          "description": "Byggðu upp fagmannlegan prófíl þinn með ferilskrársmíðaranum okkar. Sýndu færni þína, reynslu og árangur til að skera þig úr."
-        },
-        "2": {
-          "title": "Sækja um samstundis",
-          "description": "Sæktu um mörg störf með einum smelli. Snjallt umsóknarkerfið okkar aðlagar prófílinn þinn sjálfkrafa að hverri stöðu."
-        },
-        "3": {
-          "title": "Fá ráðningu",
-          "description": "Tengstu ráðningarstjórum, skipuleggðu viðtöl og fáðu draumastarfið þitt. Við styðjum þig í gegnum allt ferlið."
-        }
       },
-      "features": {
-        "0": {
-          "title": "AI-drifin samsvörun",
-          "description": "Greindur reiknirit okkar passar þig við viðeigandi tækifæri"
-        },
-        "1": {
-          "title": "Hagræðing ferilskrár",
-          "description": "Hagræddu ferilskrána þína sjálfkrafa fyrir hverja umsókn"
-        },
-        "2": {
-          "title": "Staðfest fyrirtæki",
-          "description": "Allir vinnuveitendur eru staðfestir fyrir áreiðanleika og gæði"
-        }
-      },
-      "cta": {
-        "title": "Tilbúin(n) að hefja ferð þína?",
-        "description": "Vertu með í þúsundum sérfræðinga sem hafa fundið draumastörf sín í gegnum vettvang okkar. Næsta tækifæri er aðeins einum smelli í burtu.",
-        "searchButton": "Byrja atvinnuleit",
-        "profileButton": "Búa til prófíl"
-      }
+      "empty": "Engir vinnuveitendur eru valdir núna.",
+      "unavailable": "Valdir vinnuveitendur eru tímabundið óaðgengilegir.",
+      "evidenceReviewed": "Gögn yfirfarin"
     },
     "LandingJobsFeatured": {
       "badge": "Valin störf",
-      "title": "Uppgötvaðu þitt næsta",
-      "titleHighlight": "Draum tækifæri",
+      "title": "Skoða valdar",
+      "titleHighlight": "Atvinnuauglýsingar",
       "description": "Kannaðu handvalin tækifæri frá bestu fyrirtækjum. Þessar valdar stöður bjóða upp á einstakan starfsþróun, samkeppnishæf laun og ótrúlegt vinnuumhverfi.",
-      "statsTitle": "Vertu með í þúsundum farsælla sérfræðinga",
-      "statsDescription": "Vettvangur okkar hefur hjálpað ótal sérfræðingum að finna draumastörf sín hjá fremstu fyrirtækjum um allan heim.",
+      "statsTitle": "Birt yfirlit kerfis",
+      "statsDescription": "Þessi birtingargildi eru útgáfustýrð og tengd gögnum sem stjórnandi kerfisins hefur yfirfarið.",
       "stats": {
         "jobs": "Valin störf",
         "success": "Árangurshlutfall",
-        "companies": "Helstu fyrirtæki"
+        "companies": "Valin fyrirtæki"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Sækja um núna"
         }
       },
-      "viewAll": "Skoða öll störf"
+      "viewAll": "Skoða öll störf",
+      "empty": "Engin störf eru valin núna.",
+      "evidenceReviewed": "Gögn yfirfarin"
     },
     "MainJobListings": {
       "jobSingular": "starf",

@@ -2,33 +2,37 @@ import { useEffect, useState } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FiBriefcase, FiTrendingUp, FiUsers, FiMapPin } from 'react-icons/fi';
 import { BiBuilding } from 'react-icons/bi';
-import { getFeaturedCompanies, getFrontendStats } from '../../firestore/dbOperations';
+import { getFeaturedCompanies, getFrontendStats } from '../../services/api/platform';
 import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 
 const LandingJobTopCompanies = ({ t }) => {
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [companiesUnavailable, setCompaniesUnavailable] = useState(false);
     const [frontendStats, setFrontendStats] = useState({});
 
     useEffect(() => {
         const fetchFeaturedCompanies = async () => {
             try {
                 setLoading(true);
-                // Fetch featured companies and stats from Firestore
-                const [featuredCompanies, stats] = await Promise.all([
+                // Operational company records and audited marketing claims have
+                // independent failure domains; one must not fabricate or suppress the other.
+                const [companiesResult, marketingResult] = await Promise.allSettled([
                     getFeaturedCompanies(8),
                     getFrontendStats()
                 ]);
-                setFrontendStats(stats);
+                const featuredCompanies = companiesResult.status === 'fulfilled' ? companiesResult.value : [];
+                setCompaniesUnavailable(companiesResult.status === 'rejected');
+                setFrontendStats(marketingResult.status === 'fulfilled' ? marketingResult.value : {});
 
                 if (featuredCompanies && featuredCompanies.length > 0) {
-                    // Transform Firestore data to match component expectations
+                    // Normalize API records to the component view model
                     const transformedCompanies = featuredCompanies.map(company => ({
                         id: company.id,
-                        name: company.name || 'N/A',
+                        name: company.name || 'Employer name unavailable',
                         logo: sanitizeImageUrl(company.companyImage),
-                        industry: company.industry || 'Various',
-                        location: company.location || 'Global',
+                        industry: company.industry || 'Industry not provided',
+                        location: company.location || 'Location not provided',
                         featured: true // All fetched companies are featured
                     }));
 
@@ -38,6 +42,7 @@ const LandingJobTopCompanies = ({ t }) => {
                 }
             } catch (error) {
                 console.error('Error fetching featured companies:', error);
+                setCompaniesUnavailable(true);
                 setCompanies([]);
             } finally {
                 setLoading(false);
@@ -50,9 +55,11 @@ const LandingJobTopCompanies = ({ t }) => {
     // Removed company click functionality as requested
 
     const handleViewAllCompanies = () => {
-        // Navigate to all companies page
         window.location.href = '/jobs/portal';
     };
+    const evidenceUrl = sanitizeImageUrl(frontendStats.sourceUrl);
+    const evidenceDate = new Date(frontendStats.verifiedAt);
+    const hasPublishedEvidence = Boolean(evidenceUrl && Number.isFinite(evidenceDate.getTime()));
 
     return (
         <section className="py-16 sm:py-20 md:py-24 bg-gray-50/50">
@@ -61,18 +68,18 @@ const LandingJobTopCompanies = ({ t }) => {
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8 text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 transition-all duration-300 shadow-sm backdrop-blur-sm">
                         <BiBuilding className="w-3 h-3 sm:w-4 sm:h-4" />
-                        {t('JobsUpdate.LandingJobTopCompanies.badge', 'Top Employers')}
+                        {t('JobsUpdate.LandingJobTopCompanies.badge', 'Featured Employers')}
 
                     </div>
 
                     {/* Title */}
                     <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
-                        {t('JobsUpdate.LandingJobTopCompanies.title', 'Join Leading Companies')}
+                        {t('JobsUpdate.LandingJobTopCompanies.title', 'Browse Employer Profiles')}
                     </h2>
 
                     {/* Description */}
                     <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed">
-                        {t('JobsUpdate.LandingJobTopCompanies.description', 'Discover opportunities at world-class companies that are actively hiring. From startups to Fortune 500, find your perfect match.')}
+                        {t('JobsUpdate.LandingJobTopCompanies.description', 'Browse featured employer profiles with active listings. Open the jobs portal to review current roles and application details.')}
                     </p>
                 </div>
 
@@ -94,7 +101,7 @@ const LandingJobTopCompanies = ({ t }) => {
                             </div>
                         ))
                     ) : companies.length === 0 ? (
-                        <div className="col-span-full rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">Featured employers are currently unavailable.</div>
+                        <div className="col-span-full rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">{companiesUnavailable ? t('JobsUpdate.LandingJobTopCompanies.unavailable', 'Featured employers are temporarily unavailable.') : t('JobsUpdate.LandingJobTopCompanies.empty', 'No employers are currently featured.')}</div>
                     ) : (
                         companies.slice(0, 8).map((company) => (
                             <div
@@ -144,14 +151,19 @@ const LandingJobTopCompanies = ({ t }) => {
                     )}
                 </div>
 
-                {/* Stats Section */}
-                <div className="bg-white/80 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-lg border border-blue-100/50 mb-8 sm:mb-12">
+                {/* Evidence-backed claims are omitted when their authoritative revision is unavailable. */}
+                {(hasPublishedEvidence && frontendStats.partnerCompanies && frontendStats.activeJobs && frontendStats.successfulHires) && <div className="bg-white/80 backdrop-blur-sm p-6 sm:p-8 rounded-2xl shadow-lg border border-blue-100/50 mb-8 sm:mb-12">
+                    <div className="mb-6 text-center">
+                        <a href={evidenceUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-700 underline">
+                            {t('JobsUpdate.LandingJobTopCompanies.evidenceReviewed', 'Evidence reviewed')} {evidenceDate.toLocaleDateString()}
+                        </a>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center">
                         <div className="group">
                             <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-3 group-hover:bg-blue-200 transition-colors duration-300">
                                 <BiBuilding className="w-6 h-6 text-blue-600" />
                             </div>
-                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.partnerCompanies || '500+'}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.partnerCompanies}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobTopCompanies.stats.companies', 'Partner Companies')}</div>
                         </div>
 
@@ -159,7 +171,7 @@ const LandingJobTopCompanies = ({ t }) => {
                             <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-3 group-hover:bg-green-200 transition-colors duration-300">
                                 <FiBriefcase className="w-6 h-6 text-green-600" />
                             </div>
-                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.activeJobs || '10,000+'}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.activeJobs}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobTopCompanies.stats.jobs', 'Active Jobs')}</div>
                         </div>
 
@@ -167,11 +179,11 @@ const LandingJobTopCompanies = ({ t }) => {
                             <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-3 group-hover:bg-purple-200 transition-colors duration-300">
                                 <FiUsers className="w-6 h-6 text-purple-600" />
                             </div>
-                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.successfulHires || '50,000+'}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.successfulHires}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobTopCompanies.stats.hires', 'Successful Hires')}</div>
                         </div>
                     </div>
-                </div>
+                </div>}
 
                 {/* CTA Button */}
                 <div className="text-center">

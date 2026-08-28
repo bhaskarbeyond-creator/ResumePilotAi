@@ -25,9 +25,7 @@ run('ESLint', 'npm', ['run', 'lint']);
 run('Production dependency audit', 'npm', ['run', 'audit:production']);
 run('Full dependency audit', 'npm', ['run', 'audit:all']);
 
-const java = spawnSync('java', ['-version'], { stdio: 'ignore' });
-if (java.status === 0) run('Firebase rules emulators', 'npm', ['run', 'test:firestore']);
-else blocked('Firebase rules emulators', 'Java runtime is unavailable.');
+run('Zero-Firestore static and outage certification', 'npm', ['run', 'certify:zero-firestore']);
 
 const chromiumCandidates = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome'].filter(Boolean);
 if (!chromiumCandidates.some(candidate => fs.existsSync(candidate))) blocked('Browser and live PDF journeys', 'No Chromium executable is installed. Static render tests still ran above.');

@@ -159,12 +159,10 @@ test('the credential files from the incident are absent from the working tree', 
   }
 });
 
-test('deployment scripts source Cloudflare credentials from the environment', () => {
+test('legacy scratch deployment scripts stay retired', () => {
   for (const script of ['scratch/deploy.py', 'scratch/fast_deploy_frontend.py']) {
-    const source = fs.readFileSync(path.join(root, script), 'utf8');
-    assert.ok(!/cfut_[A-Za-z0-9_-]{20,}/.test(source), `${script} must not hardcode a Cloudflare token`);
-    assert.ok(!/CLOUDFLARE_ZONE_ID\s*=\s*["'][0-9a-f]{32}["']/.test(source), `${script} must not hardcode a zone id`);
-    assert.match(source, /os\.environ\.get\("CLOUDFLARE_API_TOKEN"/, `${script} must read the token from the environment`);
-    assert.match(source, /raise SystemExit/, `${script} must refuse to run without credentials rather than proceeding`);
+    assert.equal(fs.existsSync(path.join(root, script)), false, `${script} must not be restored as a production interface`);
   }
+  const releaseWorkflow = fs.readFileSync(path.join(root, 'docs', 'SAFE_PRODUCTION_WORKFLOW.md'), 'utf8');
+  assert.match(releaseWorkflow, /restricted|forced-command|approved/i);
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addReview, getAllReviews, deleteReview, addGlobalRating } from '../../../firestore/dbOperations';
+import { addReview, getAllReviews, deleteReview, addGlobalRating } from '../../../services/api/platform';
 import { FaStar, FaUser, FaBriefcase, FaImage, FaTrash, FaPlus, FaCheck, FaTimes, FaQuoteLeft, FaStarHalfAlt } from 'react-icons/fa';
 
 const Reviews = () => {
@@ -40,16 +40,17 @@ const Reviews = () => {
     const handleDelete = async () => {
         if (!reviewToDelete) return;
         setIsLoading(true);
-        const result = await deleteReview(reviewToDelete.id, Number(reviewToDelete.revision || 0));
-        if (result.success) {
+        setErrorMessage('');
+        try {
+            await deleteReview(reviewToDelete.id, Number(reviewToDelete.revision || 0));
             setReviewToDelete(null);
             await loadReviews();
             setSuccessMessage('Review deleted and audited.');
-        } else {
-            setErrorMessage(result.error || 'Unable to delete review.');
-            if (result.code === 'ADMIN_TARGET_CHANGED') { setReviewToDelete(null); await loadReviews(); }
+        } catch (error) {
+            setErrorMessage(error.message || 'Unable to delete review.');
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     const handleChange = (event, inputName) => {
@@ -79,13 +80,17 @@ const Reviews = () => {
 
     const handleReviewSubmit = async () => {
         setIsLoading(true);
-        const result = await addReview(review);
-        if (result.success) {
+        setErrorMessage('');
+        try {
+            await addReview(review);
             await loadReviews();
             setReview({ imageUrl: '', name: '', occupation: '', review: '', rating: '', ratingOf: 0 });
             setSuccessMessage('Review added, published, and audited.');
-        } else setErrorMessage(result.error || 'Unable to add review.');
-        setIsLoading(false);
+        } catch (error) {
+            setErrorMessage(error.message || 'Unable to add review.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleRatingSubmit = async () => {
@@ -95,13 +100,17 @@ const Reviews = () => {
             return;
         }
         setIsLoading(true);
-        const result = await addGlobalRating(rating);
-        if (result.success) {
+        setErrorMessage('');
+        try {
+            await addGlobalRating(rating);
             setReview(current => ({ ...current, ratingOf: 0 }));
             setConfirmRating(false);
             setSuccessMessage('Global rating updated and audited.');
-        } else setErrorMessage(result.error || 'Unable to update global rating.');
-        setIsLoading(false);
+        } catch (error) {
+            setErrorMessage(error.message || 'Unable to update global rating.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const renderStars = (rating) => {

@@ -3,7 +3,7 @@ import { Analytics } from '../../Analytics';
 import { Link } from 'react-router-dom';
 import { withTranslation } from 'react-i18next';
 import { BiArrowBack, BiCheck, BiLoader } from 'react-icons/bi';
-import { AiOutlineRobot, AiOutlineEye, AiOutlineHeart, AiFillHeart } from 'react-icons/ai';
+import { AiOutlineEye, AiOutlineHeart, AiFillHeart } from 'react-icons/ai';
 import { BsGrid3X3Gap, BsList, BsFilter } from 'react-icons/bs';
 import { FiSearch, FiStar, FiArrowLeft, FiArrowRight, FiDownload, FiHeart, FiX, FiZoomIn } from 'react-icons/fi';
 import { HiSparkles } from 'react-icons/hi';
@@ -95,7 +95,6 @@ class ActionSelection extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            showAIModal: false,
             selectedTemplate: null,
             viewMode: 'grid',
             selectedCategory: 'all',
@@ -110,7 +109,6 @@ class ActionSelection extends Component {
             loadedTemplates: {}, // Track which templates have been loaded
         };
 
-        this.toggleAIModal = this.toggleAIModal.bind(this);
         this.handleTemplateSelect = this.handleTemplateSelect.bind(this);
         this.toggleViewMode = this.toggleViewMode.bind(this);
         this.handleCategoryChange = this.handleCategoryChange.bind(this);
@@ -143,12 +141,6 @@ class ActionSelection extends Component {
     handleResize = () => {
         this.forceUpdate();
     };
-
-    toggleAIModal() {
-        this.setState({
-            showAIModal: !this.state.showAIModal,
-        });
-    }
 
     handleTemplateSelect(templateId) {
         this.setState({ selectedTemplate: templateId });

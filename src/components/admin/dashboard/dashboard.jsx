@@ -179,7 +179,7 @@ const Dashboard = () => {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-1">
-                  Firestore Latency: <strong>{formatMetric(center.subsystems?.database?.latencyMs)}{center.subsystems?.database?.latencyMs == null ? '' : 'ms'}</strong> • Heap Usage: <strong>{formatMetric(center.subsystems?.runtime?.heapUsedMb)}{center.subsystems?.runtime?.heapUsedMb == null ? '' : 'MB'}</strong>
+                  MariaDB request latency: <strong>{formatMetric(center.subsystems?.database?.latencyMs)}{center.subsystems?.database?.latencyMs == null ? '' : 'ms'}</strong> • Heap Usage: <strong>{formatMetric(center.subsystems?.runtime?.heapUsedMb)}{center.subsystems?.runtime?.heapUsedMb == null ? '' : 'MB'}</strong>
                 </p>
               </div>
             </div>
@@ -197,7 +197,7 @@ const Dashboard = () => {
 
           {/* 6 Subsystem Signals Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100 text-xs">
-            <Signal label="Database" ok={center.signals?.database?.status === 'HEALTHY'} text={center.signals?.database?.status === 'HEALTHY' ? 'Firestore Live' : 'Unavailable'} />
+            <Signal label="Database" ok={center.signals?.database?.status === 'HEALTHY'} text={center.signals?.database?.status === 'HEALTHY' ? 'MariaDB Live' : 'Unavailable'} />
             <Signal label="Queue & DLQ" ok={!center.signals?.queue?.deadLetter} text={center.signals?.queue?.deadLetter ? `${center.signals.queue.deadLetter} DLQ Alert` : 'Outbox Healthy'} />
             <Signal label="Payments" ok={center.signals?.payments?.status === 'HEALTHY'} text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Gateway Inactive' : `${center.signals?.payments?.failed ?? 0} Failed`} />
             <Signal label="Threat Sensor" ok={center.signals?.security?.status === 'HEALTHY'} text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Sensor Offline' : `${center.signals?.security?.highSeverity ?? 0} High Threats`} />

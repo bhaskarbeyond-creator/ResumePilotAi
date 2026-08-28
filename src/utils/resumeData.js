@@ -66,7 +66,8 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
     }));
     const skills = array(raw.skills).map((item, index) => {
         const name = text(item.skillName || item.name || item.skill || item.title);
-        return { ...item, id: item.id || `skill-${index}`, name, skillName: name, rating: Number.isFinite(Number(item.rating)) ? Number(item.rating) : 50, date: Number(item.date) || index + 1 };
+        const hasRating = item.rating !== null && item.rating !== undefined && item.rating !== '' && Number.isFinite(Number(item.rating));
+        return { ...item, id: item.id || `skill-${index}`, name, skillName: name, rating: hasRating ? Number(item.rating) : null, date: Number(item.date) || index + 1 };
     });
     const languages = array(raw.languages).map((item, index) => {
         const name = text(item.name || item.language);
@@ -178,7 +179,7 @@ export function readResumeRecoveryEnvelope(value, { userId, resumeId, maxAgeMs =
  * Dynamic Experience Calculator: Merges overlapping work history date intervals into exact total experience span
  */
 export function calculateYearsOfExperience(experiences) {
-    if (!experiences || !Array.isArray(experiences) || experiences.length === 0) return '3+ years';
+    if (!experiences || !Array.isArray(experiences) || experiences.length === 0) return '';
 
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
@@ -200,10 +201,10 @@ export function calculateYearsOfExperience(experiences) {
         if (!startYearMatch) return;
 
         const startYear = parseInt(startYearMatch[1], 10);
+        const explicitlyCurrent = Boolean(exp.current || endStr.toLowerCase().includes('present'));
+        if (!endYearMatch && !explicitlyCurrent) return;
         let endYear = endYearMatch ? parseInt(endYearMatch[1], 10) : currentYear;
-        if (exp.current || endStr.toLowerCase().includes('present') || !endStr) {
-            endYear = currentYear;
-        }
+        if (explicitlyCurrent) endYear = currentYear;
 
         let startMonth = 1;
         let endMonth = 12;
@@ -217,7 +218,7 @@ export function calculateYearsOfExperience(experiences) {
         }
 
         const endLower = endStr.toLowerCase();
-        if (exp.current || endLower.includes('present') || !endStr) {
+        if (explicitlyCurrent) {
             endMonth = currentMonth;
         } else {
             for (const [key, val] of Object.entries(monthMap)) {
@@ -236,7 +237,7 @@ export function calculateYearsOfExperience(experiences) {
         }
     });
 
-    if (intervals.length === 0) return '3+ years';
+    if (intervals.length === 0) return '';
 
     // Sort by start month
     intervals.sort((a, b) => a[0] - b[0]);
@@ -259,7 +260,11 @@ export function calculateYearsOfExperience(experiences) {
         totalMonths += Math.max(1, end - start + 1);
     });
 
-    const years = Math.max(1, Math.round(totalMonths / 12));
-    return `${years}+ years`;
+    if (totalMonths < 12) return `${totalMonths} month${totalMonths === 1 ? '' : 's'}`;
+    const years = Math.floor(totalMonths / 12);
+    const remainingMonths = totalMonths % 12;
+    return remainingMonths
+        ? `${years} year${years === 1 ? '' : 's'} ${remainingMonths} month${remainingMonths === 1 ? '' : 's'}`
+        : `${years} year${years === 1 ? '' : 's'}`;
 }
 

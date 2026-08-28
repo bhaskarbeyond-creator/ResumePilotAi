@@ -1,8 +1,9 @@
 /**
  * BACKUP / RESTORE CERTIFICATION (mission §26)
  *
- * Performs a REAL backup → destruction → restore drill against the live
- * MySQL/MariaDB database:
+ * Performs a REAL backup → destruction → restore drill against an explicitly
+ * gated, disposable MariaDB test database. It refuses production/non-loopback
+ * targets:
  *
  *   1. seed marker records (user + resume) with known content
  *   2. take a logical backup (scripts/db-backup.mjs backup)
@@ -19,13 +20,31 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { loadCertificationDatabase } from './helpers/databaseConfig.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const mysql = require(path.join(ROOT, 'backend', 'node_modules', 'mysql2', 'promise'));
 
-const DB = { host: '127.0.0.1', port: 3306, user: 'resumepilot', password: 'resumepilot_sandbox_pw', database: 'ai_resume_builder' };
-const BACKUP_FILE = path.join(ROOT, '.arena', 'evidence', `backup-restore-${Date.now()}.sql`);
+const ENABLED = process.env.RUN_MARIADB_BACKUP_RESTORE_DRILL === 'true';
+const RESET_ALLOWED = process.env.MARIADB_TEST_ALLOW_RESET === 'true';
+const DB = ENABLED
+  ? loadCertificationDatabase()
+  : { host: '127.0.0.1', port: 3306, user: 'not-configured', password: '', database: 'resumepilot_cert_not_configured', name: 'resumepilot_cert_not_configured' };
+const BACKUP_FILE = path.join(ROOT, 'scratch', 'recovery-evidence', `backup-restore-${Date.now()}.sql`);
+const drillTest = (name, fn) => test(name, {
+  skip: ENABLED ? false : 'NOT VERIFIED: set RUN_MARIADB_BACKUP_RESTORE_DRILL=true and MARIADB_TEST_ALLOW_RESET=true for an isolated disposable database',
+}, fn);
+
+if (ENABLED) {
+  assert.equal(process.env.NODE_ENV, 'test', 'destructive recovery drill requires NODE_ENV=test');
+  assert.equal(RESET_ALLOWED, true, 'destructive recovery drill requires MARIADB_TEST_ALLOW_RESET=true');
+  assert.ok(['127.0.0.1', 'localhost', '::1'].includes(String(DB.host).toLowerCase()),
+    'destructive recovery drill is restricted to a loopback MariaDB service');
+  assert.match(DB.database, /(?:^|[_-])(?:test|ci|cert|certification|sandbox|scratch)(?:[_-]|$)/i,
+    'destructive recovery drill requires an explicitly disposable database name');
+  fs.mkdirSync(path.dirname(BACKUP_FILE), { recursive: true });
+}
 const MARKER_UID = 'cert-backup-user';
 const MARKER_RESUME = 'cert_backup_resume';
 
@@ -34,7 +53,12 @@ function run(args) {
     cwd: ROOT,
     env: {
       ...process.env,
-      DB_HOST: DB.host, DB_PORT: String(DB.port), DB_USER: DB.user, DB_PASSWORD: DB.password, DB_NAME: DB.database,
+      DB_HOST: DB.host,
+      DB_PORT: String(DB.port),
+      DB_USER: DB.user,
+      DB_PASSWORD: DB.password,
+      DB_NAME: DB.database,
+      DB_RESTORE_CONFIRM: `RESTORE:${DB.database}`,
     },
     encoding: 'utf8',
   });
@@ -49,43 +73,20 @@ async function tableCensus(conn) {
   return rows.map(r => r.t);
 }
 
-async function ensureMysqldRunning(maxAttempts = 10) {
-  for (let i = 0; i < maxAttempts; i++) {
+async function getConnection(retries = 3) {
+  let lastError;
+  for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
-      const c = await mysql.createConnection({ ...DB, connectTimeout: 1000 });
-      await c.query('SELECT 1');
-      await c.end();
-      return true;
-    } catch (_e) {
-      if (process.platform === 'win32') {
-        try {
-          execFileSync('powershell.exe', [
-            '-NoProfile',
-            '-Command',
-            'Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
-          ], { stdio: 'ignore' });
-        } catch (_) {}
-      }
-      await new Promise(r => setTimeout(r, 1500));
+      return await mysql.createConnection({ ...DB, multipleStatements: true, connectTimeout: 3000 });
+    } catch (error) {
+      lastError = error;
+      if (attempt + 1 < retries) await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
-  return false;
+  throw lastError;
 }
 
-async function getConnection(retries = 10) {
-  await ensureMysqldRunning();
-  for (let i = 0; i < retries; i++) {
-    try {
-      const conn = await mysql.createConnection({ ...DB, multipleStatements: true, connectTimeout: 3000 });
-      return conn;
-    } catch (_e) {
-      await new Promise(r => setTimeout(r, 1000));
-    }
-  }
-  return mysql.createConnection({ ...DB, multipleStatements: true });
-}
-
-test('backup/restore drill: seed → backup → destroy → restore → reconcile', async () => {
+drillTest('backup/restore drill: seed → backup → destroy → restore → reconcile', async () => {
   const conn = await getConnection();
 
   // 1. Seed deterministic marker records.
@@ -119,8 +120,11 @@ test('backup/restore drill: seed → backup → destroy → restore → reconcil
   const admin = await mysql.createConnection({ host: DB.host, port: DB.port, user: DB.user, password: DB.password, multipleStatements: true });
   await admin.query(`DROP DATABASE \`${DB.database}\``);
   await admin.query(`CREATE DATABASE \`${DB.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-  const [gone] = await admin.query("SELECT COUNT(*) c FROM information_schema.tables WHERE table_schema = DATABASE()");
-  assert.equal(gone[0].c, 0, 'database must be empty after destruction');
+  const [gone] = await admin.query(
+    'SELECT COUNT(*) c FROM information_schema.tables WHERE table_schema = ?',
+    [DB.database]
+  );
+  assert.equal(Number(gone[0].c), 0, 'database must be empty after destruction');
 
   // 5. Restore from the backup.
   const restoreOut = run(['restore', '--in', BACKUP_FILE]);
@@ -149,7 +153,7 @@ test('backup/restore drill: seed → backup → destroy → restore → reconcil
   snapshot = { tables: tablesAfter.length, backupFile: BACKUP_FILE };
 });
 
-test('restored database is structurally healthy for the application', async () => {
+drillTest('restored database is structurally healthy for the application', async () => {
   const conn = await getConnection();
   const [alive] = await conn.query('SELECT 1 AS alive');
   assert.equal(alive[0].alive, 1);
@@ -160,4 +164,10 @@ test('restored database is structurally healthy for the application', async () =
   assert.equal(outbox.length, 1);
   await conn.end();
   assert.ok(snapshot.tables >= 40);
+});
+
+test.after(() => {
+  for (const file of [BACKUP_FILE, `${BACKUP_FILE}.sha256`]) {
+    fs.rmSync(file, { force: true });
+  }
 });

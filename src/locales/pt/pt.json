@@ -211,7 +211,7 @@
     "unlimitedResumes": "Currículos ilimitados",
     "nonRecuring": "Pagamento não recorrente.",
     "upgradeAndDownload": "Atualizar e Descarregar",
-    "payment1": "Consiga o emprego dos seus sonhos",
+    "payment1": "Crie o seu currículo",
     "payment2": "Pagamento através de um serviço de pagamento confiável",
     "payment3": "Checkout seguro SSL / SSL seguro de 256 bits",
     "payment4": "Garantia de reembolso de 7 dias",
@@ -243,7 +243,7 @@
     "featuresNav": "Funcionalidades",
     "resumeBuilderFeatures": "Funcionalidades do Criador de Currículos",
     "featureTagline": "Tudo o que precisa para o currículo perfeito",
-    "userCount": "Mais de 50 mil utilizadores",
+    "userCount": "Visão geral das funcionalidades",
     "exploreFeatures": "Explorar todas as funcionalidades",
     "freeToTry": "Grátis para experimentar",
     "startBuilding": "Começar a construir",
@@ -345,12 +345,12 @@
       "sentence5": "Tenha sucesso em entrevistas com ferramentas de preparação AI"
     },
     "badge": "Criador de Currículos Assistido por IA",
-    "description": "Crie currículos e cartas de apresentação impressionantes e compatíveis com ATS com assistência de IA. Escolha entre modelos profissionais, obtenha feedback em tempo real e consiga o emprego dos seus sonhos mais rapidamente.",
+    "description": "Crie e edite currículos e cartas de apresentação com ferramentas guiadas, modelos configuráveis, pré-visualização ao vivo e assistência de IA opcional.",
     "createResume": "Criar Currículo",
     "createCoverLetter": "Criar Carta de Apresentação",
     "stats": {
-      "users": "+5.000 utilizadores satisfeitos",
-      "rating": "4.9/5"
+      "users": "Ferramentas guiadas para currículos",
+      "rating": "Pré-visualização ao vivo"
     },
     "features": {
       "freeToStart": "Grátis para começar",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "RESULTADOS COMPROVADOS • CONFIADO POR MAIS DE 50 MIL PROFISSIONAIS",
+    "badge": "CRIAÇÃO GUIADA DE CURRÍCULO",
     "title": {
       "part1": "Transforme",
       "part2": "a Sua Jornada",
       "part3": "de Carreira"
     },
-    "description": "Junte-se a milhares de profissionais que aceleraram as suas carreiras com o nosso criador de currículos assistido por IA. Seja notado, consiga entrevistas e garanta o emprego dos seus sonhos mais rapidamente do que nunca.",
+    "description": "Use secções guiadas, layouts configuráveis, pré-visualizações e assistência de IA opcional para preparar e rever um currículo.",
     "benefits": [
       {
         "title": "Consiga Mais Entrevistas de Emprego",
         "description": "Os nossos modelos otimizados para ATS e sugestões de conteúdo assistidas por IA ajudam o seu currículo a passar pelos sistemas de triagem automatizados e a chegar às mãos dos gestores de contratação.",
-        "detail": "Junte-se a milhares de profissionais que aumentaram a sua taxa de entrevistas em 3x usando o nosso sistema comprovado."
+        "detail": "Reveja e adapte cada sugestão antes de a utilizar numa candidatura."
       },
       {
         "title": "Destaque-se Da Concorrência",
@@ -396,24 +396,6 @@
         "title": "Construa Confiança Na Sua Procura De Emprego",
         "description": "Apresente a sua melhor versão profissional com um currículo polido e sem erros que reflita o seu verdadeiro potencial e conquistas profissionais.",
         "detail": "Sinta-se confiante sabendo que os seus materiais de candidatura são profissionalmente elaborados e estão em conformidade com os padrões da indústria."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Utilizadores Satisfeitos"
-      },
-      {
-        "number": "98.7%",
-        "label": "Taxa de Sucesso"
-      },
-      {
-        "number": "50+",
-        "label": "Modelos"
-      },
-      {
-        "number": "24h",
-        "label": "Tempo Médio"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Pronto para Conseguir o Emprego dos Seus Sonhos?",
-      "description": "Junte-se a mais de 50.000 profissionais que transformaram as suas carreiras. Comece a construir o seu currículo vencedor hoje.",
+      "title": "Pronto para criar o seu currículo?",
+      "description": "Crie, reveja e exporte o seu currículo com o editor guiado.",
       "button": "Comece a Sua História de Sucesso",
       "noCredit": "✨ Sem cartão de crédito necessário • Modelos gratuitos incluídos"
     }
@@ -440,7 +422,7 @@
       "part2": "Utilizadores",
       "part3": " Estão A Dizer"
     },
-    "description": "Junte-se a milhares de candidatos satisfeitos que conseguiram os seus empregos de sonho com o nosso criador de currículos assistido por IA.",
+    "description": "Leia comentários de clientes aprovados e publicados pelo processo de avaliações da plataforma.",
     "navigation": {
       "previous": "Anterior",
       "next": "Próximo",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Ainda precisa de ajuda?",
-      "description": "A nossa equipa de suporte está aqui 24/7 para o ajudar a ter sucesso",
+      "description": "Use o formulário de contacto para questões sobre a conta ou o produto. Os tempos de resposta não são garantidos.",
       "contactButton": "Contactar Suporte",
-      "docsButton": "Consultar Docs"
+      "docsButton": "Artigos de carreira"
     },
     "cta": {
       "badge": "Pronto para criar o seu currículo?",
-      "title": "Transforme a Sua Carreira com Currículos Assistidos por IA",
-      "description": "Junte-se a milhares de profissionais que criaram currículos impressionantes em segundos. Comece a sua jornada de carreira hoje com a nossa plataforma de design inteligente.",
+      "title": "Crie e reveja o seu currículo",
+      "description": "Consulte perguntas frequentes ou comece um currículo com o editor guiado.",
       "button": "Começar a Criar Grátis",
-      "freeCredits": "3 créditos gratuitos • Não é necessário cartão de crédito",
-      "support": "Suporte 24/7",
-      "secure": "Seguro e Privado",
-      "instant": "Resultados Instantâneos"
+      "freeCredits": "",
+      "support": "Rascunhos associados à conta",
+      "secure": "Rever antes de exportar",
+      "instant": "Assistência de IA opcional"
     },
     "trustIndicators": {
-      "secure": "Seguro e Privado",
-      "instant": "Resultados Instantâneos",
-      "support": "Suporte 24/7"
+      "secure": "Rever antes de exportar",
+      "instant": "Assistência de IA opcional",
+      "support": "Rascunhos associados à conta"
     },
     "q1": {
-      "question": "Como começo a criar meu currículo com IA?",
-      "answer": "Cadastre-se gratuitamente, insira suas informações e veja nossa IA criar currículos incríveis em segundos."
+      "question": "Como começo a usar o editor de currículos?",
+      "answer": "Crie uma conta, abra o editor, introduza informações verificadas, escolha um layout e reveja a pré-visualização antes de guardar ou exportar. A assistência de IA é opcional e pode estar desativada."
     },
     "q2": {
-      "question": "Quão rápido é o processo de geração?",
-      "answer": "Nossa IA gera várias opções de currículo em menos de 5 minutos!"
+      "question": "A assistência de IA garante uma entrevista ou emprego?",
+      "answer": "Não. A saída de IA pode estar incompleta ou incorreta e não garante aceitação por ATS, entrevista ou emprego. Reveja e edite cada sugestão."
     },
     "q3": {
-      "question": "O que está incluído no plano gratuito?",
-      "answer": "Novos usuários recebem créditos gratuitos para baixar currículos em PDF e Word."
+      "question": "Onde posso ver limites e preços atuais?",
+      "answer": "A página de preços mostra os planos, direitos, impostos e opções de pagamento atuais fornecidos pelo servidor. A disponibilidade pode variar por conta e configuração."
     },
     "q4": {
-      "question": "Posso personalizar o currículo gerado?",
-      "answer": "Sim! Você pode alterar estilos, cores e layouts facilmente."
+      "question": "Posso personalizar o meu currículo?",
+      "answer": "Sim. Pode editar secções, escolher um layout disponível e rever a pré-visualização. As sugestões de IA podem ser editadas e devem ser verificadas."
     },
     "q5": {
-      "question": "Quais formatos de arquivo vocês oferecem?",
-      "answer": "Todos os currículos estão disponíveis nos formatos PDF e Word de alta qualidade."
+      "question": "Que formatos de exportação estão disponíveis?",
+      "answer": "As exportações PDF e DOCX são oferecidas quando a rota de exportação e o direito da conta correspondentes estão disponíveis. Reveja sempre o ficheiro antes de o enviar."
     },
     "q6": {
-      "question": "Como funciona o sistema de créditos?",
-      "answer": "Cada geração consome 1 crédito. Os créditos nunca expiram."
+      "question": "Como são guardados os rascunhos e dados da conta?",
+      "answer": "O Firebase Authentication gere a identidade. Os rascunhos e outros dados da aplicação são guardados através da API baseada em MariaDB. Consulte a política de privacidade e os controlos de exportação ou eliminação da conta."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Mantenha-se Atualizado",
       "securePayments": "Pagamentos Seguros"
     },
-    "aboutText": "Ajudamos candidatos a emprego a criar currículos profissionais em minutos. A nossa missão é capacitar indivíduos para conseguir os empregos dos seus sonhos com documentos de candidatura de alta qualidade, criados com IA.",
+    "aboutText": "O ResumePilot AI fornece ferramentas para criar, rever e exportar currículos e documentos profissionais relacionados.",
     "links": {
       "pricing": "Preços",
       "contact": "Contacto"
@@ -1146,8 +1128,8 @@
       "clickToView": "Clique para ver em tamanho real",
       "changeTemplate": "Mudar Modelo",
       "viewFullSize": "Ver Tamanho Completo",
-      "trustedBy": "Confiado por mais de 50 mil profissionais",
-      "joinSuccess": "Junte-se às histórias de sucesso",
+      "trustedBy": "Pré-visualização antes de exportar",
+      "joinSuccess": "Reveja o conteúdo e a formatação",
       "resumePdf": "Curriculo.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Data de Emissão",
         "placeholder": "ex. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "Recomendações de Certificações com IA",
-      "recommend": "Recomendar Certificações (IA)",
-      "tooltip": "Gerar recomendações de certificações com IA adaptadas ao seu perfil",
-      "generating": "Analisando e gerando...",
-      "tailoredSubtitle": "Certificações reconhecidas no setor adaptadas para {{role}}",
-      "genericSubtitle": "Principais credenciais credenciadas com base em suas habilidades e trajetória",
-      "promptTitle": "Impulsione seu Currículo com Certificações Validadas",
-      "promptDescRole": "Deixe a IA analisar sua experiência como {{role}} e recomendar as certificações mais valorizadas.",
-      "promptDescGeneric": "Gere credenciais padrão do setor adaptadas ao seu campo para aumentar a pontuação ATS.",
-      "generateNow": "Gerar Recomendações de IA Agora",
-      "refresh": "Atualizar Recomendações",
-      "getRecommendations": "Obter Recomendações",
-      "addAll": "Adicionar Todas as Recomendadas",
-      "added": "Adicionado",
-      "addedBadge": "Adicionado",
-      "add": "Adicionar",
-      "mandatoryBadge": "Padrão do Setor",
-      "recommendedBadge": "Recomendado"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Encontre o emprego dos seus sonhos hoje",
+        "sentence1": "Rever ofertas de emprego atuais",
         "sentence2": "Conecte-se com os melhores empregadores",
         "sentence3": "Avance na sua jornada de carreira",
         "sentence4": "Descubra oportunidades remotas",
@@ -1935,83 +1897,40 @@
       "resources": "Recursos",
       "resourcesDesc": "Orientação e dicas de carreira",
       "stats": {
-        "jobs": "Mais de 10.000 Vagas Ativas",
-        "rating": "Avaliação 4.8/5"
+        "jobs": "Ofertas de emprego atuais",
+        "rating": "Detalhes de emprego verificados"
       },
       "features": {
         "freeToApply": "Grátis para Candidatar",
-        "verifiedEmployers": "Empregadores Verificados"
+        "verifiedEmployers": "Empregadores moderados"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Melhores Empregadores",
-      "title": "Junte-se a Empresas Líderes",
-      "description": "Descubra oportunidades em empresas de classe mundial que estão contratando ativamente. De startups a Fortune 500, encontre sua combinação perfeita.",
+      "badge": "Empregadores em destaque",
+      "title": "Consulte perfis de empregadores",
+      "description": "Consulte perfis de empregadores em destaque com ofertas ativas. Abra o portal de empregos para rever funções atuais e detalhes de candidatura.",
       "featured": "Destaques",
       "viewAll": "Ver Todas as Empresas",
       "stats": {
-        "companies": "Empresas Parceiras",
+        "companies": "Empresas em destaque",
         "jobs": "Vagas Ativas",
         "hires": "Contratações Bem-Sucedidas"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Como Funciona",
-      "title": "Conquiste o Emprego dos Seus Sonhos em",
-      "titleHighlight": "4 Passos Simples",
-      "description": "Nosso processo simplificado torna a busca de emprego fácil. Desde a descoberta até a contratação, nós o guiamos a cada passo para garantir que você encontre a oportunidade perfeita.",
-      "featuresTitle": "Por que Escolher Nossa Plataforma?",
-      "featuresDescription": "Fornecemos ferramentas e recursos de ponta para tornar sua busca de emprego mais eficaz e eficiente.",
-      "steps": {
-        "0": {
-          "title": "Pesquisar e Descobrir",
-          "description": "Navegue por milhares de oportunidades de emprego das melhores empresas. Use nossos filtros avançados para encontrar a combinação perfeita para suas habilidades e preferências."
-        },
-        "1": {
-          "title": "Criar Perfil",
-          "description": "Construa seu perfil profissional com nosso criador de currículos. Mostre suas habilidades, experiência e conquistas para se destacar da multidão."
-        },
-        "2": {
-          "title": "Candidatar Instantaneamente",
-          "description": "Candidate-se a várias vagas com um clique. Nosso sistema de candidatura inteligente adapta automaticamente seu perfil a cada posição."
-        },
-        "3": {
-          "title": "Ser Contratado",
-          "description": "Conecte-se com gerentes de contratação, agende entrevistas e consiga o emprego dos seus sonhos. Oferecemos suporte durante todo o processo."
-        }
       },
-      "features": {
-        "0": {
-          "title": "Correspondência por IA",
-          "description": "Nosso algoritmo inteligente o conecta com oportunidades relevantes"
-        },
-        "1": {
-          "title": "Otimização de Currículo",
-          "description": "Otimize automaticamente seu currículo para cada candidatura"
-        },
-        "2": {
-          "title": "Empresas Verificadas",
-          "description": "Todos os empregadores são verificados quanto à autenticidade e qualidade"
-        }
-      },
-      "cta": {
-        "title": "Pronto para Começar sua Jornada?",
-        "description": "Junte-se a milhares de profissionais que encontraram o emprego dos seus sonhos através da nossa plataforma. Sua próxima oportunidade está a apenas um clique de distância.",
-        "searchButton": "Iniciar Busca por Vagas",
-        "profileButton": "Criar Perfil"
-      }
+      "empty": "Não há empregadores em destaque neste momento.",
+      "unavailable": "Os empregadores em destaque estão temporariamente indisponíveis.",
+      "evidenceReviewed": "Prova revista"
     },
     "LandingJobsFeatured": {
       "badge": "Vagas em Destaque",
-      "title": "Descubra Sua Próxima",
-      "titleHighlight": "Oportunidade dos Sonhos",
+      "title": "Consulte ofertas",
+      "titleHighlight": "De emprego em destaque",
       "description": "Explore oportunidades selecionadas das melhores empresas. Essas posições em destaque oferecem crescimento de carreira excepcional, remuneração competitiva e ambientes de trabalho incríveis.",
-      "statsTitle": "Junte-se a Milhares de Profissionais de Sucesso",
-      "statsDescription": "Nossa plataforma ajudou inúmeros profissionais a encontrar o emprego dos seus sonhos nas melhores empresas em todo o mundo.",
+      "statsTitle": "Resumo publicado da plataforma",
+      "statsDescription": "Estes valores são versionados e ligados a provas revistas pelo administrador da plataforma.",
       "stats": {
         "jobs": "Vagas em Destaque",
         "success": "Taxa de Sucesso",
-        "companies": "Melhores Empresas"
+        "companies": "Empresas em destaque"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Candidatar Agora"
         }
       },
-      "viewAll": "Ver Todas as Vagas"
+      "viewAll": "Ver Todas as Vagas",
+      "empty": "Não há empregos em destaque neste momento.",
+      "evidenceReviewed": "Prova revista"
     },
     "MainJobListings": {
       "jobSingular": "vaga",

@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
 const { freezeContext } = require('../enterprise/tenantContext');
 const { assertSameTenant } = require('../enterprise/tenantPolicy');
 const { tenantCacheKey } = require('../enterprise/tenantCache');

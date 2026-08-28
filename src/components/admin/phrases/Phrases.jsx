@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './Phrases.scss';
-import { addCategoryToData, getAllCategories, removeCategoryByName, removePhraseFromCategory, addPhraseToCategory, getPhrasesOfCategory } from '../../../firestore/dbOperations';
+import { addCategoryToData, getAllCategories, removeCategoryByName, removePhraseFromCategory, addPhraseToCategory, getPhrasesOfCategory } from '../../../services/api/platform';
 import EnterpriseConfirmModal from '../../../enterprise/components/EnterpriseConfirmModal';
 
 class Settings extends Component {

@@ -1,595 +1,161 @@
-const mysql = require('mysql2/promise');
-const path = require('path');
+'use strict';
+
 const fs = require('fs');
+const path = require('path');
+const mysql = require('mysql2/promise');
+const { migrationStatus, runMigrations } = require('./migrationRunner');
+
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const sslConfig = process.env.DB_SSL === 'true' || process.env.MYSQL_SSL === 'true'
-    ? { rejectUnauthorized: false }
-    : undefined;
+function buildSslConfig(environment = process.env) {
+  const enabled = String(environment.DB_SSL || environment.MYSQL_SSL || '').toLowerCase() === 'true';
+  if (!enabled) return undefined;
+  const rejectUnauthorized = String(environment.DB_SSL_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false';
+  if (!rejectUnauthorized && environment.NODE_ENV === 'production') {
+    throw Object.assign(new Error('Production MariaDB TLS certificate verification cannot be disabled'), {
+      code: 'INSECURE_DATABASE_TLS_CONFIGURATION',
+    });
+  }
+  const ssl = { rejectUnauthorized };
+  if (environment.DB_SSL_CA_FILE) ssl.ca = fs.readFileSync(path.resolve(environment.DB_SSL_CA_FILE), 'utf8');
+  else if (environment.DB_SSL_CA_BASE64) ssl.ca = Buffer.from(environment.DB_SSL_CA_BASE64, 'base64').toString('utf8');
+  if (environment.DB_SSL_SERVERNAME) ssl.servername = environment.DB_SSL_SERVERNAME;
+  return ssl;
+}
 
-const poolConfig = {
-    host: process.env.DB_HOST || process.env.MYSQL_HOST || '127.0.0.1',
-    port: Number(process.env.DB_PORT || process.env.MYSQL_PORT || 3306),
-    user: process.env.DB_USER || process.env.MYSQL_USER || 'root',
-    password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : (process.env.MYSQL_PASSWORD || ''),
-    database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'ai_resume_builder',
-    waitForConnections: true,
-    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 15),
-    queueLimit: 0,
-    charset: 'utf8mb4',
-    ssl: sslConfig,
-    multipleStatements: true,
-    enableKeepAlive: process.env.NODE_ENV !== 'test',
-    keepAliveInitialDelay: process.env.NODE_ENV === 'test' ? 0 : 10000,
-    idleTimeout: process.env.NODE_ENV === 'test' ? 1000 : 60000,
-    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS || 8000),
-};
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= minimum && parsed <= maximum ? parsed : fallback;
+}
+
+const poolConfig = Object.freeze({
+  host: process.env.DB_HOST || process.env.MYSQL_HOST || '127.0.0.1',
+  port: boundedInteger(process.env.DB_PORT || process.env.MYSQL_PORT, 3306, 1, 65535),
+  user: process.env.DB_USER || process.env.MYSQL_USER || 'root',
+  password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : (process.env.MYSQL_PASSWORD || ''),
+  database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'ai_resume_builder',
+  waitForConnections: true,
+  connectionLimit: boundedInteger(process.env.DB_CONNECTION_LIMIT, 15, 1, 100),
+  queueLimit: boundedInteger(process.env.DB_QUEUE_LIMIT, 200, 1, 10_000),
+  charset: 'utf8mb4',
+  timezone: 'Z',
+  ssl: buildSslConfig(),
+  multipleStatements: false,
+  enableKeepAlive: process.env.NODE_ENV !== 'test',
+  keepAliveInitialDelay: process.env.NODE_ENV === 'test' ? 0 : 10_000,
+  idleTimeout: process.env.NODE_ENV === 'test' ? 1_000 : 60_000,
+  connectTimeout: boundedInteger(process.env.DB_CONNECT_TIMEOUT_MS, 8_000, 1_000, 60_000),
+});
 
 let pool = null;
 
 function getPool() {
-    if (!pool || pool._closed || pool.pool?._closed) {
-        pool = mysql.createPool(poolConfig);
-    }
-    return pool;
+  if (!pool || pool._closed || pool.pool?._closed) pool = mysql.createPool(poolConfig);
+  return pool;
 }
 
-/**
- * Tests live MySQL/MariaDB connectivity.
- * @returns {Promise<{connected: boolean, latencyMs: number, version?: string, error?: string}>}
- */
 async function testConnection() {
-    const start = Date.now();
-    try {
-        if (!process.env.DB_USER && process.env.NODE_ENV === 'production') {
-            return {
-                connected: false,
-                latencyMs: 0,
-                error: 'MySQL credentials not configured in backend/.env (DB_NAME, DB_USER, DB_PASSWORD missing)',
-                code: 'CREDENTIALS_MISSING',
-                host: poolConfig.host,
-                database: poolConfig.database,
-            };
-        }
-        const p = getPool();
-        const [rows] = await p.query('SELECT 1 AS alive, VERSION() AS version');
-        const latencyMs = Date.now() - start;
-        return {
-            connected: true,
-            latencyMs,
-            version: rows[0]?.version || 'Unknown',
-            host: poolConfig.host,
-            database: poolConfig.database,
-        };
-    } catch (err) {
-        return {
-            connected: false,
-            latencyMs: Date.now() - start,
-            error: err.message,
-            code: err.code || 'CONNECTION_FAILED',
-            host: poolConfig.host,
-            database: poolConfig.database,
-        };
+  const start = Date.now();
+  try {
+    if (!process.env.DB_USER && process.env.NODE_ENV === 'production') {
+      return {
+        connected: false,
+        latencyMs: 0,
+        error: 'MariaDB credentials are not configured',
+        code: 'CREDENTIALS_MISSING',
+        host: poolConfig.host,
+        database: poolConfig.database,
+      };
     }
+    const [rows] = await getPool().query('SELECT 1 AS alive, VERSION() AS version');
+    return {
+      connected: Boolean(rows[0]?.alive),
+      latencyMs: Date.now() - start,
+      version: rows[0]?.version || 'Unknown',
+      host: poolConfig.host,
+      database: poolConfig.database,
+      tls: Boolean(poolConfig.ssl),
+      tlsCertificateVerification: poolConfig.ssl ? poolConfig.ssl.rejectUnauthorized !== false : null,
+    };
+  } catch (error) {
+    return {
+      connected: false,
+      latencyMs: Date.now() - start,
+      error: error.message,
+      code: error.code || 'CONNECTION_FAILED',
+      host: poolConfig.host,
+      database: poolConfig.database,
+    };
+  }
 }
 
-/**
- * Executes schema.sql to ensure all tables and indexes exist.
- * Safe and idempotent (uses CREATE TABLE IF NOT EXISTS).
- */
-async function initializeSchema() {
-    try {
-        if (!process.env.DB_USER && process.env.NODE_ENV === 'production') {
-            return {
-                success: false,
-                error: 'MySQL credentials not configured in backend/.env. Please configure DB_NAME, DB_USER, and DB_PASSWORD first.',
-            };
-        }
-        const schemaPath = path.join(__dirname, 'schema.sql');
-        if (!fs.existsSync(schemaPath)) {
-            throw new Error(`Schema file not found at ${schemaPath}`);
-        }
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-        const p = getPool();
-        await p.query(schemaSql);
-        await ensureExtendedSchema(p);
-        console.log('[MySQL] Schema successfully initialized / verified.');
-        return { success: true };
-    } catch (err) {
-        console.error('[MySQL] Schema initialization error:', err.message);
-        return { success: false, error: err.message };
+async function initializeSchema(options = {}) {
+  try {
+    if (!process.env.DB_USER && process.env.NODE_ENV === 'production') {
+      return { success: false, error: 'MariaDB credentials are not configured', code: 'CREDENTIALS_MISSING' };
     }
+    const result = await runMigrations(getPool(), options);
+    if (!result.current) {
+      return {
+        success: false,
+        code: 'DATABASE_MIGRATIONS_PENDING',
+        error: `${result.pending.length} database migration(s) are pending`,
+        ...result,
+      };
+    }
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('[MariaDB] Migration verification/application failed:', error.message);
+    return {
+      success: false,
+      error: error.message,
+      code: error.code || 'MIGRATION_FAILED',
+      migration: error.migration || null,
+      details: error.details || null,
+    };
+  }
 }
 
-/**
- * Additive, idempotent schema extensions for existing deployments whose
- * tables were created before revision/tombstone/idempotency columns existed.
- *
- * Portable across MySQL 5.7/8.x and MariaDB: MySQL does not support
- * `ADD COLUMN IF NOT EXISTS`, so every ALTER is guarded by an
- * information_schema check first (the old MariaDB-only syntax silently
- * skipped every extension on plain MySQL).
- */
-async function addColumnIfMissing(p, table, column, definition) {
-    try {
-        const [rows] = await p.query(
-            'SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-            [table, column]
-        );
-        if (rows[0]?.c > 0) return;
-        await p.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
-    } catch (err) {
-        if (!/unknown table|duplicate column|check that column/i.test(String(err.message || ''))) {
-            console.warn(`[MySQL] Column extension notice (${table}.${column}):`, err.message);
-        }
-    }
+async function getMigrationStatus() {
+  return migrationStatus(getPool());
 }
 
-async function addIndexIfMissing(p, table, indexName, definition) {
-    try {
-        const [rows] = await p.query(
-            'SELECT COUNT(*) AS c FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
-            [table, indexName]
-        );
-        if (rows[0]?.c > 0) return;
-        await p.query(`ALTER TABLE \`${table}\` ADD ${definition}`);
-    } catch (err) {
-        if (!/unknown table|duplicate key name/i.test(String(err.message || ''))) {
-            console.warn(`[MySQL] Index extension notice (${table}.${indexName}):`, err.message);
-        }
-    }
+// Compatibility name retained for callers while behavior is now checksummed,
+// ordered migration application rather than ad-hoc schema mutation.
+async function ensureExtendedSchema() {
+  return initializeSchema({ mode: 'apply' });
 }
 
-/**
- * Messaging schema migration: deployments initialized with the legacy draft
- * schema carry a `conversations` table shaped (participant1_id, participant2_id)
- * that no code path ever used. Rename legacy tables non-destructively and let
- * the current schema create the real ones.
- */
-async function migrateLegacyMessagingSchema(p) {
-    try {
-        const [convCols] = await p.query(
-            "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'conversations' AND COLUMN_NAME = 'participant1_id'"
-        );
-        if (convCols[0]?.c > 0) {
-            const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-            await p.query(`RENAME TABLE conversations TO conversations_legacy_${stamp}`);
-            console.log(`[MySQL] Legacy conversations table preserved as conversations_legacy_${stamp}; creating current messaging schema.`);
-            await p.query(`CREATE TABLE IF NOT EXISTS conversations (
-                id VARCHAR(128) NOT NULL PRIMARY KEY,
-                application_id VARCHAR(300) NULL,
-                deleted_at TIMESTAMP NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_conversations_created (created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
-        }
-        const [msgCols] = await p.query(
-            "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'receiver_id'"
-        );
-        if (msgCols[0]?.c > 0) {
-            const stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-            await p.query(`RENAME TABLE messages TO messages_legacy_${stamp}`);
-            console.log(`[MySQL] Legacy messages table preserved as messages_legacy_${stamp}.`);
-        }
-    } catch (err) {
-        console.warn('[MySQL] Messaging migration notice:', err.message);
-    }
+function setPoolForTests(testPool) {
+  if (process.env.NODE_ENV !== 'test') {
+    throw Object.assign(new Error('MariaDB pool injection is restricted to tests'), { code: 'DATABASE_TEST_OVERRIDE_FORBIDDEN' });
+  }
+  if (!testPool || typeof testPool.query !== 'function') {
+    throw Object.assign(new Error('A query-capable MariaDB test pool is required'), { code: 'DATABASE_TEST_POOL_INVALID' });
+  }
+  pool = testPool;
+  return pool;
 }
 
-async function ensureExtendedSchema(poolOverride = null) {
-    const p = poolOverride || getPool();
-    await migrateLegacyMessagingSchema(p);
-    await addColumnIfMissing(p, 'users', 'revision', 'INT NOT NULL DEFAULT 1');
-    await addColumnIfMissing(p, 'users', 'deleted_at', 'TIMESTAMP NULL');
-    await addColumnIfMissing(p, 'resumes', 'deleted_at', 'TIMESTAMP NULL');
-    await addColumnIfMissing(p, 'sync_outbox', 'mutation_id', 'VARCHAR(64) NULL');
-    await addColumnIfMissing(p, 'sync_outbox', 'idempotency_key', 'VARCHAR(64) NULL');
-    await addColumnIfMissing(p, 'payment_orders', 'revision', 'INT NOT NULL DEFAULT 1');
-    await addColumnIfMissing(p, 'payment_orders', 'mutation_id', 'VARCHAR(64) NULL');
-    await addColumnIfMissing(p, 'payment_orders', 'recovery_needed', 'TINYINT(1) NOT NULL DEFAULT 0');
-    await addColumnIfMissing(p, 'payment_orders', 'recovery_reason', 'VARCHAR(128) NULL');
-    await addColumnIfMissing(p, 'payment_orders', 'last_payment_gateway', 'VARCHAR(64) NULL');
-    await addColumnIfMissing(p, 'payment_orders', 'provider_refund_id', 'VARCHAR(255) NULL');
-    await addColumnIfMissing(p, 'jobs', 'revision', 'INT NOT NULL DEFAULT 1');
-    await addColumnIfMissing(p, 'blog', 'revision', 'INT NOT NULL DEFAULT 1');
-    await addColumnIfMissing(p, 'blog', 'status', "VARCHAR(50) DEFAULT 'draft'");
-    await addColumnIfMissing(p, 'blog', 'scheduled_at', 'TIMESTAMP NULL');
-    await addColumnIfMissing(p, 'companies', 'extra_json', 'JSON NULL');
-    await addColumnIfMissing(p, 'companies', 'revision', 'INT NOT NULL DEFAULT 1');
-    await addColumnIfMissing(p, 'companies', 'status', "VARCHAR(50) DEFAULT 'pending'");
-    await addColumnIfMissing(p, 'jobs', 'extra_json', 'JSON NULL');
-    await addColumnIfMissing(p, 'applications', 'extra_json', 'JSON NULL');
-    await addColumnIfMissing(p, 'applications', 'revision', 'INT NOT NULL DEFAULT 1');
-    await addIndexIfMissing(p, 'favourites', 'uq_fav_user_item', 'UNIQUE KEY uq_fav_user_item (user_id, item_id)');
-    const statements = [
-        `CREATE TABLE IF NOT EXISTS payment_webhook_events (
-            event_id VARCHAR(128) NOT NULL PRIMARY KEY,
-            provider VARCHAR(64) NOT NULL,
-            event_type VARCHAR(128) NOT NULL,
-            order_id VARCHAR(128),
-            payload JSON,
-            received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS database_authority (
-            id VARCHAR(32) NOT NULL PRIMARY KEY,
-            generation INT NOT NULL DEFAULT 1,
-            write_engine VARCHAR(32) NOT NULL DEFAULT 'mysql',
-            mode VARCHAR(32) NOT NULL DEFAULT 'NORMAL',
-            lease_owner VARCHAR(128),
-            lease_expires_at BIGINT DEFAULT 0,
-            reason TEXT,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS canonical_documents (
-            entity_type VARCHAR(64) NOT NULL,
-            entity_id VARCHAR(128) NOT NULL,
-            payload JSON NOT NULL,
-            revision INT NOT NULL DEFAULT 1,
-            deleted_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (entity_type, entity_id),
-            INDEX idx_cd_type (entity_type)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        // OAuth / export-token tables moved out of Firestore into MySQL.
-        `CREATE TABLE IF NOT EXISTS oauth_states (
-            state_hash VARCHAR(64) NOT NULL PRIMARY KEY,
-            provider VARCHAR(32) NOT NULL,
-            code_verifier VARCHAR(255) NOT NULL,
-            expires_at BIGINT NOT NULL,
-            used_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_oauth_states_expiry (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS oauth_exchange_codes (
-            code_hash VARCHAR(64) NOT NULL PRIMARY KEY,
-            uid VARCHAR(128) NOT NULL,
-            provider VARCHAR(32) NOT NULL,
-            expires_at BIGINT NOT NULL,
-            used_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_oauth_exchange_expiry (expires_at),
-            INDEX idx_oauth_exchange_uid (uid)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS export_render_tokens (
-            token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
-            payload JSON NOT NULL,
-            expires_at BIGINT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            consumed_at TIMESTAMP NULL,
-            INDEX idx_export_tokens_expiry (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS ai_usage (
-            day_key VARCHAR(10) NOT NULL,
-            uid_hash VARCHAR(40) NOT NULL,
-            uid VARCHAR(128) NOT NULL,
-            email VARCHAR(255),
-            count INT NOT NULL DEFAULT 1,
-            limit_used INT NOT NULL DEFAULT 10,
-            last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (day_key, uid_hash),
-            INDEX idx_ai_usage_uid (uid),
-            INDEX idx_ai_usage_day (day_key)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS password_reset_tokens (
-            token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
-            uid VARCHAR(128) NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            expires_at BIGINT NOT NULL,
-            used_at TIMESTAMP NULL,
-            lease_id VARCHAR(64) NULL,
-            lease_expires_at BIGINT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_prt_uid (uid),
-            INDEX idx_prt_expiry (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS password_reset_state (
-            uid VARCHAR(128) NOT NULL PRIMARY KEY,
-            active_token_hash VARCHAR(64) NOT NULL,
-            expires_at BIGINT NOT NULL,
-            consumed_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS email_verification_tokens (
-            token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
-            uid VARCHAR(128) NOT NULL,
-            email VARCHAR(255) NOT NULL,
-            expires_at BIGINT NOT NULL,
-            used_at TIMESTAMP NULL,
-            lease_id VARCHAR(64) NULL,
-            lease_expires_at BIGINT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_evt_uid (uid),
-            INDEX idx_evt_expiry (expires_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS email_verification_state (
-            uid VARCHAR(128) NOT NULL PRIMARY KEY,
-            active_token_hash VARCHAR(64) NOT NULL,
-            expires_at BIGINT NOT NULL,
-            verified_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS email_logs (
-            id VARCHAR(64) NOT NULL PRIMARY KEY,
-            recipient VARCHAR(255),
-            subject VARCHAR(255),
-            template_type VARCHAR(64) DEFAULT 'custom',
-            status VARCHAR(32) DEFAULT 'SENT',
-            html MEDIUMTEXT,
-            message_id VARCHAR(255),
-            error TEXT,
-            transport VARCHAR(64) DEFAULT 'primary_smtp',
-            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_email_logs_recipient (recipient),
-            INDEX idx_email_logs_sent_at (sent_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        // Durable notification outbox (transactional outbox pattern). MySQL is
-        // authoritative; must function with Firestore completely unavailable.
-        `CREATE TABLE IF NOT EXISTS notification_outbox (
-            id VARCHAR(64) NOT NULL PRIMARY KEY,
-            event_id VARCHAR(300) NOT NULL,
-            channel VARCHAR(32) NOT NULL DEFAULT 'email',
-            recipient VARCHAR(255) NOT NULL,
-            template_type VARCHAR(80) NOT NULL,
-            vars JSON,
-            metadata JSON,
-            tenant_id VARCHAR(128) NULL,
-            idempotency_key VARCHAR(128) NULL,
-            state VARCHAR(40) NOT NULL DEFAULT 'NOTIFICATION_QUEUED',
-            attempt_count INT NOT NULL DEFAULT 0,
-            max_attempts INT NOT NULL DEFAULT 5,
-            provider_accepted TINYINT(1) NOT NULL DEFAULT 0,
-            provider_accepted_at TIMESTAMP NULL,
-            next_attempt_at BIGINT NOT NULL DEFAULT 0,
-            lease_owner VARCHAR(128) NULL,
-            lease_expires_at BIGINT NOT NULL DEFAULT 0,
-            last_attempt_at TIMESTAMP NULL,
-            last_error VARCHAR(500) NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_notification_idempotency (idempotency_key),
-            INDEX idx_notification_due (state, next_attempt_at),
-            INDEX idx_notification_recipient (recipient),
-            INDEX idx_notification_state (state)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        // Messaging (migrated from Firebase Realtime Database to MySQL).
-        `CREATE TABLE IF NOT EXISTS conversations (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            application_id VARCHAR(300) NULL,
-            deleted_at TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_conversations_created (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS conversation_participants (
-            conversation_id VARCHAR(128) NOT NULL,
-            user_id VARCHAR(128) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (conversation_id, user_id),
-            INDEX idx_conv_participants_user (user_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS conversation_messages (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            conversation_id VARCHAR(128) NOT NULL,
-            sender_id VARCHAR(128) NOT NULL,
-            text TEXT,
-            timestamp BIGINT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_conv_messages_conv_ts (conversation_id, timestamp)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        // Enterprise Multi-Tenancy tables (Authoritative MariaDB/MySQL)
-        `CREATE TABLE IF NOT EXISTS enterprise_tenants (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            slug VARCHAR(160) NOT NULL UNIQUE,
-            displayName VARCHAR(255) NOT NULL,
-            lifecycleState VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-            isolationTier VARCHAR(50) NOT NULL DEFAULT 'STANDARD',
-            dataPlane JSON,
-            policyVersion INT NOT NULL DEFAULT 1,
-            legacyOwnerUid VARCHAR(128),
-            decommissionedAt TIMESTAMP NULL,
-            purgeScheduledAt TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_tenant_state (lifecycleState),
-            INDEX idx_ent_tenant_owner (legacyOwnerUid)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_workspaces (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            lifecycleState VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-            isDefault BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_ws_tenant (tenantId),
-            INDEX idx_ent_ws_state (lifecycleState)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_memberships (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            principalId VARCHAR(128) NOT NULL,
-            canonicalPrincipalId VARCHAR(128),
-            workspaceId VARCHAR(128),
-            status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-            roles JSON NOT NULL,
-            revision INT NOT NULL DEFAULT 1,
-            personalTenant BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_mem_tenant (tenantId),
-            INDEX idx_ent_mem_principal (principalId),
-            INDEX idx_ent_mem_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_workspace_memberships (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128) NOT NULL,
-            principalId VARCHAR(128) NOT NULL,
-            status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_wsmem_ws (workspaceId),
-            INDEX idx_ent_wsmem_principal (principalId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_tenant_configurations (
-            tenantId VARCHAR(128) NOT NULL PRIMARY KEY,
-            revision INT NOT NULL DEFAULT 1,
-            customRoles JSON,
-            aiPolicy JSON,
-            quotaPolicy JSON,
-            retentionPolicy JSON,
-            securityPolicy JSON,
-            identityPolicy JSON,
-            commercials JSON,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_principal_tenants (
-            principalId VARCHAR(128) NOT NULL PRIMARY KEY,
-            personalTenantId VARCHAR(128) NOT NULL,
-            defaultWorkspaceId VARCHAR(128) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_teams (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128),
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_team_tenant (tenantId),
-            INDEX idx_ent_team_ws (workspaceId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_team_members (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            teamId VARCHAR(128) NOT NULL,
-            tenantId VARCHAR(128) NOT NULL,
-            principalId VARCHAR(128) NOT NULL,
-            role VARCHAR(50) DEFAULT 'MEMBER',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_tm_team (teamId),
-            INDEX idx_ent_tm_principal (principalId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_resources (
-            id VARCHAR(128) NOT NULL,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128),
-            resourceType VARCHAR(64) NOT NULL,
-            classification VARCHAR(32) DEFAULT 'PRIVATE',
-            data JSON NOT NULL,
-            revision INT DEFAULT 1,
-            created_by VARCHAR(128),
-            updated_by VARCHAR(128),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (tenantId, resourceType, id),
-            INDEX idx_ent_res_ws (tenantId, workspaceId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_audit_events (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128),
-            actorPrincipalId VARCHAR(128) NOT NULL,
-            action VARCHAR(128) NOT NULL,
-            category VARCHAR(128) DEFAULT 'tenant',
-            severity VARCHAR(32) DEFAULT 'INFO',
-            resourceType VARCHAR(64),
-            resourceId VARCHAR(128),
-            metadata JSON,
-            occurredAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ent_audit_tenant (tenantId, occurredAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_ai_usage (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128),
-            principalId VARCHAR(128) NOT NULL,
-            dayKey VARCHAR(10) NOT NULL,
-            model VARCHAR(128),
-            promptTokens INT DEFAULT 0,
-            completionTokens INT DEFAULT 0,
-            totalTokens INT DEFAULT 0,
-            costEstimate DECIMAL(10, 4) DEFAULT 0,
-            recordedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ent_ai_usage_tenant (tenantId, dayKey)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_service_accounts (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128),
-            displayName VARCHAR(255) NOT NULL,
-            status VARCHAR(50) DEFAULT 'ACTIVE',
-            keyId VARCHAR(128) NOT NULL,
-            keyPrefix VARCHAR(32) NOT NULL,
-            secretHash VARCHAR(128) NOT NULL,
-            scopes JSON,
-            expiresAt TIMESTAMP NULL,
-            lastUsedAt TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_sa_tenant (tenantId),
-            INDEX idx_ent_sa_hash (secretHash)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_support_grants (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            tenantId VARCHAR(128) NOT NULL,
-            workspaceId VARCHAR(128),
-            grantedBy VARCHAR(128) NOT NULL,
-            grantedTo VARCHAR(128) NOT NULL,
-            reason TEXT,
-            status VARCHAR(50) DEFAULT 'ACTIVE',
-            expiresAt TIMESTAMP NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_ent_sg_tenant (tenantId)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-        `CREATE TABLE IF NOT EXISTS enterprise_quota_buckets (
-            id VARCHAR(128) NOT NULL PRIMARY KEY,
-            keyHash VARCHAR(128) NOT NULL,
-            count INT NOT NULL DEFAULT 1,
-            expiresAt BIGINT NOT NULL,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ent_qb_hash (keyHash),
-            INDEX idx_ent_qb_expiry (expiresAt)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-    ];
-    for (const sql of statements) {
-        try {
-            await p.query(sql);
-        } catch (err) {
-            // Unknown table / older MariaDB without IF NOT EXISTS — non-fatal.
-            if (!/unknown table|duplicate column|check that column/i.test(String(err.message || ''))) {
-                console.warn('[MySQL] Schema extension notice:', err.message);
-            }
-        }
-    }
-}
-
-/**
- * Closes the pool deterministically (graceful shutdown, test teardown).
- * Pending queries complete; idle connections are destroyed. Subsequent
- * getPool() calls create a fresh pool, so a restart-in-place is safe.
- */
 async function closePool() {
-    if (pool && !pool._closed) {
-        const p = pool;
-        pool = null;
-        await p.end().catch(() => {});
-    }
+  if (pool && !pool._closed) {
+    const active = pool;
+    pool = null;
+    await active.end().catch(() => {});
+  }
 }
 
-module.exports = {
-    getPool,
-    pool: getPool(),
-    testConnection,
-    initializeSchema,
-    ensureExtendedSchema,
-    closePool,
-    poolConfig,
+const exported = {
+  buildSslConfig,
+  closePool,
+  ensureExtendedSchema,
+  getMigrationStatus,
+  getPool,
+  initializeSchema,
+  poolConfig,
+  setPoolForTests,
+  testConnection,
 };
+Object.defineProperty(exported, 'pool', { enumerable: true, get: getPool });
+module.exports = exported;

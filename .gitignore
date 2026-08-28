@@ -9,6 +9,8 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
+__pycache__/
+*.py[cod]
 /.pnp
 .pnp.js
 
@@ -58,6 +60,12 @@ backend/COMMIT_SHA
 *.p12
 *.pfx
 *.key
+# OpenSSH identities often have no extension; keep operator material out of Git.
+**/id_ed25519*
+**/id_rsa*
+**/id_ecdsa*
+**/known_hosts*
+/.release/
 
 # Vercel
 .vercel

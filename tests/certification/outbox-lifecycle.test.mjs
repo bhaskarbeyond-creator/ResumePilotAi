@@ -22,6 +22,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import mysql from 'mysql2/promise';
+import { loadCertificationDatabase } from './helpers/databaseConfig.mjs';
 import {
   queueEmailInTransaction,
   claimDueEvent,
@@ -29,7 +30,19 @@ import {
   processOutboxOnce,
 } from '../../backend/services/notificationOutbox.js';
 
-const DB = { host: '127.0.0.1', port: 3306, user: 'resumepilot', password: 'resumepilot_sandbox_pw', database: 'ai_resume_builder' };
+const ENABLED = process.env.RUN_MARIADB_OUTBOX_CERTIFICATION === 'true';
+const DB = ENABLED
+  ? loadCertificationDatabase()
+  : { host: '127.0.0.1', port: 3306, user: 'not-configured', password: '', database: 'resumepilot_cert_not_configured' };
+const mariaTest = (name, fn) => test(name, {
+  skip: ENABLED ? false : 'NOT VERIFIED: set RUN_MARIADB_OUTBOX_CERTIFICATION=true against a disposable migrated MariaDB database',
+}, fn);
+
+if (ENABLED) {
+  assert.equal(process.env.NODE_ENV, 'test', 'real outbox certification requires NODE_ENV=test');
+  assert.match(DB.database, /(?:^|[_-])(?:test|tests|ci|cert|certification|sandbox|scratch)(?:[_-]|$)/i,
+    'real outbox certification requires an explicitly disposable database');
+}
 
 let pool;
 
@@ -38,16 +51,18 @@ async function clean() {
 }
 
 test.before(async () => {
+  if (!ENABLED) return;
   pool = mysql.createPool({ ...DB, connectionLimit: 10 });
   await clean();
 });
 
 test.after(async () => {
+  if (!ENABLED) return;
   await clean();
   await pool.end();
 });
 
-test('A. event commits atomically with the business transaction; rollback discards both', async () => {
+mariaTest('A. event commits atomically with the business transaction; rollback discards both', async () => {
   // Committed transaction: event persists.
   const c1 = await pool.getConnection();
   try {
@@ -71,7 +86,7 @@ test('A. event commits atomically with the business transaction; rollback discar
   await pool.query("UPDATE notification_outbox SET provider_accepted = 1, state = 'DELIVERED' WHERE event_id = 'cert:atomic-ok'");
 });
 
-test('B. duplicate enqueue is idempotent (exactly one durable event)', async () => {
+mariaTest('B. duplicate enqueue is idempotent (exactly one durable event)', async () => {
   for (let i = 0; i < 3; i += 1) {
     const conn = await pool.getConnection();
     try {
@@ -87,7 +102,7 @@ test('B. duplicate enqueue is idempotent (exactly one durable event)', async () 
   await pool.query("UPDATE notification_outbox SET provider_accepted = 1, state = 'DELIVERED' WHERE event_id = 'cert:idempotent'");
 });
 
-test('C. concurrent workers claim a due event exactly once', async () => {
+mariaTest('C. concurrent workers claim a due event exactly once', async () => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -105,7 +120,7 @@ test('C. concurrent workers claim a due event exactly once', async () => {
   await finishAttempt(pool, winners[0], winners[0].leaseOwner, { success: true });
 });
 
-test('D. an abandoned lease expires and the event is reclaimable (worker crash)', async () => {
+mariaTest('D. an abandoned lease expires and the event is reclaimable (worker crash)', async () => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -126,7 +141,7 @@ test('D. an abandoned lease expires and the event is reclaimable (worker crash)'
   await finishAttempt(pool, reclaimed, 'recovery-worker', { success: true });
 });
 
-test('E/F. failures retry with backoff, then dead-letter at max attempts', async () => {
+mariaTest('E/F. failures retry with backoff, then dead-letter at max attempts', async () => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -162,7 +177,7 @@ test('E/F. failures retry with backoff, then dead-letter at max attempts', async
   if (ghost) await finishAttempt(pool, ghost, 'ghost-worker', { success: true });
 });
 
-test('G. dead-letter replay requeues and delivers successfully', async () => {
+mariaTest('G. dead-letter replay requeues and delivers successfully', async () => {
   // Replay (operator action): requeue the dead letter.
   const [requeue] = await pool.query(
     "UPDATE notification_outbox SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = 0, last_error = NULL, lease_owner = NULL, lease_expires_at = 0 WHERE event_id = 'cert:fail'"
@@ -184,7 +199,7 @@ test('G. dead-letter replay requeues and delivers successfully', async () => {
   assert.equal(rows[0].provider_accepted, 1);
 });
 
-test('H. delivered events leave the due-query scan (terminal state is final)', async () => {
+mariaTest('H. delivered events leave the due-query scan (terminal state is final)', async () => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -203,20 +218,13 @@ test('H. delivered events leave the due-query scan (terminal state is final)', a
   assert.ok(!second.processed || second.eventId !== 'cert:terminal', 'terminal events are never redelivered');
 });
 
-test('outbox row carries the required synchronization metadata (§9)', async () => {
+mariaTest('notification outbox rows carry required lease, retry, and idempotency metadata', async () => {
   const [rows] = await pool.query(
     `SELECT COLUMN_NAME FROM information_schema.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'notification_outbox'`
   );
-  const cols = new Set(rows.map(r => Object.values(r)[0]));
+  const cols = new Set(rows.map(row => Object.values(row)[0]));
   for (const required of ['id', 'event_id', 'channel', 'recipient', 'template_type', 'vars', 'metadata', 'tenant_id', 'idempotency_key', 'state', 'attempt_count', 'max_attempts', 'next_attempt_at', 'lease_owner', 'lease_expires_at', 'last_attempt_at', 'last_error', 'created_at']) {
     assert.ok(cols.has(required), `notification_outbox missing required metadata column: ${required}`);
-  }
-  const [syncCols] = await pool.query(
-    `SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sync_outbox'`
-  );
-  const sync = new Set(syncCols.map(r => Object.values(r)[0]));
-  for (const required of ['id', 'entity_type', 'entity_id', 'operation', 'payload', 'version', 'content_hash', 'status', 'retry_count', 'max_retries', 'last_error', 'mutation_id', 'idempotency_key']) {
-    assert.ok(sync.has(required), `sync_outbox missing required metadata column: ${required}`);
   }
 });

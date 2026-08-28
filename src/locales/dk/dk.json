@@ -211,7 +211,7 @@
     "unlimitedResumes": "Ubegrænsede ansøgninger",
     "nonRecuring": "Ikke-gentagende betaling.",
     "upgradeAndDownload": "Opgrader og download",
-    "payment1": "Få dit drømmejob",
+    "payment1": "Opret dit CV",
     "payment2": "Betaling via en betroet betalingstjeneste",
     "payment3": "SSL Sikker / 256-bit SSL sikker checkout",
     "payment4": "7-dages pengene tilbage garanti",
@@ -243,7 +243,7 @@
     "featuresNav": "Funktioner",
     "resumeBuilderFeatures": "CV-bygger funktioner",
     "featureTagline": "Alt hvad du behøver for det perfekte CV",
-    "userCount": "50K+ brugere",
+    "userCount": "Funktionsoversigt",
     "exploreFeatures": "Udforsk alle funktioner",
     "freeToTry": "Gratis at prøve",
     "startBuilding": "Begynd at bygge",
@@ -345,12 +345,12 @@
       "sentence5": "Bestå samtaler med AI forberedelsesværktøjer"
     },
     "badge": "AI-drevet CV-bygger",
-    "description": "Opret fantastiske, ATS-venlige CV'er og følgebreve med AI-assistance. Vælg mellem professionelle skabeloner, få feedback i realtid, og land dit drømmejob hurtigere.",
+    "description": "Opret og rediger CV'er og følgebreve med guidede værktøjer, tilpasselige skabeloner, live forhåndsvisning og valgfri AI-hjælp.",
     "createResume": "Opret CV",
     "createCoverLetter": "Opret følgebrev",
     "stats": {
-      "users": "5.000+ glade brugere",
-      "rating": "4.9/5"
+      "users": "Guidede CV-værktøjer",
+      "rating": "Live forhåndsvisning"
     },
     "features": {
       "freeToStart": "Gratis at starte",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "BEVISTE RESULTATER • BETROET AF 50.000+ PROFESSIONELLE",
+    "badge": "GUIDET CV-OPRETTELSE",
     "title": {
       "part1": "Transformer",
       "part2": "din karriere",
       "part3": "rejse"
     },
-    "description": "Slut dig til tusindvis af fagfolk, der har accelereret deres karriere med vores AI-drevne CV-bygger. Bliv bemærket, få interviews, og sikre dig dit drømmejob hurtigere end nogensinde før.",
+    "description": "Brug guidede afsnit, tilpasselige layouts, forhåndsvisninger og valgfri AI-hjælp til at forberede og gennemgå et CV.",
     "benefits": [
       {
         "title": "Få flere jobsamtaler",
         "description": "Vores ATS-optimerede skabeloner og AI-drevne indholdsforslag hjælper dit CV med at komme forbi automatiserede screeningssystemer og ind i hænderne på ansættelseschefer.",
-        "detail": "Slut dig til tusindvis af fagfolk, der har øget deres interviewfrekvens med 3 gange ved at bruge vores gennemprøvede system."
+        "detail": "Gennemgå og tilpas hvert forslag, før du bruger det i en ansøgning."
       },
       {
         "title": "Skil dig ud fra konkurrencen",
@@ -396,24 +396,6 @@
         "title": "Opbyg tillid til din jobsøgning",
         "description": "Præsenter dit bedste professionelle jeg med et poleret, fejlfrit CV, der afspejler dit sande potentiale og dine professionelle resultater.",
         "detail": "Føl dig tryg ved at vide, at dine ansøgningsmaterialer er professionelt udformet og branchekompatible."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Glade brugere"
-      },
-      {
-        "number": "98.7%",
-        "label": "Succesrate"
-      },
-      {
-        "number": "50+",
-        "label": "Skabeloner"
-      },
-      {
-        "number": "24 timer",
-        "label": "Gennemsnitlig tid"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Klar til at lande dit drømmejob?",
-      "description": "Slut dig til over 50.000 fagfolk, der har transformeret deres karriere. Begynd at bygge dit vindende CV i dag.",
+      "title": "Klar til at oprette dit CV?",
+      "description": "Opret, gennemgå og eksportér dit CV med den guidede editor.",
       "button": "Start din succeshistorie",
       "noCredit": "✨ Ingen kreditkort påkrævet • Gratis skabeloner inkluderet"
     }
@@ -440,7 +422,7 @@
       "part2": "brugere",
       "part3": " siger"
     },
-    "description": "Slut dig til tusindvis af tilfredse jobsøgende, der har landet deres drømmejob med vores AI-drevne CV-bygger.",
+    "description": "Læs godkendt kundefeedback, der er offentliggjort via platformens anmeldelsesproces.",
     "navigation": {
       "previous": "Forrige",
       "next": "Næste",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Har du stadig brug for hjælp?",
-      "description": "Vores supportteam er her 24/7 for at hjælpe dig med at lykkes",
+      "description": "Brug kontaktformularen til spørgsmål om konto eller produkt. Svartider garanteres ikke.",
       "contactButton": "Kontakt support",
-      "docsButton": "Gennemse dokumentation"
+      "docsButton": "Karriereartikler"
     },
     "cta": {
       "badge": "Klar til at oprette dit CV?",
-      "title": "Transformer din karriere med AI-drevne CV'er",
-      "description": "Slut dig til tusindvis af fagfolk, der har oprettet fantastiske CV'er på få sekunder. Start din karriere i dag med vores intelligente designplatform.",
+      "title": "Opret og gennemgå dit CV",
+      "description": "Se almindelige spørgsmål, eller start et CV i den guidede editor.",
       "button": "Begynd at oprette gratis",
-      "freeCredits": "3 gratis kreditter • Ingen kreditkort påkrævet",
-      "support": "24/7 Support",
-      "secure": "Sikker & Privat",
-      "instant": "Øjeblikkelige resultater"
+      "freeCredits": "",
+      "support": "Kontobaserede kladder",
+      "secure": "Gennemgå før eksport",
+      "instant": "Valgfri AI-hjælp"
     },
     "trustIndicators": {
-      "secure": "Sikker & Privat",
-      "instant": "Øjeblikkelige resultater",
-      "support": "24/7 Support"
+      "secure": "Gennemgå før eksport",
+      "instant": "Valgfri AI-hjælp",
+      "support": "Kontobaserede kladder"
     },
     "q1": {
-      "question": "Hvordan kommer jeg i gang med AI-CV-oprettelse?",
-      "answer": "Opret en gratis konto, indtast dine oplysninger, og se vores AI skabe flotte CV'er på få sekunder."
+      "question": "Hvordan kommer jeg i gang med CV-editoren?",
+      "answer": "Opret en konto, åbn CV-editoren, indtast oplysninger du har kontrolleret, vælg et layout, og gennemgå forhåndsvisningen før du gemmer eller eksporterer. AI-hjælp er valgfri og kan være deaktiveret."
     },
     "q2": {
-      "question": "Hvor hurtigt oprettes CV'et?",
-      "answer": "Vores AI genererer flere CV-varianter på under 5 minutter!"
+      "question": "Garanterer AI-hjælp en samtale eller et job?",
+      "answer": "Nej. AI-output kan være ufuldstændigt eller forkert og garanterer ikke ATS-godkendelse, en samtale eller ansættelse. Gennemgå og rediger hvert forslag."
     },
     "q3": {
-      "question": "Hvad er inkluderet i den gratis plan?",
-      "answer": "Nye brugere får gratis credits til at downloade CV'er i PDF- og Word-format."
+      "question": "Hvor kan jeg se aktuelle plangrænser og priser?",
+      "answer": "Prissiden viser de aktuelle serverleverede planer, rettigheder, skatter og betalingsmuligheder. Tilgængeligheden kan variere efter konto og operatørkonfiguration."
     },
     "q4": {
-      "question": "Kan jeg tilpasse det oprettede CV?",
-      "answer": "Ja! Du kan nemt ændre stilarter, farver og layouts."
+      "question": "Kan jeg tilpasse mit CV?",
+      "answer": "Ja. Du kan redigere CV-afsnit, vælge et tilgængeligt layout og gennemgå den viste forhåndsvisning. AI-forslag kan redigeres og bør kontrolleres."
     },
     "q5": {
-      "question": "Hvilke filformater tilbyder I?",
-      "answer": "Alle CV'er er tilgængelige i høj-kvalitets PDF- og Word-formater."
+      "question": "Hvilke eksportformater er tilgængelige?",
+      "answer": "PDF- og DOCX-eksport tilbydes, når den relevante eksportrute og kontorettighed er tilgængelig. Kontrollér altid filen før indsendelse."
     },
     "q6": {
-      "question": "Hvordan fungerer credit-systemet?",
-      "answer": "Hver generering bruger 1 credit. Credits udløber aldrig."
+      "question": "Hvordan gemmes kladder og kontodata?",
+      "answer": "Firebase Authentication håndterer identitet. CV-kladder og andre programdata gemmes via den MariaDB-baserede API. Se privatlivspolitikken og funktionerne til eksport eller sletning af konto."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Hold dig opdateret",
       "securePayments": "Sikre betalinger"
     },
-    "aboutText": "Vi hjælper jobsøgende med at oprette professionelle CV'er på få minutter. Vores mission er at give individer mulighed for at lande deres drømmejob med højkvalitets, AI-udformede ansøgningsdokumenter.",
+    "aboutText": "ResumePilot AI leverer værktøjer til at oprette, gennemgå og eksportere CV’er og relaterede karrieredokumenter.",
     "links": {
       "pricing": "Priser",
       "contact": "Kontakt"
@@ -1146,8 +1128,8 @@
       "clickToView": "Klik for at se i fuld størrelse",
       "changeTemplate": "Skift Skabelon",
       "viewFullSize": "Vis Fuld Størrelse",
-      "trustedBy": "Betroet af over 50K fagfolk",
-      "joinSuccess": "Deltag i succeshistorierne",
+      "trustedBy": "Forhåndsvis før eksport",
+      "joinSuccess": "Gennemgå indhold og formatering",
       "resumePdf": "CV.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Udstedelsesdato",
         "placeholder": "f.eks. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "AI-certificeringsanbefalinger",
-      "recommend": "Anbefal certificeringer (AI)",
-      "tooltip": "Generer AI-certificeringsanbefalinger skræddersyet til din profil",
-      "generating": "Analyserer og genererer...",
-      "tailoredSubtitle": "Anerkendte branchecertificeringer skræddersyet til {{role}}",
-      "genericSubtitle": "Førende akkrediterede certificeringer baseret på dine kompetencer",
-      "promptTitle": "Styrk dit CV med validerede certificeringer",
-      "promptDescRole": "Lad AI analysere din erfaring som {{role}} og anbefale de mest efterspurgte certificeringer.",
-      "promptDescGeneric": "Generer branchestandardcertificeringer tilpasset dit felt for at forbedre din ATS-score.",
-      "generateNow": "Generer AI-anbefalinger nu",
-      "refresh": "Opdater anbefalinger",
-      "getRecommendations": "Hent anbefalinger",
-      "addAll": "Tilføj alle anbefalede",
-      "added": "Tilføjet",
-      "addedBadge": "Tilføjet",
-      "add": "Tilføj",
-      "mandatoryBadge": "Branchestandard",
-      "recommendedBadge": "Anbefalet"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Find dit drømmejob i dag",
+        "sentence1": "Gennemgå aktuelle jobopslag",
         "sentence2": "Kom i kontakt med topvirksomheder",
         "sentence3": "Fremme din karriere",
         "sentence4": "Opdag fjernmuligheder",
@@ -1935,83 +1897,40 @@
       "resources": "Ressourcer",
       "resourcesDesc": "Karrierevejledning og tips",
       "stats": {
-        "jobs": "10.000+ aktive job",
-        "rating": "4.8/5 vurdering"
+        "jobs": "Aktuelle jobopslag",
+        "rating": "Bekræftede joboplysninger"
       },
       "features": {
         "freeToApply": "Gratis at ansøge",
-        "verifiedEmployers": "Verificerede arbejdsgivere"
+        "verifiedEmployers": "Modererede arbejdsgivere"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Top arbejdsgivere",
-      "title": "Slut dig til førende virksomheder",
-      "description": "Opdag muligheder hos virksomheder i verdensklasse, der aktivt ansætter. Fra startups til Fortune 500, find dit perfekte match.",
+      "badge": "Fremhævede arbejdsgivere",
+      "title": "Se arbejdsgiverprofiler",
+      "description": "Se fremhævede arbejdsgiverprofiler med aktive opslag. Åbn jobportalen for at gennemgå aktuelle stillinger og ansøgningsoplysninger.",
       "featured": "Udvalgt",
       "viewAll": "Vis alle virksomheder",
       "stats": {
-        "companies": "Partnervirksomheder",
+        "companies": "Fremhævede virksomheder",
         "jobs": "Aktive job",
         "hires": "Succesfulde ansættelser"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Sådan fungerer det",
-      "title": "Få dit drømmejob i",
-      "titleHighlight": "4 enkle trin",
-      "description": "Vores strømlinede proces gør jobsøgningen ubesværet. Fra opdagelse til ansættelse guider vi dig hvert skridt på vejen for at sikre, at du finder den perfekte mulighed.",
-      "featuresTitle": "Hvorfor vælge vores platform?",
-      "featuresDescription": "Vi leverer banebrydende værktøjer og funktioner for at gøre din jobsøgning mere effektiv og virkningsfuld.",
-      "steps": {
-        "0": {
-          "title": "Søg og opdag",
-          "description": "Gennemse tusindvis af jobmuligheder fra topvirksomheder. Brug vores avancerede filtre til at finde det perfekte match for dine færdigheder og præferencer."
-        },
-        "1": {
-          "title": "Opret profil",
-          "description": "Byg din professionelle profil med vores CV-bygger. Vis dine færdigheder, erfaring og resultater frem for at skille dig ud fra mængden."
-        },
-        "2": {
-          "title": "Ansøg øjeblikkeligt",
-          "description": "Ansøg på flere job med ét klik. Vores smarte ansøgningssystem skræddersyr automatisk din profil til hver stilling."
-        },
-        "3": {
-          "title": "Bliv ansat",
-          "description": "Kom i kontakt med ansættelseschefer, planlæg interviews og få dit drømmejob. Vi støtter dig gennem hele processen."
-        }
       },
-      "features": {
-        "0": {
-          "title": "AI-drevet matching",
-          "description": "Vores intelligente algoritme matcher dig med relevante muligheder"
-        },
-        "1": {
-          "title": "CV-optimering",
-          "description": "Optimer automatisk dit CV for hver ansøgning"
-        },
-        "2": {
-          "title": "Verificerede virksomheder",
-          "description": "Alle arbejdsgivere er verificeret for ægthed og kvalitet"
-        }
-      },
-      "cta": {
-        "title": "Klar til at starte din rejse?",
-        "description": "Slut dig til tusindvis af fagfolk, der har fundet deres drømmejob gennem vores platform. Din næste mulighed er kun et klik væk.",
-        "searchButton": "Start jobsøgning",
-        "profileButton": "Opret profil"
-      }
+      "empty": "Ingen arbejdsgivere er fremhævet i øjeblikket.",
+      "unavailable": "Fremhævede arbejdsgivere er midlertidigt utilgængelige.",
+      "evidenceReviewed": "Dokumentation gennemgået"
     },
     "LandingJobsFeatured": {
       "badge": "Udvalgte job",
-      "title": "Opdag din næste",
-      "titleHighlight": "Drømmemulighed",
+      "title": "Se fremhævede",
+      "titleHighlight": "Jobopslag",
       "description": "Udforsk håndplukkede muligheder fra topvirksomheder. Disse udvalgte stillinger tilbyder enestående karrierevækst, konkurrencedygtig løn og fantastiske arbejdsmiljøer.",
-      "statsTitle": "Slut dig til tusindvis af succesfulde fagfolk",
-      "statsDescription": "Vores platform har hjulpet utallige fagfolk med at finde deres drømmejob hos topvirksomheder verden over.",
+      "statsTitle": "Offentliggjort platformoversigt",
+      "statsDescription": "Disse visningsværdier er versionsstyrede og knyttet til dokumentation gennemgået af platformadministratoren.",
       "stats": {
         "jobs": "Udvalgte job",
         "success": "Succesrate",
-        "companies": "Topvirksomheder"
+        "companies": "Fremhævede virksomheder"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Ansøg nu"
         }
       },
-      "viewAll": "Vis alle job"
+      "viewAll": "Vis alle job",
+      "empty": "Ingen job er fremhævet i øjeblikket.",
+      "evidenceReviewed": "Dokumentation gennemgået"
     },
     "MainJobListings": {
       "jobSingular": "job",

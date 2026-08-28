@@ -17,8 +17,10 @@
  *
  * Durability semantics:
  *  - Leases (lease_owner + lease_expires_at) mean a crashed worker never loses
- *    an event: expired leases are reclaimed, and redelivery is safe because
- *    delivery is idempotent per (channel, eventId) identity.
+ *    an event: expired leases are reclaimed.
+ *  - SMTP does not provide an idempotency key. A process crash after provider
+ *    acceptance but before the acknowledgement update can cause redelivery;
+ *    this queue is durable at-least-once delivery, not exactly-once delivery.
  *  - Terminal records (provider accepted / DEAD_LETTER) leave the due-query
  *    index (state transitions out of the active set), so they are never
  *    re-claimed by the due scan.
@@ -26,6 +28,7 @@
 
 const crypto = require('crypto');
 const { tenantContextAuditProjection } = require('../enterprise/tenantContext');
+const { createEncryptionProvider, isEncryptedEnvelope } = require('../enterprise/encryptionProvider');
 
 const MAX_ATTEMPTS = 5;
 const BASE_RETRY_MS = 60_000;
@@ -57,13 +60,28 @@ function parseJsonField(value, fallback) {
 
 function normalizeRow(row) {
   if (!row) return null;
+  const storedVars = parseJsonField(row.vars, {});
+  let vars = storedVars;
+  let payloadError = null;
+  if (isEncryptedEnvelope(storedVars)) {
+    try {
+      const provider = createEncryptionProvider(process.env);
+      if (!provider) throw Object.assign(new Error('Outbox encryption key unavailable'), { code: 'OUTBOX_ENCRYPTION_UNAVAILABLE' });
+      vars = provider.decryptValue(storedVars);
+      if (!vars || typeof vars !== 'object' || Array.isArray(vars)) throw new Error('Decrypted outbox variables are invalid');
+    } catch (error) {
+      vars = {};
+      payloadError = error.code || 'OUTBOX_PAYLOAD_DECRYPTION_FAILED';
+    }
+  }
   return {
     id: row.id,
     eventId: row.event_id,
     channel: row.channel,
     recipient: row.recipient,
     templateType: row.template_type,
-    vars: parseJsonField(row.vars, {}),
+    vars,
+    payloadError,
     metadata: parseJsonField(row.metadata, {}),
     tenant: row.tenant_id ? { tenantId: row.tenant_id } : (parseJsonField(row.metadata, {})?.tenant || null),
     state: row.state,
@@ -85,31 +103,79 @@ function normalizeRow(row) {
  * @param {object} params { eventId, recipient, templateType, vars, metadata, tenantContext, idempotencyKey }
  * @returns {string} deterministic outbox row id
  */
-async function queueEmailInTransaction(connection, { eventId, recipient, templateType, vars = {}, metadata = {}, tenantContext = null, idempotencyKey = null } = {}) {
+async function queueEmailInTransaction(connection, { eventId, recipient, templateType, vars = {}, metadata = {}, tenantContext = null, idempotencyKey = null, sensitive = false } = {}) {
   if (!connection || typeof connection.query !== 'function') throw new Error('Invalid notification outbox event');
   if (!eventId || !validEmail(recipient) || !/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(String(templateType || ''))) throw new Error('Invalid notification outbox event');
   const id = outboxId(eventId);
   const tenant = tenantContext ? tenantContextAuditProjection(tenantContext) : null;
   const idemKey = idempotencyKey || `email:${id}`;
-  // INSERT IGNORE + unique idempotency_key: repeating the same business
-  // mutation (retry, duplicate webhook) never creates a duplicate event.
-  await connection.query(
-    `INSERT IGNORE INTO notification_outbox
+  let storedVars = vars || {};
+  if (sensitive) {
+    const provider = createEncryptionProvider(process.env);
+    if (!provider) {
+      throw Object.assign(new Error('Server-side encryption is required for sensitive notification payloads.'), {
+        code: 'OUTBOX_ENCRYPTION_UNAVAILABLE', status: 503,
+      });
+    }
+    storedVars = provider.encryptValue(storedVars);
+  }
+  // A no-op duplicate-key update preserves idempotency without INSERT IGNORE,
+  // which would also suppress truncation and constraint failures. The locked
+  // row is validated so a reused idempotency key cannot bind a caller to an
+  // unrelated notification.
+  const normalizedEventId = String(eventId).slice(0, 300);
+  const normalizedRecipient = String(recipient).trim().toLowerCase();
+  const normalizedTemplate = String(templateType);
+  const normalizedIdempotencyKey = String(idemKey).slice(0, 128);
+  const [insertResult] = await connection.query(
+    `INSERT INTO notification_outbox
        (id, event_id, channel, recipient, template_type, vars, metadata, tenant_id, idempotency_key, state, attempt_count, next_attempt_at, created_at)
-     VALUES (?, ?, 'email', ?, ?, ?, ?, ?, ?, 'NOTIFICATION_QUEUED', 0, ?, NOW(6))`,
+     VALUES (?, ?, 'email', ?, ?, ?, ?, ?, ?, 'NOTIFICATION_QUEUED', 0, ?, NOW(6))
+     ON DUPLICATE KEY UPDATE id = id`,
     [
       id,
-      String(eventId).slice(0, 300),
-      String(recipient).trim().toLowerCase(),
-      String(templateType),
-      JSON.stringify(vars || {}),
+      normalizedEventId,
+      normalizedRecipient,
+      normalizedTemplate,
+      JSON.stringify(storedVars),
       JSON.stringify({ ...(metadata || {}), ...(tenant ? { tenant } : {}) }),
       tenant?.tenantId || null,
-      String(idemKey).slice(0, 128),
+      normalizedIdempotencyKey,
       Date.now(),
     ]
   );
-  return id;
+  if (Number(insertResult?.affectedRows || 0) === 1) return id;
+  const [rows] = await connection.query(
+    'SELECT id, event_id, recipient, template_type FROM notification_outbox WHERE idempotency_key = ? FOR UPDATE',
+    [normalizedIdempotencyKey]
+  );
+  const persisted = rows[0];
+  if (!persisted || persisted.id !== id || persisted.event_id !== normalizedEventId
+      || persisted.recipient !== normalizedRecipient || persisted.template_type !== normalizedTemplate) {
+    throw Object.assign(new Error('Notification idempotency key is already bound to a different event'), {
+      code: 'NOTIFICATION_IDEMPOTENCY_CONFLICT', status: 409,
+    });
+  }
+  return persisted.id;
+}
+
+/** Enqueue an operator/system notification as its own durable mutation. Product
+ * lifecycle services should prefer queueEmailInTransaction with their existing
+ * business transaction. */
+async function queueEmail(pool, params) {
+  if (!pool?.getConnection) throw new Error('A MariaDB pool is required');
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const id = await queueEmailInTransaction(connection, params);
+    await connection.commit();
+    return id;
+  } catch (error) {
+    await connection.rollback().catch(() => {});
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 /**
@@ -120,7 +186,7 @@ async function queueEmailInTransaction(connection, { eventId, recipient, templat
 async function claimDueEvent(pool, workerId, now = Date.now()) {
   const placeholders = ACTIVE_STATES.map(() => '?').join(',');
   // Candidates: active state, due, not leased (or lease expired), under max
-  // attempts, and never already accepted by the provider (exactly-once intent).
+  // attempts, and not acknowledged as provider-accepted in our local ledger.
   const [candidates] = await pool.query(
     `SELECT id FROM notification_outbox
       WHERE state IN (${placeholders})
@@ -154,8 +220,20 @@ async function claimDueEvent(pool, workerId, now = Date.now()) {
 /**
  * Record the outcome of a delivery attempt under the lease. If the lease was
  * stolen (another worker reclaimed an expired lease), this write is a no-op —
- * duplicate delivery stays safe.
+ * the stale worker cannot overwrite the new lease owner. Provider-side duplication
+ * remains possible in the SMTP acceptance/acknowledgement crash window.
  */
+async function updateInvitationDeliveryProjection(pool, event, state, error = null) {
+  if (event?.templateType !== 'enterprise-invitation') return;
+  await pool.query(
+    `UPDATE enterprise_membership_invitations
+     SET deliveryState = ?, deliveredAt = CASE WHEN ? = 'DELIVERED' THEN NOW(6) ELSE deliveredAt END,
+         lastDeliveryError = ?, updated_at = NOW(6)
+     WHERE notificationId = ?`,
+    [state, state, error ? String(error).slice(0, 500) : null, event.id]
+  );
+}
+
 async function finishAttempt(pool, event, workerId, result, now = Date.now()) {
   const attemptCount = Number(event.attemptCount || 0) + 1;
   if (result?.success) {
@@ -169,6 +247,7 @@ async function finishAttempt(pool, event, workerId, result, now = Date.now()) {
         WHERE id = ? AND lease_owner = ?`,
       [attemptCount, event.id, workerId]
     );
+    await updateInvitationDeliveryProjection(pool, event, 'DELIVERED');
     return;
   }
   const terminal = attemptCount >= Number(event.maxAttempts || MAX_ATTEMPTS);
@@ -186,28 +265,38 @@ async function finishAttempt(pool, event, workerId, result, now = Date.now()) {
       workerId,
     ]
   );
+  await updateInvitationDeliveryProjection(
+    pool,
+    event,
+    terminal ? 'DEAD_LETTER' : 'RETRYING',
+    result?.error || 'Provider attempt failed'
+  );
 }
 
 /**
  * Process at most one due event. Designed to run on an interval: crash-safe,
- * lease-based, idempotent on redelivery.
+ * lease-based, with deterministic local event identity and at-least-once delivery.
  */
 async function processOutboxOnce({ pool, dispatch, authorize = null, workerId = crypto.randomUUID(), now = Date.now() }) {
   const event = await claimDueEvent(pool, workerId, now);
   if (!event) return { processed: false };
   let result;
   try {
-    // Tenant-bound events are fail-closed unless the worker explicitly
-    // reauthorizes them at execution time.
-    const authorized = event.tenant ? (typeof authorize === 'function' && await authorize(event)) : true;
-    if (authorized !== true) {
-      result = { success: false, error: 'TENANT_CONTEXT_REAUTHORIZATION_FAILED' };
+    if (event.payloadError) {
+      result = { success: false, error: event.payloadError };
     } else {
-      result = await dispatch(event);
+      // Tenant-bound events are fail-closed unless the worker explicitly
+      // reauthorizes them at execution time.
+      const authorized = event.tenant ? (typeof authorize === 'function' && await authorize(event)) : true;
+      if (authorized !== true) {
+        result = { success: false, error: 'TENANT_CONTEXT_REAUTHORIZATION_FAILED' };
+      } else {
+        result = await dispatch(event);
+      }
     }
   } catch (error) { result = { success: false, error: error.message }; }
   await finishAttempt(pool, event, workerId, result, now);
   return { processed: true, eventId: event.eventId, providerAccepted: result?.success === true };
 }
 
-module.exports = { MAX_ATTEMPTS, outboxId, queueEmailInTransaction, claimDueEvent, finishAttempt, processOutboxOnce, retryDelay, normalizeRow };
+module.exports = { MAX_ATTEMPTS, outboxId, queueEmailInTransaction, queueEmail, claimDueEvent, finishAttempt, processOutboxOnce, retryDelay, normalizeRow };

@@ -34,19 +34,19 @@ export function resolveDynamicModel(provider, aiConfig = {}) {
 }
 
 const ALLOWED_ENDPOINTS = new Set([
-    'generate-resume', 'generate-summary', 'generate-interview',
+    'generate-summary', 'generate-interview',
     'generate-work-description', 'generate-education-description',
     'generate-skills', 'check-grammar', 'enhance-single-bullet',
-    'generate-certifications', 'autocomplete', 'generate-ai-cover-letter'
+    'autocomplete', 'generate-ai-cover-letter'
 ]);
-const LEGACY_PROMPT_OPERATIONS = new Set([
+const CONSOLIDATED_CONTENT_OPERATIONS = new Set([
     'generate-summary', 'generate-work-description', 'generate-education-description',
-    'generate-skills', 'enhance-single-bullet', 'generate-certifications', 'autocomplete',
+    'generate-skills', 'enhance-single-bullet', 'autocomplete',
 ]);
 
 export function buildAiRequest(endpointName, payload = {}) {
     if (!ALLOWED_ENDPOINTS.has(endpointName)) throw new Error('Unsupported AI operation');
-    if (LEGACY_PROMPT_OPERATIONS.has(endpointName)) {
+    if (CONSOLIDATED_CONTENT_OPERATIONS.has(endpointName)) {
         return { url: '/api/generate-content', body: { operation: endpointName, payload } };
     }
     return { url: `/api/${endpointName}`, body: payload };

@@ -4,7 +4,7 @@ import { BiSupport } from 'react-icons/bi';
 import { useLottie } from "lottie-react";
 import { withTranslation } from 'react-i18next';
 import LoaderAnimation from '../../assets/animations/lottie-loader.json';
-import { getPages, getWebsiteData, getSocialLinks, addContactMessage } from '../../firestore/dbOperations';
+import { getPages, getWebsiteData, getSocialLinks, addContactMessage } from '../../services/api/platform';
 import HomepageFooter from '../../components/Dashboard2/elements/HomepageFooter';  
 import HomepageNavbar from '../../components/Dashboard2/elements/HomepageNavbar';
 

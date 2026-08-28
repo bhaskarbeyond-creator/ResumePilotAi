@@ -12,14 +12,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const request = require('supertest');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
 const { InMemoryServiceAccountStore } = require('../enterprise/serviceAccountStore');
 const { InMemorySupportGrantStore } = require('../enterprise/supportAccessStore');
 const { TenantService } = require('../enterprise/tenantService');
 const { applyTenantAiPolicy } = require('../enterprise/tenantAi');
 const { setTokenVerifierForTests } = require('../security/auth');
-const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
+const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
 const app = require('../index');
 
 const tokens = {
@@ -41,6 +41,9 @@ function installService() {
   serviceAccountStore = new InMemoryServiceAccountStore();
   app.set('tenantService', new TenantService({
     registry,
+    repository: new InMemoryEnterpriseRepository({
+      encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) }),
+    }),
     serviceAccountStore,
     supportGrantStore: new InMemorySupportGrantStore(),
   }));
@@ -265,7 +268,7 @@ test('custom roles: define, assign, effective permissions resolve, workspace sco
 });
 
 test('custom role normalization rejects invalid ids, wildcards, and unknown permissions', async () => {
-  const { normalizeCustomRoles } = require('../enterprise/tenantRegistry');
+  const { normalizeCustomRoles } = require('../test/helpers/inMemoryTenantRegistry');
   const normalized = normalizeCustomRoles([
     { id: 'ok_role', label: 'Ok', permissions: ['resource.read'] },           // upper-cased to OK_ROLE? -> rejected (no CUSTOM_ prefix)
     { id: 'CUSTOM_OK', permissions: ['resource.read', 'not.a.permission'] },  // unknown permission dropped
@@ -360,22 +363,19 @@ test('tenant profile rename is permissioned, audited, and leaves the slug immuta
 
 test('audit list exposes actor, severity, and category filters plus a pagination cursor', async () => {
   const { tenantId } = await buildOrg();
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
-  const repository = new FirestoreEnterpriseRepository({ db, admin });
   const svc = app.get('tenantService');
-  // Directly seed the repository partition with distinguishable events.
+  const repository = svc.repository;
+  // Directly seed the explicit test repository with distinguishable events.
   const context = await svc.resolveContext({ user: tokens.owner, requestedTenantId: tenantId, requestId: 'audit-seed' });
-  const tenantPartition = db.collection(`tenants/${tenantId}/audit_events`);
   for (let index = 0; index < 6; index += 1) {
-    await tenantPartition.doc(`event-${index}`).set({
-      id: `event-${index}`,
-      tenantId,
+    await repository.appendAuditEvent({
+      ...context.context,
+      subjectId: index % 2 === 0 ? 'actor-alice' : 'actor-bob',
+    }, {
+      id: crypto.randomUUID(),
       action: index % 2 === 0 ? 'TEAM_CREATED' : 'SERVICE_ACCOUNT_REVOKED',
       category: index % 2 === 0 ? 'tenant.team' : 'tenant.security',
-      severity: index % 2 === 0 ? 'INFO' : 'HIGH',
-      outcome: 'SUCCESS',
-      actorSubjectId: index % 2 === 0 ? 'actor-alice' : 'actor-bob',
+      severity: index % 2 === 0 ? 'INFO' : 'HIGH', outcome: 'SUCCESS',
       occurredAt: new Date(Date.now() - index * 60_000).toISOString(),
     });
   }
@@ -397,32 +397,34 @@ test('audit list exposes actor, severity, and category filters plus a pagination
 
 // ─── Data export ─────────────────────────────────────────────────────────────
 
-test('tenant data export produces a checksum-verified snapshot and refuses without settings permission', async () => {
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
-  const repository = new FirestoreEnterpriseRepository({ db, admin });
-  const { FirestoreTenantRegistry } = require('../enterprise/tenantRegistry');
-  registry = new FirestoreTenantRegistry({ db, admin });
-  app.set('tenantService', new TenantService({
-    registry,
-    db,
-    admin,
-    repository,
-    serviceAccountStore: new InMemoryServiceAccountStore(),
-    supportGrantStore: new InMemorySupportGrantStore(),
-  }));
-  const provisioned = await registry.provisionTenant({ ownerPrincipalId: tokens.owner.uid, displayName: 'Export Org', slug: 'export-org' });
-  const tenantId = provisioned.tenantId;
-  const svc = app.get('tenantService');
-  const ownerCtx = await svc.resolveContext({ user: tokens.owner, requestedTenantId: tenantId, requestId: 'export-setup' });
-  await svc.grantMembership({ context: ownerCtx.context, input: { principalId: tokens.member.uid, roles: ['MEMBER'] }, requestId: 'export-member' });
+test('tenant data export produces a checksum-verified MariaDB snapshot and refuses without settings permission', async () => {
+  const { tenantId, svc } = await buildOrg();
+  const repository = svc.repository;
+  const rowsFor = table => {
+    if (table === 'enterprise_tenants') return [registry.tenants.get(tenantId)];
+    if (table === 'enterprise_workspaces') return [...registry.workspaces.values()].filter(row => row.tenantId === tenantId);
+    if (table === 'enterprise_memberships') return [...registry.memberships.values()].filter(row => row.tenantId === tenantId);
+    return [];
+  };
+  repository.pool = {
+    async getConnection() {
+      return {
+        async query(sql) {
+          const table = String(sql).match(/SELECT \* FROM `([^`]+)`/)?.[1];
+          return table ? [rowsFor(table)] : [[]];
+        },
+        async commit() {}, async rollback() {}, release() {},
+      };
+    },
+  };
 
   const exported = await request(app).get('/api/enterprise/data/export')
     .set('Authorization', bearer('owner')).set('X-Tenant-Id', tenantId);
   assert.equal(exported.status, 200);
-  assert.equal(exported.body.snapshot.format, 'resumepilot-enterprise-tenant-snapshot');
+  assert.equal(exported.body.snapshot.format, 'resumepilot-enterprise-mariadb-tenant-snapshot');
+  assert.equal(exported.body.snapshot.version, 3);
   assert.ok(exported.body.snapshot.checksum);
-  assert.ok(exported.body.snapshot.documentCount >= 2, 'tenant + membership documents are included');
+  assert.ok(exported.body.snapshot.recordCount >= 3, 'tenant, workspace, and membership rows are included');
 
   const memberDenied = await request(app).get('/api/enterprise/data/export')
     .set('Authorization', bearer('member')).set('X-Tenant-Id', tenantId);
@@ -432,9 +434,7 @@ test('tenant data export produces a checksum-verified snapshot and refuses witho
 // ─── Usage: per-user breakdown and generation ledger ─────────────────────────
 
 test('usage summary includes per-user rollups and the generation ledger is listable', async () => {
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
-  const repository = new FirestoreEnterpriseRepository({ db, admin });
+  const repository = new InMemoryEnterpriseRepository();
   const { freezeContext } = require('../enterprise/tenantContext');
   const tenantId = crypto.randomUUID();
   const workspaceId = crypto.randomUUID();
@@ -447,9 +447,9 @@ test('usage summary includes per-user rollups and the generation ledger is lista
       subjectId: `subject-${principalId}`,
       tenantId,
       workspaceId,
-      tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
+      tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD' },
       membership: { id: `m-${principalId}`, status: 'ACTIVE', roles: ['MEMBER'] },
-      permissions: ['ai.use'],
+      dataPlane: { id: 'mysql-primary', type: 'MYSQL', routingVersion: 1 }, permissions: ['ai.use'],
       workspaceScope: 'WORKSPACE',
     });
   }

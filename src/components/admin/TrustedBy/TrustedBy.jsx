@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useId, useState } from 'react';
 import { FaPlus, FaTrash, FaPen, FaSave, FaTimes, FaImage, FaBuilding, FaEye, FaSpinner, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
-import { addTrustedBy, getTrustedBy, removeTrustedBy, updateTrustedBy } from '../../../firestore/dbOperations';
+import { addTrustedBy, getTrustedBy, removeTrustedBy, updateTrustedBy } from '../../../services/api/platform';
 import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 
 const EMPTY = { name: '', imageUrl: '', order: 0, published: true };
@@ -42,26 +42,47 @@ const TrustedBy = () => {
         event.preventDefault();
         const error = validate(form); if (error) { setMessage({ type: 'error', text: error }); return; }
         setProcessing(true);
-        const result = await addTrustedBy({ ...form, imageUrl: sanitizeImageUrl(form.imageUrl) });
-        if (result.success) { setForm(EMPTY); setMessage({ type: 'success', text: form.published ? 'Logo published and audited.' : 'Unpublished logo saved and audited.' }); await load(); }
-        else setMessage({ type: 'error', text: result.error || 'Unable to add logo.' });
-        setProcessing(false);
+        try {
+            await addTrustedBy({ ...form, imageUrl: sanitizeImageUrl(form.imageUrl) });
+            setForm(EMPTY);
+            setMessage({ type: 'success', text: form.published ? 'Logo published and audited.' : 'Unpublished logo saved and audited.' });
+            await load();
+        } catch (saveError) {
+            setMessage({ type: 'error', text: saveError.message || 'Unable to add logo.' });
+        } finally {
+            setProcessing(false);
+        }
     };
     const saveEdit = async event => {
         event.preventDefault();
         const error = validate(editing); if (error) { setMessage({ type: 'error', text: error }); return; }
         setProcessing(true);
-        const result = await updateTrustedBy(editing.id, { ...editing, imageUrl: sanitizeImageUrl(editing.imageUrl) }, editing.revision);
-        if (result.success) { setEditing(null); setMessage({ type: 'success', text: 'Logo changes saved and audited.' }); await load(); }
-        else { setMessage({ type: 'error', text: result.error }); if (result.code === 'ADMIN_TARGET_CHANGED') { setEditing(null); await load(); } }
-        setProcessing(false);
+        try {
+            await updateTrustedBy(editing.id, { ...editing, imageUrl: sanitizeImageUrl(editing.imageUrl) }, editing.revision);
+            setEditing(null);
+            setMessage({ type: 'success', text: 'Logo changes saved and audited.' });
+            await load();
+        } catch (saveError) {
+            setMessage({ type: 'error', text: saveError.message || 'Unable to update logo.' });
+            if (/changed|revision|refresh/i.test(saveError.message || '')) { setEditing(null); await load(); }
+        } finally {
+            setProcessing(false);
+        }
     };
     const confirmDelete = async () => {
+        if (!deleteTarget) return;
         setProcessing(true);
-        const result = await removeTrustedBy(deleteTarget.id, deleteTarget.revision);
-        if (result.success) { setDeleteTarget(null); setMessage({ type: 'success', text: 'Logo deleted and audited.' }); await load(); }
-        else { setMessage({ type: 'error', text: result.error }); if (result.code === 'ADMIN_TARGET_CHANGED') { setDeleteTarget(null); await load(); } }
-        setProcessing(false);
+        try {
+            await removeTrustedBy(deleteTarget.id, deleteTarget.revision);
+            setDeleteTarget(null);
+            setMessage({ type: 'success', text: 'Logo deleted and audited.' });
+            await load();
+        } catch (deleteError) {
+            setMessage({ type: 'error', text: deleteError.message || 'Unable to delete logo.' });
+            if (/changed|revision|refresh/i.test(deleteError.message || '')) { setDeleteTarget(null); await load(); }
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return <div className="min-h-screen bg-slate-50 p-4 sm:p-6">

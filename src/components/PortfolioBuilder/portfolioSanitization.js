@@ -77,7 +77,7 @@ function sanitizeValue(value, key = '', depth = 0) {
 
 /**
  * Creates an immutable, bounded public-rendering model and removes component types that
- * are not registered by the application. Stored Firestore snapshots are never mutated.
+ * are not registered by the application. The persisted MariaDB record is never mutated.
  */
 export function normalizePublishedPortfolio(portfolio, componentConfig) {
     if (!portfolio || typeof portfolio !== 'object' || !portfolio.data || typeof portfolio.data !== 'object') return null;

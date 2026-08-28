@@ -293,18 +293,24 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
                                         {(() => {
                                             const hasJob = Boolean(employment.jobTitle || employment.job_title || employment.position);
                                             const hasCompany = Boolean(employment.employer || employment.company || employment.employerName);
+                                            const hasSourceNotes = String(employment.description || employment.userNotes || '').replace(/<[^>]*>/g, ' ').trim().length >= 12;
+                                            const canRewrite = hasJob && hasCompany && hasSourceNotes;
                                             return (
                                                 <button
                                                     onClick={() => openAiModal(employment.id || employment.date)}
-                                                    disabled={!hasJob || !hasCompany}
+                                                    disabled={!canRewrite}
                                                     className={`flex items-center justify-center text-sm font-semibold px-3 py-2 rounded-lg shadow-sm ${
-                                                        hasJob && hasCompany
+                                                        canRewrite
                                                             ? 'text-purple-700 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 cursor-pointer shadow-purple-100 hover:shadow-purple-200'
                                                             : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                                                     }`}
-                                                    title={!hasJob || !hasCompany ? t('WorkHistoryStep.ai.tooltipDisabled') : t('WorkHistoryStep.ai.tooltip')}>
+                                                    title={!hasJob || !hasCompany
+                                                        ? 'Enter the job title and employer first.'
+                                                        : !hasSourceNotes
+                                                            ? 'Add at least 12 characters of factual work notes first.'
+                                                            : 'Rewrite only the facts in your notes.'}>
                                                     <MdLightbulb className="w-4 h-4 mr-2" />
-                                                    <span className="truncate">{t('WorkHistoryStep.ai.suggestions')}</span>
+                                                    <span className="truncate">Rewrite My Notes</span>
                                                 </button>
                                             );
                                         })()}
@@ -315,6 +321,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
                                             onChange={(value) => updateEmployment(employment.id, 'description', value)}
                                             placeholder={t('WorkHistoryStep.fields.description.placeholder')}
                                         />
+                                        <p className="mt-2 text-xs text-slate-500">Enter work you actually performed and verified outcomes first. AI can rephrase these notes but cannot supply missing responsibilities or metrics.</p>
                                     </div>
                                 </div>
                             </div>

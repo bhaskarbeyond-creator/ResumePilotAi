@@ -60,7 +60,7 @@ test('AI, payment and email provider tests use unambiguous namespaces', async ()
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('src/services/adminAiSettings.js', 'utf8'),
     fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('src/components/admin/settings/EmailSmtpSettings.jsx', 'utf8'),
   ]);
   assert.doesNotMatch(index, /app\.post\('\/api\/admin\/test-connection'/);
@@ -104,10 +104,11 @@ test('AI Settings supports exactly the restored secure provider set and preserve
 });
 
 test('AI secrets remain backend-only and frontend fields receive secure masked tokens', async () => {
-  const [ui, service, rules] = await Promise.all([
+  const [ui, service, policy, migration] = await Promise.all([
     fs.readFile('src/components/admin/settings/AiSettings.jsx', 'utf8'),
     fs.readFile('backend/services/aiAdmin.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
+    fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
   ]);
   assert.match(service, /settings.*ai_providers/s);
   assert.match(service, /configuredProviders/);
@@ -115,6 +116,10 @@ test('AI secrets remain backend-only and frontend fields receive secure masked t
   assert.match(ui, /masked\.gemini/);
   assert.match(ui, /masked\.nvidia/);
   assert.match(ui, /deployment-managed credential takes precedence/);
-  assert.match(rules, /ai_providers/);
-  assert.match(rules, /allow read: if admin\(\) && !\(id in/);
+  assert.match(service, /SELECT category, data, revision FROM system_settings/);
+  assert.match(service, /beginTransaction\(\)/);
+  assert.match(service, /AI_PROVIDER_SETTINGS_UPDATED/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS system_settings/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
+  assert.match(policy, /system\.config\.write/);
 });

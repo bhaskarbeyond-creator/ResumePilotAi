@@ -27,9 +27,32 @@ function buildIdentityPlugin() {
     };
 }
 
+// Build-time architecture guard: Firebase Auth and app-core modules are
+// retained, but importing any Firebase data-product implementation aborts the
+// production build. App core carries registry-name strings for optional
+// products, so module provenance—not incidental string constants—is decisive.
+function firebaseAuthOnlyBundlePlugin() {
+    const forbiddenModule = /(?:^|[\\/])@firebase[\\/](?:firestore|database|storage|functions|analytics|messaging|remote-config|data-connect|app-check)(?:[\\/]|$)|[\\/]firebase[\\/](?:firestore|database|storage|functions|analytics|messaging)(?:[.\\/]|$)/i;
+    return {
+        name: 'resumepilot-firebase-auth-only',
+        generateBundle(_options, bundle) {
+            const offenders = new Set();
+            for (const output of Object.values(bundle)) {
+                if (output.type !== 'chunk') continue;
+                for (const moduleId of Object.keys(output.modules || {})) {
+                    if (forbiddenModule.test(moduleId)) offenders.add(moduleId);
+                }
+            }
+            if (offenders.size) {
+                this.error(`Firebase application-data modules are forbidden:\n${[...offenders].join('\n')}`);
+            }
+        },
+    };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-    plugins: [tailwindcss(), react(), buildIdentityPlugin()],
+    plugins: [tailwindcss(), react(), buildIdentityPlugin(), firebaseAuthOnlyBundlePlugin()],
     build: {
         rollupOptions: {
             input: {

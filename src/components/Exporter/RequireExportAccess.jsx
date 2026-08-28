@@ -15,12 +15,11 @@ import { hasRenderToken } from './exportAccess';
  *     page exists for — while adding no security, because the token is the stronger proof.
  *
  *  2. A signed-in human who navigates to the URL directly. With no render token the
- *     page falls back to reading the resume with the caller's own Firebase credentials,
- *     so an authenticated session is still mandatory and Firestore rules remain the
- *     authoritative control.
+ *     page calls the MariaDB-backed resume API with the caller's Firebase ID token, so
+ *     an authenticated session and the backend ownership check remain mandatory.
  *
  * The token never widens access: it is 256-bit, single-use, 60-second, server-issued,
- * and stored only as a SHA-256 hash in a collection no browser can read.
+ * and stored only as a SHA-256 hash in a MariaDB table no browser can read.
  */
 export default function RequireExportAccess({ user, children }) {
     const tokenPresent = typeof window !== 'undefined' && hasRenderToken(window.location.hash);

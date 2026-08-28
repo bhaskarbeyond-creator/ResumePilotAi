@@ -2,24 +2,35 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-test('custom pages use revisioned audited backend writes with legacy public-read compatibility', async () => {
-  const [backend, operations, rules, admin] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'), fs.readFile('src/components/admin/settings/pagesSettings.jsx', 'utf8'),
+test('custom pages have one relational owner with revisioned audited writes and fail-closed public reads', async () => {
+  const [backend, operations, repository, mutations, policy, baseline, consolidation, admin] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('backend/repositories/MySQLRepository.js', 'utf8'), fs.readFile('backend/services/resilientMutations.js', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'), fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
+    fs.readFile('backend/database/migrations/013_cms_relational_authority.sql', 'utf8'), fs.readFile('src/components/admin/settings/pagesSettings.jsx', 'utf8'),
   ]);
-  assert.match(backend, /CMS_PAGE_CONFLICT/);
   assert.match(backend, /CMS_PAGE_CREATED/);
+  assert.match(backend, /CMS_PAGE_UPDATED/);
   assert.match(backend, /CMS_PAGE_DELETED/);
   assert.match(backend, /validateCustomPageContent/);
   assert.match(operations, /\/api\/admin\/pages/);
-  assert.match(operations, /\/public\/custom-pages\.json/);
+  assert.match(operations, /\/api\/public\/custom-pages\//);
+  assert.match(backend, /CUSTOM_PAGES_UNAVAILABLE/);
   assert.match(backend, /Cache-Control', 'no-store/);
   assert.match(admin, /editingRevision/);
   assert.match(admin, /Publication state/);
-  const pageRules = rules.slice(rules.indexOf('match /pages/{id}'), rules.indexOf('match /ads/{id}'));
-  assert.match(pageRules, /!\('status' in resource\.data\)/);
-  assert.match(pageRules, /resource\.data\.status == 'published'/);
-  assert.match(pageRules, /allow write: if false/);
+  assert.match(repository, /getCustomPages\(options = \{\}\)/);
+  assert.match(repository, /UPDATE custom_pages[\s\S]*WHERE id = \? AND revision = \?/);
+  assert.match(repository, /DATABASE_OWNERSHIP_VIOLATION/);
+  assert.match(mutations, /custom_pages: \['getCustomPageById', 'saveCustomPage', 'deleteCustomPage'/);
+  assert.match(backend, /getCustomPages\(\{ publishedOnly: true \}\)/);
+  assert.doesNotMatch(backend, /listDocuments\('custom_pages'/);
+  assert.doesNotMatch(backend, /cmsPagesRouter/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
+  assert.match(policy, /system\.config\.write/);
+  assert.match(baseline, /CREATE TABLE IF NOT EXISTS custom_pages/);
+  assert.match(consolidation, /FROM canonical_documents cd[\s\S]*entity_type = 'custom_pages'/);
+  assert.match(consolidation, /ADD COLUMN IF NOT EXISTS revision/);
 });
 
 test('public custom page distinguishes loading, unavailable and client-side 404 while retaining render sanitization', async () => {

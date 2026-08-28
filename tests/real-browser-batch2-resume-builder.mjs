@@ -20,6 +20,7 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
+import { rejectFirebaseDataPlaneRequests } from './helpers/firebase-data-plane-guard.mjs';
 
 const API_KEY = process.env.VITE_FIREBASE_KEY || 'demo-browser-api-key';
 
@@ -70,9 +71,7 @@ async function main() {
       'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'),
       'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
       'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
-      'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
       'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
-      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
       'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
       'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
     },
@@ -105,9 +104,9 @@ async function main() {
     }, { key: authUserKey, apiKey: API_KEY, token: mockToken });
 
     // Firebase intercepts
-    await page.route('**/securetoken.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: mockToken, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fix', id_token: mockToken, user_id: 'test-user', project_id: 'fixture' }) }));
+    await rejectFirebaseDataPlaneRequests(page);
+  await page.route('**/securetoken.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: mockToken, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fix', id_token: mockToken, user_id: 'test-user', project_id: 'fixture' }) }));
     await page.route('**/identitytoolkit.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ users: [{ localId: 'test-user', email: 'user@test.com', emailVerified: true, displayName: 'Test User' }] }) }));
-    await page.route('**/*firestore.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     await page.route('**/www.google-analytics.com/**', r => r.abort());
     await page.route('**/www.googletagmanager.com/**', r => r.abort());
     await page.route('**/maps.googleapis.com/**', r => r.abort());

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../../main';
-import { updateJobPosting, getApprovedEmployerCompanies } from '../../../firestore/dbOperations';
+import { updateJobPosting, getApprovedEmployerCompanies } from '../../../services/api/platform';
 import CustomLocationAutocomplete from '../../JobsListings/CustomLocationAutocomplete';
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -4,147 +4,144 @@ const nodemailer = require('nodemailer');
 const tls = require('tls');
 const dnsPromises = require('dns').promises;
 const net = require('net');
-const fs = require('fs');
-const path = require('path');
+const crypto = require('crypto');
 const { assertPublicNetworkTarget } = require('../security/network');
 const { enterpriseConsoleUrl, resolvePublicAppOrigin, sanitizeAbsoluteHttpUrl, assertNoForbiddenEmailHost } = require('../services/publicAppUrl');
-const { requireRecentAdminAuthentication } = require('../security/auth');
+const { requirePermission, requireRecentAdminAuthentication } = require('../security/auth');
 const { recordAdminAuditLog } = require('../security/adminAudit');
+const { getPool } = require('../database/mysql');
+const { createEncryptionProvider, isEncryptedEnvelope } = require('../enterprise/encryptionProvider');
 
-// In-memory Outbox Log Store (persisted to DB if available)
-let emailLogsStore = [];
-let customTemplatesStore = {};
+const EMAIL_SETTING_CATEGORY = 'email_runtime';
 
-// Local config file path (lives next to the backend code)
-const CONFIG_FILE = path.join(__dirname, '..', 'email_config.json');
-
-// Read SMTP/IMAP config saved via Admin Dashboard
-function readLocalConfig() {
-    try {
-        if (fs.existsSync(CONFIG_FILE)) {
-            return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-        }
-    } catch (e) {
-        console.error('Error reading local email config:', e.message);
-    }
-    return null;
+function parseStoredJson(value, fallback = {}) {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === 'object') return value;
+    try { return JSON.parse(value); } catch { throw Object.assign(new Error('Stored email configuration is corrupt.'), { code: 'EMAIL_CONFIGURATION_CORRUPT', status: 503 }); }
 }
 
-// Write SMTP/IMAP config to local JSON file
-function writeLocalConfig(data) {
-    try {
-        const existing = readLocalConfig() || {};
-        const merged = { ...existing, ...data, updatedAt: new Date().toISOString() };
-        const tempFile = `${CONFIG_FILE}.${process.pid}.tmp`;
-        fs.writeFileSync(tempFile, JSON.stringify(merged, null, 2), { encoding: 'utf-8', mode: 0o600 });
-        fs.renameSync(tempFile, CONFIG_FILE);
-        fs.chmodSync(CONFIG_FILE, 0o600);
-        return true;
-    } catch (e) {
-        console.error('Error writing local email config:', e.message);
-        return false;
-    }
-}
-
-// Utility to fetch complete Email & SMTP/IMAP config from local file, DB, or Env
-async function getEmailConfig(db) {
-    let config = {
+function defaultEmailConfig() {
+    return {
         smtp: {
-            host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-            port: parseInt(process.env.SMTP_PORT || '465', 10),
-            encryption: process.env.SMTP_ENCRYPTION || 'ssl',
-            username: process.env.SMTP_USER || '',
-            password: process.env.SMTP_PASS || '',
-            senderName: process.env.SMTP_SENDER_NAME || 'ResumePilot AI',
-            replyTo: process.env.SMTP_REPLY_TO || 'support@airesume.projectdemo.guru',
-            adminEmail: process.env.ADMIN_EMAIL || 'bhaskar.beyond@gmail.com',
-            authStrategy: 'PLAIN', // PLAIN, LOGIN, OAuth2, API_KEY
+            host: 'smtp.hostinger.com', port: 465, encryption: 'ssl', username: '', password: '',
+            senderName: 'ResumePilot AI', replyTo: '', adminEmail: '', authStrategy: 'PLAIN',
         },
         fallbackSmtp: {
-            enabled: false,
-            host: process.env.FALLBACK_SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.FALLBACK_SMTP_PORT || '587', 10),
-            encryption: process.env.FALLBACK_SMTP_ENCRYPTION || 'tls',
-            username: process.env.FALLBACK_SMTP_USER || '',
-            password: process.env.FALLBACK_SMTP_PASS || '',
+            enabled: false, host: 'smtp.gmail.com', port: 587, encryption: 'tls', username: '', password: '',
         },
         imap: {
-            enabled: true,
-            host: process.env.IMAP_HOST || 'imap.hostinger.com',
-            port: parseInt(process.env.IMAP_PORT || '993', 10),
-            encryption: process.env.IMAP_ENCRYPTION || 'ssl',
-            username: process.env.IMAP_USER || '',
-            password: process.env.IMAP_PASS || '',
-            autoSync: true
+            enabled: false, host: 'imap.hostinger.com', port: 993, encryption: 'ssl', username: '', password: '', autoSync: false,
         },
         enabledTemplates: {
-            tax_invoice: true,
-            welcome: true,
-            password_reset: true,
-            email_verification: true,
-            payment_failed: true,
-            subscription_renewal: true,
-            ai_resume_ready: true,
-            ai_cover_letter_ready: true,
-            portfolio_published: true,
-            job_application_received: true,
-            job_status_update: true,
-            job_posted_employer: true,
-            security_alert: true,
-            account_created_admin: true,
-            password_changed_confirm: true,
-            refund_processed: true,
-            subscription_cancelled: true,
-            admin_system_alert: true,
-            broadcast_announcement: true,
-            default: true
-        }
+            tax_invoice: true, welcome: true, password_reset: true, email_verification: true,
+            payment_failed: true, subscription_renewal: true, ai_resume_ready: true,
+            ai_cover_letter_ready: true, portfolio_published: true, job_application_received: true,
+            job_status_update: true, job_posted_employer: true, security_alert: true,
+            account_created_admin: true, password_changed_confirm: true, refund_processed: true,
+            subscription_cancelled: true, admin_system_alert: true, broadcast_announcement: true, default: true,
+        },
+        customTemplates: {},
+        revision: 0,
+    };
+}
+
+function settingsEncryptionProvider({ required = false } = {}) {
+    const provider = createEncryptionProvider(process.env);
+    if (!provider && required) {
+        throw Object.assign(
+            new Error('Server-side encryption is required before mail credentials can be persisted.'),
+            { code: 'EMAIL_ENCRYPTION_UNAVAILABLE', status: 503 }
+        );
+    }
+    return provider;
+}
+
+function decryptStoredCredential(value, provider) {
+    if (value === null || value === undefined || value === '') return '';
+    if (!isEncryptedEnvelope(value)) {
+        throw Object.assign(new Error('A persisted mail credential is not encrypted.'), { code: 'EMAIL_CREDENTIAL_MIGRATION_REQUIRED', status: 503 });
+    }
+    if (!provider) {
+        throw Object.assign(new Error('The mail credential encryption key is unavailable.'), { code: 'EMAIL_ENCRYPTION_UNAVAILABLE', status: 503 });
+    }
+    const decrypted = provider.decryptValue(value);
+    if (typeof decrypted !== 'string') {
+        throw Object.assign(new Error('A persisted mail credential has an invalid type.'), { code: 'EMAIL_CONFIGURATION_CORRUPT', status: 503 });
+    }
+    return decrypted;
+}
+
+function environmentCredentialPair(userKey, passwordKey, label) {
+    const username = String(process.env[userKey] || '').trim();
+    const password = String(process.env[passwordKey] || '');
+    if (Boolean(username) !== Boolean(password.trim())) {
+        throw Object.assign(new Error(`${label} deployment credentials are incomplete.`), { code: 'EMAIL_ENV_CREDENTIAL_INCOMPLETE', status: 503 });
+    }
+    return { username, password, configured: Boolean(username && password.trim()) };
+}
+
+// MariaDB is the sole runtime configuration owner. Deployment credentials may
+// override a complete stored credential pair; incomplete pairs fail closed and
+// are never combined across sources or instances.
+async function getEmailConfig() {
+    const [rows] = await getPool().query(
+        'SELECT data, revision FROM system_settings WHERE category = ? LIMIT 1',
+        [EMAIL_SETTING_CATEGORY]
+    );
+    const defaults = defaultEmailConfig();
+    const stored = rows[0] ? parseStoredJson(rows[0].data, {}) : {};
+    const provider = settingsEncryptionProvider();
+    const section = name => {
+        const value = stored[name] && typeof stored[name] === 'object' && !Array.isArray(stored[name]) ? stored[name] : {};
+        return { ...defaults[name], ...value, password: decryptStoredCredential(value.password, provider) };
+    };
+    const config = {
+        smtp: section('smtp'),
+        fallbackSmtp: section('fallbackSmtp'),
+        imap: section('imap'),
+        enabledTemplates: { ...defaults.enabledTemplates, ...(stored.enabledTemplates || {}) },
+        customTemplates: stored.customTemplates && typeof stored.customTemplates === 'object' ? stored.customTemplates : {},
+        revision: Number(rows[0]?.revision || 0),
     };
 
-    // Blank credentials in a lower-precedence source never erase a configured credential.
-    const mergeSection = (current, incoming) => {
-        if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return current;
-        const merged = { ...current, ...incoming };
-        // Across env, local file and legacy Firestore, blank means "no replacement".
-        // An explicit passwordCleared tombstone is the only deliberate removal
-        // path; deployment environment credentials still take precedence and
-        // therefore cannot be cleared from the UI.
-        if (incoming.passwordCleared === true) merged.password = '';
-        else if (!String(incoming.password || '').trim()) merged.password = current.password;
-        return merged;
-    };
-    const localConfig = readLocalConfig();
-
-    // 1. Try MariaDB primary configuration
-    try {
-        const { getRepository } = require('../repositories');
-        const repo = getRepository(db);
-        if (repo && typeof repo.getSetting === 'function') {
-            const docData = await repo.getSetting('system_settings').catch(() => null);
-            if (docData?.smtp) config.smtp = mergeSection(config.smtp, docData.smtp);
-            if (docData?.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, docData.fallbackSmtp);
-            if (docData?.imap) config.imap = mergeSection(config.imap, docData.imap);
-            if (docData?.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...docData.enabledTemplates };
-        }
-    } catch (_) {}
-
-    // 2. The Admin-managed local file is authoritative on this instance. This order
-    // matches the "MySQL primary, local mirror" contract and ensures a confirmed
-    // credential replacement is the credential the runtime actually uses.
-    if (localConfig) {
-        if (localConfig.smtp) config.smtp = mergeSection(config.smtp, localConfig.smtp);
-        if (localConfig.fallbackSmtp) config.fallbackSmtp = mergeSection(config.fallbackSmtp, localConfig.fallbackSmtp);
-        if (localConfig.imap) config.imap = mergeSection(config.imap, localConfig.imap);
-        if (localConfig.enabledTemplates) config.enabledTemplates = { ...config.enabledTemplates, ...localConfig.enabledTemplates };
+    const smtpEnvironment = environmentCredentialPair('SMTP_USER', 'SMTP_PASS', 'Primary SMTP');
+    if (smtpEnvironment.configured) {
+        config.smtp = {
+            ...config.smtp,
+            host: process.env.SMTP_HOST || config.smtp.host,
+            port: Number(process.env.SMTP_PORT || config.smtp.port),
+            encryption: process.env.SMTP_ENCRYPTION || config.smtp.encryption,
+            username: smtpEnvironment.username,
+            password: smtpEnvironment.password,
+            senderName: process.env.SMTP_SENDER_NAME || config.smtp.senderName,
+            replyTo: process.env.SMTP_REPLY_TO || config.smtp.replyTo,
+            adminEmail: process.env.ADMIN_EMAIL || config.smtp.adminEmail,
+        };
     }
-
-    // Deployment-managed passwords always win over lower-precedence Firestore or
-    // local-file values. In particular, a stale passwordCleared tombstone must
-    // never disable a credential that was supplied by the environment.
-    for (const [section, envKey] of [['smtp', 'SMTP_PASS'], ['fallbackSmtp', 'FALLBACK_SMTP_PASS'], ['imap', 'IMAP_PASS']]) {
-        if (String(process.env[envKey] || '').trim()) config[section].password = process.env[envKey];
+    const fallbackEnvironment = environmentCredentialPair('FALLBACK_SMTP_USER', 'FALLBACK_SMTP_PASS', 'Fallback SMTP');
+    if (fallbackEnvironment.configured) {
+        config.fallbackSmtp = {
+            ...config.fallbackSmtp,
+            enabled: String(process.env.FALLBACK_SMTP_ENABLED || 'true').toLowerCase() === 'true',
+            host: process.env.FALLBACK_SMTP_HOST || config.fallbackSmtp.host,
+            port: Number(process.env.FALLBACK_SMTP_PORT || config.fallbackSmtp.port),
+            encryption: process.env.FALLBACK_SMTP_ENCRYPTION || config.fallbackSmtp.encryption,
+            username: fallbackEnvironment.username,
+            password: fallbackEnvironment.password,
+        };
     }
-
+    const imapEnvironment = environmentCredentialPair('IMAP_USER', 'IMAP_PASS', 'IMAP');
+    if (imapEnvironment.configured) {
+        config.imap = {
+            ...config.imap,
+            enabled: true,
+            host: process.env.IMAP_HOST || config.imap.host,
+            port: Number(process.env.IMAP_PORT || config.imap.port),
+            encryption: process.env.IMAP_ENCRYPTION || config.imap.encryption,
+            username: imapEnvironment.username,
+            password: imapEnvironment.password,
+        };
+    }
     return config;
 }
 
@@ -220,6 +217,75 @@ function projectMailSection(section, value = {}) {
         if (field !== 'password' && value[field] !== undefined) safe[field] = value[field];
     }
     return { ...safe, passwordConfigured: Boolean(String(value.password || '').trim()) };
+}
+
+function validateExpectedEmailRevision(value) {
+    const revision = Number(value);
+    if (!Number.isInteger(revision) || revision < 0) {
+        throw Object.assign(new Error('Expected email configuration revision is required.'), { code: 'EMAIL_SETTINGS_REVISION_REQUIRED', status: 428 });
+    }
+    return revision;
+}
+
+function emailAdminAuditValues(req, action, metadata = {}) {
+    return [
+        crypto.randomUUID(),
+        req.user?.uid || 'unknown',
+        req.user?.email || null,
+        String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
+        action,
+        JSON.stringify(metadata),
+        resRequestId(req),
+    ];
+}
+
+function resRequestId(req) {
+    return req.res?.locals?.requestId || null;
+}
+
+async function insertEmailAdminAudit(connection, req, action, metadata = {}) {
+    await connection.query(
+        `INSERT INTO admin_audit_logs
+           (id, actor_uid, actor_email, actor_role, action, category, severity, outcome,
+            method, pathname, status_code, resource_type, resource_id, metadata, request_id, created_at)
+         VALUES (?, ?, ?, ?, ?, 'communications.email', 'HIGH', 'SUCCESS',
+                 'POST', ?, 200, 'EMAIL_CONFIGURATION', ?, ?, ?, NOW())`,
+        [
+            ...emailAdminAuditValues(req, action, metadata).slice(0, 5),
+            req.originalUrl || req.path,
+            EMAIL_SETTING_CATEGORY,
+            JSON.stringify(metadata),
+            resRequestId(req),
+        ]
+    );
+}
+
+function assertSafeCustomTemplate({ templateType, subject, html }) {
+    const type = String(templateType || '').trim();
+    const cleanSubject = String(subject || '').replace(/[\r\n\p{Cc}]/gu, ' ').trim().slice(0, 255);
+    const body = String(html || '');
+    if (!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(type) || !body || Buffer.byteLength(body, 'utf8') > 250_000) {
+        throw Object.assign(new Error('Template type and HTML are invalid.'), { code: 'INVALID_EMAIL_TEMPLATE', status: 400 });
+    }
+    if (/<\s*(script|iframe|object|embed|form|base|meta)\b|\son[a-z]+\s*=|javascript\s*:|data\s*:\s*text\/html/i.test(body)) {
+        throw Object.assign(new Error('Template HTML contains an unsafe active-content construct.'), { code: 'UNSAFE_EMAIL_TEMPLATE', status: 400 });
+    }
+    return { templateType: type, subject: cleanSubject, html: body };
+}
+
+function storedMailSection(section, input, currentRaw, currentRuntime, clearRequested, provider) {
+    const normalized = normalizedMailSection(section, input, currentRuntime);
+    const replacement = String(input?.password || '');
+    delete normalized.password;
+    delete normalized.passwordCleared;
+    if (clearRequested) {
+        // Deliberately omit the persisted credential.
+    } else if (replacement.trim()) {
+        normalized.password = provider.encryptValue(replacement.slice(0, 4096));
+    } else if (currentRaw?.password) {
+        normalized.password = currentRaw.password;
+    }
+    return normalized;
 }
 
 // Verify IMAP Connection via direct Socket
@@ -524,8 +590,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
     if (rawVerificationLink) vars.verification_link = hrefAttr(rawVerificationLink);
 
     const candidateName = vars.candidate_name || vars.customer_name || 'Valued Candidate';
-    const invoiceNo = vars.invoice_number || vars.transaction_id || 'RPAI-INV-1001';
-    const amount = vars.amount || vars.formatted_total || '₹199.00';
+    const invoiceNo = vars.invoice_number || vars.transaction_id || 'Unavailable';
+    const creditNoteNo = vars.credit_note_number || '';
+    const amount = vars.amount || vars.formatted_total || 'Unavailable';
     const planName = vars.plan_name || 'Pro Monthly Plan';
     const dateStr = vars.date || new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' });
 
@@ -889,8 +956,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                 <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
                     <h3 style="color: #166534; margin: 0 0 6px 0; font-size: 16px; font-weight: 800;">Refund Completed</h3>
                     <p style="color: #15803d; margin: 0; font-size: 13px; line-height: 1.5;">We have processed a refund of <strong>${amount}</strong> for Invoice #${invoiceNo}.</p>
+                    ${creditNoteNo ? `<p style="color: #15803d; margin: 8px 0 0; font-size: 13px;">Credit note: <strong>${creditNoteNo}</strong></p>` : ''}
                 </div>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6;">The credited amount will reflect in your original payment source within 3–5 business days depending on your bank.</p>`
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">Your payment provider confirmed completion. The time before funds appear in the original payment source is controlled by the provider and the receiving bank.</p>`
             );
             break;
 
@@ -937,9 +1005,9 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                     <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Congratulations, ${candidateName}!</h2>
                     <p style="font-size: 14px; color: #475569;">Your web portfolio is now live and accessible to recruiters worldwide.</p>
                     <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; margin: 20px 0; font-family: monospace; font-weight: 700; color: #4f46e5;">
-                        ${siteUrl}/p/${vars.portfolio_slug || 'candidate'}
+                        ${siteUrl}/portfolio/${vars.portfolio_slug || 'candidate'}
                     </div>
-                    <a href="${siteUrl}/p/${vars.portfolio_slug || 'candidate'}" style="background-color: #0f172a; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block;">Visit Live Portfolio &rarr;</a>
+                    <a href="${siteUrl}/portfolio/${vars.portfolio_slug || 'candidate'}" style="background-color: #0f172a; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block;">Visit Live Portfolio &rarr;</a>
                 </div>`
             );
             break;
@@ -1097,40 +1165,28 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
     return { subject, html: bodyHtml };
 }
 
-// Log Outbound Email to In-Memory & Database Store
-async function logOutboundEmail(db, logEntry) {
+// MariaDB is the sole outbound-delivery history owner. Callers must explicitly
+// handle persistence failures; no process-memory success fallback exists.
+async function logOutboundEmail(logEntry) {
     const entry = {
-        id: `LOG-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        recipient: logEntry.to,
-        subject: logEntry.subject,
-        templateType: logEntry.templateType || 'custom',
-        status: logEntry.status, // SENT, FAILED, SKIPPED
+        id: crypto.randomUUID(),
+        recipient: String(logEntry.to || '').slice(0, 255),
+        subject: String(logEntry.subject || '').replace(/[\r\n]/g, ' ').slice(0, 255),
+        templateType: String(logEntry.templateType || 'custom').slice(0, 64),
+        status: String(logEntry.status || 'FAILED').slice(0, 32),
         html: logEntry.html || null,
-        messageId: logEntry.messageId || null,
-        error: logEntry.error || null,
-        transport: logEntry.transport || 'primary_smtp',
-        sentAt: new Date().toISOString()
+        messageId: logEntry.messageId ? String(logEntry.messageId).slice(0, 255) : null,
+        error: logEntry.error ? String(logEntry.error).slice(0, 1000) : null,
+        transport: String(logEntry.transport || 'primary_smtp').slice(0, 64),
+        sentAt: new Date().toISOString(),
     };
-
-    emailLogsStore.unshift(entry);
-    if (emailLogsStore.length > 200) emailLogsStore.pop(); // Keep last 200 logs
-
-    // Durable email log: MySQL (email_logs table) is authoritative; the
-    // Firestore data plane is never required.
-    try {
-        const { getPool } = require('../database/mysql');
-        await getPool().query(
-            `INSERT INTO email_logs (id, recipient, subject, template_type, status, html, message_id, error, transport, sent_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE status = VALUES(status), message_id = VALUES(message_id), error = VALUES(error), transport = VALUES(transport)`,
-            [entry.id, String(entry.recipient || '').slice(0, 255), String(entry.subject || '').slice(0, 255),
-             entry.templateType, entry.status, entry.html || null, entry.messageId || null,
-             entry.error ? String(entry.error).slice(0, 1000) : null, entry.transport, new Date(entry.sentAt || Date.now())]
-        ).catch(e => console.error('Failed to log email in MySQL:', e.message));
-    } catch (e) {
-        console.error('Failed to log email in MySQL:', e.message);
-    }
-
+    await getPool().query(
+        `INSERT INTO email_logs
+           (id, recipient, subject, template_type, status, html, message_id, error, transport, sent_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [entry.id, entry.recipient, entry.subject, entry.templateType, entry.status, entry.html,
+            entry.messageId, entry.error, entry.transport, new Date(entry.sentAt)]
+    );
     return entry;
 }
 
@@ -1323,10 +1379,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
 // --- API ENDPOINTS ---
 
 async function recordMailAdminAudit(req, { action, outcome = 'SUCCESS', severity = 'MEDIUM', metadata = {}, requestId = null } = {}) {
-    const db = req.app?.get('db');
-    const admin = req.app?.get('firebaseAdmin');
-    // recordAdminAuditLog writes to MySQL (authoritative); no Firestore gate.
-    return recordAdminAuditLog(db, admin, {
+    return recordAdminAuditLog(req, {
         actorUid: req.user?.uid,
         actorEmail: req.user?.email,
         actorRole: String(req.user?.claims?.role || 'ADMIN').toUpperCase(),
@@ -1395,46 +1448,72 @@ router.post('/admin/reset-circuit-breaker', requireRecentAdminAuthentication, as
     return res.json({ success: true, message: 'Circuit breaker reset successfully! Primary SMTP restored to Operational state.' });
 });
 
-// 0b. Custom Template Customization Endpoints
-router.post('/admin/save-template-customization', async (req, res) => {
-    const db = req.app.get('db');
-    const { templateType, subject, html } = req.body;
-    if (!templateType || !html) {
-        return res.status(400).json({ success: false, error: 'templateType and html are required.' });
-    }
-    const previousTemplates = { ...customTemplatesStore };
-    customTemplatesStore[templateType] = { subject: subject || '', html, updatedAt: new Date().toISOString() };
-    let previousRemoteTemplates = null;
-
+// 0b. Custom templates share the revisioned MariaDB email configuration row.
+async function saveTemplateCustomization(req, res) {
+    let connection;
     try {
-        const local = readLocalConfig() || {};
-        local.customTemplates = customTemplatesStore;
-        if (!writeLocalConfig(local)) throw Object.assign(new Error('Email template local persistence failed'), { code: 'EMAIL_CONFIG_WRITE_FAILED', status: 503 });
-        if (db) {
-            const previousRemote = await db.collection('data').doc('custom_email_templates').get();
-            previousRemoteTemplates = previousRemote.exists ? (previousRemote.data() || {}) : {};
-            await db.collection('data').doc('custom_email_templates').set(customTemplatesStore, { merge: true });
+        const expectedRevision = validateExpectedEmailRevision(req.body?.expectedRevision);
+        const template = assertSafeCustomTemplate(req.body || {});
+        connection = await getPool().getConnection();
+        await connection.beginTransaction();
+        const [rows] = await connection.query(
+            'SELECT data, revision FROM system_settings WHERE category = ? FOR UPDATE',
+            [EMAIL_SETTING_CATEGORY]
+        );
+        const currentRevision = Number(rows[0]?.revision || 0);
+        if (currentRevision !== expectedRevision) {
+            throw Object.assign(new Error('Email templates changed after this panel loaded.'), {
+                code: 'EMAIL_SETTINGS_CONFLICT', status: 409, currentRevision,
+            });
         }
-        const audit = await recordMailAdminAudit(req, {
-            action: 'EMAIL_TEMPLATE_CUSTOMIZATION_UPDATED',
-            metadata: { templateType: String(templateType).slice(0, 80) },
+        const current = rows[0] ? parseStoredJson(rows[0].data, {}) : {};
+        const templates = current.customTemplates && typeof current.customTemplates === 'object' ? current.customTemplates : {};
+        if (!Object.hasOwn(templates, template.templateType) && Object.keys(templates).length >= 100) {
+            throw Object.assign(new Error('The custom email template limit has been reached.'), { code: 'EMAIL_TEMPLATE_LIMIT', status: 409 });
+        }
+        const revision = currentRevision + 1;
+        const next = {
+            ...current,
+            customTemplates: {
+                ...templates,
+                [template.templateType]: { subject: template.subject, html: template.html, updatedAt: new Date().toISOString() },
+            },
+        };
+        await connection.query(
+            `INSERT INTO system_settings (category, data, revision, updated_at)
+             VALUES (?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+            [EMAIL_SETTING_CATEGORY, JSON.stringify(next), revision]
+        );
+        await insertEmailAdminAudit(connection, req, 'EMAIL_TEMPLATE_CUSTOMIZATION_UPDATED', { templateType: template.templateType, revision });
+        await connection.commit();
+        return res.json({ success: true, message: `Template '${template.templateType}' customized successfully.`, revision });
+    } catch (error) {
+        if (connection) await connection.rollback().catch(() => {});
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'EMAIL_TEMPLATE_SAVE_FAILED',
+            error: error.status && error.status < 500 ? error.message : 'The email template could not be saved.',
+            currentRevision: error.currentRevision,
             requestId: res.locals?.requestId,
         });
-        if (!audit) {
-            customTemplatesStore = previousTemplates;
-            writeLocalConfig({ customTemplates: previousTemplates });
-            if (db && previousRemoteTemplates !== null) await db.collection('data').doc('custom_email_templates').set(previousRemoteTemplates);
-            return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'The template was not confirmed because its audit event could not be persisted.', requestId: res.locals?.requestId });
-        }
-        return res.json({ success: true, message: `Template '${templateType}' customized successfully!` });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+    } finally {
+        connection?.release();
     }
-});
+}
 
-router.get('/admin/custom-templates', (req, res) => {
-    res.json({ success: true, templates: customTemplatesStore });
-});
+async function getCustomTemplates(_req, res) {
+    try {
+        const [rows] = await getPool().query('SELECT data, revision FROM system_settings WHERE category = ? LIMIT 1', [EMAIL_SETTING_CATEGORY]);
+        const current = rows[0] ? parseStoredJson(rows[0].data, {}) : {};
+        return res.json({ success: true, templates: current.customTemplates || {}, revision: Number(rows[0]?.revision || 0), source: 'mariadb' });
+    } catch (_error) {
+        return res.status(503).json({ success: false, code: 'EMAIL_TEMPLATES_UNAVAILABLE', error: 'Email templates are unavailable.', requestId: res.locals?.requestId });
+    }
+}
+
+router.post('/admin/save-template-customization', requireRecentAdminAuthentication, saveTemplateCustomization);
+router.get('/admin/custom-templates', getCustomTemplates);
 
 // 1. Test Outbound SMTP Socket Connection (Supports type='smtp' and type='fallback_smtp')
 function recentAuthForEmailTest(req, res, next) {
@@ -1447,7 +1526,7 @@ router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) =
 
     if (type === 'fallback_smtp') {
         try {
-            const stored = (await getEmailConfig(req.app.get('db'))).fallbackSmtp || {};
+            const stored = (await getEmailConfig()).fallbackSmtp || {};
             const fallbackConfig = {
                 host: req.body.host || stored.host || 'smtp.gmail.com',
                 port: parseInt(req.body.port || stored.port || '587', 10),
@@ -1513,7 +1592,7 @@ router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) =
     }
 
     try {
-        const stored = (await getEmailConfig(req.app.get('db'))).smtp || {};
+        const stored = (await getEmailConfig()).smtp || {};
         const smtpConfig = {
             host: req.body.host || stored.host || 'smtp.hostinger.com',
             port: parseInt(req.body.port || stored.port || '465', 10),
@@ -1580,14 +1659,20 @@ router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) =
 });
 
 // Admin-safe runtime projection: allowlisted metadata and configured booleans, never credentials.
-router.get('/admin/settings', async (req, res) => {
-    const config = await getEmailConfig(req.app.get('db'));
-    return res.json({ success: true, settings: {
-        smtp: projectMailSection('smtp', config.smtp),
-        fallbackSmtp: projectMailSection('fallbackSmtp', config.fallbackSmtp),
-        imap: projectMailSection('imap', config.imap),
-        enabledTemplates: config.enabledTemplates || {},
-    } });
+router.get('/admin/settings', async (_req, res) => {
+    try {
+        const config = await getEmailConfig();
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, settings: {
+            smtp: projectMailSection('smtp', config.smtp),
+            fallbackSmtp: projectMailSection('fallbackSmtp', config.fallbackSmtp),
+            imap: projectMailSection('imap', config.imap),
+            enabledTemplates: config.enabledTemplates || {},
+            revision: config.revision,
+        }, source: 'mariadb' });
+    } catch (error) {
+        return res.status(error.status || 503).json({ success: false, code: error.code || 'EMAIL_SETTINGS_UNAVAILABLE', error: 'Email runtime settings are unavailable.', requestId: res.locals?.requestId });
+    }
 });
 
 /**
@@ -1606,7 +1691,7 @@ router.get('/admin/settings', async (req, res) => {
 router.get('/admin/deliverability', async (req, res) => {
     // Derive the domain to inspect from the configured sender, never from
     // caller-supplied input, so this cannot be used as a DNS probe primitive.
-    const config = await getEmailConfig(req.app.get('db'));
+    const config = await getEmailConfig();
     const sender = config?.smtp?.username || config?.smtp?.user || config?.smtp?.from || '';
     const domain = String(sender).includes('@') ? String(sender).split('@').pop().trim().toLowerCase() : '';
 
@@ -1740,59 +1825,111 @@ router.get('/admin/deliverability', async (req, res) => {
     });
 });
 
-// Save validated SMTP/IMAP settings while blank secret fields preserve every configured source.
+// Save validated SMTP/IMAP settings in one revision-guarded MariaDB transaction.
 router.post('/admin/save-smtp', recentAuthForMailSecretMutation, async (req, res) => {
+    let connection;
     try {
         const { smtp, fallbackSmtp, imap, enabledTemplates } = req.body || {};
-        if (!smtp && !fallbackSmtp && !imap && !enabledTemplates) return res.status(400).json({ success: false, error: 'Email settings are required.' });
-        const local = readLocalConfig() || {};
-        const data = {};
+        if (!smtp && !fallbackSmtp && !imap && !enabledTemplates) {
+            return res.status(400).json({ success: false, code: 'EMAIL_SETTINGS_REQUIRED', error: 'Email settings are required.' });
+        }
+        const expectedRevision = validateExpectedEmailRevision(req.body?.expectedRevision);
         const clearSecrets = req.body?.clearSecrets && typeof req.body.clearSecrets === 'object' ? req.body.clearSecrets : {};
-        const environmentSecret = key => String(process.env[key] || '').trim();
-        if (clearSecrets.smtp === true && environmentSecret('SMTP_PASS', 'smtp')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Primary SMTP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
-        if (clearSecrets.fallbackSmtp === true && environmentSecret('FALLBACK_SMTP_PASS', 'fallbackSmtp')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'Fallback SMTP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
-        if (clearSecrets.imap === true && environmentSecret('IMAP_PASS', 'imap')) return res.status(409).json({ success: false, code: 'INFRASTRUCTURE_SECRET_CANNOT_CLEAR', error: 'IMAP credentials are deployment-managed and cannot be cleared from the Admin UI.' });
-        if (smtp) {
-            data.smtp = normalizedMailSection('smtp', smtp, local.smtp);
-            if (clearSecrets.smtp === true) { data.smtp.password = ''; data.smtp.passwordCleared = true; }
-        }
-        if (fallbackSmtp) {
-            data.fallbackSmtp = normalizedMailSection('fallbackSmtp', fallbackSmtp, local.fallbackSmtp);
-            if (clearSecrets.fallbackSmtp === true) { data.fallbackSmtp.password = ''; data.fallbackSmtp.passwordCleared = true; }
-        }
-        if (imap) {
-            data.imap = normalizedMailSection('imap', imap, local.imap);
-            if (clearSecrets.imap === true) { data.imap.password = ''; data.imap.passwordCleared = true; }
-        }
-        if (enabledTemplates) data.enabledTemplates = normalizeTemplateToggles(enabledTemplates);
-
-        const success = writeLocalConfig(data);
-        if (success) {
-            console.log('[Email Config] Settings & Template toggles saved to', CONFIG_FILE);
-            const database = req.app.get('db');
-            const firebaseAdmin = req.app.get('firebaseAdmin');
-            if (database && firebaseAdmin?.firestore?.FieldValue) {
-                await database.collection('security_audit_logs').doc().set({
-                    action: 'SMTP_SETTINGS_UPDATED',
-                    actorUid: req.user?.uid || 'unknown',
-                    requestId: res.locals?.requestId || null,
-                    credentialsCleared: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
-                    createdAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
-                });
+        const environmentPairs = {
+            smtp: environmentCredentialPair('SMTP_USER', 'SMTP_PASS', 'Primary SMTP'),
+            fallbackSmtp: environmentCredentialPair('FALLBACK_SMTP_USER', 'FALLBACK_SMTP_PASS', 'Fallback SMTP'),
+            imap: environmentCredentialPair('IMAP_USER', 'IMAP_PASS', 'IMAP'),
+        };
+        for (const section of ['smtp', 'fallbackSmtp', 'imap']) {
+            const changesCredential = clearSecrets[section] === true || String(req.body?.[section]?.password || '').trim();
+            if (changesCredential && environmentPairs[section].configured) {
+                throw Object.assign(
+                    new Error(`${section} credentials are deployment-managed and cannot be changed from the Admin UI.`),
+                    { code: 'INFRASTRUCTURE_SECRET_READ_ONLY', status: 409 }
+                );
             }
-            return res.json({ success: true, message: 'Email settings saved to server.', credentialPolicy: 'EMPTY_PRESERVES_EXPLICIT_CLEAR_REQUIRED' });
         }
-        return res.status(500).json({ success: false, error: 'Failed to write config file.' });
-    } catch (err) {
-        console.error('Save SMTP Error:', err.message);
-        return res.status(400).json({ success: false, error: err.message || 'Invalid email settings.' });
+        const hasReplacementSecret = ['smtp', 'fallbackSmtp', 'imap'].some(section => String(req.body?.[section]?.password || '').trim());
+        const encryptionProvider = settingsEncryptionProvider({ required: hasReplacementSecret });
+
+        connection = await getPool().getConnection();
+        await connection.beginTransaction();
+        const [rows] = await connection.query(
+            'SELECT data, revision FROM system_settings WHERE category = ? FOR UPDATE',
+            [EMAIL_SETTING_CATEGORY]
+        );
+        const currentRevision = Number(rows[0]?.revision || 0);
+        if (currentRevision !== expectedRevision) {
+            throw Object.assign(new Error('Email settings changed after this panel loaded. Reload before saving.'), {
+                code: 'EMAIL_SETTINGS_CONFLICT', status: 409, currentRevision,
+            });
+        }
+        const current = rows[0] ? parseStoredJson(rows[0].data, {}) : {};
+        const defaults = defaultEmailConfig();
+        const next = { ...current };
+        for (const section of ['smtp', 'fallbackSmtp', 'imap']) {
+            if (!req.body?.[section]) continue;
+            const currentRaw = current[section] && typeof current[section] === 'object' ? current[section] : {};
+            const currentRuntime = { ...defaults[section], ...currentRaw, password: '' };
+            next[section] = storedMailSection(
+                section,
+                req.body[section],
+                currentRaw,
+                currentRuntime,
+                clearSecrets[section] === true,
+                encryptionProvider
+            );
+        }
+        if (enabledTemplates) {
+            next.enabledTemplates = { ...defaults.enabledTemplates, ...normalizeTemplateToggles(enabledTemplates) };
+        }
+        const revision = currentRevision + 1;
+        await connection.query(
+            `INSERT INTO system_settings (category, data, revision, updated_at)
+             VALUES (?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+            [EMAIL_SETTING_CATEGORY, JSON.stringify(next), revision]
+        );
+        await insertEmailAdminAudit(connection, req, 'SMTP_SETTINGS_UPDATED', {
+            revision,
+            changedSections: ['smtp', 'fallbackSmtp', 'imap', 'enabledTemplates'].filter(section => Boolean(req.body?.[section])),
+            credentialsCleared: Object.entries(clearSecrets).filter(([, value]) => value === true).map(([key]) => key),
+            credentialsReplaced: ['smtp', 'fallbackSmtp', 'imap'].filter(section => String(req.body?.[section]?.password || '').trim()),
+        });
+        await connection.commit();
+        const config = await getEmailConfig();
+        return res.json({
+            success: true,
+            message: 'Email settings saved.',
+            revision,
+            settings: {
+                smtp: projectMailSection('smtp', config.smtp),
+                fallbackSmtp: projectMailSection('fallbackSmtp', config.fallbackSmtp),
+                imap: projectMailSection('imap', config.imap),
+                enabledTemplates: config.enabledTemplates,
+                revision,
+            },
+            credentialPolicy: 'EMPTY_PRESERVES_EXPLICIT_CLEAR_REQUIRED',
+        });
+    } catch (error) {
+        if (connection) await connection.rollback().catch(() => {});
+        console.error('[Email settings save]', { code: error.code, requestId: res.locals?.requestId });
+        return res.status(error.status || (error.code ? 503 : 400)).json({
+            success: false,
+            code: error.code || 'INVALID_EMAIL_SETTINGS',
+            error: error.status && error.status >= 500 ? 'Email settings could not be saved.' : error.message,
+            currentRevision: error.currentRevision,
+            requestId: res.locals?.requestId,
+        });
+    } finally {
+        connection?.release();
     }
 });
 
 // 2. Test Inbound IMAP Connection Socket
 router.post('/admin/test-imap', requireRecentAdminAuthentication, async (req, res) => {
     try {
-        const stored = (await getEmailConfig(req.app.get('db'))).imap || {};
+        const stored = (await getEmailConfig()).imap || {};
         const imapConfig = {
             host: req.body.host || stored.host || 'imap.hostinger.com',
             port: parseInt(req.body.port || stored.port || '993', 10),
@@ -1824,300 +1961,145 @@ router.post('/admin/test-imap', requireRecentAdminAuthentication, async (req, re
     }
 });
 
-// 3. Unified Dynamic Email Dispatcher
-router.post('/send-email', async (req, res) => {
-    const db = req.app.get('db');
-    const { to, templateType, customSubject, customBody, vars } = req.body;
-
-    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(String(to || '').trim()) || String(to || '').length > 254) {
-        return res.status(400).json({ success: false, error: 'A single valid recipient email address is required.' });
+// 3. Administrative one-off dispatcher. Product notifications use the durable
+// notification outbox; this endpoint is restricted to recently authenticated operators.
+router.post('/send-email', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
+    const recipient = String(req.body?.to || '').trim().toLowerCase();
+    const templateType = String(req.body?.templateType || 'default');
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(recipient) || recipient.length > 254) {
+        return res.status(400).json({ success: false, code: 'INVALID_EMAIL_RECIPIENT', error: 'A single valid recipient email address is required.' });
     }
-
-    // Process dispatch asynchronously in background
-    (async () => {
-        try {
-            const config = await getEmailConfig(db);
-            
-            // Check Template On/Off Toggle
-            if (templateType && config.enabledTemplates && config.enabledTemplates[templateType] === false) {
-                console.log(`[Email Skipped] Template '${templateType}' is disabled in Admin settings.`);
-                await logOutboundEmail(db, {
-                    to,
-                    subject: customSubject || `Notification (${templateType})`,
-                    templateType: templateType || 'custom',
-                    status: 'SKIPPED',
-                    error: 'Template disabled in System Settings'
-                });
-                return;
-            }
-
-            const rendered = renderEmailTemplate(templateType || 'default', { ...vars, subject: customSubject, body: customBody }, customTemplatesStore);
-
-            const mailOptions = {
-                from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
-                replyTo: config.smtp.replyTo || config.smtp.username,
-                to,
-                subject: customSubject || rendered.subject,
-                html: customBody ? `<div style="font-family: Arial; padding: 20px;">${customBody}</div>` : rendered.html
-            };
-
-            const result = await dispatchMailWithFallback(config, mailOptions);
-            await logOutboundEmail(db, {
-                to,
-                subject: mailOptions.subject,
-                templateType: templateType || 'custom',
-                status: 'SENT',
-                messageId: result.messageId,
-                transport: result.transport
-            });
-        } catch (err) {
-            console.error('Send Email Error:', err);
-            await logOutboundEmail(db, {
-                to,
-                subject: customSubject || 'Notification',
-                templateType: templateType || 'custom',
-                status: 'FAILED',
-                error: err.message
-            });
-        }
-    })();
-
-    return res.json({ success: true, message: 'Email queued for background dispatch.' });
-});
-
-// 4. Dedicated PDF Receipt & Tax Invoice Email Dispatcher
-router.post('/send-invoice-email', async (req, res) => {
-    const db = req.app.get('db');
-    const paymentOrderId = String(req.body.paymentOrderId || '');
-    if (!req.user?.uid || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
-        return res.status(400).json({ success: false, error: 'A valid payment order is required.' });
+    if (!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(templateType)) {
+        return res.status(400).json({ success: false, code: 'INVALID_EMAIL_TEMPLATE', error: 'Invalid email template type.' });
     }
-    // MySQL is the authoritative payment-order store (owner-scoped read).
-    const { getRepository } = require('../repositories');
-    const repo = getRepository(db);
-    const order = await repo.getPaymentOrder(paymentOrderId).catch(() => null);
-    if (!order || String(order.uid || order.userId || '') !== req.user.uid || String(order.status || '').toUpperCase() !== 'ACTIVE') {
-        return res.status(404).json({ success: false, error: 'Active payment order not found.' });
-    }
-    const customerEmail = req.user.email;
-    const customerName = String(req.body.customerName || req.user.email?.split('@')[0] || 'Customer').slice(0, 100);
-    const invoiceNumber = `RPAI-${paymentOrderId.slice(0, 20).toUpperCase()}`;
-    const amount = `${String(order.currency || '').toUpperCase()} ${(Number(order.amount || 0) / 100).toFixed(2)}`;
-    const planName = order.planId;
-    const gstin = String(req.body.gstin || '').slice(0, 20);
-
-    res.json({ success: true, message: 'Tax invoice email queued for delivery.' });
-
-    (async () => {
-        try {
-            const config = await getEmailConfig(db);
-            
-            // Check Tax Invoice On/Off Toggle
-            if (config.enabledTemplates && config.enabledTemplates.tax_invoice === false) {
-                console.log('[Email Skipped] tax_invoice template is disabled in Admin settings.');
-                return;
-            }
-
-            if (!config.smtp.username || !config.smtp.password) return;
-
-            const recipient = customerEmail || config.smtp.adminEmail;
-            const rendered = renderEmailTemplate('tax_invoice', {
-                candidate_name: customerName,
-                invoice_number: invoiceNumber,
-                amount: amount,
-                plan_name: planName,
-                gstin: gstin,
-                site_url: publicSiteOrigin(),
-                support_email: config.smtp.replyTo || config.smtp.username
-            }, customTemplatesStore);
-
-            const mailOptions = {
-                from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
-                replyTo: config.smtp.replyTo || config.smtp.username,
-                to: recipient,
-                subject: rendered.subject,
-                html: rendered.html,
-                attachments: []
-            };
-
-            const result = await dispatchMailWithFallback(config, mailOptions);
-
-            await logOutboundEmail(db, {
-                to: recipient,
-                subject: rendered.subject,
-                templateType: 'tax_invoice',
-                status: 'SENT',
-                messageId: result.messageId,
-                transport: result.transport
-            });
-
-            // Notify admin email if configured
-            if (config.smtp.adminEmail && config.smtp.adminEmail !== recipient) {
-                const adminRendered = renderEmailTemplate('admin_alert', {
-                    candidate_name: customerName,
-                    customer_email: recipient,
-                    invoice_number: invoiceNumber,
-                    amount: amount,
-                }, customTemplatesStore);
-
-                dispatchMailWithFallback(config, {
-                    from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
-                    to: config.smtp.adminEmail,
-                    subject: adminRendered.subject,
-                    html: adminRendered.html
-                }).catch(e => console.error('Admin alert failed:', e.message));
-            }
-
-        } catch (err) {
-            console.error('Invoice Email Dispatch Error:', err);
-            await logOutboundEmail(db, {
-                to: customerEmail || 'Customer',
-                subject: `Tax Invoice #${invoiceNumber}`,
-                templateType: 'tax_invoice',
-                status: 'FAILED',
-                error: err.message
-            });
-        }
-    })();
-});
-
-// 5. Outbox Audit Logs Endpoint
-router.get('/logs', async (req, res) => {
-    const db = req.app.get('db');
-    if (db) {
-        try {
-            const snapshot = await db.collection('email_logs').orderBy('sentAt', 'desc').limit(100).get();
-            const dbLogs = [];
-            snapshot.forEach(doc => dbLogs.push(doc.data()));
-            if (dbLogs.length > 0) {
-                return res.json({ success: true, logs: dbLogs });
-            }
-        } catch (e) {
-            console.error('Error fetching logs from DB:', e.message);
-        }
-    }
-    return res.json({ success: true, logs: emailLogsStore });
-});
-
-// 6. Resend Dispatched Email
-router.post('/resend', async (req, res) => {
-    const db = req.app.get('db');
-    const { logId, id } = req.body;
-    const searchId = logId || id;
-
-    if (!searchId) {
-        return res.status(400).json({ success: false, error: 'logId is required.' });
-    }
-
-    // Tier 1: Search in-memory store
-    let targetLog = emailLogsStore.find(l => l.id === searchId || l.messageId === searchId);
-
-    // Tier 2: Fallback query to the authoritative MySQL email_logs table.
-    if (!targetLog) {
-        try {
-            const { getPool } = require('../database/mysql');
-            const [rows] = await getPool().query(
-                'SELECT id, recipient, subject, template_type, status, html, message_id, error, transport, sent_at FROM email_logs WHERE id = ? OR message_id = ? LIMIT 1',
-                [String(searchId).slice(0, 64), String(searchId).slice(0, 255)]
-            );
-            if (rows.length) {
-                const row = rows[0];
-                targetLog = {
-                    id: row.id,
-                    recipient: row.recipient,
-                    to: row.recipient,
-                    subject: row.subject,
-                    templateType: row.template_type,
-                    status: row.status,
-                    html: row.html,
-                    messageId: row.message_id,
-                    error: row.error,
-                    transport: row.transport,
-                    sentAt: row.sent_at ? new Date(row.sent_at).toISOString() : null,
-                };
-                // Cache retrieved log into memory store for fast subsequent access
-                emailLogsStore.unshift(targetLog);
-            }
-        } catch (e) {
-            console.warn('[Resend Email] MySQL log lookup notice:', e.message);
-        }
-    }
-
-    if (!targetLog) {
-        return res.status(404).json({ success: false, error: `Email log entry '${searchId}' not found.` });
-    }
-
+    let providerAccepted = false;
     try {
-        const config = await getEmailConfig(db);
-        const rendered = targetLog.html
-            ? { subject: targetLog.subject, html: targetLog.html }
-            : renderEmailTemplate(targetLog.templateType, { candidate_name: targetLog.recipient }, customTemplatesStore);
-
+        const config = await getEmailConfig();
+        if (config.enabledTemplates?.[templateType] === false) {
+            const log = await logOutboundEmail(null, {
+                to: recipient, subject: req.body?.customSubject || `Notification (${templateType})`,
+                templateType, status: 'SKIPPED', error: 'Template disabled in email settings',
+            });
+            return res.status(409).json({ success: false, code: 'EMAIL_TEMPLATE_DISABLED', error: 'This email template is disabled.', logId: log.id });
+        }
+        const rendered = renderEmailTemplate(templateType, {
+            ...(req.body?.vars || {}),
+            subject: req.body?.customSubject,
+            body: req.body?.customBody,
+        }, config.customTemplates);
         const mailOptions = {
             from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
-            to: targetLog.recipient,
-            subject: targetLog.subject || rendered.subject,
-            html: rendered.html
+            replyTo: config.smtp.replyTo || config.smtp.username,
+            to: recipient,
+            subject: String(req.body?.customSubject || rendered.subject).replace(/[\r\n]/g, ' ').slice(0, 255),
+            html: req.body?.customBody ? formatCustomEmailBody(req.body.customBody) : rendered.html,
         };
-
         const result = await dispatchMailWithFallback(config, mailOptions);
-        await logOutboundEmail(db, {
-            to: targetLog.recipient,
-            subject: `[RESENT] ${targetLog.subject}`,
-            templateType: targetLog.templateType,
-            status: 'SENT',
-            html: rendered.html,
-            messageId: result.messageId,
-            transport: result.transport
+        providerAccepted = true;
+        const log = await logOutboundEmail(null, {
+            to: recipient, subject: mailOptions.subject, templateType, status: 'SENT',
+            html: mailOptions.html, messageId: result.messageId, transport: result.transport,
         });
-
-        return res.json({ success: true, message: `Email resent to ${targetLog.recipient}!` });
-
-    } catch (err) {
-        console.error('Resend Error:', err);
-        return res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// 7. Dynamic Templates API (Get & Save Custom Templates)
-router.get('/templates', (req, res) => {
-    return res.json({ success: true, templates: customTemplatesStore });
-});
-
-router.post('/templates', async (req, res) => {
-    const db = req.app.get('db');
-    const { templateType, subject, html } = req.body;
-
-    if (!templateType || !html) {
-        return res.status(400).json({ success: false, error: 'templateType and html content are required.' });
-    }
-
-    customTemplatesStore[templateType] = { subject, html, updatedAt: new Date().toISOString() };
-
-    if (db) {
-        try {
-            await db.collection('settings').doc('email_templates').set(customTemplatesStore, { merge: true });
-        } catch (e) {
-            console.error('Failed to save templates in DB:', e.message);
+        return res.json({ success: true, providerAccepted: true, messageId: result.messageId, logId: log.id });
+    } catch (error) {
+        if (!providerAccepted) {
+            await logOutboundEmail(null, {
+                to: recipient, subject: req.body?.customSubject || `Notification (${templateType})`,
+                templateType, status: 'FAILED', error: error.message,
+            }).catch(logError => console.error('[Email] Failed-attempt history unavailable:', logError.code || logError.message));
         }
+        return res.status(providerAccepted ? 503 : (error.code === 'EMAIL_NOT_CONFIGURED' ? 503 : 502)).json({
+            success: false,
+            code: providerAccepted ? 'EMAIL_ACCEPTED_HISTORY_FAILED' : (error.code || 'EMAIL_DELIVERY_FAILED'),
+            error: providerAccepted
+                ? 'The provider accepted the email, but delivery history could not be persisted. Do not resend without checking the provider.'
+                : 'The email provider did not accept the message.',
+            providerAccepted,
+            requestId: res.locals?.requestId,
+        });
     }
-
-    return res.json({ success: true, message: `Template "${templateType}" updated successfully!` });
 });
 
-async function dispatchNotification(db, { to, templateType, vars = {}, customSubject, customBody }) {
+// Client-authored invoice emails are retired. Invoice issuance now owns its
+// immutable payload and notification outbox event in the invoice transaction.
+router.post('/send-invoice-email', (_req, res) => {
+    return res.status(410).json({
+        success: false,
+        code: 'LEGACY_INVOICE_EMAIL_RETIRED',
+        error: 'Generate the verified invoice through /api/invoice/generate; delivery is queued transactionally.',
+        requestId: res.locals?.requestId,
+    });
+});
+
+router.get('/logs', requirePermission('system.config.read'), async (_req, res) => {
+    try {
+        const [rows] = await getPool().query(
+            `SELECT id, recipient, subject, template_type, status, message_id, error, transport, sent_at
+             FROM email_logs ORDER BY sent_at DESC, id DESC LIMIT 100`
+        );
+        const logs = rows.map(row => ({
+            id: row.id, recipient: row.recipient, to: row.recipient, subject: row.subject,
+            templateType: row.template_type, status: row.status, messageId: row.message_id,
+            error: row.error, transport: row.transport,
+            sentAt: row.sent_at ? new Date(row.sent_at).toISOString() : null,
+        }));
+        return res.json({ success: true, logs, source: 'mariadb' });
+    } catch (_error) {
+        return res.status(503).json({ success: false, code: 'EMAIL_LOGS_UNAVAILABLE', error: 'Email delivery history is unavailable.', requestId: res.locals?.requestId });
+    }
+});
+
+router.post('/resend', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
+    const searchId = String(req.body?.logId || req.body?.id || '').trim();
+    if (!/^[A-Za-z0-9@._:<>{}-]{1,255}$/.test(searchId)) {
+        return res.status(400).json({ success: false, code: 'INVALID_EMAIL_LOG_ID', error: 'A valid logId is required.' });
+    }
+    try {
+        const [rows] = await getPool().query(
+            `SELECT id, recipient, subject, template_type, html, message_id
+             FROM email_logs WHERE id = ? OR message_id = ? ORDER BY sent_at DESC LIMIT 1`,
+            [searchId.slice(0, 64), searchId]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, code: 'EMAIL_LOG_NOT_FOUND', error: 'Email log entry not found.' });
+        const target = rows[0];
+        const config = await getEmailConfig();
+        const rendered = target.html
+            ? { subject: target.subject, html: target.html }
+            : renderEmailTemplate(target.template_type, { candidate_name: target.recipient }, config.customTemplates);
+        const result = await dispatchMailWithFallback(config, {
+            from: `"${config.smtp.senderName}" <${config.smtp.username}>`,
+            replyTo: config.smtp.replyTo || config.smtp.username,
+            to: target.recipient,
+            subject: String(target.subject || rendered.subject).replace(/[\r\n]/g, ' ').slice(0, 255),
+            html: rendered.html,
+        });
+        const log = await logOutboundEmail(null, {
+            to: target.recipient, subject: `[RESENT] ${target.subject || rendered.subject}`,
+            templateType: target.template_type, status: 'SENT', html: rendered.html,
+            messageId: result.messageId, transport: result.transport,
+        });
+        return res.json({ success: true, providerAccepted: true, logId: log.id });
+    } catch (error) {
+        return res.status(error.status || 502).json({ success: false, code: error.code || 'EMAIL_RESEND_FAILED', error: 'The email could not be resent.', requestId: res.locals?.requestId });
+    }
+});
+
+router.get('/templates', requirePermission('system.config.read'), getCustomTemplates);
+router.post('/templates', requirePermission('system.config.write'), requireRecentAdminAuthentication, saveTemplateCustomization);
+
+async function dispatchNotification({ to, templateType, vars = {}, customSubject, customBody }) {
     const recipient = String(to || '').trim().toLowerCase();
     if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(recipient) || recipient.length > 254) {
         return { success: false, error: 'A single valid recipient address is required' };
     }
     to = recipient;
     try {
-        const config = await getEmailConfig(db);
+        const config = await getEmailConfig();
         
         // Check On/Off toggle
         if (templateType && config.enabledTemplates && config.enabledTemplates[templateType] === false) {
             console.log(`[Email Skipped] Template '${templateType}' is disabled in Admin settings.`);
-            await logOutboundEmail(db, {
+            await logOutboundEmail({
                 to,
                 subject: customSubject || `Notification (${templateType})`,
                 templateType: templateType || 'custom',
@@ -2197,7 +2179,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             action_url: finalActionUrl,
         };
 
-        const rendered = renderEmailTemplate(templateType || 'default', mergedVars, customTemplatesStore);
+        const rendered = renderEmailTemplate(templateType || 'default', mergedVars, config.customTemplates);
         const resolvedSubject = replaceEmailVariables(customSubject || rendered.subject, mergedVars);
         const resolvedHtml = customBody
             ? formatCustomEmailBody(customBody, mergedVars, brandName, siteUrl, supportEmail)
@@ -2216,7 +2198,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
             from: `"${config.smtp?.senderName || 'ResumePilot Enterprise'}" <${config.smtp?.senderEmail || config.smtp?.username}>`,
             replyTo: config.smtp?.replyTo || config.smtp?.username,
             to,
-            subject: resolvedSubject,
+            subject: String(resolvedSubject || '').replace(/[\r\n\p{Cc}]/gu, ' ').trim().slice(0, 255),
             html: resolvedHtml,
             text: textFallback,
             messageId,
@@ -2229,7 +2211,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         };
 
         const result = await dispatchMailWithFallback(config, mailOptions);
-        await logOutboundEmail(db, {
+        await logOutboundEmail({
             to,
             subject: mailOptions.subject,
             templateType: templateType || 'custom',
@@ -2249,7 +2231,7 @@ async function dispatchNotification(db, { to, templateType, vars = {}, customSub
         } else {
             console.error(`[Notification Error] Template '${templateType}' to '${to}' failed:`, err.message);
         }
-        await logOutboundEmail(db, {
+        await logOutboundEmail({
             to,
             subject: customSubject || `Notification (${templateType})`,
             templateType: templateType || 'custom',

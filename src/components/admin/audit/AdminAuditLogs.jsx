@@ -15,7 +15,6 @@ export default function AdminAuditLogs() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [severityFilter, setSeverityFilter] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState('');
-  const [degradedInfo, setDegradedInfo] = useState(null);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -50,19 +49,12 @@ export default function AdminAuditLogs() {
       const logsData = await logsRes.json();
       const statsData = statsRes.ok ? await statsRes.json() : null;
 
-      if (logsData.degraded) {
-        setDegradedInfo(logsData.message || 'Audit log query is currently degraded.');
-      } else {
-        setDegradedInfo(null);
-      }
-
       setLogs(logsData.logs || []);
       setSearchWindow(logsData.searchTruncated ? { size: logsData.searchWindow } : null);
       setStats(statsData);
     } catch (err) {
       console.error('[AdminAuditLogs] Error fetching logs:', err);
       setError(err.message || 'Failed to load audit logs');
-      setDegradedInfo(null);
     } finally {
       setLoading(false);
     }
@@ -254,21 +246,6 @@ export default function AdminAuditLogs() {
       </div>
 
       {searchWindow && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">Search examined the newest {searchWindow.size} records. Older matching records may require a narrower server filter or an audited export.</div>}
-
-      {/* Degraded Standby State Banner */}
-      {degradedInfo && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-start gap-3">
-          <FiAlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-bold text-amber-950">Standby Audit Store Quota Limited</p>
-            <p className="mt-0.5 text-amber-800">{degradedInfo}</p>
-            <p className="mt-1 text-[11px] text-amber-700">Primary business database (MariaDB) is 100% active. Historical audit queries will resume automatically once the daily standby quota window resets.</p>
-          </div>
-          <button type="button" onClick={fetchLogs} disabled={loading} className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-lg border border-amber-300 transition">
-            Check Status
-          </button>
-        </div>
-      )}
 
       {/* Error State */}
       {error && (

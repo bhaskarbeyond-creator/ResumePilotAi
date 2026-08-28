@@ -61,41 +61,15 @@ const SECRETS = {
   'data/subscriptions': {},
 };
 
-function _buildMockDb() {
-  return {
-    collection(name) {
-      return {
-        doc(id) {
-          return {
-            async get() {
-              const value = SECRETS[`${name}/${id}`];
-              return { exists: Boolean(value), data: () => value };
-            },
-          };
-        },
-      };
-    },
-  };
-}
+const { setRepositoryForTests } = require('../repositories');
+setRepositoryForTests({
+  async getSetting(category) {
+    return SECRETS[`settings/${category}`] || SECRETS[`data/${category}`] || null;
+  },
+  async recordAdminAuditLog() { return true; },
+});
 
 const app = require('../index');
-// The projection is MySQL-authoritative; seed the fixture values in MySQL
-// system_settings (Firestore data plane OFF) before the tests run.
-const { before } = require('node:test');
-const { getPool } = require('../database/mysql');
-before(async () => {
-  const pool = getPool();
-  await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','payment_providers','subscriptions')");
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('public_config', ?, 1)", [JSON.stringify({ subscriptions: { razorpayKeyId: 'mock-rzp-public-key-id' } })]);
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('payment_providers', ?, 7)", [JSON.stringify({
-    razorpay: { keyId: 'mock-rzp-public-key-id', keySecret: 'mock-rzp-secret-DO_NOT_LEAK' },
-    stripe: { secretKey: 'mock-stripe-secret-DO_NOT_LEAK' },
-    paypal: { clientId: 'paypal-public-id', clientSecret: 'paypal-secret-DO_NOT_LEAK' },
-    _revision: 7,
-  })]);
-  await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('subscriptions', ?, 1)", [JSON.stringify({})]);
-});
-app.set('db', null);
 
 test('REGRESSION: ADMIN (system.config.read) can READ the secret-free payment projection', async () => {
   const res = await request(app).get('/api/platform/payment-settings').set('Authorization', 'Bearer admin');

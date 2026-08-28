@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getAllEmployerApplications, approveEmployerApplication, rejectEmployerApplication, reactivateEmployerApplication } from '../../../firestore/dbOperations';
+import { getAllEmployerApplications, approveEmployerApplication, rejectEmployerApplication, reactivateEmployerApplication } from '../../../services/api/platform';
 import { FaBuilding, FaUser, FaCalendar, FaCheck, FaTimes, FaEye, FaChevronDown, FaChevronUp, FaClock, FaInbox, FaSearch, FaFilter, FaGlobe, FaMapMarkerAlt, FaPhone, FaEnvelope, FaLinkedin, FaUsers, FaExclamationTriangle } from 'react-icons/fa';
 
 class EmployerApplications extends Component {

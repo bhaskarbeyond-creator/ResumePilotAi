@@ -1,8 +1,6 @@
 /**
- * Resume Field Mapper & Intermediate Temp JSON Converter
- * Maximum-strength normalizer that handles every possible AI output variation,
- * non-standard field names, and edge cases in uploaded resume data.
- * ALWAYS merges heuristic extraction with AI output for full coverage.
+ * Resume Field Mapper & Intermediate Temp JSON Converter.
+ * Normalizes source-extracted fields without supplying missing candidate claims.
  */
 
 // ═══════════════════════════════════════════════
@@ -148,7 +146,7 @@ export function normalizeRawDataToTempJson(aiRawJson = {}, rawText = '') {
             employer: employer || '',
             city: pick(emp, 'city', 'location', 'place', 'office') || '',
             begin: beginDate || '',
-            end: isCurrent ? 'Present' : (endDate || ''),
+            end: endDate || '',
             description: description || '',
             current: Boolean(isCurrent),
         };
@@ -203,23 +201,23 @@ export function normalizeRawDataToTempJson(aiRawJson = {}, rawText = '') {
             skills.push({
                 id: `skill_${Date.now()}_${skills.length}`,
                 skillName: cleanName,
-                rating: Math.min(100, Math.max(10, Number(rat) || 85)),
+                rating: rat !== null && rat !== undefined && rat !== '' && Number.isFinite(Number(rat))
+                    ? Math.min(100, Math.max(0, Number(rat)))
+                    : null,
             });
         }
     };
 
     aiSkills.forEach((sk) => {
         let skillName = '';
-        let rating = 85;
+        let rating = null;
         if (typeof sk === 'string') {
             skillName = sk.trim();
         } else if (typeof sk === 'object' && sk !== null) {
             skillName = pick(sk, 'skillName', 'skill_name', 'name', 'skill', 'technology', 'tool', 'label');
-            rating = sk.rating || sk.level || sk.proficiency || 85;
-            if (typeof rating === 'string') {
-                const levelMap = { expert: 95, advanced: 90, proficient: 85, intermediate: 75, beginner: 65, basic: 60 };
-                rating = levelMap[rating.toLowerCase()] || 85;
-            }
+            rating = sk.rating !== null && sk.rating !== undefined && sk.rating !== '' && Number.isFinite(Number(sk.rating))
+                ? Number(sk.rating)
+                : null;
         }
         if (skillName.includes(':') || skillName.includes(',')) {
             const parts = skillName.split(/[:;,]/).map(p => p.trim()).filter(Boolean);
@@ -233,14 +231,14 @@ export function normalizeRawDataToTempJson(aiRawJson = {}, rawText = '') {
     const aiLanguages = pickArray(aiRawJson, 'languages', 'spokenLanguages', 'spoken_languages');
     const languages = aiLanguages.map((lang, idx) => {
         if (typeof lang === 'string') {
-            return { id: `lang_${Date.now()}_${idx}`, name: lang.trim(), language: lang.trim(), level: 'Fluent' };
+            return { id: `lang_${Date.now()}_${idx}`, name: lang.trim(), language: lang.trim(), level: '' };
         }
         const langTitle = pick(lang, 'name', 'language', 'lang') || '';
         return {
             id: `lang_${Date.now()}_${idx}`,
             name: langTitle,
             language: langTitle,
-            level: pick(lang, 'level', 'proficiency', 'fluency') || 'Native / Bilingual',
+            level: pick(lang, 'level', 'proficiency', 'fluency') || '',
         };
     });
 
@@ -266,7 +264,10 @@ export function normalizeRawDataToTempJson(aiRawJson = {}, rawText = '') {
             employmentsCount: employments.length,
             educationsCount: educations.length,
             skillsCount: skills.length,
-            aiUsed: true,
+            aiUsed: aiRawJson?._grounding === 'source-extracted',
+            grounding: aiRawJson?._grounding === 'source-extracted'
+                ? 'source-extracted'
+                : (rawText ? 'local-source-heuristic' : 'normalized-input'),
         },
     };
 
@@ -311,7 +312,6 @@ export function mapTempJsonToResumePayload(tempJson = {}, existingResumeData = {
 export function extractHeuristicResumeData(rawText = '') {
     if (!rawText) return {};
 
-    console.log('⚡ Running Enhanced Client-Side Heuristic Extraction...');
 
     const lines = rawText.split(/\n+/).map(l => l.trim()).filter(Boolean);
 
@@ -367,19 +367,18 @@ export function extractHeuristicResumeData(rawText = '') {
         }
     }
 
-    // ---- Location (city, country, address, postalcode) ----
+    // ---- Location (source-labeled fields only) ----
     let city = '', country = '', address = '', postalcode = '';
-    // Try to find a line with "Location" or "Address"
-    const locLine = lines.find(l => /^(location|address)\s*[:;]/i.test(l));
-    if (locLine) {
-        const parts = locLine.replace(/^(location|address)\s*[:;]/i, '').split(/[,|-]/).map(p => p.trim()).filter(Boolean);
-        if (parts.length >= 1) city = parts[0];
-        if (parts.length >= 2) country = parts.slice(1).join(', ');
-        address = locLine.replace(/^(location|address)\s*[:;]/i, '').trim();
-    } else {
-        // Fallback: scan raw text for city patterns
-        const cityMatch = rawText.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*,\s*([A-Z]{2})\b/);
-        if (cityMatch) { city = cityMatch[1]; country = cityMatch[2]; }
+    const labeledValue = label => {
+        const pattern = new RegExp(`^(?:${label})\\s*[:;]\\s*`, 'i');
+        const line = lines.find(value => pattern.test(value));
+        return line ? line.replace(pattern, '').trim() : '';
+    };
+    city = labeledValue('city');
+    country = labeledValue('country');
+    address = labeledValue('address') || labeledValue('location');
+    postalcode = labeledValue('postal(?:\\s*code)?|zip(?:\\s*code)?');
+    if (!postalcode) {
         const zipMatch = rawText.match(/\b\d{5}(?:-\d{4})?\b/);
         if (zipMatch) postalcode = zipMatch[0];
     }
@@ -402,10 +401,6 @@ export function extractHeuristicResumeData(rawText = '') {
             summary = `<p>${summaryLines.join(' ').replace(/^[-•*]\s*/, '').trim()}</p>`;
         }
     }
-    if (!summary && occupation) {
-        summary = `<p>Experienced ${occupation} with expertise in delivering impactful solutions and leading cross-functional teams.</p>`;
-    }
-
     // ---- Work History (heuristic) ----
     const employments = [];
     const expStart = lines.findIndex(l => /^(experience|work\s*experience|professional\s*experience|employment|career\s*history|work\s*history|where\s*i\s*worked)/i.test(l));
@@ -426,9 +421,9 @@ export function extractHeuristicResumeData(rawText = '') {
                     id: Date.now() + i,
                     jobTitle: parts[0] || '',
                     employer: parts[1] || '',
-                    city: parts[2] || city || '',
-                    begin: dateMatch ? dateMatch[0].split(/[-–]|to/i)[0]?.trim() : '',
-                    end: dateMatch ? (dateMatch[0].split(/[-–]|to/i)[1]?.trim() || 'Present') : 'Present',
+                    city: parts[2] || '',
+                    begin: dateMatch ? dateMatch[0].split(/[-–]|\bto\b/i)[0]?.trim() : '',
+                    end: dateMatch ? (dateMatch[0].split(/[-–]|\bto\b/i)[1]?.trim() || '') : '',
                     description: '',
                     current: /present|current/i.test(line),
                 };
@@ -446,8 +441,8 @@ export function extractHeuristicResumeData(rawText = '') {
         const eduLines = lines.slice(eduStart + 1, endIdx);
         let currentEdu = null;
         eduLines.forEach((line, i) => {
-            const yearMatch = line.match(/\b(19|20)\d{2}\b/);
-            if (yearMatch || /degree|master|bachelor|b\.e|m\.tech|b\.tech|bs|ms|phd|diploma/i.test(line)) {
+            const yearMatches = [...line.matchAll(/\b(?:19|20)\d{2}\b/g)].map(match => match[0]);
+            if (yearMatches.length || /degree|master|bachelor|b\.e|m\.tech|b\.tech|bs|ms|phd|diploma/i.test(line)) {
                 if (currentEdu) educations.push(currentEdu);
                 const parts = line.split(/[-–|@,]/).map(p => p.trim()).filter(Boolean);
                 currentEdu = {
@@ -455,8 +450,8 @@ export function extractHeuristicResumeData(rawText = '') {
                     degree: parts[0] || line,
                     school: parts[1] || '',
                     city: '',
-                    started: yearMatch ? yearMatch[0] : '',
-                    finished: yearMatch ? yearMatch[0] : '',
+                    started: yearMatches.length >= 2 ? yearMatches[0] : '',
+                    finished: yearMatches.length >= 2 ? yearMatches[yearMatches.length - 1] : '',
                     description: '',
                 };
             } else if (currentEdu) {
@@ -481,25 +476,52 @@ export function extractHeuristicResumeData(rawText = '') {
         'Cisco', 'Jira', 'Confluence', 'Figma', 'Adobe XD', 'Sketch', 'Photoshop',
         'Illustrator', 'InDesign', 'After Effects', 'Premiere Pro', 'Final Cut Pro',
     ];
-    const lowerText = rawText.toLowerCase();
+    const skillHeaderIndex = lines.findIndex(line => /^(?:skills?|technical\s+skills|core\s+competencies|technologies|tech\s+stack)\b/i.test(line));
+    const skillLines = [];
+    if (skillHeaderIndex !== -1) {
+        const headerValue = lines[skillHeaderIndex].replace(/^(?:skills?|technical\s+skills|core\s+competencies|technologies|tech\s+stack)\s*[:;-]?\s*/i, '').trim();
+        if (headerValue) skillLines.push(headerValue);
+        const nextSection = /^(?:experience|employment|education|projects|certifications?|languages?|awards?|references?|hobbies|interests)\b/i;
+        for (let index = skillHeaderIndex + 1; index < lines.length; index += 1) {
+            if (nextSection.test(lines[index])) break;
+            skillLines.push(lines[index]);
+        }
+    }
+    const lowerSkillText = skillLines.join('\n').toLowerCase();
     techSkills.forEach((sk, idx) => {
-        if (lowerText.includes(sk.toLowerCase())) {
-            skills.push({ id: `sk_${Date.now()}_${idx}`, skillName: sk, rating: 85 });
+        const escapedSkill = sk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const explicitlyListed = new RegExp(`(?:^|[\\s,;|/()])${escapedSkill}(?=$|[\\s,;|/()])`, 'i').test(lowerSkillText);
+        if (explicitlyListed) {
+            skills.push({ id: `sk_${Date.now()}_${idx}`, skillName: sk, rating: null });
         }
     });
 
-    // ---- Languages (heuristic) ----
+    // ---- Languages (only an explicit language section is authoritative) ----
     const languages = [];
-    const langKeywords = ['English', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 'Hindi', 'Arabic', 'Portuguese', 'Russian', 'Dutch', 'Italian', 'Korean'];
-    langKeywords.forEach(lang => {
-        if (lowerText.includes(lang.toLowerCase())) {
-            let level = 'Fluent';
-            if (lowerText.includes(`${lang.toLowerCase()} native`)) level = 'Native';
-            else if (lowerText.includes(`${lang.toLowerCase()} intermediate`)) level = 'Intermediate';
-            else if (lowerText.includes(`${lang.toLowerCase()} basic`)) level = 'Basic';
-            languages.push({ id: `lang_${Date.now()}_${languages.length}`, language: lang, level });
+    const langKeywords = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Hindi', 'Telugu', 'Tamil', 'Kannada', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi', 'Urdu', 'Arabic', 'Mandarin', 'Chinese', 'Japanese', 'Korean', 'Russian', 'Dutch', 'Polish', 'Swedish', 'Norwegian', 'Danish', 'Greek', 'Romanian', 'Icelandic'];
+    const languageHeaderIndex = lines.findIndex(line => /^(?:languages?|linguistic\s+skills)\b/i.test(line));
+    if (languageHeaderIndex !== -1) {
+        const headerValue = lines[languageHeaderIndex].replace(/^(?:languages?|linguistic\s+skills)\s*[:;-]?\s*/i, '').trim();
+        const languageLines = headerValue ? [headerValue] : [];
+        const nextSection = /^(?:experience|employment|education|skills|projects|certifications?|awards?|references?|hobbies|interests)\b/i;
+        for (let index = languageHeaderIndex + 1; index < lines.length; index += 1) {
+            if (nextSection.test(lines[index])) break;
+            languageLines.push(lines[index]);
         }
-    });
+        langKeywords.forEach(lang => {
+            const matchingLine = languageLines.find(line => new RegExp(`(?:^|[^A-Za-z])${lang}(?:$|[^A-Za-z])`, 'i').test(line));
+            if (!matchingLine) return;
+            const lowerLine = matchingLine.toLowerCase();
+            const language = lang.toLowerCase();
+            const explicitLevel = ['native', 'bilingual', 'fluent', 'advanced', 'intermediate', 'elementary', 'basic', 'beginner']
+                .find(level => new RegExp(`(?:${language}\\s*[-–:,(]*\\s*${level}|${level}\\s*[-–:,(]*\\s*${language})`, 'i').test(lowerLine));
+            languages.push({
+                id: `lang_${Date.now()}_${languages.length}`,
+                language: lang,
+                level: explicitLevel ? explicitLevel.charAt(0).toUpperCase() + explicitLevel.slice(1) : '',
+            });
+        });
+    }
 
     return {
         firstname,

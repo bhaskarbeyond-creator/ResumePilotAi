@@ -1,0 +1,93 @@
+name: Quality gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-build-audit:
+    name: Test, build, and audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RUN_MARIADB_INTEGRATION: "true"
+      MARIADB_TEST_ALLOW_RESET: "true"
+      EXPECTED_MARIADB_MAJOR_MINOR: "11.4"
+      MARIADB_CI_IMAGE: mariadb@sha256:4f1d8d202fcf7bcb3902f63af09f9c1a050c2922a89652f22abaec0d4f015e83 # 11.4.12
+    steps:
+      - name: Check out reviewed source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Start isolated MariaDB with ephemeral credentials
+        run: scripts/start-ci-mariadb.sh
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm --prefix backend ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify clean migrations, rollback, constraints, and duplicate preflight
+        run: node scripts/verify-mariadb-migrations.mjs
+
+      - name: Initialize isolated CI database schema
+        env:
+          NODE_ENV: test
+        run: |
+          node - <<'NODE'
+          const database = require('./backend/database/mysql');
+          database.initializeSchema()
+            .then((result) => {
+              if (!result.success) throw new Error(result.error || 'schema initialization failed');
+              return database.closePool();
+            })
+            .catch((error) => { console.error(error.message); process.exit(1); });
+          NODE
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Security and backend regression tests
+        env:
+          NODE_ENV: test
+        run: npm run test:security
+
+      - name: Product regression tests
+        env:
+          NODE_ENV: test
+        run: npm run test:product
+
+      - name: Production build
+        env:
+          VITE_BUILD_SHA: ${{ github.sha }}
+        run: npm run build
+
+      - name: Production dependency audit
+        run: npm run audit:production
+
+      - name: Stop isolated MariaDB
+        if: always()
+        run: docker rm -f "$CI_MARIADB_CONTAINER" >/dev/null 2>&1 || true

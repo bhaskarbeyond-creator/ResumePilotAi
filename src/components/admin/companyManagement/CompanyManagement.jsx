@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getAllCompanies, approveCompany, rejectCompany, toggleCompanyFeatured } from '../../../firestore/dbOperations';
+import { getAllCompanies, approveCompany, rejectCompany, toggleCompanyFeatured } from '../../../services/api/platform';
 import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import { FaBuilding, FaUser, FaCalendar, FaCheck, FaTimes, FaEye, FaChevronDown, FaChevronUp, FaClock, FaInbox, FaSearch, FaFilter, FaGlobe, FaMapMarkerAlt, FaPhone, FaEnvelope, FaUsers, FaExclamationTriangle, FaImage, FaIndustry, FaCheckCircle, FaTimesCircle, FaStar, FaPlus } from 'react-icons/fa';
 import AddCompanyModal from '../../Dashboard/EmployerDashboard/AddCompanyModal';

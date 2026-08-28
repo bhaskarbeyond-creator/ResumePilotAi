@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaCookieBite, FaCheck, FaTimes, FaSpinner, FaBalanceScale } from 'react-icons/fa';
 
 const GdprLegalSettings = () => {
@@ -15,7 +15,7 @@ const GdprLegalSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.gdpr) {
                 setGdprConfig((prev) => ({ ...prev, ...settings.gdpr }));
             }

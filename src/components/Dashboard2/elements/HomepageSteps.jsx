@@ -1,24 +1,10 @@
 import React from 'react';
-import { FiTarget, FiTrendingUp, FiAward, FiStar, FiArrowRight, FiUsers, FiFileText, FiZap } from 'react-icons/fi';
+import { FiTarget, FiTrendingUp, FiAward, FiStar, FiArrowRight, FiZap } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import backgroundImage from '../../../assets/Landing Page images/ddddddddddddddd.JPG';
 import backgroundImage2 from '../../../assets/Landing Page images/dddd2.png';
 import backgroundImage3 from '../../../assets/Landing Page images/dddd3.png';
 import appPreviewImage from '../../../assets/Landing Page images/app.png';
-
-const StatCard = ({ stat, index }) => (
-    <div
-        className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300 animate-fade-in-up group"
-        style={{ animationDelay: `${0.8 + index * 0.1}s` }}>
-        <div className="text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
-                <stat.icon className="w-5 h-5 text-purple-600" />
-            </div>
-            <p className="text-2xl font-bold text-purple-600 mb-1">{stat.number}</p>
-            <p className="text-xs text-gray-600 font-medium">{stat.label}</p>
-        </div>
-    </div>
-);
 
 const BenefitSection = ({ benefit, index, isReverse }) => (
     <div className={`grid lg:grid-cols-2 gap-12 xl:gap-16 items-center ${isReverse ? 'lg:grid-flow-col-dense' : ''}`}>
@@ -85,14 +71,6 @@ const HomepageBenefitsPolished = () => {
             description: t('HomepageSteps.benefits.2.description'),
             detail: t('HomepageSteps.benefits.2.detail'),
         },
-    ];
-
-    // Get stats from translations
-    const _stats = [
-        { number: t('HomepageSteps.stats.0.number'), label: t('HomepageSteps.stats.0.label'), icon: FiUsers },
-        { number: t('HomepageSteps.stats.1.number'), label: t('HomepageSteps.stats.1.label'), icon: FiTarget },
-        { number: t('HomepageSteps.stats.2.number'), label: t('HomepageSteps.stats.2.label'), icon: FiFileText },
-        { number: t('HomepageSteps.stats.3.number'), label: t('HomepageSteps.stats.3.label'), icon: FiZap },
     ];
 
     return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdClose, MdLightbulb, MdBolt, MdContentCopy, MdAdd, MdCheck, MdAutoAwesome } from 'react-icons/md';
+import { MdClose, MdBolt, MdContentCopy, MdCheck, MdAutoAwesome } from 'react-icons/md';
 import { FiLoader } from 'react-icons/fi';
 import { generateUserAiContent } from '../../../../services/aiService';
 
@@ -16,9 +16,16 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
     const generateAiSuggestions = async () => {
         const school = selectedEducation?.school || selectedEducation?.institution || '';
         const degree = selectedEducation?.degree || selectedEducation?.qualification || '';
+        const sourceNotes = String(selectedEducation?.description || selectedEducation?.userNotes || selectedEducation?.coursework || '').trim();
 
         if (!selectedEducation || !school || !degree) {
-            setError(t('EducationSuggestionModal.errors.requiredFields', 'Please enter School and Degree first.'));
+            setSuggestions([]);
+            setError(t('EducationSuggestionModal.errors.requiredFields', 'Enter the school and degree before requesting a rewrite.'));
+            return;
+        }
+        if (sourceNotes.length < 12) {
+            setSuggestions([]);
+            setError('First add at least 12 characters of verified coursework, projects, activities, or honors. AI can rewrite those facts but will not invent academic achievements.');
             return;
         }
 
@@ -31,37 +38,27 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
         try {
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
             const data = await generateUserAiContent('generate-education-description', {
-                school: school,
-                degree: degree,
+                school,
+                degree,
                 startDate: selectedEducation.started || selectedEducation.startDate || '',
                 endDate: selectedEducation.finished || selectedEducation.endDate || '',
                 current: Boolean(selectedEducation.current),
+                existingText: sourceNotes,
                 language: preferredLanguage,
             }, { signal: requestController.signal });
 
-            if (data && data.suggestions && Array.isArray(data.suggestions)) {
-                const cleanSuggestions = data.suggestions.map((item) => {
-                    if (typeof item === 'string') return item.trim();
-                    if (typeof item === 'object' && item !== null) {
-                        return (item.highlight || item.bulletPoint || item.text || item.suggestion || item.bullet || Object.values(item)[0] || '').toString().trim();
-                    }
-                    return String(item).trim();
-                }).filter(Boolean);
-                setSuggestions(cleanSuggestions);
-            } else {
-                throw new Error('Invalid response format');
-            }
+            const cleanSuggestions = Array.isArray(data?.suggestions)
+                ? data.suggestions.map(item => String(typeof item === 'object' ? item.text || item.suggestion || '' : item).trim()).filter(Boolean)
+                : [];
+            if (!cleanSuggestions.length) throw new Error('No source-supported rewrites were returned');
+            setSuggestions(cleanSuggestions);
         } catch (err) {
             if (err?.name === 'AbortError') return;
-            console.error('Error generating AI suggestions:', err);
-            setError(`AI Error: ${err.message || 'Failed to generate AI suggestions'}. Please verify your AI API Key, selected Model, or API settings in Admin Panel settings.`);
-
-            setSuggestions([
-                `Completed advanced coursework in ${degree} with focus on core domain fundamentals and practical application.`,
-                `Maintained high academic standing while completing capstone projects and research publications.`,
-                `Collaborated on team research projects, analyzing complex data sets and presenting findings to faculty committees.`,
-                `Demonstrated leadership in student-led technical associations and organized academic peer-mentorship workshops.`
-            ]);
+            console.error('Error rewriting education notes:', err);
+            setSuggestions([]);
+            setError(err?.code === 'INVALID_AI_INPUT'
+                ? err.message
+                : 'Your education notes were not changed because a source-supported rewrite is unavailable. Please try again later or edit them directly.');
         } finally {
             if (requestControllerRef.current === requestController) {
                 requestControllerRef.current = null;
@@ -70,14 +67,20 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
         }
     };
 
-    // Auto-generate on open
+    // Rewrite automatically only when candidate-authored source notes exist.
     useEffect(() => {
         const school = selectedEducation?.school || selectedEducation?.institution || '';
         const degree = selectedEducation?.degree || selectedEducation?.qualification || '';
-
-        if (isOpen && school && degree) {
-            setSelectedBullets([]);
+        const sourceNotes = String(selectedEducation?.description || selectedEducation?.userNotes || selectedEducation?.coursework || '').trim();
+        if (!isOpen) return;
+        setSelectedBullets([]);
+        if (school && degree && sourceNotes.length >= 12) {
             generateAiSuggestions();
+        } else {
+            setSuggestions([]);
+            setError(!school || !degree
+                ? 'Enter the school and degree first.'
+                : 'Add verified education notes before asking AI to rewrite them.');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, selectedEducation]);
@@ -136,12 +139,12 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                Academic Achievements Generator
+                                Source-grounded education-note rewrite
                                 <span className="bg-indigo-500/30 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-medium border border-indigo-400/20">
-                                    ATS Optimized
+                                    Facts required
                                 </span>
                             </h3>
-                            <p className="text-xs text-slate-300">Generate, customize & select academic honors & project highlights</p>
+                            <p className="text-xs text-slate-300">Rephrase only the education facts you entered; review every result before applying</p>
                         </div>
                     </div>
                     <button onClick={handleClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
@@ -183,13 +186,13 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
                     {isGenerating ? (
                         <div className="py-12 text-center space-y-3">
                             <FiLoader className="animate-spin w-8 h-8 text-indigo-600 mx-auto" />
-                            <p className="text-sm font-medium text-slate-600">Generating academic highlights & coursework achievements...</p>
+                            <p className="text-sm font-medium text-slate-600">Rewriting your supplied education facts...</p>
                         </div>
                     ) : suggestions.length > 0 ? (
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    Click highlights to build description ({selectedBullets.length} selected)
+                                    Review source-grounded rewrite options ({selectedBullets.length} selected)
                                 </h4>
                                 {selectedBullets.length > 0 && (
                                     <button

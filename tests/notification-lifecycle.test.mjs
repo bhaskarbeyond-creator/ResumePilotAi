@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 test('notification producers are backend-owned, deterministic, and state-labelled', async () => {
-  const [backend, operations, rules, notifier] = await Promise.all([
+  const [backend, operations, routes, migration, notifier, outbox] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
+    fs.readFile('backend/routes/notificationsData.js', 'utf8'),
+    fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
     fs.readFile('backend/services/emailNotifier.js', 'utf8'),
+    fs.readFile('backend/services/notificationOutbox.js', 'utf8'),
   ]);
   assert.match(backend, /notificationEventId/);
   assert.match(backend, /state: 'NOTIFICATION_CREATED'/);
@@ -20,19 +22,24 @@ test('notification producers are backend-owned, deterministic, and state-labelle
   assert.match(backend, /notificationEventId\('payment_active', orderRef\.id\)/);
   assert.match(backend, /notificationEventId\('payment_refunded', paymentOrderId\)/);
   assert.doesNotMatch(operations, /export async function createNotification/);
-  assert.match(rules, /match \/notifications[\s\S]*?allow create: if false/);
-  assert.match(notifier, /deliveryState: 'DELIVERY_ATTEMPTED'/);
-  assert.match(notifier, /deliveryState: 'DELIVERY_FAILED'/);
+  assert.doesNotMatch(routes, /router\.post\('\/:id'/);
+  assert.match(routes, /Only the read state can be updated/);
+  assert.match(routes, /WHERE id = \? AND user_id = \?/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS notifications/);
+  assert.match(notifier, /deliveryState: 'NOTIFICATION_QUEUED'/);
+  assert.match(outbox, /state = 'DELIVERY_ATTEMPTED'/);
+  assert.match(outbox, /terminal \? 'DEAD_LETTER' : 'RETRYING'/);
   assert.match(backend, /NOTIFICATION_OUTBOX_WORKER_ENABLED/);
   assert.match(backend, /repo\.saveNotification\(recipientUid/);
-  assert.match(rules, /match \/notification_outbox\/\{id\} \{ allow read, write: if false; \}/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS notification_outbox/);
+  assert.match(migration, /UNIQUE KEY uq_notification_idempotency/);
   assert.doesNotMatch(backend, /notification queued|notifications queued|email delivered/i);
 });
 
 test('unread listeners and panel reject stale accounts and confirm read persistence', async () => {
   const [hook, operations, panel] = await Promise.all([
     fs.readFile('src/hooks/useUnreadNotifications.js', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('src/components/Dashboard/ProfileDisplay/NotificationPanel.jsx', 'utf8'),
   ]);
   assert.match(hook, /subscribeUnreadNotifications/);

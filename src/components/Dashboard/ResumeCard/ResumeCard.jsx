@@ -4,7 +4,7 @@
 
 import React, { Component } from 'react';
 import './ResumeCard.scss';
-import { checkIfInFavourites, removeCover } from '../../../firestore/dbOperations';
+import { checkIfInFavourites, removeCover } from '../../../services/api/platform';
 import fire from '../../../conf/fire';
 import { deleteResumeDraft, publishResume } from '../../../services/resumePersistence';
 import { normalizeResumeData } from '../../../utils/resumeData';

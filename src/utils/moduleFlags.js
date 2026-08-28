@@ -19,12 +19,13 @@ export function isPortfolioModuleEnabled(settings) {
 }
 
 /**
- * Distinguish a successful Firestore/public_config read from the static
- * default-ON fallback. Missing `_settingsSource` means the caller already
- * has remote document data (for example a public_config snapshot).
+ * Distinguish a successful server configuration read from presentation-only
+ * defaults or a previously fetched but now stale snapshot. Missing provenance
+ * means the caller already has authoritative API data.
  */
 export function isFallbackSettings(settings) {
-    return settings?._settingsSource === 'fallback';
+    if (settings?._settingsStale === true) return true;
+    return ['fallback', 'safe-defaults', 'stale-cache', 'cache', 'unavailable'].includes(settings?._settingsSource);
 }
 
 /**
@@ -42,7 +43,8 @@ export function resolveAtsScoreVisibility(settings, { allowMissingDefault = true
         return resolveEnabledFlag(value, true);
     }
     if (allowMissingDefault !== true) return null;
-    return true;
+    // Missing is not affirmative authorization to expose ATS functionality.
+    return false;
 }
 
 /**
@@ -103,19 +105,6 @@ export function resolveAppliedJobsVisibility(settings, { allowMissingDefault = t
 }
 
 /**
- * Tag a Firestore listener snapshot with its provenance. Cached snapshots are
- * useful for many kinds of content, but a default-ON feature flag must not be
- * enabled until Firestore confirms the snapshot came from the server.
- */
-export function settingsFromSnapshot(snapshot) {
-    const data = snapshot?.exists ? (snapshot.data?.() || {}) : {};
-    return {
-        ...data,
-        _settingsSource: snapshot?.metadata?.fromCache === true ? 'fallback' : 'remote',
-    };
-}
-
-/**
  * Auto-save only the flag the administrator actually changed. Sending an
  * entire hydrated category from a stale tab can overwrite a newer sibling
  * flag even when the backend correctly performs an atomic merge.
@@ -143,7 +132,7 @@ export function mergeSettingsCategory(defaults = {}, ...layers) {
 }
 
 export function evaluateAtsVisibilityMatrix(enableAtsScoreModule) {
-    const enabled = resolveEnabledFlag(enableAtsScoreModule, true);
+    const enabled = resolveEnabledFlag(enableAtsScoreModule, false);
     return {
         atsScoreChecker: enabled,
         optimizationMeter: enabled,

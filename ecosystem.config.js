@@ -1,22 +1,18 @@
 /**
- * PM2 process definition for the ResumePilot AI backend (Hostinger Node.js hosting).
+ * PM2 process definition for the ResumePilot AI backend.
  *
- * The backend is the ONLY long-running process: it serves the API, the
- * enterprise console APIs, and (when ENTERPRISE_OUTBOX_WORKER_ENABLED=true)
- * the Firestore durable-outbox worker timer. There is no PostgreSQL, Redis,
- * broker, or KMS service to supervise.
- *
- * Copy the env block values from your secret store — never commit real values.
- * Full deployment/rollback runbook: docs/ENTERPRISE_LOCAL_INFRASTRUCTURE_HANDOFF.md
+ * Secrets and deployment-specific identifiers are intentionally absent. PM2
+ * inherits them from the approved process environment or secret manager; do
+ * not copy credentials into this tracked file. MariaDB owns application data,
+ * while Firebase Admin is used only for identity operations.
  */
 module.exports = {
   apps: [
     {
       name: 'resumepilot-backend',
       cwd: __dirname,
-      script: 'index.js',
-      instances: 1,          // Enterprise leases make multi-instance safe, but
-                             // start with one instance on shared hosting.
+      script: 'backend/index.js',
+      instances: 1,
       exec_mode: 'fork',
       max_memory_restart: '600M',
       autorestart: true,
@@ -26,29 +22,12 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 8080,
-        PROTOCOL: 'https',
-        WEBSITE_NAME: 'resumepilot.example',
-        // ---- Firebase (identity + Firestore data plane + legacy product data) ----
-        FIREBASE_PROJECT_ID: 'project-id',
-        FIREBASE_DATABASE_URL: 'https://project-default-rtdb.firebaseio.com',
-        FIREBASE_CLIENT_EMAIL: 'firebase-adminsdk@project-id.iam.gserviceaccount.com',
-        FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\\nREPLACE\\n-----END PRIVATE KEY-----\\n',
-        // ---- Enterprise plane (Firebase-only architecture) ----
-        ENTERPRISE_TENANCY_ENABLED: 'true',
-        ENTERPRISE_ENCRYPTION_KEYS: '{"v1":"REPLACE_WITH_openssl_rand_base64_32"}',
-        TENANT_JOB_SIGNING_SECRET: 'REPLACE_WITH_openssl_rand_base64_32',
-        TENANT_ARTIFACT_SIGNING_SECRET: 'REPLACE_WITH_openssl_rand_base64_32',
-        ENTERPRISE_OUTBOX_WORKER_ENABLED: 'true',
-        ENTERPRISE_OUTBOX_INTERVAL_MS: '15000',
-        // Tenant hard-deletion garbage collector: reclaims DELETING tenants
-        // after the grace period (7 days) without manual script execution.
-        TENANT_GC_WORKER_ENABLED: 'true',
-        TENANT_GC_INTERVAL_MS: '3600000',
-        TENANT_GC_GRACE_PERIOD_DAYS: '7',
-        ENTERPRISE_STORAGE_PROVIDER: 'firebase-storage',
-        // ---- Notifications / CMS (existing product workers) ----
-        NOTIFICATION_OUTBOX_WORKER_ENABLED: 'true',
+        ENTERPRISE_TENANCY_ENABLED: 'false',
+        ENTERPRISE_DATA_PROVIDER: 'mysql',
+        ENTERPRISE_OUTBOX_WORKER_ENABLED: 'false',
+        NOTIFICATION_OUTBOX_WORKER_ENABLED: 'false',
         CMS_SCHEDULER_ENABLED: 'false',
+        TENANT_GC_WORKER_ENABLED: 'false',
       },
     },
   ],

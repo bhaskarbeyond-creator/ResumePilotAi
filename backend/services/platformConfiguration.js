@@ -16,20 +16,21 @@
 
 const { FLAG_DEFINITIONS, getAllFlags } = require('./featureFlagService');
 const { selectPaymentPair } = require('./paymentAdmin');
+const { getPool } = require('../database/mysql');
 
 const FLAG_DESCRIPTIONS = Object.freeze({
   ENTERPRISE_TENANCY_ENABLED: {
     description: 'Enable the Enterprise multi-tenant control plane.',
     impact: 'Enables tenant-aware Enterprise APIs and the Enterprise console. It does not grant any user access; Firebase claims, tenant membership, and policy checks still apply.',
-    dependencies: ['Firestore tenant registry', 'Enterprise repository', 'tenant encryption key', 'tenant job signing secret'],
+    dependencies: ['MariaDB tenant registry', 'Enterprise repository', 'tenant encryption key', 'tenant job signing secret'],
     runtime: 'per-request',
     requiresRestart: false,
     owner: 'SUPER_ADMIN',
   },
   CMS_SCHEDULER_ENABLED: {
     description: 'Enable the scheduled blog publication worker.',
-    impact: 'A worker instance polls Firestore and publishes due CMS posts.',
-    dependencies: ['Firestore', 'exactly one scheduler worker'],
+    impact: 'A worker instance polls MariaDB and publishes due CMS posts.',
+    dependencies: ['MariaDB blog table', 'exactly one scheduler worker'],
     runtime: 'startup',
     requiresRestart: true,
     owner: 'SUPER_ADMIN',
@@ -37,7 +38,7 @@ const FLAG_DESCRIPTIONS = Object.freeze({
   NOTIFICATION_OUTBOX_WORKER_ENABLED: {
     description: 'Enable the in-process notification outbox worker.',
     impact: 'This process claims and dispatches durable email/SMS outbox records.',
-    dependencies: ['Firestore notification_outbox', 'SMTP or Twilio configuration'],
+    dependencies: ['MariaDB notification_outbox', 'SMTP or Twilio configuration'],
     runtime: 'startup',
     requiresRestart: true,
     owner: 'SUPER_ADMIN',
@@ -45,7 +46,7 @@ const FLAG_DESCRIPTIONS = Object.freeze({
   ENTERPRISE_OUTBOX_WORKER_ENABLED: {
     description: 'Enable the Enterprise durable outbox worker.',
     impact: 'This process claims and processes signed Enterprise job envelopes.',
-    dependencies: ['Firestore enterprise_outbox', 'TENANT_JOB_SIGNING_SECRET'],
+    dependencies: ['MariaDB enterprise_outbox', 'TENANT_JOB_SIGNING_SECRET'],
     runtime: 'startup',
     requiresRestart: true,
     owner: 'SUPER_ADMIN',
@@ -127,11 +128,9 @@ const SAFE_ENVIRONMENT = Object.freeze([
   ['ENTERPRISE_DATA_PROVIDER', 'Enterprise data-plane provider declaration', 'enterprise', false, true],
   ['ENTERPRISE_ENCRYPTION_PROVIDER', 'Enterprise encryption provider declaration', 'security', false, true],
   ['ENTERPRISE_ENCRYPTION_ACTIVE_KEY', 'Active enterprise encryption key version', 'security', false, true],
-  ['FIREBASE_PROJECT_ID', 'Firebase project identifier', 'firebase', false, true],
-  ['FIREBASE_DATABASE_URL', 'Firebase Realtime Database URL', 'firebase', false, true],
-  ['FIREBASE_USE_ADC', 'Use Application Default Credentials', 'firebase', false, true],
-  ['FIREBASE_CLIENT_EMAIL', 'Firebase service identity email', 'firebase', false, true],
-  ['FIREBASE_STORAGE_BUCKET', 'Firebase Storage bucket', 'storage', false, true],
+  ['FIREBASE_PROJECT_ID', 'Firebase Authentication project identifier', 'firebase-auth', false, true],
+  ['FIREBASE_USE_ADC', 'Use Application Default Credentials for Firebase Authentication', 'firebase-auth', false, true],
+  ['FIREBASE_CLIENT_EMAIL', 'Firebase Authentication service identity email', 'firebase-auth', false, true],
   ['ENTERPRISE_STORAGE_PROVIDER', 'Enterprise artifact storage adapter', 'storage', false, true],
   ['ENTERPRISE_STORAGE_BUCKET', 'Enterprise artifact storage bucket', 'storage', false, true],
   ['CORS_ALLOWED_ORIGINS', 'Exact browser origin allowlist', 'security', false, true],
@@ -211,8 +210,7 @@ function timestampToIso(value) {
   } catch (_) { return null; }
 }
 
-function sourceForEnv(env, key, storedPaths = []) {
-  if (storedPaths.some(value => value !== undefined && value !== null && value !== '')) return 'firestore';
+function sourceForEnv(env, key) {
   if (env[key] !== undefined && String(env[key]).trim() !== '') return 'environment';
   return 'default';
 }
@@ -222,9 +220,7 @@ function envItem(env, key, label, category, secret, requiresRestart) {
   let value;
   if (secret) value = configured ? 'CONFIGURED' : 'NOT_CONFIGURED';
   else if (key === 'FIREBASE_CLIENT_EMAIL' && env[key]) value = String(env[key]).replace(/^(.{3}).*(@.*)$/, '$1••••$2');
-  else if (key === 'FIREBASE_DATABASE_URL' && env[key]) {
-    try { const parsed = new URL(String(env[key])); value = `${parsed.protocol}//${parsed.host}`; } catch (_) { value = '[INVALID_URL]'; }
-  } else if (key === 'CORS_ALLOWED_ORIGINS' && env[key]) value = String(env[key]).split(',').map(item => item.trim()).filter(Boolean).join(', ');
+  else if (key === 'CORS_ALLOWED_ORIGINS' && env[key]) value = String(env[key]).split(',').map(item => item.trim()).filter(Boolean).join(', ');
   else value = env[key] ?? null;
   return {
     key,
@@ -282,8 +278,8 @@ function flagItem(key, flag, storedFlags) {
     secret: false,
     editable: description.owner === 'SUPER_ADMIN',
     runtime: description.runtime || (definition.requiresRestart ? 'startup' : 'per-request'),
-    // A Firestore override is read at request time for runtime flags. An
-    // environment-sourced value cannot change until the process restarts.
+    // An environment-sourced value cannot change until the process restarts;
+    // MariaDB runtime overrides follow the flag definition's restart policy.
     requiresRestart: flag.source === 'environment' ? true : (description.requiresRestart ?? definition.requiresRestart === true),
     description: description.description || definition.description || key,
     impact: description.impact || definition.impact || '',
@@ -294,39 +290,50 @@ function flagItem(key, flag, storedFlags) {
   });
 }
 
-async function readDocs(db) {
-  if (!db) return { docs: {}, flags: {}, error: 'Firestore is unavailable.', unavailable: [] };
-  const paths = {
-    payment: 'settings/payment_providers',
-    ai: 'settings/ai_providers',
-    oauth: 'settings/oauth_providers',
-    admin: 'settings/admin_configuration',
-    public: 'data/public_config',
-    legacy: 'data/system_settings',
-    subscriptions: 'data/subscriptions',
-    flag: 'settings/feature_flags',
-  };
-  const unavailable = [];
-  const entries = await Promise.all(Object.entries(paths).map(async ([name, path]) => {
+const CONFIGURATION_CATEGORIES = Object.freeze({
+  payment: 'payment_providers',
+  ai: 'ai_providers',
+  oauth: 'oauth_providers',
+  admin: 'admin_configuration',
+  public: 'public_config',
+  legacy: 'system_settings',
+  subscriptions: 'subscriptions',
+  flag: 'feature_flags',
+});
+
+async function readSettings() {
+  const categories = Object.values(CONFIGURATION_CATEGORIES);
+  const placeholders = categories.map(() => '?').join(', ');
+  const [rows] = await getPool().query(
+    `SELECT category, data FROM system_settings WHERE category IN (${placeholders})`,
+    categories
+  );
+  const byCategory = new Map();
+  for (const row of rows) {
     try {
-      const snap = await db.doc(path).get();
-      return [name, snap.exists ? (snap.data() || {}) : {}];
-    } catch (_) {
-      unavailable.push(name);
-      return [name, null];
+      const value = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
+      byCategory.set(row.category, value && typeof value === 'object' ? value : {});
+    } catch (error) {
+      throw Object.assign(new Error(`Stored platform configuration is invalid for category ${row.category}`), {
+        code: 'PLATFORM_CONFIGURATION_INVALID',
+        status: 503,
+        cause: error,
+      });
     }
-  }));
-  const docs = Object.fromEntries(entries);
-  return { docs, flags: docs.flag || {}, error: unavailable.length ? `Configuration sources unavailable: ${unavailable.join(', ')}` : null, unavailable };
+  }
+  const docs = Object.fromEntries(Object.entries(CONFIGURATION_CATEGORIES)
+    .map(([name, category]) => [name, byCategory.get(category) || {}]));
+  return { docs, flags: docs.flag || {} };
 }
 
 /**
  * Return the entire configuration census as a safe control-plane projection.
- * `db` is optional so local diagnostics can still show infrastructure posture.
+ * MariaDB is the single runtime-configuration owner. A storage error is
+ * propagated rather than replaced with an environment-only partial picture.
  */
-async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
-  const { docs, flags: storedFlags, error, unavailable } = await readDocs(db);
-  const allFlags = await getAllFlags(db);
+async function getPlatformConfiguration({ env = process.env } = {}) {
+  const { docs, flags: storedFlags } = await readSettings();
+  const allFlags = await getAllFlags();
   const groups = { infrastructure: {}, runtime: {}, featureFlags: {}, integrations: {}, workers: {}, security: {}, governance: {} };
 
   for (const [key, label, category, secret, restart] of SAFE_ENVIRONMENT) {
@@ -398,7 +405,7 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
     const configured = configuredValue(stored, env[envName]);
     groups.integrations[`ai.${provider}`] = storedItem(`ai.${provider}`, `${provider} AI provider`, 'ai', {
       configured,
-      source: stored ? 'firestore' : env[envName] ? 'environment' : 'none',
+      source: stored ? 'mysql' : env[envName] ? 'environment' : 'none',
       value: configured ? 'CONFIGURED' : 'NOT_CONFIGURED',
       secret: true,
       editable: true,
@@ -421,7 +428,7 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
     const envClientSecret = env[`${envPrefix}_CLIENT_SECRET`];
     const environmentComplete = Boolean(envClientId && envClientSecret);
     const storedComplete = Boolean(storedClientId && storedClientSecret);
-    const source = environmentComplete ? 'environment' : storedComplete ? 'firestore' : envClientId || envClientSecret ? 'environment-partial' : storedClientId || storedClientSecret ? 'firestore-partial' : 'none';
+    const source = environmentComplete ? 'environment' : storedComplete ? 'mysql' : envClientId || envClientSecret ? 'environment-partial' : storedClientId || storedClientSecret ? 'mysql-partial' : 'none';
     const clientId = source.startsWith('environment') ? envClientId : storedClientId;
     const clientSecret = source.startsWith('environment') ? envClientSecret : storedClientSecret;
     const configured = Boolean(clientId && clientSecret);
@@ -480,8 +487,8 @@ async function getPlatformConfiguration({ db = null, env = process.env } = {}) {
   const configuration = {
     generatedAt: new Date().toISOString(),
     sourceStatus: {
-      firestore: !db ? 'UNAVAILABLE' : error ? 'PARTIAL' : 'AVAILABLE',
-      unavailableDocuments: unavailable || [],
+      mariadb: 'AVAILABLE',
+      authoritativeOwner: 'MARIADB',
     },
     groups,
     summary: {

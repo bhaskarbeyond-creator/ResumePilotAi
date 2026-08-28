@@ -17,31 +17,46 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { loadCertificationDatabase } from './helpers/databaseConfig.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const EVIDENCE = path.join(ROOT, '.arena', 'evidence');
 fs.mkdirSync(EVIDENCE, { recursive: true });
 
-const MYSQL_DIR = path.join(os.homedir(), '.cache', 'resumepilot-mysql', 'mysql-server');
-const MYSQLD = path.join(MYSQL_DIR, 'mysqld');
-const DB = { host: '127.0.0.1', port: 3306, user: 'resumepilot', password: 'resumepilot_sandbox_pw', database: 'ai_resume_builder' };
+const MYSQL_DIR = path.resolve(process.env.CERT_MARIADB_BASEDIR || path.join(os.homedir(), '.cache', 'resumepilot-mariadb'));
+const MYSQLD = path.resolve(process.env.CERT_MARIADB_SERVER_BINARY || path.join(MYSQL_DIR, 'bin', 'mariadbd'));
+const DB = loadCertificationDatabase();
+const DESTRUCTIVE_RESTART_ENABLED = process.env.RUN_DESTRUCTIVE_MARIADB_RESTART_DRILL === 'true';
+const destructiveTest = DESTRUCTIVE_RESTART_ENABLED ? test : test.skip;
 const mysql = require(path.join(ROOT, 'backend', 'node_modules', 'mysql2', 'promise'));
 
 const log = [];
 const record = (scenario, detail) => { log.push({ t: new Date().toISOString(), scenario, ...detail }); };
 
 function mysqldArgs() {
-  return ['--no-defaults', `--user=${os.userInfo().username}`, `--basedir=${MYSQL_DIR}`, `--datadir=${path.join(MYSQL_DIR, 'data', 'mysql')}`,
-    `--tmpdir=${path.join(MYSQL_DIR, 'temp')}`, `--socket=${path.join(MYSQL_DIR, 'temp', 'mysql.sock')}`, '--port=3306',
-    '--bind-address=127.0.0.1', '--log_syslog=0', '--explicit_defaults_for_timestamp', '--skip-name-resolve',
-    `--secure-file-priv=${path.join(MYSQL_DIR, 'mysql-files')}`];
+  const dataDir = process.env.CERT_MARIADB_DATADIR;
+  if (!dataDir) throw new Error('CERT_MARIADB_DATADIR is required for the destructive restart drill');
+  const runtimeDir = path.resolve(process.env.CERT_MARIADB_RUNTIME_DIR || path.join(os.tmpdir(), 'resumepilot-mariadb-cert'));
+  fs.mkdirSync(runtimeDir, { recursive: true });
+  return [
+    '--no-defaults',
+    `--user=${os.userInfo().username}`,
+    `--basedir=${MYSQL_DIR}`,
+    `--datadir=${path.resolve(dataDir)}`,
+    `--tmpdir=${runtimeDir}`,
+    `--socket=${path.join(runtimeDir, 'mariadb.sock')}`,
+    `--pid-file=${path.join(runtimeDir, 'mariadb.pid')}`,
+    `--port=${DB.port}`,
+    `--bind-address=${DB.host}`,
+    '--skip-name-resolve',
+  ];
 }
 
 async function mysqlUp(timeoutMs = 15000) {
@@ -57,40 +72,46 @@ async function mysqlUp(timeoutMs = 15000) {
   return false;
 }
 
-async function stopMysqld() {
-  try {
-    if (process.platform === 'win32') {
-      execFileSync('taskkill', ['/F', '/IM', 'mysqld.exe'], { stdio: 'ignore' });
-    } else {
-      execFileSync('pkill', ['-f', 'mysqld'], { stdio: 'ignore' });
+let managedServer = null;
+
+function verifiedServerPid() {
+  const raw = managedServer?.pid || process.env.CERT_MARIADB_SERVER_PID;
+  const pid = Number(raw);
+  if (!Number.isInteger(pid) || pid < 2) {
+    throw new Error('CERT_MARIADB_SERVER_PID must identify the isolated server used by the destructive restart drill');
+  }
+  if (process.platform !== 'win32') {
+    const executable = fs.realpathSync(`/proc/${pid}/exe`);
+    if (!/(?:mariadbd|mysqld)$/.test(executable)) {
+      throw new Error(`Refusing to signal non-MariaDB process ${pid}: ${executable}`);
     }
-  } catch (_e) { /* already stopped */ }
-  await new Promise(r => setTimeout(r, 1500));
+  }
+  return pid;
+}
+
+async function stopMysqld() {
+  const pid = verifiedServerPid();
+  process.kill(pid, 'SIGTERM');
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    if (!(await mysqlUp(500))) return;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  throw new Error(`Isolated MariaDB process ${pid} did not stop after SIGTERM`);
 }
 
 function startMysqld() {
-  if (process.platform === 'win32') {
-    try {
-      execFileSync('powershell.exe', [
-        '-NoProfile',
-        '-Command',
-        'Remove-Item -Path "D:\\xampp\\mysql\\data\\master-*.info", "D:\\xampp\\mysql\\data\\relay-log-*.info", "D:\\xampp\\mysql\\data\\multi-master.info" -Force -ErrorAction SilentlyContinue; Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
-      ], { stdio: 'ignore' });
-    } catch (_e) {}
-    return null;
+  if (!fs.existsSync(MYSQLD)) {
+    throw new Error(`CERT_MARIADB_SERVER_BINARY does not exist: ${MYSQLD}`);
   }
-  const child = spawn(MYSQLD, mysqldArgs(), { stdio: 'ignore', detached: true });
-  child.unref();
-  return child;
+  managedServer = spawn(MYSQLD, mysqldArgs(), { stdio: 'ignore' });
+  return managedServer;
 }
 
-async function ensureMysqldRunning(maxAttempts = 10) {
-  for (let i = 0; i < maxAttempts; i++) {
-    if (await mysqlUp(1000)) return true;
-    startMysqld();
-    await new Promise(r => setTimeout(r, 1500));
-  }
-  return mysqlUp(2000);
+async function ensureMysqldRunning() {
+  if (await mysqlUp(1_000)) return true;
+  startMysqld();
+  return mysqlUp(15_000);
 }
 
 // ─── Scenario A: MySQL unavailable at boot ────────────────────────────────
@@ -140,7 +161,7 @@ test('B/C. transaction failure mid-way rolls back; nothing acknowledged', async 
 
 // ─── Scenario D: real deadlock resolved by repository retry ───────────────
 test('D. deadlock under concurrent cross-updates resolves without data loss', async () => {
-  if (!(await mysqlUp())) { startMysqld(); assert.ok(await mysqlUp(), 'mysql must be running'); }
+  assert.ok(await mysqlUp(), 'the explicitly configured disposable MariaDB must be running');
   const conn1 = await mysql.createConnection(DB);
   const conn2 = await mysql.createConnection(DB);
   await conn1.query("CREATE TABLE IF NOT EXISTS deadlock_probe (id INT PRIMARY KEY, v INT) ENGINE=InnoDB");
@@ -177,7 +198,7 @@ test('D. deadlock under concurrent cross-updates resolves without data loss', as
 
 // ─── Scenario E: connection starvation — queuing, no fabrication ──────────
 test('E. single-connection pool serializes a burst without fabricating results', async () => {
-  if (!(await mysqlUp())) { startMysqld(); assert.ok(await mysqlUp(), 'mysql must be running'); }
+  assert.ok(await mysqlUp(), 'the explicitly configured disposable MariaDB must be running');
   const tiny = mysql.createPool({ ...DB, connectionLimit: 1, waitForConnections: true, queueLimit: 0 });
   const startedAt = Date.now();
   const results = await Promise.all(Array.from({ length: 12 }, (_, i) =>
@@ -190,8 +211,9 @@ test('E. single-connection pool serializes a burst without fabricating results',
 });
 
 // ─── Scenarios G/H: MySQL restarted while the app stays up ────────────────
-test('G/H. app survives a MySQL restart; readiness and writes recover without app restart', async () => {
-  if (!(await mysqlUp())) { startMysqld(); assert.ok(await mysqlUp(), 'mysql must be running first'); }
+destructiveTest('G/H. app survives a MariaDB restart; readiness and writes recover without app restart', async () => {
+  assert.ok(await mysqlUp(), 'the isolated MariaDB must be running before the restart drill');
+  verifiedServerPid();
   const { bootServer, certToken } = await import('./helpers/bootServer.mjs');
   const server = await bootServer({ port: 8322, db: DB, timeoutMs: 45000 });
   const token = certToken({ uid: 'fi-gh', email: 'fi-gh@cert.local', role: 'USER' });
@@ -246,7 +268,10 @@ test('G/H. app survives a MySQL restart; readiness and writes recover without ap
 });
 
 test.after(async () => {
-  // Guarantee MySQL is back up for the rest of the certification stack.
-  await ensureMysqldRunning();
+  // Restore only the isolated server that this opt-in drill was authorized to
+  // restart; never discover or signal unrelated database processes.
+  if (DESTRUCTIVE_RESTART_ENABLED && !(await mysqlUp(1_000))) {
+    await ensureMysqldRunning();
+  }
   fs.writeFileSync(path.join(EVIDENCE, 'db-failure-injection.json'), JSON.stringify(log, null, 2));
 });

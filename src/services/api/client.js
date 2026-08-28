@@ -44,6 +44,11 @@ export async function apiFetch(url, options = {}) {
         err.status = response.status;
         err.code = data.error?.code || data.code || `HTTP_${response.status}`;
         err.details = data;
+        // Promote only the standardized conflict-recovery fields. Callers can
+        // recover without understanding each endpoint's response envelope, while
+        // arbitrary server fields are never copied onto Error instances.
+        err.remoteRevision = data.remoteRevision ?? data.error?.remoteRevision;
+        err.remoteData = data.remoteData ?? data.error?.remoteData;
         throw err;
     }
 

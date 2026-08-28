@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getAllJobs, updateJobStatus, deleteJobByAdmin, toggleJobFeatured } from '../../../firestore/dbOperations';
+import { getAllJobs, updateJobStatus, deleteJobByAdmin, toggleJobFeatured } from '../../../services/api/platform';
 import { FaBriefcase, FaBuilding, FaCalendar, FaCheck, FaTimes, FaEye, FaChevronDown, FaChevronUp, FaClock, FaInbox, FaSearch, FaFilter, FaMapMarkerAlt, FaDollarSign, FaUsers, FaExclamationTriangle, FaTrash, FaEdit, FaPause, FaPlay, FaArchive, FaStar, FaPlus } from 'react-icons/fa';
 import CreateJobModal from '../../JobsListings/CreateJobModal';
 

@@ -1,7 +1,7 @@
 /**
  * Regression coverage for forensic-audit defect D6:
  *
- *   In src/firestore/dbOperations.js, `listBlogPosts()` destructured `page` and
+ *   In src/services/api/platform.js, `listBlogPosts()` destructured `page` and
  *   `limit` from `options` INSIDE its try block. They were therefore block-scoped
  *   to the try and not visible in the `catch`, so the "graceful empty list"
  *   fallback threw `ReferenceError: page is not defined` instead of returning.
@@ -89,7 +89,7 @@ registerHooks({
 globalThis.__FIRE_STUB__ = fireStub;
 
 test('D6: listBlogPosts degrades to an empty envelope instead of throwing ReferenceError', async () => {
-  const mod = await import('../src/firestore/dbOperations.js');
+  const mod = await import('../src/services/api/platform.js');
   assert.equal(typeof mod.listBlogPosts, 'function', 'the real listBlogPosts must be exercised');
 
   let result;
@@ -116,7 +116,7 @@ test('D6: listBlogPosts degrades to an empty envelope instead of throwing Refere
 });
 
 test('D6: the fallback still works when no paging options are supplied', async () => {
-  const mod = await import('../src/firestore/dbOperations.js');
+  const mod = await import('../src/services/api/platform.js');
   const result = await mod.listBlogPosts({});
   assert.equal(result.success, true);
   assert.equal(result.pagination.currentPage, 1, 'defaults must apply when options are absent');

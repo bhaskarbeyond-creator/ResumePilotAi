@@ -22,13 +22,15 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import http from 'node:http';
 import { bootServer, certToken } from './helpers/bootServer.mjs';
+import { loadCertificationDatabase } from './helpers/databaseConfig.mjs';
 import mysql from 'mysql2/promise';
 
 const PORT = 8311;
 const AI_PORT = 9417;
-const dbConn = { host: '127.0.0.1', port: 3306, user: 'resumepilot', password: 'resumepilot_sandbox_pw', name: 'ai_resume_builder' };
+const dbConn = loadCertificationDatabase();
 
 let server;
 let aiRequests = [];
@@ -72,7 +74,7 @@ test.before(async () => {
       // AI provider points at the local OpenAI-compatible gateway. This proves
       // the full AI pipeline (config → provider request → parse → response)
       // without any Google/Firebase dependency.
-      OPENAI_API_KEY: 'certification-openai-key',
+      OPENAI_API_KEY: `ephemeral-${crypto.randomBytes(24).toString('base64url')}`,
       OPENAI_BASE_URL: `http://127.0.0.1:${aiPort}/v1`,
       OPENAI_MODEL: 'certification-mock-model',
     },

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
-import { getBlogPostBySlug, listBlogPosts, listBlogCategories } from '../../../firestore/dbOperations';
+import { getBlogPostBySlug, listBlogPosts, listBlogCategories } from '../../../services/api/platform';
 import { AuthContext } from '../../../main';
 import Spinner from '../../Spinner/Spinner';
 import BlogCard from '../components/BlogCard';

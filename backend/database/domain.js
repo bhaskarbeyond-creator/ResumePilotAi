@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * Canonical domain mappers. Both MariaDB and Firestore adapters produce
- * these shapes so the API never leaks engine-specific types.
+ * Canonical MariaDB domain mappers. These shapes prevent database-driver
+ * representations from leaking through the API.
  */
 
 const {

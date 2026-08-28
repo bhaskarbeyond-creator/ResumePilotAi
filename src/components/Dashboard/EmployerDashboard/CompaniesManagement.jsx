@@ -4,7 +4,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBuilding, FaSearch, FaFilter, FaCalendar, FaGlobe, FaMapMarkerAlt, FaEnvelope, FaPhone, FaPlus, FaEdit, FaTrash, FaExternalLinkAlt, FaCheckCircle, FaClock, FaTimesCircle, FaExclamationTriangle, FaInfoCircle, FaUsers, FaIndustry, FaChevronDown, FaChevronUp, FaEye, FaImage } from 'react-icons/fa';
-import { getEmployerCompanies, deleteCompany } from '../../../firestore/dbOperations';
+import { getEmployerCompanies, deleteCompany } from '../../../services/api/platform';
 import { AuthContext } from '../../../main';
 import AddCompanyModal from './AddCompanyModal';
 

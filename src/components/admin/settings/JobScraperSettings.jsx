@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaSearch, FaCheck, FaTimes, FaSpinner, FaBriefcase, FaGlobeAsia } from 'react-icons/fa';
 
 const JobScraperSettings = () => {
@@ -16,7 +16,7 @@ const JobScraperSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.jobScraper) {
                 setScraperConfig((prev) => ({ ...prev, ...settings.jobScraper, naukriEnabled: false }));
             }

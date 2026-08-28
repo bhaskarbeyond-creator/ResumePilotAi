@@ -1,62 +1,52 @@
-const { getActiveEngine } = require('../database/engineManager');
-const FirestoreRepository = require('./FirestoreRepository');
+'use strict';
+
 const MySQLRepository = require('./MySQLRepository');
 const ResilientRepository = require('./ResilientRepository');
 
-let firestoreRepoInstance = null;
 let mysqlRepoInstance = null;
 let resilientRepoInstance = null;
-let resilientFirestoreDb = null;
+let testRepositoryOverride = null;
 
-function getDirectRepository(engine, firestoreDb = null) {
-    const target = engine || getActiveEngine();
-    if (target === 'mysql') {
-        if (!mysqlRepoInstance) mysqlRepoInstance = new MySQLRepository();
-        return mysqlRepoInstance;
-    }
-    if (!firestoreRepoInstance || (firestoreDb && firestoreRepoInstance.db !== firestoreDb)) {
-        firestoreRepoInstance = new FirestoreRepository(firestoreDb);
-    }
-    return firestoreRepoInstance;
+function mysqlRepository() {
+    if (!mysqlRepoInstance) mysqlRepoInstance = new MySQLRepository();
+    return mysqlRepoInstance;
 }
 
-/**
- * Factory: resilient MySQL-authoritative repository.
- *
- * Firestore is NEVER used on the synchronous application path:
- *  - `getRepository()` returns the MySQL-only ResilientRepository; the
- *    Firestore adapter is only constructed by callers that explicitly ask for
- *    it via `getDirectRepository('firestore', ...)` — i.e. the optional
- *    asynchronous standby replication worker and migration tooling.
- *  - Pass `{ direct: true }` or `{ engine: 'mysql' }` to obtain the raw MySQL
- *    adapter (used by the sync worker to target the standby).
- */
-function getRepository(firestoreDb = null, options = {}) {
-    if (options && options.direct === true && options.engine && options.engine !== 'mysql') {
-        return getDirectRepository(options.engine, firestoreDb);
-    }
-    if (options && (options.direct === true || options.engine === 'mysql')) {
-        return getDirectRepository('mysql', firestoreDb);
-    }
-
-    if (!mysqlRepoInstance) mysqlRepoInstance = new MySQLRepository();
-
-    if (!resilientRepoInstance || resilientFirestoreDb !== firestoreDb) {
-        resilientRepoInstance = new ResilientRepository({
-            mysqlRepo: mysqlRepoInstance,
-            firestoreRepo: null,
-            firestoreDb: null,
-        });
-        resilientFirestoreDb = firestoreDb;
+/** Application repository factory for the sole MariaDB data owner. */
+function getRepository() {
+    if (testRepositoryOverride) return testRepositoryOverride;
+    if (!resilientRepoInstance) {
+        resilientRepoInstance = new ResilientRepository({ mysqlRepo: mysqlRepository() });
     }
     return resilientRepoInstance;
+}
+
+/** Direct access exists only for transaction-aware internal services. */
+function getDirectRepository() {
+    return mysqlRepository();
+}
+
+function setRepositoryForTests(repository = null) {
+    if (process.env.NODE_ENV !== 'test') {
+        throw Object.assign(new Error('Repository injection is restricted to tests'), { code: 'REPOSITORY_TEST_OVERRIDE_FORBIDDEN' });
+    }
+    if (repository !== null && typeof repository !== 'object') {
+        throw Object.assign(new Error('A repository-compatible object is required'), { code: 'REPOSITORY_TEST_OVERRIDE_INVALID' });
+    }
+    testRepositoryOverride = repository;
+}
+
+function resetRepositoryCacheForTests() {
+    mysqlRepoInstance = null;
+    resilientRepoInstance = null;
+    testRepositoryOverride = null;
 }
 
 module.exports = {
     getRepository,
     getDirectRepository,
-    getActiveEngine,
-    FirestoreRepository,
     MySQLRepository,
     ResilientRepository,
+    resetRepositoryCacheForTests,
+    setRepositoryForTests,
 };

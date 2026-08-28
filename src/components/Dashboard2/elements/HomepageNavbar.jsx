@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { checkIfAdmin, getSystemSettings } from '../../../firestore/dbOperations';
+import { checkIfAdmin, getSystemSettings } from '../../../services/api/platform';
 import logo from '../../../assets/logo/logo.png';
-import { FaEnvelope, FaBars, FaTimes, FaChevronDown, FaArrowRight, FaShieldAlt, FaSmile, FaLifeRing, FaBook, FaVideo, FaUsers, FaGraduationCap, FaNewspaper, FaQuestionCircle, FaExternalLinkAlt, FaDownload, FaHeart, FaPlay, FaStar, FaRocket, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
+import { FaEnvelope, FaBars, FaTimes, FaChevronDown, FaArrowRight, FaShieldAlt, FaSmile, FaLifeRing, FaBook, FaVideo, FaUsers, FaGraduationCap, FaNewspaper, FaQuestionCircle, FaExternalLinkAlt, FaDownload, FaPlay, FaStar, FaRocket, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
 import { FiTarget, FiTrendingUp, FiAward, FiFileText, FiZap, FiEdit3 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import HomepageLanguages from './HomepageLanguages';
@@ -14,7 +14,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
     const [scrolled, setScrolled] = useState(false);
     const [activeMobileDropdown, setActiveMobileDropdown] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [enableJobScraperModule, setEnableJobScraperModule] = useState(true);
+    const [enableJobScraperModule, setEnableJobScraperModule] = useState(false);
 
     useEffect(() => {
         const loadModules = (event) => {
@@ -221,10 +221,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                                             </h3>
                                                             <p className="text-gray-500 text-xs mt-0.5">{t('navbar.featureTagline')}</p>
                                                         </div>
-                                                        <div className="flex items-center text-xs text-purple-600 bg-purple-100 px-2 py-0.5 rounded-md">
-                                                            <FaHeart className="text-red-500 mr-1 w-2.5 h-2.5" />
-                                                            <span className="font-medium text-xs">{t('navbar.userCount')}</span>
-                                                        </div>
+
                                                     </div>
                                                 </div>
 

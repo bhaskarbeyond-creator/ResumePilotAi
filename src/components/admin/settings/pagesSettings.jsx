@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { addPages, getAdminPages, removePageByName } from '../../../firestore/dbOperations';
+import { addPages, getAdminPages, removePageByName } from '../../../services/api/platform';
 import { FaCheck, FaTimes, FaFile, FaTrash, FaPlus, FaEdit, FaEye, FaGlobe } from 'react-icons/fa';
 import EnterpriseConfirmModal from '../../../enterprise/components/EnterpriseConfirmModal';
 // import ReactQuill from 'react-quill'; // ES6

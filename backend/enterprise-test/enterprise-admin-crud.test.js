@@ -6,7 +6,8 @@ process.env.ENTERPRISE_TENANCY_ENABLED = 'true';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
-const { InMemoryTenantRegistry } = require('../enterprise/tenantRegistry');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
 const { InMemoryServiceAccountStore } = require('../enterprise/serviceAccountStore');
 const { InMemorySupportGrantStore } = require('../enterprise/supportAccessStore');
 const { TenantService } = require('../enterprise/tenantService');
@@ -26,7 +27,7 @@ function installService() {
   const registry = new InMemoryTenantRegistry();
   const serviceAccountStore = new InMemoryServiceAccountStore();
   const supportGrantStore = new InMemorySupportGrantStore();
-  app.set('tenantService', new TenantService({ registry, serviceAccountStore, supportGrantStore }));
+  app.set('tenantService', new TenantService({ registry, repository: new InMemoryEnterpriseRepository(), serviceAccountStore, supportGrantStore }));
   return { registry, serviceAccountStore, supportGrantStore };
 }
 

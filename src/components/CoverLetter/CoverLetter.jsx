@@ -3,7 +3,7 @@ import './CoverLetter.scss';
 import logo from '../../assets/logo/logo.png';
 import { withTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob, getSystemSettings } from '../../firestore/dbOperations';
+import { saveCoverLetter, getUserCoverLetters, deleteCoverLetter, getProfileOfUser, createTrackedJob, getSystemSettings } from '../../services/api/platform';
 import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { generateUserAiContent } from '../../services/aiService';
 import fire from '../../conf/fire';
@@ -140,10 +140,6 @@ class CoverLetter extends Component {
             window.removeEventListener('systemSettingsUpdated', this.handleSettingsUpdated);
             this.handleSettingsUpdated = null;
         }
-        if (typeof this.unsubscribePublicConfig === 'function') {
-            this.unsubscribePublicConfig();
-            this.unsubscribePublicConfig = null;
-        }
         const controller = this.aiRequestController;
         this.aiRequestController = null;
         controller?.abort();
@@ -160,7 +156,7 @@ class CoverLetter extends Component {
     };
 
     subscribeAtsVisibility = () => {
-        // Contract fallback: fire.firestore().collection('data').doc('public_config').onSnapshot({ includeMetadataChanges: true }, (snapshot) => { const settings = settingsFromSnapshot(snapshot); this.applyAtsVisibility(settings, { allowMissingDefault: false }); }, () => { this.setState({ isAtsEnabled: false }); });
+        // Settings are delivered by the authenticated API event bridge; there is no browser data-store listener.
         getSystemSettings().then((settings) => {
             this.applyAtsVisibility(settings, { allowMissingDefault: true });
         }).catch(() => {
@@ -179,16 +175,6 @@ class CoverLetter extends Component {
             }
         };
         window.addEventListener('systemSettingsUpdated', this.handleSettingsUpdated);
-        // Server-confirmed configuration via REST API (MariaDB-first)
-        fetch('/api/platform/public-config')
-            .then(r => r.json())
-            .then(settings => {
-                if (settings && typeof settings === 'object') {
-                    this.applyAtsVisibility(settings, { allowMissingDefault: true });
-                }
-            })
-            .catch(() => {});
-        this.unsubscribePublicConfig = () => {};
     };
 
     handleKeyDown = (e) => {
@@ -218,7 +204,7 @@ class CoverLetter extends Component {
             let occupation = this.state.jobTitle || '';
             let skills = this.state.userSkills || '';
 
-            // 1. Authoritative Firestore Master Profile
+            // 1. Authoritative MariaDB profile through the authenticated API
             const user = fire.auth().currentUser;
             if (user) {
                 if (!email) email = user.email || '';
@@ -251,7 +237,7 @@ class CoverLetter extends Component {
                         }
                     }
                 } catch (profileErr) {
-                    console.warn('[CoverLetter] Firestore profile fetch error:', profileErr);
+                    console.warn('[CoverLetter] profile API fetch error:', profileErr);
                 }
             }
 

@@ -27,12 +27,18 @@ class Cv4 extends Component {
     returnSkills() {
         var elements = [];
         for (let index = 0; index < (this.props.values.skills || []).length; index++) {
+            const skill = this.props.values.skills[index];
+            const rating = typeof skill.rating === 'number' && Number.isFinite(skill.rating)
+                ? Math.min(100, Math.max(0, skill.rating))
+                : null;
             elements.push(
                 <div key={index} className="cv4-skill">
-                    <span className="cv4-skillName">{this.props.values.skills[index].name}</span>
-                    <div className="cv4-skillBox" style={{ border: `1px solid ${this.getSecondaryColor()}` }}>
-                        <div style={{ width: (this.props.values.skills[index].rating || 75) + '%', backgroundColor: this.getSecondaryColor() }} className="cv4-skillRating"></div>
-                    </div>
+                    <span className="cv4-skillName">{skill.name}</span>
+                    {rating !== null && (
+                        <div className="cv4-skillBox" style={{ border: `1px solid ${this.getSecondaryColor()}` }} aria-label={`${rating}% proficiency`}>
+                            <div style={{ width: `${rating}%`, backgroundColor: this.getSecondaryColor() }} className="cv4-skillRating"></div>
+                        </div>
+                    )}
                 </div>
             );
         }

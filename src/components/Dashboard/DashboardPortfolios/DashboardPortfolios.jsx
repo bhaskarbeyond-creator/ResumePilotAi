@@ -3,7 +3,7 @@ import { withTranslation } from 'react-i18next';
 import { FiPlus, FiEye, FiEdit3, FiTrash2, FiExternalLink, FiGrid, FiList } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import fire from '../../../conf/fire';
-import { getUserPortfolios, deletePortfolio } from '../../../firestore/dbOperations';
+import { getUserPortfolios, deletePortfolio } from '../../../services/api/platform';
 
 // Import portfolio preview images
 import darkCyberPreview from '../../../assets/portfolioPreview/Dark Cyber Portfolio.JPG';

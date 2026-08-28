@@ -11,6 +11,7 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
+import { rejectFirebaseDataPlaneRequests } from './helpers/firebase-data-plane-guard.mjs';
 
 const API_KEY = process.env.VITE_FIREBASE_KEY || (() => { try { const c = fs.readFileSync('.env', 'utf8'); const m = c.match(/VITE_FIREBASE_KEY=([^\r\n]+)/); return m ? m[1].trim() : 'demo-key'; } catch { return 'demo-key'; } })();
 
@@ -75,10 +76,9 @@ async function setupPage(browser, uid, email, displayName, role) {
     try { const r = indexedDB.open('firebaseLocalStorageDb', 1); r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains('firebaseLocalStorage')) db.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); }; r.onsuccess = () => { const db = r.result; const tx = db.transaction('firebaseLocalStorage', 'readwrite'); tx.objectStore('firebaseLocalStorage').put({ fbase_key: key, value: u }); }; } catch {}
   }, { key: `firebase:authUser:${API_KEY}:[DEFAULT]`, apiKey: API_KEY, token, uid, email, displayName });
 
+  await rejectFirebaseDataPlaneRequests(page);
   await page.route('**/securetoken.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: token, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fix', id_token: token, user_id: uid }) }));
   await page.route('**/identitytoolkit.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ users: [{ localId: uid, email, emailVerified: true, displayName }] }) }));
-  await page.route('**/*firestore.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
-  await page.route('**/googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
   await page.route('**/www.google-analytics.com/**', r => r.abort());
   await page.route('**/www.googletagmanager.com/**', r => r.abort());
   await page.route('**/maps.googleapis.com/**', r => r.abort());
@@ -206,9 +206,7 @@ async function main() {
       'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'),
       'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
       'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
-      'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
       'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
-      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
       'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
       'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
     },
@@ -233,10 +231,9 @@ async function main() {
       await page.route('**/www.google-analytics.com/**', r => r.abort());
       await page.route('**/www.googletagmanager.com/**', r => r.abort());
       await page.route('**/maps.googleapis.com/**', r => r.abort());
-      await page.route('**/*firestore.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+      await rejectFirebaseDataPlaneRequests(page);
       await page.route('**/securetoken.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
       await page.route('**/identitytoolkit.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
-      await page.route('**/googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
       await page.route('**/api/**', createMockBackend());
 
       const publicRoutes = ['/', '/features', '/pricing', '/blog', '/jobs', '/templates', '/contact', '/about', '/login', '/register', '/front', '/jobs/portal', '/jobs/browse', '/jobs/categories', '/portfolios', '/billing/plans'];

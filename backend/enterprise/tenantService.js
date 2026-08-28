@@ -2,24 +2,62 @@
 
 const { permissionsFor } = require('../security/auth');
 const { buildTenantAuditEvent, writeTenantAuditEvent } = require('./tenantAudit');
-const { createEnterpriseRepository } = require('./enterpriseRepository');
+const { createEnterpriseRepository, normalizeProvider } = require('./enterpriseRepository');
 const { createEncryptionProvider } = require('./encryptionProvider');
-const { FirestoreTenantRegistry, InMemoryTenantRegistry, membershipDocumentId, customRoleIds } = require('./tenantRegistry');
-const { MySqlTenantRegistry } = require('./mysqlTenantRegistry');
-const { MySqlEnterpriseRepository } = require('./mysqlEnterpriseRepository');
+const { MySqlTenantRegistry, membershipDocumentId, customRoleIds } = require('./mysqlTenantRegistry');
 const { MySqlServiceAccountStore } = require('./mysqlServiceAccountStore');
 const { MySqlSupportGrantStore } = require('./mysqlSupportGrantStore');
 const { MySqlAtomicCounterStore } = require('./mysqlAtomicCounterStore');
 const { assertSupportScopes } = require('./serviceIdentity');
-const { FirestoreServiceAccountStore } = require('./serviceAccountStore');
-const { FirestoreSupportGrantStore } = require('./supportAccessStore');
-const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('./tenantQuota');
+const { TenantQuotaGuard } = require('./tenantQuota');
 const { assertUuid, canonicalPrincipalId, freezeContext } = require('./tenantContext');
 const { permissionsForRoles } = require('./tenantPolicy');
 
 function profileFromUser(user) {
   return {
     displayName: String(user?.claims?.name || user?.claims?.display_name || user?.email || '').slice(0, 120),
+  };
+}
+
+function compactInvitationText(value, fallback, max = 160) {
+  const text = Array.from(String(value || ''), character => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? ' ' : character;
+  }).join('').replace(/\s+/g, ' ').trim().slice(0, max);
+  return text || fallback;
+}
+
+function buildInvitationNotification({ recipientEmail, organizationName, inviterLabel, roles, actionUrl }) {
+  const organization = compactInvitationText(organizationName, 'your enterprise workspace', 120);
+  const inviter = compactInvitationText(inviterLabel, 'An enterprise administrator', 120);
+  const roleTitle = compactInvitationText((roles || []).join(', ').replace(/_/g, ' '), 'Enterprise Member', 160);
+  const recipientName = compactInvitationText(String(recipientEmail || '').split('@')[0].replace(/[._+-]/g, ' '), 'Team member', 100);
+  return {
+    templateType: 'enterprise-invitation',
+    vars: {
+      user_name: recipientName,
+      candidate_name: recipientName,
+      inviter_name: inviter,
+      organization_name: organization,
+      role_title: roleTitle,
+      action_url: actionUrl,
+      expires_in: '7 days',
+    },
+    metadata: {
+      source: 'enterprise_membership_transaction',
+      customSubject: `You're invited to join ${organization} on ResumePilot Enterprise`,
+      customBody: [
+        `Hi ${recipientName},`,
+        '',
+        `${inviter} invited you to join ${organization} on ResumePilot Enterprise.`,
+        `Assigned role: ${roleTitle}.`,
+        '',
+        'Sign in with this email address to review and accept the invitation:',
+        actionUrl,
+        '',
+        'This invitation expires in 7 days. If you were not expecting it, ignore this message and contact your organization administrator.',
+      ].join('\n'),
+    },
   };
 }
 
@@ -35,10 +73,10 @@ function isSupportEligible(user) {
 }
 
 class TenantService {
-  constructor({ registry, db = null, admin = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, encryptionProvider = null, dataProviderName = 'firestore', constructionError = null }) {
+  constructor({ registry, admin = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, encryptionProvider = null, dataProviderName = 'mysql', constructionError = null }) {
     this.constructionError = constructionError;
     this.registry = registry;
-    this.db = db;
+    // Firebase Admin is retained only for identity-directory operations.
     this.admin = admin;
     // Enterprise business logic reaches tenant data exclusively through the
     // repository abstraction. There is no provider branching in services.
@@ -57,7 +95,7 @@ class TenantService {
       dataPlaneConfigured: Boolean(this.repository),
       error: this.constructionError ? String(this.constructionError).slice(0, 200) : null,
       encryption: this.encryptionProvider ? this.encryptionProvider.describe() : { provider: 'none', configured: false, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' },
-      quotaStore: this.quotaGuard ? 'firestore-atomic' : 'unavailable',
+      quotaStore: this.quotaGuard ? 'mariadb-atomic' : 'unavailable',
     };
   }
 
@@ -73,6 +111,8 @@ class TenantService {
       requestedTenantId,
       requestedWorkspaceId,
       profile: profileFromUser(user),
+      identityEmail: user?.email || user?.claims?.email || null,
+      emailVerified: user?.emailVerified === true || user?.claims?.email_verified === true,
     });
     const configuration = await this.registry.getTenantConfiguration(resolved.tenant.id);
     this.enforceTenantSecurityPolicies({ user, configuration, roles: resolved.membership.roles });
@@ -234,15 +274,16 @@ class TenantService {
       expiresInMinutes: input?.expiresInMinutes,
       scopes,
     });
-    if (this.db && this.admin) {
-      await this.db.collection('security_audit_logs').doc().set({
-        action: 'SUPPORT_GRANT_CREATED', actorUid: user.uid, tenantId, workspaceId: workspace?.id || null,
+    await this.writePlatformAudit({
+      user, tenantId, workspaceId: workspace?.id || null,
+      action: 'SUPPORT_GRANT_CREATED', category: 'tenant.support', severity: 'HIGH',
+      resource: { type: 'support_grant', id: grant.id },
+      metadata: {
         grantScope: workspace?.id ? 'WORKSPACE' : 'TENANT',
-        supportSubjectId: grant.supportSubjectId, supportGrantId: grant.id, reason: grant.reason,
-        requestId: requestId || null, expiresAt: grant.expiresAt,
-        createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
+        supportSubjectId: grant.supportSubjectId,
+        requestId: requestId || '', expiresAt: grant.expiresAt,
+      },
+    });
     return grant;
   }
 
@@ -259,12 +300,12 @@ class TenantService {
       workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
     } : {});
     if (!revoked) throw Object.assign(new Error('Support grant was not found'), { code: 'SUPPORT_GRANT_NOT_FOUND', status: 404 });
-    if (this.db && this.admin?.firestore?.FieldValue) {
-      await this.db.collection('security_audit_logs').doc().set({
-        action: 'SUPPORT_GRANT_REVOKED', actorUid: user.uid, supportGrantId: String(grantId), requestId: requestId || null,
-        tenantId: context?.tenantId || null,
-        workspaceId: context?.workspaceId || null,
-        createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
+    if (context?.tenantId) {
+      await this.writePlatformAudit({
+        user, tenantId: context.tenantId, workspaceId: context.workspaceId || null,
+        action: 'SUPPORT_GRANT_REVOKED', category: 'tenant.support', severity: 'HIGH',
+        resource: { type: 'support_grant', id: String(grantId) },
+        metadata: { requestId: requestId || '' },
       });
     }
     return true;
@@ -366,17 +407,16 @@ class TenantService {
       displayName: input?.displayName,
       scopes: input?.scopes,
     });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'SERVICE_ACCOUNT_CREATED',
-        category: 'tenant.security',
-        severity: 'HIGH',
-        resource: { type: 'service_account', id: created.account.id },
-        metadata: { scopes: created.material.record.scopes.join(','), accountScope: requestedScope },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'SERVICE_ACCOUNT_CREATED',
+      category: 'tenant.security',
+      severity: 'HIGH',
+      resource: { type: 'service_account', id: created.account.id },
+      metadata: { scopes: created.material.record.scopes.join(','), accountScope: requestedScope },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return created;
   }
 
@@ -399,16 +439,15 @@ class TenantService {
       workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
     });
     if (!revoked) throw Object.assign(new Error('Service account was not found'), { code: 'SERVICE_ACCOUNT_NOT_FOUND', status: 404 });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'SERVICE_ACCOUNT_REVOKED',
-        category: 'tenant.security',
-        severity: 'HIGH',
-        resource: { type: 'service_account', id: serviceAccountId },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'SERVICE_ACCOUNT_REVOKED',
+      category: 'tenant.security',
+      severity: 'HIGH',
+      resource: { type: 'service_account', id: serviceAccountId },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return true;
   }
 
@@ -421,17 +460,16 @@ class TenantService {
       workspaceId: context.workspaceScope === 'TENANT' ? null : context.workspaceId,
     });
     if (!rotated) throw Object.assign(new Error('Service account was not found'), { code: 'SERVICE_ACCOUNT_NOT_FOUND', status: 404 });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'SERVICE_ACCOUNT_KEY_ROTATED',
-        category: 'tenant.security',
-        severity: 'HIGH',
-        resource: { type: 'service_account', id: serviceAccountId },
-        metadata: { apiKeyId: rotated.material.record.id, apiKeyPrefix: rotated.material.record.prefix },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'SERVICE_ACCOUNT_KEY_ROTATED',
+      category: 'tenant.security',
+      severity: 'HIGH',
+      resource: { type: 'service_account', id: serviceAccountId },
+      metadata: { apiKeyId: rotated.material.record.id, apiKeyPrefix: rotated.material.record.prefix },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return rotated;
   }
 
@@ -451,16 +489,15 @@ class TenantService {
       name: input?.name,
       isDefault: input?.isDefault === true,
     });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'WORKSPACE_CREATED',
-        category: 'tenant.workspace',
-        resource: { type: 'workspace', id: workspace.id },
-        metadata: { name: workspace.name },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'WORKSPACE_CREATED',
+      category: 'tenant.workspace',
+      resource: { type: 'workspace', id: workspace.id },
+      metadata: { name: workspace.name },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return workspace;
   }
 
@@ -521,7 +558,17 @@ class TenantService {
   async authorizeOutboxEvent(event) {
     const tenantEnvelope = event?.tenant;
     if (!tenantEnvelope) return true;
-    // Current legacy bridge reauthorizes Firebase user subjects only. Future OIDC/
+    if (event?.templateType === 'enterprise-invitation') {
+      const membershipId = event?.metadata?.membershipId;
+      if (!membershipId || typeof this.registry.isInvitationDeliverable !== 'function') return false;
+      const deliverable = await this.registry.isInvitationDeliverable({
+        tenantId: tenantEnvelope.tenantId,
+        membershipId,
+        notificationId: event.id,
+      });
+      if (!deliverable) return false;
+    }
+    // Current bridge reauthorizes Firebase user subjects only. Future OIDC/
     // SCIM workers must supply an issuer-aware resolver instead of guessing.
     if (tenantEnvelope.identityIssuer && tenantEnvelope.identityIssuer !== 'firebase') return false;
     try {
@@ -564,11 +611,12 @@ class TenantService {
   }
 
   async exportTenantData({ context }) {
-    if (!this.db) {
-      throw Object.assign(new Error('Tenant data export requires the Firestore data plane'), { code: 'TENANT_EXPORT_UNAVAILABLE', status: 503 });
+    const pool = this.repository?.pool || this.registry?.pool;
+    if (!pool) {
+      throw Object.assign(new Error('Tenant data export requires the MariaDB data plane'), { code: 'TENANT_EXPORT_UNAVAILABLE', status: 503 });
     }
     const { exportTenantSnapshot, verifySnapshot } = require('./enterpriseBackup');
-    const snapshot = await exportTenantSnapshot({ db: this.db, tenantId: context.tenantId });
+    const snapshot = await exportTenantSnapshot({ pool, tenantId: context.tenantId });
     const verification = verifySnapshot(snapshot);
     if (!verification.ok) {
       throw Object.assign(new Error(`Tenant export failed integrity verification: ${verification.problems.join('; ')}`), { code: 'TENANT_EXPORT_INVALID', status: 500 });
@@ -576,7 +624,13 @@ class TenantService {
     await this.writeAudit(context, {
       action: 'TENANT_DATA_EXPORTED', category: 'tenant.configuration', severity: 'HIGH',
       resource: { type: 'tenant', id: context.tenantId },
-      metadata: { collections: (snapshot.manifest || []).length, documents: snapshot.documentCount ?? null, checksum: snapshot.checksum || null },
+      metadata: {
+        format: snapshot.format,
+        version: snapshot.version,
+        tables: snapshot.tables.length,
+        records: snapshot.recordCount,
+        checksum: snapshot.checksum,
+      },
     });
     return snapshot;
   }
@@ -604,28 +658,25 @@ class TenantService {
 
   async updateTenantConfiguration({ context, input, expectedRevision }) {
     const configuration = await this.registry.updateTenantConfiguration({ tenantId: context.tenantId, input, expectedRevision });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'TENANT_CONFIGURATION_UPDATED',
-        category: 'tenant.configuration',
-        severity: 'HIGH',
-        metadata: { configurationRevision: configuration.revision },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'TENANT_CONFIGURATION_UPDATED',
+      category: 'tenant.configuration',
+      severity: 'HIGH',
+      metadata: { configurationRevision: configuration.revision },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return configuration;
   }
 
-  
+
   async executeTenantGarbageCollection({ gracePeriodDays = 7, requestId = null } = {}) {
     if (!this.registry.purgeTenantRecords) {
       throw new Error("Registry does not support purging");
     }
 
-    // Firestore stores timestamps as Timestamp objects whose valueOf() returns
-    // the object itself, so new Date(timestamp) is NaN. Convert defensively:
-    // real SDK Timestamps, harness timestamps, Dates, ISO strings, epoch millis.
+    // Convert database dates, ISO strings, epochs, and timestamp-like test adapters defensively.
     const toEpochMillis = (value) => {
       if (!value) return 0;
       if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -675,29 +726,16 @@ class TenantService {
       // the others from being reclaimed. Failed tenants stay in DELETING and
       // are retried on the next collection run (purge is idempotent).
       try {
-        await this.registry.purgeTenantRecords(tenant.id);
+        await this.registry.purgeTenantRecords(tenant.id, { requestId });
         purgedCount += 1;
       } catch (error) {
         failures.push({ tenantId: tenant.id, error: String(error?.message || error).slice(0, 300) });
         continue;
       }
 
-      if (this.db && this.admin?.firestore?.FieldValue) {
-        try {
-          await this.db.collection('security_audit_logs').doc().set({
-            action: 'PLATFORM_TENANT_HARD_DELETED',
-            actorRole: 'SYSTEM_DAEMON',
-            tenantId: tenant.id,
-            requestId: requestId || null,
-            createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
-            metadata: { gracePeriodDays: days }
-          });
-        } catch (auditError) {
-          // The purge already committed; audit bookkeeping is best-effort and
-          // must never mark a successfully deleted tenant as failed.
-          console.warn('[TenantService] Hard-delete audit write failed:', auditError?.message || auditError);
-        }
-      }
+      // purgeTenantRecords writes the retained platform deletion audit inside
+      // the same MariaDB transaction. Do not recreate a tenant-scoped audit row
+      // after the tenant partition has been removed.
     }
 
     if (failures.length) {
@@ -713,15 +751,12 @@ class TenantService {
       throw Object.assign(new Error('Platform tenant lifecycle permission is required'), { code: 'FORBIDDEN', status: 403 });
     }
     const tenant = await this.registry.setTenantLifecycleState({ tenantId, nextState });
-    if (this.db && this.admin?.firestore?.FieldValue) {
-      await this.db.collection('security_audit_logs').doc().set({
-        action: `PLATFORM_TENANT_${String(nextState).toUpperCase()}`,
-        actorUid: user.uid,
-        tenantId: tenant.id,
-        requestId: requestId || null,
-        createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
+    await this.writePlatformAudit({
+      user, tenantId: tenant.id,
+      action: `PLATFORM_TENANT_${String(nextState).toUpperCase()}`,
+      category: 'tenant.lifecycle', severity: 'HIGH',
+      resource: { type: 'tenant', id: tenant.id }, metadata: { requestId: requestId || '' },
+    });
     return tenant;
   }
 
@@ -730,31 +765,26 @@ class TenantService {
       throw Object.assign(new Error('Platform tenant profile permission is required'), { code: 'FORBIDDEN', status: 403 });
     }
     const tenant = await this.registry.updateTenantProfile({ tenantId, displayName });
-    if (this.db && this.admin?.firestore?.FieldValue) {
-      await this.db.collection('security_audit_logs').doc().set({
-        action: 'PLATFORM_TENANT_RENAMED',
-        actorUid: user.uid,
-        tenantId: tenant.id,
-        displayName: tenant.displayName,
-        requestId: requestId || null,
-        createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
+    await this.writePlatformAudit({
+      user, tenantId: tenant.id,
+      action: 'PLATFORM_TENANT_RENAMED', category: 'tenant.lifecycle', severity: 'HIGH',
+      resource: { type: 'tenant', id: tenant.id },
+      metadata: { displayName: tenant.displayName, requestId: requestId || '' },
+    });
     return tenant;
   }
 
   async setTenantLifecycleState({ context, nextState }) {
     const tenant = await this.registry.setTenantLifecycleState({ tenantId: context.tenantId, nextState });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: `TENANT_${String(nextState).toUpperCase()}`,
-        category: 'tenant.lifecycle',
-        severity: 'HIGH',
-        resource: { type: 'tenant', id: context.tenantId },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: `TENANT_${String(nextState).toUpperCase()}`,
+      category: 'tenant.lifecycle',
+      severity: 'HIGH',
+      resource: { type: 'tenant', id: context.tenantId },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return tenant;
   }
 
@@ -785,9 +815,18 @@ class TenantService {
   }
 
   async writeAudit(context, event) {
-    if (this.db && this.admin) {
-      await writeTenantAuditEvent(this.db, this.admin, buildTenantAuditEvent({ context, ...event }));
-    }
+    this.assertRepository();
+    await writeTenantAuditEvent(this.repository, buildTenantAuditEvent({ context, ...event }));
+  }
+
+  async writePlatformAudit({ user = null, tenantId, workspaceId = null, action, category, severity = 'INFO', resource = null, metadata = {} }) {
+    this.assertRepository();
+    return this.repository.appendAuditEvent({
+      tenantId: assertUuid(tenantId, 'Tenant identifier'),
+      workspaceId: workspaceId || null,
+      workspaceScope: workspaceId ? 'WORKSPACE' : 'TENANT',
+      principalId: String(user?.uid || 'system:tenant-lifecycle').slice(0, 128),
+    }, { action, category, severity, resource, metadata });
   }
 
   async updateWorkspace({ context, workspaceId, input }) {
@@ -926,127 +965,116 @@ class TenantService {
       throw Object.assign(new Error('Workspace team access is not permitted'), { code: 'WORKSPACE_FORBIDDEN', status: 403 });
     }
     const team = await this.registry.createTeam({ tenantId: context.tenantId, workspaceId, name: input?.name });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'TEAM_CREATED',
-        category: 'tenant.team',
-        resource: { type: 'team', id: team.id },
-        metadata: { workspaceId: team.workspaceId },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'TEAM_CREATED',
+      category: 'tenant.team',
+      resource: { type: 'team', id: team.id },
+      metadata: { workspaceId: team.workspaceId },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return team;
   }
 
-  async grantMembership({ context, input }) {
+  async grantMembership({ context, input, actor = null }) {
     let targetPrincipalId = String(input?.principalId || '');
     const invitationMode = String(input?.status || 'ACTIVE').toUpperCase() === 'INVITED';
     const requestedRoles = Array.isArray(input?.roles) ? input.roles.map(role => String(role).toUpperCase()) : ['MEMBER'];
     if (requestedRoles.includes('TENANT_OWNER') && !context.roles.includes('TENANT_OWNER')) {
       throw Object.assign(new Error('Only a tenant owner may grant tenant ownership'), { code: 'TENANT_OWNER_GRANT_FORBIDDEN', status: 403 });
     }
-    // Only roles defined by the platform or by this tenant's configuration can
-    // be assigned (server-side allowlist, never client-defined).
     const configuration = context.tenant?.configuration || await this.registry.getTenantConfiguration(context.tenantId);
     const allowedRoles = customRoleIds(configuration.customRoles || {});
-    // The foundation grants only already-known identities. An invitation may be
-    // addressed to an email address; the backend resolves it to the verified
-    // Firebase identity server-side, so no membership is ever created for an
-    // arbitrary unverified client-supplied subject.
-    if (!targetPrincipalId && input?.invitationEmail) {
-      if (this.admin?.auth) {
-        try {
-          const resolved = await this.admin.auth().getUserByEmail(String(input.invitationEmail).trim().toLowerCase());
-          targetPrincipalId = resolved.uid;
-        } catch {
-          throw Object.assign(new Error('No registered identity exists for that email address'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
-        }
-      } else {
+    let invitationEmail = invitationMode ? String(input?.invitationEmail || '').trim().toLowerCase() : null;
+    const validInvitationEmail = value => /^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,189}$/.test(String(value || ''));
+
+    // Email-addressed invitations are resolved through the retained Firebase
+    // identity directory. The stored recipient must match that verified
+    // principal; an administrator cannot bind one account while mailing another.
+    if (!targetPrincipalId && invitationEmail) {
+      if (!this.admin?.auth) {
         throw Object.assign(new Error('An email invitation requires the identity directory'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
       }
+      try {
+        const resolved = await this.admin.auth().getUserByEmail(invitationEmail);
+        targetPrincipalId = resolved.uid;
+      } catch {
+        throw Object.assign(new Error('No registered identity exists for that email address'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
+      }
     }
+
     if (this.admin?.auth) {
       try {
         const target = await this.admin.auth().getUser(targetPrincipalId);
-        if (target.disabled) throw Object.assign(new Error('Target identity is suspended'), { code: 'TARGET_PRINCIPAL_SUSPENDED', status: 409 });
-        if (invitationMode && !input?.invitationEmail && target.email) {
-          input = { ...input, invitationEmail: target.email };
+        if (target.disabled) {
+          throw Object.assign(new Error('Target identity is suspended'), { code: 'TARGET_PRINCIPAL_SUSPENDED', status: 409 });
+        }
+        if (invitationMode) {
+          const directoryEmail = String(target.email || '').trim().toLowerCase();
+          if (!invitationEmail) invitationEmail = directoryEmail;
+          if (!directoryEmail || invitationEmail !== directoryEmail) {
+            throw Object.assign(new Error('Invitation email does not match the target identity'), { code: 'INVITATION_IDENTITY_MISMATCH', status: 409 });
+          }
         }
       } catch (error) {
         if (error.status) throw error;
         throw Object.assign(new Error('Target identity was not found'), { code: 'TARGET_PRINCIPAL_NOT_FOUND', status: 404 });
       }
     }
+    if (invitationMode && !validInvitationEmail(invitationEmail)) {
+      throw Object.assign(new Error('A valid invitation email address is required'), { code: 'INVALID_INVITATION_EMAIL', status: 400 });
+    }
+
+    const workspaceId = input?.workspaceId || context.workspaceId;
+    const { enterpriseConsoleUrl } = require('../services/publicAppUrl');
+    const actionUrl = invitationMode ? enterpriseConsoleUrl({
+      tab: 'members',
+      tenantId: context.tenantId,
+      workspaceId: workspaceId || '',
+    }) : null;
+    const invitation = invitationMode ? {
+      recipientEmail: invitationEmail,
+      invitedByPrincipalId: context.principalId,
+      expiresAt: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString(),
+      tenantContext: context,
+      notification: buildInvitationNotification({
+        recipientEmail: invitationEmail,
+        organizationName: context.tenant?.displayName,
+        inviterLabel: actor?.displayName || actor?.email || 'An enterprise administrator',
+        roles: requestedRoles,
+        actionUrl,
+      }),
+    } : null;
+
     const membership = await this.registry.grantMembership({
       tenantId: context.tenantId,
       principalId: targetPrincipalId,
-      workspaceId: input?.workspaceId || context.workspaceId,
-      roles: input?.roles || ['MEMBER'],
+      workspaceId,
+      roles: requestedRoles,
       status: invitationMode ? 'INVITED' : 'ACTIVE',
-      invitationEmail: input?.invitationEmail || null,
+      invitation,
       allowedRoles,
     });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: invitationMode ? 'TENANT_INVITATION_CREATED' : 'TENANT_MEMBERSHIP_GRANTED',
-        category: 'tenant.membership',
-        resource: { type: 'membership', id: membership.id },
-        severity: 'HIGH',
-        metadata: {
-          targetPrincipalId: membership.principalId,
-          roles: membership.roles.join(','),
-          status: membership.status,
-          ...(membership.invitationEmail ? { invitationEmail: membership.invitationEmail } : {}),
-        },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
-    // Best-effort invitation email: delivery never blocks the grant, and the
-    // delivery state is recorded on the membership for administrators.
-    if (invitationMode) {
-      await this.deliverInvitationEmail(membership, context);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: invitationMode ? 'TENANT_INVITATION_CREATED' : 'TENANT_MEMBERSHIP_GRANTED',
+      category: 'tenant.membership',
+      resource: { type: 'membership', id: membership.id },
+      severity: 'HIGH',
+      metadata: {
+        targetPrincipalId: membership.principalId,
+        roles: membership.roles.join(','),
+        status: membership.status,
+        ...(membership.invitationEmail ? { invitationEmail: membership.invitationEmail } : {}),
+        ...(membership.invitationNotificationId ? { notificationId: membership.invitationNotificationId } : {}),
+      },
+    });
+    await writeTenantAuditEvent(this.repository, event);
     return membership;
   }
 
-  async deliverInvitationEmail(membership, context) {
-    if (!membership?.invitationEmail || !this.db) return null;
-    let deliveryState = 'DELIVERY_SKIPPED';
-    try {
-      const emailNotifierMod = require('../services/emailNotifier');
-      const EmailNotifier = emailNotifierMod?.EmailNotifier || emailNotifierMod?.default || emailNotifierMod;
-      const { enterpriseConsoleUrl } = require('../services/publicAppUrl');
-      const actionUrl = enterpriseConsoleUrl({
-        tab: 'members',
-        tenantId: context?.tenant?.id || context?.tenantId || '',
-        workspaceId: membership.workspaceId || context?.workspaceId || '',
-      });
-      const result = await EmailNotifier.notifyEnterpriseInvitation(this.db, {
-        userEmail: membership.invitationEmail,
-        organizationName: context?.tenant?.displayName || 'an enterprise organization',
-        inviterEmail: context?.subjectId || '',
-        roleTitle: (membership.roles || []).join(', ') || 'Enterprise Member',
-        actionUrl,
-      });
-      deliveryState = result?.success ? 'DELIVERED' : String(result?.deliveryState || 'DELIVERY_FAILED').toUpperCase();
-    } catch (err) {
-      console.error('[TenantService deliverInvitationEmail error]:', err?.message || err);
-      deliveryState = 'DELIVERY_FAILED';
-    }
-    try {
-      await this.registry.markInvitationDelivery({
-        tenantId: membership.tenantId,
-        principalId: membership.principalId,
-        deliveryState,
-        deliveredAt: new Date().toISOString(),
-      });
-    } catch { /* delivery bookkeeping is best-effort; the invitation itself stands */ }
-    return deliveryState;
-  }
-
-  async resendMembershipInvitation({ context, principalId }) {
+  async resendMembershipInvitation({ context, principalId, actor = null }) {
     const membership = await this.registry.getMembership(context.tenantId, principalId);
     if (String(membership.status || '').toUpperCase() !== 'INVITED') {
       throw Object.assign(new Error('Only a pending invitation can be resent'), { code: 'INVITATION_NOT_PENDING', status: 409 });
@@ -1054,13 +1082,36 @@ class TenantService {
     if (!membership.invitationEmail) {
       throw Object.assign(new Error('The invitation has no delivery address'), { code: 'INVITATION_NO_ADDRESS', status: 409 });
     }
-    const deliveryState = await this.deliverInvitationEmail(membership, context);
+    const { enterpriseConsoleUrl } = require('../services/publicAppUrl');
+    const actionUrl = enterpriseConsoleUrl({
+      tab: 'members',
+      tenantId: context.tenantId,
+      workspaceId: membership.workspaceId || context.workspaceId || '',
+    });
+    const queued = await this.registry.queueMembershipInvitation({
+      tenantId: context.tenantId,
+      principalId,
+      invitedByPrincipalId: context.principalId,
+      tenantContext: context,
+      notification: buildInvitationNotification({
+        recipientEmail: membership.invitationEmail,
+        organizationName: context.tenant?.displayName,
+        inviterLabel: actor?.displayName || actor?.email || 'An enterprise administrator',
+        roles: membership.roles,
+        actionUrl,
+      }),
+    });
     await this.writeAudit(context, {
       action: 'TENANT_INVITATION_RESENT', category: 'tenant.membership', severity: 'MEDIUM',
       resource: { type: 'membership', id: membership.id },
-      metadata: { targetPrincipalId: principalId, invitationEmail: membership.invitationEmail, deliveryState: deliveryState || 'DELIVERY_SKIPPED' },
+      metadata: {
+        targetPrincipalId: principalId,
+        invitationEmail: membership.invitationEmail,
+        deliveryState: queued.invitationDeliveryState || 'NOTIFICATION_QUEUED',
+        notificationId: queued.invitationNotificationId || '',
+      },
     });
-    return { ...membership, lastDeliveryState: deliveryState || 'DELIVERY_SKIPPED' };
+    return { ...queued, lastDeliveryState: queued.invitationDeliveryState || 'NOTIFICATION_QUEUED' };
   }
 
   async updateTenantMembership({ context, principalId, input }) {
@@ -1077,33 +1128,31 @@ class TenantService {
       workspaceId: input?.workspaceId || null,
       allowedRoles: customRoleIds(configuration.customRoles || {}),
     });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'TENANT_MEMBERSHIP_UPDATED',
-        category: 'tenant.membership',
-        resource: { type: 'membership', id: membership.id },
-        severity: 'HIGH',
-        metadata: { targetPrincipalId: membership.principalId, roles: membership.roles.join(','), status: membership.status },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'TENANT_MEMBERSHIP_UPDATED',
+      category: 'tenant.membership',
+      resource: { type: 'membership', id: membership.id },
+      severity: 'HIGH',
+      metadata: { targetPrincipalId: membership.principalId, roles: membership.roles.join(','), status: membership.status },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return membership;
   }
 
   async removeTenantMembership({ context, principalId }) {
     await this.registry.removeTenantMembership({ tenantId: context.tenantId, principalId });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context,
-        action: 'TENANT_MEMBERSHIP_REMOVED',
-        category: 'tenant.membership',
-        resource: { type: 'membership', id: membershipDocumentId(context.tenantId, principalId) },
-        severity: 'HIGH',
-        metadata: { targetPrincipalId: principalId },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context,
+      action: 'TENANT_MEMBERSHIP_REMOVED',
+      category: 'tenant.membership',
+      resource: { type: 'membership', id: membershipDocumentId(context.tenantId, principalId) },
+      severity: 'HIGH',
+      metadata: { targetPrincipalId: principalId },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return true;
   }
 
@@ -1120,116 +1169,83 @@ class TenantService {
   async listResources({ context, options = {} }) {
     this.assertRepository();
     const repoResources = await this.repository.listResources(context, options);
-    
-    // In live Firestore environment, aggregate member resumes for high-value talent repository
-    if (this.db && (!options.resourceType || ['resume', 'RESUME'].includes(String(options.resourceType).toUpperCase()))) {
-      try {
-        const memberships = await this.listTenantMemberships({ context });
-        const targetUids = new Set();
-        
-        if (context.subjectId) targetUids.add(context.subjectId);
-        if (context.principalId && !context.principalId.startsWith('principal:')) targetUids.add(context.principalId);
+    const wantsResumes = !options.resourceType || String(options.resourceType).toUpperCase() === 'RESUME';
+    if (!wantsResumes) return repoResources;
 
-        if (Array.isArray(memberships)) {
-          for (const m of memberships) {
-            if (m.subjectId) targetUids.add(m.subjectId);
-            if (m.principalId && !m.principalId.startsWith('principal:')) targetUids.add(m.principalId);
-            if (m.invitationEmail) {
-              try {
-                const userSnap = await this.db.collection('users').where('email', '==', m.invitationEmail).limit(1).get();
-                if (!userSnap.empty) targetUids.add(userSnap.docs[0].id);
-              } catch (_) {}
-            }
-          }
-        }
-
-        const existingIds = new Set(repoResources.map(r => r.id));
-        const memberResumes = [];
-
-        for (const uid of Array.from(targetUids).slice(0, 30)) {
-          const snap = await this.db.collection('users').doc(uid).collection('resumes').limit(50).get();
-          snap.forEach(doc => {
-            if (existingIds.has(doc.id)) return;
-            const data = doc.data() || {};
-            const candidateName = `${data.firstname || ''} ${data.lastname || ''}`.trim() ||
-              data.personalInfo?.fullName || data.fullName || data.title || 'Candidate Profile';
-            const jobTitle = data.occupation || data.personalInfo?.jobTitle || data.positionTitle || data.jobTitle || 'Executive Professional';
-            const atsScore = Number(data.atsScore || data.score || (data.firstname && (data.employment?.length || data.experience?.length) ? 92 : 80));
-            const template = data.template || data.templateId || 'modern';
-            
-            let updatedAt = new Date().toISOString();
-            if (data.updatedAt?._seconds) updatedAt = new Date(data.updatedAt._seconds * 1000).toISOString();
-            else if (data.updatedAt?.toDate) updatedAt = data.updatedAt.toDate().toISOString();
-            else if (data.created_at?._seconds) updatedAt = new Date(data.created_at._seconds * 1000).toISOString();
-
-            let createdAt = updatedAt;
-            if (data.created_at?._seconds) createdAt = new Date(data.created_at._seconds * 1000).toISOString();
-            else if (data.created_at?.toDate) createdAt = data.created_at.toDate().toISOString();
-
-            const experience = Array.isArray(data.employment)
-              ? data.employment.map(e => ({
-                  jobTitle: e.jobTitle || e.title || 'Role Title',
-                  companyName: e.employer || e.companyName || 'Organization',
-                  startDate: e.startDate || e.begin || e.started || '',
-                  endDate: e.endDate || e.end || e.finished || (e.current ? 'Present' : ''),
-                  description: e.description || ''
-                }))
-              : (Array.isArray(data.experience) ? data.experience : []);
-
-            const skills = Array.isArray(data.skills)
-              ? data.skills.map(s => (typeof s === 'string' ? s : s.name || s.skillName || s.skill || ''))
-              : [];
-
-            const completeness = (data.firstname && experience.length > 0 && skills.length > 0) ? 95 : (data.firstname ? 80 : 65);
-            
-            memberResumes.push({
-              id: doc.id,
-              tenantId: context.tenantId,
-              workspaceId: data.workspaceId || context.workspaceId || 'default',
-              workspaceName: context.workspace?.name || 'Main Workspace',
-              resourceType: 'RESUME',
-              ownerPrincipalId: uid,
-              ownerEmail: data.email || data.personalInfo?.email || null,
-              ownerName: candidateName,
-              candidateName,
-              jobTitle,
-              atsScore,
-              template,
-              classification: data.classification || 'INTERNAL',
-              completeness,
-              summary: data.summary || data.personalInfo?.summary || '',
-              revision: data.revision || 1,
-              createdAt,
-              updatedAt,
-              payload: {
-                ...data,
-                personalInfo: {
-                  fullName: candidateName,
-                  jobTitle,
-                  email: data.email || data.personalInfo?.email || '',
-                  phone: data.phone || data.personalInfo?.phone || '',
-                  location: `${data.city || ''} ${data.country || ''}`.trim(),
-                  summary: data.summary || data.personalInfo?.summary || '',
-                },
-                experience,
-                skills,
-                education: Array.isArray(data.education) ? data.education : [],
-              },
-            });
-            existingIds.add(doc.id);
-          });
-        }
-
-        return [...repoResources, ...memberResumes];
-      } catch (err) {
-        // Member-resume aggregation is an additive view; the authorized
-        // repository listing below remains the source of truth. The failure
-        // is logged rather than swallowed so aggregation outages are visible.
-        console.warn('[TenantService] Member resume aggregation failed:', err?.message || err);
-      }
+    const pool = this.repository.pool || this.registry?.pool;
+    if (!pool?.query) return repoResources;
+    const boundedLimit = Math.max(1, Math.min(Number(options.limit) || 50, 200));
+    let workspacePredicate = '';
+    const params = [context.tenantId];
+    if (context.workspaceScope !== 'TENANT') {
+      workspacePredicate = ` AND (
+        membership.workspaceId = ? OR EXISTS (
+          SELECT 1 FROM enterprise_workspace_memberships workspace_membership
+          WHERE workspace_membership.tenantId = membership.tenantId
+            AND workspace_membership.principalId = membership.principalId
+            AND workspace_membership.workspaceId = ?
+            AND workspace_membership.status = 'ACTIVE'
+        )
+      )`;
+      params.push(context.workspaceId, context.workspaceId);
     }
-
-    return repoResources;
+    params.push(boundedLimit);
+    const [rows] = await pool.query(
+      `SELECT resume.*, membership.workspaceId AS membershipWorkspaceId,
+              user.email AS ownerAccountEmail
+       FROM enterprise_memberships membership
+       INNER JOIN resumes resume ON resume.user_id = membership.principalId
+       LEFT JOIN users user ON user.id = resume.user_id
+       WHERE membership.tenantId = ? AND membership.status = 'ACTIVE'${workspacePredicate}
+       ORDER BY resume.updated_at DESC LIMIT ?`,
+      params
+    );
+    const existingIds = new Set(repoResources.map(resource => String(resource.id)));
+    const parseArray = value => {
+      if (Array.isArray(value)) return value;
+      if (typeof value !== 'string' || !value) return [];
+      try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+    };
+    const memberResumes = [];
+    for (const row of rows) {
+      if (existingIds.has(String(row.id))) continue;
+      const experience = parseArray(row.employments);
+      const skills = parseArray(row.skills);
+      const education = parseArray(row.educations);
+      const candidateName = `${row.firstname || ''} ${row.lastname || ''}`.trim() || row.title || 'Candidate Profile';
+      memberResumes.push({
+        id: row.id,
+        tenantId: context.tenantId,
+        workspaceId: row.membershipWorkspaceId || context.workspaceId || null,
+        resourceType: 'RESUME',
+        ownerPrincipalId: row.user_id,
+        ownerEmail: row.email || row.ownerAccountEmail || null,
+        ownerName: candidateName,
+        candidateName,
+        jobTitle: row.occupation || '',
+        atsScore: null,
+        template: row.template || 'Cv1',
+        classification: 'INTERNAL',
+        revision: Number(row.revision || 1),
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
+        payload: {
+          personalInfo: {
+            fullName: candidateName,
+            jobTitle: row.occupation || '',
+            email: row.email || row.ownerAccountEmail || '',
+            phone: row.phone || '',
+            location: [row.city, row.country].filter(Boolean).join(', '),
+            summary: row.summary || '',
+          },
+          experience,
+          skills,
+          education,
+        },
+      });
+      existingIds.add(String(row.id));
+    }
+    return [...repoResources, ...memberResumes].slice(0, boundedLimit);
   }
 
   async updateResource({ context, resourceId, input }) {
@@ -1282,77 +1298,58 @@ class TenantService {
       region: input?.region,
     });
     const resolved = await this.resolveContext({ user, requestedTenantId: result.tenantId, requestedWorkspaceId: result.workspaceId, requestId });
-    if (this.db && this.admin) {
-      const event = buildTenantAuditEvent({
-        context: resolved.context,
-        action: 'TENANT_PROVISIONED',
-        category: 'tenant.lifecycle',
-        resource: { type: 'tenant', id: result.tenantId },
-        severity: 'HIGH',
-        metadata: { isolationTier: resolved.tenant.isolationTier, dataPlaneType: resolved.tenant.dataPlane.type },
-      });
-      await writeTenantAuditEvent(this.db, this.admin, event);
-    }
+    const event = buildTenantAuditEvent({
+      context: resolved.context,
+      action: 'TENANT_PROVISIONED',
+      category: 'tenant.lifecycle',
+      resource: { type: 'tenant', id: result.tenantId },
+      severity: 'HIGH',
+      metadata: { isolationTier: resolved.tenant.isolationTier, dataPlaneType: resolved.tenant.dataPlane.type },
+    });
+    await writeTenantAuditEvent(this.repository, event);
+
     return { ...result, tenant: resolved.tenant, workspace: resolved.workspace };
   }
 }
 
-function createTenantService({ pool = null, db = null, admin = null, registry = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, environment = process.env } = {}) {
-  const provider = String(environment.ENTERPRISE_DATA_PROVIDER || (db ? 'firestore' : 'mysql')).toLowerCase();
-  const isMySql = provider === 'mysql' || !db;
+function createTenantService({ pool = null, admin = null, registry = null, repository = null, serviceAccountStore = null, supportGrantStore = null, quotaGuard = null, environment = process.env } = {}) {
+  normalizeProvider(environment.ENTERPRISE_DATA_PROVIDER || 'mysql');
 
   let encryptionProvider = null;
+  let constructionError = null;
   try {
     encryptionProvider = createEncryptionProvider(environment);
   } catch (error) {
+    constructionError = error.message;
     encryptionProvider = Object.freeze({
-      describe: () => ({ provider: error.code === 'ENTERPRISE_ENCRYPTION_PROVIDER_UNAVAILABLE' ? 'unavailable' : 'server-key', configured: false, error: error.message, securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED' }),
+      describe: () => ({
+        provider: error.code === 'ENTERPRISE_ENCRYPTION_PROVIDER_UNAVAILABLE' ? 'unavailable' : 'server-key',
+        configured: false,
+        error: error.message,
+        securityLevel: 'ENCRYPTION_UNAVAILABLE_FAIL_CLOSED',
+      }),
     });
   }
 
-  let resolvedRegistry = registry;
-  if (!resolvedRegistry) {
-    if (isMySql) {
-      resolvedRegistry = new MySqlTenantRegistry({ pool });
-    } else if (db) {
-      resolvedRegistry = new FirestoreTenantRegistry({ db, admin });
-    } else {
-      resolvedRegistry = new InMemoryTenantRegistry();
-    }
-  }
-
-  let constructionError = null;
-  let resolvedRepository = repository;
-  if (!resolvedRepository) {
-    try {
-      resolvedRepository = createEnterpriseRepository({
-        environment,
-        pool,
-        db,
-        admin,
-        encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
-      });
-    } catch (error) {
-      console.error('[Enterprise data plane] Repository construction failed:', error.message);
-      resolvedRepository = null;
-      constructionError = error.message;
-    }
-  }
-
-  const resolvedServiceAccountStore = serviceAccountStore || (isMySql ? new MySqlServiceAccountStore({ pool }) : (db && admin ? new FirestoreServiceAccountStore({ db, admin }) : null));
-  const resolvedSupportGrantStore = supportGrantStore || (isMySql ? new MySqlSupportGrantStore({ pool }) : (db && admin ? new FirestoreSupportGrantStore({ db, admin }) : null));
-  const resolvedQuotaGuard = quotaGuard || (isMySql ? new TenantQuotaGuard({ store: new MySqlAtomicCounterStore({ pool }) }) : (db && admin ? new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }) : null));
+  const resolvedRegistry = registry || new MySqlTenantRegistry({ pool });
+  const resolvedRepository = repository || createEnterpriseRepository({
+    environment,
+    pool,
+    encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
+  });
+  const resolvedServiceAccountStore = serviceAccountStore || new MySqlServiceAccountStore({ pool });
+  const resolvedSupportGrantStore = supportGrantStore || new MySqlSupportGrantStore({ pool });
+  const resolvedQuotaGuard = quotaGuard || new TenantQuotaGuard({ store: new MySqlAtomicCounterStore({ pool }) });
 
   return new TenantService({
     registry: resolvedRegistry,
-    db,
     admin,
-    repository: resolvedRepository || null,
+    repository: resolvedRepository,
     serviceAccountStore: resolvedServiceAccountStore,
     supportGrantStore: resolvedSupportGrantStore,
     quotaGuard: resolvedQuotaGuard,
     encryptionProvider: encryptionProvider && typeof encryptionProvider.encryptValue === 'function' ? encryptionProvider : null,
-    dataProviderName: String(environment.ENTERPRISE_DATA_PROVIDER || (isMySql ? 'mysql' : 'firestore')).toLowerCase(),
+    dataProviderName: 'mysql',
     constructionError,
   });
 }

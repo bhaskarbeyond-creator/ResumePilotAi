@@ -113,79 +113,40 @@ function deriveSeverity(method, pathname, statusCode) {
   return 'INFO';
 }
 
-async function recordAdminAuditLog(arg1, arg2, arg3) {
-  let db = null;
-  let admin = null;
-  let event = {};
-  let repo = null;
-
-  if (arg1 && typeof arg1 === 'object' && (arg1.app || arg1.originalUrl || arg1.headers)) {
-    const req = arg1;
-    event = arg2 || {};
-    db = req.app?.get('db');
-    admin = req.app?.get('firebaseAdmin');
-    repo = req.repository;
-  } else {
-    db = arg1;
-    admin = arg2;
-    event = arg3 || {};
-  }
-
+async function recordAdminAuditLog(requestOrEvent, explicitEvent) {
+  const isRequest = Boolean(requestOrEvent && typeof requestOrEvent === 'object'
+    && (requestOrEvent.app || requestOrEvent.originalUrl || requestOrEvent.headers));
+  let event = isRequest ? (explicitEvent || {}) : (requestOrEvent || {});
+  const repository = isRequest ? (requestOrEvent.repository || null) : null;
   if (!event || typeof event !== 'object') event = {};
-
-  try {
-    const id = event.id || crypto.randomUUID();
-    const docData = {
-      id,
-      actorUid: event.actorUid || 'anonymous',
-      actorEmail: event.actorEmail || null,
-      actorRole: event.actorRole || 'ADMIN',
-      action: event.action || 'UNKNOWN_ACTION',
-      category: event.category || 'system.general',
-      severity: event.severity || 'INFO',
-      outcome: event.outcome || ((Number(event.statusCode) || 200) < 400 ? 'SUCCESS' : 'FAILURE'),
-      method: event.method || 'GET',
-      pathname: event.pathname || '',
-      statusCode: Number(event.statusCode) || 200,
-      durationMs: Number(event.durationMs) || 0,
-      requestId: event.requestId || null,
-      ipAddress: event.ipAddress || null,
-      userAgent: event.userAgent ? String(event.userAgent).slice(0, 200) : null,
-      resourceType: event.resourceType || null,
-      resourceId: event.resourceId || null,
-      metadata: sanitizeAuditValue('metadata', event.metadata || {}),
-      occurredAt: event.occurredAt || new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    // 1. Primary write to MariaDB repository
-    try {
-      const activeRepo = repo || (db && typeof db.recordAdminAuditLog === 'function' ? db : null) || getRepository(db);
-      if (activeRepo && typeof activeRepo.recordAdminAuditLog === 'function') {
-        await activeRepo.recordAdminAuditLog(docData);
-      }
-    } catch (_) {}
-
-    // 2. Standby replica write to Firestore
-    if (db && typeof db.collection === 'function') {
-      try {
-        const collectionRef = db.collection('admin_audit_logs');
-        if (collectionRef && typeof collectionRef.doc === 'function') {
-          const docRef = collectionRef.doc(id);
-          if (docRef && typeof docRef.set === 'function') {
-            docRef.set({
-              ...docData,
-              createdAt: admin?.firestore?.FieldValue ? admin.firestore.FieldValue.serverTimestamp() : new Date(),
-            }).catch(() => {});
-          }
-        }
-      } catch (_) {}
-    }
-
-    return docData;
-  } catch (_err) {
-    return null;
+  const docData = {
+    id: event.id || crypto.randomUUID(),
+    actorUid: event.actorUid || 'anonymous',
+    actorEmail: event.actorEmail || null,
+    actorRole: event.actorRole || 'ADMIN',
+    action: event.action || 'UNKNOWN_ACTION',
+    category: event.category || 'system.general',
+    severity: event.severity || 'INFO',
+    outcome: event.outcome || ((Number(event.statusCode) || 200) < 400 ? 'SUCCESS' : 'FAILURE'),
+    method: event.method || 'GET',
+    pathname: event.pathname || '',
+    statusCode: Number(event.statusCode) || 200,
+    durationMs: Number(event.durationMs) || 0,
+    requestId: event.requestId || null,
+    ipAddress: event.ipAddress || null,
+    userAgent: event.userAgent ? String(event.userAgent).slice(0, 200) : null,
+    resourceType: event.resourceType || null,
+    resourceId: event.resourceId || null,
+    metadata: sanitizeAuditValue('metadata', event.metadata || {}),
+    occurredAt: event.occurredAt || new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+  const activeRepository = repository || getRepository();
+  if (!activeRepository?.recordAdminAuditLog) {
+    throw Object.assign(new Error('Administrative audit repository is unavailable'), { code: 'AUDIT_WRITE_FAILED', status: 503 });
   }
+  await activeRepository.recordAdminAuditLog(docData);
+  return docData;
 }
 
 function createAdminAuditMiddleware() {
@@ -231,7 +192,7 @@ function createAdminAuditMiddleware() {
             query: req.query,
             body: sanitizeAuditValue('body', req.body || {}),
           },
-        }).catch(() => {});
+        }).catch(error => console.error('[AdminAudit] Post-response audit persistence failed:', error?.message || error));
       }
     };
 
@@ -239,143 +200,32 @@ function createAdminAuditMiddleware() {
   };
 }
 
-async function queryAdminAuditLogs(dbOrRepo, options = {}) {
+async function queryAdminAuditLogs(repository, options = {}) {
   const limitCount = Math.min(Math.max(Number(options.limit) || 50, 1), 200);
-
-  // 1. If explicitly passed a repository with getAdminAuditLogs:
-  if (dbOrRepo && typeof dbOrRepo.getAdminAuditLogs === 'function') {
-    try {
-      const logs = await dbOrRepo.getAdminAuditLogs({
-        limit: limitCount,
-        actorUid: options.actorUid,
-        resourceId: options.resourceId,
-        category: options.category,
-        severity: options.severity,
-        outcome: options.outcome,
-        action: options.action,
-      });
-
-      let filteredLogs = logs;
-      const search = String(options.search || '').trim().toLowerCase();
-      if (search) {
-        filteredLogs = logs.filter(log => {
-          const searchable = [
-            log.id, log.actorUid, log.actorEmail, log.actorRole,
-            log.action, log.category, log.severity, log.outcome,
-            log.method, log.pathname, log.resourceType, log.resourceId,
-            log.requestId, log.ipAddress, JSON.stringify(log.metadata || '')
-          ].join(' ').toLowerCase();
-          return searchable.includes(search);
-        });
-      }
-
-      return {
-        logs: filteredLogs,
-        count: filteredLogs.length,
-        hasMore: logs.length === limitCount,
-        source: 'mariadb-primary',
-      };
-    } catch (_) {}
+  const activeRepository = repository?.getAdminAuditLogs ? repository : getRepository();
+  if (!activeRepository?.getAdminAuditLogs) {
+    throw Object.assign(new Error('Administrative audit repository is unavailable'), { code: 'AUDIT_READ_FAILED', status: 503 });
   }
-
-  // 2. If passed a Firestore collection/query (real or mock):
-  if (dbOrRepo && typeof dbOrRepo.collection === 'function') {
-    const db = dbOrRepo;
-    const search = String(options.search || '').trim().toLowerCase().slice(0, 200);
-    const filterValues = {
-      actorUid: options.actorUid ? String(options.actorUid) : '',
-      action: options.action ? String(options.action).toUpperCase() : '',
-      category: options.category ? String(options.category).toLowerCase() : '',
-      severity: options.severity ? String(options.severity).toUpperCase() : '',
-      outcome: options.outcome ? String(options.outcome).toUpperCase() : '',
-    };
-    const hasFilter = Boolean(search || Object.values(filterValues).some(Boolean));
-    const searchScanLimit = hasFilter ? Math.min(Math.max(limitCount * 20, 500), 2000) : limitCount;
-    let query = db.collection('admin_audit_logs');
-    if (typeof query.orderBy === 'function') {
-      query = query.orderBy('createdAt', 'desc');
-    }
-    if (typeof query.limit === 'function') {
-      query = query.limit(searchScanLimit);
-    }
-
-    if (options.startAfterDocId && typeof db.collection('admin_audit_logs').doc === 'function') {
-      const startDoc = await db.collection('admin_audit_logs').doc(String(options.startAfterDocId)).get().catch(() => null);
-      if (startDoc?.exists && typeof query.startAfter === 'function') {
-        query = query.startAfter(startDoc);
-      }
-    }
-
-    let snapshot;
-    try {
-      snapshot = await query.get();
-    } catch (err) {
-      const isQuotaOrUnavailable = String(err?.message || '').includes('RESOURCE_EXHAUSTED') ||
-                                   String(err?.message || '').includes('Quota exceeded') ||
-                                   String(err?.message || '').includes('UNAVAILABLE') ||
-                                   err?.code === 8 || err?.code === 14 || err?.code === 'resource-exhausted';
-      if (isQuotaOrUnavailable) {
-        return {
-          logs: [],
-          count: 0,
-          hasMore: false,
-          degraded: true,
-          quotaLimited: true,
-          reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
-          message: 'Standby audit event store read limit reached.',
-        };
-      }
-      throw err;
-    }
-
-    const logs = [];
-    if (snapshot && typeof snapshot.forEach === 'function') {
-      snapshot.forEach(doc => {
-        const data = (typeof doc.data === 'function' ? doc.data() : doc.data) || {};
-        const safe = sanitizeAuditValue('record', data) || {};
-        const log = {
-          id: doc.id,
-          ...safe,
-          createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : (data.occurredAt || data.createdAt || null),
-        };
-        if (filterValues.actorUid && log.actorUid !== filterValues.actorUid) return;
-        if (filterValues.action && String(log.action || '').toUpperCase() !== filterValues.action) return;
-        if (filterValues.category && String(log.category || '').toLowerCase() !== filterValues.category) return;
-        if (filterValues.severity && String(log.severity || '').toUpperCase() !== filterValues.severity) return;
-        if (filterValues.outcome && String(log.outcome || '').toUpperCase() !== filterValues.outcome) return;
-        if (search) {
-          const searchable = [
-            log.id, log.actorUid, log.actorEmail, log.actorRole,
-            log.action, log.category, log.severity, log.outcome,
-            log.method, log.pathname, log.resourceType, log.resourceId,
-            log.requestId, log.ipAddress, JSON.stringify(log.metadata || '')
-          ].join(' ').toLowerCase();
-          if (!searchable.includes(search)) return;
-        }
-        logs.push(log);
-      });
-    }
-
-    const scannedCount = snapshot?.docs?.length || snapshot?.size || logs.length;
-    return {
-      logs: logs.slice(0, limitCount),
-      count: Math.min(logs.length, limitCount),
-      hasMore: hasFilter ? logs.length > limitCount || scannedCount === searchScanLimit : logs.length === limitCount,
-      ...(hasFilter ? { searchWindow: scannedCount, searchTruncated: scannedCount === searchScanLimit } : {}),
-      source: 'firestore',
-    };
-  }
-
-  // 3. Global Repository fallback
-  try {
-    const repo = getRepository();
-    if (repo && typeof repo.getAdminAuditLogs === 'function') {
-      const logs = await repo.getAdminAuditLogs({ limit: limitCount });
-      return { logs, count: logs.length, hasMore: false, source: 'mariadb-primary' };
-    }
-  } catch (_) {}
-
-  return { logs: [], count: 0, hasMore: false, source: 'none' };
+  const page = await activeRepository.getAdminAuditLogs({
+    ...options,
+    search: String(options.search || '').trim() || undefined,
+    limit: limitCount + 1,
+  });
+  const hasMore = page.length > limitCount;
+  // Read-time redaction protects against legacy/imported rows that predate the
+  // write-side sanitizer. Administrative audit APIs must never become a
+  // credential exfiltration path merely because historical metadata is dirty.
+  const logs = page.slice(0, limitCount).map(log => ({
+    ...log,
+    metadata: sanitizeAuditValue('metadata', log?.metadata || {}),
+  }));
+  return {
+    logs,
+    count: logs.length,
+    hasMore,
+    nextCursor: hasMore ? logs[logs.length - 1]?.id || null : null,
+    source: 'mariadb',
+  };
 }
 
 module.exports = {

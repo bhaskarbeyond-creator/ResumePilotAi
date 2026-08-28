@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FiDollarSign, FiRefreshCw, FiCheck, FiAlertTriangle, FiGlobe, FiLock } from 'react-icons/fi';
 import { getPlatformCurrency, updatePlatformCurrency } from '../../../services/platformApi';
 import { useAdminSession } from '../AdminContext';
+import { saveCurrencySettingsWithRecovery } from './currencySettingsController';
 
 export default function PlatformCurrencySettings() {
   const { isSuperAdmin } = useAdminSession();
@@ -13,22 +14,29 @@ export default function PlatformCurrencySettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const applyCurrencyConfig = useCallback((currency) => {
+    setCurrencyConfig(currency);
+    setSelectedCurrency(currency.code || 'INR');
+    setAllowMultiCurrency(Boolean(currency.allowMultiCurrency));
+  }, []);
+
   const loadCurrency = useCallback(async () => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       const res = await getPlatformCurrency();
-      if (res.success && res.currency) {
-        setCurrencyConfig(res.currency);
-        setSelectedCurrency(res.currency.code || 'INR');
-        setAllowMultiCurrency(Boolean(res.currency.allowMultiCurrency));
-      }
+      if (!res?.success || !res.currency) throw new Error('The server returned an invalid currency configuration.');
+      applyCurrencyConfig(res.currency);
+      return res;
     } catch (err) {
+      setCurrencyConfig(null);
       setError(err.message || 'Failed to load platform currency configuration.');
+      return null;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyCurrencyConfig]);
 
   useEffect(() => {
     loadCurrency();
@@ -40,19 +48,28 @@ export default function PlatformCurrencySettings() {
       setError('SUPER_ADMIN role is required to modify authoritative platform currency.');
       return;
     }
+    if (!_currencyConfig) {
+      setError('Load the authoritative currency configuration before saving.');
+      return;
+    }
     setSaving(true);
     setError('');
     setSuccess('');
     try {
-      const res = await updatePlatformCurrency({
-        currency: selectedCurrency,
-        allowMultiCurrency,
+      const outcome = await saveCurrencySettingsWithRecovery({
+        update: updatePlatformCurrency,
+        reload: getPlatformCurrency,
+        payload: {
+          currency: selectedCurrency,
+          allowMultiCurrency,
+          expectedRevision: _currencyConfig.revision,
+        },
       });
-      if (res.success) {
-        setSuccess(res.message || 'Platform currency updated successfully.');
-        setCurrencyConfig(res.currency);
+      applyCurrencyConfig(outcome.currency);
+      if (outcome.kind === 'conflict') {
+        setError('These settings changed after you loaded them. The latest authoritative values were reloaded; review them before saving again.');
       } else {
-        setError(res.error || 'Failed to update currency.');
+        setSuccess(outcome.response.message || 'Platform currency updated successfully.');
       }
     } catch (err) {
       setError(err.message || 'Failed to update platform currency.');
@@ -60,8 +77,6 @@ export default function PlatformCurrencySettings() {
       setSaving(false);
     }
   };
-
-  1499.00;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 space-y-5 animate-fade-in text-xs">
@@ -79,8 +94,9 @@ export default function PlatformCurrencySettings() {
           type="button"
           onClick={loadCurrency}
           disabled={loading}
-          className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 transition"
-          title="Refresh"
+          className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 transition disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+          title="Refresh currency settings"
+          aria-label="Refresh currency settings"
         >
           <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
@@ -110,14 +126,22 @@ export default function PlatformCurrencySettings() {
           <FiRefreshCw className="h-6 w-6 animate-spin text-indigo-600" />
           <span>Loading platform currency…</span>
         </div>
+      ) : !_currencyConfig ? (
+        <div className="py-10 text-center flex flex-col items-center justify-center gap-3" role="status">
+          <p className="font-semibold text-slate-700">Currency settings are unavailable. Saving is disabled until authoritative values load.</p>
+          <button type="button" onClick={loadCurrency} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+            Retry loading
+          </button>
+        </div>
       ) : (
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Primary Platform Currency */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-              <label className="block font-bold text-slate-900 text-xs">Primary Platform Currency</label>
+              <label htmlFor="platform-primary-currency" className="block font-bold text-slate-900 text-xs">Primary Platform Currency</label>
               <p className="text-slate-500 text-[11px]">System-wide base currency used for pricing, catalog, and standard invoice settlement.</p>
               <select
+                id="platform-primary-currency"
                 disabled={!isSuperAdmin}
                 value={selectedCurrency}
                 onChange={(e) => setSelectedCurrency(e.target.value)}
@@ -177,7 +201,7 @@ export default function PlatformCurrencySettings() {
           {/* Action Footer */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <span className="text-slate-400 text-[11px]">
-              {!isSuperAdmin ? 'Requires SUPER_ADMIN role to update platform configuration.' : 'Changes are audited and take effect across all client sessions.'}
+              {!isSuperAdmin ? 'Requires SUPER_ADMIN role to update platform configuration.' : `Loaded revision ${_currencyConfig.revision}. Changes are audited.`}
             </span>
             {isSuperAdmin && (
               <button

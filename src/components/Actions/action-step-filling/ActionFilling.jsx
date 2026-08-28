@@ -20,12 +20,11 @@ import PlusIcon from '../../../assets/plus.png';
 import MinusIcon from '../../../assets/minus.png';
 import Toasts from '../../Toasts/Toats';
 import { withTranslation } from 'react-i18next';
-import { getAds, getAllCategories } from '../../../firestore/dbOperations';
+import { getAds, getAllCategories } from '../../../services/api/platform';
 import Autocomplete from '../../AutoComplete/AutoComplete';
 
 import { BiPlus, BiArrowBack } from 'react-icons/bi';
-import { AiOutlineMinus, AiOutlineRobot } from 'react-icons/ai';
-import AIGenerationModal from './AIGenerationModal';
+import { AiOutlineMinus } from 'react-icons/ai';
 
 class ActionFilling extends Component {
     // Handling the state
@@ -45,8 +44,6 @@ class ActionFilling extends Component {
             categories: [],
             ads: [],
             autoCompleteOptions: ['English', 'Spanish', 'French', 'German', 'Italian'],
-            showAIModal: false,
-            aiModalStep: 1,
         };
         //  Binding  all functions to this context to be able to use them
         this.aditionalDetailHandler = this.aditionalDetailHandler.bind(this);
@@ -62,8 +59,6 @@ class ActionFilling extends Component {
         this.removeLanguageJsx = this.removeLanguageJsx.bind(this);
         this.removeSkillJsx = this.removeSkillJsx.bind(this);
         this.autoCompleteHandleChange = this.autoCompleteHandleChange.bind(this);
-        this.toggleAIModal = this.toggleAIModal.bind(this);
-        this.handleAIModalStep = this.handleAIModalStep.bind(this);
         var AnalyticsObject = Analytics;
         AnalyticsObject('Template-filling');
     }
@@ -363,17 +358,6 @@ class ActionFilling extends Component {
         this.props.handleInputs('Title', e.currentTarget.textContent);
     }
 
-    toggleAIModal() {
-        this.setState({
-            showAIModal: !this.state.showAIModal,
-            aiModalStep: 1,
-        });
-    }
-
-    handleAIModalStep(step) {
-        this.setState({ aiModalStep: step });
-    }
-
     componentDidUpdate(prevProps) {
         // Check if the currentResumeName has changed
         if (prevProps.currentResumeName !== this.props.currentResumeName) {
@@ -590,10 +574,6 @@ class ActionFilling extends Component {
                     </div>
                     {/* {t("form.untitled")} */}
                     <div className="actionFilling__headAction">
-                        <button onClick={this.toggleAIModal} className="ai-generation-button">
-                            <AiOutlineRobot className="ai-icon" />
-                            AI Generate
-                        </button>
                         <button
                             onClick={() => {
                                 // Clear localStorage items
@@ -608,19 +588,6 @@ class ActionFilling extends Component {
                         </button>
                     </div>
                 </div>
-
-                {/* AI Generation Modal */}
-                {this.state.showAIModal && (
-                    <AIGenerationModal
-                        closeModal={this.toggleAIModal}
-                        currentStep={this.state.aiModalStep}
-                        handleStep={this.handleAIModalStep}
-                        handleInputs={this.props.handleInputs}
-                        goThirdStep={this.props.goThirdStep}
-                        t={t}
-                        existingData={this.props.values}
-                    />
-                )}
 
                 {/* ProgressBar */}
                 <ProgressBar textHidden={false} values={this.props.values} progress={this.props.progress} />

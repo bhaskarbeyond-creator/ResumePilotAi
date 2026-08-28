@@ -1,8 +1,10 @@
+process.env.NODE_ENV = 'test';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { isPrivateIp, isPrivateV4, assertHttpsUrl, assertPublicNetworkTarget } = require('../security/network');
 const { isAdminPath, requiresVerifiedEmail, enforceApiPolicy } = require('../security/policy');
-const { accountRateLimit, _buckets } = require('../security/abuse');
+const { accountRateLimit, configureAbuseCounterStoreForTests } = require('../security/abuse');
+const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 const { permissionsFor } = require('../security/auth');
 
 function responseHarness() {
@@ -97,19 +99,20 @@ test('route policy requires verified email for paid AI and payments', () => {
   assert.equal(res.body.error.code, 'EMAIL_VERIFICATION_REQUIRED');
 });
 
-test('account limiter cannot be bypassed by changing IP for an authenticated account', () => {
-  _buckets.clear();
+test('account limiter cannot be bypassed by changing IP for an authenticated account', async () => {
+  configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
   const limiter = accountRateLimit({ namespace: 'test', limit: 2, windowMs: 60_000 });
-  const call = ip => {
+  const call = async ip => {
     const req = { user: { uid: 'same-user' }, ip };
     const res = responseHarness();
     let next = false;
-    limiter(req, res, () => { next = true; });
+    await limiter(req, res, () => { next = true; });
     return { res, next };
   };
-  assert.equal(call('1.1.1.1').next, true);
-  assert.equal(call('2.2.2.2').next, true);
-  const blocked = call('3.3.3.3');
+  assert.equal((await call('1.1.1.1')).next, true);
+  assert.equal((await call('2.2.2.2')).next, true);
+  const blocked = await call('3.3.3.3');
   assert.equal(blocked.next, false);
   assert.equal(blocked.res.statusCode, 429);
+  configureAbuseCounterStoreForTests(null);
 });

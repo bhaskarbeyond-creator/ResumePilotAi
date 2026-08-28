@@ -99,20 +99,24 @@ class Cv3 extends Component {
         const colors = this.getColors();
         for (let index = 0; index < tempSkills.length; index++) {
             const skill = tempSkills[index];
-            const rating = skill.rating || 90;
-            const filledDots = Math.round((rating / 100) * 5);
+            const rating = typeof skill.rating === 'number' && Number.isFinite(skill.rating)
+                ? Math.min(100, Math.max(0, skill.rating))
+                : null;
+            const filledDots = rating === null ? 0 : Math.round((rating / 100) * 5);
             elements.push(
                 <div key={index} className="cv3-skillCard">
                     <span className="cv3-skillName">{skill.name}</span>
-                    <div className="cv3-skillDots">
-                        {[1, 2, 3, 4, 5].map((dot) => (
-                            <span
-                                key={dot}
-                                className={`cv3-dot ${dot <= filledDots ? 'filled' : ''}`}
-                                style={{ backgroundColor: dot <= filledDots ? colors.primary : '#e2e8f0' }}
-                            />
-                        ))}
-                    </div>
+                    {rating !== null && (
+                        <div className="cv3-skillDots" aria-label={`${rating}% proficiency`}>
+                            {[1, 2, 3, 4, 5].map((dot) => (
+                                <span
+                                    key={dot}
+                                    className={`cv3-dot ${dot <= filledDots ? 'filled' : ''}`}
+                                    style={{ backgroundColor: dot <= filledDots ? colors.primary : '#e2e8f0' }}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         }

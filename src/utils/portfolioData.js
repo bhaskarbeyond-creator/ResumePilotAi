@@ -693,7 +693,7 @@ export function createRichPortfolioFixture() {
             { title: 'Atlas Inference Mesh', description: 'Multi-region model serving fabric with canary rollouts and cost-aware routing.', url: 'https://priyaraman.dev/atlas', technologies: 'Go, Kubernetes, Envoy' },
             { title: 'Harbor Developer Platform', description: 'Internal PaaS that standardized CI, secrets, and golden paths.', url: 'https://priyaraman.dev/harbor', technologies: 'TypeScript, Terraform, AWS' },
             { title: 'Lumen Ledger', description: 'Exactly-once billing pipeline with replayable audit trails.', url: 'https://priyaraman.dev/lumen', technologies: 'Kafka, PostgreSQL, Python' },
-            { title: 'ResumePilot Web CV', description: 'Public portfolio engine with template switching and draft isolation.', url: 'https://priyaraman.dev/webcv', technologies: 'React, Vite, Firestore' },
+            { title: 'ResumePilot Web CV', description: 'Public portfolio engine with template switching and draft isolation.', url: 'https://priyaraman.dev/webcv', technologies: 'React, Vite, MariaDB' },
             { title: 'Nightwatch Observability', description: 'SLO-first tracing and burn-rate alerts for product squads.', url: 'https://priyaraman.dev/nightwatch', technologies: 'OpenTelemetry, Grafana' },
         ],
         certifications: [

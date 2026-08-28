@@ -84,7 +84,16 @@ function buildTenantAiOperation({ context, operation, payload, sourceResources =
       throw Object.assign(new Error('AI source is outside the active tenant context'), { code: 'TENANT_AI_SOURCE_DENIED', status: 404 });
     }
   }
-  const sourceDigest = crypto.createHash('sha256').update(JSON.stringify(sourceResources.map(source => ({ id: source.id, revision: source.revision, tenantId: source.tenantId, workspaceId: source.workspaceId || null })))).digest('hex');
+  const sourceDigest = crypto.createHash('sha256').update(JSON.stringify({
+    operation: String(operation || ''),
+    payload: payload && typeof payload === 'object' ? payload : {},
+    resources: sourceResources.map(source => ({
+      id: source.id,
+      revision: source.revision,
+      tenantId: source.tenantId,
+      workspaceId: source.workspaceId || null,
+    })),
+  })).digest('hex');
   return Object.freeze({
     tenantId: context.tenantId,
     workspaceId: context.workspaceId,

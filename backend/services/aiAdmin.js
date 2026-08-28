@@ -99,199 +99,115 @@ function secretPatch(input = {}, existing = {}, legacy = {}) {
 }
 
 const { getRepository } = require('../repositories');
+const { getPool } = require('../database/mysql');
+const crypto = require('crypto');
 
-async function loadAiAdminSettings(db, environment = process.env) {
-  let stored = {};
-  let secrets = {};
-  let legacyAi = {};
-
-  // 1. Primary: MariaDB system_settings
-  try {
-    const repo = getRepository(db);
-    if (repo && typeof repo.getSetting === 'function') {
-      const [pubSetting, secSetting, legSetting] = await Promise.all([
-        repo.getSetting('public_config').catch(() => null),
-        repo.getSetting('ai_providers').catch(() => null),
-        repo.getSetting('system_settings').catch(() => null),
-      ]);
-      if (pubSetting) stored = pubSetting;
-      if (secSetting) secrets = secSetting;
-      if (legSetting?.ai) legacyAi = legSetting.ai;
-    }
-  } catch (_) {}
-
-  // 2. Standby Fallback: Firestore ONLY when the standby data plane is
-  // explicitly enabled by an operator (FIREBASE_DATA_PLANE=on|standby).
-  // Default OFF: MySQL is the only synchronous store and Firestore is never
-  // consulted, even when a Firestore handle happens to be available.
-  const dataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
-  const standbyEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(dataPlane);
-  if (standbyEnabled && Object.keys(stored).length === 0 && Object.keys(secrets).length === 0 && db && typeof db.collection === 'function') {
-    try {
-      const [publicDoc, secretDoc, legacyDoc] = await Promise.allSettled([
-        db.collection('data').doc('public_config').get(),
-        db.collection('settings').doc('ai_providers').get(),
-        db.collection('data').doc('system_settings').get(),
-      ]);
-      if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) stored = publicDoc.value.data() || {};
-      if (secretDoc.status === 'fulfilled' && secretDoc.value.exists) secrets = secretDoc.value.data() || {};
-      if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyAi = legacyDoc.value.data()?.ai || {};
-    } catch (_) {}
-  }
-
-  const publicAi = stored.ai || {};
+async function loadAiAdminSettings(environment = process.env) {
+  const repo = getRepository();
+  const [stored, secrets, systemSettings] = await Promise.all([
+    repo.getSetting('public_config'),
+    repo.getSetting('ai_providers'),
+    repo.getSetting('system_settings'),
+  ]);
+  const publicConfig = stored || {};
+  const providerSecrets = secrets || {};
+  const legacyAi = systemSettings?.ai || {};
+  const publicAi = publicConfig.ai || {};
   const credentialSources = Object.fromEntries(PROVIDERS.map(provider => [provider,
-    environment[`${provider.toUpperCase()}_API_KEY`] ? 'environment' : secrets[provider]?.apiKey ? 'secret-store' : legacyAi[SECRET_FIELDS[provider]] ? 'legacy-server-store' : 'none'
+    environment[`${provider.toUpperCase()}_API_KEY`] ? 'environment'
+      : providerSecrets[provider]?.apiKey ? 'mariadb-secret-store'
+        : legacyAi[SECRET_FIELDS[provider]] ? 'mariadb-legacy-setting' : 'none'
   ]));
   const configuredProviders = Object.fromEntries(PROVIDERS.map(provider => [provider, credentialSources[provider] !== 'none']));
-  const runtime = await loadProviderConfiguration(db, environment);
-
-  const maskedKeys = {};
-  for (const provider of PROVIDERS) {
-    const rawKey = runtime.providers[provider]?.key || '';
-    maskedKeys[provider] = maskApiKey(rawKey);
-  }
-
+  const runtime = await loadProviderConfiguration(environment);
+  const maskedKeys = Object.fromEntries(PROVIDERS.map(provider => [provider, maskApiKey(runtime.providers[provider]?.key || '')]));
   const publicFields = new Set([
     'provider', 'temperature', 'maxTokens', 'enableFallback', 'enableImportModule',
     ...Object.values(ENABLE_FIELDS), ...Object.values(MODEL_FIELDS),
   ]);
   const settings = Object.fromEntries(Object.entries(publicAi).filter(([key, value]) => publicFields.has(key)
-    && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')));
+    && ['string', 'number', 'boolean'].includes(typeof value)));
   settings.provider = PROVIDERS.includes(settings.provider) ? settings.provider : runtime.primary;
   settings.temperature = settings.temperature ?? runtime.temperature;
   settings.maxTokens = settings.maxTokens ?? runtime.maxTokens;
   settings.enableFallback = settings.enableFallback ?? runtime.enableFallback;
-  for (const provider of PROVIDERS) {
-    settings[MODEL_FIELDS[provider]] = runtime.providers[provider].model;
-  }
-  return { settings, configuredProviders, credentialSources, maskedKeys, revision: Number(stored.aiRevision || secrets._revision || 0) };
+  for (const provider of PROVIDERS) settings[MODEL_FIELDS[provider]] = runtime.providers[provider].model;
+  return {
+    settings, configuredProviders, credentialSources, maskedKeys,
+    revision: Number(publicConfig.aiRevision || providerSecrets._revision || 0),
+    source: 'MARIADB_AND_DEPLOYMENT_ENVIRONMENT',
+  };
 }
 
-async function saveAiAdminSettings({ db, admin, input, expectedRevision = 0, actorUid, requestId }) {
+async function saveAiAdminSettings({ input, expectedRevision = 0, actorUid, requestId }) {
   const safePublic = publicAiSettings(input);
-  const repo = getRepository(db);
-  let currentSecrets = {};
-  let currentPublic = {};
-  let legacyAi = {};
-
-  // 1. Primary: MariaDB system_settings
-  if (repo && typeof repo.getSetting === 'function') {
-    try {
-      const [secSetting, pubSetting, legSetting] = await Promise.all([
-        repo.getSetting('ai_providers').catch(() => null),
-        repo.getSetting('public_config').catch(() => null),
-        repo.getSetting('system_settings').catch(() => null),
-      ]);
-      if (secSetting) currentSecrets = secSetting;
-      if (pubSetting) currentPublic = pubSetting;
-      if (legSetting?.ai) legacyAi = legSetting.ai;
-    } catch (_) {}
-  }
-
-  // 2. Standby Fallback: Firestore (if currentSecrets and currentPublic not loaded from MariaDB)
-  if (Object.keys(currentSecrets).length === 0 && Object.keys(currentPublic).length === 0 && db && typeof db.collection === 'function') {
-    try {
-      const [secretDoc, publicDoc, legacyDoc] = await Promise.allSettled([
-        db.collection('settings').doc('ai_providers').get(),
-        db.collection('data').doc('public_config').get(),
-        db.collection('data').doc('system_settings').get(),
-      ]);
-      if (secretDoc.status === 'fulfilled' && secretDoc.value.exists) currentSecrets = secretDoc.value.data() || {};
-      if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) currentPublic = publicDoc.value.data() || {};
-      if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyAi = legacyDoc.value.data()?.ai || {};
-    } catch (_) {}
-  }
-
-  const currentRevision = Number(currentPublic.aiRevision || currentSecrets._revision || 0);
-  if (expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
-    throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
-  }
-  const nextRevision = currentRevision + 1;
-  const providerPatch = secretPatch(input, currentSecrets, legacyAi);
-  const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
-  const envKeyNames = { gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY', groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
-  
-  for (const provider of PROVIDERS) {
-    if (clearSecrets[provider] === true && String(process.env[envKeyNames[provider]] || '').trim()) {
-      throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
+  const pool = getPool();
+  const connection = await pool.getConnection();
+  let nextRevision;
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.query(
+      "SELECT category, data, revision FROM system_settings WHERE category IN ('ai_providers','public_config','system_settings') FOR UPDATE"
+    );
+    const byCategory = Object.fromEntries(rows.map(row => [row.category, {
+      data: typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}),
+      revision: Number(row.revision || 0),
+    }]));
+    const currentSecrets = byCategory.ai_providers?.data || {};
+    const currentPublic = byCategory.public_config?.data || {};
+    const legacyAi = byCategory.system_settings?.data?.ai || {};
+    const currentRevision = Math.max(
+      Number(currentPublic.aiRevision || 0), Number(currentSecrets._revision || 0),
+    );
+    if (expectedRevision !== undefined && Number(expectedRevision) !== currentRevision) {
+      throw errorWith('AI_SETTINGS_CONFLICT', 'AI settings changed after this panel loaded. Refresh before saving.', 409);
     }
-    if (clearSecrets[provider] === true) {
-      delete providerPatch[provider].apiKey;
-    }
-  }
-
-  const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
-  const mergedPublic = { ...currentPublic, ai: safePublic, aiRevision: nextRevision };
-
-  // 1. Save to MariaDB Primary
-  if (repo && typeof repo.saveSetting === 'function') {
-    await Promise.all([
-      repo.saveSetting('ai_providers', mergedSecrets, nextRevision),
-      repo.saveSetting('public_config', mergedPublic, nextRevision),
-    ]);
-    if (typeof repo.recordAdminAuditLog === 'function') {
-      await repo.recordAdminAuditLog({
-        actorUid: actorUid || 'system',
-        action: 'AI_PROVIDER_SETTINGS_UPDATED',
-        category: 'ai_governance',
-        severity: 'MEDIUM',
-        outcome: 'SUCCESS',
-        metadata: { revision: nextRevision, changedFields: Object.keys(safePublic) },
-        requestId: requestId || null,
-      }).catch(() => {});
-    }
-  }
-
-  // 2. Replicate to Firestore Standby / Save to db (mock or real)
-  if (db) {
-    try {
-      if (typeof db.batch === 'function') {
-        const secretRef = db.collection('settings').doc('ai_providers');
-        const publicRef = db.collection('data').doc('public_config');
-        const batch = db.batch();
-        batch.set(secretRef, mergedSecrets, { merge: true });
-        batch.set(publicRef, mergedPublic, { merge: true });
-        if (admin?.firestore?.FieldValue) {
-          batch.set(db.collection('security_audit_logs').doc(), {
-            action: 'AI_PROVIDER_SETTINGS_UPDATED',
-            actorUid: actorUid || 'system',
-            revision: nextRevision,
-            changedFields: Object.keys(safePublic),
-            requestId: requestId || null,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        }
-        // Standby replication is non-blocking: the user request must never wait
-        // on the secondary system (MySQL is authoritative and already committed).
-        Promise.resolve(batch.commit()).catch(() => {});
-      } else if (typeof db.runTransaction === 'function') {
-        Promise.resolve(db.runTransaction(async tx => {
-          const secretRef = db.collection('settings').doc('ai_providers');
-          const publicRef = db.collection('data').doc('public_config');
-          tx.set(secretRef, mergedSecrets, { merge: true });
-          tx.set(publicRef, mergedPublic, { merge: true });
-          tx.set(db.collection('security_audit_logs').doc(), {
-            action: 'AI_PROVIDER_SETTINGS_UPDATED',
-            actorUid: actorUid || 'system',
-            revision: nextRevision,
-            changedFields: Object.keys(safePublic),
-            requestId: requestId || null,
-            createdAt: admin?.firestore?.FieldValue?.serverTimestamp ? admin.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
-          });
-        })).catch(() => {});
+    const providerPatch = secretPatch(input, currentSecrets, legacyAi);
+    const clearSecrets = input.clearSecrets && typeof input.clearSecrets === 'object' ? input.clearSecrets : {};
+    const envKeyNames = {
+      gemini: 'GEMINI_API_KEY', nvidia: 'NVIDIA_API_KEY', openai: 'OPENAI_API_KEY',
+      groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY',
+    };
+    for (const provider of PROVIDERS) {
+      if (clearSecrets[provider] === true && String(process.env[envKeyNames[provider]] || '').trim()) {
+        throw errorWith('INFRASTRUCTURE_SECRET_CANNOT_CLEAR', `${provider} is deployment-managed and cannot be cleared from the Admin UI.`, 409);
       }
-    } catch (_) {}
+      if (clearSecrets[provider] === true) delete providerPatch[provider].apiKey;
+    }
+    nextRevision = currentRevision + 1;
+    const mergedSecrets = { ...currentSecrets, ...providerPatch, _revision: nextRevision };
+    const mergedPublic = { ...currentPublic, ai: safePublic, aiRevision: nextRevision };
+    for (const [category, data] of [['ai_providers', mergedSecrets], ['public_config', mergedPublic]]) {
+      await connection.query(
+        `INSERT INTO system_settings (category, data, revision, updated_at) VALUES (?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+        [category, JSON.stringify(data), nextRevision]
+      );
+    }
+    await connection.query(
+      `INSERT INTO admin_audit_logs
+       (id, actor_uid, actor_role, action, category, severity, outcome, method, pathname,
+        status_code, resource_type, resource_id, metadata, request_id, created_at)
+       VALUES (?, ?, 'SUPER_ADMIN', 'AI_PROVIDER_SETTINGS_UPDATED', 'ai.governance', 'HIGH',
+               'SUCCESS', 'POST', '/api/admin/ai-settings', 200, 'system_settings',
+               'ai_providers', ?, ?, NOW())`,
+      [crypto.randomUUID(), actorUid || 'system', JSON.stringify({ revision: nextRevision, changedFields: Object.keys(safePublic) }), requestId || null]
+    );
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback().catch(() => {});
+    throw error;
+  } finally {
+    connection.release();
   }
-
-  clearProviderConfigurationCache(db);
-  const loaded = await loadAiAdminSettings(db);
+  clearProviderConfigurationCache();
+  const loaded = await loadAiAdminSettings();
   return { ...loaded, revision: nextRevision };
 }
 
-async function testAiProvider({ db, environment = process.env, provider, model, apiKey, fetchImpl = global.fetch, timeoutMs = 30000 }) {
+async function testAiProvider({ environment = process.env, provider, model, apiKey, fetchImpl = global.fetch, timeoutMs = 30000 }) {
   if (!PROVIDERS.includes(provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
-  const configuration = await loadProviderConfiguration(db, environment);
+  const configuration = await loadProviderConfiguration(environment);
   const base = configuration.providers[provider];
   const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
   const key = String((!isMasked && apiKey) || base?.key || '').trim();
@@ -311,9 +227,9 @@ async function testAiProvider({ db, environment = process.env, provider, model, 
   }
 }
 
-async function fetchProviderModels({ db, environment = process.env, provider, apiKey, fetchImpl = global.fetch, timeoutMs = 15000 }) {
+async function fetchProviderModels({ environment = process.env, provider, apiKey, fetchImpl = global.fetch, timeoutMs = 15000 }) {
   if (!PROVIDERS.includes(provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
-  const configuration = await loadProviderConfiguration(db, environment);
+  const configuration = await loadProviderConfiguration(environment);
   const base = configuration.providers[provider];
   const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
   const key = String((!isMasked && apiKey) || base?.key || '').trim();

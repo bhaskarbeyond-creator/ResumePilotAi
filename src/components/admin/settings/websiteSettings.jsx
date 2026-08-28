@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getWebsiteData, settWebsiteData } from '../../../firestore/dbOperations';
+import { getWebsiteData, settWebsiteData } from '../../../services/api/platform';
 import { FaCheck, FaTimes, FaGlobe, FaTag, FaLanguage, FaFileAlt, FaToggleOn, FaToggleOff, FaCheckCircle, FaBan } from 'react-icons/fa';
 
 const ALL_LANGUAGES = [
@@ -25,12 +25,12 @@ class WebsiteSettings extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            websiteTitle: 'ResumePilot AI — #1 ATS Resume Builder & CV Maker for Students & Freshers',
-            websiteDescription: 'Create ATS-friendly resumes, cover letters, and professional portfolios in minutes with AI. Specially designed for university students, college freshers, and job seekers in India and globally. Get instant AI bullet points, ATS scoring, and Naukri/LinkedIn job matching.',
-            websiteKeywords: 'ResumePilot AI, ATS Resume Builder, CV Maker, AI Resume Builder, Student Resume Builder, Fresher CV Maker, Free Resume Builder India, Indian Biodata Maker, Naukri Resume Generator',
+            websiteTitle: 'ResumePilot AI — Resume Builder & CV Maker',
+            websiteDescription: 'Create and edit resumes, cover letters, and professional portfolios with guided tools, configurable layouts, previews, and export options.',
+            websiteKeywords: 'ResumePilot AI, resume builder, CV maker, cover letter builder, portfolio builder, resume templates',
             defaultLan: 'English',
             disabledLanguages: [],
-            isSuccesShowed: false, saving: false, error: '',
+            isSuccesShowed: false, saving: false, error: '', authoritativeLoaded: false,
         };
         this.handleChange = this.handleChange.bind(this);
         this.saveWebsiteMetaData = this.saveWebsiteMetaData.bind(this);
@@ -42,23 +42,33 @@ class WebsiteSettings extends Component {
 
     componentDidMount() {
         getWebsiteData().then((data) => {
-            if (data) {
+            if (!data || data._settingsStale === true || data._settingsSource !== 'remote') {
                 this.setState({
-                    websiteTitle: data.title || this.state.websiteTitle,
-                    websiteDescription: data.description || this.state.websiteDescription,
-                    websiteKeywords: data.keywords || this.state.websiteKeywords,
-                    defaultLan: data.language || 'English',
-                    disabledLanguages: data.disabledLanguages || [],
+                    authoritativeLoaded: false,
+                    error: data?._settingsError || 'Authoritative website metadata is unavailable. Reload after MariaDB recovery.',
                 });
+                return;
             }
-        });
+            this.setState({
+                websiteTitle: data.title || '',
+                websiteDescription: data.description || '',
+                websiteKeywords: data.keywords || '',
+                defaultLan: data.language || 'English',
+                disabledLanguages: data.disabledLanguages || [],
+                authoritativeLoaded: true,
+                error: '',
+            });
+        }).catch((error) => this.setState({
+            authoritativeLoaded: false,
+            error: error.message || 'Authoritative website metadata is unavailable.',
+        }));
     }
 
     applyStudentPreset() {
         this.setState({
-            websiteTitle: 'ResumePilot AI — #1 ATS Resume Builder & CV Maker for Students & Freshers',
-            websiteDescription: 'Create ATS-friendly resumes, cover letters, and professional portfolios in minutes with AI. Specially designed for university students, college freshers, and job seekers in India and globally. Get instant AI bullet points, ATS scoring, and Naukri/LinkedIn job matching.',
-            websiteKeywords: 'ResumePilot AI, ATS Resume Builder, CV Maker, AI Resume Builder, Student Resume Builder, Fresher CV Maker, Free Resume Builder India, Indian Biodata Maker, Naukri Resume Generator',
+            websiteTitle: 'ResumePilot AI — Resume Builder & CV Maker',
+            websiteDescription: 'Create and edit resumes, cover letters, and professional portfolios with guided tools, configurable layouts, previews, and export options.',
+            websiteKeywords: 'ResumePilot AI, resume builder, CV maker, cover letter builder, portfolio builder, resume templates',
             defaultLan: 'English',
             disabledLanguages: [],
         });
@@ -98,7 +108,11 @@ class WebsiteSettings extends Component {
     }
 
     async saveWebsiteMetaData() {
-        const title = this.state.websiteTitle || 'ResumePilot AI — #1 ATS Resume Builder & CV Maker for Students & Freshers';
+        if (!this.state.authoritativeLoaded) {
+            this.setState({ error: 'Reload authoritative website metadata before saving.' });
+            return;
+        }
+        const title = this.state.websiteTitle || '';
         const description = this.state.websiteDescription || '';
         const keywords = this.state.websiteKeywords || '';
         const language = this.state.defaultLan || 'English';
@@ -178,7 +192,7 @@ class WebsiteSettings extends Component {
                         </div>
                         <input
                             type="text"
-                            placeholder="ResumePilot AI — #1 ATS Resume Builder & CV Maker for Students & Freshers"
+                            placeholder="ResumePilot AI — Resume Builder & CV Maker"
                             value={this.state.websiteTitle}
                             onChange={(event) => this.handleChange(event, 'websiteTitle')}
                             className="w-full px-4 py-2.5 text-sm font-semibold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white text-slate-900"
@@ -338,7 +352,7 @@ class WebsiteSettings extends Component {
                         <button
                             type="button"
                             onClick={() => this.saveWebsiteMetaData()}
-                            disabled={this.state.saving}
+                            disabled={this.state.saving || !this.state.authoritativeLoaded}
                             className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors flex items-center space-x-2 shadow-md"
                         >
                             <FaCheck className="w-4 h-4" />

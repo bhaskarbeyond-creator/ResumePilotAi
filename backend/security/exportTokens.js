@@ -1,116 +1,109 @@
+'use strict';
+
 const crypto = require('crypto');
 const { getPool } = require('../database/mysql');
+const { createEncryptionProvider, isEncryptedEnvelope } = require('../enterprise/encryptionProvider');
 
 const DEFAULT_TTL_MS = 60_000;
 const hash = token => crypto.createHash('sha256').update(token).digest('hex');
-const memoryTokens = new Map();
 
-// Periodic prune of expired memory tokens (every 30 seconds)
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of memoryTokens.entries()) {
-    if (val.expiresAt <= now) {
-      memoryTokens.delete(key);
-    }
+function encryptionProvider() {
+  const provider = createEncryptionProvider(process.env);
+  if (!provider) {
+    throw Object.assign(new Error('Export token payload encryption is unavailable.'), {
+      code: 'EXPORT_TOKEN_ENCRYPTION_UNAVAILABLE', status: 503,
+    });
   }
-}, 30_000).unref();
+  return provider;
+}
 
-// Opportunistic TTL sweep of the MySQL token table (never blocks a request).
+// Opportunistic TTL sweep of the MariaDB token table. Cleanup is not part of
+// validation: every redemption independently checks expiry under row lock.
 setInterval(() => {
-  getPool().query('DELETE FROM export_render_tokens WHERE expires_at < ? LIMIT 500', [Date.now()]).catch(() => {});
+  getPool().query('DELETE FROM export_render_tokens WHERE expires_at < ? LIMIT 500', [Date.now()]).catch(error => {
+    console.error('[Export token sweep]', error.code || error.message);
+  });
 }, 60_000).unref();
 
 /**
- * Creates a single-use PDF export render token. The token hash is stored
- * durably in MySQL (export_render_tokens) so a process restart cannot orphan
- * a valid token; the in-memory map is a fast path only.
- *
- * MySQL is the authoritative store. There is no Firestore involvement.
+ * Create a single-use PDF-render token. Only its SHA-256 hash and an encrypted
+ * payload are committed to MariaDB. No in-memory acceptance path exists: a
+ * durable-store or encryption failure means no bearer token is returned.
  */
-async function createExportRenderToken(_db, data, { now = Date.now(), ttlMs = DEFAULT_TTL_MS } = {}) {
+async function createExportRenderToken(data, { now = Date.now(), ttlMs = DEFAULT_TTL_MS } = {}) {
   const token = crypto.randomBytes(32).toString('base64url');
   const tokenHash = hash(token);
-  const expiresAt = now + ttlMs;
-  memoryTokens.set(tokenHash, { data, expiresAt });
+  const expiresAt = Number(now) + Math.max(1, Math.min(Number(ttlMs) || DEFAULT_TTL_MS, 5 * 60_000));
+  const sealedPayload = encryptionProvider().encryptValue(data || {});
   try {
     await getPool().query(
       'INSERT INTO export_render_tokens (token_hash, payload, expires_at) VALUES (?, ?, ?)',
-      [tokenHash, JSON.stringify(data || {}), Number(expiresAt)]
+      [tokenHash, JSON.stringify(sealedPayload), expiresAt]
     );
-  } catch (err) {
-    if (process.env.NODE_ENV === 'test' && (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND')) {
-      return token;
-    }
-    // If the durable write fails we must not hand out a token the export
-    // pipeline could not later validate — fail closed.
-    memoryTokens.delete(tokenHash);
-    const e = new Error(`Export token store unavailable: ${err.message}`);
-    e.code = 'EXPORT_TOKEN_STORE_UNAVAILABLE';
-    e.status = 503;
-    throw e;
+  } catch (error) {
+    const wrapped = new Error(`Export token store unavailable: ${error.message}`);
+    wrapped.code = 'EXPORT_TOKEN_STORE_UNAVAILABLE';
+    wrapped.status = 503;
+    throw wrapped;
   }
   return token;
 }
 
 /**
- * Atomically consume (validate + delete) an export render token.
- * Returns the payload or null when missing/expired. The row is deleted in the
- * same transaction as the read, so a token can never be redeemed twice.
+ * Atomically consume (read + delete) a token. The transaction commits the
+ * deletion before decryption is attempted, so corrupt or undecryptable payloads
+ * cannot be replayed indefinitely.
  */
-async function consumeExportRenderToken(_db, token, { now = Date.now() } = {}) {
+async function consumeExportRenderToken(token, { now = Date.now() } = {}) {
   if (!/^[A-Za-z0-9_-]{43}$/.test(String(token || ''))) return null;
   const tokenHash = hash(token);
-  if (memoryTokens.has(tokenHash)) {
-    const record = memoryTokens.get(tokenHash);
-    memoryTokens.delete(tokenHash);
-    if (record.expiresAt > now) {
-      try {
-        await getPool().query('DELETE FROM export_render_tokens WHERE token_hash = ?', [tokenHash]);
-      } catch { /* memory path already satisfied the single-use contract */ }
-      return record.data;
-    }
-    return null;
-  }
   const pool = getPool();
-  let conn;
+  let connection;
   try {
-    conn = await pool.getConnection();
-  } catch (err) {
-    if (process.env.NODE_ENV === 'test' && (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND')) {
-      return null;
-    }
-    throw err;
-  }
-  try {
-    await conn.beginTransaction();
-    const [rows] = await conn.query(
-      'SELECT token_hash, payload, expires_at FROM export_render_tokens WHERE token_hash = ? FOR UPDATE',
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [rows] = await connection.query(
+      'SELECT payload, expires_at FROM export_render_tokens WHERE token_hash = ? FOR UPDATE',
       [tokenHash]
     );
-    if (rows.length === 0) {
-      await conn.rollback();
+    if (!rows.length) {
+      await connection.rollback();
       return null;
     }
+    await connection.query('DELETE FROM export_render_tokens WHERE token_hash = ?', [tokenHash]);
+    await connection.commit();
     const record = rows[0];
-    await conn.query('DELETE FROM export_render_tokens WHERE token_hash = ?', [tokenHash]);
-    await conn.commit();
     if (Number(record.expires_at) <= Number(now)) return null;
-    try { return JSON.parse(record.payload || 'null'); } catch { return null; }
-  } catch (err) {
-    try { await conn.rollback(); } catch { /* connection may be broken */ }
-    throw err;
+    let envelope;
+    try { envelope = typeof record.payload === 'string' ? JSON.parse(record.payload) : record.payload; }
+    catch { return null; }
+    if (!isEncryptedEnvelope(envelope)) return null;
+    try { return encryptionProvider().decryptValue(envelope); }
+    catch (error) {
+      // The bearer has already been consumed. Surface key-custody outages so
+      // operators can distinguish them from invalid user input.
+      if (error?.code === 'ENTERPRISE_ENCRYPTION_UNAVAILABLE' || error?.code === 'EXPORT_TOKEN_ENCRYPTION_UNAVAILABLE') {
+        throw Object.assign(new Error('Export token payload cannot be decrypted.'), {
+          code: 'EXPORT_TOKEN_ENCRYPTION_UNAVAILABLE', status: 503,
+        });
+      }
+      return null;
+    }
+  } catch (error) {
+    if (connection) await connection.rollback().catch(() => {});
+    throw error;
   } finally {
-    if (conn) conn.release();
+    if (connection) connection.release();
   }
 }
 
-async function discardExportRenderToken(_db, token) {
-  if (!token) return;
-  const tokenHash = hash(token);
-  memoryTokens.delete(tokenHash);
-  try {
-    await getPool().query('DELETE FROM export_render_tokens WHERE token_hash = ?', [tokenHash]);
-  } catch { /* best-effort */ }
+/** Discard is an authoritative revocation and therefore propagates store
+ * failures; callers decide whether to surface or alert alongside their primary
+ * operation error. */
+async function discardExportRenderToken(token) {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(String(token || ''))) return false;
+  const [result] = await getPool().query('DELETE FROM export_render_tokens WHERE token_hash = ?', [hash(token)]);
+  return Number(result?.affectedRows || 0) > 0;
 }
 
 module.exports = { createExportRenderToken, consumeExportRenderToken, discardExportRenderToken, hash };

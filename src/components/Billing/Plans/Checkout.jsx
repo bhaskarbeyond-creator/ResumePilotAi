@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import { CardElement } from '@stripe/react-stripe-js';
-import CheckImage from '../../../assets/check.png';
 import { FaLock, FaShieldAlt, FaCheckCircle, FaArrowRight, FaArrowLeft, FaCreditCard, FaPaypal, FaGlobe, FaCertificate, FaCrown, FaCheck, FaStar, FaBolt, FaRocket, FaGem, FaInfinity, FaHeadset, FaDownload, FaFileAlt, FaMagic, FaChevronRight, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
 // Payment method logos
 import VisaLogo from '../../../assets/payment/Visa_Inc._logo.svg';
@@ -11,12 +10,9 @@ import AmexLogo from '../../../assets/payment/American_Express_logo_(2018).svg';
 import PayPalLogo from '../../../assets/payment/PayPal_logo.svg';
 import JCBLogo from '../../../assets/payment/JCB_logo.svg';
 import DropdownInput from '../../Form/dropdown-input/DropdownInput';
-import SimpleInput from '../../Form/simple-input/SimpleInput';
 import axios from 'axios';
-import { getSubscriptionStatus } from '../../../firestore/dbOperations';
 import SuccessAnimation from '../../../assets/animations/50049-nfc-successful.json';
 import { withTranslation } from 'react-i18next';
-import Lottie from 'lottie-react';
 import { useLottie } from 'lottie-react';
 import fire from '../../../conf/fire';
 import { AuthContext } from '../../../main';
@@ -34,13 +30,17 @@ const View = () => {
 };
 
 // PayPal Button Component
-const PayPalButtonWrapper = ({ _amount, _currency, onSuccess, onError, selectedPlan, couponCode }) => {
+const PayPalButtonWrapper = ({ _amount, _currency, onSuccess, onError, selectedPlan, couponCode, billingDetails }) => {
     const [{ isPending, isResolved, isRejected }] = usePayPalScriptReducer();
     const paymentOrderIdRef = React.useRef(null);
 
     const createOrder = async () => {
         const apiBase = '';
-        const response = await axios.post(`${apiBase}/api/paypal/create-order`, { planId: selectedPlan, couponCode });
+        const response = await axios.post(`${apiBase}/api/paypal/create-order`, {
+            planId: selectedPlan,
+            couponCode,
+            billingDetails,
+        });
         paymentOrderIdRef.current = response.data.paymentOrderId;
         return response.data.orderId;
     };
@@ -99,6 +99,14 @@ class Checkout extends Component {
 
     constructor(props) {
         super(props);
+        this.indianStates = [
+            'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+            'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa',
+            'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir', 'Jharkhand', 'Karnataka',
+            'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+            'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim',
+            'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+        ];
         this.countries = [
             'Afghanistan', 'Åland Islands', 'Albania', 'Algeria', 'American Samoa', 'Andorra', 'Angola', 'Anguilla',
             'Antigua and Barbuda', 'Argentina', 'Armenia', 'Aruba', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas',
@@ -123,27 +131,28 @@ class Checkout extends Component {
             paymentMethod: 'creditCard',
             Country: '',
             'Postal Code': '',
+            BillingName: '',
             CardHolder: '',
             Address: '',
+            City: '',
+            State: '',
             customerTaxId: '',
             isPaying: false,
             isLoading: false,
+            serverPaymentStatus: 'IDLE',
+            invoiceStatus: 'NOT_REQUESTED',
+            invoiceError: '',
             showMobileSummary: false,
             animating: false,
             // Form validation
-            validationErrors: { Country: '', 'Postal Code': '' },
+            validationErrors: {},
             // In-app toast notification (replaces alert())
             toast: { show: false, type: 'error', message: '' },
             // Stripe idempotency key — generated once per checkout attempt
             idempotencyKey: `ck_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-            taxConfig: {
-                enableTax: true,
-                taxName: 'GST',
-                taxRate: 18,
-                taxInclusive: false,
-                companyTaxId: '27AAAAA0000A1Z5',
-                requireCustomerTaxId: false,
-            }
+            taxConfig: props.taxConfig && typeof props.taxConfig === 'object'
+                ? { ...props.taxConfig }
+                : null
         };
 
         this.handleInput = this.handleInput.bind(this);
@@ -155,21 +164,8 @@ class Checkout extends Component {
 
     componentDidMount() {
         this.syncPaymentMethod();
-        getSubscriptionStatus().then((subData) => {
-            if (subData) {
-                this.setState({
-                    taxConfig: {
-                        enableTax: subData.enableTax !== undefined ? subData.enableTax : true,
-                        taxName: subData.taxName || 'GST',
-                        taxRate: subData.taxRate !== undefined ? subData.taxRate : 18,
-                        taxInclusive: subData.taxInclusive !== undefined ? subData.taxInclusive : false,
-                        companyTaxId: subData.companyTaxId || '',
-                        requireCustomerTaxId: subData.requireCustomerTaxId !== undefined ? subData.requireCustomerTaxId : false,
-                    }
-                });
-            }
-        });
-
+        const currentUser = this.getCurrentUser();
+        if (currentUser?.displayName) this.setState({ BillingName: currentUser.displayName });
         // PhonePe callback handler — restore pending order after redirect
         try {
             const params = new URLSearchParams(window.location.search);
@@ -183,13 +179,13 @@ class Checkout extends Component {
                     window.history.replaceState({}, '', cleanUrl);
                     const apiBase = '';
                     axios.post(`${apiBase}/api/phonepe/status`, { orderId: pending.orderId })
-                        .then((verification) => {
+                        .then(async (verification) => {
                             if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
                                 throw new Error('PhonePe payment was not activated by the server.');
                             }
-                            this.triggerInvoiceEmail({ paymentOrderId: pending.orderId });
+                            this.recordIssuedInvoice(verification.data);
                             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
-                            this.showToast('success', 'PhonePe payment verified and subscription activated.');
+                            this.showToast('success', 'PhonePe payment verified; subscription and invoice were committed together.');
                         })
                         .catch((err) => this.showToast('error', 'PhonePe verification failed: ' + (err.response?.data?.error || err.message)));
                 }
@@ -201,23 +197,12 @@ class Checkout extends Component {
         if (this._toastTimer) clearTimeout(this._toastTimer);
     }
 
-    triggerInvoiceEmail = async (invDetails = {}) => {
-        try {
-            const apiBase = '';
-            const user = this.getCurrentUser();
-            if (!invDetails.paymentOrderId) return;
-            await axios.post(`${apiBase}/api/send-invoice-email`, {
-                paymentOrderId: invDetails.paymentOrderId,
-                customerEmail: user?.email || invDetails.email || '',
-                customerName: user?.displayName || this.state.CardHolder || invDetails.name || 'Candidate',
-                invoiceNumber: invDetails.invoiceNumber || `RPAI/26-27/${Math.floor(1000 + Math.random() * 9000)}`,
-                amount: `${invDetails.symbol || '₹'}${parseFloat(invDetails.amount || 199).toFixed(2)}`,
-                planName: invDetails.planName || this.props.selectedPlan || 'Pro Plan',
-                gstin: this.state.customerTaxId || invDetails.gstin || ''
-            });
-        } catch (e) {
-            console.warn('Auto invoice email dispatch notice:', e.message);
+    recordIssuedInvoice = (activation) => {
+        if (activation?.invoiceStatus !== 'ISSUED' || !activation?.invoiceNumber) {
+            throw new Error('Payment activation did not include its required immutable invoice.');
         }
+        this.setState({ invoiceStatus: 'GENERATED', invoiceError: '' });
+        return true;
     };
 
     componentDidUpdate(prevProps) {
@@ -260,8 +245,8 @@ class Checkout extends Component {
 
     getTaxCalculations(basePrice) {
         const { taxConfig } = this.state;
-        if (!taxConfig || !taxConfig.enableTax) {
-            return { subtotal: basePrice, taxAmount: 0, totalPrice: basePrice, taxName: 'GST', taxRate: 0, companyTaxId: '', taxInclusive: false };
+        if (!taxConfig || !taxConfig.enableTax || !taxConfig.taxInclusive) {
+            return { subtotal: basePrice, taxAmount: 0, totalPrice: basePrice, taxName: '', taxRate: 0, companyTaxId: '', taxInclusive: false, configurationUnavailable: true };
         }
 
         const rate = parseFloat(taxConfig.taxRate) || 0;
@@ -282,7 +267,7 @@ class Checkout extends Component {
             subtotal: parseFloat(subtotal.toFixed(2)),
             taxAmount: parseFloat(taxAmount.toFixed(2)),
             totalPrice: parseFloat(totalPrice.toFixed(2)),
-            taxName: taxConfig.taxName || 'GST',
+            taxName: taxConfig.taxName || '',
             taxRate: rate,
             companyTaxId: taxConfig.companyTaxId || '',
             taxInclusive: isInclusive
@@ -296,6 +281,44 @@ class Checkout extends Component {
             // Clear validation error for this field when user types
             validationErrors: { ...prev.validationErrors, [name]: '' },
         }));
+    }
+
+    renderInvoiceAddressFields(inputClass) {
+        const fieldClass = (name) => `${inputClass} ${this.state.validationErrors[name] ? 'border-rose-500 bg-rose-50/30' : ''}`;
+        const field = (name, label, placeholder, options = {}) => (
+            <div>
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2" htmlFor={`checkout-${name}`}>{label} *</label>
+                <input
+                    id={`checkout-${name}`}
+                    type="text"
+                    value={this.state[name]}
+                    onChange={(event) => this.handleInput(name, event)}
+                    placeholder={placeholder}
+                    className={fieldClass(name)}
+                    aria-invalid={Boolean(this.state.validationErrors[name])}
+                    aria-describedby={this.state.validationErrors[name] ? `checkout-${name}-error` : undefined}
+                    autoComplete={options.autoComplete}
+                    list={options.list}
+                    maxLength={options.maxLength || 160}
+                />
+                {this.state.validationErrors[name] && (
+                    <p id={`checkout-${name}-error`} className="text-xs font-bold text-rose-500 mt-1.5">⚠️ {this.state.validationErrors[name]}</p>
+                )}
+            </div>
+        );
+        return (
+            <>
+                {field('BillingName', 'Legal billing name', 'Name to print on the invoice', { autoComplete: 'name' })}
+                {field('Address', 'Billing street address', 'Building, street and locality', { autoComplete: 'street-address', maxLength: 500 })}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {field('City', 'City', 'Billing city', { autoComplete: 'address-level2' })}
+                    {field('State', 'State / Union Territory', 'Select or enter state', { autoComplete: 'address-level1', list: 'invoice-indian-states' })}
+                </div>
+                <datalist id="invoice-indian-states">
+                    {this.indianStates.map((stateName) => <option key={stateName} value={stateName} />)}
+                </datalist>
+            </>
+        );
     }
 
     // ── In-app toast system (replaces all native alert() calls) ──────────────
@@ -329,6 +352,19 @@ class Checkout extends Component {
         return null;
     }
 
+    getBillingDetails() {
+        return {
+            customerName: this.state.BillingName.trim(),
+            customerCompany: '',
+            customerGstin: this.state.customerTaxId.trim().toUpperCase(),
+            customerAddress: this.state.Address.trim(),
+            customerCity: this.state.City.trim(),
+            customerState: this.state.State.trim(),
+            customerPincode: this.state['Postal Code'].trim(),
+            customerCountry: this.state.Country.trim(),
+        };
+    }
+
     async awaitServerPaymentConfirmation(orderId) {
         const apiBase = '';
         for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -360,13 +396,13 @@ class Checkout extends Component {
                 type: 'card',
                 card: cardElement,
                 billing_details: {
-                    name: this.state.CardHolder || currentUser.displayName || 'Candidate Subscriber',
+                    name: this.state.BillingName.trim(),
                     address: {
-                        line1: this.state.Address || 'Billing Address',
-                        postal_code: this.state['Postal Code'] || '000000',
-                        country: this.state.Country
-                            ? this.state.Country.substring(0, 2).toUpperCase()
-                            : (this.props.currencyCode === 'INR' ? 'IN' : this.props.currencyCode === 'GBP' ? 'GB' : 'US'),
+                        line1: this.state.Address.trim(),
+                        postal_code: this.state['Postal Code'].trim(),
+                        country: this.props.currencyCode === 'INR' && this.state.Country.trim().toLowerCase() === 'india'
+                            ? 'IN'
+                            : undefined,
                     },
                 },
             });
@@ -389,6 +425,7 @@ class Checkout extends Component {
             const payRes = await axios.post(`${apiBase}/api/pay`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
+                billingDetails: this.getBillingDetails(),
             }, {
                 headers: { 'Idempotency-Key': this.state.idempotencyKey },
             });
@@ -428,7 +465,7 @@ class Checkout extends Component {
             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
             trackEngagement('purchase_confirmed', { plan_type: this.props.selectedPlan, payment_method: 'Stripe' });
-            this.triggerInvoiceEmail({ paymentOrderId, amount: taxCalc.totalPrice, symbol: this.props.currencyCode === 'INR' ? '₹' : '$', planName: this.props.selectedPlan });
+            this.recordIssuedInvoice(confirmedOrder);
             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
         } catch (err) {
             console.error('Unexpected Submit Error:', err);
@@ -456,6 +493,7 @@ class Checkout extends Component {
             if (!verification.data?.verified || verification.data?.status !== 'ACTIVE') {
                 throw new Error('PayPal payment was not activated by the server.');
             }
+            this.recordIssuedInvoice(verification.data);
         } catch (verifyErr) {
             this.showToast('error', verifyErr.response?.data?.error || verifyErr.message || 'PayPal verification failed.');
             return;
@@ -464,8 +502,6 @@ class Checkout extends Component {
         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
         trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'PayPal', amount: taxCalc.totalPrice });
-        this.triggerInvoiceEmail({ paymentOrderId: details.paymentOrderId });
-
         this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE' });
     };
 
@@ -489,6 +525,7 @@ class Checkout extends Component {
             const orderRes = await axios.post(`${apiBase}/api/razorpay/create-order`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
+                billingDetails: this.getBillingDetails(),
             });
 
             const orderData = orderRes.data;
@@ -529,8 +566,7 @@ class Checkout extends Component {
                         trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                         trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
                         trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Razorpay', amount: taxCalc.totalPrice });
-                        this.triggerInvoiceEmail({ paymentOrderId: orderData.paymentOrderId });
-
+                        this.recordIssuedInvoice(verification.data);
                         this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                     } catch (err) {
                         console.error('Razorpay verification error:', err);
@@ -573,6 +609,7 @@ class Checkout extends Component {
             const txnRes = await axios.post(`${apiBase}/api/paytm/initiate-transaction`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
+                billingDetails: this.getBillingDetails(),
             });
 
             const txnData = txnRes.data;
@@ -619,7 +656,7 @@ class Checkout extends Component {
                             trackSubscription(this.props.selectedPlan, taxCalc.totalPrice);
                             trackEvent('subscription_purchase', 'Billing', this.props.selectedPlan, taxCalc.totalPrice);
                             trackEngagement('purchase_completed', { plan_type: this.props.selectedPlan, payment_method: 'Paytm', amount: taxCalc.totalPrice });
-                            this.triggerInvoiceEmail({ paymentOrderId: txnData.paymentOrderId });
+                            this.recordIssuedInvoice(verification.data);
                             this.setState({ step: 3, serverPaymentStatus: 'ENTITLEMENT_ACTIVE', isLoading: false });
                         } catch (err) {
                             this.showToast('error', 'Paytm payment verification failed: ' + err.message);
@@ -649,14 +686,11 @@ class Checkout extends Component {
         this.setState({ isLoading: true });
 
         try {
-            const basePrice = this.props.selectedPlan === 'monthly' ? this.props.monthly
-                : this.props.selectedPlan === 'halfYear' ? this.props.quartarly
-                : this.props.yearly;
-            const taxCalc = this.getTaxCalculations(basePrice);
             const apiBase = '';
             const ppRes = await axios.post(`${apiBase}/api/phonepe/initiate`, {
                 planId: this.props.selectedPlan,
                 couponCode: this.props.couponCode || null,
+                billingDetails: this.getBillingDetails(),
             });
 
             const ppData = ppRes.data;
@@ -667,13 +701,9 @@ class Checkout extends Component {
 
             // Store pending order context in sessionStorage for callback handling
             try {
-                sessionStorage.setItem('phonepe_pending', JSON.stringify({
-                    orderId: ppData.orderId, plan: this.props.selectedPlan, amount: taxCalc.totalPrice,
-                    taxCalc: { subtotal: taxCalc.subtotal, taxAmount: taxCalc.taxAmount, taxRate: taxCalc.taxRate,
-                        taxName: taxCalc.taxName, companyTaxId: taxCalc.companyTaxId },
-                    currency: this.props.currencyCode || 'INR',
-                    customerTaxId: this.state.customerTaxId || ''
-                }));
+                // Store only the opaque order reference. Legal billing PII is
+                // already held in the immutable server-side order snapshot.
+                sessionStorage.setItem('phonepe_pending', JSON.stringify({ orderId: ppData.orderId }));
             } catch (_e) { /* sessionStorage may be unavailable in some environments */ }
 
             // Redirect to PhonePe-hosted payment page
@@ -687,18 +717,33 @@ class Checkout extends Component {
 
     nextStep() {
         const { step } = this.state;
-        // Step 0 validation: Country and Postal Code are required
+        // Step 0 validation: collect the legal billing identity used to issue the invoice.
         if (step === 0) {
             const errors = {};
+            const currency = String(this.props.currencyCode || 'INR').toUpperCase();
             if (!this.state.Country || !this.state.Country.trim()) {
-                errors['Country'] = 'Please select your country / region.';
+                errors.Country = 'Please select your country / region.';
+            } else if (currency === 'INR' && this.state.Country.trim().toLowerCase() !== 'india') {
+                errors.Country = 'INR checkout requires an Indian billing address.';
             }
-            if (!this.state['Postal Code'] || !this.state['Postal Code'].trim()) {
-                errors['Postal Code'] = 'Please enter a valid postal / zip code.';
+            if (!/^\d{6}$/.test(this.state['Postal Code'].trim())) {
+                errors['Postal Code'] = 'Enter a valid six-digit Indian pincode.';
+            }
+            if (!this.state.BillingName.trim()) errors.BillingName = 'Enter the legal name to print on the invoice.';
+            if (!this.state.Address.trim()) errors.Address = 'Enter the billing street address.';
+            if (!this.state.City.trim()) errors.City = 'Enter the billing city.';
+            if (!this.state.State.trim()) {
+                errors.State = 'Enter the billing state or union territory.';
+            } else if (currency === 'INR' && !this.indianStates.includes(this.state.State.trim())) {
+                errors.State = 'Select a valid Indian state or union territory.';
+            }
+            const gstin = this.state.customerTaxId.trim().toUpperCase();
+            if (gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) {
+                errors.customerTaxId = 'Enter a valid 15-character GSTIN or leave it blank for a B2C invoice.';
             }
             if (Object.keys(errors).length > 0) {
-                this.setState({ validationErrors: errors });
-                this.showToast('error', 'Please fill in all required billing fields before continuing.');
+                this.setState({ validationErrors: errors, gstinError: errors.customerTaxId || this.state.gstinError || '' });
+                this.showToast('error', 'Please correct the required billing fields before continuing.');
                 return;
             }
         }
@@ -714,7 +759,7 @@ class Checkout extends Component {
         this.setState((prev) => ({ step: prev.step + 1 }));
     }
     previousStep() {
-        this.setState((prev) => ({ step: prev.step - 1, validationErrors: { Country: '', 'Postal Code': '' } }));
+        this.setState((prev) => ({ step: prev.step - 1, validationErrors: {} }));
     }
 
     getPrice() {
@@ -1033,6 +1078,8 @@ class Checkout extends Component {
                                                     </div>
                                                 </div>
 
+                                                {this.renderInvoiceAddressFields('checkout-input')}
+
                                                 {/* Tax ID */}
                                                 {this.state.taxConfig.enableTax && (
                                                     <div>
@@ -1061,7 +1108,11 @@ class Checkout extends Component {
                                                                 } else if (val.length === 15 && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(val)) {
                                                                     err = 'Invalid GSTIN structure. Verify state code & PAN digits.';
                                                                 }
-                                                                this.setState({ customerTaxId: val, gstinError: err });
+                                                                this.setState((prev) => ({
+                                                                    customerTaxId: val,
+                                                                    gstinError: err,
+                                                                    validationErrors: { ...prev.validationErrors, customerTaxId: '' }
+                                                                }));
                                                             }}
                                                             placeholder={`Enter 15-character ${this.state.taxConfig.taxName} number (e.g. 27AAAAA0000A1Z5)`}
                                                             className={`checkout-input uppercase font-mono ${this.state.gstinError ? 'border-amber-400 bg-amber-50/20' : ''}`}
@@ -1283,7 +1334,7 @@ class Checkout extends Component {
                                                             </div>
                                                             <div className="flex-1">
                                                                 <h3 className="text-sm font-black text-slate-900">PhonePe UPI &amp; Payments</h3>
-                                                                <p className="text-xs text-slate-500 mt-0.5">India&apos;s #1 UPI App · Instant payments via PhonePe</p>
+                                                                <p className="text-xs text-slate-500 mt-0.5">PhonePe UPI payment</p>
                                                                 <div className="flex items-center gap-2 mt-2.5">
                                                                     <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-black rounded-md border border-violet-200">UPI Instant</span>
                                                                     <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-black rounded-md border border-violet-200">500M+ Users</span>
@@ -1391,19 +1442,6 @@ class Checkout extends Component {
                                                                 type="text"
                                                                 onChange={(e) => this.handleInput('CardHolder', e)}
                                                                 placeholder="Full name as displayed on card"
-                                                                className="checkout-input"
-                                                            />
-                                                        </div>
-
-                                                        {/* Billing Address */}
-                                                        <div>
-                                                            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
-                                                                Billing Address *
-                                                            </label>
-                                                            <input
-                                                                type="text"
-                                                                onChange={(e) => this.handleInput('Address', e)}
-                                                                placeholder="Street address, apartment or suite"
                                                                 className="checkout-input"
                                                             />
                                                         </div>
@@ -1518,6 +1556,7 @@ class Checkout extends Component {
                                                                     currency={this.props.currencyCode || 'USD'}
                                                                     selectedPlan={this.props.selectedPlan}
                                                                     couponCode={this.props.couponCode}
+                                                                    billingDetails={this.getBillingDetails()}
                                                                     onSuccess={this.handlePayPalSuccess}
                                                                     onError={this.handlePayPalError}
                                                                 />
@@ -1616,7 +1655,7 @@ class Checkout extends Component {
                                                             </div>
                                                             <div>
                                                                 <h2 className="text-lg font-black text-slate-900">PhonePe UPI &amp; Payments</h2>
-                                                                <p className="text-xs text-slate-500">India&apos;s #1 UPI app — instant secure payment</p>
+                                                                <p className="text-xs text-slate-500">PhonePe UPI payment</p>
                                                             </div>
                                                             <span className="ml-auto text-xs font-black text-violet-700 bg-violet-50 px-3 py-1 rounded-full border border-violet-100">Step 3 of 3</span>
                                                         </div>
@@ -1665,7 +1704,7 @@ class Checkout extends Component {
                                     {/* Lottie + Confetti */}
                                     <div className="relative w-36 h-36 mx-auto success-pop">
                                         <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', animation: 'pulse-glow 2s ease-in-out infinite' }}></div>
-                                        <>{View}</>
+                                        <View />
                                         {/* Mini confetti dots */}
                                         {[
                                             { top: '10%', left: '5%', w: 10, h: 10, bg: '#4f46e5', delay: '0s', dur: '1.8s' },
@@ -1737,11 +1776,21 @@ class Checkout extends Component {
                                             <FaLock className="w-3.5 h-3.5 text-indigo-500" />
                                             <span>Auto-Renewal Control in Dashboard</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <FaEnvelope className="w-3.5 h-3.5 text-blue-500" />
-                                            <span>Invoice sent to your email</span>
+                                        <div className="flex items-center gap-2" role="status">
+                                            <FaEnvelope className={`w-3.5 h-3.5 ${this.state.invoiceStatus === 'FAILED' ? 'text-rose-500' : 'text-blue-500'}`} />
+                                            <span>{this.state.invoiceStatus === 'GENERATED'
+                                                ? 'Invoice generated; email queued for delivery'
+                                                : this.state.invoiceStatus === 'FAILED'
+                                                    ? 'Invoice generation needs attention'
+                                                    : 'Generating authoritative invoice…'}</span>
                                         </div>
                                     </div>
+
+                                    {this.state.invoiceStatus === 'FAILED' && (
+                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-800" role="alert">
+                                            {this.state.invoiceError}
+                                        </div>
+                                    )}
 
                                     {/* CTA Buttons */}
                                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1760,7 +1809,7 @@ class Checkout extends Component {
                                             className="w-full sm:w-auto px-7 py-4 rounded-2xl text-slate-700 font-black text-sm flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
                                             style={{ background: '#fff', border: '2px solid #e2e8f0', minWidth: '200px' }}>
                                             <FaFileAlt className="w-4 h-4 text-slate-500" />
-                                            <span>View Invoice & Receipt</span>
+                                            <span>View Billing History</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1869,12 +1918,15 @@ class Checkout extends Component {
                             </div>
                         </div>
 
+                        {this.renderInvoiceAddressFields('checkout-input-emb')}
+
                         {this.state.taxConfig.enableTax && (
                             <div>
                                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
                                     Business {this.state.taxConfig.taxName}IN <span className="text-slate-400 font-normal normal-case">(Optional — B2B invoices)</span>
                                 </label>
-                                <input type="text" value={this.state.customerTaxId} onChange={(e) => this.setState({ customerTaxId: e.target.value })} placeholder={`Enter ${this.state.taxConfig.taxName} registration number`} className="checkout-input-emb" />
+                                <input type="text" value={this.state.customerTaxId} onChange={(e) => this.handleInput('customerTaxId', { target: { value: e.target.value.toUpperCase().trim() } })} placeholder={`Enter ${this.state.taxConfig.taxName} registration number`} className={`checkout-input-emb uppercase font-mono ${this.state.validationErrors.customerTaxId ? 'border-rose-500 bg-rose-50/30' : ''}`} maxLength={15} />
+                                {this.state.validationErrors.customerTaxId && <p className="text-[11px] font-bold text-rose-500 mt-1">⚠️ {this.state.validationErrors.customerTaxId}</p>}
                             </div>
                         )}
 
@@ -2032,7 +2084,7 @@ class Checkout extends Component {
                                     </div>
                                     <div className="flex-1">
                                         <h4 className="text-xs font-black text-slate-900">PhonePe UPI &amp; Payments</h4>
-                                        <p className="text-[11px] text-slate-500">India&apos;s #1 UPI App · Instant payments via PhonePe</p>
+                                        <p className="text-[11px] text-slate-500">PhonePe UPI payment</p>
                                         <div className="flex items-center gap-1.5 mt-1.5">
                                             <span className="px-1.5 py-0.5 bg-violet-100 text-violet-700 text-[9px] font-black rounded border border-violet-200">UPI Instant</span>
                                             <span className="px-1.5 py-0.5 bg-violet-100 text-violet-700 text-[9px] font-black rounded border border-violet-200">500M+ Users</span>
@@ -2103,10 +2155,6 @@ class Checkout extends Component {
                                     <input type="text" onChange={(e) => this.handleInput('CardHolder', e)} placeholder="Full name as on card" className="checkout-input-emb" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">Billing Address *</label>
-                                    <input type="text" onChange={(e) => this.handleInput('Address', e)} placeholder="Street address" className="checkout-input-emb" />
-                                </div>
-                                <div>
                                     <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                                         <FaCreditCard className="w-2.5 h-2.5 text-indigo-500" /> Card Number, Expiry & CVC *
                                     </label>
@@ -2158,7 +2206,7 @@ class Checkout extends Component {
                                         <span className="text-sm font-black text-amber-900">{this.props.currency}{price}</span>
                                     </div>
                                     <div className="p-4">
-                                        <PayPalButtonWrapper amount={price} currency={this.props.currencyCode || 'USD'} selectedPlan={this.props.selectedPlan} couponCode={this.props.couponCode} onSuccess={this.handlePayPalSuccess} onError={this.handlePayPalError} />
+                                        <PayPalButtonWrapper amount={price} currency={this.props.currencyCode || 'USD'} selectedPlan={this.props.selectedPlan} couponCode={this.props.couponCode} billingDetails={this.getBillingDetails()} onSuccess={this.handlePayPalSuccess} onError={this.handlePayPalError} />
                                     </div>
                                 </div>
 
@@ -2245,7 +2293,7 @@ class Checkout extends Component {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-slate-900">PhonePe UPI &amp; Payments</h3>
-                                        <p className="text-[11px] text-slate-500">India&apos;s #1 UPI App — instant secure payment</p>
+                                        <p className="text-[11px] text-slate-500">PhonePe UPI payment</p>
                                     </div>
                                 </div>
 
@@ -2278,7 +2326,7 @@ class Checkout extends Component {
                     <div className="text-center space-y-6 py-4">
                         <div className="relative w-28 h-28 mx-auto emb-success">
                             <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)' }}></div>
-                            <>{View}</>
+                            <View />
                             {[
                                 { top: '5%', left: '0%', w: 8, bg: '#4f46e5', delay: '0s', dur: '1.8s' },
                                 { top: '15%', right: '0%', w: 7, bg: '#f59e0b', delay: '0.3s', dur: '2s' },
@@ -2301,6 +2349,14 @@ class Checkout extends Component {
                             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                                 Your subscription is now <strong className="text-slate-700">instantly active</strong>. All AI tools, unlimited exports, and VIP support are fully unlocked.
                             </p>
+                        </div>
+
+                        <div className={`rounded-xl border px-4 py-3 text-xs font-semibold ${this.state.invoiceStatus === 'FAILED' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-blue-200 bg-blue-50 text-blue-800'}`} role={this.state.invoiceStatus === 'FAILED' ? 'alert' : 'status'}>
+                            {this.state.invoiceStatus === 'GENERATED'
+                                ? 'Your authoritative invoice was generated and its email notification was queued for delivery.'
+                                : this.state.invoiceStatus === 'FAILED'
+                                    ? this.state.invoiceError
+                                    : 'Generating your authoritative invoice…'}
                         </div>
 
                         <div className="rounded-2xl overflow-hidden border border-slate-100" style={{ background: 'linear-gradient(135deg, #0f0c29, #1e1b4b)' }}>
@@ -2334,7 +2390,7 @@ class Checkout extends Component {
                             </button>
                             <button type="button" onClick={() => { window.location.href = '/dashboard/plans?tab=invoices'; }}
                                 className="w-full sm:w-auto px-6 py-3.5 rounded-xl text-slate-700 font-bold text-xs border-2 border-slate-200 hover:border-slate-300 flex items-center justify-center gap-2 transition-all hover:bg-slate-50 cursor-pointer">
-                                <FaFileAlt className="w-3.5 h-3.5 text-slate-500" /><span>View Invoice & Receipt</span>
+                                <FaFileAlt className="w-3.5 h-3.5 text-slate-500" /><span>View Billing History</span>
                             </button>
                         </div>
                     </div>

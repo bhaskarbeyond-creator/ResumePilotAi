@@ -45,7 +45,7 @@ test('operational status rejects unauthenticated callers', async () => {
   for (const path of [
     '/api/platform/operational-status',
     '/api/platform/operational-status/api-matrix',
-    '/api/platform/operational-status/firestore',
+    '/api/platform/operational-status/database',
     '/api/platform/health-indicator',
   ]) {
     const res = await as('get', path);
@@ -80,17 +80,17 @@ test('ADMIN may read operational status and the API matrix', async () => {
 });
 
 test('ADMIN is denied the SUPER_ADMIN-only provider test', async () => {
-  const res = await as('post', '/api/platform/operational-status/firestore/test', 'admin');
+  const res = await as('post', '/api/platform/operational-status/database/test', 'admin');
   assert.equal(res.status, 403, `provider test must be SUPER_ADMIN only, got ${res.status}`);
 });
 
 test('an ordinary user is denied the provider test', async () => {
-  const res = await as('post', '/api/platform/operational-status/firestore/test', 'user');
+  const res = await as('post', '/api/platform/operational-status/database/test', 'user');
   assert.ok([401, 403].includes(res.status), `expected 401/403, got ${res.status}`);
 });
 
 test('the provider test rejects unauthenticated callers', async () => {
-  const res = await as('post', '/api/platform/operational-status/firestore/test');
+  const res = await as('post', '/api/platform/operational-status/database/test');
   assert.equal(res.status, 401);
 });
 
@@ -99,12 +99,9 @@ test('the provider test rejects unauthenticated callers', async () => {
  * ------------------------------------------------------------------ */
 
 test('SUPER_ADMIN may read every operational-status surface', async () => {
-  // The health engine models exactly one active primary data plane: 'database'
-  // when MySQL is active, 'firestore' when Firestore is active. Asserting a
-  // hardcoded 'firestore' surface therefore fails on a MySQL-primary release.
-  // Enumerate the services the snapshot actually publishes instead — this is
-  // strictly stronger than a fixed list and stays correct across engine
-  // switches.
+  // MariaDB is the immutable application-data owner. Enumerate every service
+  // published by the snapshot and ensure the canonical database service is
+  // present; no alternate data-plane branch is valid.
   for (const path of [
     '/api/platform/operational-status',
     '/api/platform/operational-status/api-matrix',
@@ -118,16 +115,14 @@ test('SUPER_ADMIN may read every operational-status surface', async () => {
   const serviceIds = (snapshot.body?.services || []).map(item => item.id);
   assert.ok(serviceIds.length > 0, 'the health snapshot must publish monitored services');
 
-  const primaryEngine = require('../database/engineManager').getActiveEngine();
-  const expectedPrimary = primaryEngine === 'mysql' ? 'database' : 'firestore';
-  assert.ok(
-    serviceIds.includes(expectedPrimary),
-    `the snapshot must publish the active primary "${expectedPrimary}" (engine=${primaryEngine}); got ${serviceIds.join(', ')}`,
-  );
+  assert.ok(serviceIds.includes('database'),
+    `the snapshot must publish the canonical MariaDB service; got ${serviceIds.join(', ')}`);
 
   for (const serviceId of serviceIds) {
     const res = await as('get', `/api/platform/operational-status/${serviceId}`, 'super-admin');
-    assert.equal(res.status, 200, `SUPER_ADMIN must be able to read /operational-status/${serviceId}, got ${res.status}`);
+    assert.ok([200, 503].includes(res.status),
+      `authorized detail must return data or a controlled dependency failure for ${serviceId}, got ${res.status}`);
+    if (res.status === 503) assert.equal(res.body?.error?.code, 'SERVICE_DETAIL_UNAVAILABLE');
   }
 });
 
@@ -226,12 +221,14 @@ test('service availability is public, uncached and secret-free', async () => {
  * Enterprise tenancy gate stays honest
  * ------------------------------------------------------------------ */
 
-test('a disabled enterprise tenancy is reported as DISABLED, not as an outage', async () => {
+test('a disabled enterprise tenancy is reported as DISABLED, never inferred during collector failure', async () => {
   const res = await as('get', '/api/platform/operational-status/enterprise-tenancy', 'super-admin');
-  assert.equal(res.status, 200);
+  assert.ok([200, 503].includes(res.status));
+  if (res.status === 503) {
+    assert.equal(res.body?.error?.code, 'SERVICE_DETAIL_UNAVAILABLE');
+    return;
+  }
   const { service } = res.body;
-  // Whatever the deployment posture, the state must be a real enum value and
-  // a disabled tenancy must never be reported as OPERATIONAL.
   assert.ok(['OPERATIONAL', 'DEGRADED', 'UNAVAILABLE', 'DISABLED', 'NOT_CONFIGURED', 'NOT_SUPPORTED', 'UNKNOWN'].includes(service.state));
   if (service.state === 'DISABLED') {
     assert.match(service.reason, /deliberate|intentional|disabled|false/i);

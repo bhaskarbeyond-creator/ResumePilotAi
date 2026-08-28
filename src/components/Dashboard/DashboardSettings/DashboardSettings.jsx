@@ -1,8 +1,7 @@
-import { writeSanitizedPrintDocument } from '../../../utils/sanitizeHtml';
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getWebsiteData, getSubscriptionStatus, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../firestore/dbOperations';
+import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../services/api/platform';
 import { saveProfile } from '../../../services/profilePersistence';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory } from 'react-icons/fa';
@@ -17,7 +16,6 @@ import { inferCountryFromCity } from '../../../utils/locationHelper';
 import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
-import { formatSafeDate } from '../../../utils/subscriptionUtils';
 
 const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
 
@@ -44,7 +42,7 @@ function DashboardSettings(_props) {
             }
         }
     }, [location.search]);
-    const [summaryTone, setSummaryTone] = useState('executive');
+    const [summaryTone, setSummaryTone] = useState('balanced');
     const [_skillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [profileSaveState, setProfileSaveState] = useState('loading');
@@ -163,22 +161,22 @@ function DashboardSettings(_props) {
         return () => window.removeEventListener('keydown', handleGlobalEscape);
     }, [deleteAccountModalOpen, totpSetupModalOpen, totpDisableModalOpen, cropModalSrc, isSubscriptionModalOpen, isSubmitting]);
 
-    // Data Normalizers for legacy Firestore structures
+    // Data normalizers for historical profile shapes
     const normalizeSkills = (arr) => {
         if (!Array.isArray(arr)) return [];
         return arr.map((item, idx) => {
-            if (typeof item === 'string') return { id: `skill_${idx}_${Date.now()}`, name: item, level: 'Expert' };
-            if (item && typeof item === 'object') return { id: item.id || `skill_${idx}`, name: item.name || item.title || '', level: item.level || 'Expert' };
-            return { id: `skill_${idx}`, name: String(item || ''), level: 'Expert' };
+            if (typeof item === 'string') return { id: `skill_${idx}_${Date.now()}`, name: item, level: '' };
+            if (item && typeof item === 'object') return { id: item.id || `skill_${idx}`, name: item.name || item.title || '', level: item.level || '' };
+            return { id: `skill_${idx}`, name: String(item || ''), level: '' };
         });
     };
 
     const normalizeLanguages = (arr) => {
         if (!Array.isArray(arr)) return [];
         return arr.map((item, idx) => {
-            if (typeof item === 'string') return { id: `lang_${idx}_${Date.now()}`, name: item, level: 'Native / Bilingual' };
-            if (item && typeof item === 'object') return { id: item.id || `lang_${idx}`, name: item.name || item.language || '', level: item.level || item.proficiency || 'Native / Bilingual' };
-            return { id: `lang_${idx}`, name: String(item || ''), level: 'Native / Bilingual' };
+            if (typeof item === 'string') return { id: `lang_${idx}_${Date.now()}`, name: item, level: '' };
+            if (item && typeof item === 'object') return { id: item.id || `lang_${idx}`, name: item.name || item.language || '', level: item.level || item.proficiency || '' };
+            return { id: `lang_${idx}`, name: String(item || ''), level: '' };
         });
     };
 
@@ -320,189 +318,6 @@ function DashboardSettings(_props) {
         fetchUserAccountData();
     };
 
-    async (txn) => {;
-        const subData = await getSubscriptionStatus();
-        const metaData = await getWebsiteData();
-        const siteTitle = (metaData && metaData.title ? metaData.title.split('—')[0].trim() : 'AI RESUME BUILDER').toUpperCase();
-        const activeTemplate = (subData && subData.receiptTemplate) || 'modern';
-        const printWindow = window.open('', '_blank');
-
-        const taxName = txn.taxName || subData?.taxName || 'GST';
-        const taxRate = txn.taxRate !== undefined ? txn.taxRate : (subData?.taxRate !== undefined ? subData.taxRate : 18);
-        const subtotal = txn.subtotal !== undefined ? txn.subtotal : (txn.price || '19.99');
-        const taxAmount = txn.taxAmount !== undefined ? txn.taxAmount : 0;
-        const totalPrice = txn.price || '19.99';
-        const companyTaxId = txn.companyTaxId || subData?.companyTaxId || '';
-        const customerTaxId = txn.customerTaxId || '';
-        const currency = txn.currency || subData?.currency || 'INR';
-
-        let templateStyles = '';
-        let headerHtml = '';
-
-        if (activeTemplate === 'classic') {
-            // Classic Corporate monochrome formal
-            templateStyles = `
-                body { font-family: Georgia, 'Times New Roman', serif; margin: 40px; color: #000; line-height: 1.4; }
-                .header { border-bottom: 3px double #000; padding-bottom: 12px; margin-bottom: 24px; text-align: center; }
-                .title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; border: 1px solid #000; padding: 12px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 16px; border: 1px solid #000; }
-                th { text-align: left; padding: 10px; background: #eee; border: 1px solid #000; font-size: 11px; text-transform: uppercase; }
-                td { padding: 10px; border: 1px solid #000; font-size: 12px; }
-                .summary-box { border: 1px solid #000; padding: 12px; margin-top: 16px; width: 260px; margin-left: auto; }
-                .total-row { font-weight: bold; font-size: 15px; border-top: 2px solid #000; margin-top: 6px; padding-top: 6px; }
-            `;
-            headerHtml = `
-                <div class="header">
-                    <div class="title">${siteTitle}</div>
-                    <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">FORMAL TAX INVOICE &amp; PAYMENT RECEIPT</div>
-                    ${companyTaxId ? `<div style="font-size: 11px; margin-top: 4px;">Supplier ${taxName} Registration No: ${companyTaxId}</div>` : ''}
-                </div>
-            `;
-        } else if (activeTemplate === 'gradient') {
-            // Vibrant Enterprise Gradient Header
-            templateStyles = `
-                body { font-family: 'Outfit', 'Inter', sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; background: #f8fafc; }
-                .card-wrap { background: #fff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; border: 1px solid #e2e8f0; }
-                .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; padding: 24px; border-radius: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
-                .title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; background: #f1f5f9; padding: 16px; border-radius: 12px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-                th { text-align: left; padding: 12px; background: #ede9fe; color: #5b21b6; border-radius: 8px 8px 0 0; font-size: 11px; text-transform: uppercase; font-weight: 800; }
-                td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; }
-                .summary-box { background: linear-gradient(135deg, #f8fafc 0%, #ede9fe 100%); border: 1px solid #c7d2fe; border-radius: 14px; padding: 18px; margin-top: 20px; width: 290px; margin-left: auto; }
-                .total-row { font-weight: 800; font-size: 16px; color: #4338ca; border-top: 2px solid #a5b4fc; padding-top: 8px; margin-top: 8px; }
-            `;
-            headerHtml = `
-                <div class="header">
-                    <div>
-                        <div class="title">${siteTitle}</div>
-                        <div style="font-size: 12px; opacity: 0.9;">Enterprise Tax Invoice Receipt</div>
-                        ${companyTaxId ? `<div style="font-size: 11px; opacity: 0.85; margin-top: 4px;">GSTIN: ${companyTaxId}</div>` : ''}
-                    </div>
-                    <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #fff; padding: 6px 16px; border-radius: 99px; font-weight: 800; font-size: 12px;">${txn.status || 'PAID ✓'}</div>
-                </div>
-            `;
-        } else if (activeTemplate === 'compact') {
-            // Compact Stub Voucher Monospace
-            templateStyles = `
-                body { font-family: 'Courier New', Courier, monospace; margin: 20px auto; max-width: 420px; color: #000; line-height: 1.3; background: #fff; }
-                .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 12px; margin-bottom: 16px; }
-                .title { font-size: 20px; font-weight: bold; }
-                .grid { border-bottom: 1px dashed #000; padding-bottom: 12px; margin-bottom: 12px; font-size: 12px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
-                th { text-align: left; padding: 6px 0; border-bottom: 1px dashed #000; text-transform: uppercase; }
-                td { padding: 6px 0; border-bottom: 1px dotted #ccc; }
-                .summary-box { border-top: 2px dashed #000; margin-top: 12px; padding-top: 8px; font-size: 13px; }
-                .total-row { font-weight: bold; font-size: 15px; margin-top: 6px; }
-            `;
-            headerHtml = `
-                <div class="header">
-                    <div class="title">${siteTitle}</div>
-                    <div>===============================</div>
-                    <div style="font-size: 12px; font-weight: bold;">PAYMENT RECEIPT VOUCHER</div>
-                    ${companyTaxId ? `<div style="font-size: 11px;">GSTIN: ${companyTaxId}</div>` : ''}
-                </div>
-            `;
-        } else {
-            // Modern Minimalist (Default)
-            templateStyles = `
-                body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; }
-                .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4338ca; padding-bottom: 20px; margin-bottom: 30px; }
-                .title { font-size: 24px; font-weight: bold; color: #4338ca; }
-                .badge { background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; }
-                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-                .label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
-                .value { font-size: 14px; font-weight: 600; color: #0f172a; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid #e2e8f0; font-size: 11px; text-transform: uppercase; color: #475569; }
-                td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-                .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-top: 20px; width: 280px; margin-left: auto; }
-                .summary-line { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-                .total-row { font-weight: bold; font-size: 16px; color: #4338ca; border-top: 2px solid #cbd5e1; padding-top: 8px; margin-top: 8px; }
-            `;
-            headerHtml = `
-                <div class="header">
-                    <div>
-                        <div class="title">${siteTitle}</div>
-                        <div style="font-size: 12px; color: #64748b;">Official B2B Tax Invoice &amp; Payment Receipt</div>
-                        ${companyTaxId ? `<div style="font-size: 11px; font-weight: bold; color: #4338ca; margin-top: 4px;">Supplier ${taxName}IN / Reg No: ${companyTaxId}</div>` : ''}
-                    </div>
-                    <div class="badge">${txn.status || 'PAID'}</div>
-                </div>
-            `;
-        }
-
-        const formattedDate = formatSafeDate(txn.created_at || txn.createdAt || txn.date) || new Date().toLocaleDateString();
-
-        const invoiceHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Tax Invoice Receipt - ${txn.transactionId}</title>
-                <style>
-                    ${templateStyles}
-                    .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
-                </style>
-            </head>
-            <body>
-                <div class="card-wrap">
-                    ${headerHtml}
-                    <div class="grid">
-                        <div>
-                            <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Billed To</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${profile.firstname || 'Valued User'} ${profile.lastname || ''}</div>
-                            <div style="font-size: 12px; color: #64748b;">${profile.email || databaseAccountSettings.email || ''}</div>
-                            ${customerTaxId ? `<div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-top: 4px;">Customer ${taxName} ID: ${customerTaxId}</div>` : ''}
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Invoice Reference</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #0f172a;">${txn.transactionId}</div>
-                            <div style="font-size: 12px; color: #64748b;">Date: ${formattedDate}</div>
-                        </div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th>Payment Gateway</th>
-                                <th style="text-align: right;">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td style="font-weight: bold;">${txn.planType || 'Pro Membership Plan'}</td>
-                                <td>${txn.paymentType || txn.paimentType || 'Card / PayPal / Razorpay'}</td>
-                                <td style="text-align: right; font-weight: bold;">${currency}${subtotal}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <div class="summary-box">
-                        <div style="display:flex; justify-content: space-between; margin-bottom:6px;">
-                            <span>Base Price: </span>
-                            <span style="font-weight:600;">${currency}${subtotal}</span>
-                        </div>
-                        <div style="display:flex; justify-content: space-between; margin-bottom:6px;">
-                            <span>${taxName} (${taxRate}%): </span>
-                            <span style="font-weight:600;">${currency}${taxAmount}</span>
-                        </div>
-                        <div class="total-row" style="display:flex; justify-content: space-between;">
-                            <span>Total Paid: </span>
-                            <span>${currency}${totalPrice}</span>
-                        </div>
-                    </div>
-
-                    <div class="footer">
-                        Thank you for subscribing to ${siteTitle}. Official compliance Tax Invoice. For support, visit ${window.location.hostname}
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
-        writeSanitizedPrintDocument(printWindow, invoiceHtml);
-        printWindow.print();
-    };
 
     useEffect(() => {
         const unsubscribe = fire.auth().onAuthStateChanged(async currentUser => {
@@ -568,7 +383,7 @@ function DashboardSettings(_props) {
                     const snapshot = profileSnapshot || profileRef.current;
                     const baseRevision = Number.isInteger(expectedRevision) ? expectedRevision : snapshot.revision;
                     const profileToSave = normalizeProfileForSave(snapshot);
-                    const result = await saveProfile(null, currentUser.uid, profileToSave, baseRevision);
+                    const result = await saveProfile(currentUser.uid, profileToSave, baseRevision);
                     if (!mountedRef.current) throw Object.assign(new Error('Profile save cancelled.'), { code: 'PROFILE_SAVE_CANCELLED' });
                     if (!result.success) throw Object.assign(new Error(result.error || 'Profile save failed.'), { code: result.code, remoteRevision: result.remoteRevision });
 
@@ -864,297 +679,118 @@ function DashboardSettings(_props) {
         }
     };
 
-    // REAL AI GENERATION FUNCTIONS (Synthesizes all filled profile details into Executive Bio)
+    // Summary rewriting is grounded in candidate-entered profile facts.
     const handleWriteAiSummary = async () => {
-        if (!profile.occupation && !profile.firstname) {
-            triggerNotification('Please fill in your Basic Info & Occupation before generating your Executive Bio.', 'error');
+        const cleanText = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const latestWorkRole = cleanText(profile.workExperiences?.[0]?.jobTitle);
+        const primaryRole = cleanText(profile.occupation) || latestWorkRole;
+        if (!primaryRole) {
+            triggerNotification('Enter your occupation or a work-history role before requesting a summary rewrite.', 'error');
             return;
         }
+        const yearsExp = calculateYearsOfExperience(profile.workExperiences || []);
+        const expDetails = (profile.workExperiences || []).map(work => {
+            const role = cleanText(work?.jobTitle);
+            const employer = cleanText(work?.company);
+            const dates = [cleanText(work?.startDate), cleanText(work?.endDate)].filter(Boolean).join(' to ');
+            return [[role, employer ? `${role ? 'at ' : ''}${employer}` : ''].filter(Boolean).join(' '), dates, cleanText(work?.description)]
+                .filter(Boolean).join('; ');
+        }).filter(Boolean).join(' | ');
+        const eduDetails = (profile.education || []).map(education =>
+            [cleanText(education?.degree), cleanText(education?.school), [cleanText(education?.startDate), cleanText(education?.endDate)].filter(Boolean).join(' to '), cleanText(education?.description)]
+                .filter(Boolean).join('; ')
+        ).filter(Boolean).join(' | ');
+        const skillsDetails = (profile.skills || []).map(skill => cleanText(typeof skill === 'string' ? skill : skill?.name || skill?.skillName)).filter(Boolean).join(', ');
+        const certsDetails = (profile.certifications || []).map(cert => cleanText(typeof cert === 'string' ? cert : [cert?.title || cert?.name, cert?.issuer].filter(Boolean).join(' — '))).filter(Boolean).join(', ');
+        const projectsDetails = (profile.projects || []).map(project => [cleanText(project?.title || project?.name), cleanText(project?.description)].filter(Boolean).join(': ')).filter(Boolean).join(' | ');
+        const existingText = cleanText(profile.summary);
+        const substantiveSource = [existingText, yearsExp, expDetails, eduDetails, skillsDetails, certsDetails, projectsDetails].filter(Boolean).join(' ');
+        if (substantiveSource.length < 20) {
+            triggerNotification('Add verified experience, skills, education, project, credential, or existing-summary facts before requesting a rewrite.', 'error');
+            return;
+        }
+
         setIsAiGenerating(true);
         try {
-            const yearsExp = calculateYearsOfExperience(profile.workExperiences || []);
-            const latestWorkRole = (profile.workExperiences && profile.workExperiences.length > 0 && profile.workExperiences[0].jobTitle) ? profile.workExperiences[0].jobTitle : '';
-            const primaryRole = profile.occupation || latestWorkRole || 'Professional';
-            const expDetails = (profile.workExperiences || []).map(w => `${w.jobTitle || 'Role'} at ${w.company || 'Company'} (${w.startDate || ''} - ${w.endDate || 'Present'}) ${w.description ? ': ' + w.description : ''}`).filter(Boolean).join('; ');
-            const eduDetails = (profile.education || []).map(e => `${e.degree || 'Degree'} from ${e.school || 'University'} (${e.startDate || ''} - ${e.endDate || ''})`).filter(Boolean).join('; ');
-            const skillsDetails = (profile.skills || []).map(s => (typeof s === 'string' ? s : s?.name || s?.skillName || '')).filter(Boolean).join(', ');
-            const certsDetails = (profile.certifications || []).map(c => typeof c === 'string' ? c : `${c?.title || c?.name || ''}${c?.issuer ? ' (' + c.issuer + ')' : ''}`).filter(Boolean).join(', ');
-            const projectsDetails = (profile.projects || []).map(p => `${p?.title || p?.name || 'Project'}: ${p?.description || ''}`).filter(Boolean).join('; ');
-
             const data = await runProfileAi('generate-summary', {
-                name: `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || 'Professional',
+                name: [cleanText(profile.firstname), cleanText(profile.lastname)].filter(Boolean).join(' '),
                 jobTitle: primaryRole,
                 occupation: primaryRole,
-                experience: yearsExp || 'several years of experience',
-                workHistory: expDetails || '',
-                education: eduDetails || '',
-                skills: skillsDetails || 'industry-standard competencies',
-                certifications: certsDetails || '',
-                projects: projectsDetails || '',
-                achievement: expDetails ? expDetails.substring(0, 150) : 'delivering high-impact solutions',
-                summaryType: summaryTone || 'executive',
-                tone: summaryTone || 'executive'
-            });
-
-            const summaryText = data?.summary || data?.description || data?.text || data?.data?.summary || (typeof data === 'string' ? data : null);
-
-            if (summaryText && typeof summaryText === 'string' && summaryText.trim().length > 0) {
-                setProfile((prev) => ({ ...prev, summary: summaryText.trim() }));
-                triggerNotification('Real AI Executive Bio generated based on your complete profile details!');
-            } else {
-                throw new Error('AI provider returned an unexpected summary format');
-            }
-        } catch (err) {
-            if (err?.name === 'AbortError') return;
-            console.error('AI Summary Error:', err);
-
-            // Dynamic profile synthesis fallback
-            const primaryRole = profile.occupation || profile.workExperiences?.[0]?.jobTitle || 'Industry Professional';
-            const yearsExp = calculateYearsOfExperience(profile.workExperiences || []);
-            const skillsList = (profile.skills || []).map(s => typeof s === 'string' ? s : s?.name || s?.skillName).filter(Boolean).slice(0, 4).join(', ');
-
-            let synthesizedBio = `${primaryRole} with ${yearsExp ? yearsExp + ' of' : 'extensive'} proven experience delivering high-impact solutions. `;
-            if (skillsList) synthesizedBio += `Proficient in ${skillsList}, with a strong background in driving technical excellence and cross-functional leadership. `;
-            synthesizedBio += `Dedicated to building scalable, efficient systems and achieving organizational objectives.`;
-
-            setProfile((prev) => ({ ...prev, summary: synthesizedBio }));
-
-            const friendlyMessage = err.code === 'EMAIL_VERIFICATION_REQUIRED'
-                ? 'Please verify your email address to use AI features. A profile draft has been created for you.'
-                : err.code === 'AUTH_REQUIRED'
-                ? 'Please sign in to use AI features. A profile draft has been created for you.'
-                : (err.message || 'AI service was busy. A personalized draft bio has been created for you.');
-
-            triggerNotification(friendlyMessage, 'error');
-        } finally {
-            setIsAiGenerating(false);
-        }
-    };
-
-    async (index) => {;
-        const job = (profile.workExperiences || [])[index];
-        if (!job || !job.jobTitle) {
-            triggerNotification('Please enter the Job Title for this position first.', 'error');
-            return;
-        }
-        setIsAiGenerating(true);
-        try {
-            const data = await runProfileAi('generate-work-description', {
-                jobTitle: job.jobTitle,
-                employer: job.company || 'Organization',
-                city: job.city || '',
-                existingText: job.description || '',
-            });
-            const suggestions = data?.suggestions || data?.bullets || data?.items || data?.data?.suggestions || (Array.isArray(data) ? data : []);
-            if (suggestions && suggestions.length > 0) {
-                const bulletText = suggestions.map(s => `• ${String(s).replace(/^[•\-*]\s*/, '')}`).join('\n');
-                updateWorkExperience(index, 'description', bulletText);
-                triggerNotification('Real AI Work Experience bullet points generated!');
-            } else {
-                throw new Error('Invalid AI suggestions');
-            }
-        } catch (err) {
-            if (err?.name === 'AbortError') return;
-            console.error('AI Work Description Error:', err);
-            // Dynamic fallback bullet points
-            const fallbackBullets = [
-                `• Led and executed ${job.jobTitle} key initiatives, improving operational efficiency and product quality.`,
-                `• Collaborated with cross-functional teams to deliver scalable, high-performance solutions.`,
-                `• Mentored team members, streamlined workflows, and upheld industry best practices.`
-            ].join('\n');
-            updateWorkExperience(index, 'description', fallbackBullets);
-            triggerNotification('A draft set of work experience bullet points has been generated.', 'info');
-        } finally {
-            setIsAiGenerating(false);
-        }
-    };
-
-    // DYNAMIC AI RECOMMENDATIONS FOR SKILLS & CERTIFICATIONS BASED ON ALL ENTERED DETAILS
-    const handleRecommendAiSkills = async () => {
-        setIsAiGenerating(true);
-        const effectiveRole = (profile.occupation && profile.occupation.trim()) || (profile.workExperiences?.[0]?.jobTitle) || 'Software Engineer / Professional';
-        try {
-            const expDetails = (profile.workExperiences || []).map(w => `${w.jobTitle || 'Role'} at ${w.company || ''}`).filter(Boolean).join('; ');
-            const eduDetails = (profile.education || []).map(e => `${e.degree || ''} from ${e.school || ''}`).filter(Boolean).join('; ');
-            const projDetails = (profile.projects || []).map(p => p?.title || p?.name).filter(Boolean).join(', ');
-            const existing = (profile.skills || []).map(s => (typeof s === 'string' ? s : s?.name || s?.skillName)).filter(Boolean);
-
-            const data = await runProfileAi('generate-skills', {
-                jobTitle: effectiveRole,
-                occupation: effectiveRole,
-                workHistory: expDetails,
-                education: eduDetails,
-                projects: projDetails,
-                existingSkills: existing,
-            });
-
-            const skillsList = data?.skills || data?.competencies || data?.items || data?.data?.skills || (Array.isArray(data) ? data : []);
-
-            if (skillsList && Array.isArray(skillsList) && skillsList.length > 0) {
-                const unadded = skillsList.filter(s => {
-                    const name = typeof s === 'string' ? s : s?.name || s?.skill || s?.title;
-                    return name && !existing.some(e => e.toLowerCase() === name.toLowerCase());
-                });
-
-                const itemsToReview = (unadded.length > 0 ? unadded : skillsList).map((s, idx) => {
-                    const raw = typeof s === 'string' ? s : s?.name || s?.skill || s?.title;
-                    const cleaned = cleanSkillName(raw);
-                    const category = (typeof s === 'object' && s?.category) ? s.category : (idx < 6 ? 'mandatory' : 'recommended');
-                    return { name: cleaned, category };
-                }).filter(s => s.name);
-
-                if (itemsToReview.length > 0) {
-                    setAiModalState({
-                        isOpen: true,
-                        title: `Review AI Recommended Skills for ${effectiveRole}`,
-                        type: 'skills',
-                        items: itemsToReview,
-                        onApply: (approvedItems) => {
-                            const newSkills = approvedItems.map(item => ({ name: cleanSkillName(item.name || item.title), level: 'Expert' }));
-                            setProfile(prev => {
-                                const existingNames = new Set((prev.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase()));
-                                const trulyNew = newSkills.filter(s => !existingNames.has(s.name.toLowerCase()));
-                                return {
-                                    ...prev,
-                                    skills: [...(prev.skills || []), ...trulyNew]
-                                };
-                            });
-                            triggerNotification(`Added ${approvedItems.length} approved ATS skills to your profile!`);
-                        }
-                    });
-                } else {
-                    triggerNotification('Your skills list already covers all top recommended skills!');
-                }
-            } else {
-                throw new Error('Invalid skills format');
-            }
-        } catch (err) {
-            if (err?.name === 'AbortError') return;
-            console.error('AI Skills Recommendation Error:', err);
-            // Resilient instant fallback so the user is never blocked
-            const fallbackSkills = [
-                { name: 'Problem Solving', category: 'mandatory' },
-                { name: 'Team Collaboration', category: 'mandatory' },
-                { name: 'Project Management', category: 'mandatory' },
-                { name: 'Critical Thinking', category: 'mandatory' },
-                { name: 'Communication', category: 'mandatory' },
-                { name: 'Agile & Scrum Methodologies', category: 'recommended' },
-                { name: 'Data Analysis', category: 'recommended' },
-                { name: 'Strategic Planning', category: 'recommended' },
-            ];
-            setAiModalState({
-                isOpen: true,
-                title: `Review Recommended Skills for ${effectiveRole}`,
-                type: 'skills',
-                items: fallbackSkills,
-                onApply: (approvedItems) => {
-                    const newSkills = approvedItems.map(item => ({ name: cleanSkillName(item.name || item.title), level: 'Expert' }));
-                    setProfile(prev => {
-                        const existingNames = new Set((prev.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase()));
-                        const trulyNew = newSkills.filter(s => !existingNames.has(s.name.toLowerCase()));
-                        return { ...prev, skills: [...(prev.skills || []), ...trulyNew] };
-                    });
-                    triggerNotification(`Added ${approvedItems.length} recommended skills to your profile!`);
-                }
-            });
-        } finally {
-            setIsAiGenerating(false);
-        }
-    };
-
-    const handleRecommendAiCertifications = async () => {
-        setIsAiGenerating(true);
-        const effectiveRole = (profile.occupation && profile.occupation.trim()) || (profile.workExperiences?.[0]?.jobTitle) || 'Software Engineer / Professional';
-        try {
-            const expDetails = (profile.workExperiences || []).map(w => `${w.jobTitle || 'Role'} at ${w.company || ''}`).filter(Boolean).join('; ');
-            const eduDetails = (profile.education || []).map(e => `${e.degree || ''} from ${e.school || ''}`).filter(Boolean).join('; ');
-            const skillsDetails = (profile.skills || []).map(s => (typeof s === 'string' ? s : s?.name || s?.skillName)).filter(Boolean).join(', ');
-            const existingCerts = (profile.certifications || []).map(c => typeof c === 'string' ? c : c?.title || c?.name).filter(Boolean);
-
-            const data = await runProfileAi('generate-certifications', {
-                jobTitle: effectiveRole,
-                occupation: effectiveRole,
+                experience: yearsExp,
                 workHistory: expDetails,
                 education: eduDetails,
                 skills: skillsDetails,
-                existingCertifications: existingCerts,
+                certifications: certsDetails,
+                projects: projectsDetails,
+                existingText,
+                tone: summaryTone || 'balanced',
             });
-
-            const certsList = data?.certifications || data?.certs || data?.items || data?.data?.certifications || (Array.isArray(data) ? data : []);
-
-            if (certsList && Array.isArray(certsList) && certsList.length > 0) {
-                const unadded = certsList.filter(c => {
-                    const title = typeof c === 'string' ? c : c?.title || c?.name;
-                    return title && !existingCerts.some(e => e.toLowerCase() === title.toLowerCase());
-                });
-
-                const itemsToReview = (unadded.length > 0 ? unadded : certsList).map((c, idx) => {
-                    const title = typeof c === 'string' ? c : (c?.title || c?.name || '');
-                    const issuer = typeof c === 'object' ? (c?.issuer || 'Accredited Organization') : 'Accredited Organization';
-                    const category = (typeof c === 'object' && c?.category) ? c.category : (idx < 3 ? 'mandatory' : 'recommended');
-                    return { title, issuer, category };
-                }).filter(c => c.title);
-
-                if (itemsToReview.length > 0) {
-                    setAiModalState({
-                        isOpen: true,
-                        title: `Review Industry Certifications for ${effectiveRole}`,
-                        type: 'certifications',
-                        items: itemsToReview,
-                        onApply: (approvedItems) => {
-                            const newCerts = approvedItems.map((c, i) => ({
-                                id: `cert_ai_${Date.now()}_${i}`,
-                                title: c.title || c.name,
-                                issuer: c.issuer || 'Professional Accrediting Body',
-                                date: `${new Date().getFullYear()}`
-                            }));
-                            setProfile(prev => {
-                                const existingTitles = new Set((prev.certifications || []).map(c => (c.title || '').toLowerCase()));
-                                const trulyNew = newCerts.filter(c => !existingTitles.has(c.title.toLowerCase()));
-                                return {
-                                    ...prev,
-                                    certifications: [...(prev.certifications || []), ...trulyNew]
-                                };
-                            });
-                            triggerNotification(`Added ${approvedItems.length} approved certifications to your profile!`);
-                        }
-                    });
-                } else {
-                    triggerNotification('Your certifications list already covers all top recommended credentials!');
-                }
-            } else {
-                throw new Error('Invalid certifications format');
+            if (typeof data?.summary !== 'string' || !data.summary.trim()) {
+                throw new Error('No source-supported summary was returned');
             }
+            setProfile(prev => ({ ...prev, summary: data.summary.trim() }));
+            triggerNotification(data?._source === 'source-preserving-fallback'
+                ? 'The provider was unavailable; only your supplied facts were preserved. Review the wording.'
+                : 'Summary rewritten from your supplied profile facts. Review it before saving.',
+            data?._source === 'source-preserving-fallback' ? 'info' : 'success');
         } catch (err) {
             if (err?.name === 'AbortError') return;
-            console.error('AI Certifications Recommendation Error:', err);
-            // Resilient instant fallback so the user is never blocked
-            const fallbackCerts = [
-                { title: 'Project Management Professional (PMP)', issuer: 'Project Management Institute (PMI)', category: 'mandatory' },
-                { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance', category: 'mandatory' },
-                { title: 'AWS Certified Solutions Architect', issuer: 'Amazon Web Services', category: 'mandatory' },
-                { title: 'Certified Information Systems Security Professional (CISSP)', issuer: '(ISC)²', category: 'recommended' },
-            ];
+            console.error('AI summary rewrite error:', err);
+            triggerNotification(err?.code === 'INVALID_AI_INPUT'
+                ? err.message
+                : 'Your current summary was not changed because a source-supported rewrite is unavailable.', 'error');
+        } finally {
+            setIsAiGenerating(false);
+        }
+    };
+
+    // Skill ideas are recommendations only and require explicit user review.
+    const handleRecommendAiSkills = async () => {
+        const effectiveRole = String(profile.occupation || profile.workExperiences?.[0]?.jobTitle || '').trim();
+        if (!effectiveRole) {
+            triggerNotification('Enter an occupation or work-history role before requesting skill ideas.', 'error');
+            return;
+        }
+        setIsAiGenerating(true);
+        try {
+            const existing = (profile.skills || []).map(skill =>
+                String(typeof skill === 'string' ? skill : skill?.name || skill?.skillName || '').trim()
+            ).filter(Boolean);
+            const data = await runProfileAi('generate-skills', {
+                jobTitle: effectiveRole,
+                occupation: effectiveRole,
+                existingSkills: existing,
+            });
+            const skillsList = Array.isArray(data?.skills) ? data.skills : [];
+            const itemsToReview = skillsList.map(skill => ({
+                name: cleanSkillName(typeof skill === 'string' ? skill : skill?.name || skill?.skill || skill?.title),
+                category: 'recommended',
+            })).filter(skill => skill.name && !existing.some(value => value.toLowerCase() === skill.name.toLowerCase()));
+            if (!itemsToReview.length) {
+                triggerNotification('No additional skill ideas are available. Your profile was not changed.', 'info');
+                return;
+            }
             setAiModalState({
                 isOpen: true,
-                title: `Review Recommended Certifications for ${effectiveRole}`,
-                type: 'certifications',
-                items: fallbackCerts,
-                onApply: (approvedItems) => {
-                    const newCerts = approvedItems.map((c, i) => ({
-                        id: `cert_ai_${Date.now()}_${i}`,
-                        title: c.title || c.name,
-                        issuer: c.issuer || 'Professional Accrediting Body',
-                        date: `${new Date().getFullYear()}`
-                    }));
+                title: `Review skill ideas for ${effectiveRole} — add only skills you actually have`,
+                type: 'skills',
+                items: itemsToReview,
+                onApply: approvedItems => {
+                    const newSkills = approvedItems.map(item => ({
+                        name: cleanSkillName(item.name || item.title),
+                        level: '',
+                    })).filter(item => item.name);
                     setProfile(prev => {
-                        const existingTitles = new Set((prev.certifications || []).map(c => (c.title || '').toLowerCase()));
-                        const trulyNew = newCerts.filter(c => !existingTitles.has(c.title.toLowerCase()));
-                        return { ...prev, certifications: [...(prev.certifications || []), ...trulyNew] };
+                        const existingNames = new Set((prev.skills || []).map(skill => String(typeof skill === 'string' ? skill : skill.name || '').toLowerCase()));
+                        return { ...prev, skills: [...(prev.skills || []), ...newSkills.filter(skill => !existingNames.has(skill.name.toLowerCase()))] };
                     });
-                    triggerNotification(`Added ${approvedItems.length} recommended certifications to your profile!`);
-                }
+                    triggerNotification(`Added ${newSkills.length} skills you confirmed. Set each proficiency level yourself.`);
+                },
             });
+        } catch (err) {
+            if (err?.name === 'AbortError') return;
+            console.error('AI skill recommendation error:', err);
+            triggerNotification('Skill ideas are unavailable. Your profile was not changed.', 'error');
         } finally {
             setIsAiGenerating(false);
         }
@@ -1218,7 +854,7 @@ function DashboardSettings(_props) {
     const addSkill = () => {
         setProfile((prev) => ({
             ...prev,
-            skills: [...prev.skills, { name: '', level: 'Expert' }]
+            skills: [...prev.skills, { name: '', level: '' }]
         }));
     };
 
@@ -1291,7 +927,7 @@ function DashboardSettings(_props) {
     const addLanguage = () => {
         setProfile((prev) => ({
             ...prev,
-            languages: [...prev.languages, { id: `lang_${Date.now()}`, name: '', level: 'Native / Bilingual' }]
+            languages: [...prev.languages, { id: `lang_${Date.now()}`, name: '', level: '' }]
         }));
     };
     const updateLanguage = (index, field, value) => {
@@ -1354,7 +990,7 @@ function DashboardSettings(_props) {
         if (profileConflictRef.current) { triggerNotification('Resolve the newer profile revision before replacing the avatar.', 'error'); return; }
         setProfileSaveState('saving');
         const avatarOnly = { ...profileRef.current, selectedImage: croppedDataUrl };
-        const result = await saveProfile(null, currentUser.uid, avatarOnly, profileRef.current.revision);
+        const result = await saveProfile(currentUser.uid, avatarOnly, profileRef.current.revision);
         if (!result.success) {
             setProfileSaveState(result.code === 'PROFILE_CONFLICT' ? 'conflict' : 'failed');
             if (result.code === 'PROFILE_CONFLICT') setProfileConflict({ remoteRevision: result.remoteRevision });
@@ -1643,7 +1279,7 @@ function DashboardSettings(_props) {
                             </div>
                         )}
 
-                        {/* Sub-Tab 2: Professional Bio / Executive Summary (WITH REAL AI & TONE SELECTOR) */}
+                        {/* Sub-Tab 2: Professional Bio / source-grounded summary rewrite */}
                         {profileSubTab === 'summary' && (
                             <div className="space-y-4">
                                 <div className="flex flex-col gap-3">
@@ -1654,7 +1290,7 @@ function DashboardSettings(_props) {
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
                                         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0">Tone:</span>
-                                            {['executive', 'technical', 'creative', 'metric-focused'].map((toneKey) => (
+                                            {['balanced', 'concise', 'technical', 'executive'].map((toneKey) => (
                                                 <button
                                                     key={toneKey}
                                                     type="button"
@@ -1674,15 +1310,15 @@ function DashboardSettings(_props) {
                                             disabled={isAiGenerating}
                                             className="w-full sm:w-auto whitespace-nowrap px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 shrink-0">
                                             <FaMagic className="w-3.5 h-3.5" />
-                                            <span>{isAiGenerating ? 'Writing with Real AI...' : 'Write Executive Bio with AI'}</span>
+                                            <span>{isAiGenerating ? 'Rewriting supplied facts...' : 'Rewrite Bio from My Facts'}</span>
                                         </button>
                                     </div>
                                 </div>
-                                <textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Write or select a tone above and click 'Write Executive Bio with AI' to generate..." className="w-full h-52 text-xs p-4 bg-white border border-slate-300 rounded-xl font-sans leading-relaxed text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                <textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Enter factual profile details, then optionally ask AI to rewrite them without adding claims." className="w-full h-52 text-xs p-4 bg-white border border-slate-300 rounded-xl font-sans leading-relaxed text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
                             </div>
                         )}
 
-                        {/* Sub-Tab 3: Work History Array (WITH REAL AI) */}
+                        {/* Sub-Tab 3: Work History Array */}
                         {profileSubTab === 'experience' && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1932,7 +1568,7 @@ function DashboardSettings(_props) {
                                                 <span>Auto-Recommend Top Skills (AI)</span>
                                             </button>
                                             <button type="button" onClick={addSkill} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
-                                                Add Manually
+                                                Add Certification
                                             </button>
                                         </div>
                                     </div>
@@ -1987,17 +1623,10 @@ function DashboardSettings(_props) {
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional Certifications & Credentials</h3>
-                                        <p className="text-xs text-slate-500">Add AWS, PMP, Scrum Master, or professional licenses.</p>
+                                        <p className="text-xs text-slate-500">Add only credentials you have earned, using the issuer, issue date, and credential link from your record.</p>
                                     </div>
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                                        <button
-                                            type="button"
-                                            onClick={handleRecommendAiCertifications}
-                                            disabled={isAiGenerating}
-                                            className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
-                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>Recommend Certifications (AI)</span>
-                                        </button>
+                                        
                                         <button type="button" onClick={addCertification} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
                                             <FaPlus className="w-3 h-3" /> Add Certification
                                         </button>
@@ -2008,16 +1637,9 @@ function DashboardSettings(_props) {
                                     <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
                                         <p className="text-xs font-semibold text-slate-700">No certifications saved in Master Profile</p>
                                         <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={handleRecommendAiCertifications}
-                                                disabled={isAiGenerating}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
-                                                <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                                <span>Recommend Industry Certifications (AI)</span>
-                                            </button>
+                                            
                                             <button type="button" onClick={addCertification} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
-                                                Add Manually
+                                                Add Certification
                                             </button>
                                         </div>
                                     </div>
@@ -2059,14 +1681,7 @@ function DashboardSettings(_props) {
 
                                 {profile.certifications.length > 0 && (
                                     <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={handleRecommendAiCertifications}
-                                            disabled={isAiGenerating}
-                                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
-                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>Recommend Certifications (AI)</span>
-                                        </button>
+                                        
                                         <button type="button" onClick={addCertification} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Certification
                                         </button>
@@ -2095,7 +1710,7 @@ function DashboardSettings(_props) {
                                             <button
                                                 key={lang}
                                                 type="button"
-                                                onClick={() => setProfile((prev) => ({ ...prev, languages: [...prev.languages, { id: `lang_${Date.now()}`, name: lang, level: 'Native / Bilingual' }] }))}
+                                                onClick={() => setProfile((prev) => ({ ...prev, languages: [...prev.languages, { id: `lang_${Date.now()}`, name: lang, level: '' }] }))}
                                                 className="px-3 py-1.5 text-[11px] font-semibold bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all"
                                             >
                                                 + {lang}
@@ -2125,10 +1740,11 @@ function DashboardSettings(_props) {
                                                         inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                                     />
                                                     <select
-                                                        value={lang.level || 'Native / Bilingual'}
+                                                        value={lang.level || ''}
                                                         onChange={(e) => updateLanguage(idx, 'level', e.target.value)}
                                                         className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                                     >
+                                                        <option value="" disabled>Select your proficiency</option>
                                                         {PROFICIENCY_LEVELS.map((lvl) => (
                                                             <option key={lvl} value={lvl}>{lvl}</option>
                                                         ))}

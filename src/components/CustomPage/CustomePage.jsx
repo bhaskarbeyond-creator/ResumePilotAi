@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import './CustomPage.scss';
-import { getPageByName, getPages, getSocialLinks, getWebsiteData } from '../../firestore/dbOperations';
+import { getPageByName, getPages, getSocialLinks, getWebsiteData } from '../../services/api/platform';
 // Images
 
 import { withTranslation } from 'react-i18next';

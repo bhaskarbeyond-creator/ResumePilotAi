@@ -65,9 +65,9 @@ test('tracked files contain no recognizable private credentials', () => {
 });
 
 test('the leaked production database credential is absent from tracked files', () => {
-  // A production MySQL password was previously committed as a fallback in
-  // scripts/live-firestore-to-mysql-sync.mjs and in scratch automation. The
-  // value must remain rotated-out and never reintroduced in any form.
+  // A production MySQL password was historically committed in retired
+  // synchronization tooling and scratch automation. The value must remain
+  // rotated out and never be reintroduced in any form.
   const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: root }).toString().split('\0').filter(Boolean);
   const findings = [];
   for (const file of tracked) {
@@ -145,13 +145,13 @@ test('resume imports use bundled parsers and content signatures, not runtime CDN
 });
 
 test('payment and AI secrets are split from browser-readable settings', () => {
-  const operations = read('src/firestore/dbOperations.js');
-  const rules = read('SecurityRules.txt');
-  assert.match(operations, /\/api\/admin\/payment-settings/);
-  assert.match(operations, /redactSubscriptionSecrets/);
-  assert.doesNotMatch(operations, /subscriptions_cache', JSON\.stringify\(subData\)/);
-  assert.match(rules, /ai_providers','payment_providers','oauth_providers/);
-  assert.match(rules, /system_settings','subscriptions/);
+  const applicationData = read('src/services/api/platform.js');
+  const paymentAdmin = read('backend/services/paymentAdmin.js');
+  assert.match(applicationData, /\/api\/admin\/payment-settings/);
+  assert.match(applicationData, /redactSubscriptionSecrets/);
+  assert.doesNotMatch(applicationData, /subscriptions_cache', JSON\.stringify\(subData\)/);
+  assert.match(paymentAdmin, /mariadb|mysql/i);
+  assert.doesNotMatch(paymentAdmin, /firestore/i);
 });
 
 test('Firebase bearer interceptor is restricted to same-origin API URLs', () => {
@@ -163,7 +163,8 @@ test('Firebase bearer interceptor is restricted to same-origin API URLs', () => 
 
 test('browser code has no email, hostname, UID-pattern, or Firestore-field admin backdoor', () => {
   const sensitiveFiles = [
-    'src/firestore/dbOperations.js',
+    'src/services/api/platform.js',
+    'src/services/api/users.js',
     'src/components/auth/login/Login.jsx',
     'src/components/auth/register/Register.jsx',
     'src/components/admin/Admin.jsx',
@@ -174,7 +175,7 @@ test('browser code has no email, hostname, UID-pattern, or Firestore-field admin
   ].map(read).join('\n');
   assert.doesNotMatch(sensitiveFiles, /email\s*===?\s*(?:conf|config)\.adminEmail|admin@admin\.com|admin_test_uid|UID_TEST_|uid\.includes\(['"]admin/i);
   assert.doesNotMatch(read('src/components/initailisation/initialisationSetup/initialisationSetup.jsx'), /createUserWithEmailAndPassword|setA\s*\(/);
-  assert.match(read('src/firestore/dbOperations.js'), /getIdTokenResult/);
+  assert.match(read('src/services/api/platform.js'), /getIdTokenResult/);
 });
 
 test('OAuth never creates unsigned local browser sessions', () => {
@@ -202,14 +203,12 @@ test('static entry point has an enforcing CSP without inline-script escape hatch
   assert.match(apache, /Referrer-Policy "no-referrer"/);
 });
 
-test('Firestore deploy config includes both deny-by-default stores', () => {
+test('Firebase deploy config retains Auth only and cannot deploy application-data stores', () => {
   const config = JSON.parse(read('firebase.json'));
-  assert.equal(config.firestore.rules, 'SecurityRules.txt');
-  assert.equal(config.database.rules, 'Realtime_database_Security_rules.txt');
-  assert.match(read('SecurityRules.txt'), /match \/\{document=\*\*\} \{ allow read, write: if false; \}/);
-  const realtime = JSON.parse(read('Realtime_database_Security_rules.txt'));
-  assert.equal(realtime.rules['.read'], false);
-  assert.equal(realtime.rules['.write'], false);
-  assert.equal(realtime.rules.messages.$conversationId.$messageId['.write'], false);
-  assert.equal(realtime.rules.conversations.$conversationId['.write'], false);
+  assert.deepEqual(Object.keys(config).sort(), ['emulators']);
+  assert.deepEqual(Object.keys(config.emulators).sort(), ['auth', 'ui']);
+  assert.equal(config.emulators.auth.port, 9099);
+  for (const retired of ['SecurityRules.txt', 'Realtime_database_Security_rules.txt', 'firestore.indexes.json']) {
+    assert.equal(fs.existsSync(path.join(root, retired)), false);
+  }
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import './DashboardActions.scss';
-import { getStatesOfUser } from '../../../firestore/dbOperations';
+import { getStatesOfUser } from '../../../services/api/platform';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { FiDownloadCloud } from 'react-icons/fi';
 import { MdAdsClick } from 'react-icons/md';
@@ -25,7 +25,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
         localStorage.removeItem('currentCoverId');
     };
 
-    // get states of user from firestore
+    // Load the authenticated user's document-generation counters
     React.useEffect(() => {
         const userId = fire.auth().currentUser?.uid;
         let active = true;

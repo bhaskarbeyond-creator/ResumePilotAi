@@ -117,7 +117,27 @@ test('writes are rejected with a controlled error during MariaDB outage — no F
     assert.equal(fsStore.has('user:u3'), false, 'Firestore must never receive the write');
 });
 
-test('both engines down: write throws SERVICE_DEGRADED and does not fake success', async () => {
+test('ordinary business write errors do not trip MariaDB availability state', async () => {
+    authority.__resetForTests({ mysqlHealthy: true });
+    const mysqlRepo = mockRepo('mysql');
+    mysqlRepo.saveUser = async () => {
+        const error = new Error('duplicate email');
+        error.code = 'ER_DUP_ENTRY';
+        error.status = 409;
+        throw error;
+    };
+    const repo = new ResilientRepository({ mysqlRepo });
+
+    await assert.rejects(() => repo.saveUser('duplicate', {}), { code: 'ER_DUP_ENTRY', status: 409 });
+    await assert.rejects(() => repo.saveUser('duplicate', {}), { code: 'ER_DUP_ENTRY', status: 409 });
+
+    const status = authority.getStatus();
+    assert.equal(status.metrics.writeFailures, 0);
+    assert.equal(status.health.mysql.consecutiveFailures, 0);
+    assert.equal(status.canAcceptWrites, true);
+});
+
+test('MariaDB down: write throws SERVICE_DEGRADED and does not fake success', async () => {
     authority.__resetForTests({ configuredPrimary: 'mysql' });
     authority.recordFailure('mysql', 'write', new Error('down'));
     authority.recordFailure('mysql', 'write', new Error('down'));

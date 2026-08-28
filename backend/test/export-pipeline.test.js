@@ -1,8 +1,11 @@
 process.env.NODE_ENV = 'test';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+process.env.ENTERPRISE_ENCRYPTION_KEY ||= crypto.randomBytes(32).toString('base64');
 const request = require('supertest');
 const { setTokenVerifierForTests } = require('../security/auth');
+const { setPoolForTests } = require('../database/mysql');
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
@@ -14,40 +17,111 @@ setTokenVerifierForTests(async token => {
 
 const active = { membership: 'Premium', paymentStatus: 'ACTIVE', membershipEnds: new Date(Date.now() + 86_400_000) };
 
-function buildDb() {
-  const documents = new Map([
-    ['users/alice', { ...active }],
-    ['users/bob', { ...active }],
-    ['users/basic', { membership: 'Basic', paymentStatus: 'NONE', membershipEnds: new Date(0) }],
-    ['users/alice/resumes/resume-alice-01', { firstname: 'Asha', template: 'Cv1', revision: 3 }],
-    ['users/alice/covers/cover-alice-01', { firstname: 'Asha', template: 'Cover1', revision: 1 }],
-    ['users/basic/resumes/resume-basic-01', { firstname: 'Basic', template: 'Cv1' }],
-    ['pb/published-01', { ownerUid: 'alice', isPublished: true, publicationMode: 'explicit', object: '{"firstname":"Asha","template":"Cv1"}' }],
-    ['pb/revoked-01', { ownerUid: 'alice', isPublished: false, publicationMode: 'explicit', object: '{"firstname":"Asha","template":"Cv1"}' }],
-    ['pb/implicit-01', { ownerUid: 'alice', isPublished: true, object: '{"firstname":"Asha","template":"Cv1"}' }],
-  ]);
-  const ref = path => ({
-    path,
-    async get() { const data = documents.get(path); return { exists: Boolean(data), data: () => data }; },
-    async create(value) { documents.set(path, value); },
-    async delete() { documents.delete(path); },
-    collection(name) { return { doc: id => ref(`${path}/${name}/${id}`) }; },
-  });
-  return {
-    documents,
-    collection: name => ({ doc: id => ref(`${name}/${id}`) }),
-    async runTransaction(callback) {
-      return callback({
-        async get(reference) { const data = documents.get(reference.path); return { exists: Boolean(data), data: () => data }; },
-        delete(reference) { documents.delete(reference.path); },
-        set(reference, value) { documents.set(reference.path, value); },
-      });
-    },
-  };
+/**
+ * Narrow SQL-contract double for this route suite. Requests still traverse the
+ * canonical ResilientRepository -> MySQLRepository stack; only the disposable
+ * MariaDB connection boundary is replaced. The real-engine gate exercises the
+ * same queries against MariaDB 11.4.
+ */
+class ExportMariaDbPool {
+  constructor() { this.reset(); }
+
+  reset() {
+    this.users = new Map([
+      ['alice', { id: 'alice', email: 'alice@example.com', role: 'USER', revision: 1, ...active }],
+      ['bob', { id: 'bob', email: 'bob@example.com', role: 'USER', revision: 1, ...active }],
+      ['basic', { id: 'basic', email: 'basic@example.com', role: 'USER', revision: 1, membership: 'Basic', paymentStatus: 'NONE', membershipEnds: new Date(0) }],
+    ]);
+    this.resumes = new Map([
+      ['resume-alice-01', { id: 'resume-alice-01', user_id: 'alice', firstname: 'Asha', template: 'Cv1', revision: 3 }],
+      ['resume-basic-01', { id: 'resume-basic-01', user_id: 'basic', firstname: 'Basic', template: 'Cv1', revision: 1 }],
+    ]);
+    this.covers = new Map([
+      ['cover-alice-01', { id: 'cover-alice-01', user_id: 'alice', title: 'Asha Cover', template: 'Cover1', data: JSON.stringify({ firstname: 'Asha', template: 'Cover1', revision: 1 }) }],
+    ]);
+    this.publicResumes = new Map([
+      ['published-01', { id: 'published-01', owner_uid: 'alice', is_published: 1, publication_mode: 'explicit', object: JSON.stringify({ firstname: 'Asha', template: 'Cv1' }), source_revision: 3, publication_revision: 1 }],
+      ['revoked-01', { id: 'revoked-01', owner_uid: 'alice', is_published: 0, publication_mode: 'explicit', object: JSON.stringify({ firstname: 'Asha', template: 'Cv1' }) }],
+      ['implicit-01', { id: 'implicit-01', owner_uid: 'alice', is_published: 1, publication_mode: null, object: JSON.stringify({ firstname: 'Asha', template: 'Cv1' }) }],
+    ]);
+    this.settings = new Map();
+    this.exportTokens = new Map();
+    this.quotaBuckets = new Map();
+  }
+
+  async query(sql, params = []) {
+    const normalized = String(sql).replace(/\s+/g, ' ').trim();
+    if (/^SELECT \* FROM resumes WHERE id = \? AND user_id = \? LIMIT 1$/i.test(normalized)) {
+      const row = this.resumes.get(params[0]);
+      return [[row && row.user_id === params[1] ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^SELECT \* FROM covers WHERE id = \? AND user_id = \? LIMIT 1$/i.test(normalized)) {
+      const row = this.covers.get(params[0]);
+      return [[row && row.user_id === params[1] ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^SELECT \* FROM public_resumes WHERE id = \? LIMIT 1$/i.test(normalized)) {
+      const row = this.publicResumes.get(params[0]);
+      return [[row ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^SELECT \* FROM users WHERE id = \? LIMIT 1$/i.test(normalized)) {
+      const row = this.users.get(params[0]);
+      return [[row ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^SELECT \* FROM system_settings WHERE category = \? LIMIT 1$/i.test(normalized)) {
+      const data = this.settings.get(params[0]);
+      return [[data === undefined ? null : { category: params[0], data: JSON.stringify(data), revision: 1 }].filter(Boolean), []];
+    }
+    if (/^SELECT count, expiresAt FROM enterprise_quota_buckets WHERE id = \? FOR UPDATE$/i.test(normalized)) {
+      const row = this.quotaBuckets.get(params[0]);
+      return [[row ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^INSERT INTO enterprise_quota_buckets /i.test(normalized)) {
+      this.quotaBuckets.set(params[0], { count: params[2], expiresAt: params[3] });
+      return [{ affectedRows: 1 }, []];
+    }
+    if (/^UPDATE enterprise_quota_buckets SET count = \?, expiresAt = \?/i.test(normalized)) {
+      this.quotaBuckets.set(params[2], { count: params[0], expiresAt: params[1] });
+      return [{ affectedRows: 1 }, []];
+    }
+    if (/^INSERT INTO export_render_tokens /i.test(normalized)) {
+      this.exportTokens.set(params[0], { payload: params[1], expires_at: params[2] });
+      return [{ affectedRows: 1 }, []];
+    }
+    if (/^SELECT payload, expires_at FROM export_render_tokens WHERE token_hash = \? FOR UPDATE$/i.test(normalized)) {
+      const row = this.exportTokens.get(params[0]);
+      return [[row ? { ...row } : null].filter(Boolean), []];
+    }
+    if (/^DELETE FROM export_render_tokens WHERE token_hash = \?$/i.test(normalized)) {
+      const removed = this.exportTokens.delete(params[0]);
+      return [{ affectedRows: removed ? 1 : 0 }, []];
+    }
+    if (/^DELETE FROM export_render_tokens WHERE expires_at < \? LIMIT 500$/i.test(normalized)) {
+      let affectedRows = 0;
+      for (const [key, row] of this.exportTokens) {
+        if (Number(row.expires_at) < Number(params[0])) { this.exportTokens.delete(key); affectedRows += 1; }
+      }
+      return [{ affectedRows }, []];
+    }
+    throw new Error(`Unexpected export MariaDB query: ${normalized}`);
+  }
+
+  async getConnection() {
+    const pool = this;
+    return {
+      beginTransaction: async () => {},
+      query: (sql, params) => pool.query(sql, params),
+      commit: async () => {},
+      rollback: async () => {},
+      release() {},
+    };
+  }
+
+  async end() {}
 }
 
+const pool = new ExportMariaDbPool();
+setPoolForTests(pool);
 const app = require('../index');
-app.set('db', buildDb());
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 const post = (path, token, body) => {
   const call = request(app).post(path);
@@ -73,7 +147,7 @@ test('public export still refuses revoked, implicit, and unknown publications', 
   }
 });
 
-test('cover-letter templates are accepted and resolved from the owner-scoped covers collection', async () => {
+test('cover-letter templates are accepted and resolved from the owner-scoped covers table', async () => {
   const response = await post('/api/export', 'alice', { resumeId: 'cover-alice-01', resumeName: 'Cover1', language: 'en' });
   assert.equal(AUTHORIZED_FOR_RENDER(response.status), true,
     `Cover1 export must reach the renderer, got ${response.status} ${JSON.stringify(response.body)}`);
@@ -92,7 +166,7 @@ test('private export enforces authentication, ownership, and entitlement server-
   assert.equal((await post('/api/export', 'basic', { resumeId: 'resume-basic-01', resumeName: 'Cv1', language: 'en' })).status, 402);
 });
 
-test('cross-account DOCX export is refused for both resume and cover collections', async () => {
+test('cross-account DOCX export is refused for both owner-scoped tables', async () => {
   assert.equal((await post('/api/export-docx', 'bob', { resumeId: 'resume-alice-01', resumeName: 'Cv1' })).status, 404);
   assert.equal((await post('/api/export-docx', 'bob', { resumeId: 'cover-alice-01', resumeName: 'Cover1' })).status, 404);
 });
@@ -119,15 +193,13 @@ test('owner DOCX export resolves cover documents and returns a real OOXML packag
 });
 
 test('DOCX export rejects invalid template identifiers and template mismatches', async () => {
-  app.set('db', buildDb());
-  assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv99' })).status, 400);
+    assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv99' })).status, 400);
   assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: '../etc/passwd' })).status, 400);
   assert.equal((await post('/api/export-docx', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv8' })).status, 400, 'stored Cv1 vs requested Cv8 is a mismatch');
 });
 
 test('DOCX export ignores client-supplied colors and still returns authentic Cv1 navy', async () => {
-  app.set('db', buildDb());
-  const response = await request(app)
+    const response = await request(app)
     .post('/api/export-docx')
     .set(bearer('alice'))
     .send({ resumeId: 'resume-alice-01', resumeName: 'Cv1', colors: { primary: '#FF00FF', secondary: '#00FF00' } })
@@ -146,10 +218,9 @@ test('DOCX export ignores client-supplied colors and still returns authentic Cv1
 });
 
 test('render-data endpoint is one-time, rejects malformed tokens, and never caches', async () => {
-  const db = buildDb();
-  app.set('db', db);
+  pool.reset();
   const { createExportRenderToken } = require('../security/exportTokens');
-  const token = await createExportRenderToken(db, { firstname: 'Asha', template: 'Cv1' });
+  const token = await createExportRenderToken({ firstname: 'Asha', template: 'Cv1' });
 
   const first = await request(app).get('/api/export-render-data').query({ token });
   assert.equal(first.status, 200);
@@ -167,8 +238,7 @@ test('render-data endpoint is one-time, rejects malformed tokens, and never cach
 });
 
 test('export errors return a stable code without leaking internal render diagnostics', async () => {
-  app.set('db', buildDb());
-  const response = await post('/api/export', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv1', language: 'en' });
+    const response = await post('/api/export', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv1', language: 'en' });
   if (response.status === 500) {
     assert.equal(response.body.error.code, 'EXPORT_FAILED');
     assert.equal(typeof response.body.error.requestId, 'string');
@@ -178,8 +248,7 @@ test('export errors return a stable code without leaking internal render diagnos
 });
 
 test('the concurrency ceiling is claimed before awaiting so parallel exports cannot overshoot', async () => {
-  app.set('db', buildDb());
-  const responses = await Promise.all(Array.from({ length: 12 }, () =>
+    const responses = await Promise.all(Array.from({ length: 12 }, () =>
     post('/api/export', 'alice', { resumeId: 'resume-alice-01', resumeName: 'Cv1', language: 'en' })));
 
   // Two distinct 429 controls exist: the concurrency ceiling ("busy") and the

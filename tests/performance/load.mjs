@@ -13,14 +13,17 @@ import mysql from 'mysql2/promise';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const EVIDENCE_DIR = path.join(ROOT, '.arena', 'evidence');
 
 const PORT = 8313;
-const DB = { host: '127.0.0.1', port: '3306', user: 'resumepilot', password: 'resumepilot_sandbox_pw', name: 'ai_resume_builder' };
+const DB = {
+  host: process.env.PERF_MARIADB_HOST || '127.0.0.1',
+  port: process.env.PERF_MARIADB_PORT || '3306',
+  user: process.env.PERF_MARIADB_USER || 'resumepilot',
+  password: process.env.PERF_MARIADB_PASSWORD || '',
+  name: process.env.PERF_MARIADB_DATABASE || 'ai_resume_builder',
+};
 
 // Thresholds — copied verbatim from tests/performance/SPEC.md (defined first).
 const THRESHOLDS = {
@@ -36,9 +39,8 @@ const THRESHOLDS = {
 
 const percentile = (sorted, p) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : 0;
 
-function summarize(latencies, errors, expectedStatuses = new Set([200])) {
+function summarize(latencies, errors) {
   const sorted = [...latencies].sort((a, b) => a - b);
-  const wallMs = Math.max(1, sorted.length ? Math.max(...latencies.map((_, i) => i)) : 1);
   return {
     count: latencies.length,
     errors,
@@ -81,6 +83,7 @@ async function runScenario({ name, concurrency, total, durationMs, request }) {
   await Promise.all(Array.from({ length: concurrency }, worker));
   const wallSec = Math.max(0.001, (Date.now() - startedAt) / 1000);
   const stats = summarize(latencies, errors);
+  stats.scenario = name;
   stats.expectedCodes = expectedCodes;
   stats.throughputRps = Math.round((latencies.length / wallSec) * 10) / 10;
   stats.errorRate = latencies.length ? errors / latencies.length : 0;
@@ -101,6 +104,7 @@ const json = async (base, method, url, { token, body } = {}) => {
 };
 
 async function main() {
+  if (!DB.password) throw new Error('PERF_MARIADB_PASSWORD is required for the disposable benchmark database');
   fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
   const db = await mysql.createConnection({ host: DB.host, port: Number(DB.port), user: DB.user, password: DB.password, database: DB.name });
 
@@ -143,7 +147,7 @@ async function main() {
   }, 2000);
 
   // Clean perf fixtures from any previous run so results are reproducible.
-  await db.query("DELETE FROM resumes WHERE id LIKE 'perf\_%'");
+  await db.query("DELETE FROM resumes WHERE id LIKE 'perf\\_%'");
   await db.query("DELETE FROM users WHERE id LIKE 'perf-%'");
 
   const report = { startedAt: new Date().toISOString(), scenarios: {}, thresholds: THRESHOLDS, failures: [] };

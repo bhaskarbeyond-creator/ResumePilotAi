@@ -1,11 +1,24 @@
 process.env.NODE_ENV = 'test';
 process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com';
+process.env.SMTP_USER = 'mailer@example.com';
 process.env.SMTP_PASS = 'fixture-mail-password';
+process.env.SMTP_HOST = 'smtp.example.com';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { setTokenVerifierForTests } = require('../security/auth');
+const RUN_MARIADB_INTEGRATION = process.env.RUN_MARIADB_INTEGRATION === 'true';
+if (RUN_MARIADB_INTEGRATION) {
+  require('./helpers/disposableMariaDb').loadDisposableMariaDb();
+}
+const mariaTest = (name, fn) => test(name, {
+  skip: RUN_MARIADB_INTEGRATION ? false : 'NOT VERIFIED: requires a disposable migrated MariaDB database',
+}, fn);
+
+if (!RUN_MARIADB_INTEGRATION) {
+  require('./helpers/routesIntegrationContract').installRoutesIntegrationContract();
+}
 
 setTokenVerifierForTests(async token => {
   const now = Math.floor(Date.now() / 1000);
@@ -21,9 +34,6 @@ setTokenVerifierForTests(async token => {
 });
 
 const app = require('../index');
-// Isolate all tests from live Firestore. Tests that require database access mock it explicitly
-// per-test using app.set('db', mockDb) and restore in finally blocks.
-app.set('db', null);
 const bearer = token => ({ Authorization: `Bearer ${token}` });
 
 test('minimal health endpoint is public and does not cache', async () => {
@@ -41,7 +51,7 @@ test('readiness is truthful: reflects the MySQL data plane, never a secondary st
   // environment is ready; with MySQL down it must report not_ready (503).
   assert.equal(response.status, mysql.connected ? 200 : 503);
   assert.equal(response.body.status, mysql.connected ? 'ready' : 'not_ready');
-  assert.equal(response.body.authoritativeDatabase, 'mysql');
+  assert.equal(response.body.authoritativeDatabase, 'MARIADB');
   assert.equal(response.body.checks.firestoreDataPlane, 'REMOVED', 'readiness must never depend on a secondary store');
   assert.equal(response.body.checks.mysql.status, mysql.connected ? 'READY' : 'UNAVAILABLE');
   assert.equal(response.body.checks.aiProviders, 'NOT_CHECKED');
@@ -107,17 +117,21 @@ test('admin lacking super-admin role cannot mutate or test AI provider settings'
   }
 });
 
-test('email settings projection exposes configured state but no runtime credential', async () => {
-  for (const route of ['/api/email/admin/settings', '/api/admin/settings']) {
-    const response = await request(app).get(route).set(bearer('admin'));
-    assert.equal(response.status, 200, route);
-    assert.equal(response.body.settings.smtp.passwordConfigured, true, route);
-    assert.equal(Object.hasOwn(response.body.settings.smtp, 'password'), false, route);
-    assert.doesNotMatch(JSON.stringify(response.body), /fixture-mail-password/, route);
-  }
+test('email settings projections expose configured state without runtime credentials', async () => {
+  const runtime = await request(app).get('/api/email/admin/settings').set(bearer('admin'));
+  assert.equal(runtime.status, 200);
+  assert.equal(runtime.body.settings.smtp.passwordConfigured, true);
+  assert.equal(Object.hasOwn(runtime.body.settings.smtp, 'password'), false);
+  assert.doesNotMatch(JSON.stringify(runtime.body), /fixture-mail-password/);
+
+  const generic = await request(app).get('/api/admin/settings').set(bearer('admin'));
+  assert.equal(generic.status, 200);
+  assert.equal(generic.body.settings.smtp.enabled, true);
+  assert.equal(Object.hasOwn(generic.body.settings.smtp, 'password'), false);
+  assert.doesNotMatch(JSON.stringify(generic.body), /fixture-mail-password/);
 });
 
-test('Twilio settings persist in the canonical MySQL secret namespace without response disclosure', async () => {
+mariaTest('Twilio settings persist in the canonical MySQL secret namespace without response disclosure', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
   await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')");
@@ -143,7 +157,7 @@ test('Twilio settings persist in the canonical MySQL secret namespace without re
   }
 });
 
-test('Ads create and revision-safe delete persist through audited backend routes', async () => {
+mariaTest('Ads create and revision-safe delete persist through audited backend routes', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
   await pool.query("DELETE FROM canonical_documents WHERE entity_type = 'ads'");
@@ -169,7 +183,7 @@ test('Ads create and revision-safe delete persist through audited backend routes
   }
 });
 
-test('job application submission and employer status transitions are atomic, audited, and revision safe', async () => {
+mariaTest('job application submission and employer status transitions are atomic, audited, and revision safe', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
   await pool.query("DELETE FROM applications WHERE id LIKE 'user-1_%'");
@@ -210,7 +224,7 @@ test('job application submission and employer status transitions are atomic, aud
   }
 });
 
-test('employer job create, pause, edit, and delete routes are owned, audited, and revision safe', async () => {
+mariaTest('employer job create, pause, edit, and delete routes are owned, audited, and revision safe', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
   await pool.query("DELETE FROM jobs WHERE employer_id = 'employer-1'");
@@ -253,7 +267,7 @@ test('employer job create, pause, edit, and delete routes are owned, audited, an
   }
 });
 
-test('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {
+mariaTest('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
   await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')");
@@ -286,7 +300,8 @@ test('generic settings preserve omitted and blank backend secrets without browse
 
 test('email runtime save rejects unencrypted or malformed transport configuration', async () => {
   const response = await request(app).post('/api/email/admin/save-smtp').set(bearer('admin')).send({
-    smtp: { host: 'smtp.example.com', port: 25, encryption: 'none', username: 'mailer@example.com', password: 'replacement' },
+    expectedRevision: 0,
+    smtp: { host: 'smtp.example.com', port: 25, encryption: 'none', username: 'mailer@example.com' },
   });
   assert.equal(response.status, 400);
   assert.match(response.body.error, /Encrypted smtp transport is required/);
@@ -313,7 +328,7 @@ test('loading non-secret AI settings does not require recent authentication', as
   assert.doesNotMatch(JSON.stringify(response.body), /server-only-gemini-key|gemini-secret-value/);
 });
 
-test('fresh authorized admin reaches revisioned AI settings persistence without secret disclosure', async () => {
+mariaTest('fresh authorized admin reaches revisioned AI settings persistence without secret disclosure', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
   await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
@@ -333,11 +348,9 @@ test('fresh authorized admin reaches revisioned AI settings persistence without 
   }
 });
 
-test('legacy shared test endpoint cannot falsely report an AI provider success', async () => {
+test('legacy shared provider-test endpoint is retired instead of reporting false success', async () => {
   const response = await request(app).post('/api/admin/test-connection').set(bearer('admin')).send({ type: 'gemini' });
-  assert.equal(response.status, 400);
-  assert.equal(response.body.code, 'EMAIL_TEST_TYPE_UNSUPPORTED');
-  assert.equal(response.body.success, false);
+  assert.equal(response.status, 404);
 });
 
 test('fresh authorized admin provider test reaches the dedicated AI route with useful errors', async () => {
@@ -386,12 +399,12 @@ test('password reset request is generic and timing-equalized for malformed accou
   assert.doesNotMatch(JSON.stringify(response.body), /not-an-email|user.not.found/i);
 });
 
-test('verification and notification dispatch cannot target another account', async () => {
+test('verification requires authentication and legacy notification dispatch is retired', async () => {
   const anonymous = await request(app).post('/api/auth/send-verification-email').send({ email: 'victim@example.com' });
   assert.equal(anonymous.status, 401);
   const notification = await request(app).post('/api/notify/user-signup').set(bearer('user')).send({ userEmail: 'victim@example.com' });
-  assert.equal(notification.status, 403);
-  assert.equal(notification.body.error.code, 'RECIPIENT_MISMATCH');
+  assert.equal(notification.status, 410);
+  assert.equal(notification.body.code, 'CLIENT_NOTIFICATION_DISPATCH_RETIRED');
 });
 
 test('CORS grants only exact configured origins', async () => {
@@ -431,19 +444,17 @@ test('legacy/demo payment bypasses fail closed and client entitlement dates are 
   const razorpayWithIdentity = await request(app).post('/api/razorpay/create-order').set(bearer('user')).send({ planId: 'monthly', amount: 1, userId: 'victim' });
   assert.equal(razorpayWithIdentity.status, 400);
   assert.equal(razorpayWithIdentity.body.error.code, 'CLIENT_PAYMENT_IDENTITY_REJECTED');
-  // Simulate fully unconfigured provider: clear env vars AND isolate db so no Firestore fallback occurs.
+  // Simulate a fully unconfigured provider. The repository contract contains no
+  // provider credential and there is no secondary data-plane fallback.
   const savedId = process.env.RAZORPAY_KEY_ID;
   const savedSecret = process.env.RAZORPAY_KEY_SECRET;
-  const originalDb = app.get('db');
   delete process.env.RAZORPAY_KEY_ID;
   delete process.env.RAZORPAY_KEY_SECRET;
-  app.set('db', null);
   try {
     const razorpayUnconfigured = await request(app).post('/api/razorpay/create-order').set(bearer('user')).send({ planId: 'monthly' });
     assert.equal(razorpayUnconfigured.status, 503);
     assert.equal(razorpayUnconfigured.body.error.code, 'PAYMENT_PROVIDER_UNAVAILABLE');
   } finally {
-    app.set('db', originalDb);
     if (savedId) process.env.RAZORPAY_KEY_ID = savedId;
     if (savedSecret) process.env.RAZORPAY_KEY_SECRET = savedSecret;
   }

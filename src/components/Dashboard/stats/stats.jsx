@@ -3,7 +3,7 @@ import './stats.scss'
 import usersImage from '../../../assets/users.png'
 import resumesImage from '../../../assets/resumes.png'
 import downloadImage from '../../../assets/download.png'
-import { getStats } from '../../../firestore/dbOperations'
+import { getStats } from '../../../services/api/platform'
 class Stats extends Component {
     constructor(props) {
         super(props);

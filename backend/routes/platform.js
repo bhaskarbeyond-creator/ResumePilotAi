@@ -15,10 +15,9 @@ const {
   TESTABLE_SERVICES,
   STATE: HEALTH_STATE,
 } = require('../services/platformHealth');
-const { getActiveEngine } = require('../database/engineManager');
 const { getPool } = require('../database/mysql');
 const { getRepository } = require('../repositories');
-const { getPlatformCurrencyConfig, _normalizeCurrencyCode } = require('../services/platformCurrency');
+const { getPlatformCurrencyConfig } = require('../services/platformCurrency');
 
 const router = express.Router();
 
@@ -56,120 +55,59 @@ async function safeQuery(label, fn) {
   }
 }
 
-function countFrom(result) {
-  if (!result?.ok || !result.value || typeof result.value.data !== 'function') return { ok: false, value: null };
-  const n = Number(result.value.data()?.count);
-  return Number.isFinite(n) ? { ok: true, value: n } : { ok: false, value: null };
-}
-
-async function inspectOutbox(db) {
-  const stats = { active: 0, deadLetter: 0, completed: 0, status: 'HEALTHY', inspected: 0 };
-  let hasData = false;
-
-  // 1. Check MySQL sync_outbox
-  try {
-    const pool = getPool();
-    if (pool) {
-      const [rows] = await pool.query("SELECT status, retry_count FROM sync_outbox LIMIT 100");
-      if (Array.isArray(rows)) {
-        hasData = true;
-        rows.forEach(r => {
-          stats.inspected += 1;
-          if (r.status === 'DEAD_LETTER' || Number(r.retry_count || 0) >= 5) stats.deadLetter += 1;
-          else if (r.status === 'COMPLETED' || r.status === 'SUCCESS') stats.completed += 1;
-          else stats.active += 1;
-        });
-      }
-    }
-  } catch (_) {}
-
-  // 2. Check MySQL notification_outbox (transactional outbox; MySQL authoritative)
-  try {
-    const pool = getPool();
-    if (pool) {
-      const [rows] = await pool.query(
-        'SELECT state, attempt_count, provider_accepted FROM notification_outbox LIMIT 100'
-      );
-      if (Array.isArray(rows)) {
-        hasData = true;
-        rows.forEach(r => {
-          stats.inspected += 1;
-          if (r.state === 'DEAD_LETTER' || Number(r.attempt_count || 0) >= 5) stats.deadLetter += 1;
-          else if (r.provider_accepted === 1 || r.provider_accepted === true) stats.completed += 1;
-          else stats.active += 1;
-        });
-      }
-    }
-  } catch (_) {}
-
-  if (!hasData) return { active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null };
+async function inspectOutbox() {
+  const pool = getPool();
+  const [notifications, enterprise] = await Promise.all([
+    pool.query('SELECT state AS status, COUNT(*) AS total FROM notification_outbox GROUP BY state').then(([rows]) => rows),
+    pool.query('SELECT status, COUNT(*) AS total FROM enterprise_outbox GROUP BY status').then(([rows]) => rows),
+  ]);
+  const stats = { active: 0, deadLetter: 0, completed: 0, status: 'OPERATIONAL', inspected: 0, sources: ['notification_outbox', 'enterprise_outbox'] };
+  for (const row of [...notifications, ...enterprise]) {
+    const count = Number(row.total || 0);
+    stats.inspected += count;
+    if (row.status === 'DEAD_LETTER') stats.deadLetter += count;
+    else if (['DELIVERED', 'COMPLETED', 'REJECTED', 'SKIPPED_NO_RECIPIENT'].includes(row.status)) stats.completed += count;
+    else stats.active += count;
+  }
   if (stats.deadLetter > 0) stats.status = 'DEGRADED';
   return stats;
 }
 
 async function buildHealthPayload(req) {
-  const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   const tenantService = req.app?.get('tenantService');
   const startTime = Date.now();
-  let dbHealthy = false;
-  let dbLatencyMs = null;
-  let authHealthy = false;
-  let authLatencyMs = null;
+  let database = { healthy: false, latencyMs: null, error: null };
+  let authentication = { healthy: false, latencyMs: null, error: null };
+  let queueStats = { active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null };
 
-  const engine = getActiveEngine();
-  const isMySQL = engine === 'mysql';
-  let dbProvider = 'Google Cloud Firestore';
-
-  if (isMySQL) {
-    try {
-      const pingStart = Date.now();
-      const pool = getPool();
-      await pool.query('SELECT 1 AS alive');
-      dbLatencyMs = Date.now() - pingStart;
-      dbHealthy = true;
-      dbProvider = 'MySQL / MariaDB (u727965524_airesume)';
-    } catch (err) {
-      console.warn('[PlatformHealth] MySQL ping warning:', err.message);
-    }
-  } else if (db) {
-    try {
-      const pingStart = Date.now();
-      await db.collection('settings').doc('system_ping_check').set(
-        { lastPing: admin?.firestore?.FieldValue?.serverTimestamp?.() || new Date() },
-        { merge: true }
-      );
-      dbLatencyMs = Date.now() - pingStart;
-      dbHealthy = true;
-      dbProvider = 'Google Cloud Firestore';
-    } catch (err) {
-      console.warn('[PlatformHealth] DB ping warning:', err.message);
-    }
+  try {
+    const started = Date.now();
+    await getPool().query('SELECT 1 AS alive');
+    database = { healthy: true, latencyMs: Date.now() - started, error: null };
+  } catch (error) {
+    database.error = String(error.message || error).slice(0, 200);
   }
-
   if (admin?.auth) {
     try {
-      const authStart = Date.now();
+      const started = Date.now();
       await admin.auth().listUsers(1);
-      authLatencyMs = Date.now() - authStart;
-      authHealthy = true;
-    } catch (err) {
-      console.warn('[PlatformHealth] Auth probe warning:', err.message);
+      authentication = { healthy: true, latencyMs: Date.now() - started, error: null };
+    } catch (error) {
+      authentication.error = String(error.message || error).slice(0, 200);
     }
   }
+  try { queueStats = await inspectOutbox(); }
+  catch (error) { queueStats.error = String(error.message || error).slice(0, 200); }
 
-  const queueStats = isMySQL
-    ? { active: 0, deadLetter: 0, completed: 0, status: 'OPERATIONAL', inspected: new Date().toISOString() }
-    : await inspectOutbox(db).catch(() => ({ active: null, deadLetter: null, completed: null, status: 'UNKNOWN', inspected: null }));
   const memoryUsage = process.memoryUsage();
   const totalMem = os.totalmem();
   const freeMem = os.freemem();
-
   let healthScore = 100;
-  if (!dbHealthy) healthScore -= 40;
-  else if (dbLatencyMs > 500) healthScore -= 10;
-  if (!authHealthy) healthScore -= 30;
-  else if (authLatencyMs > 1500) healthScore -= 10;
+  if (!database.healthy) healthScore -= 40;
+  else if (database.latencyMs > 500) healthScore -= 10;
+  if (!authentication.healthy) healthScore -= 30;
+  else if (authentication.latencyMs > 1500) healthScore -= 10;
   if (queueStats.status === 'UNKNOWN') healthScore -= 20;
   else if (queueStats.deadLetter > 5) healthScore -= 20;
   else if (queueStats.deadLetter > 0) healthScore -= 10;
@@ -177,40 +115,26 @@ async function buildHealthPayload(req) {
   healthScore = Math.max(0, Math.min(100, healthScore));
 
   return {
-    status: healthScore >= 80 && dbHealthy && authHealthy && queueStats.status !== 'UNKNOWN' ? 'HEALTHY' : healthScore >= 50 ? 'DEGRADED' : 'UNHEALTHY',
+    status: healthScore >= 80 && database.healthy && authentication.healthy && queueStats.status !== 'UNKNOWN'
+      ? 'HEALTHY' : healthScore >= 50 ? 'DEGRADED' : 'UNHEALTHY',
     healthScore,
+    scoreMethod: 'rule-based subsystem deductions; not a performance benchmark',
     commitSha: getCommitSha(),
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
     latencyMs: Date.now() - startTime,
     subsystems: {
-      database: {
-        status: dbHealthy ? 'HEALTHY' : 'DOWN',
-        latencyMs: dbLatencyMs,
-        provider: dbProvider,
-      },
-      authentication: {
-        status: authHealthy ? 'HEALTHY' : 'DOWN',
-        latencyMs: authLatencyMs,
-        provider: 'Firebase Authentication',
-      },
+      database: { status: database.healthy ? 'HEALTHY' : 'DOWN', latencyMs: database.latencyMs, provider: 'MariaDB', error: database.error },
+      authentication: { status: authentication.healthy ? 'HEALTHY' : 'DOWN', latencyMs: authentication.latencyMs, provider: 'Firebase Authentication', error: authentication.error },
       queue: {
-        status: queueStats.status,
-        activeJobs: queueStats.active,
-        deadLetterJobs: queueStats.deadLetter,
-        completedJobs: queueStats.completed,
-        inspected: queueStats.inspected,
+        status: queueStats.status, activeJobs: queueStats.active, deadLetterJobs: queueStats.deadLetter,
+        completedJobs: queueStats.completed, inspected: queueStats.inspected, sources: queueStats.sources || [], error: queueStats.error || null,
       },
       runtime: {
-        nodeVersion: process.version,
-        platform: process.platform,
-        arch: process.arch,
-        pid: process.pid,
+        nodeVersion: process.version, platform: process.platform, arch: process.arch, pid: process.pid,
         heapUsedMb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-        heapTotalMb: Math.round(memoryUsage.heapTotal / 1024 / 1024),
-        rssMb: Math.round(memoryUsage.rss / 1024 / 1024),
-        systemFreeMemMb: Math.round(freeMem / 1024 / 1024),
-        systemTotalMemMb: Math.round(totalMem / 1024 / 1024),
+        heapTotalMb: Math.round(memoryUsage.heapTotal / 1024 / 1024), rssMb: Math.round(memoryUsage.rss / 1024 / 1024),
+        systemFreeMemMb: Math.round(freeMem / 1024 / 1024), systemTotalMemMb: Math.round(totalMem / 1024 / 1024),
       },
       tenancy: tenantService ? tenantService.describeRuntime?.() : { enabled: false },
     },
@@ -227,81 +151,27 @@ router.get('/version', (_req, res) => {
 
 // Public platform and module configuration (Public, 100% MariaDB-backed)
 router.get('/public-config', async (req, res) => {
-  res.setHeader('Cache-Control', 'public, max-age=60');
-  const repo = getRepository(req.app?.get('db'));
-  const defaults = {
-    modules: {
-      atsChecker: true,
-      resumeImport: true,
-      aiAssistant: true,
-      coverLetter: true,
-      blog: true,
-      jobs: true,
-      jobTracker: true,
-      portfolio: true,
-      review: true,
-      contact: true,
-      subscriptions: true,
-      enableGoogleAuthModule: true,
-      enableGoogle: true,
-      enableFacebookAuthModule: true,
-      enableFacebook: true,
-    },
-    google: {
-      enableGoogleLogin: true,
-    },
-    socialAuth: {
-      enableGoogleLogin: true,
-      enableFacebookLogin: true,
-      enableLinkedinLogin: false,
-      enableGithubLogin: false,
-    },
-    firebase: {
-      enableGoogleAuth: true,
-      enableFacebookAuth: true,
-    },
-    subscriptions: {
-      stripeEnabled: false,
-      paypalEnabled: false,
-      razorpayEnabled: false,
-      paytmEnabled: false,
-      phonepeEnabled: false,
-      sandboxMode: true,
-      enableTax: true,
-      taxName: 'GST',
-      taxRate: 18,
-      taxInclusive: false,
-      companyTaxId: '',
-      requireCustomerTaxId: false,
-      receiptTemplate: 'modern',
-    },
-    _settingsSource: 'remote',
-  };
-
+  res.setHeader('Cache-Control', 'no-store');
+  const repo = getRepository();
   try {
-    let settings = null;
-    if (repo && typeof repo.getSetting === 'function') {
-      settings = await repo.getSetting('public_config').catch(() => null);
-    }
-    if (!settings && req.app?.get('db')) {
-      try {
-        const snap = await req.app.get('db').collection('data').doc('public_config').get();
-        if (snap.exists) settings = snap.data();
-      } catch (_) {}
-    }
-
-    if (settings && typeof settings === 'object') {
-      return res.json({
-        ...defaults,
-        ...settings,
-        modules: { ...defaults.modules, ...(settings.modules || {}) },
-        subscriptions: { ...defaults.subscriptions, ...(settings.subscriptions || {}) },
-        _settingsSource: 'remote',
+    const [settings, websiteMeta] = await Promise.all([
+      repo.getSetting('public_config'),
+      repo.getSetting('website_meta'),
+    ]);
+    if (!settings || typeof settings !== 'object') {
+      return res.status(503).json({
+        error: { code: 'PUBLIC_CONFIGURATION_NOT_INITIALIZED', message: 'Public configuration is not initialized in MariaDB.', requestId: res.locals?.requestId },
       });
     }
-    return res.json(defaults);
-  } catch (_err) {
-    return res.json(defaults);
+    return res.json({
+      ...settings,
+      website: websiteMeta && typeof websiteMeta === 'object' ? websiteMeta : undefined,
+      _settingsSource: 'mariadb',
+    });
+  } catch (_error) {
+    return res.status(503).json({
+      error: { code: 'PUBLIC_CONFIGURATION_UNAVAILABLE', message: 'Public configuration could not be loaded.', requestId: res.locals?.requestId },
+    });
   }
 });
 
@@ -375,34 +245,22 @@ router.get('/operational-status/:serviceId', async (req, res) => {
     }
     const relatedEndpoints = snapshot.apiMatrix.endpoints.filter(endpoint => endpoint.dependencyId === serviceId);
 
-    // Related audit events are best-effort: an unreadable trail is reported as such.
-    let auditEvents = [];
-    let auditSource = 'unavailable';
-    const db = req.app?.get('db');
-    if (db) {
-      const query = await safeQuery('service-audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(50).get());
-      if (query.ok) {
-        auditSource = 'ok';
-        const needle = serviceId.replace(/-/g, '');
-        query.value.forEach(doc => {
-          const data = doc.data() || {};
-          const haystack = `${data.action || ''} ${data.category || ''} ${data.pathname || ''}`.toLowerCase().replace(/[^a-z0-9]/g, '');
-          if (haystack.includes(needle) || relatedEndpoints.some(endpoint => String(data.pathname || '').startsWith(endpoint.path.split(':')[0]))) {
-            auditEvents.push({
-              id: doc.id,
-              action: data.action || 'UNKNOWN',
-              actorEmail: data.actorEmail || null,
-              severity: data.severity || 'INFO',
-              outcome: data.outcome || null,
-              statusCode: data.statusCode ?? null,
-              pathname: data.pathname || null,
-              createdAt: isoFrom(data.createdAt),
-            });
-          }
-        });
-        auditEvents = auditEvents.slice(0, 10);
-      }
-    }
+    const auditRows = await getRepository().getAdminAuditLogs({ limit: 50 });
+    const needle = serviceId.replace(/-/g, '');
+    const auditEvents = auditRows.filter(data => {
+      const haystack = `${data.action || ''} ${data.category || ''} ${data.pathname || ''}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return haystack.includes(needle) || relatedEndpoints.some(endpoint => String(data.pathname || '').startsWith(endpoint.path.split(':')[0]));
+    }).slice(0, 10).map(data => ({
+      id: data.id,
+      action: data.action || 'UNKNOWN',
+      actorEmail: data.actorEmail || null,
+      severity: data.severity || 'INFO',
+      outcome: data.outcome || null,
+      statusCode: data.statusCode ?? null,
+      pathname: data.pathname || null,
+      createdAt: isoFrom(data.createdAt),
+    }));
+    const auditSource = 'mariadb';
 
     return res.json({
       service: detail,
@@ -431,12 +289,10 @@ router.post('/operational-status/:serviceId/test', requireRecentAdminAuthenticat
       error: { code: 'SERVICE_TEST_UNSUPPORTED', message: 'This service does not expose a safe operator test', requestId: res.locals?.requestId },
     });
   }
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
   try {
     const result = await runServiceTest(req.app, serviceId);
     resetHealthCache();
-    const audit = await recordAdminAuditLog(db, admin, {
+    const audit = await recordAdminAuditLog({
       actorUid: req.user?.uid,
       actorEmail: req.user?.email,
       actorRole: 'SUPER_ADMIN',
@@ -462,16 +318,11 @@ router.post('/operational-status/:serviceId/test', requireRecentAdminAuthenticat
 
 /** Explicit operator refresh. Audited because it is a deliberate operational action. */
 router.post('/operational-status/refresh', requirePermission('system.config.write'), async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  if (!db || !admin?.firestore?.FieldValue) {
-    return res.status(503).json({ error: { code: 'AUDIT_UNAVAILABLE', message: 'A durable audit store is required to refresh platform health.', requestId: res.locals?.requestId } });
-  }
   try {
     resetHealthCache();
     const elevated = isSuperAdmin(req.user);
     const snapshot = await getHealthSnapshot(req.app, { force: true });
-    const audit = await recordAdminAuditLog(db, admin, {
+    const audit = await recordAdminAuditLog({
       actorUid: req.user?.uid,
       actorEmail: req.user?.email,
       actorRole: elevated ? 'SUPER_ADMIN' : 'ADMIN',
@@ -494,893 +345,371 @@ router.post('/operational-status/refresh', requirePermission('system.config.writ
   }
 });
 
-router.get('/overview', async (req, res) => {
-  const db = req.app?.get('db');
-  const repo = getRepository(db);
-
+router.get('/overview', async (_req, res) => {
   try {
-    let statsData = null;
-    let earningsData = null;
-    let tenantCounts = null;
-
-    // 1. Fetch from repository / MySQL primary
-    try {
-      statsData = await repo.getStats();
-    } catch (_) {}
-
-    // 2. If stats are empty and Firestore is available, try fallback
-    if ((!statsData || !Object.keys(statsData).length) && db) {
-      try {
-        const statsDoc = await db.collection('data').doc('stats').get().catch(() => null);
-        if (statsDoc?.exists) statsData = statsDoc.data();
-      } catch (_) {}
-    }
-
-    const tenantService = req.app?.get('tenantService');
-    if (tenantService?.registry) {
-      try {
-        const tenants = await tenantService.registry.listAllTenants({ limit: 1000 }).catch(() => []);
-        let total = tenants.length;
-        let active = tenants.filter(t => t.lifecycleState === 'ACTIVE').length;
-        let suspended = tenants.filter(t => t.lifecycleState === 'SUSPENDED').length;
-        tenantCounts = { total, active, suspended, source: 'MYSQL_AUTHORITATIVE' };
-      } catch (_) {}
-    }
-
-    const platformCurrency = await getPlatformCurrencyConfig(db).catch(() => ({ code: 'INR', symbol: '₹' }));
-
+    const pool = getPool();
+    const [[userRows], [resumeRows], [earningsRows], [tenantRows], platformCurrency] = await Promise.all([
+      pool.query('SELECT COUNT(*) AS total FROM users WHERE deleted_at IS NULL'),
+      pool.query('SELECT COUNT(*) AS total FROM resumes WHERE deleted_at IS NULL'),
+      pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM payment_orders WHERE status IN ('ACTIVE', 'COMPLETED', 'PAID')"),
+      pool.query("SELECT COUNT(*) AS total, SUM(lifecycleState = 'ACTIVE') AS active, SUM(lifecycleState = 'SUSPENDED') AS suspended FROM enterprise_tenants"),
+      getPlatformCurrencyConfig(null),
+    ]);
     return res.json({
       kpis: {
-        totalUsers: statsData ? Math.max(0, statsData.users ?? statsData.totalUsers ?? statsData.numberOfUsers ?? 0) : 0,
-        resumesCreated: statsData ? Math.max(0, statsData.resumes ?? statsData.numberOfResumesCreated ?? 0) : 0,
-        totalDownloads: statsData ? Math.max(0, statsData.downloads ?? statsData.numberOfResumesDownloaded ?? 0) : 0,
-        totalEarningsCents: earningsData ? (earningsData.total ?? earningsData.amount ?? 0) : 0,
+        totalUsers: Number(userRows[0]?.total || 0),
+        resumesCreated: Number(resumeRows[0]?.total || 0),
+        totalDownloads: null,
+        totalEarningsCents: Number(earningsRows[0]?.total || 0),
         currency: platformCurrency.code || 'INR',
         currencySymbol: platformCurrency.symbol || '₹',
-        tenants: tenantCounts,
+        tenants: {
+          total: Number(tenantRows[0]?.total || 0),
+          active: Number(tenantRows[0]?.active || 0),
+          suspended: Number(tenantRows[0]?.suspended || 0),
+          source: 'MARIADB_AUTHORITATIVE',
+        },
       },
-      sources: { stats: statsData ? 'AVAILABLE' : 'UNAVAILABLE', earnings: earningsData ? 'AVAILABLE' : 'UNAVAILABLE', tenants: tenantCounts ? 'AVAILABLE' : 'UNAVAILABLE' },
+      sources: { stats: 'MARIADB', earnings: 'MARIADB', tenants: 'MARIADB', downloads: 'NOT_RECORDED' },
       updatedAt: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error('[PlatformOverview] Error fetching stats:', err);
-    return res.status(500).json({ error: { code: 'OVERVIEW_ERROR', message: err.message, requestId: res.locals?.requestId } });
+  } catch (error) {
+    console.error('[PlatformOverview] Query failed:', error?.message || error);
+    return res.status(503).json({ error: { code: 'OVERVIEW_UNAVAILABLE', message: 'Platform overview is unavailable.', requestId: res.locals?.requestId } });
   }
 });
 
-router.get('/queues', async (req, res) => {
-  const db = req.app?.get('db');
-  const pool = getPool();
-
-  if (!db && !pool) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable', requestId: res.locals?.requestId } });
-  }
-
-  const items = [];
-  let deadLetterCount = 0;
-  let pendingCount = 0;
-  let successCount = 0;
-  const queriedSources = [];
-
-  // 1. Query MariaDB / MySQL sync_outbox if pool is available
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        'SELECT id, entity_type, entity_id, operation, status, retry_count, last_error, created_at, updated_at FROM sync_outbox ORDER BY created_at DESC LIMIT 50'
-      );
-      if (Array.isArray(rows)) {
-        queriedSources.push('MYSQL_SYNC_OUTBOX');
-        rows.forEach(row => {
-          const isDeadLetter = row.status === 'DEAD_LETTER' || Number(row.retry_count || 0) >= 5;
-          if (isDeadLetter) deadLetterCount += 1;
-          else if (row.status === 'COMPLETED' || row.status === 'SUCCESS') successCount += 1;
-          else pendingCount += 1;
-
-          items.push({
-            id: String(row.id || ''),
-            channel: 'database_sync',
-            recipient: `${String(row.entity_type || 'entity')}:${String(row.entity_id || 'id')}`,
-            templateType: String(row.operation || 'SYNC').toUpperCase(),
-            state: isDeadLetter ? 'DEAD_LETTER' : String(row.status || 'PENDING'),
-            attemptCount: Number(row.retry_count || 0),
-            lastError: row.last_error ? String(row.last_error).slice(0, 200) : null,
-            createdAt: isoFrom(row.created_at),
-            updatedAt: isoFrom(row.updated_at),
-          });
-        });
-      }
-    } catch (mysqlErr) {
-      console.warn('[PlatformQueues] MySQL sync_outbox notice:', mysqlErr.message);
-    }
-  }
-
-  // 2. Query MySQL notification_outbox (durable notification queue; MySQL authoritative)
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        'SELECT id, channel, recipient, template_type, state, attempt_count, last_error, created_at, updated_at FROM notification_outbox ORDER BY created_at DESC LIMIT 50'
-      );
-      if (Array.isArray(rows)) {
-        queriedSources.push('MYSQL_NOTIFICATION_OUTBOX');
-        rows.forEach(row => {
-          const isDeadLetter = row.state === 'DEAD_LETTER' || Number(row.attempt_count || 0) >= 5;
-          const recipientRaw = String(row.recipient || '');
-          if (isDeadLetter) deadLetterCount += 1;
-          else if (row.state === 'DELIVERED' || row.state === 'COMPLETED') successCount += 1;
-          else pendingCount += 1;
-
-          items.push({
-            id: String(row.id || ''),
-            channel: row.channel || 'email',
-            recipient: recipientRaw ? `${recipientRaw.slice(0, 3)}***@${recipientRaw.split('@')[1] || 'domain.com'}` : 'unknown',
-            templateType: row.template_type || 'general',
-            state: isDeadLetter ? 'DEAD_LETTER' : String(row.state || 'QUEUED'),
-            attemptCount: Number(row.attempt_count || 0),
-            lastError: row.last_error ? String(row.last_error).slice(0, 200) : null,
-            createdAt: isoFrom(row.created_at),
-            updatedAt: isoFrom(row.updated_at),
-          });
-        });
-      }
-    } catch (notifErr) {
-      console.warn('[PlatformQueues] MySQL notification_outbox notice:', notifErr.message);
-    }
-  }
-
-  if (queriedSources.length === 0) {
+router.get('/queues', async (_req, res) => {
+  try {
+    const pool = getPool();
+    const [[notificationRows], [enterpriseRows]] = await Promise.all([
+      pool.query(`SELECT id, channel, recipient, template_type, state, attempt_count, last_error, created_at, updated_at
+                  FROM notification_outbox ORDER BY created_at DESC LIMIT 50`),
+      pool.query(`SELECT id, jobType, tenantId, status, attemptCount, lastError, created_at, updated_at
+                  FROM enterprise_outbox ORDER BY created_at DESC LIMIT 50`),
+    ]);
+    const maskEmail = value => {
+      const [local, domain] = String(value || '').split('@');
+      return local && domain ? `${local.slice(0, 2)}***@${domain}` : null;
+    };
+    const jobs = [
+      ...notificationRows.map(row => ({
+        id: row.id, queue: 'notification', channel: row.channel || 'email', recipient: maskEmail(row.recipient),
+        templateType: row.template_type, state: row.state, attemptCount: Number(row.attempt_count || 0),
+        lastError: row.last_error ? String(row.last_error).slice(0, 200) : null,
+        createdAt: isoFrom(row.created_at), updatedAt: isoFrom(row.updated_at),
+      })),
+      ...enterpriseRows.map(row => ({
+        id: row.id, queue: 'enterprise', channel: 'tenant_job', recipient: `tenant:${String(row.tenantId).slice(0, 8)}…`,
+        templateType: row.jobType, state: row.status, attemptCount: Number(row.attemptCount || 0),
+        lastError: row.lastError ? String(row.lastError).slice(0, 200) : null,
+        createdAt: isoFrom(row.created_at), updatedAt: isoFrom(row.updated_at),
+      })),
+    ].sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
+    const deadLetterCount = jobs.filter(job => job.state === 'DEAD_LETTER').length;
+    const pendingCount = jobs.filter(job => ['NOTIFICATION_QUEUED', 'QUEUED', 'PROCESSING', 'RETRYING'].includes(job.state)).length;
+    const successCount = jobs.filter(job => ['DELIVERED', 'COMPLETED', 'REJECTED', 'SKIPPED_NO_RECIPIENT'].includes(job.state)).length;
+    return res.json({
+      summary: { totalInspected: jobs.length, deadLetterCount, pendingCount, successCount, source: 'MARIADB_OUTBOXES', sampled: true },
+      jobs,
+    });
+  } catch (_error) {
     return res.status(503).json({ error: { code: 'QUEUE_QUERY_UNAVAILABLE', message: 'Queue telemetry is unavailable.', requestId: res.locals?.requestId } });
   }
-
-  items.sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
-
-  return res.json({
-    summary: {
-      totalInspected: items.length,
-      deadLetterCount,
-      pendingCount,
-      successCount,
-      source: queriedSources.join('+'),
-    },
-    jobs: items,
-  });
 });
 
 router.post('/queues/retry', requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  const pool = getPool();
-
-  if (!db && !pool) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
+  const jobId = String(req.body?.jobId || '');
+  const queue = String(req.body?.queue || 'notification').toLowerCase();
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || queue !== 'notification') {
+    return res.status(400).json({
+      error: { code: 'INVALID_RETRY_TARGET', message: 'Specify one notification dead-letter job. Enterprise jobs must be replayed from their tenant context.', requestId: res.locals?.requestId },
+    });
   }
-
-  const { jobId, all = false } = req.body || {};
-  if (jobId !== undefined && !/^[A-Za-z0-9_-]{1,128}$/.test(String(jobId))) {
-    return res.status(400).json({ error: { code: 'INVALID_JOB_ID', message: 'A valid queue job id is required', requestId: res.locals?.requestId } });
-  }
-  if (!jobId && all !== true) {
-    return res.status(400).json({ error: { code: 'RETRY_TARGET_REQUIRED', message: 'Provide jobId or set all=true', requestId: res.locals?.requestId } });
-  }
-
+  const connection = await getPool().getConnection();
   try {
-    let retriedCount = 0;
-
-    // Retry MySQL sync_outbox
-    if (pool) {
-      try {
-        if (jobId) {
-          const [result] = await pool.query(
-            "UPDATE sync_outbox SET status = 'PENDING', retry_count = 0, last_error = NULL, updated_at = NOW() WHERE id = ?",
-            [String(jobId)]
-          );
-          if (result && result.affectedRows > 0) retriedCount += result.affectedRows;
-        } else if (all) {
-          const [result] = await pool.query(
-            "UPDATE sync_outbox SET status = 'PENDING', retry_count = 0, last_error = NULL, updated_at = NOW() WHERE status = 'DEAD_LETTER'"
-          );
-          if (result && result.affectedRows > 0) retriedCount += result.affectedRows;
-        }
-      } catch (mysqlErr) {
-        console.warn('[PlatformQueues] MySQL retry notice:', mysqlErr.message);
-      }
+    await connection.beginTransaction();
+    const [result] = await connection.query(
+      `UPDATE notification_outbox
+       SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = ?,
+           last_error = NULL, lease_owner = NULL, lease_expires_at = 0
+       WHERE id = ? AND state = 'DEAD_LETTER'`,
+      [Date.now(), jobId]
+    );
+    if (Number(result.affectedRows || 0) !== 1) {
+      await connection.rollback();
+      return res.status(404).json({ error: { code: 'DEAD_LETTER_NOT_FOUND', message: 'Notification dead-letter job was not found.', requestId: res.locals?.requestId } });
     }
-
-    // Retry MySQL notification_outbox (durable notification queue)
-    if (pool) {
-      try {
-        if (jobId) {
-          const [result] = await pool.query(
-            "UPDATE notification_outbox SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = ?, last_error = NULL, lease_owner = NULL, lease_expires_at = 0 WHERE id = ?",
-            [Date.now(), String(jobId)]
-          );
-          if (result && result.affectedRows > 0) retriedCount += result.affectedRows;
-        } else if (all) {
-          const [result] = await pool.query(
-            "UPDATE notification_outbox SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = ?, last_error = NULL, lease_owner = NULL, lease_expires_at = 0 WHERE state = 'DEAD_LETTER'",
-            [Date.now()]
-          );
-          if (result && result.affectedRows > 0) retriedCount += result.affectedRows;
-        }
-      } catch (notifErr) {
-        console.warn('[PlatformQueues] MySQL notification retry notice:', notifErr.message);
-      }
-    }
-
-    // Write audit log safely (MySQL-backed via recordAdminAuditLog)
-    try {
-      await recordAdminAuditLog(db, admin, {
-        actorUid: req.user?.uid,
-        actorEmail: req.user?.email,
-        actorRole: 'SUPER_ADMIN',
-        action: 'PLATFORM_QUEUE_RETRY',
-        category: 'platform.queue',
-        severity: 'HIGH',
-        outcome: 'SUCCESS',
-        method: 'POST',
-        pathname: req.originalUrl,
-        statusCode: 200,
-        metadata: { jobId: jobId || null, all: all === true, retriedCount },
-        requestId: res.locals?.requestId,
-      });
-    } catch (_) {}
-
-    return res.json({ success: true, retriedCount });
-  } catch (_err) {
-    return res.status(500).json({ error: { code: 'RETRY_FAILED', message: 'Queue retry could not be completed', requestId: res.locals?.requestId } });
+    await connection.query(
+      `INSERT INTO admin_audit_logs
+       (id, actor_uid, actor_email, actor_role, action, category, severity, outcome, method, pathname, status_code, resource_type, resource_id, metadata, request_id)
+       VALUES (?, ?, ?, 'SUPER_ADMIN', 'PLATFORM_QUEUE_RETRY', 'platform.queue', 'HIGH', 'SUCCESS', 'POST', ?, 200, 'notification_job', ?, ?, ?)`,
+      [require('crypto').randomUUID(), req.user?.uid || 'unknown', req.user?.email || null,
+        req.originalUrl, jobId, JSON.stringify({ queue }), res.locals?.requestId || null]
+    );
+    await connection.commit();
+    return res.json({ success: true, retriedCount: 1, jobId, queue });
+  } catch (_error) {
+    await connection.rollback().catch(() => {});
+    return res.status(503).json({ error: { code: 'RETRY_FAILED', message: 'Queue retry could not be completed.', requestId: res.locals?.requestId } });
+  } finally {
+    connection.release();
   }
 });
 
-router.post('/queues/purge', requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  const pool = getPool();
+router.post('/queues/purge', requireRecentAdminAuthentication, (_req, res) => res.status(410).json({
+  error: { code: 'DEAD_LETTER_PURGE_RETIRED', message: 'Dead letters are retained for investigation and may not be bulk-deleted.' },
+}));
 
-  if (!db && !pool) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
-  }
-
+router.get('/maintenance', async (_req, res) => {
   try {
-    let purgedCount = 0;
-
-    // Purge MySQL dead letters
-    if (pool) {
-      try {
-        const [result] = await pool.query("DELETE FROM sync_outbox WHERE status = 'DEAD_LETTER'");
-        if (result && result.affectedRows > 0) purgedCount += result.affectedRows;
-      } catch (mysqlErr) {
-        console.warn('[PlatformQueues] MySQL purge notice:', mysqlErr.message);
-      }
-    }
-
-    // Purge MySQL notification_outbox dead letters
-    if (pool) {
-      try {
-        const [result] = await pool.query("DELETE FROM notification_outbox WHERE state = 'DEAD_LETTER'");
-        if (result && result.affectedRows > 0) purgedCount += result.affectedRows;
-      } catch (notifErr) {
-        console.warn('[PlatformQueues] MySQL notification purge notice:', notifErr.message);
-      }
-    }
-
-    try {
-      await recordAdminAuditLog(db, admin, {
-        actorUid: req.user?.uid,
-        actorEmail: req.user?.email,
-        actorRole: 'SUPER_ADMIN',
-        action: 'PLATFORM_QUEUE_PURGE',
-        category: 'platform.queue',
-        severity: 'HIGH',
-        outcome: 'SUCCESS',
-        method: 'POST',
-        pathname: req.originalUrl,
-        statusCode: 200,
-        metadata: { purgedCount },
-        requestId: res.locals?.requestId,
+    const [rows] = await getPool().query(
+      "SELECT data, revision, updated_at FROM system_settings WHERE category = 'maintenance'"
+    );
+    if (!rows.length) {
+      return res.json({
+        enabled: false, available: true, configurationState: 'DEFAULT',
+        message: 'Platform is operating normally.', scheduledEnd: null,
+        updatedBy: null, updatedAt: null, revision: 0, source: 'APPLICATION_DEFAULT',
       });
-    } catch (_) {}
-
-    return res.json({ success: true, purgedCount });
-  } catch (_err) {
-    return res.status(500).json({ error: { code: 'PURGE_FAILED', message: 'Queue purge could not be completed', requestId: res.locals?.requestId } });
-  }
-});
-
-router.get('/maintenance', async (req, res) => {
-  const db = req.app?.get('db');
-  const pool = getPool();
-  let maintenanceData = null;
-  let publicHealth = {};
-  let source = 'DEFAULT';
-
-  // 1. Try MySQL system_settings
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        "SELECT category, data, revision, updated_at FROM system_settings WHERE category IN ('maintenance', 'public_config')"
-      );
-      if (Array.isArray(rows) && rows.length > 0) {
-        for (const row of rows) {
-          const parsed = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {});
-          if (row.category === 'maintenance') {
-            maintenanceData = { ...parsed, _revision: row.revision, updatedAt: row.updated_at };
-          } else if (row.category === 'public_config') {
-            publicHealth = parsed.systemHealth || {};
-          }
-        }
-        if (maintenanceData) source = 'MYSQL_SYSTEM_SETTINGS';
-      }
-    } catch (mysqlErr) {
-      console.warn('[Platform maintenance] MySQL query notice:', mysqlErr.message);
     }
+    const data = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : (rows[0].data || {});
+    return res.json({
+      enabled: data.enabled === true,
+      available: true,
+      configurationState: 'AVAILABLE',
+      message: data.message || 'Platform is operating normally.',
+      scheduledEnd: data.scheduledEnd || null,
+      updatedBy: data.updatedBy || null,
+      updatedAt: isoFrom(rows[0].updated_at),
+      revision: Number(rows[0].revision || 0),
+      source: 'MARIADB_SYSTEM_SETTINGS',
+    });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'MAINTENANCE_STATUS_UNAVAILABLE', message: 'Maintenance status is unavailable.', requestId: res.locals?.requestId } });
   }
-
-  // 2. Try Firestore if not found in MySQL
-  if (!maintenanceData && db && typeof db.collection === 'function') {
-    try {
-      const [legacy, publicConfig] = await Promise.all([
-        db.collection('settings').doc('maintenance').get().catch(() => ({ exists: false })),
-        db.collection('data').doc('public_config').get().catch(() => ({ exists: false })),
-      ]);
-      if (legacy.exists) {
-        maintenanceData = legacy.data() || {};
-        source = 'FIRESTORE';
-      }
-      if (publicConfig.exists) {
-        publicHealth = publicConfig.data()?.systemHealth || {};
-      }
-    } catch (fsErr) {
-      console.warn('[Platform maintenance] Firestore query notice:', fsErr.message);
-    }
-  }
-
-  const data = maintenanceData || {};
-  const enabled = data.enabled === true || publicHealth.maintenanceMode === true;
-  return res.json({
-    enabled,
-    available: true,
-    configurationState: 'AVAILABLE',
-    message: data.message || publicHealth.maintenanceMessage || 'Platform is operating normally.',
-    scheduledEnd: data.scheduledEnd || null,
-    updatedBy: data.updatedBy || null,
-    updatedAt: isoFrom(data.updatedAt) || new Date().toISOString(),
-    revision: Number(data._revision || data.revision || 0),
-    source,
-  });
 });
 
 router.post('/maintenance', requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  const pool = getPool();
-
-  if (!db && !pool) {
-    return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Database unavailable' } });
-  }
-
   const { enabled, message, scheduledEnd } = req.body || {};
+  const expectedRevision = Number(req.body?.expectedRevision);
+  if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+    return res.status(400).json({ error: { code: 'EXPECTED_REVISION_REQUIRED', message: 'A non-negative expectedRevision is required.', requestId: res.locals?.requestId } });
+  }
   const payload = {
-    enabled: Boolean(enabled),
-    message: String(message || 'Platform is undergoing scheduled maintenance.').replace(/\p{Cc}/gu, ' ').slice(0, 300),
+    enabled: enabled === true,
+    message: String(message || (enabled ? 'Platform is undergoing scheduled maintenance.' : 'Platform is operating normally.')).replace(/\p{Cc}/gu, ' ').slice(0, 300),
     scheduledEnd: scheduledEnd ? String(scheduledEnd).slice(0, 100) : null,
     updatedBy: req.user?.email || req.user?.uid || 'admin',
-    updatedAt: new Date().toISOString(),
   };
-
-  let nextRevision = 1;
-
-  // 1. Update MySQL system_settings
-  if (pool) {
-    try {
-      const [rows] = await pool.query("SELECT revision FROM system_settings WHERE category = 'maintenance'");
-      const currentRev = rows?.[0]?.revision || 0;
-      nextRevision = currentRev + 1;
-      await pool.query(
-        `INSERT INTO system_settings (category, data, revision, updated_at)
-         VALUES ('maintenance', ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
-        [JSON.stringify({ ...payload, _revision: nextRevision }), nextRevision]
-      );
-    } catch (mysqlErr) {
-      console.warn('[Platform maintenance] MySQL write notice:', mysqlErr.message);
-    }
-  }
-
-  // 2. Update Firestore if available
-  if (db && typeof db.collection === 'function' && admin?.firestore?.FieldValue) {
-    try {
-      const maintenanceRef = db.collection('settings').doc('maintenance');
-      const publicRef = db.collection('data').doc('public_config');
-      await maintenanceRef.set({ ...payload, _revision: nextRevision, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
-      await publicRef.set({
-        systemHealth: { maintenanceMode: payload.enabled, maintenanceMessage: payload.message },
-        _settingsRevisions: { systemHealth: nextRevision },
-      }, { merge: true }).catch(() => {});
-    } catch (fsErr) {
-      console.warn('[Platform maintenance] Firestore write notice:', fsErr.message);
-    }
-  }
-
+  const connection = await getPool().getConnection();
   try {
-    await recordAdminAuditLog(db, admin, {
-      actorUid: req.user?.uid,
-      actorEmail: req.user?.email,
-      actorRole: 'SUPER_ADMIN',
-      action: 'PLATFORM_MAINTENANCE_UPDATED',
-      category: 'platform.operations',
-      severity: 'HIGH',
-      outcome: 'SUCCESS',
-      method: 'POST',
-      pathname: req.originalUrl,
-      statusCode: 200,
-      metadata: { enabled: payload.enabled, scheduledEnd: payload.scheduledEnd, revision: nextRevision },
-      requestId: res.locals?.requestId,
-    });
-  } catch (_) {}
-
-  return res.json({ success: true, enabled: payload.enabled, message: payload.message, revision: nextRevision, updatedAt: new Date().toISOString() });
+    await connection.beginTransaction();
+    const [rows] = await connection.query("SELECT revision FROM system_settings WHERE category = 'maintenance' FOR UPDATE");
+    const currentRevision = Number(rows[0]?.revision || 0);
+    if (currentRevision !== expectedRevision) {
+      await connection.rollback();
+      return res.status(409).json({ error: { code: 'ADMIN_TARGET_CHANGED', message: 'Maintenance settings changed after the page loaded.', requestId: res.locals?.requestId } });
+    }
+    const nextRevision = currentRevision + 1;
+    await connection.query(
+      `INSERT INTO system_settings (category, data, revision, updated_at)
+       VALUES ('maintenance', ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision), updated_at = NOW()`,
+      [JSON.stringify(payload), nextRevision]
+    );
+    await connection.query(
+      `INSERT INTO admin_audit_logs
+       (id, actor_uid, actor_email, actor_role, action, category, severity, outcome, method, pathname, status_code, resource_type, resource_id, metadata, request_id)
+       VALUES (?, ?, ?, 'SUPER_ADMIN', 'PLATFORM_MAINTENANCE_UPDATED', 'platform.operations', 'HIGH', 'SUCCESS', 'POST', ?, 200, 'system_setting', 'maintenance', ?, ?)`,
+      [require('crypto').randomUUID(), req.user?.uid || 'unknown', req.user?.email || null,
+        req.originalUrl, JSON.stringify({ enabled: payload.enabled, scheduledEnd: payload.scheduledEnd, revision: nextRevision }), res.locals?.requestId || null]
+    );
+    await connection.commit();
+    return res.json({ success: true, ...payload, revision: nextRevision, updatedAt: new Date().toISOString() });
+  } catch (_error) {
+    await connection.rollback().catch(() => {});
+    return res.status(503).json({ error: { code: 'MAINTENANCE_UPDATE_FAILED', message: 'Maintenance settings could not be persisted.', requestId: res.locals?.requestId } });
+  } finally {
+    connection.release();
+  }
 });
 
 router.get('/command-center', async (req, res) => {
-  const db = req.app?.get('db');
-  const tenantService = req.app?.get('tenantService');
-  const platformCurrency = await getPlatformCurrencyConfig(db);
-  const health = await buildHealthPayload(req);
-  const sources = { health: 'ok' };
-  const recommendations = [];
-
-  const engine = getActiveEngine();
-  const isMySQL = engine === 'mysql';
-
-  let statsData = {};
-  let earningsData = {};
-  const tenants = [];
-  const recentSecurity = [];
-  const recentAudit = [];
-  let paymentFailed = null;
-  let paymentPending = null;
-  let paymentActive = null;
-  let highSecurity = null;
-  let suspendedAgg = { ok: true, value: 0 };
-  let activeTenantAgg = { ok: true, value: 0 };
-  let tenantTotalAgg = { ok: true, value: 0 };
-  let announcementsResult = { ok: false };
-  let maintenanceResult = { ok: false };
-  let tenantsResult = { ok: false };
-  let paymentFailedAgg = { ok: true, value: 0 };
-  let highSecurityAgg = { ok: true, value: 0 };
-
-  let featureFlagsSummary = { enabled: 0, disabled: 0, total: 0, source: 'DEFAULTS_ONLY' };
   try {
-    const { getAllFlags } = require('../services/featureFlagService');
-    const flags = await getAllFlags(db);
-    const flagEntries = Object.values(flags || {});
-    featureFlagsSummary.total = flagEntries.length;
-    featureFlagsSummary.enabled = flagEntries.filter(f => f.value === true || f.value === 'true').length;
-    featureFlagsSummary.disabled = flagEntries.length - featureFlagsSummary.enabled;
-    featureFlagsSummary.source = 'AVAILABLE';
-  } catch (_err) {
-    // The absence of a flag read is not a zero-count result.
-  }
-
-  if (isMySQL) {
-    try {
-      const pool = getPool();
-      const [userCnt] = await pool.query('SELECT COUNT(*) as c FROM users');
-      const [resumeCnt] = await pool.query('SELECT COUNT(*) as c FROM resumes');
-      const [portfolioCnt] = await pool.query('SELECT COUNT(*) as c FROM portfolios');
-      const [coverCnt] = await pool.query('SELECT COUNT(*) as c FROM covers');
-      const [earningsRows] = await pool.query('SELECT COALESCE(SUM(amount), 0) as total FROM payment_orders WHERE status IN ("ACTIVE", "COMPLETED", "PAID")');
-      const [statsRows] = await pool.query('SELECT * FROM stats WHERE id = ?', ['stats']);
-      
-      let baseUsers = 0;
-      let baseResumes = 0;
-      let baseDownloads = 0;
-      let baseEarnings = 0;
-
-      if (statsRows.length) {
-        try {
-          const parsed = typeof statsRows[0].data === 'string' ? JSON.parse(statsRows[0].data) : statsRows[0].data;
-          baseUsers = Number(parsed?.numberOfUsers || parsed?.users || 0);
-          baseResumes = Number(parsed?.numberOfResumesCreated || parsed?.resumes || 0);
-          baseDownloads = Number(parsed?.numberOfResumesDownloaded || parsed?.downloads || 0);
-          baseEarnings = Number(parsed?.totalEarnings || parsed?.earnings || 0);
-        } catch (_) {}
-      }
-
-      statsData = {
-        numberOfUsers: Math.max(baseUsers, Number(userCnt[0]?.c || 0)),
-        numberOfResumesCreated: Math.max(baseResumes, Number(resumeCnt[0]?.c || 0) + Number(portfolioCnt[0]?.c || 0) + Number(coverCnt[0]?.c || 0)),
-        numberOfResumesDownloaded: baseDownloads,
-      };
-
-      // payment_orders.amount is stored in subunits (paise/cents), convert to whole currency units
-      const paidSubunits = Number(earningsRows[0]?.total || 0);
-      const paidWholeUnits = paidSubunits / 100;
-
-      earningsData = {
-        amount: Math.max(baseEarnings, paidWholeUnits),
-        currency: platformCurrency.code || 'INR'
-      };
-
-      const [auditRows] = await pool.query('SELECT * FROM database_switch_audit ORDER BY created_at DESC LIMIT 8');
-      auditRows.forEach(row => {
-        recentAudit.push({
-          id: String(row.id),
-          action: `DATABASE_SWITCH_${row.target_engine?.toUpperCase()}`,
-          actorUid: row.actor_uid || 'system',
-          createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
-        });
-      });
-
-      sources.stats = 'ok';
-      sources.tenants = 'ok';
-      sources.payments = 'ok';
-      sources.security = 'ok';
-      sources.earnings = 'ok';
-      sources.audit = 'ok';
-    } catch (e) {
-      console.warn('[Platform] MySQL platform overview notice:', e.message);
-    }
-  } else {
-    const statsResult = db ? await safeQuery('stats', () => db.collection('data').doc('stats').get()) : { ok: false };
-    const earningsResult = db ? await safeQuery('earnings', () => db.collection('data').doc('earnings').get()) : { ok: false };
-    const tenantsResult = db ? await safeQuery('tenants', () => db.collection('enterprise_tenants').limit(200).get()) : { ok: false };
-    const paymentsResult = db ? await safeQuery('payments', () => db.collection('payment_orders').limit(100).get()) : { ok: false };
-    const securityResult = db ? await safeQuery('security', () => db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(20).get()) : { ok: false };
-    const auditResult = db ? await safeQuery('audit', () => db.collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(8).get()) : { ok: false };
-
+    const pool = getPool();
+    const health = await buildHealthPayload(req);
     const [
-      usersCntSnap,
-      resumesCntSnap,
-      portfoliosCntSnap,
-      coversCntSnap,
-      paidPaymentsSnap,
-      paymentsFailCnt,
-      securityHighCnt,
-      suspendedTenantsCnt,
-      activeTenantsCnt,
-      tenantsTotalCnt,
-      activePaymentsCnt,
-      pendingPaymentsCnt
-    ] = db ? await Promise.all([
-      safeQuery('users-count', () => db.collection('users').count().get()),
-      safeQuery('resumes-count', () => (typeof db.collectionGroup === 'function' ? db.collectionGroup('resumes') : db.collection('resumes')).count().get()),
-      safeQuery('portfolios-count', () => (typeof db.collectionGroup === 'function' ? db.collectionGroup('portfolios') : db.collection('portfolios')).count().get()),
-      safeQuery('covers-count', () => (typeof db.collectionGroup === 'function' ? db.collectionGroup('covers') : db.collection('covers')).count().get()),
-      safeQuery('payments-paid', () => db.collection('payment_orders').where('status', 'in', ['ACTIVE', 'COMPLETED', 'PAID']).get()),
-      safeQuery('payments-failed-count', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
-      safeQuery('security-high-count', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
-      safeQuery('tenants-suspended-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
-      safeQuery('tenants-active-count', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'ACTIVE').count().get()),
-      safeQuery('tenants-total-count', () => db.collection('enterprise_tenants').count().get()),
-      safeQuery('payments-active-count', () => db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get()),
-      safeQuery('payments-pending-count', () => db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get()),
-    ]) : [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}];
+      [countRows], [earningsRows], [paymentRows], [securityCountRows], [securityRows],
+      [tenantRows], [attentionTenantRows], [auditRows], [announcementRows], [settingRows],
+      platformCurrency,
+    ] = await Promise.all([
+      pool.query(`SELECT
+        (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS users,
+        (SELECT COUNT(*) FROM resumes WHERE deleted_at IS NULL) AS resumes,
+        (SELECT COUNT(*) FROM portfolios) AS portfolios,
+        (SELECT COUNT(*) FROM covers) AS covers`),
+      pool.query("SELECT COALESCE(SUM(amount), 0) AS total FROM payment_orders WHERE status IN ('ACTIVE','COMPLETED','PAID')"),
+      pool.query('SELECT status, COUNT(*) AS total FROM payment_orders GROUP BY status'),
+      pool.query("SELECT COUNT(*) AS total FROM security_audit_logs WHERE severity IN ('HIGH','CRITICAL')"),
+      pool.query('SELECT id, action, actor_uid, severity, created_at FROM security_audit_logs ORDER BY created_at DESC LIMIT 6'),
+      pool.query(`SELECT COUNT(*) AS total,
+        SUM(lifecycleState = 'ACTIVE') AS active,
+        SUM(lifecycleState = 'SUSPENDED') AS suspended
+        FROM enterprise_tenants`),
+      pool.query("SELECT id, displayName, slug, lifecycleState, isolationTier FROM enterprise_tenants WHERE lifecycleState <> 'ACTIVE' ORDER BY updated_at DESC LIMIT 8"),
+      pool.query('SELECT id, action, actor_uid, actor_email, category, severity, outcome, created_at FROM admin_audit_logs ORDER BY created_at DESC LIMIT 8'),
+      pool.query('SELECT id, title, message, severity, enabled, updated_at FROM platform_announcements WHERE enabled = 1 ORDER BY updated_at DESC LIMIT 5'),
+      pool.query("SELECT category, data, revision, updated_at FROM system_settings WHERE category IN ('maintenance','stats')"),
+      getPlatformCurrencyConfig(null),
+    ]);
 
-    sources.stats = statsResult.ok ? 'ok' : 'unavailable';
-    sources.earnings = earningsResult.ok ? 'ok' : 'unavailable';
-    sources.tenants = tenantsResult.ok ? 'ok' : 'unavailable';
-    sources.payments = paymentsResult.ok ? 'ok' : 'unavailable';
-    sources.security = securityResult.ok ? 'ok' : 'unavailable';
-    sources.audit = auditResult.ok ? 'ok' : 'unavailable';
+    const payments = { failed: 0, pending: 0, active: 0 };
+    for (const row of paymentRows) {
+      const status = String(row.status || '').toUpperCase();
+      const total = Number(row.total || 0);
+      if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) payments.failed += total;
+      else if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING'].includes(status)) payments.pending += total;
+      else if (['ACTIVE', 'COMPLETED', 'PAID'].includes(status)) payments.active += total;
+    }
+    const settings = Object.fromEntries(settingRows.map(row => {
+      let value = {};
+      try { value = typeof row.data === 'string' ? JSON.parse(row.data) : (row.data || {}); } catch { value = {}; }
+      return [row.category, { ...value, revision: Number(row.revision || 0), updatedAt: isoFrom(row.updated_at) }];
+    }));
+    const maintenance = settings.maintenance
+      ? { enabled: settings.maintenance.enabled === true, message: settings.maintenance.message || '', source: 'MARIADB' }
+      : { enabled: false, message: 'Platform is operating normally.', source: 'APPLICATION_DEFAULT' };
+    const stats = settings.stats || {};
+    const totalUsers = Number(countRows[0]?.users || 0);
+    const resumesCreated = Number(countRows[0]?.resumes || 0) + Number(countRows[0]?.portfolios || 0) + Number(countRows[0]?.covers || 0);
+    const highSecurity = Number(securityCountRows[0]?.total || 0);
+    const suspendedCount = Number(tenantRows[0]?.suspended || 0);
 
-    if (statsResult.ok && statsResult.value.exists) statsData = statsResult.value.data();
-    if (earningsResult.ok && earningsResult.value.exists) earningsData = earningsResult.value.data();
-
-    const usersCnt = countFrom(usersCntSnap).ok ? countFrom(usersCntSnap).value : 0;
-    const resumesCnt = countFrom(resumesCntSnap).ok ? countFrom(resumesCntSnap).value : 0;
-    const portfoliosCnt = countFrom(portfoliosCntSnap).ok ? countFrom(portfoliosCntSnap).value : 0;
-    const coversCnt = countFrom(coversCntSnap).ok ? countFrom(coversCntSnap).value : 0;
-
-    let realPaidPaise = 0;
-    if (paidPaymentsSnap.ok && paidPaymentsSnap.value) {
-      paidPaymentsSnap.value.forEach(doc => {
-        const d = doc.data() || {};
-        realPaidPaise += Number(d.amount || 0);
-      });
+    let operationalStatus = null;
+    let operationalSource = 'unavailable';
+    try {
+      const snapshot = await getHealthSnapshot(req.app);
+      operationalSource = 'mariadb-and-live-probes';
+      operationalStatus = {
+        overall: snapshot.summary.overall,
+        indicator: snapshot.summary.indicator,
+        counts: snapshot.summary.counts,
+        checkedAt: snapshot.checkedAt,
+        apiMatrix: {
+          total: snapshot.apiMatrix.total,
+          operationalOrExpected: snapshot.apiMatrix.operationalOrExpected,
+          degraded: snapshot.apiMatrix.degraded,
+          unavailable: snapshot.apiMatrix.unavailable,
+        },
+        attention: snapshot.services
+          .filter(item => [HEALTH_STATE.UNAVAILABLE, HEALTH_STATE.DEGRADED, HEALTH_STATE.UNKNOWN].includes(item.state))
+          .map(item => ({ id: item.id, name: item.name, state: item.state, reason: item.reason, critical: item.critical })),
+      };
+    } catch (error) {
+      console.error('[Platform command center] Operational probe failed:', error?.message || error);
     }
 
-    const baseUsers = Math.max(0, Number(statsData.numberOfUsers || statsData.users || 0));
-    const baseResumes = Math.max(0, Number(statsData.numberOfResumesCreated || statsData.resumes || 0));
-    const totalEngineered = resumesCnt + portfoliosCnt + coversCnt;
+    const tenantRuntime = req.app?.get('tenantService')?.describeRuntime?.() || {};
+    const encryption = tenantRuntime.encryption || { provider: 'none', configured: false };
+    let riskScore = 0;
+    if (health.subsystems.database.status !== 'HEALTHY') riskScore += 40;
+    if (health.subsystems.authentication.status !== 'HEALTHY') riskScore += 30;
+    if (health.subsystems.queue.deadLetterJobs > 0) riskScore += Math.min(25, health.subsystems.queue.deadLetterJobs * 5);
+    if (payments.failed > 0) riskScore += Math.min(20, payments.failed * 4);
+    if (highSecurity > 0) riskScore += Math.min(20, highSecurity * 5);
+    if (suspendedCount > 0) riskScore += 10;
+    if (maintenance.enabled) riskScore += 15;
+    if (encryption.configured !== true) riskScore += 5;
+    riskScore = Math.min(100, riskScore);
 
-    statsData = {
-      numberOfUsers: Math.max(baseUsers, usersCnt),
-      numberOfResumesCreated: totalEngineered > 0 ? totalEngineered : Math.max(0, baseResumes),
-      numberOfResumesDownloaded: Math.max(0, Number(statsData.numberOfResumesDownloaded || statsData.downloads || 0)),
-    };
+    const recommendations = [];
+    if (health.subsystems.database.status !== 'HEALTHY') recommendations.push({ id: 'db-down', severity: 'HIGH', title: 'MariaDB probe failed', detail: 'The authoritative application-data store is unavailable.', href: '/adm/operations' });
+    if (health.subsystems.authentication.status !== 'HEALTHY') recommendations.push({ id: 'auth-down', severity: 'HIGH', title: 'Firebase Authentication probe failed', detail: 'The retained identity directory did not answer the administrative probe.', href: '/adm/health' });
+    if (health.subsystems.queue.deadLetterJobs > 0) recommendations.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} dead-letter job(s)`, detail: 'Inspect failed notification and tenant jobs before individual replay.', href: '/adm/queues' });
+    if (payments.failed > 0) recommendations.push({ id: 'payments', severity: 'MEDIUM', title: `${payments.failed} failed payment order(s)`, detail: 'Review the authoritative MariaDB payment ledger.', href: '/adm/settings?tab=ordersManagement' });
+    if (highSecurity > 0) recommendations.push({ id: 'security', severity: 'HIGH', title: `${highSecurity} high-severity security event(s)`, detail: 'Inspect the durable security event stream.', href: '/adm/security' });
+    if (suspendedCount > 0) recommendations.push({ id: 'suspended-tenants', severity: 'MEDIUM', title: `${suspendedCount} suspended tenant(s)`, detail: 'Confirm that each suspension is still required.', href: '/adm/tenants' });
+    if (maintenance.enabled) recommendations.push({ id: 'maintenance', severity: 'HIGH', title: 'Maintenance mode is enabled', detail: maintenance.message, href: '/adm/operations' });
+    if (!operationalStatus) recommendations.push({ id: 'health-unavailable', severity: 'HIGH', title: 'Operational probe unavailable', detail: 'No service state is inferred while the collector is unavailable.', href: '/adm/health' });
+    if (!recommendations.length) recommendations.push({ id: 'no-observed-alerts', severity: 'INFO', title: 'No alert condition observed', detail: 'Continue monitoring; this is not a certification of untested paths.', href: '/adm/audit-logs' });
 
-    // payment_orders stores amounts in subunits (paise/cents), convert to major units (/ 100)
-    const realPaidRupees = realPaidPaise / 100;
-    const baseStoredEarnings = Number(earningsData.amount || earningsData.total || 0);
-    const finalEarningsAmount = realPaidRupees > 0 ? realPaidRupees : baseStoredEarnings;
-
-    earningsData = {
-      amount: finalEarningsAmount,
-      currency: platformCurrency.code || 'INR'
-    };
-
-    if (tenantsResult.ok) {
-      tenantsResult.value.forEach(doc => {
-        const data = doc.data() || {};
-        tenants.push({
-          id: doc.id,
-          displayName: data.displayName || 'Untitled tenant',
-          slug: data.slug || '',
-          lifecycleState: data.lifecycleState || 'UNKNOWN',
-          isolationTier: data.isolationTier || 'STANDARD',
-        });
-      });
+    let featureFlags = { enabled: null, disabled: null, total: null, source: 'UNAVAILABLE' };
+    try {
+      const { getAllFlags } = require('../services/featureFlagService');
+      const values = Object.values(await getAllFlags());
+      featureFlags = { enabled: values.filter(flag => flag.value === true).length, disabled: values.filter(flag => flag.value !== true).length, total: values.length, source: 'MARIADB' };
+    } catch (error) {
+      console.error('[Platform command center] Feature flag query failed:', error?.message || error);
     }
 
-    const paymentFailedAgg = countFrom(paymentsFailCnt);
-    const paymentPendingAgg = countFrom(pendingPaymentsCnt);
-    const paymentActiveAgg = countFrom(activePaymentsCnt);
-    const highSecurityAgg = countFrom(securityHighCnt);
-    suspendedAgg = countFrom(suspendedTenantsCnt);
-    activeTenantAgg = countFrom(activeTenantsCnt);
-    tenantTotalAgg = countFrom(tenantsTotalCnt);
-
-    paymentFailed = paymentFailedAgg.ok ? paymentFailedAgg.value : null;
-    paymentPending = paymentPendingAgg.ok ? paymentPendingAgg.value : null;
-    paymentActive = paymentActiveAgg.ok ? paymentActiveAgg.value : null;
-    highSecurity = highSecurityAgg.ok ? highSecurityAgg.value : null;
-
-    if (securityResult.ok) {
-      securityResult.value.forEach(doc => {
-        const data = doc.data() || {};
-        const severity = String(data.severity || (String(data.action || '').includes('DENIED') ? 'HIGH' : 'INFO')).toUpperCase();
-        recentSecurity.push({
-          id: doc.id,
-          action: data.action || 'UNKNOWN',
-          actorUid: data.actorUid || null,
-          severity,
-          createdAt: isoFrom(data.createdAt),
-        });
-      });
-    }
-
-    if (auditResult.ok) {
-      auditResult.value.forEach(doc => {
-        const data = doc.data() || {};
-        recentAudit.push({
-          id: doc.id,
-          action: data.action || 'UNKNOWN',
-          actorUid: data.actorUid || null,
-          category: data.category || 'general',
-          createdAt: isoFrom(data.createdAt),
-        });
-      });
-    }
-  }
-
-  const announcements = [];
-  if (announcementsResult.ok) {
-    announcementsResult.value.forEach(doc => {
-      const data = doc.data() || {};
-      announcements.push({
-        id: doc.id,
-        title: data.title || '',
-        message: data.message || '',
-        severity: data.severity || 'INFO',
-        enabled: data.enabled === true,
-        updatedAt: isoFrom(data.updatedAt),
-      });
+    return res.json({
+      healthScore: health.healthScore,
+      healthScoreMethod: health.scoreMethod,
+      status: health.status,
+      riskScore,
+      riskScoreMethod: 'rule-based observed-signal deductions; not a benchmark',
+      commitSha: health.commitSha,
+      uptimeSeconds: health.uptimeSeconds,
+      subsystems: health.subsystems,
+      kpis: {
+        totalUsers,
+        resumesCreated,
+        totalDownloads: Number.isFinite(Number(stats.numberOfResumesDownloaded)) ? Number(stats.numberOfResumesDownloaded) : null,
+        totalEarnings: Number(earningsRows[0]?.total || 0) / 100,
+        currency: platformCurrency.code || 'INR', currencySymbol: platformCurrency.symbol || '₹',
+        tenants: { total: Number(tenantRows[0]?.total || 0), active: Number(tenantRows[0]?.active || 0), suspended: suspendedCount, mode: 'AGGREGATED' },
+      },
+      signals: {
+        database: { status: health.subsystems.database.status, latencyMs: health.subsystems.database.latencyMs },
+        queue: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: 'AGGREGATED' },
+        payments: { status: payments.failed > 0 ? 'DEGRADED' : 'HEALTHY', ...payments, mode: 'AGGREGATED' },
+        security: { status: highSecurity > 0 ? 'ATTENTION' : 'HEALTHY', highSeverity: highSecurity, recentCount: securityRows.length, mode: 'AGGREGATED' },
+        encryption: { status: encryption.configured === true ? 'CONFIGURED' : 'UNAVAILABLE', provider: encryption.provider || 'none', securityLevel: encryption.securityLevel || null },
+        featureFlags,
+        deployment: { status: 'REPORTED', commitSha: health.commitSha, nodeVersion: health.subsystems.runtime.nodeVersion },
+      },
+      recommendations,
+      operationalStatus,
+      attentionTenants: attentionTenantRows.map(row => ({ id: row.id, displayName: row.displayName, slug: row.slug, lifecycleState: row.lifecycleState, isolationTier: row.isolationTier })),
+      recentAudit: auditRows.map(row => ({ id: row.id, action: row.action, actorUid: row.actor_uid, actorEmail: row.actor_email, category: row.category, severity: row.severity, outcome: row.outcome, createdAt: isoFrom(row.created_at) })),
+      recentSecurity: securityRows.map(row => ({ id: row.id, action: row.action, actorUid: row.actor_uid, severity: row.severity, createdAt: isoFrom(row.created_at) })),
+      maintenance,
+      announcements: announcementRows.map(row => ({ id: row.id, title: row.title, message: row.message, severity: row.severity, enabled: row.enabled === 1 || row.enabled === true, updatedAt: isoFrom(row.updated_at) })),
+      sources: { database: 'MARIADB', authentication: 'FIREBASE_AUTH', operationalStatus: operationalSource },
+      updatedAt: new Date().toISOString(),
     });
+  } catch (error) {
+    console.error('[Platform command center] Query failed:', error?.message || error);
+    return res.status(503).json({ error: { code: 'COMMAND_CENTER_UNAVAILABLE', message: 'Command center telemetry is unavailable.', requestId: res.locals?.requestId } });
   }
-
-  const maintenance = maintenanceResult.ok && maintenanceResult.value.exists
-    ? { enabled: maintenanceResult.value.data()?.enabled === true, message: maintenanceResult.value.data()?.message || '', source: 'AVAILABLE' }
-    : { enabled: null, message: null, source: 'UNAVAILABLE' };
-
-  const runtime = tenantService?.describeRuntime?.() || { encryption: { provider: 'none' } };
-  const encryption = runtime.encryption || { provider: 'none', configured: false };
-
-  const suspendedSample = tenants.filter(t => t.lifecycleState === 'SUSPENDED');
-  const suspendedCount = suspendedAgg.ok ? suspendedAgg.value : tenantsResult.ok ? suspendedSample.length : null;
-  const suspendedMode = suspendedAgg.ok ? 'AGGREGATED' : tenantsResult.ok ? 'SAMPLED' : 'UNAVAILABLE';
-
-  let riskScore = 0;
-  if (health.subsystems.database.status !== 'HEALTHY') riskScore += 40;
-  if (health.subsystems.authentication?.status !== 'HEALTHY') riskScore += 30;
-  if (health.subsystems.queue.deadLetterJobs > 0) riskScore += Math.min(25, health.subsystems.queue.deadLetterJobs * 5);
-  if (paymentFailed > 0) riskScore += Math.min(20, paymentFailed * 4);
-  if (highSecurity > 0) riskScore += Math.min(20, highSecurity * 5);
-  if (suspendedCount > 0) riskScore += 10;
-  if (maintenance.enabled) riskScore += 15;
-  if (encryption.provider === 'none' || encryption.configured === false) riskScore += 5;
-  riskScore = Math.max(0, Math.min(100, riskScore));
-
-  if (health.subsystems.database.status !== 'HEALTHY') {
-    recommendations.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', detail: 'Platform data plane did not acknowledge the health write.', href: '/adm/operations' });
-  }
-  if (health.subsystems.authentication?.status !== 'HEALTHY') {
-    recommendations.push({ id: 'auth-down', severity: 'HIGH', title: 'Firebase Authentication probe failed', detail: 'The identity directory did not acknowledge the administrative probe. Authenticated routes cannot be certified as healthy.', href: '/adm/health' });
-  }
-  if (health.subsystems.queue.deadLetterJobs > 0) {
-    recommendations.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} dead-letter notification(s)`, detail: 'Replay or inspect failed email/outbox jobs. Queue counts are from the latest inspected outbox sample.', href: '/adm/queues' });
-  }
-  if (paymentFailed > 0) {
-    recommendations.push({ id: 'payments', severity: 'MEDIUM', title: `${paymentFailed} failed payment order(s)`, detail: 'Review the payment ledger. This is an aggregated Firestore count, not a sample.', href: '/adm/settings?tab=ordersManagement' });
-  } else if (!paymentFailedAgg.ok) {
-    recommendations.push({ id: 'payments-unavailable', severity: 'INFO', title: 'Payment ledger count unavailable', detail: 'Failed-payment aggregation could not be read. Not treated as zero.', href: '/adm/settings?tab=ordersManagement' });
-  }
-  if (highSecurity > 0) {
-    recommendations.push({ id: 'security', severity: 'HIGH', title: `${highSecurity} high-severity security event(s)`, detail: 'Inspect the security event stream for denied or destructive operations. This is an aggregated count.', href: '/adm/security' });
-  } else if (!highSecurityAgg.ok) {
-    recommendations.push({ id: 'security-unavailable', severity: 'INFO', title: 'High-severity security count unavailable', detail: 'Aggregation could not be read. Not treated as zero.', href: '/adm/security' });
-  }
-  if (suspendedCount > 0) {
-    recommendations.push({ id: 'suspended-tenants', severity: 'MEDIUM', title: `${suspendedCount} suspended tenant(s)`, detail: suspendedMode === 'AGGREGATED' ? 'Confirm whether suspension is still required.' : 'Count is from the inspected tenant sample, not a full scan.', href: '/adm/tenants' });
-  }
-  if (maintenance.enabled) {
-    recommendations.push({ id: 'maintenance', severity: 'HIGH', title: 'Maintenance mode is enabled', detail: maintenance.message || 'Public product routes are blocked for non-admins.', href: '/adm/operations' });
-  }
-  // Operational health is folded into the command center so the Attention list
-  // and the Platform Health console can never disagree about the same fact.
-  let operationalStatus = null;
-  let emailOperationalState = 'UNKNOWN';
-  try {
-    const snapshot = await getHealthSnapshot(req.app);
-    sources.operationalStatus = 'ok';
-    emailOperationalState = snapshot.services.find(item => item.id === 'email-smtp')?.state || 'UNKNOWN';
-    operationalStatus = {
-      overall: snapshot.summary.overall,
-      indicator: snapshot.summary.indicator,
-      counts: snapshot.summary.counts,
-      checkedAt: snapshot.checkedAt,
-      apiMatrix: {
-        total: snapshot.apiMatrix.total,
-        operationalOrExpected: snapshot.apiMatrix.operationalOrExpected,
-        degraded: snapshot.apiMatrix.degraded,
-        unavailable: snapshot.apiMatrix.unavailable,
-      },
-      attention: snapshot.services
-        .filter(item => [HEALTH_STATE.UNAVAILABLE, HEALTH_STATE.DEGRADED, HEALTH_STATE.UNKNOWN].includes(item.state))
-        .map(item => ({ id: item.id, name: item.name, state: item.state, reason: item.reason, critical: item.critical })),
-    };
-    for (const item of attentionItemsFromOperationalStatus(snapshot)) {
-      if (item.severity === 'INFO') continue;
-      if (recommendations.some(existing => existing.id === item.id)) continue;
-      recommendations.push({ id: item.id, severity: item.severity, title: item.title, detail: item.detail, href: item.href });
-    }
-  } catch (_) {
-    sources.operationalStatus = 'unavailable';
-  }
-
-  if (!recommendations.length) {
-    recommendations.push({ id: 'healthy', severity: 'INFO', title: 'No urgent platform actions from inspected sources', detail: 'Continue monitoring health, audit, and tenant lifecycle.', href: '/adm/audit-logs' });
-  }
-
-  return res.json({
-    healthScore: health.healthScore,
-    status: health.status,
-    riskScore,
-    commitSha: health.commitSha,
-    uptimeSeconds: health.uptimeSeconds,
-    subsystems: health.subsystems,
-    kpis: {
-      totalUsers: statsData.numberOfUsers ?? statsData.users ?? statsData.totalUsers ?? 0,
-      resumesCreated: statsData.numberOfResumesCreated ?? statsData.resumes ?? 0,
-      totalDownloads: statsData.numberOfResumesDownloaded ?? statsData.downloads ?? 0,
-      totalEarnings: earningsData.amount ?? earningsData.total ?? 0,
-      currency: platformCurrency.code || 'INR',
-      currencySymbol: platformCurrency.symbol || (platformCurrency.code === 'INR' ? '₹' : (platformCurrency.code === 'EUR' ? '€' : (platformCurrency.code === 'GBP' ? '£' : '$'))),
-      tenants: {
-        total: tenantTotalAgg.ok ? tenantTotalAgg.value : isMySQL ? 0 : tenantsResult.ok ? tenants.length : null,
-        active: activeTenantAgg.ok ? activeTenantAgg.value : isMySQL ? 0 : tenantsResult.ok ? tenants.filter(t => t.lifecycleState === 'ACTIVE').length : null,
-        suspended: suspendedCount,
-        mode: isMySQL ? 'AGGREGATED' : tenantTotalAgg.ok ? 'AGGREGATED' : tenantsResult.ok ? 'SAMPLED' : 'UNAVAILABLE',
-      },
-    },
-    signals: {
-      database: { status: health.subsystems.database.status, latencyMs: health.subsystems.database.latencyMs },
-      queue: { status: health.subsystems.queue.status, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: 'SAMPLED' },
-      email: { status: emailOperationalState, deadLetter: health.subsystems.queue.deadLetterJobs, pending: health.subsystems.queue.activeJobs, mode: emailOperationalState === 'UNKNOWN' ? 'UNAVAILABLE' : 'OPERATIONAL_STATUS' },
-      payments: {
-        status: !paymentFailedAgg.ok ? 'UNAVAILABLE' : paymentFailed > 0 ? 'DEGRADED' : 'HEALTHY',
-        failed: paymentFailed,
-        pending: paymentPending,
-        active: paymentActive,
-        mode: paymentFailedAgg.ok ? 'AGGREGATED' : 'UNAVAILABLE',
-      },
-      security: {
-        status: !highSecurityAgg.ok ? 'UNAVAILABLE' : highSecurity > 0 ? 'ATTENTION' : 'HEALTHY',
-        highSeverity: highSecurity,
-        recentCount: recentSecurity.length,
-        mode: highSecurityAgg.ok ? 'AGGREGATED' : 'UNAVAILABLE',
-      },
-      encryption: {
-        status: encryption.configured === true ? 'CONFIGURED' : 'UNAVAILABLE',
-        provider: encryption.provider || 'none',
-        securityLevel: encryption.securityLevel || null,
-      },
-      featureFlags: featureFlagsSummary,
-      deployment: {
-        status: 'REPORTED',
-        commitSha: health.commitSha,
-        nodeVersion: health.subsystems.runtime.nodeVersion,
-      },
-    },
-    recommendations,
-    operationalStatus,
-    attentionTenants: tenants.filter(t => t.lifecycleState !== 'ACTIVE').slice(0, 8),
-    recentAudit,
-    recentSecurity: recentSecurity.slice(0, 6),
-    maintenance,
-    announcements: announcements.filter(item => item.enabled).slice(0, 5),
-    sources,
-    updatedAt: new Date().toISOString(),
-  });
 });
 
 router.get('/security-events', async (req, res) => {
-  const db = req.app?.get('db');
-  const pool = getPool();
   const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
-  const events = [];
-  const seenIds = new Set();
-
-  // 1. Try MySQL security_audit_logs
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        "SELECT id, action, actor_uid, target_uid, category, severity, metadata, request_id, created_at FROM security_audit_logs ORDER BY created_at DESC LIMIT ?",
-        [limit]
-      );
-      if (Array.isArray(rows)) {
-        rows.forEach(r => {
-          seenIds.add(r.id);
-          let meta = {};
-          try { meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata) : (r.metadata || {}); } catch { meta = {}; }
-          events.push({
-            id: r.id,
-            action: r.action || 'UNKNOWN',
-            actorUid: r.actor_uid || null,
-            actorEmail: meta.actorEmail || meta.actor_email || null,
-            targetUid: r.target_uid || null,
-            category: r.category || null,
-            severity: r.severity || 'INFO',
-            pathname: meta.pathname || null,
-            requestId: r.request_id || null,
-            createdAt: isoFrom(r.created_at),
-          });
-        });
-      }
-    } catch (mysqlErr) {
-      console.warn('[Platform security-events] MySQL query notice:', mysqlErr.message);
-    }
+  try {
+    const [rows] = await getPool().query(
+      `SELECT id, action, actor_uid, target_uid, category, severity, target_type,
+              target_id, metadata, request_id, created_at
+       FROM security_audit_logs ORDER BY created_at DESC LIMIT ?`,
+      [limit]
+    );
+    const events = rows.map(row => {
+      let metadata = {};
+      try { metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {}); } catch { metadata = {}; }
+      return {
+        id: row.id, action: row.action || 'UNKNOWN', actorUid: row.actor_uid || null,
+        actorEmail: metadata.actorEmail || null, targetUid: row.target_uid || null,
+        targetType: row.target_type || null, targetId: row.target_id || null,
+        category: row.category || null, severity: row.severity || 'INFO',
+        pathname: metadata.pathname || null, requestId: row.request_id || null,
+        createdAt: isoFrom(row.created_at),
+      };
+    });
+    return res.json({ events, count: events.length, source: 'MARIADB' });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'SECURITY_EVENTS_UNAVAILABLE', message: 'Security events are unavailable.', requestId: res.locals?.requestId } });
   }
-
-  // 2. Try Firestore security_audit_logs if available
-  if (db && typeof db.collection === 'function' && events.length < limit) {
-    try {
-      const snap = await db.collection('security_audit_logs').orderBy('createdAt', 'desc').limit(limit).get();
-      snap.forEach(doc => {
-        if (!seenIds.has(doc.id)) {
-          seenIds.add(doc.id);
-          const data = doc.data() || {};
-          events.push({
-            id: doc.id,
-            action: data.action || 'UNKNOWN',
-            actorUid: data.actorUid || null,
-            actorEmail: data.actorEmail || null,
-            targetUid: data.targetUid || null,
-            tenantId: data.tenantId || null,
-            category: data.category || null,
-            severity: data.severity || 'INFO',
-            pathname: data.pathname || null,
-            requestId: data.requestId || null,
-            createdAt: isoFrom(data.createdAt),
-          });
-        }
-      });
-    } catch (error) {
-      console.warn('[Platform security-events] Firestore notice:', error.message);
-    }
-  }
-
-  return res.json({ events, count: events.length });
 });
 
 router.get('/encryption', async (req, res) => {
@@ -1409,221 +738,113 @@ router.get('/encryption', async (req, res) => {
 
 router.get('/observability', async (req, res) => {
   const { enterpriseObservability } = require('../enterprise/tenantObservability');
-  
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
-  
-  if (db && admin && !enterpriseObservability.durableDb) {
-    enterpriseObservability.setDurableStore(db, admin);
+  enterpriseObservability.setDurableStore(getPool());
+  try {
+    const [rows] = await getPool().query('SELECT * FROM enterprise_observability_rollups WHERE id = ?', ['global']);
+    return res.json({
+      metrics: enterpriseObservability.getMetrics(),
+      durableMetrics: rows[0] || null,
+      note: 'Percentiles are measured from server request durations in this process; no performance improvement is inferred.',
+      commitSha: getCommitSha(), uptimeSeconds: Math.floor(process.uptime()),
+    });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'OBSERVABILITY_UNAVAILABLE', message: 'Durable observability metrics are unavailable.', requestId: res.locals?.requestId } });
   }
-
-  // Optionally trigger an immediate flush to ensure we don't lose data on restart
-  if (db && admin) {
-    await enterpriseObservability.flushToDurableStore();
-  }
-
-  const metrics = enterpriseObservability.getMetrics();
-  
-  let durableMetrics = null;
-  if (db) {
-    try {
-      const snap = await db.collection('data').doc('observability').get();
-      if (snap.exists) durableMetrics = snap.data();
-    } catch (_) {}
-  }
-
-  return res.json({
-    metrics,
-    durableMetrics,
-    note: 'In-process sample metrics are combined with durable historical metrics from Firestore.',
-    commitSha: getCommitSha(),
-    uptimeSeconds: Math.floor(process.uptime()),
-  });
 });
 
 router.get('/backup-status', async (req, res) => {
-  const tenantService = req.app?.get('tenantService');
-  const runtime = tenantService?.describeRuntime?.() || {};
-  const db = req.app?.get('db');
-  let lastExport = null;
-  if (db) {
-    try {
-      const snap = await db.collection('admin_audit_logs').where('action', '==', 'TENANT_DATA_EXPORTED').orderBy('createdAt', 'desc').limit(1).get();
-      if (!snap.empty) {
-        const data = snap.docs[0].data() || {};
-        lastExport = { id: snap.docs[0].id, createdAt: isoFrom(data.createdAt), actorEmail: data.actorEmail || data.actorUid || null };
-      }
-    } catch (_) { /* index may be absent; capability remains truthful */ }
+  const runtime = req.app?.get('tenantService')?.describeRuntime?.() || {};
+  try {
+    const [rows] = await getPool().query(
+      "SELECT id, actor_email, actor_uid, created_at FROM admin_audit_logs WHERE action = 'TENANT_DATA_EXPORTED' ORDER BY created_at DESC LIMIT 1"
+    );
+    return res.json({
+      capability: {
+        provider: 'mariadb-logical-tenant-export',
+        available: runtime.dataPlaneConfigured === true,
+        restoreModes: ['dry-run', 'apply'],
+        scope: 'tenant-portability-not-physical-disaster-recovery',
+      },
+      lastRecordedExport: rows[0] ? { id: rows[0].id, createdAt: isoFrom(rows[0].created_at), actorEmail: rows[0].actor_email || rows[0].actor_uid || null } : null,
+      productionBackupVerification: {
+        status: process.env.DB_BACKUP_VERIFIED_AT && process.env.DB_BACKUP_REFERENCE ? 'REPORTED_BY_RELEASE_ENVIRONMENT' : 'NOT_VERIFIED',
+        verifiedAt: process.env.DB_BACKUP_VERIFIED_AT || null,
+        referenceConfigured: Boolean(process.env.DB_BACKUP_REFERENCE),
+      },
+    });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'BACKUP_STATUS_UNAVAILABLE', message: 'Backup status is unavailable.', requestId: res.locals?.requestId } });
   }
-  return res.json({
-    capability: {
-      provider: 'enterpriseBackup.exportTenantSnapshot',
-      available: Boolean(db && runtime.dataPlaneConfigured),
-      restoreModes: ['dry-run', 'apply'],
-      note: 'Backup and restore remain tenant-scoped Enterprise operations. Super Admin surfaces status and links; it does not duplicate the backup store.',
-    },
-    lastRecordedExport: lastExport,
-  });
 });
 
 router.get('/payments-health', async (req, res) => {
-  const db = req.app?.get('db');
-  const pool = getPool();
-  let counts = null;
-
-  // 1. Try MySQL payment_orders table
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        "SELECT status, count(*) as cnt FROM payment_orders GROUP BY status"
-      );
-      if (Array.isArray(rows) && rows.length > 0) {
-        const c = { inspected: 0, ACTIVE: 0, FAILED: 0, PENDING: 0, REFUNDED: 0, OTHER: 0 };
-        rows.forEach(r => {
-          const st = String(r.status || '').toUpperCase();
-          const n = Number(r.cnt || 0);
-          c.inspected += n;
-          if (st === 'ACTIVE') c.ACTIVE += n;
-          else if (['FAILED', 'CANCELLED', 'DECLINED'].includes(st)) c.FAILED += n;
-          else if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING'].includes(st)) c.PENDING += n;
-          else if (st === 'REFUNDED') c.REFUNDED += n;
-          else c.OTHER += n;
-        });
-        counts = c;
-      }
-    } catch (mysqlErr) {
-      console.warn('[Platform payments-health] MySQL query notice:', mysqlErr.message);
+  try {
+    const [rows] = await getPool().query('SELECT status, COUNT(*) AS total FROM payment_orders GROUP BY status');
+    const counts = { inspected: 0, ACTIVE: 0, FAILED: 0, PENDING: 0, REFUNDED: 0, OTHER: 0 };
+    for (const row of rows) {
+      const status = String(row.status || '').toUpperCase();
+      const total = Number(row.total || 0);
+      counts.inspected += total;
+      if (['ACTIVE', 'COMPLETED', 'PAID'].includes(status)) counts.ACTIVE += total;
+      else if (['FAILED', 'CANCELLED', 'DECLINED'].includes(status)) counts.FAILED += total;
+      else if (['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING'].includes(status)) counts.PENDING += total;
+      else if (status === 'REFUNDED') counts.REFUNDED += total;
+      else counts.OTHER += total;
     }
+    return res.json({ counts, status: counts.FAILED > 0 ? 'DEGRADED' : 'HEALTHY', source: 'MARIADB_PAYMENT_LEDGER' });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'PAYMENTS_HEALTH_UNAVAILABLE', message: 'Payment ledger health is unavailable.', requestId: res.locals?.requestId } });
   }
-
-  // 2. Try Firestore if not queried from MySQL
-  if (!counts && db && typeof db.collection === 'function') {
-    try {
-      const [activeCnt, failedCnt, pendingCnt, refundedCnt, allCnt] = await Promise.all([
-        db.collection('payment_orders').where('status', '==', 'ACTIVE').count().get().catch(() => ({ data: () => ({ count: 0 }) })),
-        db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get().catch(() => ({ data: () => ({ count: 0 }) })),
-        db.collection('payment_orders').where('status', 'in', ['PENDING', 'PENDING_PAYMENT', 'PAYMENT_CREATED', 'REFUND_PENDING']).count().get().catch(() => ({ data: () => ({ count: 0 }) })),
-        db.collection('payment_orders').where('status', '==', 'REFUNDED').count().get().catch(() => ({ data: () => ({ count: 0 }) })),
-        db.collection('payment_orders').count().get().catch(() => ({ data: () => ({ count: 0 }) })),
-      ]);
-
-      counts = {
-        inspected: allCnt.data().count,
-        ACTIVE: activeCnt.data().count,
-        FAILED: failedCnt.data().count,
-        PENDING: pendingCnt.data().count,
-        REFUNDED: refundedCnt.data().count,
-        OTHER: Math.max(0, allCnt.data().count - (activeCnt.data().count + failedCnt.data().count + pendingCnt.data().count + refundedCnt.data().count)),
-      };
-    } catch (fsErr) {
-      console.warn('[Platform payments-health] Firestore query notice:', fsErr.message);
-    }
-  }
-
-  if (!counts) {
-    counts = { inspected: 0, ACTIVE: 0, FAILED: 0, PENDING: 0, REFUNDED: 0, OTHER: 0 };
-  }
-
-  return res.json({
-    counts,
-    status: counts.FAILED > 0 ? 'DEGRADED' : 'HEALTHY',
-    note: 'Counts are fully accurate aggregations from the dual-database payment_orders ledger.',
-  });
 });
 
 router.get('/search', async (req, res) => {
-  const q = String(req.query.q || '').trim().slice(0, 120);
-  if (q.length < 2) return res.json({ users: [], tenants: [], query: q });
-  const db = req.app?.get('db');
-  const pool = getPool();
-  const tenantService = req.app?.get('tenantService');
-  const needle = q.toLowerCase();
-  const tenants = [];
-  const users = [];
-  const seenUserIds = new Set();
-
+  const query = String(req.query.q || '').trim().slice(0, 120);
+  if (query.length < 2) return res.json({ users: [], tenants: [], query });
   try {
-    if (tenantService?.listPlatformTenants) {
-      const listed = await tenantService.listPlatformTenants({ user: req.user, limit: 200 });
-      for (const tenant of listed) {
-        if ([tenant.displayName, tenant.slug, tenant.id].some(value => String(value || '').toLowerCase().includes(needle))) {
-          tenants.push(tenant);
-        }
-      }
-    }
-  } catch (_) { /* tenant search remains best-effort */ }
-
-  // 1. Search MySQL users
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        "SELECT id, email, displayName, firstname, lastname, membership FROM users WHERE email LIKE ? OR displayName LIKE ? OR id = ? LIMIT 10",
-        [`%${q}%`, `%${q}%`, q]
-      );
-      if (Array.isArray(rows)) {
-        rows.forEach(u => {
-          seenUserIds.add(u.id);
-          users.push({
-            id: u.id,
-            email: u.email || null,
-            displayName: u.displayName || `${u.firstname || ''} ${u.lastname || ''}`.trim() || null,
-            membership: u.membership || null,
-          });
-        });
-      }
-    } catch (_) {}
+    const like = `%${query.replace(/[%_\\]/g, value => `\\${value}`)}%`;
+    const [[users], [tenants]] = await Promise.all([
+      getPool().query(
+        `SELECT id, email, displayName, firstname, lastname, membership
+         FROM users WHERE email LIKE ? ESCAPE '\\\\' OR displayName LIKE ? ESCAPE '\\\\' OR id = ? LIMIT 10`,
+        [like, like, query]
+      ),
+      getPool().query(
+        `SELECT id, slug, displayName, lifecycleState, isolationTier
+         FROM enterprise_tenants WHERE displayName LIKE ? ESCAPE '\\\\' OR slug LIKE ? ESCAPE '\\\\' OR id = ? LIMIT 10`,
+        [like, like, query]
+      ),
+    ]);
+    return res.json({
+      query,
+      users: users.map(user => ({ id: user.id, email: user.email || null, displayName: user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || null, membership: user.membership || null })),
+      tenants,
+      source: 'MARIADB',
+    });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'PLATFORM_SEARCH_UNAVAILABLE', message: 'Platform search is unavailable.', requestId: res.locals?.requestId } });
   }
-
-  // 2. Search Firestore users if not found
-  if (db && users.length < 5) {
-    try {
-      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(q)) {
-        const snap = await db.collection('users').where('email', '==', q.toLowerCase()).limit(5).get();
-        snap.forEach(doc => {
-          if (!seenUserIds.has(doc.id)) {
-            seenUserIds.add(doc.id);
-            const data = doc.data() || {};
-            users.push({ id: doc.id, email: data.email || q, displayName: data.displayName || `${data.firstname || ''} ${data.lastname || ''}`.trim(), membership: data.membership || null });
-          }
-        });
-      }
-    } catch (_) {}
-  }
-
-  return res.json({ query: q, users: users.slice(0, 8), tenants: tenants.slice(0, 8) });
 });
 
-router.get('/announcements', async (req, res) => {
-  const pool = getPool();
-  const announcements = [];
-
-  // MySQL platform_announcements table (authoritative).
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        'SELECT id, title, message, severity, audience, enabled, revision, created_by, updated_at FROM platform_announcements ORDER BY updated_at DESC LIMIT 50'
-      );
-      if (Array.isArray(rows)) {
-        rows.forEach(row => {
-          announcements.push({
-            id: row.id,
-            title: row.title || '',
-            message: row.message || '',
-            severity: row.severity || 'INFO',
-            audience: row.audience || 'ALL',
-            enabled: row.enabled === 1 || row.enabled === true,
-            revision: Number(row.revision || 0),
-            createdBy: row.created_by || null,
-            updatedAt: isoFrom(row.updated_at),
-          });
-        });
-      }
-    } catch (mysqlErr) {
-      console.warn('[Platform announcements] MySQL query notice:', mysqlErr.message);
-    }
+router.get('/announcements', async (_req, res) => {
+  try {
+    const [rows] = await getPool().query(
+      'SELECT id, title, message, severity, audience, enabled, revision, created_by, updated_at FROM platform_announcements ORDER BY updated_at DESC LIMIT 50'
+    );
+    const announcements = rows.map(row => ({
+      id: row.id,
+      title: row.title || '',
+      message: row.message || '',
+      severity: row.severity || 'INFO',
+      audience: row.audience || 'ALL',
+      enabled: row.enabled === 1 || row.enabled === true,
+      revision: Number(row.revision || 0),
+      createdBy: row.created_by || null,
+      updatedAt: isoFrom(row.updated_at),
+    }));
+    return res.json({ announcements, source: 'MARIADB' });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'ANNOUNCEMENTS_UNAVAILABLE', message: 'Announcements are unavailable.', requestId: res.locals?.requestId } });
   }
-
-  return res.json({ announcements });
 });
 
 router.post('/announcements', requireRecentAdminAuthentication, async (req, res) => {
@@ -1653,7 +874,7 @@ router.post('/announcements', requireRecentAdminAuthentication, async (req, res)
       [require('crypto').randomUUID(), req.user?.uid || 'admin', JSON.stringify({ announcementId: id, revision: 1 }), res.locals?.requestId || null]
     );
     await conn.commit();
-  } catch (err) {
+  } catch (_err) {
     await conn.rollback().catch(() => {});
     return res.status(503).json({ error: { code: 'DATABASE_UNAVAILABLE', message: 'Announcement could not be persisted', requestId: res.locals?.requestId } });
   } finally {
@@ -1710,7 +931,7 @@ router.patch('/announcements/:id', requireRecentAdminAuthentication, async (req,
     );
     await conn.commit();
     return res.json({ success: true, announcement: { id, title: nextTitle, message: nextMessage, severity: nextSeverity, audience: current.audience, enabled: nextEnabled, revision: nextRevision } });
-  } catch (error) {
+  } catch (_error) {
     await conn.rollback().catch(() => {});
     return res.status(503).json({ error: { code: 'ANNOUNCEMENT_UPDATE_FAILED', message: 'Announcement could not be updated', requestId: res.locals?.requestId } });
   } finally {
@@ -1749,7 +970,7 @@ router.delete('/announcements/:id', requireRecentAdminAuthentication, async (req
     );
     await conn.commit();
     return res.json({ success: true, id });
-  } catch (error) {
+  } catch (_error) {
     await conn.rollback().catch(() => {});
     return res.status(503).json({ error: { code: 'ANNOUNCEMENT_DELETE_FAILED', message: 'Announcement could not be deleted', requestId: res.locals?.requestId } });
   } finally {
@@ -1757,33 +978,29 @@ router.delete('/announcements/:id', requireRecentAdminAuthentication, async (req
   }
 });
 
-async function inspectAttentionSignals(req) {
-  const db = req.app?.get('db');
-  const extras = { paymentFailed: 0, highSecurity: 0, suspendedTenants: 0, maintenanceEnabled: false };
-  if (!db) return extras;
-  const [payments, security, tenants, maintenance] = await Promise.all([
-    safeQuery('payments', () => db.collection('payment_orders').where('status', 'in', ['FAILED', 'CANCELLED', 'DECLINED']).count().get()),
-    safeQuery('security', () => db.collection('security_audit_logs').where('severity', 'in', ['HIGH', 'CRITICAL']).count().get()),
-    safeQuery('tenants', () => db.collection('enterprise_tenants').where('lifecycleState', '==', 'SUSPENDED').count().get()),
-    safeQuery('maintenance', () => db.collection('settings').doc('maintenance').get()),
+async function inspectAttentionSignals() {
+  const [[paymentRows], [securityRows], [tenantRows], [maintenanceRows]] = await Promise.all([
+    getPool().query("SELECT COUNT(*) AS total FROM payment_orders WHERE status IN ('FAILED','CANCELLED','DECLINED')"),
+    getPool().query("SELECT COUNT(*) AS total FROM security_audit_logs WHERE severity IN ('HIGH','CRITICAL')"),
+    getPool().query("SELECT COUNT(*) AS total FROM enterprise_tenants WHERE lifecycleState = 'SUSPENDED'"),
+    getPool().query("SELECT data FROM system_settings WHERE category = 'maintenance'"),
   ]);
-  if (payments.ok && payments.value) {
-    extras.paymentFailed = payments.value.data().count || 0;
+  let maintenance = {};
+  if (maintenanceRows[0]) {
+    try { maintenance = typeof maintenanceRows[0].data === 'string' ? JSON.parse(maintenanceRows[0].data) : (maintenanceRows[0].data || {}); } catch { maintenance = {}; }
   }
-  if (security.ok && security.value) {
-    extras.highSecurity = security.value.data().count || 0;
-  }
-  if (tenants.ok && tenants.value) {
-    extras.suspendedTenants = tenants.value.data().count || 0;
-  }
-  extras.maintenanceEnabled = maintenance.ok && maintenance.value.exists && maintenance.value.data()?.enabled === true;
-  return extras;
+  return {
+    paymentFailed: Number(paymentRows[0]?.total || 0),
+    highSecurity: Number(securityRows[0]?.total || 0),
+    suspendedTenants: Number(tenantRows[0]?.total || 0),
+    maintenanceEnabled: maintenance.enabled === true,
+  };
 }
 
 function attentionItemsFromSignals(health, extras = {}) {
   const items = [];
   if (health.subsystems.database.status !== 'HEALTHY') {
-    items.push({ id: 'db-down', severity: 'HIGH', title: 'Firestore ping failed', href: '/adm/operations', kind: 'health' });
+    items.push({ id: 'db-down', severity: 'HIGH', title: 'MariaDB probe failed', href: '/adm/operations', kind: 'health' });
   }
   if (health.subsystems.queue.deadLetterJobs > 0) {
     items.push({ id: 'dlq', severity: 'HIGH', title: `${health.subsystems.queue.deadLetterJobs} notification DLQ item(s)`, href: '/adm/queues', kind: 'queue' });
@@ -1861,34 +1078,40 @@ function attentionItemsFromOperationalStatus(snapshot) {
 }
 
 router.get('/attention', async (req, res) => {
-  const health = await buildHealthPayload(req);
-  const extras = await inspectAttentionSignals(req);
-  let operational = null;
-  let operationalSource = 'unavailable';
   try {
-    operational = await getHealthSnapshot(req.app);
-    operationalSource = 'ok';
-  } catch (_) { /* the signal-derived items below remain valid */ }
+    const health = await buildHealthPayload(req);
+    const extras = await inspectAttentionSignals(req);
+    let operational = null;
+    let operationalSource = 'unavailable';
+    try {
+      operational = await getHealthSnapshot(req.app);
+      operationalSource = 'ok';
+    } catch (_) { /* the signal-derived items below remain valid */ }
 
-  const items = [...attentionItemsFromSignals(health, extras), ...attentionItemsFromOperationalStatus(operational)];
-  const deduped = [];
-  const seen = new Set();
-  for (const item of items) {
-    if (seen.has(item.id)) continue;
-    seen.add(item.id);
-    deduped.push(item);
+    const items = [...attentionItemsFromSignals(health, extras), ...attentionItemsFromOperationalStatus(operational)];
+    const deduped = [];
+    const seen = new Set();
+    for (const item of items) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      deduped.push(item);
+    }
+
+    return res.json({
+      items: deduped,
+      healthScore: health.healthScore,
+      status: health.status,
+      operationalStatus: operational
+        ? { overall: operational.summary.overall, indicator: operational.summary.indicator, counts: operational.summary.counts, checkedAt: operational.checkedAt }
+        : null,
+      operationalSource,
+      note: 'Attention items are derived from inspected platform signals and live operational health. This is not a ticket system.',
+    });
+  } catch (_error) {
+    return res.status(503).json({
+      error: { code: 'ATTENTION_SIGNALS_UNAVAILABLE', message: 'Platform attention signals are unavailable.', requestId: res.locals?.requestId },
+    });
   }
-
-  return res.json({
-    items: deduped,
-    healthScore: health.healthScore,
-    status: health.status,
-    operationalStatus: operational
-      ? { overall: operational.summary.overall, indicator: operational.summary.indicator, counts: operational.summary.counts, checkedAt: operational.checkedAt }
-      : null,
-    operationalSource,
-    note: 'Attention items are derived from inspected platform signals and live operational health. This is not a ticket system.',
-  });
 });
 
 /**
@@ -1914,156 +1137,51 @@ router.get('/health-indicator', async (req, res) => {
   }
 });
 
-router.get('/enterprise-queue', async (req, res) => {
+router.get('/enterprise-queue', async (_req, res) => {
   try {
-    const pool = getPool();
-    const db = req.app?.get('db');
-    const admin = req.app?.get('firebaseAdmin');
-    const signingSecret = process.env.TENANT_JOB_SIGNING_SECRET || null;
-    
-    let queue = null;
-    if (db && typeof db.collection === 'function') {
-      try {
-        const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
-        queue = await getOutboxStatus({ db, admin, signingSecret });
-      } catch (err) {
-        console.warn('[Platform enterprise-queue] Firestore outbox query notice:', err.message);
-      }
-    }
-
-    if (!queue && pool) {
-      try {
-        const [rows] = await pool.query(
-          "SELECT status, count(*) as cnt FROM sync_outbox GROUP BY status"
-        );
-        const counts = { QUEUED: 0, PROCESSING: 0, RETRYING: 0, COMPLETED: 0, DEAD_LETTER: 0, REJECTED: 0 };
-        (rows || []).forEach(r => {
-          if (counts[r.status] !== undefined) counts[r.status] = Number(r.cnt || 0);
-        });
-        queue = {
-          totalEnqueued: Object.values(counts).reduce((a, b) => a + b, 0),
-          counts,
-          deadLetterCount: counts.DEAD_LETTER,
-          claimableCount: counts.QUEUED + counts.RETRYING,
-          status: counts.DEAD_LETTER > 0 ? 'DEGRADED' : 'HEALTHY',
-          provider: 'MariaDB sync_outbox',
-        };
-      } catch (mysqlErr) {
-        console.warn('[Platform enterprise-queue] MySQL outbox query notice:', mysqlErr.message);
-      }
-    }
-
-    if (!queue) {
-      queue = {
-        totalEnqueued: 0,
-        counts: { QUEUED: 0, PROCESSING: 0, RETRYING: 0, COMPLETED: 0, DEAD_LETTER: 0, REJECTED: 0 },
-        deadLetterCount: 0,
-        claimableCount: 0,
-        status: 'HEALTHY',
-        provider: 'In-Memory / Multi-Engine Resilient',
-      };
-    }
-
-    return res.json({
-      queue,
-      note: 'Global Enterprise durable-outbox posture. Tenant job replay remains in /enterprise.',
+    const { getOutboxStatus } = require('../enterprise/enterpriseOutbox');
+    const queue = await getOutboxStatus({
+      pool: getPool(),
+      signingSecret: process.env.TENANT_JOB_SIGNING_SECRET || null,
     });
+    return res.json({ queue, note: 'Global MariaDB enterprise-outbox posture. Tenant-scoped replay remains in the Enterprise console.' });
   } catch (_error) {
-    return res.json({
-      queue: {
-        totalEnqueued: 0,
-        counts: { QUEUED: 0, PROCESSING: 0, RETRYING: 0, COMPLETED: 0, DEAD_LETTER: 0, REJECTED: 0 },
-        deadLetterCount: 0,
-        claimableCount: 0,
-        status: 'HEALTHY',
-        provider: 'Fallback Safe State',
-      },
-      note: 'Global Enterprise durable-outbox posture. Tenant job replay remains in /enterprise.',
-    });
+    return res.status(503).json({ error: { code: 'ENTERPRISE_QUEUE_UNAVAILABLE', message: 'Enterprise queue telemetry is unavailable.', requestId: res.locals?.requestId } });
   }
 });
 
 const PLATFORM_OPERATOR_ROLES = new Set(['ADMIN', 'SUPPORT', 'USER']);
 
 router.get('/operators', async (req, res) => {
-  const db = req.app?.get('db');
-  const pool = getPool();
   const identityAdmin = req.app?.get('firebaseAdmin');
-  const operators = [];
-  const seenIds = new Set();
-  let source = 'LOCAL_DATABASE';
-
-  // 1. Query MySQL users table for operators
-  if (pool) {
-    try {
-      const [rows] = await pool.query(
-        "SELECT id, email, role, firstname, lastname, displayName, suspended FROM users WHERE UPPER(role) IN ('ADMIN', 'SUPER_ADMIN', 'SUPPORT') LIMIT 100"
-      );
-      if (Array.isArray(rows) && rows.length > 0) {
-        rows.forEach(u => {
-          seenIds.add(u.id);
-          operators.push({
-            id: u.id,
-            email: u.email || null,
-            role: String(u.role || '').toUpperCase(),
-            suspended: u.suspended === 1 || u.suspended === true,
-            emailVerified: true,
-            mfaEnabled: false,
-            displayName: u.displayName || `${u.firstname || ''} ${u.lastname || ''}`.trim() || null,
-          });
-        });
-        source = 'MYSQL_USERS_TABLE';
-      }
-    } catch (mysqlErr) {
-      console.warn('[Platform operators] MySQL query notice:', mysqlErr.message);
-    }
+  if (!identityAdmin?.auth) {
+    return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable.', requestId: res.locals?.requestId } });
   }
-
-  // 2. Query Firebase Auth / Firestore if available
-  if (identityAdmin?.auth) {
-    try {
-      const listed = await identityAdmin.auth().listUsers(200);
-      for (const identity of listed.users || []) {
-        const claims = identity.customClaims || {};
-        let profile = {};
-        if (db && typeof db.collection === 'function') {
-          try {
-            const doc = await db.collection('users').doc(identity.uid).get();
-            if (doc.exists) profile = doc.data() || {};
-          } catch (_) {}
-        }
-        const role = String(claims.role || profile.role || '').toUpperCase();
+  try {
+    const operators = [];
+    let pageToken;
+    do {
+      const page = await identityAdmin.auth().listUsers(200, pageToken);
+      for (const identity of page.users || []) {
+        const role = String(identity.customClaims?.role || '').toUpperCase();
         if (!['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role)) continue;
-
-        const opData = {
+        operators.push({
           id: identity.uid,
-          email: identity.email || profile.email || null,
+          email: identity.email || null,
           role,
-          suspended: identity.disabled === true || profile.suspended === true,
+          suspended: identity.disabled === true,
           emailVerified: identity.emailVerified === true,
           mfaEnabled: Array.isArray(identity.multiFactor?.enrolledFactors) && identity.multiFactor.enrolledFactors.length > 0,
-          displayName: identity.displayName || profile.displayName || `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || null,
-        };
-
-        if (seenIds.has(identity.uid)) {
-          const idx = operators.findIndex(o => o.id === identity.uid);
-          if (idx >= 0) operators[idx] = { ...operators[idx], ...opData };
-        } else {
-          seenIds.add(identity.uid);
-          operators.push(opData);
-        }
+          displayName: identity.displayName || null,
+        });
       }
-      source = 'AUTHENTICATED_OPERATOR_REGISTRY';
-    } catch (authErr) {
-      console.warn('[Platform operators] Firebase Auth query notice:', authErr.message);
-    }
+      pageToken = page.pageToken;
+      if (operators.length >= 500) break;
+    } while (pageToken);
+    return res.json({ operators: operators.slice(0, 500), source: 'FIREBASE_AUTH_IDENTITY', truncated: Boolean(pageToken) });
+  } catch (_error) {
+    return res.status(503).json({ error: { code: 'OPERATOR_DIRECTORY_UNAVAILABLE', message: 'Operator directory is unavailable.', requestId: res.locals?.requestId } });
   }
-
-  return res.json({
-    operators,
-    source,
-    note: 'Authoritative operator directory with dual-engine fallback support.',
-  });
 });
 
 router.post('/operators', requireRecentAdminAuthentication, async (req, res) => {
@@ -2073,9 +1191,7 @@ router.post('/operators', requireRecentAdminAuthentication, async (req, res) => 
   if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid) || !PLATFORM_OPERATOR_ROLES.has(nextRole) || (expectedRole !== null && !PLATFORM_OPERATOR_ROLES.has(expectedRole) && expectedRole !== 'SUPER_ADMIN')) {
     return res.status(400).json({ error: { code: 'INVALID_OPERATOR', message: 'A valid uid and role of ADMIN, SUPPORT, or USER is required' } });
   }
-  const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
-  const pool = getPool();
   if (!admin?.auth) {
     return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
   }
@@ -2091,16 +1207,21 @@ router.post('/operators', requireRecentAdminAuthentication, async (req, res) => 
     if (currentRole === 'SUPER_ADMIN') {
       return res.status(403).json({ error: { code: 'SUPER_ADMIN_PROTECTED', message: 'SUPER_ADMIN claims cannot be changed from this API' } });
     }
+    await recordAdminAuditLog({
+      actorUid: req.user?.uid,
+      actorEmail: req.user?.email,
+      actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_OPERATOR_ROLE_CHANGE_REQUESTED',
+      category: 'iam.operators',
+      severity: 'HIGH',
+      outcome: 'SUCCESS',
+      method: 'POST', pathname: req.originalUrl, statusCode: 202,
+      resourceType: 'firebase_auth_user', resourceId: uid,
+      metadata: { previousRole: currentRole, nextRole }, requestId: res.locals?.requestId,
+    });
     await admin.auth().setCustomUserClaims(uid, { ...(target.customClaims || {}), role: nextRole });
     await admin.auth().revokeRefreshTokens(uid);
-    // Authoritative role record lives in MySQL. Best-effort: an unknown uid
-    // (identity-only operator) is still audited below.
-    try {
-      await pool.query('UPDATE users SET role = ? WHERE id = ?', [nextRole, uid]);
-    } catch (mysqlErr) {
-      console.warn('[Platform operators] MySQL role write notice:', mysqlErr.message);
-    }
-    await recordAdminAuditLog(db, admin, {
+    await recordAdminAuditLog({
       actorUid: req.user?.uid,
       actorEmail: req.user?.email,
       actorRole: 'SUPER_ADMIN',
@@ -2128,15 +1249,21 @@ router.post('/operators/:uid/revoke-sessions', requireRecentAdminAuthentication,
   if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
     return res.status(400).json({ error: { code: 'INVALID_UID', message: 'A valid uid is required' } });
   }
-  const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   if (!admin?.auth) {
     return res.status(503).json({ error: { code: 'IDENTITY_UNAVAILABLE', message: 'Identity directory unavailable' } });
   }
   try {
     const target = await admin.auth().getUser(uid);
+    await recordAdminAuditLog({
+      actorUid: req.user?.uid, actorEmail: req.user?.email, actorRole: 'SUPER_ADMIN',
+      action: 'PLATFORM_OPERATOR_SESSION_REVOCATION_REQUESTED', category: 'iam.operators',
+      severity: 'HIGH', outcome: 'SUCCESS', method: 'POST', pathname: req.originalUrl,
+      statusCode: 202, resourceType: 'firebase_auth_user', resourceId: uid,
+      metadata: {}, requestId: res.locals?.requestId,
+    });
     await admin.auth().revokeRefreshTokens(uid);
-    await recordAdminAuditLog(db, admin, {
+    await recordAdminAuditLog({
       actorUid: req.user?.uid,
       actorEmail: req.user?.email,
       actorRole: 'SUPER_ADMIN',
@@ -2162,7 +1289,6 @@ router.post('/operators/:uid/revoke-sessions', requireRecentAdminAuthentication,
 router.get('/tenants/:tenantId', async (req, res) => {
   const tenantId = String(req.params.tenantId || '').trim();
   const tenantService = req.app?.get('tenantService');
-  const db = req.app?.get('db');
   const admin = req.app?.get('firebaseAdmin');
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
     return res.status(400).json({ error: { code: 'INVALID_TENANT_ID', message: 'Invalid tenant identifier', requestId: res.locals?.requestId } });
@@ -2260,8 +1386,6 @@ router.patch('/tenants/:tenantId', requireRecentAdminAuthentication, async (req,
 
 router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication, async (req, res) => {
   const tenantService = req.app?.get('tenantService');
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
   if (!tenantService?.setTenantLifecycleAsPlatform) {
     return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant service unavailable' } });
   }
@@ -2276,8 +1400,7 @@ router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication,
       nextState: 'DELETING',
       requestId: res.locals?.requestId,
     });
-    if (db && admin?.firestore?.FieldValue) {
-      await recordAdminAuditLog(db, admin, {
+    await recordAdminAuditLog({
         actorUid: req.user?.uid,
         actorEmail: req.user?.email,
         actorRole: 'SUPER_ADMIN',
@@ -2290,7 +1413,6 @@ router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication,
         statusCode: 200,
         metadata: { tenantId: tenant.id, reason },
       });
-    }
     return res.json({ tenant: { id: tenant.id, lifecycleState: tenant.lifecycleState }, reason });
   } catch (error) {
     return res.status(error.status || 503).json({
@@ -2304,8 +1426,6 @@ router.post('/tenants/:tenantId/decommission', requireRecentAdminAuthentication,
 
 router.post('/tenants/garbage-collect', requireRecentAdminAuthentication, async (req, res) => {
   const tenantService = req.app?.get('tenantService');
-  const db = req.app?.get('db');
-  const admin = req.app?.get('firebaseAdmin');
   if (!tenantService?.executeTenantGarbageCollection) {
     return res.status(503).json({ error: { code: 'TENANT_CONTROL_PLANE_UNAVAILABLE', message: 'Tenant garbage collection is unavailable' } });
   }
@@ -2318,8 +1438,7 @@ router.post('/tenants/garbage-collect', requireRecentAdminAuthentication, async 
   const requestId = res.locals?.requestId || null;
   try {
     const result = await tenantService.executeTenantGarbageCollection({ gracePeriodDays, requestId });
-    if (db && admin?.firestore?.FieldValue) {
-      await recordAdminAuditLog(db, admin, {
+    await recordAdminAuditLog({
         actorUid: req.user?.uid,
         actorEmail: req.user?.email,
         actorRole: 'SUPER_ADMIN',
@@ -2336,8 +1455,7 @@ router.post('/tenants/garbage-collect', requireRecentAdminAuthentication, async 
           considered: result.considered ?? null,
           failures: (result.failures || []).slice(0, 20),
         },
-      }).catch(() => { /* purge result already committed; audit is best-effort */ });
-    }
+      });
     return res.json({ success: true, ...result });
   } catch (error) {
     return res.status(error.status || 503).json({
@@ -2356,10 +1474,9 @@ router.post('/tenants/garbage-collect', requireRecentAdminAuthentication, async 
 
 const { FLAG_DEFINITIONS, getAllFlags, setFlagValue } = require('../services/featureFlagService');
 
-router.get('/feature-flags', requireSuperAdmin, async (req, res) => {
+router.get('/feature-flags', requireSuperAdmin, async (_req, res) => {
   try {
-    const db = req.app.get('db');
-    const flags = await getAllFlags(db);
+    const flags = await getAllFlags();
     return res.json({ flags });
   } catch (_error) {
     return res.status(503).json({ error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Could not load feature flags' } });
@@ -2377,7 +1494,7 @@ router.put('/feature-flags/:flagKey', requireRecentAdminAuthentication, async (r
   }
   try {
     // MySQL-backed: flags persist in system_settings with a durable audit event.
-    const result = await setFlagValue(null, null, flagKey, value, req.user?.uid, res.locals.requestId);
+    const result = await setFlagValue(flagKey, value, req.user?.uid, res.locals.requestId);
     return res.json({ success: true, ...result });
   } catch (error) {
     const status = Number(error.status) >= 400 && Number(error.status) < 600 ? Number(error.status) : 400;
@@ -2392,10 +1509,7 @@ router.put('/feature-flags/:flagKey', requireRecentAdminAuthentication, async (r
 
 router.get('/configuration', requireSuperAdmin, async (req, res) => {
   try {
-    const configuration = await getPlatformConfiguration({
-      db: req.app.get('db'),
-      env: process.env,
-    });
+    const configuration = await getPlatformConfiguration({ env: process.env });
     res.setHeader('Cache-Control', 'no-store');
     return res.json(configuration);
   } catch (error) {
@@ -2432,7 +1546,7 @@ router.get('/configuration', requireSuperAdmin, async (req, res) => {
 
 router.get('/payment-settings', requirePermission('system.config.read'), async (req, res) => {
   try {
-    const projection = await getPaymentSettingsProjection(req.app.get('db'), process.env);
+    const projection = await getPaymentSettingsProjection(process.env);
     res.setHeader('Cache-Control', 'no-store');
     return res.json(projection);
   } catch (error) {

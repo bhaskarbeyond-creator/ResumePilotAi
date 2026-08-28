@@ -20,6 +20,7 @@ import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { rejectFirebaseDataPlaneRequests } from './helpers/firebase-data-plane-guard.mjs';
 
 function readEnvKey() {
   for (const file of ['.env', 'backend/.env']) {
@@ -72,7 +73,7 @@ function createFixtureBackend() {
     if (path === '/api/enterprise/tenants') return route.fulfill({ json: { tenants: [{ id: state.tenant.id, slug: state.tenant.slug, displayName: state.tenant.displayName, lifecycleState: 'ACTIVE', isolationTier: 'ENTERPRISE', roles: ['TENANT_OWNER'], defaultWorkspaceId: state.workspace.id, personalTenant: false }] } });
     if (path === '/api/enterprise/context') {
       return route.fulfill({ json: {
-        context: { tenantId: state.tenant.id, workspaceId: state.workspace.id, roles: ['TENANT_OWNER'], permissions: ['*'], policyVersion: 1, dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', region: 'default', routingVersion: 1 } },
+        context: { tenantId: state.tenant.id, workspaceId: state.workspace.id, roles: ['TENANT_OWNER'], permissions: ['*'], policyVersion: 1, dataPlane: { id: 'mysql-primary', type: 'MYSQL', region: 'default', routingVersion: 1 } },
         tenant: state.tenant,
         workspace: state.workspace,
       } });
@@ -197,7 +198,7 @@ function createFixtureBackend() {
       state.audit.push(auditEvent('SERVICE_ACCOUNT_REVOKED'));
       return route.fulfill({ status: 204, body: '' });
     }
-    if (path === '/api/enterprise/queue/status') return route.fulfill({ json: { queue: { engine: 'firestore-durable-outbox', durable: true, configured: true, healthy: true, status: 'online', activeQueued: 1, deadLetterCount: state.jobs.filter(job => job.status === 'DEAD_LETTER').length, counts: {}, signingConfigured: true } } });
+    if (path === '/api/enterprise/queue/status') return route.fulfill({ json: { queue: { engine: 'mariadb-transactional-outbox', durable: true, configured: true, healthy: true, status: 'online', activeQueued: 1, deadLetterCount: state.jobs.filter(job => job.status === 'DEAD_LETTER').length, counts: {}, signingConfigured: true } } });
     if (path === '/api/enterprise/queue/jobs' && method === 'GET') {
       const filter = url.searchParams.get('status');
       return route.fulfill({ json: { jobs: state.jobs.filter(job => !filter || job.status === filter) } });
@@ -224,7 +225,7 @@ function createFixtureBackend() {
       return route.fulfill({ json: { events } });
     }
     if (path === '/api/enterprise/observability/metrics') return route.fulfill({ json: { metrics: { sampleCount: 128, p50: 42, p95: 180, p99: 320, errors: { clientErrors: 3, serverErrors: 1, authErrors: 1, dbErrors: 0, redisErrors: 0, queueErrors: 0, aiErrors: 1 } } } });
-    if (path === '/api/enterprise/data-plane/status') return route.fulfill({ json: { dataPlane: { provider: 'firestore', configured: true, durable: true, encryption: 'server-key', encryptionSecurityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', quotaStore: 'firestore-atomic', queue: 'firestore-durable-outbox' } } });
+    if (path === '/api/enterprise/data-plane/status') return route.fulfill({ json: { dataPlane: { provider: 'mysql', configured: true, durable: true, encryption: 'server-key', encryptionSecurityLevel: 'SERVER_SIDE_MASTER_KEY_ENVELOPE_AES_256_GCM', quotaStore: 'mariadb-atomic', queue: 'mariadb-transactional-outbox' } } });
     if (path === '/api/enterprise/support-grants') return route.fulfill({ json: { grants: [] } });
     if (path === '/api/enterprise/support/context') return route.fulfill({ status: 403, json: { error: { code: 'SUPPORT_GRANT_DENIED' } } });
     if (path.startsWith('/api/enterprise/')) return route.fulfill({ status: 200, json: {} });
@@ -288,9 +289,7 @@ async function main() {
       // would make is intercepted by page.route below.
       'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
       'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
-      'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
       'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
-      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
       'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
       'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
     },
@@ -360,7 +359,8 @@ async function main() {
     };
     await page.addInitScript(initAuth, { key: authUserKey, apiKey: API_KEY, token: mockToken });
 
-    await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({
+    await rejectFirebaseDataPlaneRequests(page);
+  await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
@@ -386,11 +386,6 @@ async function main() {
         }],
       }),
     }));
-    await page.route('**/*firestore.googleapis.com/**', route => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: '{}',
-    }));
     const backend = createFixtureBackend();
     await page.route('**/api/**', backend);
 
@@ -403,7 +398,7 @@ async function main() {
 
     // Overview module: durable queue + optional redis panels are truthful.
     check('overview shows the durable job outbox panel', (await page.locator('text=Durable Job Outbox').count()) > 0);
-    check('overview shows the Firestore data-plane panel', (await page.locator('text=Firestore Data Plane').count()) > 0);
+    check('overview shows the MariaDB data-plane panel', (await page.locator('text=MariaDB Data Plane').count()) > 0);
 
     // Workspaces module: create a workspace (real fixture state change).
     await page.goto(`${base}/enterprise?tab=workspaces`, { waitUntil: 'domcontentloaded' });
@@ -556,6 +551,7 @@ async function main() {
     for (const vp of viewports) {
       const vpPage = await browser.newPage({ viewport: { width: vp.width, height: vp.height }, isMobile: vp.isMobile, hasTouch: vp.isMobile });
       await vpPage.addInitScript(initAuth, { key: authUserKey, apiKey: API_KEY, token: mockToken });
+      await rejectFirebaseDataPlaneRequests(vpPage);
       await vpPage.route('**/securetoken.googleapis.com/**', route => route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -581,11 +577,6 @@ async function main() {
             providerUserInfo: [],
           }],
         }),
-      }));
-      await vpPage.route('**/*firestore.googleapis.com/**', route => route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: '{}',
       }));
       const vpBackend = createFixtureBackend();
       await vpPage.route('**/api/**', vpBackend);

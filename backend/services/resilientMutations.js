@@ -1,10 +1,9 @@
 'use strict';
 
 /**
- * Engine-agnostic CAS mutations for remaining Super Admin / employer entities.
+ * MariaDB CAS mutations for remaining Super Admin / employer entities.
  *
- * HTTP → this service → ResilientRepository → write-authority engine → outbox.
- * Never dual-writes. Never uses Firestore.runTransaction in the request path.
+ * HTTP → this service → MariaDB repository. No alternate data-plane path exists.
  */
 
 const crypto = require('crypto');
@@ -25,9 +24,8 @@ function nextId(prefix) {
     return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(4).toString('hex')}`;
 }
 
-function repoFor(firestoreDb, repo) {
-    if (repo) return repo;
-    return require('../repositories').getRepository(firestoreDb || null);
+function repoFor(repo) {
+    return repo || require('../repositories').getRepository();
 }
 
 async function casWrite({
@@ -55,7 +53,7 @@ async function casWrite({
 
 async function audit(repo, payload) {
     if (typeof repo.recordSecurityAuditLog === 'function') {
-        await repo.recordSecurityAuditLog(payload).catch(() => {});
+        await repo.recordSecurityAuditLog(payload);
     }
 }
 
@@ -69,7 +67,7 @@ async function notify(repo, uid, eventId, data) {
         createdAt: nowIso(),
         updatedAt: nowIso(),
         ...data,
-    }).catch(() => {});
+    });
 }
 
 function eventId(...parts) {
@@ -78,8 +76,8 @@ function eventId(...parts) {
 
 // ——— Companies ———
 
-async function createCompany({ repo, firestoreDb, employerId, data, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
+async function createCompany({ repo, employerId, data, actorUid, requestId }) {
+    const r = repoFor(repo);
     const id = nextId('co');
     const record = {
         ...data,
@@ -97,8 +95,8 @@ async function createCompany({ repo, firestoreDb, employerId, data, actorUid, re
     return { companyId: id, status: 'pending', revision: 1 };
 }
 
-async function updateCompany({ repo, firestoreDb, companyId, employerId, expectedRevision, data, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
+async function updateCompany({ repo, companyId, employerId, expectedRevision, data, actorUid, requestId }) {
+    const r = repoFor(repo);
     const saved = await casWrite({
         repo: r,
         get: (id) => r.getCompany(id),
@@ -114,8 +112,8 @@ async function updateCompany({ repo, firestoreDb, companyId, employerId, expecte
     return { status: 'pending', featured: false, revision: saved.revision };
 }
 
-async function deleteCompany({ repo, firestoreDb, companyId, employerId, expectedRevision, actorUid, requestId, requireNoJobs = true }) {
-    const r = repoFor(firestoreDb, repo);
+async function deleteCompany({ repo, companyId, employerId, expectedRevision, actorUid, requestId, requireNoJobs = true }) {
+    const r = repoFor(repo);
     const current = await r.getCompany(companyId);
     if (!current || (employerId && current.employerId !== employerId && current.owner_id !== employerId)) {
         throw fail('NOT_FOUND', 404, 'Company not found.');
@@ -124,7 +122,7 @@ async function deleteCompany({ repo, firestoreDb, companyId, employerId, expecte
         throw fail('CAS_CONFLICT', 409, 'This company changed after the dashboard loaded. Refresh before deleting.');
     }
     if (requireNoJobs && typeof r.getJobs === 'function') {
-        const jobs = await r.getJobs({ employerId: current.employerId || employerId, limit: 50 }).catch(() => []);
+        const jobs = await r.getJobs({ employerId: current.employerId || employerId, limit: 50 });
         const related = (jobs || []).filter((j) => j.companyId === companyId || j.company_id === companyId);
         if (related.length) throw fail('COMPANY_HAS_JOBS', 409, 'Delete or archive this company’s jobs before deleting the company.');
     }
@@ -133,8 +131,8 @@ async function deleteCompany({ repo, firestoreDb, companyId, employerId, expecte
     return { success: true };
 }
 
-async function moderateCompany({ repo, firestoreDb, companyId, expectedStatus, expectedFeatured, patch, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
+async function moderateCompany({ repo, companyId, expectedStatus, expectedFeatured, patch, actorUid, requestId }) {
+    const r = repoFor(repo);
     const current = await r.getCompany(companyId);
     if (!current) throw fail('NOT_FOUND', 404, 'Company not found.');
     if (expectedStatus !== undefined && String(current.status || 'pending') !== String(expectedStatus)) {
@@ -163,8 +161,8 @@ async function moderateCompany({ repo, firestoreDb, companyId, expectedStatus, e
 
 // ——— Jobs ———
 
-async function createJob({ repo, firestoreDb, employerId, company, data, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
+async function createJob({ repo, employerId, company, data, actorUid, requestId }) {
+    const r = repoFor(repo);
     const id = nextId('job');
     const record = {
         ...data,
@@ -184,8 +182,8 @@ async function createJob({ repo, firestoreDb, employerId, company, data, actorUi
     return { jobId: id, status: 'pending', revision: 1 };
 }
 
-async function updateJob({ repo, firestoreDb, jobId, employerId, expectedRevision, patch, actorUid, requestId, action }) {
-    const r = repoFor(firestoreDb, repo);
+async function updateJob({ repo, jobId, employerId, expectedRevision, patch, actorUid, requestId, action }) {
+    const r = repoFor(repo);
     const current = await r.getJob(jobId);
     if (!current || (employerId && current.employerId !== employerId && current.employer_id !== employerId)) {
         throw fail('NOT_FOUND', 404, 'Job not found.');
@@ -200,8 +198,8 @@ async function updateJob({ repo, firestoreDb, jobId, employerId, expectedRevisio
     return { ...patch, revision };
 }
 
-async function deleteJob({ repo, firestoreDb, jobId, employerId, expectedRevision, actorUid, requestId, requireNoApplications = true }) {
-    const r = repoFor(firestoreDb, repo);
+async function deleteJob({ repo, jobId, employerId, expectedRevision, actorUid, requestId, requireNoApplications = true }) {
+    const r = repoFor(repo);
     const current = await r.getJob(jobId);
     if (!current || (employerId && current.employerId !== employerId && current.employer_id !== employerId)) {
         throw fail('NOT_FOUND', 404, 'Job not found.');
@@ -210,16 +208,18 @@ async function deleteJob({ repo, firestoreDb, jobId, employerId, expectedRevisio
         throw fail('CAS_CONFLICT', 409, 'This job changed after the dashboard loaded. Refresh before deleting.');
     }
     if (requireNoApplications && typeof r.getApplications === 'function') {
-        const apps = await r.getApplications({ jobId }).catch(() => []);
+        const apps = await r.getApplications({ jobId });
         if (apps && apps.length) throw fail('JOB_HAS_APPLICATIONS', 409, 'This job has applications and cannot be deleted. Pause it instead.');
     }
-    await r.deleteJob(jobId);
+    const currentOwnerId = current.employerId || current.employer_id;
+    const deleted = await r.deleteJob(jobId, currentOwnerId);
+    if (!deleted) throw fail('NOT_FOUND', 404, 'Job not found.');
     await audit(r, { action: 'JOB_DELETED', actorUid, jobId, previousStatus: current.status, requestId });
     return { success: true };
 }
 
-async function moderateJob({ repo, firestoreDb, jobId, expectedStatus, expectedFeatured, patch, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
+async function moderateJob({ repo, jobId, expectedStatus, expectedFeatured, patch, actorUid, requestId }) {
+    const r = repoFor(repo);
     const current = await r.getJob(jobId);
     if (!current) throw fail('NOT_FOUND', 404, 'Job not found.');
     if (expectedStatus !== undefined && String(current.status || 'pending') !== String(expectedStatus)) {
@@ -248,11 +248,11 @@ async function moderateJob({ repo, firestoreDb, jobId, expectedStatus, expectedF
 
 // ——— Applications ———
 
-async function createApplication({ repo, firestoreDb, applicationId, job, user, payload, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
+async function createApplication({ repo, applicationId, job, user, payload, actorUid, requestId }) {
+    const r = repoFor(repo);
     const existing = typeof r.getApplication === 'function'
         ? await r.getApplication(applicationId)
-        : (await r.getApplications({ jobId: job.id, applicantId: user.uid }).catch(() => [])).find((a) => a.id === applicationId);
+        : (await r.getApplications({ jobId: job.id, applicantId: user.uid })).find((a) => a.id === applicationId);
     if (existing) throw fail('ALREADY_APPLIED', 409, 'You have already applied to this job.');
     const record = {
         ...payload,
@@ -294,12 +294,12 @@ async function createApplication({ repo, firestoreDb, applicationId, job, user, 
 }
 
 async function updateApplicationStatus({
-    repo, firestoreDb, applicationId, employerId, status, notes, expectedStatus, expectedRevision, actorUid, requestId, notification,
+    repo, applicationId, employerId, status, notes, expectedStatus, expectedRevision, actorUid, requestId, notification,
 }) {
-    const r = repoFor(firestoreDb, repo);
+    const r = repoFor(repo);
     const current = typeof r.getApplication === 'function'
         ? await r.getApplication(applicationId)
-        : (await r.getApplications({}).catch(() => [])).find((a) => a.id === applicationId);
+        : (await r.getApplications({})).find((a) => a.id === applicationId);
     if (!current) throw fail('NOT_FOUND', 404, 'Application not found.');
     const job = await r.getJob(current.jobId);
     if (!job || (employerId && job.employerId !== employerId && job.employer_id !== employerId)) {
@@ -332,41 +332,41 @@ async function updateApplicationStatus({
     return { status, revision };
 }
 
-// ——— Generic CMS documents (categories, ads, reviews, pages, trusted-by, landing, employer applications) ———
+// ——— Generic CMS documents plus explicit relational-domain adapters ———
 
 function docApi(r, entityType) {
+    const specialized = {
+        custom_pages: ['getCustomPageById', 'saveCustomPage', 'deleteCustomPage', 'getCustomPages'],
+        trusted_by: ['getTrustedById', 'saveTrustedBy', 'deleteTrustedBy', 'getTrustedBy'],
+        reviews: ['getReview', 'saveReview', 'deleteReview', 'getReviews'],
+        blog: ['getBlogPostById', 'saveBlogPost', 'deleteBlogPost', 'getBlogPosts'],
+    }[entityType];
     return {
         get: async (id) => {
+            if (specialized?.[0] && typeof r[specialized[0]] === 'function') return r[specialized[0]](id);
             if (typeof r.getDocument === 'function') return r.getDocument(entityType, id);
-            if (entityType === 'reviews' && typeof r.getReview === 'function') return r.getReview(id);
-            if (entityType === 'trusted_by' && typeof r.getTrustedByItem === 'function') return r.getTrustedByItem(id);
             return null;
         },
         save: async (id, data) => {
+            if (specialized?.[1] && typeof r[specialized[1]] === 'function') return r[specialized[1]](id, data);
             if (typeof r.saveDocument === 'function') return r.saveDocument(entityType, id, data);
-            if (entityType === 'reviews' && typeof r.saveReview === 'function') return r.saveReview(id, data);
-            if (entityType === 'trusted_by' && typeof r.saveTrustedBy === 'function') return r.saveTrustedBy(id, data);
-            if (entityType === 'custom_pages' && typeof r.saveCustomPage === 'function') return r.saveCustomPage(id, data);
-            if (entityType === 'blog' && typeof r.saveBlogPost === 'function') return r.saveBlogPost(id, data);
             throw fail('METHOD_NOT_IMPLEMENTED', 501, `No adapter for ${entityType}`);
         },
-        remove: async (id) => {
-            if (typeof r.deleteDocument === 'function') return r.deleteDocument(entityType, id);
-            if (entityType === 'reviews' && typeof r.deleteReview === 'function') return r.deleteReview(id);
-            if (entityType === 'trusted_by' && typeof r.deleteTrustedBy === 'function') return r.deleteTrustedBy(id);
-            if (entityType === 'custom_pages' && typeof r.deleteCustomPage === 'function') return r.deleteCustomPage(id);
-            if (entityType === 'blog' && typeof r.deleteBlogPost === 'function') return r.deleteBlogPost(id);
+        remove: async (id, expectedRevision) => {
+            if (specialized?.[2] && typeof r[specialized[2]] === 'function') return r[specialized[2]](id, expectedRevision);
+            if (typeof r.deleteDocument === 'function') return r.deleteDocument(entityType, id, expectedRevision);
             throw fail('METHOD_NOT_IMPLEMENTED', 501, `No adapter for ${entityType}`);
         },
         list: async (opts) => {
+            if (specialized?.[3] && typeof r[specialized[3]] === 'function') return r[specialized[3]](opts);
             if (typeof r.listDocuments === 'function') return r.listDocuments(entityType, opts);
             return [];
         },
     };
 }
 
-async function createDocument({ repo, firestoreDb, entityType, id, data, actorUid, requestId, action }) {
-    const r = repoFor(firestoreDb, repo);
+async function createDocument({ repo, entityType, id, data, actorUid, requestId, action }) {
+    const r = repoFor(repo);
     const api = docApi(r, entityType);
     const docId = id || nextId(entityType.replace(/[^a-z]/gi, '').slice(0, 8) || 'doc');
     const record = { ...data, id: docId, revision: 1, createdAt: nowIso(), updatedAt: nowIso() };
@@ -375,8 +375,8 @@ async function createDocument({ repo, firestoreDb, entityType, id, data, actorUi
     return { id: docId, revision: 1, ...record };
 }
 
-async function updateDocument({ repo, firestoreDb, entityType, id, expectedRevision, patch, actorUid, requestId, action }) {
-    const r = repoFor(firestoreDb, repo);
+async function updateDocument({ repo, entityType, id, expectedRevision, patch, actorUid, requestId, action }) {
+    const r = repoFor(repo);
     const api = docApi(r, entityType);
     const saved = await casWrite({
         repo: r,
@@ -391,24 +391,22 @@ async function updateDocument({ repo, firestoreDb, entityType, id, expectedRevis
     return saved;
 }
 
-async function deleteDocument({ repo, firestoreDb, entityType, id, expectedRevision, actorUid, requestId, action }) {
-    const r = repoFor(firestoreDb, repo);
+async function deleteDocument({ repo, entityType, id, expectedRevision, actorUid, requestId, action }) {
+    const r = repoFor(repo);
     const api = docApi(r, entityType);
     const current = await api.get(id);
     if (!current) throw fail('NOT_FOUND', 404, 'Record not found.');
     if (expectedRevision !== undefined && expectedRevision !== null && Number(current.revision || 0) !== Number(expectedRevision)) {
         throw fail('CAS_CONFLICT', 409, 'This record changed after the page loaded. Refresh before deleting.');
     }
-    await api.remove(id);
-    await audit(r, { action: action || `${entityType.toUpperCase()}_DELETED`, actorUid, resourceId: id, revision: expectedRevision, requestId });
+    await api.remove(id, Number(current.revision || expectedRevision));
+    await audit(r, { action: action || `${entityType.toUpperCase()}_DELETED`, actorUid, resourceId: id, revision: Number(current.revision || expectedRevision), requestId });
     return { success: true };
 }
 
-async function moderateBlogPost({ repo, firestoreDb, postId, nextStatus, expectedRevision, scheduledAt, actorUid, requestId }) {
-    const r = repoFor(firestoreDb, repo);
-    const current = await r.getBlogPosts({ publishedOnly: false, limit: 500 })
-        .then((posts) => (posts || []).find((p) => p.id === postId))
-        .catch(() => null);
+async function moderateBlogPost({ repo, postId, nextStatus, expectedRevision, scheduledAt, actorUid, requestId }) {
+    const r = repoFor(repo);
+    const current = (await r.getBlogPosts({ publishedOnly: false, limit: 500 }) || []).find((post) => post.id === postId);
     const existing = current || (typeof r.getDocument === 'function' ? await r.getDocument('blog', postId) : null);
     if (!existing) throw fail('NOT_FOUND', 404, 'Post not found.');
     if (Number(existing.revision || 0) !== Number(expectedRevision)) {
@@ -439,9 +437,9 @@ async function moderateBlogPost({ repo, firestoreDb, postId, nextStatus, expecte
     return { status: nextStatus, revision };
 }
 
-async function saveSettingDocument({ repo, firestoreDb, category, expectedRevision, patch, actorUid, requestId, action }) {
-    const r = repoFor(firestoreDb, repo);
-    const current = (await r.getSetting(category).catch(() => null)) || {};
+async function saveSettingDocument({ repo, category, expectedRevision, patch, actorUid, requestId, action }) {
+    const r = repoFor(repo);
+    const current = (await r.getSetting(category)) || {};
     const currentRev = Number(current.revision || 0);
     if (expectedRevision !== undefined && expectedRevision !== null && Number(expectedRevision) !== currentRev) {
         throw fail('ADMIN_TARGET_CHANGED', 409, 'This setting changed after the panel loaded. Refresh before saving.');

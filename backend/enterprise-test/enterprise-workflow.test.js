@@ -2,25 +2,28 @@
 
 process.env.NODE_ENV = 'test';
 process.env.ENTERPRISE_TENANCY_ENABLED = 'true';
+process.env.TENANT_JOB_SIGNING_SECRET = 'enterprise-workflow-test-signing-secret-32-bytes';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const request = require('supertest');
-const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-const { FirestoreTenantRegistry } = require('../enterprise/tenantRegistry');
-const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
-const { FirestoreServiceAccountStore } = require('../enterprise/serviceAccountStore');
-const { FirestoreSupportGrantStore } = require('../enterprise/supportAccessStore');
-const { FirestoreAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
+const { InMemoryTenantRegistry } = require('../test/helpers/inMemoryTenantRegistry');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
+const { InMemoryAtomicCounterStore } = require('../test/helpers/inMemoryAtomicCounterStore');
+const { InMemoryEnterpriseOutboxPool } = require('../test/helpers/inMemoryEnterpriseOutboxPool');
+const { setPoolForTests } = require('../database/mysql');
+const { InMemoryServiceAccountStore } = require('../enterprise/serviceAccountStore');
+const { InMemorySupportGrantStore } = require('../enterprise/supportAccessStore');
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
 const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
 const { TenantService } = require('../enterprise/tenantService');
 const { setTokenVerifierForTests } = require('../security/auth');
 const app = require('../index');
 
 /**
- * Complete enterprise workflow over the real HTTP surface with the canonical
- * Firestore stores: login → tenant selection → workspace selection → every
+ * Complete enterprise workflow over the real HTTP surface with explicit
+ * MariaDB contract test doubles: login → tenant selection → workspace selection → every
  * console module → logout. Verifies real state changes, not rendering.
  */
 
@@ -35,24 +38,19 @@ const revoked = new Set();
 function bearer(name) { return `Bearer ${name}`; }
 
 function install() {
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
   const encryptionProvider = new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) });
   const service = new TenantService({
-    registry: new FirestoreTenantRegistry({ db, admin }),
-    db,
-    admin,
-    repository: new FirestoreEnterpriseRepository({ db, admin, encryptionProvider }),
-    serviceAccountStore: new FirestoreServiceAccountStore({ db, admin }),
-    supportGrantStore: new FirestoreSupportGrantStore({ db, admin }),
-    quotaGuard: new TenantQuotaGuard({ store: new FirestoreAtomicCounterStore({ db, admin }) }),
+    registry: new InMemoryTenantRegistry(),
+    repository: new InMemoryEnterpriseRepository({ encryptionProvider }),
+    serviceAccountStore: new InMemoryServiceAccountStore(),
+    supportGrantStore: new InMemorySupportGrantStore(),
+    quotaGuard: new TenantQuotaGuard({ store: new InMemoryAtomicCounterStore() }),
     encryptionProvider,
-    dataProviderName: 'firestore',
+    dataProviderName: 'mysql',
   });
-  app.set('db', db);
-  app.set('firebaseAdmin', admin);
   app.set('tenantService', service);
-  return { db, admin, service };
+  setPoolForTests(new InMemoryEnterpriseOutboxPool());
+  return { service };
 }
 
 test.beforeEach(() => {

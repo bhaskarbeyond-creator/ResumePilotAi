@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { queryAdminAuditLogs, sanitizeAuditValue } = require('../security/adminAudit');
+const { queryAdminAuditLogs } = require('../security/adminAudit');
 const { requirePermission } = require('../security/auth');
 const { getRepository } = require('../repositories');
 
@@ -9,19 +9,7 @@ const router = express.Router();
 
 router.use(requirePermission('system.config.read'));
 
-// Attach repository
-router.use((req, res, next) => {
-  try {
-    req.repository = req.repository || getRepository(req.app?.get('db'));
-    next();
-  } catch (_) {
-    next();
-  }
-});
-
 router.get('/audit-logs', async (req, res) => {
-  const db = req.app?.get('db');
-
   try {
     const {
       limit = 50,
@@ -33,8 +21,7 @@ router.get('/audit-logs', async (req, res) => {
       search,
       startAfterDocId,
     } = req.query;
-
-    const result = await queryAdminAuditLogs(req.repository || db, {
+    const result = await queryAdminAuditLogs(getRepository(), {
       limit: parseInt(limit, 10) || 50,
       actorUid: actorUid ? String(actorUid) : undefined,
       action: action ? String(action) : undefined,
@@ -44,118 +31,76 @@ router.get('/audit-logs', async (req, res) => {
       search: search ? String(search) : undefined,
       startAfterDocId: startAfterDocId ? String(startAfterDocId) : undefined,
     });
-
     return res.json(result);
   } catch (error) {
-    const isQuotaOrUnavailable = String(error?.message || '').includes('RESOURCE_EXHAUSTED') ||
-                                 String(error?.message || '').includes('Quota exceeded') ||
-                                 String(error?.message || '').includes('UNAVAILABLE') ||
-                                 error?.code === 8 || error?.code === 14 || error?.code === 'resource-exhausted';
-    if (isQuotaOrUnavailable) {
-      return res.json({
-        logs: [],
-        count: 0,
-        hasMore: false,
-        degraded: true,
-        quotaLimited: true,
-        reason: 'STANDBY_FIRESTORE_QUOTA_LIMITED',
-        message: 'Standby audit event store read limit reached. Real-time audit recording is active in the primary database.',
-      });
-    }
-    console.error('[AdminAuditRoute] Error fetching audit logs:', error);
-    return res.status(error.status || 500).json({
+    console.error('[AdminAuditRoute] Audit query failed:', { code: error.code, requestId: res.locals?.requestId });
+    return res.status(error.status || 503).json({
       error: {
         code: error.code || 'AUDIT_QUERY_FAILED',
-        message: 'Failed to query admin audit logs',
+        message: error.status && error.status < 500 ? error.message : 'Administrative audit records are unavailable.',
         requestId: res.locals?.requestId,
       },
     });
   }
 });
 
-router.get('/audit-logs/stats', async (req, res) => {
-  const repo = req.repository || getRepository(req.app?.get('db'));
-
+router.get('/audit-logs/stats', async (_req, res) => {
   try {
-    let logs = [];
-    if (repo && typeof repo.getAdminAuditLogs === 'function') {
-      logs = await repo.getAdminAuditLogs({ limit: 200 }).catch(() => []);
-    }
-
-    // Fallback to Firestore if empty and db is available
-    if (!logs.length && req.app?.get('db')) {
-      try {
-        const snap = await req.app.get('db').collection('admin_audit_logs').orderBy('createdAt', 'desc').limit(200).get();
-        logs = snap.docs.map(d => d.data());
-      } catch (_) {}
-    }
-
-    let totalRecent = logs.length;
+    const logs = await getRepository().getAdminAuditLogs({ limit: 200 });
     let highSeverityCount = 0;
     let failureCount = 0;
     const categoryCounts = {};
     const actorCounts = {};
 
-    logs.forEach(log => {
+    for (const log of logs) {
       if (['HIGH', 'CRITICAL'].includes(log.severity)) highSeverityCount += 1;
       if (log.outcome === 'FAILURE' || (log.statusCode && log.statusCode >= 400)) failureCount += 1;
-      const cat = log.category || 'general';
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      const category = log.category || 'general';
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
       const actor = log.actorEmail || log.actorUid || 'unknown';
       actorCounts[actor] = (actorCounts[actor] || 0) + 1;
-    });
+    }
 
     return res.json({
-      sampleSize: totalRecent,
+      sampleSize: logs.length,
       highSeverityCount,
       failureCount,
-      successRate: totalRecent > 0 ? Math.round(((totalRecent - failureCount) / totalRecent) * 100) : 100,
+      successRate: logs.length ? Math.round(((logs.length - failureCount) / logs.length) * 100) : null,
       categoryCounts,
-      topActors: Object.entries(actorCounts).map(([actor, count]) => ({ actor, count })).slice(0, 10),
+      topActors: Object.entries(actorCounts)
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 10)
+        .map(([actor, count]) => ({ actor, count })),
+      source: 'mariadb',
     });
   } catch (error) {
-    console.error('[AdminAuditRoute] Error computing stats:', error);
-    return res.json({
-      sampleSize: 0,
-      highSeverityCount: 0,
-      failureCount: 0,
-      successRate: 100,
-      categoryCounts: {},
-      topActors: [],
+    console.error('[AdminAuditRoute] Audit statistics failed:', { code: error.code, requestId: res.locals?.requestId });
+    return res.status(503).json({
+      error: {
+        code: 'AUDIT_STATS_UNAVAILABLE',
+        message: 'Administrative audit statistics are unavailable.',
+        requestId: res.locals?.requestId,
+      },
     });
   }
 });
 
 router.get('/audit-logs/:id', async (req, res) => {
-  const repo = req.repository || getRepository(req.app?.get('db'));
-  const logId = String(req.params.id);
-
+  const logId = String(req.params.id || '').trim();
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(logId)) {
+    return res.status(400).json({ error: { code: 'INVALID_AUDIT_ID', message: 'Invalid audit record ID.', requestId: res.locals?.requestId } });
+  }
   try {
-    // 1. Try MariaDB
-    if (repo && typeof repo.getAdminAuditLogs === 'function') {
-      const logs = await repo.getAdminAuditLogs({ limit: 1, action: undefined });
-      const found = logs.find(l => l.id === logId);
-      if (found) return res.json(found);
+    const record = await getRepository().getAdminAuditLog(logId);
+    if (!record) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Audit record not found.', requestId: res.locals?.requestId } });
     }
-
-    // 2. Try Firestore
-    const db = req.app?.get('db');
-    if (db && typeof db.collection === 'function') {
-      const doc = await db.collection('admin_audit_logs').doc(logId).get();
-      if (doc.exists) {
-        const data = doc.data() || {};
-        const safe = sanitizeAuditValue('record', data) || {};
-        return res.json({
-          id: doc.id,
-          ...safe,
-          createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.occurredAt || null,
-        });
-      }
-    }
-
-    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Audit record not found', requestId: res.locals?.requestId } });
-  } catch (_error) {
-    return res.status(500).json({ error: { code: 'QUERY_FAILED', message: 'Failed to retrieve audit record', requestId: res.locals?.requestId } });
+    return res.json(record);
+  } catch (error) {
+    console.error('[AdminAuditRoute] Audit detail failed:', { code: error.code, requestId: res.locals?.requestId });
+    return res.status(503).json({
+      error: { code: 'AUDIT_QUERY_FAILED', message: 'Administrative audit record is unavailable.', requestId: res.locals?.requestId },
+    });
   }
 });
 

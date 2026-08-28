@@ -8,35 +8,16 @@ const ISOLATION_TIERS = Object.freeze([
   'STANDARD', 'ENTERPRISE', 'REGULATED'
 ]);
 
-const DATA_PLANE_TYPES = Object.freeze([
-  // Firestore is the only enterprise data plane. Documents written by earlier
-  // development iterations may still carry PostgreSQL-type routing metadata;
-  // normalizeDataPlane() translates those values on read so no PostgreSQL
-  // store is ever required or contacted.
-  'FIRESTORE'
-]);
-
-// Legacy routing metadata translated to the Firestore plane on read. Kept as
-// data (not code paths) so historical documents remain loadable without any
-// PostgreSQL implementation.
-const LEGACY_DATA_PLANE_TYPES = Object.freeze(['SHARED_POSTGRES', 'DEDICATED_POSTGRES']);
-
-const ENTERPRISE_DATA_PROVIDERS = Object.freeze([
-  // Firestore is the canonical and only enterprise data provider.
-  'firestore'
-]);
+const DATA_PLANE_TYPES = Object.freeze(['MYSQL']);
+const ENTERPRISE_DATA_PROVIDERS = Object.freeze(['mysql']);
 
 const MEMBERSHIP_STATES = Object.freeze([
   'INVITED', 'ACTIVE', 'SUSPENDED', 'REMOVED'
 ]);
 
 const TENANT_ROLES = Object.freeze({
-  TENANT_OWNER: [
-    '*'
-  ],
-  ENTERPRISE_OWNER: [
-    '*'
-  ],
+  TENANT_OWNER: ['*'],
+  ENTERPRISE_OWNER: ['*'],
   TENANT_ADMIN: [
     'tenant.read', 'tenant.settings.write', 'tenant.members.read', 'tenant.members.invite',
     'tenant.members.manage', 'tenant.roles.manage', 'tenant.workspaces.manage',
@@ -62,12 +43,8 @@ const TENANT_ROLES = Object.freeze({
   ENTERPRISE_MEMBER: [
     'workspace.read', 'resource.read', 'resource.create', 'resource.update', 'ai.use'
   ],
-  VIEWER: [
-    'workspace.read', 'resource.read'
-  ],
-  ENTERPRISE_VIEWER: [
-    'workspace.read', 'resource.read'
-  ]
+  VIEWER: ['workspace.read', 'resource.read'],
+  ENTERPRISE_VIEWER: ['workspace.read', 'resource.read']
 });
 
 const PERMISSIONS = Object.freeze([
@@ -84,7 +61,6 @@ module.exports = {
   DATA_PLANE_TYPES,
   ENTERPRISE_DATA_PROVIDERS,
   ISOLATION_TIERS,
-  LEGACY_DATA_PLANE_TYPES,
   MEMBERSHIP_STATES,
   PERMISSIONS,
   TENANT_LIFECYCLE_STATES,

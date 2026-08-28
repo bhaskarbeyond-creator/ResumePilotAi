@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 test('browser account bootstrap never discovers, copies, merges, or inherits another UID', async () => {
-  const auth = await fs.readFile('src/firestore/auth.js', 'utf8');
+  const auth = await fs.readFile('src/services/api/users.js', 'utf8');
   assert.doesNotMatch(auth, /where\('email'|mergeUserAccounts|oldUid|existingMembership|membershipEnds|isA:/);
   assert.match(auth, /currentUser\.uid !== userId/);
-  assert.match(auth, /membership: 'Basic'/);
+  assert.match(auth, /saveCurrentUserProfile/);
+  assert.doesNotMatch(auth, /membership\s*:|membershipEnds\s*:|paymentStatus\s*:|role\s*:/);
 });
 
 test('resume validation is deterministic and never fabricates AI analysis or scores', async () => {
@@ -36,7 +37,7 @@ test('jobs surfaces never fall back to fabricated listings, employers, or match 
 
 test('employer and application queries are backend-owned with no Firestore sampling', async () => {
   const [operations, backend] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'), fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'), fs.readFile('backend/index.js', 'utf8'),
   ]);
   // Job/application queries go through the MySQL repository with server-side
   // owner scoping — no client-controlled where/orderBy, no sampling logs.
@@ -79,7 +80,7 @@ test('browser production source does not log user or application payloads', asyn
 
 test('browser entitlement checks display server state and never downgrade membership directly', async () => {
   const [operations, welcome] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'), fs.readFile('src/components/welcome/Welcome.jsx', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'), fs.readFile('src/components/welcome/Welcome.jsx', 'utf8'),
   ]);
   assert.match(operations, /getUserProfile\(userId\)/);
   assert.doesNotMatch(operations, /function makeBasicAccount|accountType: accountType|expDate: expDate/);

@@ -9,7 +9,7 @@ import axios from 'axios';
 import download from 'downloadjs';
 import config from '../conf/configuration';
 import { trackDownload, trackEvent, trackEngagement } from './ga4';
-import { IncrementDownloads, addOneToNumberOfDocumentsDownloaded } from '../firestore/dbOperations';
+import { IncrementDownloads, addOneToNumberOfDocumentsDownloaded } from '../services/api/platform';
 
 const DOCX_MAGIC = [0x50, 0x4b]; // PK zip container magic bytes
 

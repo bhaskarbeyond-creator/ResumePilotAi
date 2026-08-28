@@ -2,46 +2,83 @@
 
 const express = require('express');
 const admin = require('../services/firebaseAdmin');
-const { requireAuth, requirePermission, requireSuperAdmin, requireRecentAdminAuthentication } = require('../security/auth');
-const { getPlatformCurrencyConfig, setPlatformCurrencyConfig, normalizeCurrencyCode, formatCurrencyAmount } = require('../services/platformCurrency');
+const {
+  requirePermission,
+  requireSuperAdmin,
+  requireRecentAdminAuthentication,
+} = require('../security/auth');
+const {
+  getPlatformCurrencyConfig,
+  setPlatformCurrencyConfig,
+  normalizeCurrencyCode,
+  formatCurrencyAmount,
+} = require('../services/platformCurrency');
 const { getGlobalAiDashboardData } = require('../services/adminAiEntitlement');
 const { getPool } = require('../database/mysql');
-const { getRepository } = require('../repositories');
 
 const router = express.Router();
+const TENANT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function adminIso(value) {
   if (!value) return null;
-  try {
-    const date = value?.toDate?.() || (value ? new Date(value) : null);
-    return date && Number.isFinite(date.getTime()) ? date.toISOString() : null;
-  } catch (_) {
-    return null;
-  }
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
-// 1. PLATFORM CURRENCY CONFIGURATION
-router.get('/platform/currency', async (req, res) => {
-  const db = req.app.get('db');
-  const currencyConfig = await getPlatformCurrencyConfig(db);
-  return res.json({ success: true, currency: currencyConfig });
+function requireTenantService(req) {
+  const service = req.app.get('tenantService');
+  if (!service?.registry) {
+    throw Object.assign(new Error('Tenant control plane is unavailable'), { code: 'TENANT_SERVICE_UNAVAILABLE', status: 503 });
+  }
+  return service;
+}
+
+function assertTenantId(value) {
+  const tenantId = String(value || '').trim().toLowerCase();
+  if (!TENANT_ID_PATTERN.test(tenantId)) {
+    throw Object.assign(new Error('Invalid tenant identifier'), { code: 'INVALID_TENANT_ID', status: 400 });
+  }
+  return tenantId;
+}
+
+function expectedRevision(body) {
+  const revision = Number(body?.expectedRevision);
+  if (!Number.isInteger(revision) || revision < 1) {
+    throw Object.assign(new Error('Expected configuration revision is required'), { code: 'EXPECTED_REVISION_REQUIRED', status: 428 });
+  }
+  return revision;
+}
+
+function sendTenantError(res, error, fallbackCode, fallbackMessage) {
+  const status = error.status || 503;
+  return res.status(status).json({
+    success: false,
+    code: error.code || fallbackCode,
+    error: status < 500 ? error.message : fallbackMessage,
+    currentRevision: error.currentRevision,
+    requestId: res.locals.requestId,
+  });
+}
+
+// Platform currency has one MariaDB owner and requires optimistic concurrency.
+router.get('/platform/currency', requirePermission('system.config.read'), async (_req, res) => {
+  try {
+    return res.json({ success: true, currency: await getPlatformCurrencyConfig() });
+  } catch (_) {
+    return res.status(503).json({ success: false, code: 'CURRENCY_UNAVAILABLE', error: 'Currency configuration is unavailable.' });
+  }
 });
 
-router.put('/platform/currency', requireAuth, requireRecentAdminAuthentication, async (req, res) => {
-  const db = req.app.get('db');
-  const identityAdmin = req.app.get('firebaseAdmin') || admin;
-  const { currency, allowMultiCurrency } = req.body || {};
-
+router.put('/platform/currency', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
+  const { currency, allowMultiCurrency, expectedRevision: revision } = req.body || {};
   if (!currency) {
-    return res.status(400).json({ success: false, code: 'CURRENCY_REQUIRED', error: 'Currency code is required' });
+    return res.status(400).json({ success: false, code: 'CURRENCY_REQUIRED', error: 'Currency code is required.' });
   }
-
   try {
     const updated = await setPlatformCurrencyConfig({
-      db,
-      admin: identityAdmin,
       currency,
       allowMultiCurrency,
+      expectedRevision: revision,
       actorUid: req.user.uid,
       requestId: res.locals.requestId,
     });
@@ -51,320 +88,207 @@ router.put('/platform/currency', requireAuth, requireRecentAdminAuthentication, 
   }
 });
 
-// 2. ACTIVE SUBSCRIPTIONS & LIFECYCLE MANAGEMENT
+// Subscription data is read exclusively from MariaDB. Database failures are
+// surfaced; an empty successful response means the query genuinely found no rows.
 router.get('/subscriptions', requirePermission('payments.read'), async (req, res) => {
-  const db = req.app.get('db');
-  const pool = getPool();
-  String(req.query?.status || 'all').toLowerCase();
   const limit = Math.min(Math.max(Number(req.query?.limit) || 50, 1), 200);
+  const status = String(req.query?.status || 'all').trim().toUpperCase();
+  const allowedStatuses = new Set(['ALL', 'ACTIVE', 'INACTIVE', 'PENDING', 'PAST_DUE', 'CANCELLED', 'REFUNDED', 'FAILED']);
+  if (!allowedStatuses.has(status)) {
+    return res.status(400).json({ success: false, code: 'INVALID_SUBSCRIPTION_STATUS', error: 'Invalid subscription status filter.' });
+  }
 
   try {
-    let activeSubscribers = [];
-    let transactions = [];
-
-    // 1. Primary: Query MariaDB users & payment_orders
-    if (pool) {
-      try {
-        const [userRows] = await pool.query(
-          "SELECT id, email, displayName, firstname, lastname, membership, membershipEnds, paymentStatus, updated_at FROM users WHERE membership IN ('Premium', 'Pro', 'Enterprise') LIMIT ?",
-          [limit]
-        );
-        if (Array.isArray(userRows)) {
-          activeSubscribers = userRows.map(u => ({
-            uid: u.id,
-            email: u.email || null,
-            displayName: u.displayName || `${u.firstname || ''} ${u.lastname || ''}`.trim() || null,
-            membership: u.membership || 'Premium',
-            membershipEnds: adminIso(u.membershipEnds),
-            paymentStatus: u.paymentStatus || 'ACTIVE',
-            currency: 'INR',
-            updatedAt: adminIso(u.updated_at),
-          }));
-        }
-
-        const [orderRows] = await pool.query(
-          "SELECT id, uid, plan_id, amount, currency, status, provider, last_payment_gateway, created_at FROM payment_orders ORDER BY created_at DESC LIMIT ?",
-          [limit]
-        );
-        if (Array.isArray(orderRows)) {
-          transactions = orderRows.map(o => ({
-            id: o.id,
-            uid: o.uid || null,
-            userEmail: null,
-            planId: o.plan_id || 'monthly',
-            amount: o.amount,
-            currency: normalizeCurrencyCode(o.currency || 'INR'),
-            formattedAmount: formatCurrencyAmount((o.amount || 0) / 100, o.currency || 'INR'),
-            status: o.status || 'ACTIVE',
-            provider: o.provider || o.last_payment_gateway || 'Gateway',
-            createdAt: adminIso(o.created_at),
-          }));
-        }
-      } catch (mysqlErr) {
-        console.warn('[Admin subscriptions] MySQL query notice:', mysqlErr.message);
-      }
+    const pool = getPool();
+    const userParams = [];
+    let userSql = `SELECT id, email, displayName, firstname, lastname, membership, membershipEnds,
+                          paymentStatus, lastPaymentCurrency, updated_at
+                   FROM users
+                   WHERE deleted_at IS NULL AND membership IN ('Premium', 'Pro', 'Enterprise')`;
+    if (status !== 'ALL') {
+      userSql += ' AND UPPER(paymentStatus) = ?';
+      userParams.push(status);
     }
+    userSql += ' ORDER BY updated_at DESC LIMIT ?';
+    userParams.push(limit);
 
-    // 2. Standby Fallback: Query Firestore if activeSubscribers is empty
-    if (activeSubscribers.length === 0 && db && typeof db.collection === 'function') {
-      try {
-        const [ordersSnap, usersSnap] = await Promise.all([
-          db.collection('orders').orderBy('createdAt', 'desc').limit(limit).get().catch(() => ({ docs: [] })),
-          db.collection('users').where('membership', '==', 'Premium').limit(limit).get().catch(() => ({ docs: [] })),
-        ]);
-
-        activeSubscribers = usersSnap.docs.map(doc => {
-          const data = doc.data() || {};
-          return {
-            uid: doc.id,
-            email: data.email || null,
-            displayName: data.displayName || null,
-            membership: data.membership || 'Premium',
-            membershipEnds: adminIso(data.membershipEnds),
-            paymentStatus: data.paymentStatus || 'ACTIVE',
-            currency: normalizeCurrencyCode(data.preferredCurrency || data.currency || 'INR'),
-            updatedAt: adminIso(data.updatedAt),
-          };
-        });
-
-        transactions = ordersSnap.docs.map(doc => {
-          const data = doc.data() || {};
-          return {
-            id: doc.id,
-            uid: data.uid || null,
-            userEmail: data.userEmail || data.email || null,
-            planId: data.planId || data.plan || 'monthly',
-            amount: data.amount,
-            currency: normalizeCurrencyCode(data.currency || 'INR'),
-            formattedAmount: formatCurrencyAmount((data.amount || 0) / 100, data.currency || 'INR'),
-            status: data.status || 'COMPLETED',
-            provider: data.paymentType || data.provider || 'Gateway',
-            createdAt: adminIso(data.createdAt || data.date),
-          };
-        });
-      } catch (fsErr) {
-        console.warn('[Admin subscriptions] Firestore query notice:', fsErr.message);
-      }
+    const orderParams = [];
+    let orderSql = `SELECT id, uid, plan_id, amount, currency, status, provider,
+                           last_payment_gateway, created_at
+                    FROM payment_orders`;
+    if (status !== 'ALL') {
+      orderSql += ' WHERE UPPER(status) = ?';
+      orderParams.push(status);
     }
+    orderSql += ' ORDER BY created_at DESC LIMIT ?';
+    orderParams.push(limit);
 
+    const [[userRows], [orderRows]] = await Promise.all([
+      pool.query(userSql, userParams),
+      pool.query(orderSql, orderParams),
+    ]);
+    const subscribers = userRows.map(user => ({
+      uid: user.id,
+      email: user.email || null,
+      displayName: user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || null,
+      membership: user.membership,
+      membershipEnds: adminIso(user.membershipEnds),
+      paymentStatus: user.paymentStatus,
+      currency: normalizeCurrencyCode(user.lastPaymentCurrency || 'INR'),
+      updatedAt: adminIso(user.updated_at),
+    }));
+    const transactions = orderRows.map(order => ({
+      id: order.id,
+      uid: order.uid || null,
+      planId: order.plan_id,
+      amount: Number(order.amount || 0),
+      currency: normalizeCurrencyCode(order.currency || 'INR'),
+      formattedAmount: formatCurrencyAmount(Number(order.amount || 0) / 100, order.currency || 'INR'),
+      status: order.status,
+      provider: order.provider || order.last_payment_gateway || null,
+      createdAt: adminIso(order.created_at),
+    }));
     return res.json({
       success: true,
-      subscribers: activeSubscribers,
+      subscribers,
       transactions,
-      totalActiveSubscribers: activeSubscribers.length,
+      totalActiveSubscribers: subscribers.length,
       recentTransactionsCount: transactions.length,
+      source: 'mariadb',
     });
   } catch (error) {
-    console.error('[Admin subscriptions query]', error.message);
-    return res.json({
-      success: true,
-      subscribers: [],
-      transactions: [],
-      totalActiveSubscribers: 0,
-      recentTransactionsCount: 0,
-    });
+    console.error('[Admin subscriptions query]', { code: error.code, requestId: res.locals.requestId });
+    return res.status(503).json({ success: false, code: 'SUBSCRIPTION_DATA_UNAVAILABLE', error: 'Subscription data is unavailable.' });
   }
 });
 
-// 3. AI ENTITLEMENTS GLOBAL DASHBOARD
-router.get('/ai/entitlements', requirePermission('ai.usage.read'), async (req, res) => {
-  const db = req.app.get('db');
-  const data = await getGlobalAiDashboardData(db);
-  return res.json({ success: true, aiGovernance: data });
-});
-
-// 4. TENANT 360 MEMBER MANAGEMENT
-router.post('/platform/tenants/:tenantId/members', requireRecentAdminAuthentication, async (req, res) => {
-  const tenantId = String(req.params.tenantId || '').trim();
-  const tenantService = req.app.get('tenantService');
-  const db = req.app.get('db');
-  const identityAdmin = req.app.get('firebaseAdmin') || admin;
-
-  if (!tenantService?.registry) {
-    return res.status(503).json({ success: false, code: 'TENANT_SERVICE_UNAVAILABLE', error: 'Tenant service unavailable' });
-  }
-
-  const { email, uid, role, workspaceId } = req.body || {};
-  let principalId = uid ? String(uid).trim() : null;
-
+router.get('/ai/entitlements', requirePermission('ai.usage.read'), async (_req, res) => {
   try {
-    if (!principalId && email) {
-      const existing = await identityAdmin.auth().getUserByEmail(String(email).trim().toLowerCase());
-      principalId = existing.uid;
-    }
-    if (!principalId) {
-      return res.status(400).json({ success: false, code: 'PRINCIPAL_REQUIRED', error: 'User UID or registered email is required' });
-    }
+    return res.json({ success: true, aiGovernance: await getGlobalAiDashboardData() });
+  } catch (error) {
+    return res.status(error.status || 503).json({ success: false, code: error.code || 'AI_ENTITLEMENT_DATA_UNAVAILABLE', error: 'AI entitlement data is unavailable.' });
+  }
+});
 
-    const membership = await tenantService.registry.grantMembership({
+router.post('/platform/tenants/:tenantId/members', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
+  try {
+    const tenantId = assertTenantId(req.params.tenantId);
+    const service = requireTenantService(req);
+    const identityAdmin = req.app.get('firebaseAdmin') || admin;
+    const requestedUid = String(req.body?.uid || '').trim();
+    const requestedEmail = String(req.body?.email || '').trim().toLowerCase();
+    if (!requestedUid && !requestedEmail) {
+      return res.status(400).json({ success: false, code: 'PRINCIPAL_REQUIRED', error: 'A registered user UID or email is required.' });
+    }
+    const identity = requestedUid
+      ? await identityAdmin.auth().getUser(requestedUid)
+      : await identityAdmin.auth().getUserByEmail(requestedEmail);
+    if (requestedEmail && identity.email?.toLowerCase() !== requestedEmail) {
+      return res.status(400).json({ success: false, code: 'USER_IDENTITY_MISMATCH', error: 'UID and email do not identify the same account.' });
+    }
+    await service.registry.getTenant(tenantId);
+    const membership = await service.registry.grantMembership({
       tenantId,
-      principalId,
-      workspaceId: workspaceId || null,
-      roles: [String(role || 'MEMBER').toUpperCase()],
+      principalId: identity.uid,
+      roles: [String(req.body?.role || 'MEMBER').toUpperCase()],
       status: 'ACTIVE',
-      invitationEmail: email || null,
     });
-
-    // Synchronize user document tenantMemberships in authoritative MariaDB repository
-    const repo = req.repository || getRepository(db);
-    try {
-      const profile = (await repo.getUser(principalId).catch(() => ({}))) || {};
-      const tenants = Array.isArray(profile.tenantMemberships) ? profile.tenantMemberships : [];
-      const tenantRecord = await tenantService.registry.getTenant(tenantId).catch(() => ({ displayName: tenantId, slug: tenantId }));
-      const updated = tenants.filter(t => t.tenantId !== tenantId && t.id !== tenantId);
-      updated.push({
-        tenantId,
-        id: tenantId,
-        displayName: tenantRecord.displayName,
-        slug: tenantRecord.slug,
-        role: String(role || 'MEMBER').toUpperCase(),
-        joinedAt: new Date().toISOString(),
-      });
-      await repo.saveUser(principalId, { ...profile, tenantMemberships: updated });
-    } catch (_) {}
-
     return res.status(201).json({ success: true, message: 'Member added to organization.', membership });
   } catch (error) {
-    return res.status(error.status || 500).json({ success: false, code: error.code || 'MEMBER_ADD_FAILED', error: error.message });
+    return sendTenantError(res, error, 'MEMBER_ADD_FAILED', 'The member could not be added.');
   }
 });
 
-router.delete('/platform/tenants/:tenantId/members/:principalId', requireRecentAdminAuthentication, async (req, res) => {
-  const tenantId = String(req.params.tenantId || '').trim();
-  const principalId = String(req.params.principalId || '').trim();
-  const tenantService = req.app.get('tenantService');
-  const db = req.app.get('db');
-
-  if (!tenantService?.registry) {
-    return res.status(503).json({ success: false, code: 'TENANT_SERVICE_UNAVAILABLE', error: 'Tenant service unavailable' });
-  }
-
+router.delete('/platform/tenants/:tenantId/members/:principalId', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
   try {
-    await tenantService.registry.removeTenantMembership({ tenantId, principalId });
-
-    const repo = req.repository || getRepository(db);
-    try {
-      const profile = (await repo.getUser(principalId).catch(() => ({}))) || {};
-      const tenants = Array.isArray(profile.tenantMemberships) ? profile.tenantMemberships : [];
-      const updated = tenants.filter(t => t.tenantId !== tenantId && t.id !== tenantId);
-      await repo.saveUser(principalId, { ...profile, tenantMemberships: updated });
-    } catch (_) {}
-
+    const tenantId = assertTenantId(req.params.tenantId);
+    const principalId = String(req.params.principalId || '').trim();
+    if (!principalId) throw Object.assign(new Error('Principal identifier is required'), { code: 'PRINCIPAL_REQUIRED', status: 400 });
+    const service = requireTenantService(req);
+    await service.registry.getMembership(tenantId, principalId);
+    await service.registry.removeTenantMembership({ tenantId, principalId });
     return res.json({ success: true, message: 'Member removed from organization.' });
   } catch (error) {
-    return res.status(error.status || 500).json({ success: false, code: error.code || 'MEMBER_REMOVE_FAILED', error: error.message });
+    return sendTenantError(res, error, 'MEMBER_REMOVE_FAILED', 'The member could not be removed.');
   }
 });
 
-router.patch('/platform/tenants/:tenantId/members/:principalId', requireRecentAdminAuthentication, async (req, res) => {
-  const tenantId = String(req.params.tenantId || '').trim();
-  const principalId = String(req.params.principalId || '').trim();
-  const tenantService = req.app.get('tenantService');
-  const { role, status } = req.body || {};
-
-  if (!tenantService?.registry) {
-    return res.status(503).json({ success: false, code: 'TENANT_SERVICE_UNAVAILABLE', error: 'Tenant service unavailable' });
-  }
-
+router.patch('/platform/tenants/:tenantId/members/:principalId', requirePermission('system.config.write'), requireRecentAdminAuthentication, async (req, res) => {
   try {
-    const updated = await tenantService.registry.updateTenantMembership({
+    const tenantId = assertTenantId(req.params.tenantId);
+    const principalId = String(req.params.principalId || '').trim();
+    if (!principalId) throw Object.assign(new Error('Principal identifier is required'), { code: 'PRINCIPAL_REQUIRED', status: 400 });
+    const updated = await requireTenantService(req).registry.updateTenantMembership({
       tenantId,
       principalId,
-      roles: role ? [String(role).toUpperCase()] : null,
-      status: status ? String(status).toUpperCase() : null,
+      roles: req.body?.role ? [String(req.body.role).toUpperCase()] : undefined,
+      status: req.body?.status ? String(req.body.status).toUpperCase() : undefined,
     });
     return res.json({ success: true, message: 'Membership updated.', membership: updated });
   } catch (error) {
-    return res.status(error.status || 500).json({ success: false, code: error.code || 'MEMBER_UPDATE_FAILED', error: error.message });
+    return sendTenantError(res, error, 'MEMBER_UPDATE_FAILED', 'The membership could not be updated.');
   }
 });
 
-// 5. TENANT COMMERCIALS & PLAN BINDING
-router.patch('/platform/tenants/:tenantId/commercials', requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
-  const tenantId = String(req.params.tenantId || '').trim();
-  const db = req.app.get('db');
-  const identityAdmin = req.app.get('firebaseAdmin') || admin;
-  const { plan, seatLimit, currency, billingStatus } = req.body || {};
-
-  if (!db) return res.status(503).json({ success: false, code: 'DATABASE_UNAVAILABLE', error: 'Database unavailable' });
-
+router.patch('/platform/tenants/:tenantId/commercials', requirePermission('system.config.write'), requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
   try {
-    const tenantRef = db.collection('enterprise_tenants').doc(tenantId);
-    const snap = await tenantRef.get();
-    if (!snap.exists) return res.status(404).json({ success: false, code: 'TENANT_NOT_FOUND', error: 'Tenant not found' });
-
-    const updates = {
-      plan: plan || 'Enterprise Standard',
-      seatLimit: Number(seatLimit) || 50,
-      currency: normalizeCurrencyCode(currency || 'INR'),
-      billingStatus: billingStatus || 'ACTIVE',
-      updatedAt: identityAdmin.firestore.FieldValue.serverTimestamp(),
-    };
-
-    await tenantRef.set(updates, { merge: true });
-    return res.json({ success: true, message: 'Tenant commercial settings updated.', commercials: updates });
+    const tenantId = assertTenantId(req.params.tenantId);
+    const revision = expectedRevision(req.body);
+    const service = requireTenantService(req);
+    const configuration = await service.registry.updateTenantConfiguration({
+      tenantId,
+      expectedRevision: revision,
+      input: {
+        commercials: {
+          plan: req.body?.plan,
+          seatLimit: Number(req.body?.seatLimit),
+          currency: normalizeCurrencyCode(req.body?.currency),
+          billingStatus: req.body?.billingStatus,
+        },
+      },
+    });
+    return res.json({ success: true, message: 'Tenant commercial settings updated.', commercials: configuration.commercials, revision: configuration.revision });
   } catch (error) {
-    return res.status(500).json({ success: false, code: 'COMMERCIALS_UPDATE_FAILED', error: error.message });
+    return sendTenantError(res, error, 'COMMERCIALS_UPDATE_FAILED', 'Tenant commercial settings could not be updated.');
   }
 });
 
-// 6. TENANT AI POLICY & QUOTA BUCKETS
-router.patch('/platform/tenants/:tenantId/ai-policy', requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
-  const tenantId = String(req.params.tenantId || '').trim();
-  const db = req.app.get('db');
-  req.app.get('firebaseAdmin') || admin;
-  const { dailyLimit, allowedProviders, allowedModels, primaryModel, customProviderKeys } = req.body || {};
-
-  if (!db) return res.status(503).json({ success: false, code: 'DATABASE_UNAVAILABLE', error: 'Database unavailable' });
-
+router.patch('/platform/tenants/:tenantId/ai-policy', requirePermission('system.config.write'), requireRecentAdminAuthentication, requireSuperAdmin, async (req, res) => {
   try {
-    const tenantRef = db.collection('enterprise_tenants').doc(tenantId);
-    const snap = await tenantRef.get();
-    if (!snap.exists) return res.status(404).json({ success: false, code: 'TENANT_NOT_FOUND', error: 'Tenant not found' });
-
-    const existingPolicy = snap.data()?.aiPolicy || {};
-    const existingKeys = existingPolicy.customProviderKeys || {};
-    
-    // Merge new custom keys, keeping existing ones if blank
-    const updatedCustomKeys = { ...existingKeys };
-    if (customProviderKeys && typeof customProviderKeys === 'object') {
-      for (const [provider, keyVal] of Object.entries(customProviderKeys)) {
-        if (keyVal === '__REMOVE__') {
-          delete updatedCustomKeys[provider];
-        } else if (typeof keyVal === 'string' && keyVal.trim().length > 0) {
-          updatedCustomKeys[provider] = keyVal.trim();
-        }
-      }
+    const tenantId = assertTenantId(req.params.tenantId);
+    const revision = expectedRevision(req.body);
+    if (req.body?.customProviderKeys && Object.keys(req.body.customProviderKeys).length) {
+      throw Object.assign(
+        new Error('Dedicated tenant provider credentials are unavailable until the encrypted credential adapter is configured.'),
+        { code: 'TENANT_PROVIDER_CREDENTIALS_UNSUPPORTED', status: 501 }
+      );
     }
-
-    const aiPolicy = {
-      dailyLimit: Math.max(10, Math.min(500000, Number(dailyLimit) || 5000)),
-      allowedProviders: Array.isArray(allowedProviders) ? allowedProviders : (existingPolicy.allowedProviders || ['gemini', 'nvidia', 'openai']),
-      allowedModels: Array.isArray(allowedModels) ? allowedModels : (existingPolicy.allowedModels || []),
-      primaryModel: primaryModel ? String(primaryModel).trim() : (existingPolicy.primaryModel || 'meta/llama-3.2-11b-vision-instruct'),
-      customProviderKeys: updatedCustomKeys,
-      updatedAt: new Date().toISOString(),
-      updatedBy: req.user.uid,
-    };
-
-    await tenantRef.set({ aiPolicy }, { merge: true });
-    
-    // Return sanitized policy with keys masked
-    const sanitizedCustomKeys = Object.fromEntries(
-      Object.entries(updatedCustomKeys).map(([p, k]) => [p, k ? `${k.slice(0, 4)}...${k.slice(-4)}` : ''])
-    );
-
+    const service = requireTenantService(req);
+    const current = await service.registry.getTenantConfiguration(tenantId);
+    const configuration = await service.registry.updateTenantConfiguration({
+      tenantId,
+      expectedRevision: revision,
+      input: {
+        aiPolicy: {
+          allowedProviders: Array.isArray(req.body?.allowedProviders) ? req.body.allowedProviders : current.aiPolicy.allowedProviders,
+          allowedModels: Array.isArray(req.body?.allowedModels) ? req.body.allowedModels : current.aiPolicy.allowedModels,
+          primaryModel: req.body?.primaryModel || current.aiPolicy.primaryModel,
+        },
+        quotaPolicy: {
+          ...current.quotaPolicy,
+          aiRequestsPerDay: Number(req.body?.dailyLimit),
+        },
+      },
+    });
     return res.json({
       success: true,
-      message: 'Tenant AI policy & dedicated provider keys updated.',
-      aiPolicy: { ...aiPolicy, customProviderKeys: sanitizedCustomKeys }
+      message: 'Tenant AI policy updated.',
+      aiPolicy: { ...configuration.aiPolicy, dailyLimit: configuration.quotaPolicy.aiRequestsPerDay, customProviderKeys: {} },
+      revision: configuration.revision,
     });
   } catch (error) {
-    return res.status(500).json({ success: false, code: 'AI_POLICY_UPDATE_FAILED', error: error.message });
+    return sendTenantError(res, error, 'AI_POLICY_UPDATE_FAILED', 'Tenant AI policy could not be updated.');
   }
 });
 
-
-module.exports = {
-  adminPlatformOperationsRouter: router,
-};
+module.exports = { adminPlatformOperationsRouter: router };

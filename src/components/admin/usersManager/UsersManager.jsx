@@ -3,7 +3,7 @@ import { FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle, 
 import fire from '../../../conf/fire';
 import { getAdminUsers, getPlatformTenants, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, exportUserData } from '../../../services/platformApi';
 
-import { toggleUserSuspension, deleteUserByAdmin } from '../../../firestore/dbOperations';
+import { toggleUserSuspension, deleteUserByAdmin } from '../../../services/api/platform';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
 import User360Drawer from './User360Drawer';
 import CreateUserModal from './CreateUserModal';

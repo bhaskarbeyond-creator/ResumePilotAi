@@ -32,25 +32,16 @@ jobs:
         run: node --test tests/security-static.test.mjs tests/secret-scanner-efficacy.test.mjs tests/xss.test.mjs tests/mfa-static.test.mjs
 
   backend-integration:
-    name: Backend integration (MySQL authoritative)
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mariadb:11
-        env:
-          MARIADB_DATABASE: ai_resume_builder
-          MARIADB_USER: resumepilot
-          MARIADB_PASSWORD: ci_password
-          MARIADB_ROOT_PASSWORD: ci_root_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
+    name: Backend integration (MariaDB authoritative)
+    runs-on: ubuntu-24.04
+    env:
+      MARIADB_CI_IMAGE: mariadb@sha256:4f1d8d202fcf7bcb3902f63af09f9c1a050c2922a89652f22abaec0d4f015e83 # 11.4.12
+      RUN_MARIADB_INTEGRATION: "true"
+      MARIADB_TEST_ALLOW_RESET: "true"
     steps:
       - uses: actions/checkout@v4
+      - name: Start isolated MariaDB with ephemeral credentials
+        run: scripts/start-ci-mariadb.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -61,35 +52,26 @@ jobs:
       - name: Backend test suite (against live MariaDB)
         working-directory: backend
         env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: "3306"
-          DB_USER: resumepilot
-          DB_PASSWORD: ci_password
-          DB_NAME: ai_resume_builder
           NODE_ENV: test
         run: npm test
+      - name: Stop isolated MariaDB
+        if: always()
+        run: docker rm -f "$CI_MARIADB_CONTAINER" >/dev/null 2>&1 || true
 
   zero-firestore-certification:
     name: Zero-Firestore production certification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [build-lint-unit, backend-integration]
-    services:
-      mysql:
-        image: mariadb:11
-        env:
-          MARIADB_DATABASE: ai_resume_builder
-          MARIADB_USER: resumepilot
-          MARIADB_PASSWORD: ci_password
-          MARIADB_ROOT_PASSWORD: ci_root_password
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
+    env:
+      MARIADB_CI_IMAGE: mariadb@sha256:4f1d8d202fcf7bcb3902f63af09f9c1a050c2922a89652f22abaec0d4f015e83 # 11.4.12
+      RUN_MARIADB_INTEGRATION: "true"
+      RUN_MARIADB_OUTBOX_CERTIFICATION: "true"
+      RUN_MARIADB_BACKUP_RESTORE_DRILL: "true"
+      MARIADB_TEST_ALLOW_RESET: "true"
     steps:
       - uses: actions/checkout@v4
+      - name: Start isolated MariaDB with ephemeral credentials
+        run: scripts/start-ci-mariadb.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -97,15 +79,22 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm ci --no-audit --no-fund
         working-directory: backend
+      - name: Initialize isolated certification schema
+        env:
+          NODE_ENV: test
+        run: |
+          node - <<'NODE'
+          const database = require('./backend/database/mysql');
+          database.initializeSchema()
+            .then((result) => {
+              if (!result.success) throw new Error(result.error || 'schema initialization failed');
+              return database.closePool();
+            })
+            .catch((error) => { console.error(error.message); process.exit(1); });
+          NODE
       - name: Static zero-Firestore certification (census + structure)
         run: npm run certify:firestore-zero
-      - name: Runtime certification (Firestore OFF boot, MySQL outage, outbox, backup/restore)
-        env:
-          DB_HOST: 127.0.0.1
-          DB_PORT: "3306"
-          DB_USER: resumepilot
-          DB_PASSWORD: ci_password
-          DB_NAME: ai_resume_builder
+      - name: Runtime certification (Firestore OFF boot, MariaDB outage, outbox, backup/restore)
         run: npm run certify:runtime
       - name: Upload evidence
         if: always()
@@ -116,6 +105,9 @@ jobs:
             docs/firestore-dependency-census.json
             .arena/evidence/
           if-no-files-found: ignore
+      - name: Stop isolated MariaDB
+        if: always()
+        run: docker rm -f "$CI_MARIADB_CONTAINER" >/dev/null 2>&1 || true
 
   security-audit:
     name: Dependency security audit
@@ -131,5 +123,5 @@ jobs:
         working-directory: backend
       - name: Production dependency audit (blocks on high/critical)
         run: |
-          npm audit --omit=dev --audit-level=high || true
-          npm --prefix backend audit --omit=dev --audit-level=high || true
+          npm audit --omit=dev --audit-level=high
+          npm --prefix backend audit --omit=dev --audit-level=high

@@ -1,57 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdClose, MdLightbulb, MdBolt, MdContentCopy, MdAdd, MdCheck, MdAutoAwesome } from 'react-icons/md';
+import { MdClose, MdBolt, MdContentCopy, MdCheck, MdAutoAwesome } from 'react-icons/md';
 import { FiLoader } from 'react-icons/fi';
 import { generateUserAiContent } from '../../../../services/aiService';
 
-// Updated tone prompts – now include style guidance for natural language and ATS optimization
+// Tone changes presentation only; every option remains constrained to the user's notes.
 const FOCUS_TONES = [
-    {
-        id: 'metrics',
-        label: '📈 Growth & Metrics',
-        prompt: `Write in a natural, human voice – as if the person is telling a compelling story about their achievements. 
-                 Use strong action verbs and include specific, measurable results (percentages, dollar amounts, time saved). 
-                 Keep sentences varied and conversational, avoiding robotic bullet‑style lists. 
-                 Focus on: high‑impact growth, revenue increases, cost reductions, and performance metrics.`
-    },
-    {
-        id: 'leadership',
-        label: '👥 Leadership',
-        prompt: `Use a warm, authentic tone that highlights leadership and collaboration. 
-                 Describe how you motivated teams, drove strategic initiatives, and influenced cross‑functional outcomes. 
-                 Include concrete examples of team size, project scope, or organisational change. 
-                 Write as if you're telling a mentor about your proudest leadership moments.`
-    },
-    {
-        id: 'efficiency',
-        label: '⚡ Efficiency & Ops',
-        prompt: `Adopt a clear, straightforward style that showcases operational excellence. 
-                 Emphasise process improvements, cost savings, and productivity gains with real numbers. 
-                 Use everyday language to explain complex optimisations – make it easy for any reader to understand your impact.`
-    },
-    {
-        id: 'technical',
-        label: '🛠️ Tech & Delivery',
-        prompt: `Write in a crisp, confident tone that conveys technical depth without jargon overload. 
-                 Describe system architectures, product deliveries, and technical challenges you solved. 
-                 Include quantifiable outcomes (e.g., reduced latency, increased uptime, shipped features). 
-                 Keep the narrative engaging and human, as if explaining your work to a curious colleague.`
-    },
+    { id: 'balanced', label: 'Balanced' },
+    { id: 'concise', label: 'Concise' },
+    { id: 'leadership', label: 'Leadership (if stated)' },
+    { id: 'metrics', label: 'Metrics (if stated)' },
 ];
-
-// Dynamic fallback generator – creates personalised sentences using the user's actual data
-const generateFallbackSuggestions = (jobTitle, employer, city) => {
-    const baseTemplates = [
-        `As a ${jobTitle} at ${employer}${city ? ` in ${city}` : ''}, I led initiatives that streamlined our core workflows, boosting team productivity by over 20%.`,
-        `Collaborating across departments, I helped deliver key projects ahead of schedule, ensuring alignment with business goals and earning recognition from senior leadership.`,
-        `I introduced new tools and best practices that reduced operational errors by 30% and saved the team an average of 10 hours per week.`,
-        `Beyond my primary responsibilities, I mentored junior colleagues and facilitated knowledge‑sharing sessions, which contributed to a 15% increase in internal promotions.`,
-        `I took ownership of critical system upgrades, improving system reliability and cutting response times by 40% without disrupting daily operations.`,
-        `By rethinking our customer onboarding process, I increased retention by 25% and boosted net promoter scores by 12 points.`
-    ];
-    // Return a shuffled subset to vary each time (optional)
-    return baseTemplates.sort(() => Math.random() - 0.5).slice(0, 4);
-};
 
 const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApplySuggestion }) => {
     const { t } = useTranslation('common');
@@ -59,22 +18,23 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
     const [suggestions, setSuggestions] = useState([]);
     const [selectedBullets, setSelectedBullets] = useState([]);
     const [copiedIndex, setCopiedIndex] = useState(null);
-    const [activeTone, setActiveTone] = useState('metrics');
+    const [activeTone, setActiveTone] = useState('balanced');
     const [error, setError] = useState(null);
     const requestControllerRef = useRef(null);
 
     const generateAiSuggestions = async (toneId = activeTone) => {
         const jobTitle = selectedEmployment?.jobTitle || selectedEmployment?.job_title || selectedEmployment?.position || '';
         const employer = selectedEmployment?.employer || selectedEmployment?.company || selectedEmployment?.employerName || '';
+        const sourceNotes = String(selectedEmployment?.description || selectedEmployment?.userNotes || '').trim();
 
         if (!selectedEmployment || !jobTitle || !employer) {
-            setError(t('WorkHistorySuggestionModal.errors.requiredFields', 'Please enter Job Title and Company first.'));
-            // Show a gentle fallback prompt instead of leaving empty
-            setSuggestions([
-                'Start by describing your role and impact in your own words.',
-                'Think about a project that made a difference – what problem did you solve?',
-                'What metrics or feedback highlight your success?'
-            ]);
+            setSuggestions([]);
+            setError(t('WorkHistorySuggestionModal.errors.requiredFields', 'Enter the job title and employer before requesting a rewrite.'));
+            return;
+        }
+        if (sourceNotes.length < 12) {
+            setSuggestions([]);
+            setError('First add at least 12 characters describing work you actually performed. AI can rewrite those facts, but it will not invent responsibilities or results.');
             return;
         }
 
@@ -84,48 +44,32 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
         setIsGenerating(true);
         setError(null);
 
-        const toneObj = FOCUS_TONES.find((t) => t.id === toneId) || FOCUS_TONES[0];
-
         try {
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
-            // Add an extra parameter to request natural, ATS-friendly language
             const data = await generateUserAiContent('generate-work-description', {
-                jobTitle: jobTitle,
-                employer: employer,
+                jobTitle,
+                employer,
                 city: selectedEmployment.city || '',
                 startDate: selectedEmployment.begin || selectedEmployment.startDate || '',
                 endDate: selectedEmployment.end || selectedEmployment.endDate || '',
                 current: Boolean(selectedEmployment.current),
-                existingText: selectedEmployment.description || selectedEmployment.userNotes || '',
+                existingText: sourceNotes,
                 language: preferredLanguage,
-                focusTone: toneObj.prompt,
-                style: 'natural, human-like, ATS-optimized, strictly truthful, no fabricated facts'
+                tone: toneId,
             }, { signal: requestController.signal });
 
-            if (data && data.suggestions && Array.isArray(data.suggestions)) {
-                const cleanSuggestions = data.suggestions.map((item) => {
-                    if (typeof item === 'string') return item.trim();
-                    if (typeof item === 'object' && item !== null) {
-                        return (item.bulletPoint || item.text || item.suggestion || item.bullet || Object.values(item)[0] || '').toString().trim();
-                    }
-                    return String(item).trim();
-                }).filter(Boolean);
-                setSuggestions(cleanSuggestions);
-            } else {
-                throw new Error('Invalid response format');
-            }
+            const cleanSuggestions = Array.isArray(data?.suggestions)
+                ? data.suggestions.map(item => String(typeof item === 'object' ? item.text || item.suggestion || '' : item).trim()).filter(Boolean)
+                : [];
+            if (!cleanSuggestions.length) throw new Error('No source-supported rewrites were returned');
+            setSuggestions(cleanSuggestions);
         } catch (err) {
             if (err?.name === 'AbortError') return;
-            console.error('Error generating AI suggestions:', err);
-            setError(`AI Service fallback used. (${err.message || 'Unknown error'})`);
-
-            // Use dynamic fallback – never hardcoded
-            const fallback = generateFallbackSuggestions(
-                jobTitle,
-                employer,
-                selectedEmployment.city
-            );
-            setSuggestions(fallback);
+            console.error('Error rewriting work notes:', err);
+            setSuggestions([]);
+            setError(err?.code === 'INVALID_AI_INPUT'
+                ? err.message
+                : 'Your notes were not changed because a source-supported rewrite is unavailable. Please try again later or edit them directly.');
         } finally {
             if (requestControllerRef.current === requestController) {
                 requestControllerRef.current = null;
@@ -134,21 +78,20 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
         }
     };
 
-    // Auto-generate suggestions on modal open
+    // Rewrite automatically only when candidate-authored source notes exist.
     useEffect(() => {
         const jobTitle = selectedEmployment?.jobTitle || selectedEmployment?.job_title || selectedEmployment?.position || '';
         const employer = selectedEmployment?.employer || selectedEmployment?.company || selectedEmployment?.employerName || '';
-
-        if (isOpen && jobTitle && employer) {
-            setSelectedBullets([]);
+        const sourceNotes = String(selectedEmployment?.description || selectedEmployment?.userNotes || '').trim();
+        if (!isOpen) return;
+        setSelectedBullets([]);
+        if (jobTitle && employer && sourceNotes.length >= 12) {
             generateAiSuggestions(activeTone);
-        }
-        // If open but missing data, show the gentle prompts
-        if (isOpen && (!jobTitle || !employer)) {
-            setSuggestions([
-                'Enter your Job Title and Company to get personalised, ATS‑friendly suggestions.',
-                'We’ll then generate impactful, human‑sounding bullet points.'
-            ]);
+        } else {
+            setSuggestions([]);
+            setError(!jobTitle || !employer
+                ? 'Enter the job title and employer first.'
+                : 'Add factual notes about work you performed before asking AI to rewrite them.');
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, selectedEmployment]);
@@ -212,12 +155,12 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                AI‑Powered Natural Descriptions
+                                Source-grounded work-note rewrite
                                 <span className="bg-indigo-500/30 text-indigo-300 text-xs px-2 py-0.5 rounded-full font-medium border border-indigo-400/20">
-                                    ATS‑Optimised
+                                    Facts required
                                 </span>
                             </h3>
-                            <p className="text-xs text-slate-300">Generate human‑like, impactful bullet points tailored to your role</p>
+                            <p className="text-xs text-slate-300">Rephrase only the work facts you entered; review every result before applying</p>
                         </div>
                     </div>
                     <button onClick={handleClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
@@ -251,7 +194,7 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
 
                     {/* Focus Tone Filter Pills */}
                     <div>
-                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Select Accomplishment Focus</label>
+                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Rewrite style</label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {FOCUS_TONES.map((tone) => (
                                 <button
@@ -280,13 +223,13 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
                     {isGenerating ? (
                         <div className="py-12 text-center space-y-3">
                             <FiLoader className="animate-spin w-8 h-8 text-indigo-600 mx-auto" />
-                            <p className="text-sm font-medium text-slate-600">Crafting natural, ATS‑friendly bullet points...</p>
+                            <p className="text-sm font-medium text-slate-600">Rewriting your supplied facts...</p>
                         </div>
                     ) : suggestions.length > 0 ? (
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    Click bullets to build your custom description ({selectedBullets.length} selected)
+                                    Review source-grounded rewrite options ({selectedBullets.length} selected)
                                 </h4>
                                 {selectedBullets.length > 0 && (
                                     <button

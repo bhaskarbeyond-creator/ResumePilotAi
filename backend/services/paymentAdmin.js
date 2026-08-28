@@ -68,54 +68,30 @@ const { getRepository } = require('../repositories');
  * Canonical, secret-free payment settings projection shared by the Admin UI and
  * the backwards-compatible `/api/admin/payment-settings` read alias.
  */
-async function getPaymentSettingsProjection(db, environment = process.env) {
-  let publicRoot = {};
-  let secrets = {};
-  let legacyConfig = {};
-
-  // 1. Primary: MariaDB system_settings
-  try {
-    const repo = getRepository(db);
-    if (repo && typeof repo.getSetting === 'function') {
-      const [pubSetting, paySetting, subSetting] = await Promise.all([
-        repo.getSetting('public_config').catch(() => null),
-        repo.getSetting('payment_providers').catch(() => null),
-        repo.getSetting('subscriptions').catch(() => null),
-      ]);
-      if (pubSetting) publicRoot = pubSetting;
-      if (paySetting) secrets = paySetting;
-      if (subSetting) legacyConfig = subSetting;
-    }
-  } catch (_) {
-    // Non-fatal, fallback to Firestore/defaults
+async function getPaymentSettingsProjection(environment = process.env) {
+  const repo = getRepository();
+  const [publicRootValue, secretsValue] = await Promise.all([
+    repo.getSetting('public_config'),
+    repo.getSetting('payment_providers'),
+  ]);
+  if (!publicRootValue || typeof publicRootValue !== 'object'
+      || !publicRootValue.subscriptions || typeof publicRootValue.subscriptions !== 'object') {
+    throw paymentError(
+      'PAYMENT_SETTINGS_UNINITIALIZED',
+      'The authoritative payment settings projection has not been initialized.',
+      503
+    );
   }
+  const publicRoot = publicRootValue;
+  const secrets = secretsValue && typeof secretsValue === 'object' ? secretsValue : {};
 
-  // 2. Secondary Standby: Firestore ONLY when the standby data plane is
-  // explicitly enabled by an operator. Default OFF: MySQL is the only store.
-  const dataPlane = String(process.env.FIREBASE_DATA_PLANE || process.env.ENABLE_FIRESTORE_DATA_PLANE || 'off').toLowerCase();
-  const standbyEnabled = ['on', 'true', '1', 'firestore-standby', 'standby'].includes(dataPlane);
-  if (standbyEnabled && db && (!publicRoot || Object.keys(publicRoot).length === 0)) {
-    try {
-      const [publicDoc, secretsDoc, legacyDoc] = await Promise.allSettled([
-        db.collection('data').doc('public_config').get(),
-        db.collection('settings').doc('payment_providers').get(),
-        db.collection('data').doc('subscriptions').get(),
-      ]);
-      if (publicDoc.status === 'fulfilled' && publicDoc.value.exists) publicRoot = publicDoc.value.data() || {};
-      if (secretsDoc.status === 'fulfilled' && secretsDoc.value.exists) secrets = secretsDoc.value.data() || {};
-      if (legacyDoc.status === 'fulfilled' && legacyDoc.value.exists) legacyConfig = legacyDoc.value.data() || {};
-    } catch (_) {
-      // Standby error is non-fatal
-    }
-  }
-
-  const publicConfig = publicPaymentSettings(publicRoot.subscriptions || legacyConfig || {});
+  const publicConfig = publicPaymentSettings(publicRoot.subscriptions);
   const providers = {
-    razorpay: selectPaymentPair({ envId: environment.RAZORPAY_KEY_ID, envSecret: environment.RAZORPAY_KEY_SECRET, storedId: secrets.razorpay?.keyId || publicConfig.razorpayKeyId || legacyConfig.razorpayKeyId, storedSecret: secrets.razorpay?.keySecret || legacyConfig.razorpayKeySecret }),
-    stripe: selectPaymentPair({ envSecret: environment.STRIPE_SECRET, storedSecret: secrets.stripe?.secretKey || legacyConfig.stripeSecretKey, requiresId: false }),
-    paypal: selectPaymentPair({ envId: environment.PAYPAL_CLIENT_ID, envSecret: environment.PAYPAL_CLIENT_SECRET, storedId: secrets.paypal?.clientId || publicConfig.paypalClientId || legacyConfig.paypalClientId, storedSecret: secrets.paypal?.clientSecret || legacyConfig.paypalClientSecret }),
-    paytm: selectPaymentPair({ envId: environment.PAYTM_MID, envSecret: environment.PAYTM_MERCHANT_KEY, storedId: secrets.paytm?.mid || publicConfig.paytmMid || legacyConfig.paytmMid, storedSecret: secrets.paytm?.merchantKey || legacyConfig.paytmMerchantKey }),
-    phonepe: selectPaymentPair({ envId: environment.PHONEPE_MERCHANT_ID, envSecret: environment.PHONEPE_SALT_KEY, storedId: secrets.phonepe?.merchantId || publicConfig.phonepeId || legacyConfig.phonepeId, storedSecret: secrets.phonepe?.saltKey || legacyConfig.phonepeSaltKey }),
+    razorpay: selectPaymentPair({ envId: environment.RAZORPAY_KEY_ID, envSecret: environment.RAZORPAY_KEY_SECRET, storedId: secrets.razorpay?.keyId || publicConfig.razorpayKeyId, storedSecret: secrets.razorpay?.keySecret }),
+    stripe: selectPaymentPair({ envSecret: environment.STRIPE_SECRET, storedSecret: secrets.stripe?.secretKey, requiresId: false }),
+    paypal: selectPaymentPair({ envId: environment.PAYPAL_CLIENT_ID, envSecret: environment.PAYPAL_CLIENT_SECRET, storedId: secrets.paypal?.clientId || publicConfig.paypalClientId, storedSecret: secrets.paypal?.clientSecret }),
+    paytm: selectPaymentPair({ envId: environment.PAYTM_MID, envSecret: environment.PAYTM_MERCHANT_KEY, storedId: secrets.paytm?.mid || publicConfig.paytmMid, storedSecret: secrets.paytm?.merchantKey }),
+    phonepe: selectPaymentPair({ envId: environment.PHONEPE_MERCHANT_ID, envSecret: environment.PHONEPE_SALT_KEY, storedId: secrets.phonepe?.merchantId || publicConfig.phonepeId, storedSecret: secrets.phonepe?.saltKey }),
   };
   const configuredProviders = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, Boolean(pair.secret && (provider === 'stripe' || pair.id))]));
   const maskedKeys = Object.fromEntries(Object.entries(providers).map(([provider, pair]) => [provider, maskWriteOnlySecret(pair.secret)]));
@@ -128,8 +104,8 @@ async function getPaymentSettingsProjection(db, environment = process.env) {
       paypalClientId: providers.paypal.id || '',
       paytmMid: providers.paytm.id || '',
       phonepeId: providers.phonepe.id || '',
-      phonepeSaltIndex: publicConfig.phonepeSaltIndex || secrets.phonepe?.saltIndex || environment.PHONEPE_SALT_INDEX || '1',
-      paytmWebsite: publicConfig.paytmWebsite || secrets.paytm?.website || environment.PAYTM_WEBSITE || 'WEBSTAGING',
+      phonepeSaltIndex: publicConfig.phonepeSaltIndex || secrets.phonepe?.saltIndex || environment.PHONEPE_SALT_INDEX || '',
+      paytmWebsite: publicConfig.paytmWebsite || secrets.paytm?.website || environment.PAYTM_WEBSITE || '',
     },
     configuredProviders,
     maskedKeys,

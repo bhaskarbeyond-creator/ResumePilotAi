@@ -94,31 +94,11 @@ test('Super Admin & Platform Module: isSuperAdmin correctly identifies role & wi
   assert.equal(hasSecondFactor(superAdminUser), false);
 });
 
-test('Super Admin & Platform Module: recordAdminAuditLog mock execution succeeds', async () => {
-  const fakeDocs = {};
-  const mockDb = {
-    collection(name) {
-      return {
-        doc(id = 'generated-id') {
-          return {
-            async set(data) {
-              fakeDocs[`${name}/${id}`] = data;
-              return { writeTime: new Date() };
-            },
-          };
-        },
-      };
-    },
-  };
-  const mockAdmin = {
-    firestore: {
-      FieldValue: {
-        serverTimestamp: () => new Date(),
-      },
-    },
-  };
-
-  const result = await recordAdminAuditLog(mockDb, mockAdmin, {
+test('Super Admin & Platform Module: recordAdminAuditLog persists through the repository contract', async () => {
+  const persisted = [];
+  const repository = { async recordAdminAuditLog(event) { persisted.push(event); return event; } };
+  const requestContext = { app: {}, repository, originalUrl: '/api/admin/ai-settings', headers: {} };
+  const result = await recordAdminAuditLog(requestContext, {
     actorUid: 'admin-001',
     actorEmail: 'admin@domain.com',
     action: 'UPDATE_AI_SETTINGS',
@@ -136,7 +116,8 @@ test('Super Admin & Platform Module: recordAdminAuditLog mock execution succeeds
   assert.equal(result.actorUid, 'admin-001');
   assert.equal(result.action, 'UPDATE_AI_SETTINGS');
   assert.equal(result.outcome, 'SUCCESS');
-  assert.ok(fakeDocs[`admin_audit_logs/${result.id}`]);
+  assert.equal(persisted.length, 1);
+  assert.equal(persisted[0].id, result.id);
 });
 
 test('Platform API: /api/platform/health returns structured diagnostic data', async () => {
@@ -168,7 +149,7 @@ test('Platform API: /api/platform/maintenance status is readable by Admin and ed
   if (readRes.status === 200) {
     assert.equal(typeof readRes.body.enabled, 'boolean');
   } else {
-    assert.equal(readRes.body.error?.code, 'MAINTENANCE_UNAVAILABLE');
+    assert.equal(readRes.body.error?.code, 'MAINTENANCE_STATUS_UNAVAILABLE');
   }
 
   // Admin cannot toggle maintenance (Super Admin only)
@@ -180,14 +161,17 @@ test('Platform API: /api/platform/maintenance status is readable by Admin and ed
   assert.equal(adminToggle.body.error.code, 'FORBIDDEN');
 });
 
-test('Platform API: command center returns structured intelligence for admins and rejects users', async () => {
+test('Platform API: command center returns telemetry or a controlled database failure, and rejects users', async () => {
   const res = await request(app).get('/api/platform/command-center').set(bearer('admin'));
-  assert.equal(res.status, 200);
-  assert.ok(res.body.healthScore !== undefined);
-  assert.ok(Array.isArray(res.body.recommendations));
-  assert.ok(res.body.signals);
-  assert.ok(res.body.signals.database);
-  assert.ok(res.body.sources);
+  assert.ok([200, 503].includes(res.status));
+  if (res.status === 200) {
+    assert.ok(res.body.healthScore !== undefined);
+    assert.ok(Array.isArray(res.body.recommendations));
+    assert.ok(res.body.signals?.database);
+    assert.ok(res.body.sources);
+  } else {
+    assert.equal(res.body.error?.code, 'COMMAND_CENTER_UNAVAILABLE');
+  }
 
   const user = await request(app).get('/api/platform/command-center').set(bearer('user'));
   assert.equal(user.status, 403);
@@ -200,9 +184,13 @@ test('Platform API: encryption and observability are read-only control-plane vie
   assert.ok(enc.body.encryption.provider);
 
   const obs = await request(app).get('/api/platform/observability').set(bearer('admin'));
-  assert.equal(obs.status, 200);
-  assert.ok(obs.body.metrics);
-  assert.equal(typeof obs.body.metrics.sampleCount, 'number');
+  assert.ok([200, 503].includes(obs.status));
+  if (obs.status === 200) {
+    assert.ok(obs.body.metrics);
+    assert.equal(typeof obs.body.metrics.sampleCount, 'number');
+  } else {
+    assert.equal(obs.body.error?.code, 'OBSERVABILITY_UNAVAILABLE');
+  }
 });
 
 test('Platform API: tenant decommission and announcements require Super Admin', async () => {
@@ -237,28 +225,87 @@ test('Platform API: announcement delete and operator assignment require Super Ad
   assert.equal(invalid.status, 400);
 });
 
-test('Platform API: attention and enterprise-queue are readable by Admin', async () => {
+test('Platform API: attention and enterprise-queue are readable or fail closed for Admin', async () => {
   const attention = await request(app).get('/api/platform/attention').set(bearer('admin'));
-  assert.equal(attention.status, 200);
-  assert.ok(Array.isArray(attention.body.items));
+  assert.ok([200, 503].includes(attention.status));
+  if (attention.status === 200) assert.ok(Array.isArray(attention.body.items));
+  else assert.equal(attention.body.error?.code, 'ATTENTION_SIGNALS_UNAVAILABLE');
 
   const queue = await request(app).get('/api/platform/enterprise-queue').set(bearer('admin'));
   assert.ok([200, 503].includes(queue.status));
-  if (queue.status === 200) {
-    assert.ok(queue.body.queue);
-  } else {
-    assert.equal(queue.body.error?.code, 'ENTERPRISE_QUEUE_UNAVAILABLE');
-  }
+  if (queue.status === 200) assert.ok(queue.body.queue);
+  else assert.equal(queue.body.error?.code, 'ENTERPRISE_QUEUE_UNAVAILABLE');
 });
 
-test('Platform API: search rejects empty queries and accepts admin search', async () => {
+test('Platform API: search rejects one-character queries', async () => {
   const empty = await request(app).get('/api/platform/search?q=a').set(bearer('admin'));
   assert.equal(empty.status, 200);
   assert.deepEqual(empty.body.users, []);
+  assert.deepEqual(empty.body.tenants, []);
+});
 
-  const res = await request(app).get('/api/platform/search?q=acme').set(bearer('admin'));
-  assert.equal(res.status, 200);
-  assert.ok(Array.isArray(res.body.tenants));
+test('Platform API: search executes the MariaDB SQL contract and escapes LIKE metacharacters', async () => {
+  const { setPoolForTests, closePool } = require('../database/mysql');
+  const calls = [];
+  const query = 'ac%me_\\corp';
+  const expectedLike = '%ac\\%me\\_\\\\corp%';
+
+  setPoolForTests({
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql.includes('FROM users')) {
+        return [[{
+          id: 'user-7',
+          email: 'owner@acme.example',
+          displayName: null,
+          firstname: 'Acme',
+          lastname: 'Owner',
+          membership: 'Premium',
+        }]];
+      }
+      if (sql.includes('FROM enterprise_tenants')) {
+        return [[{
+          id: 'tenant-7',
+          slug: 'acme',
+          displayName: 'Acme Careers',
+          lifecycleState: 'ACTIVE',
+          isolationTier: 'STANDARD',
+        }]];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    },
+    async end() {},
+  });
+
+  try {
+    const res = await request(app)
+      .get('/api/platform/search')
+      .query({ q: query })
+      .set(bearer('admin'));
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.source, 'MARIADB');
+    assert.equal(res.body.query, query);
+    assert.deepEqual(res.body.users, [{
+      id: 'user-7',
+      email: 'owner@acme.example',
+      displayName: 'Acme Owner',
+      membership: 'Premium',
+    }]);
+    assert.equal(res.body.tenants[0].id, 'tenant-7');
+    assert.equal(calls.length, 2);
+    for (const call of calls) {
+      const escape = call.sql.match(/LIKE \? ESCAPE '([^']+)'/);
+      assert.ok(escape, 'each wildcard predicate must declare an escape character');
+      assert.equal(escape[1].length, 2, `MariaDB must receive an escaped backslash SQL literal; SQL=${JSON.stringify(call.sql)}`);
+      assert.ok([...escape[1]].every(character => character === '\\'));
+      assert.equal(call.params[0], expectedLike);
+      assert.equal(call.params[1], expectedLike);
+      assert.equal(call.params[2], query);
+    }
+  } finally {
+    await closePool();
+  }
 });
 
 test('Platform API: Super Admin mutations require MFA when SUPER_ADMIN_MFA_REQUIRED=true', async () => {

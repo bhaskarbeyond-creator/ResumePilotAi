@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { reauthenticateUser } from '../../../firestore/dbOperations';
+import { reauthenticateUser } from '../../../services/api/platform';
 import { loadAdminAiSettings, saveAdminAiSettings, testAdminAiProvider, fetchAdminAiModels, loadQuotaStats, saveQuotaLimits, resetQuota } from '../../../services/adminAiSettings';
 import fire from '../../../conf/fire';
 import { FaRobot, FaCheck, FaTimes, FaSpinner, FaKey, FaSlidersH, FaEye, FaEyeSlash, FaServer, FaBolt, FaGlobe, FaBrain, FaDesktop, FaDownload, FaChartBar, FaTrashAlt, FaSyncAlt, FaUserShield } from 'react-icons/fa';
@@ -77,6 +77,7 @@ const AiSettings = () => {
     const [quotaRecords, setQuotaRecords] = useState([]);
     const [quotaToday, setQuotaToday] = useState('');
     const [quotaTotalHistorical, setQuotaTotalHistorical] = useState(0);
+    const [quotaRevision, setQuotaRevision] = useState(0);
     const [quotaLoading, setQuotaLoading] = useState(false);
     const [quotaSaving, setQuotaSaving] = useState(false);
     const [quotaResetting, setQuotaResetting] = useState(null);
@@ -163,8 +164,10 @@ const AiSettings = () => {
                 if (result.todayRecords) setQuotaRecords(result.todayRecords);
                 if (result.today) setQuotaToday(result.today);
                 if (result.totalHistoricalRecords !== undefined) setQuotaTotalHistorical(result.totalHistoricalRecords);
-            } catch (_) { /* Quota stats optional - don't block page */ }
-            finally { if (active) setQuotaLoading(false); }
+                setQuotaRevision(Number(result.quotaRevision) || 0);
+            } catch (quotaError) {
+                if (active) setQuotaMessage({ type: 'error', text: `AI quota telemetry is unavailable: ${quotaError.message}` });
+            } finally { if (active) setQuotaLoading(false); }
         };
         loadQuota();
         return () => { active = false; };
@@ -178,10 +181,21 @@ const AiSettings = () => {
                 basicDailyLimit: Number(quotaLimits.basic) || 10,
                 premiumDailyLimit: Number(quotaLimits.premium) || 100,
                 adminDailyLimit: Number(quotaLimits.admin) || 10000,
+                expectedRevision: quotaRevision,
             });
+            setQuotaRevision(Number(result.revision) || quotaRevision + 1);
             setQuotaMessage({ type: 'success', text: result.message || 'Quota limits saved.' });
         } catch (error) {
-            setQuotaMessage({ type: 'error', text: error.message || 'Failed to save quota limits.' });
+            if (error.code === 'AI_QUOTA_CONFLICT') {
+                try {
+                    const remote = await loadQuotaStats();
+                    if (remote.limits) setQuotaLimits(remote.limits);
+                    setQuotaRevision(Number(remote.quotaRevision) || 0);
+                } catch (refreshError) {
+                    error.message = `${error.message} The latest quota state could not be reloaded: ${refreshError.message}`;
+                }
+            }
+            setQuotaMessage({ type: 'error', text: error.message || 'Failed to save AI quota limits.' });
         } finally {
             setQuotaSaving(false);
             setTimeout(() => setQuotaMessage(null), 6000);
@@ -396,11 +410,10 @@ const AiSettings = () => {
                 apiKey: key,
                 model: aiConfig[modelFields[targetProvider]] || '',
             });
-            const latency = Date.now() - startTime;
+            const observedDurationMs = Date.now() - startTime;
             setPendingOperation(null);
             const verifiedModel = result.model || aiConfig[modelFields[targetProvider]] || 'default';
-            const speedRating = latency < 800 ? '⚡ Ultra Fast' : latency < 3000 ? '✓ Fast' : latency < 7000 ? '⏳ Moderate' : '🐢 High Latency';
-            setCardMessage(targetProvider, 'success', `✓ ${targetProvider.toUpperCase()} connection verified in ${latency}ms (${speedRating})! Model "${verifiedModel}" is live and ready.`);
+            setCardMessage(targetProvider, 'success', `${targetProvider.toUpperCase()} returned a successful connectivity response for model "${verifiedModel}". Single-request duration: ${observedDurationMs} ms (not a performance benchmark).`);
         } catch (error) {
             if (error.code === 'RECENT_AUTH_REQUIRED') setPendingOperation({ type: 'test', provider: targetProvider });
             const errorMsg = error.message.startsWith('Test Failed') ? error.message : `Test Failed: ${error.message}`;

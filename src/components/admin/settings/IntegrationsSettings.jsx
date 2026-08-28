@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaMapMarkerAlt, FaCheck, FaTimes, FaSpinner, FaShieldAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const IntegrationsSettings = () => {
@@ -17,7 +17,7 @@ const IntegrationsSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             const ig = (settings && settings.integrations) || {};
             setIntegrationsConfig({
                 googleMapsApiKey: ig.googleMapsApiKey || import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_APP_GOOGLE_MAPS_API_KEY || '',

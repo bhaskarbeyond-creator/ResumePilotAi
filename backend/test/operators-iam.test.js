@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.NODE_ENV = 'test';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
@@ -10,31 +12,19 @@ function makeApp() {
   const app = express();
   app.use(express.json());
 
-  // Mock DB and Firebase Admin
+  // Firebase Authentication remains the identity owner. MariaDB records the
+  // required before/after administrative audit events through this explicit
+  // repository contract double.
   const usersDb = new Map([
     ['super-uid', { email: 'super@airesume.guru', role: 'SUPER_ADMIN', displayName: 'Super Operator' }],
     ['admin-uid', { email: 'admin@airesume.guru', role: 'ADMIN', displayName: 'Platform Admin' }],
     ['target-uid', { email: 'user@example.com', role: 'USER', displayName: 'Target User' }],
   ]);
 
-  const mockDb = {
-    collection(_name) {
-      return {
-        doc(id) {
-          return {
-            async get() {
-              const data = usersDb.get(id) || {};
-              return { exists: usersDb.has(id), data: () => data };
-            },
-            async set(data, opts) {
-              const existing = usersDb.get(id) || {};
-              usersDb.set(id, opts?.merge ? { ...existing, ...data } : data);
-            }
-          };
-        },
-      };
-    }
-  };
+  const auditEvents = [];
+  require('../repositories').setRepositoryForTests({
+    async recordAdminAuditLog(event) { auditEvents.push(event); return event; },
+  });
 
   const mockAdmin = {
     auth() {
@@ -66,14 +56,8 @@ function makeApp() {
         }
       };
     },
-    firestore: {
-      FieldValue: {
-        serverTimestamp: () => new Date().toISOString()
-      }
-    }
   };
 
-  app.set('db', mockDb);
   app.set('firebaseAdmin', mockAdmin);
 
   // Authenticated mock SuperAdmin middleware

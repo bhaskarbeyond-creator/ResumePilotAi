@@ -3,7 +3,7 @@ import './DashboardFavourites.scss';
 import { AiFillDelete } from 'react-icons/ai';
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCoverById, getFavourites, getResumeById } from '../../../firestore/dbOperations';
+import { getCoverById, getFavourites, getResumeById } from '../../../services/api/platform';
 import { AiFillStar } from 'react-icons/ai';
 import { FaTrash } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';

@@ -4,7 +4,7 @@ import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FaBriefcase, FaSearch, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaBuilding, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { AuthContext } from '../../main';
-import { getUserJobApplications } from '../../firestore/dbOperations';
+import { getUserJobApplications } from '../../services/api/platform';
 
 
 // eslint-disable-next-line react-refresh/only-export-components

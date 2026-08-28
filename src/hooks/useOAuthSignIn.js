@@ -11,43 +11,40 @@
  *   - GitHub   (Server-side OAuth 2.0 redirect via /api/auth/github)
  *
  * All providers:
- *   - Record authProvider, photoURL, lastLoginAt in Firestore via addUser()
+ *   - Record authProvider, photoURL, and login metadata through the MariaDB profile API
  *   - Gate welcome email behind isNewUser flag (no duplicate emails on re-login)
  *   - Read enable/disable flags from admin module settings
  */
 
 import { useState, useEffect } from 'react';
 import fire, { googleProvider, facebookProvider } from '../conf/fire';
-import addUser, { updateUserOnLogin } from '../firestore/auth';
+import addUser, { updateUserOnLogin } from '../services/api/users';
 
-/**
- * Fetch admin module settings to check which OAuth providers are enabled.
- * Returns default-enabled (true) for all providers if settings are unavailable.
- */
+/** Fetch authoritative module settings. Provider launch fails closed when the
+ * MariaDB projection is unavailable; Firebase Authentication remains the
+ * identity plane and resumes as soon as its explicit provider flag is loaded. */
 async function getModuleSettings() {
     try {
-        const { getSystemSettings } = await import('../firestore/dbOperations');
+        const { getSystemSettings } = await import('../services/api/platform');
         const settings = await getSystemSettings();
+        if (settings?._settingsSource !== 'remote' || settings?._settingsStale === true) {
+            return { google: false, facebook: false, linkedin: false, github: false };
+        }
         const mods = settings?.modules || {};
         const sa = settings?.socialAuth || {};
-
-        const isLinkedinEnabled = mods.enableLinkedinAuthModule !== false && mods.enableLinkedinLogin !== false && sa.enableLinkedinLogin !== false;
-        const isGithubEnabled = mods.enableGithubAuthModule !== false && mods.enableGithubLogin !== false && sa.enableGithubLogin !== false;
-
         return {
-            google: mods.enableGoogleAuthModule !== false,
-            facebook: mods.enableFacebookAuthModule !== false,
-            linkedin: isLinkedinEnabled,
-            github: isGithubEnabled,
+            google: mods.enableGoogleAuthModule === true,
+            facebook: mods.enableFacebookAuthModule === true,
+            linkedin: mods.enableLinkedinAuthModule === true && sa.enableLinkedinLogin === true,
+            github: mods.enableGithubAuthModule === true && sa.enableGithubLogin === true,
         };
     } catch {
-        return { google: true, facebook: true, linkedin: true, github: true };
+        return { google: false, facebook: false, linkedin: false, github: false };
     }
 }
 
-/**
- * Dispatch post-OAuth actions: save user to Firestore, fire welcome email if new user.
- */
+/** Persist the OAuth profile through the MariaDB API; account-created mail is
+ * enqueued by the same server transaction when the profile is first inserted. */
 async function postAuthActions({ uid, displayName, email, photoURL, authProvider }) {
     const nameParts = (displayName || email?.split('@')[0] || 'User').trim().split(' ');
     const firstName = nameParts[0] || 'User';
@@ -61,14 +58,8 @@ async function postAuthActions({ uid, displayName, email, photoURL, authProvider
         console.warn('[useOAuthSignIn] addUser notice:', err.message);
     }
 
-    if (isNewUser) {
-        fetch('/api/notify/user-signup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userEmail: email, userName: displayName || firstName })
-        }).catch(() => {});
-    } else {
-        // Always refresh profile metadata on subsequent logins
+    if (!isNewUser) {
+        // Always refresh profile metadata on subsequent logins.
         updateUserOnLogin(uid, { photoURL, displayName, authProvider }).catch(() => {});
     }
 

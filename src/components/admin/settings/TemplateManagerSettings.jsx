@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaFileCode, FaCheck, FaTimes, FaSpinner, FaStar, FaBan, FaSearch, FaUnlock, FaLock, FaEye, FaLayerGroup, FaCrown, FaFileAlt, FaCheckCircle, FaRedo, FaExpand } from 'react-icons/fa';
 
 // Import all 51 CV Template Thumbnail Images
@@ -116,7 +116,7 @@ const TemplateManagerSettings = () => {
     ];
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.templateManager) {
                 setTemplateConfig({
                     disabledCvTemplates: [],

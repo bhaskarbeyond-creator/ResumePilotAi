@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard, FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw, FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign, FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff } from 'react-icons/fi';
 import { getUser360, assignUserTenant, removeUserTenant, updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, unenrollUserMfa, exportUserData } from '../../../services/platformApi';
 
-import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../firestore/dbOperations';
+import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../services/api/platform';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
 
 export default function User360Drawer({

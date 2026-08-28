@@ -9,7 +9,7 @@ test('messaging creation and profile projection are participant-bound and determ
   // secret-free, non-cacheable participant projection.
   const [backend, operations] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
   ]);
   const createRoute = backend.match(/app\.post\('\/api\/messages\/conversations'[\s\S]*?\n\}\);/)?.[0] || '';
   // Only the applicant or the employer may open the conversation.

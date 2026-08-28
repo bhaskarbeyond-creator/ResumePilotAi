@@ -1,23 +1,70 @@
+'use strict';
+
+process.env.NODE_ENV = 'test';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { enforceDailyAiQuota, accountRateLimit, _buckets } = require('../security/abuse');
+const {
+  enforceDailyAiQuota,
+  accountRateLimit,
+  configureAbuseCounterStoreForTests,
+} = require('../security/abuse');
+const { setPoolForTests } = require('../database/mysql');
+const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 
-function quotaDb(membership = 'Basic') {
-  // The quota store is MySQL (ai_usage table) — a Firestore-shaped mock is no
-  // longer on the synchronous path. The default Basic limit applies when the
-  // test user has no membership row.
-  const { getPool } = require('../database/mysql');
-  const pool = getPool();
-  pool.query("DELETE FROM ai_usage WHERE uid IN ('user-1','user-2')").catch(() => {});
-  pool.query(
-    "INSERT INTO users (id, email, membership, paymentStatus) VALUES ('user-1', 'quota@example.com', ?, 'INACTIVE') ON DUPLICATE KEY UPDATE membership = ?",
-    [membership, membership]
-  ).catch(() => {});
-  pool.query(
-    "INSERT INTO users (id, email, membership, paymentStatus) VALUES ('user-2', 'quota2@example.com', 'Basic', 'INACTIVE') ON DUPLICATE KEY UPDATE membership = 'Basic'"
-  ).catch(() => {});
-  return { pool };
+class AiQuotaMariaDbPool {
+  constructor() { this.reset(); }
+
+  reset() {
+    this.unavailable = false;
+    this.users = new Map([
+      ['user-1', { id: 'user-1', email: 'quota@example.test', membership: 'Basic', paymentStatus: 'INACTIVE' }],
+      ['user-2', { id: 'user-2', email: 'quota2@example.test', membership: 'Basic', paymentStatus: 'INACTIVE' }],
+    ]);
+    this.usage = new Map();
+  }
+
+  async query() {
+    if (this.unavailable) throw Object.assign(new Error('MariaDB unavailable'), { code: 'ECONNREFUSED' });
+    throw new Error('Direct queries are not part of the AI quota transaction contract');
+  }
+
+  async getConnection() {
+    if (this.unavailable) throw Object.assign(new Error('MariaDB unavailable'), { code: 'ECONNREFUSED' });
+    const pool = this;
+    return {
+      beginTransaction: async () => {},
+      async query(sql, params = []) {
+        const normalized = String(sql).replace(/\s+/g, ' ').trim();
+        if (/^SELECT \* FROM users WHERE id = \? LIMIT 1$/i.test(normalized)) {
+          const row = pool.users.get(params[0]);
+          return [[row ? { ...row } : null].filter(Boolean), []];
+        }
+        if (/^SELECT data FROM system_settings WHERE category = 'ai_quota' LIMIT 1$/i.test(normalized)) {
+          return [[], []];
+        }
+        if (/^SELECT count FROM ai_usage WHERE day_key = \? AND uid_hash = \? FOR UPDATE$/i.test(normalized)) {
+          const row = pool.usage.get(`${params[0]}:${params[1]}`);
+          return [[row ? { count: row.count } : null].filter(Boolean), []];
+        }
+        if (/^INSERT INTO ai_usage /i.test(normalized)) {
+          pool.usage.set(`${params[0]}:${params[1]}`, {
+            uid: params[2], email: params[3], count: params[4], limit: params[5],
+          });
+          return [{ affectedRows: 1 }, []];
+        }
+        throw new Error(`Unexpected AI quota SQL: ${normalized}`);
+      },
+      commit: async () => {},
+      rollback: async () => {},
+      release() {},
+    };
+  }
+
+  async end() {}
 }
+
+const pool = new AiQuotaMariaDbPool();
+setPoolForTests(pool);
 
 function responseRecorder() {
   return {
@@ -28,70 +75,67 @@ function responseRecorder() {
   };
 }
 
-async function runQuota(db, uid = 'user-1') {
-  const req = { user: { uid }, app: { get: key => key === 'db' ? db : null } };
+async function runQuota(uid = 'user-1') {
+  const req = { user: { uid, email: `${uid}@example.test`, role: 'USER' } };
   const res = responseRecorder();
   let continued = false;
   await enforceDailyAiQuota(req, res, () => { continued = true; });
   return { res, continued };
 }
 
+test.beforeEach(() => {
+  pool.reset();
+  configureAbuseCounterStoreForTests(null);
+});
+
+test.after(() => configureAbuseCounterStoreForTests(null));
+
 test('daily AI quota is account-bound, durable, and fails closed after the basic limit', async () => {
-  const db = quotaDb('Basic');
   for (let count = 1; count <= 10; count += 1) {
-    const result = await runQuota(db);
+    const result = await runQuota();
     assert.equal(result.continued, true);
     assert.equal(result.res.headers['X-AI-Daily-Remaining'], String(10 - count));
   }
-  const blocked = await runQuota(db);
+  const blocked = await runQuota();
   assert.equal(blocked.continued, false);
   assert.equal(blocked.res.statusCode, 429);
   assert.equal(blocked.res.body.error.code, 'AI_DAILY_QUOTA_EXCEEDED');
-  const otherAccount = await runQuota(db, 'user-2');
+  const otherAccount = await runQuota('user-2');
   assert.equal(otherAccount.continued, true);
 });
 
-test('AI quota fails closed when its durable store is unavailable', async () => {
-  // Simulate store outage by dropping the ai_usage table; the middleware must
-  // fail closed (503) — never silently bypass the limit.
-  const { getPool } = require('../database/mysql');
-  const pool = getPool();
-  await pool.query('DROP TABLE IF EXISTS ai_usage');
-  try {
-    const result = await runQuota(null);
-    assert.equal(result.continued, false);
-    assert.equal(result.res.statusCode, 503);
-    assert.equal(result.res.body.error.code, 'AI_QUOTA_UNAVAILABLE');
-  } finally {
-    await pool.query(`CREATE TABLE IF NOT EXISTS ai_usage (
-      day_key VARCHAR(10) NOT NULL,
-      uid_hash VARCHAR(40) NOT NULL,
-      uid VARCHAR(128) NOT NULL,
-      email VARCHAR(255),
-      count INT NOT NULL DEFAULT 1,
-      limit_used INT NOT NULL DEFAULT 10,
-      last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (day_key, uid_hash),
-      INDEX idx_ai_usage_uid (uid),
-      INDEX idx_ai_usage_day (day_key)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`).catch(() => {});
-  }
+test('AI quota fails closed when its authoritative MariaDB store is unavailable', async () => {
+  pool.unavailable = true;
+  const result = await runQuota();
+  assert.equal(result.continued, false);
+  assert.equal(result.res.statusCode, 503);
+  assert.equal(result.res.body.error.code, 'AI_QUOTA_UNAVAILABLE');
 });
 
-test('burst limiter cannot be bypassed by changing source address for one account', () => {
-  _buckets.clear();
+test('burst limiter cannot be bypassed by changing source address for one account', async () => {
+  configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
   const middleware = accountRateLimit({ namespace: 'ai-test', limit: 2, windowMs: 60_000 });
-  const invoke = ip => {
+  const invoke = async ip => {
     const req = { user: { uid: 'same-account' }, ip };
     const res = responseRecorder();
     let continued = false;
-    middleware(req, res, () => { continued = true; });
+    await middleware(req, res, () => { continued = true; });
     return { res, continued };
   };
-  assert.equal(invoke('203.0.113.1').continued, true);
-  assert.equal(invoke('203.0.113.2').continued, true);
-  const blocked = invoke('203.0.113.3');
+  assert.equal((await invoke('203.0.113.1')).continued, true);
+  assert.equal((await invoke('203.0.113.2')).continued, true);
+  const blocked = await invoke('203.0.113.3');
   assert.equal(blocked.continued, false);
   assert.equal(blocked.res.statusCode, 429);
+});
+
+test('burst limiter fails closed when the durable counter store is unavailable', async () => {
+  configureAbuseCounterStoreForTests({ increment: async () => { throw new Error('counter offline'); } });
+  const middleware = accountRateLimit({ namespace: 'ai-test-failure', limit: 2, windowMs: 60_000 });
+  const res = responseRecorder();
+  let continued = false;
+  await middleware({ user: { uid: 'same-account' }, ip: '203.0.113.1' }, res, () => { continued = true; });
+  assert.equal(continued, false);
+  assert.equal(res.statusCode, 503);
+  assert.equal(res.body.error.code, 'RATE_LIMIT_UNAVAILABLE');
 });

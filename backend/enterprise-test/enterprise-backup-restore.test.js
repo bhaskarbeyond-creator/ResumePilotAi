@@ -2,121 +2,151 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const crypto = require('node:crypto');
-const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-const { FirestoreTenantRegistry } = require('../enterprise/tenantRegistry');
-const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
-const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
-const { freezeContext } = require('../enterprise/tenantContext');
-const backup = require('../enterprise/enterpriseBackup');
+const {
+  TENANT_TABLES,
+  checksum,
+  exportTenantSnapshot,
+  restoreTenantSnapshot,
+  verifySnapshot,
+  verifyTenantRestored,
+} = require('../enterprise/enterpriseBackup');
+const { InMemoryTenantBackupPool } = require('../test/helpers/inMemoryTenantBackupPool');
+const { TenantService } = require('../enterprise/tenantService');
 
-function setup() {
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
-  const encryptionProvider = new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) });
-  const repository = new FirestoreEnterpriseRepository({ db, admin, encryptionProvider });
-  const registry = new FirestoreTenantRegistry({ db, admin });
-  return { db, admin, repository, registry, encryptionProvider };
+const TENANT_ID = '11111111-1111-4111-8111-111111111111';
+const WORKSPACE_ID = '22222222-2222-4222-8222-222222222222';
+
+function seed() {
+  return {
+    enterprise_tenants: [{ id: TENANT_ID, slug: 'backup-co', displayName: 'Backup Co' }],
+    enterprise_workspaces: [{ id: WORKSPACE_ID, tenantId: TENANT_ID, name: 'Primary' }],
+    enterprise_memberships: [{ id: 'membership-owner', tenantId: TENANT_ID, principalId: 'backup-owner', workspaceId: WORKSPACE_ID, status: 'ACTIVE' }],
+    enterprise_membership_invitations: [{ id: 'invitation-1', membershipId: 'membership-owner', tenantId: TENANT_ID, principalId: 'backup-owner', workspaceId: WORKSPACE_ID }],
+    enterprise_workspace_memberships: [{ id: 'workspace-member-1', tenantId: TENANT_ID, workspaceId: WORKSPACE_ID, principalId: 'backup-owner' }],
+    enterprise_tenant_configurations: [{ tenantId: TENANT_ID, revision: 1 }],
+    enterprise_principal_tenants: [{ principalId: 'backup-owner', personalTenantId: TENANT_ID, defaultWorkspaceId: WORKSPACE_ID }],
+    enterprise_teams: [{ id: 'team-1', tenantId: TENANT_ID, workspaceId: WORKSPACE_ID, name: 'Team' }],
+    enterprise_team_members: [{ id: 'team-member-1', tenantId: TENANT_ID, teamId: 'team-1', principalId: 'backup-owner' }],
+    enterprise_resources: [{
+      id: 'resource-1', tenantId: TENANT_ID, workspaceId: WORKSPACE_ID, resourceType: 'RESUME',
+      data: JSON.stringify({ payloadCipher: { __enterpriseEncrypted: true, alg: 'AES-256-GCM', keyVersion: 'v1', ciphertext: 'sealed-value', iv: 'iv', tag: 'tag' } }), revision: 1,
+    }],
+    enterprise_audit_events: [{ id: 'audit-1', tenantId: TENANT_ID, action: 'RESOURCE_CREATED' }],
+    enterprise_ai_usage: [{ id: 'usage-1', tenantId: TENANT_ID, workspaceId: WORKSPACE_ID, principalId: 'backup-owner', dayKey: '2026-08-28' }],
+    enterprise_support_grants: [], enterprise_outbox: [],
+    notification_outbox: [{ id: 'notification-1', tenant_id: TENANT_ID, state: 'DELIVERED' }],
+  };
 }
 
-test('tenant snapshot export includes partition tree and control plane with verified checksums', async () => {
-  const { db, admin, repository, registry } = setup();
-  const { tenantId, workspaceId } = await registry.provisionTenant({ ownerPrincipalId: 'backup-owner', displayName: 'Backup Co', slug: 'backup-co' });
-  const context = freezeContext({
-    tenantId, workspaceId, principalId: crypto.randomUUID(),
-    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
-    membership: { status: 'ACTIVE', roles: ['TENANT_OWNER'] }, roles: ['TENANT_OWNER'],
-  });
-  await repository.createResource(context, { resourceType: 'RESUME', payload: { title: 'Backup drill' } });
-  await repository.recordAiUsage(context, { provider: 'openai', model: 'gpt-4o-mini', operation: 'generate-summary', inputTokens: 10, outputTokens: 5, idempotencyKey: crypto.randomUUID() });
+function resign(snapshot) {
+  snapshot.recordCount = snapshot.tables.reduce((total, table) => total + table.rows.length, 0);
+  snapshot.checksum = checksum(snapshot.tables.map(table => ({ name: table.name, count: table.count, rows: table.rows })));
+  return snapshot;
+}
 
-  const snapshot = await backup.exportTenantSnapshot({ db, admin, tenantId });
-  assert.ok(snapshot.checksum.match(/^[0-9a-f]{64}$/));
-  assert.equal(snapshot.tenantId, tenantId);
-  const manifestNames = snapshot.manifest.map(entry => entry.collection);
-  assert.ok(manifestNames.includes('enterprise_tenants'));
-  assert.ok(manifestNames.includes('tenants/{tenantId}/resources'));
-  assert.ok(manifestNames.includes('tenants/{tenantId}/ai_usage'));
-  assert.ok(snapshot.documents.some(document => document.path.startsWith(`tenants/${tenantId}/resources/`)));
-  // Encrypted payloads remain sealed inside the backup envelope.
-  assert.ok(!JSON.stringify(snapshot).includes('Backup drill'), 'snapshot must not leak decrypted payloads');
-
-  const verification = backup.verifySnapshot(snapshot);
-  assert.equal(verification.ok, true, JSON.stringify(verification.problems));
+test('tenant snapshot export contains every MariaDB tenant table and verifies its checksum', async () => {
+  const pool = new InMemoryTenantBackupPool(seed());
+  const snapshot = await exportTenantSnapshot({ pool, tenantId: TENANT_ID, now: '2026-08-28T00:00:00.000Z' });
+  assert.equal(snapshot.format, 'resumepilot-enterprise-mariadb-tenant-snapshot');
+  assert.equal(snapshot.version, 3);
+  assert.equal(snapshot.tables.length, TENANT_TABLES.length);
+  assert.equal(snapshot.tables.find(table => table.name === 'enterprise_resources').count, 1);
+  assert.equal(snapshot.tables.find(table => table.name === 'notification_outbox').count, 1);
+  assert.match(snapshot.checksum, /^[0-9a-f]{64}$/);
+  assert.equal(verifySnapshot(snapshot).ok, true);
+  assert.ok(!JSON.stringify(snapshot).includes('plaintext-api-key'));
+  assert.ok(snapshot.notes.some(note => note.includes('service_accounts')));
 });
 
-test('snapshot tampering is detected by checksum verification', async () => {
-  const { db, admin, repository, registry } = setup();
-  const { tenantId, workspaceId } = await registry.provisionTenant({ ownerPrincipalId: 'tamper-owner', displayName: 'Tamper Co', slug: 'tamper-co' });
-  const context = freezeContext({
-    tenantId, workspaceId, principalId: crypto.randomUUID(),
-    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
-    membership: { status: 'ACTIVE', roles: ['TENANT_OWNER'] }, roles: ['TENANT_OWNER'],
+test('tenant export audit describes the MariaDB snapshot rather than retired document metadata', async () => {
+  const pool = new InMemoryTenantBackupPool(seed());
+  let auditEvent = null;
+  const repository = {
+    pool,
+    async appendAuditEvent(_context, event) { auditEvent = event; return event; },
+  };
+  const service = new TenantService({ registry: {}, repository });
+  const context = {
+    tenantId: TENANT_ID, workspaceId: WORKSPACE_ID, workspaceScope: 'WORKSPACE',
+    principalId: 'backup-owner', subjectId: 'firebase-backup-owner', identityIssuer: 'firebase',
+    actorType: 'user', requestId: 'backup-request', correlationId: 'backup-correlation', policyVersion: 1,
+    dataPlane: { id: 'mysql-primary', type: 'MYSQL', routingVersion: 1 },
+  };
+  const snapshot = await service.exportTenantData({ context });
+  assert.equal(auditEvent.action, 'TENANT_DATA_EXPORTED');
+  assert.deepEqual(auditEvent.metadata, {
+    format: snapshot.format,
+    version: '3',
+    tables: String(TENANT_TABLES.length),
+    records: String(snapshot.recordCount),
+    checksum: snapshot.checksum,
   });
-  await repository.createResource(context, { resourceType: 'RESUME', payload: { title: 'Original' } });
-  const snapshot = await backup.exportTenantSnapshot({ db, admin, tenantId });
+  assert.equal(Object.hasOwn(auditEvent.metadata, 'collections'), false);
+  assert.equal(Object.hasOwn(auditEvent.metadata, 'documents'), false);
+});
 
-  const tampered = JSON.parse(JSON.stringify(snapshot));
-  tampered.documents[0].data.displayName = 'Hacked Co';
-  const verification = backup.verifySnapshot(tampered);
+test('snapshot tampering and structural drift are detected before restore', async () => {
+  const pool = new InMemoryTenantBackupPool(seed());
+  const snapshot = await exportTenantSnapshot({ pool, tenantId: TENANT_ID });
+  const tampered = structuredClone(snapshot);
+  tampered.tables.find(table => table.name === 'enterprise_resources').rows[0].revision = 99;
+  assert.match(verifySnapshot(tampered).problems.join('; '), /checksum mismatch/);
+
+  const missing = structuredClone(snapshot);
+  missing.tables = missing.tables.filter(table => table.name !== 'enterprise_ai_usage');
+  resign(missing);
+  assert.match(verifySnapshot(missing).problems.join('; '), /required table is missing: enterprise_ai_usage/);
+  await assert.rejects(() => restoreTenantSnapshot({ pool, snapshot: missing, mode: 'apply' }), error => error.code === 'ENTERPRISE_BACKUP_CORRUPT');
+});
+
+test('restore dry-run writes nothing; apply recovers catastrophic tenant loss and reconciles every row', async () => {
+  const pool = new InMemoryTenantBackupPool(seed());
+  const snapshot = await exportTenantSnapshot({ pool, tenantId: TENANT_ID });
+  const beforeDryRun = structuredClone(pool.rows);
+  const dryRun = await restoreTenantSnapshot({ pool, snapshot, mode: 'dry-run' });
+  assert.equal(dryRun.restored, snapshot.recordCount);
+  assert.deepEqual(pool.rows, beforeDryRun);
+
+  pool.clearTenant(TENANT_ID);
+  assert.equal(pool.rows.enterprise_tenants.length, 0);
+  const restored = await restoreTenantSnapshot({ pool, snapshot, mode: 'apply' });
+  assert.equal(restored.restored, snapshot.recordCount);
+  const reconciliation = await verifyTenantRestored({ pool, snapshot });
+  assert.deepEqual(reconciliation, { ok: true, missing: [], mismatched: [] });
+});
+
+test('append-only restore rejects an alternate-unique collision and rolls back all table writes', async () => {
+  const sourceSeed = seed();
+  sourceSeed.enterprise_ai_usage[0] = {
+    ...sourceSeed.enterprise_ai_usage[0], id: 'usage-from-snapshot', eventKey: 'shared-provider-event', totalTokens: 42,
+  };
+  const source = new InMemoryTenantBackupPool(sourceSeed);
+  const snapshot = await exportTenantSnapshot({ pool: source, tenantId: TENANT_ID });
+
+  const targetSeed = seed();
+  targetSeed.enterprise_tenants[0].displayName = 'Target must roll back';
+  targetSeed.enterprise_ai_usage[0] = {
+    ...targetSeed.enterprise_ai_usage[0], id: 'different-existing-id', eventKey: 'shared-provider-event', totalTokens: 99,
+  };
+  const target = new InMemoryTenantBackupPool(targetSeed);
+  const before = structuredClone(target.rows);
+
+  await assert.rejects(
+    () => restoreTenantSnapshot({ pool: target, snapshot, mode: 'apply' }),
+    error => error.code === 'ENTERPRISE_BACKUP_CONFLICT' && /enterprise_ai_usage/.test(error.message)
+  );
+  assert.deepEqual(target.rows, before);
+  assert.ok(target.calls.includes('ROLLBACK'));
+});
+
+test('restore refuses a checksum-valid snapshot containing a cross-tenant row', async () => {
+  const pool = new InMemoryTenantBackupPool(seed());
+  const snapshot = await exportTenantSnapshot({ pool, tenantId: TENANT_ID });
+  const forged = structuredClone(snapshot);
+  forged.tables.find(table => table.name === 'enterprise_resources').rows[0].tenantId = '33333333-3333-4333-8333-333333333333';
+  resign(forged);
+  const verification = verifySnapshot(forged);
   assert.equal(verification.ok, false);
-  assert.ok(verification.problems.some(problem => problem.includes('checksum')));
-});
-
-test('restore: dry-run performs zero writes, apply restores, and rollback re-applies the previous snapshot', async () => {
-  const { db, admin, repository, registry } = setup();
-  const { tenantId, workspaceId } = await registry.provisionTenant({ ownerPrincipalId: 'restore-owner', displayName: 'Restore Co', slug: 'restore-co' });
-  const context = freezeContext({
-    tenantId, workspaceId, principalId: crypto.randomUUID(),
-    tenant: { id: tenantId, lifecycleState: 'ACTIVE', isolationTier: 'STANDARD', dataPlane: { id: 'firestore-primary', type: 'FIRESTORE', routingVersion: 1 } },
-    membership: { status: 'ACTIVE', roles: ['TENANT_OWNER'] }, roles: ['TENANT_OWNER'],
-  });
-  const resource = await repository.createResource(context, { resourceType: 'RESUME', payload: { title: 'Before disaster' } });
-  const before = await backup.exportTenantSnapshot({ db, admin, tenantId });
-
-  // Simulated catastrophic loss inside the tenant partition.
-  for (const path of [...db.documents.keys()]) {
-    if (path.startsWith(`tenants/${tenantId}/resources/`)) db.documents.delete(path);
-  }
-  assert.equal(await repository.getResource(context, resource.id), null);
-
-  // Dry-run: verification passes, nothing is written.
-  const dryRun = await backup.restoreTenantSnapshot({ db, admin, snapshot: before, mode: 'dry-run' });
-  assert.equal(dryRun.mode, 'dry-run');
-  assert.equal(await repository.getResource(context, resource.id), null, 'dry-run must not restore');
-
-  // Apply: documents return byte-for-byte.
-  const applied = await backup.restoreTenantSnapshot({ db, admin, snapshot: before, mode: 'apply' });
-  assert.equal(applied.restored, before.documents.length);
-  assert.deepEqual(applied.refused, []);
-  const restored = await repository.getResource(context, resource.id);
-  assert.equal(restored.payload.title, 'Before disaster');
-
-  const postRestore = await backup.verifyTenantRestored({ db, admin, snapshot: before });
-  assert.equal(postRestore.ok, true, JSON.stringify(postRestore));
-
-  // Disaster during restore: re-apply the same snapshot (idempotent rollback).
-  const rollback = await backup.restoreTenantSnapshot({ db, admin, snapshot: before, mode: 'apply' });
-  assert.equal(rollback.restored, before.documents.length);
-  const again = await repository.getResource(context, resource.id);
-  assert.equal(again.payload.title, 'Before disaster');
-});
-
-test('restore refuses documents that do not belong to the snapshot tenant', async () => {
-  const { db, admin, registry } = setup();
-  const alice = await registry.provisionTenant({ ownerPrincipalId: 'restore-alice', displayName: 'Alice Co', slug: 'alice-restore' });
-  const bob = await registry.provisionTenant({ ownerPrincipalId: 'restore-bob', displayName: 'Bob Co', slug: 'bob-restore' });
-  const snapshot = await backup.exportTenantSnapshot({ db, admin, tenantId: alice.tenantId });
-
-  // Forge a snapshot that tries to smuggle Bob's tenant document into Alice's restore.
-  const forged = JSON.parse(JSON.stringify(snapshot));
-  forged.documents.push({ path: `enterprise_tenants/${bob.tenantId}`, data: { id: bob.tenantId, displayName: 'Smuggled' } });
-  forged.documents.sort((left, right) => left.path.localeCompare(right.path));
-  forged.checksum = backup.checksum(forged.documents.map(document => ({ path: document.path, data: document.data })));
-  forged.manifest.find(entry => entry.collection === 'enterprise_tenants').count += 1;
-
-  const applied = await backup.restoreTenantSnapshot({ db, admin, snapshot: forged, mode: 'apply' });
-  assert.deepEqual(applied.refused, [`enterprise_tenants/${bob.tenantId}`], 'foreign-tenant documents must be refused');
-  const bobDoc = await db.collection('enterprise_tenants').doc(bob.tenantId).get();
-  assert.notEqual(bobDoc.data().displayName, 'Smuggled');
+  assert.match(verification.problems.join('; '), /tenant scope mismatch/);
+  await assert.rejects(() => restoreTenantSnapshot({ pool, snapshot: forged, mode: 'apply' }), error => error.code === 'ENTERPRISE_BACKUP_CORRUPT');
 });

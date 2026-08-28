@@ -85,60 +85,7 @@ class InMemorySupportGrantStore {
   }
 }
 
-class FirestoreSupportGrantStore {
-  constructor({ db, admin }) { this.db = db; this.admin = admin; }
-
-  assertAvailable() {
-    if (!this.db || !this.admin?.firestore?.FieldValue) {
-      throw Object.assign(new Error('Support access store is unavailable'), { code: 'SUPPORT_ACCESS_UNAVAILABLE', status: 503 });
-    }
-  }
-
-  async create(input) {
-    this.assertAvailable();
-    const grant = createSupportGrant(input);
-    await this.db.collection('enterprise_support_grants').doc(grant.id).create({
-      ...grant,
-      createdAt: this.admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: this.admin.firestore.FieldValue.serverTimestamp(),
-    });
-    return grant;
-  }
-
-  async validate({ grantId, supportSubjectId, tenantId, workspaceId, now }) {
-    this.assertAvailable();
-    const snapshot = await this.db.collection('enterprise_support_grants').doc(String(grantId || '')).get();
-    if (!snapshot.exists) return null;
-    const grant = { ...snapshot.data(), id: snapshot.id };
-    return activeGrant(grant, { supportSubjectId, tenantId, workspaceId, now }) ? grant : null;
-  }
-
-  async revoke(grantId, { tenantId = null, workspaceId = null } = {}) {
-    this.assertAvailable();
-    const reference = this.db.collection('enterprise_support_grants').doc(String(grantId || ''));
-    const snapshot = await reference.get();
-    if (!snapshot.exists) return false;
-    const grant = snapshot.data() || {};
-    if (tenantId && grant.tenantId !== assertUuid(tenantId, 'Tenant identifier')) return false;
-    if (workspaceId && grant.workspaceId !== assertUuid(workspaceId, 'Workspace identifier')) return false;
-    await reference.update({ status: 'REVOKED', revokedAt: this.admin.firestore.FieldValue.serverTimestamp(), updatedAt: this.admin.firestore.FieldValue.serverTimestamp() });
-    return true;
-  }
-
-  async list({ tenantId, workspaceId = null }) {
-    this.assertAvailable();
-    tenantId = assertUuid(tenantId, 'Tenant identifier');
-    let query = this.db.collection('enterprise_support_grants').where('tenantId', '==', tenantId).where('status', '==', 'ACTIVE');
-    if (workspaceId) query = query.where('workspaceId', '==', assertUuid(workspaceId, 'Workspace identifier'));
-    const snapshot = await query.get();
-    return snapshot.docs
-      .map(document => ({ ...document.data(), id: document.id }))
-      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  }
-}
-
 module.exports = {
-  FirestoreSupportGrantStore,
   InMemorySupportGrantStore,
   activeGrant,
   createSupportGrant,

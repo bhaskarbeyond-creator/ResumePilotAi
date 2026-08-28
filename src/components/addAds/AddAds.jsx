@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './AddAds.scss'
 import SimpleInput from '../Form/simple-input/SimpleInput';
-import { getAds, addAds, removeAd } from '../../firestore/dbOperations'
+import { getAds, addAds, removeAd } from '../../services/api/platform'
 import { withTranslation } from 'react-i18next';
 import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 class AddAds extends Component {

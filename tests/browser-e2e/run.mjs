@@ -15,19 +15,30 @@
  * Exit code 0 only when every scenario passes.
  */
 import { chromium } from 'playwright';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { loadCertificationDatabase } from '../certification/helpers/databaseConfig.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const EVIDENCE = path.join(ROOT, '.arena', 'evidence', 'browser-e2e');
 fs.mkdirSync(path.join(EVIDENCE, 'screenshots'), { recursive: true });
 
-const BASE = process.env.E2E_BASE || 'http://127.0.0.1:3001';
-const API = 'http://127.0.0.1:8080';
-const DB = { host: '127.0.0.1', port: 3306, user: 'resumepilot', password: 'resumepilot_sandbox_pw', database: 'ai_resume_builder' };
+if (process.env.RUN_BROWSER_MARIADB_E2E !== 'true') {
+  throw new Error('NOT VERIFIED: set RUN_BROWSER_MARIADB_E2E=true only for an isolated disposable browser/database stack');
+}
+const BASE = process.env.BROWSER_E2E_BASE_URL || 'http://127.0.0.1:3001';
+const API = process.env.BROWSER_E2E_API_URL || 'http://127.0.0.1:8080';
+for (const [name, value] of [['BROWSER_E2E_BASE_URL', BASE], ['BROWSER_E2E_API_URL', API]]) {
+  const parsed = new URL(value);
+  if (!['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname)) {
+    throw new Error(`${name} must target loopback; this mutation suite is forbidden against remote or production hosts`);
+  }
+}
+const DB = loadCertificationDatabase();
 const mysql = require(path.join(ROOT, 'backend', 'node_modules', 'mysql2', 'promise'));
 
 // Console noise caused by the sandboxed network (external CDNs blocked), not
@@ -41,18 +52,8 @@ async function ensureMysqldRunning(maxAttempts = 10) {
       await c.query('SELECT 1');
       await c.end();
       return true;
-    } catch (_e) {
-      if (process.platform === 'win32') {
-        try {
-          const { execFileSync } = require('node:child_process');
-          execFileSync('powershell.exe', [
-            '-NoProfile',
-            '-Command',
-            'Start-Process -FilePath "D:\\xampp\\mysql\\bin\\mysqld.exe" -ArgumentList "--defaults-file=D:\\xampp\\mysql\\bin\\my.ini","--standalone" -WorkingDirectory "D:\\xampp\\mysql" -WindowStyle Hidden'
-          ], { stdio: 'ignore' });
-        } catch (_) {}
-      }
-      await new Promise(r => setTimeout(r, 1500));
+    } catch (_error) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
   }
   return false;
@@ -132,7 +133,7 @@ async function login(page, email, password) {
 const RUN = Date.now();
 const USER_A = `e2e-a-${RUN}@cert.local`;
 const USER_B = `e2e-b-${RUN}@cert.local`;
-const PASSWORD = 'e2e-password-123';
+const PASSWORD = `E2E-${crypto.randomBytes(18).toString('base64url')}Aa1!`;
 let resumeId = null;
 
 const browser = await chromium.launch(LAUNCH);

@@ -248,15 +248,15 @@ async function main() {
         }
       }
 
-      const testRoute = await probe(`${BASE}/api/platform/operational-status/firestore/test`, {
+      const retiredProviderRoute = await probe(`${BASE}/api/platform/operational-status/firestore/test`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${admin.idToken}`, 'Content-Type': 'application/json' },
       });
-      if (testRoute.status === 403) {
-        recorder.pass('ADMIN is refused the SUPER_ADMIN-only provider test', { status: 403 });
+      if (retiredProviderRoute.status === 404 || retiredProviderRoute.status === 410) {
+        recorder.pass('retired Firestore provider test is unavailable', { status: retiredProviderRoute.status });
       } else {
-        recorder.fail('ADMIN is refused the SUPER_ADMIN-only provider test', {
-          reason: `expected 403, got ${testRoute.status}`,
+        recorder.fail('retired Firestore provider test is unavailable', {
+          reason: `expected 404/410, got ${retiredProviderRoute.status}`,
         });
       }
     } catch (error) {

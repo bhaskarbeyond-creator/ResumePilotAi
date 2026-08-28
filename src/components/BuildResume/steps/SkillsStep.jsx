@@ -18,6 +18,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
     const [expandedCards, setExpandedCards] = useState(new Set());
     const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
     const [popularSkills, setPopularSkills] = useState([]);
+    const [skillsError, setSkillsError] = useState('');
     const idCounter = useRef(0);
     const aiRequestControllerRef = useRef(null);
     useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
@@ -27,7 +28,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         return {
             id: `skill_${Date.now()}_${idCounter.current}`,
             skillName: '',
-            rating: 50,
+            rating: null,
         };
     };
 
@@ -76,56 +77,37 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
     };
 
     const generateAISkills = async () => {
-        const targetOccupation = (resumeData.occupation && resumeData.occupation.trim())
-            || (resumeData.employments?.[0]?.jobTitle)
-            || 'Professional';
+        const targetOccupation = String(resumeData.occupation || resumeData.employments?.[0]?.jobTitle || '').trim();
+        if (!targetOccupation) {
+            setPopularSkills([]);
+            setSkillsError('Enter your target occupation before requesting skill ideas.');
+            return;
+        }
 
         aiRequestControllerRef.current?.abort();
         const requestController = new AbortController();
         aiRequestControllerRef.current = requestController;
         setIsGeneratingSkills(true);
+        setSkillsError('');
         try {
             const currentLanguage = localStorage.getItem('i18nextLng') || 'en';
-            const experienceLevel = resumeData.experienceLevel || 'mid-level';
-            const existingSkillsList = skills
-                .map((s) => (s.skillName || s.name || '').trim())
-                .filter(Boolean);
-
+            const existingSkillsList = skills.map(skill => String(skill.skillName || skill.name || '').trim()).filter(Boolean);
             const data = await generateUserAiContent('generate-skills', {
                 occupation: targetOccupation,
                 jobTitle: targetOccupation,
-                experienceLevel: experienceLevel,
                 existingSkills: existingSkillsList,
                 language: currentLanguage,
             }, { signal: requestController.signal });
-
-            if (data && data.skills && Array.isArray(data.skills)) {
-                const skillNames = data.skills
-                    .map((skill) => typeof skill === 'string' ? skill : skill?.name || skill?.skill || skill?.title || '')
-                    .map((skill) => String(skill).trim())
-                    .filter(Boolean);
-                setPopularSkills(skillNames);
-            } else {
-                throw new Error('Invalid response format');
-            }
+            const skillNames = Array.isArray(data?.skills)
+                ? data.skills.map(skill => String(typeof skill === 'string' ? skill : skill?.name || skill?.skill || skill?.title || '').trim()).filter(Boolean)
+                : [];
+            setPopularSkills(skillNames);
+            if (!skillNames.length) setSkillsError('No skill ideas are available. Nothing was added to your resume.');
         } catch (error) {
             if (error?.name === 'AbortError') return;
-            console.error('Error generating AI skills:', error);
-            // Fallback to default skills if API call fails
-            setPopularSkills([
-                'Communication',
-                'Problem Solving',
-                'Team Collaboration',
-                'Project Management',
-                'Time Management',
-                'Adaptability',
-                'Critical Thinking',
-                'Leadership',
-                'Organization',
-                'Technical Writing',
-                'Data Analysis',
-                'Customer Service',
-            ]);
+            console.error('Error generating AI skill ideas:', error);
+            setPopularSkills([]);
+            setSkillsError('Skill ideas are unavailable. Nothing was added to your resume.');
         } finally {
             if (aiRequestControllerRef.current === requestController) {
                 aiRequestControllerRef.current = null;
@@ -174,7 +156,10 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [skills.length]);
 
+    const hasSkillRating = rating => rating !== null && rating !== undefined && rating !== '' && Number.isFinite(Number(rating));
+
     const getSkillLevelText = (rating) => {
+        if (!hasSkillRating(rating)) return 'Set proficiency level';
         if (rating < 25) return t('SkillsStep.skillLevels.beginner');
         if (rating < 50) return t('SkillsStep.skillLevels.intermediate');
         if (rating < 75) return t('SkillsStep.skillLevels.advanced');
@@ -182,6 +167,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
     };
 
     const getSkillColor = (rating) => {
+        if (rating === null || rating === undefined || rating === '' || !Number.isFinite(Number(rating))) return 'from-gray-300 to-gray-400';
         if (rating < 25) return 'from-red-400 to-red-500';
         if (rating < 50) return 'from-orange-400 to-orange-500';
         if (rating < 75) return 'from-blue-400 to-blue-500';
@@ -245,7 +231,9 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
 
                                     <div className="flex items-center text-sm space-x-2">
                                         <span className={`font-medium ${skill.skillName ? 'text-gray-600' : 'text-gray-400'}`}>
-                                            {skill.skillName ? `${getSkillLevelText(skill.rating)} (${skill.rating}%)` : t('SkillsStep.defaultValues.clickToAdd')}
+                                            {skill.skillName
+                                                ? `${getSkillLevelText(skill.rating)}${hasSkillRating(skill.rating) ? ` (${skill.rating}%)` : ''}`
+                                                : t('SkillsStep.defaultValues.clickToAdd')}
                                         </span>
                                     </div>
                                 </div>
@@ -308,7 +296,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                                 {t('SkillsStep.fields.skillLevel.label')}
                                             </label>
                                             <span className="text-sm font-medium text-blue-600">
-                                                {getSkillLevelText(skill.rating)} ({skill.rating}%)
+                                                {getSkillLevelText(skill.rating)}{hasSkillRating(skill.rating) ? ` (${skill.rating}%)` : ''}
                                             </span>
                                         </div>
 
@@ -316,13 +304,13 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                             <div className="w-full bg-gray-200 rounded-full h-3">
                                                 <div
                                                     className={`h-3 rounded-full bg-gradient-to-r ${getSkillColor(skill.rating)} transition-all duration-200`}
-                                                    style={{ width: `${skill.rating}%` }}></div>
+                                                    style={{ width: `${hasSkillRating(skill.rating) ? skill.rating : 0}%` }}></div>
                                             </div>
                                             <input
                                                 type="range"
                                                 min="0"
                                                 max="100"
-                                                value={skill.rating}
+                                                value={hasSkillRating(skill.rating) ? skill.rating : 0}
                                                 onChange={(e) => updateSkill(skill.id, 'rating', parseInt(e.target.value))}
                                                 className="absolute inset-0 w-full h-3 opacity-0 cursor-pointer"
                                             />
@@ -330,7 +318,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
 
                                         <div className="flex justify-between text-sm font-medium text-gray-500">
                                             <span>{t('SkillsStep.skillLevels.beginner')}</span>
-                                            <span className="text-gray-600">{skill.rating}%</span>
+                                            <span className="text-gray-600">{hasSkillRating(skill.rating) ? `${skill.rating}%` : 'Not set'}</span>
                                             <span>{t('SkillsStep.skillLevels.expert')}</span>
                                         </div>
                                     </div>
@@ -352,8 +340,8 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                 <div className="mt-6 p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-blue-100 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
                         <div>
-                            <h3 className="text-base font-bold text-gray-800 mb-1">{t('SkillsStep.quickAdd.title')}</h3>
-                            <p className="text-sm text-gray-600">{t('SkillsStep.quickAdd.subtitle')}</p>
+                            <h3 className="text-base font-bold text-gray-800 mb-1">Skill ideas for review</h3>
+                            <p className="text-sm text-gray-600">These are role-related ideas, not verified abilities. Add only skills you actually have and set your own proficiency.</p>
                         </div>
                         <button
                             onClick={generateAISkills}
@@ -383,19 +371,20 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <MdLightbulb className="w-8 h-8 text-blue-600" />
                             </div>
-                            <h4 className="text-lg font-semibold text-gray-800 mb-2">AI-Powered Skill Suggestions</h4>
+                            <h4 className="text-lg font-semibold text-gray-800 mb-2">Optional skill ideas</h4>
                             <p className="text-gray-600 mb-4 max-w-md mx-auto">
                                 {!resumeData.occupation
-                                    ? 'Add your job title first to get personalized skill suggestions.'
-                                    : `Get personalized skill suggestions for ${resumeData.occupation} based on industry standards and your experience level.`}
+                                    ? 'Add your target occupation first.'
+                                    : `Request role-related ideas for ${resumeData.occupation}, then add only skills you can personally verify.`}
                             </p>
+                            {skillsError && <p className="text-sm text-amber-700 mb-4" role="status">{skillsError}</p>}
                             {resumeData.occupation && (
                                 <button
                                     onClick={generateAISkills}
                                     disabled={isGeneratingSkills}
                                     className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all cursor-pointer">
                                     <MdLightbulb className="w-5 h-5 mr-2" />
-                                    Generate Skills Now
+                                    Get Skill Ideas
                                 </button>
                             )}
                         </div>

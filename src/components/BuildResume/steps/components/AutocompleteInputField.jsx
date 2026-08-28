@@ -2,8 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateUserAiContent } from '../../../../services/aiService';
 
-// Client-side cache to minimize API cost and latency
+// Client-side cache to minimize API cost and latency. AI suggestions are
+// intentionally limited to non-identity taxonomies; authoritative employers,
+// schools, locations, issuers, and credentials remain direct user entry.
 const suggestionCache = {};
+const AI_AUTOCOMPLETE_TYPES = new Set([
+    'jobTitle', 'occupation', 'degree', 'skill', 'language',
+    'hobby', 'hobbies', 'interest', 'interests',
+]);
 
 const AutocompleteInputField = ({
     label,
@@ -38,6 +44,12 @@ const AutocompleteInputField = ({
     // Fetch AI suggestions
     const fetchSuggestions = async (queryVal) => {
         const query = queryVal.trim();
+        if (!AI_AUTOCOMPLETE_TYPES.has(suggestionType)) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            setLoading(false);
+            return;
+        }
         if (query.length < 2) {
             setSuggestions([]);
             setShowDropdown(false);

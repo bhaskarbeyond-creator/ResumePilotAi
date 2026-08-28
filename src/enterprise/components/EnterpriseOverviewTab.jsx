@@ -114,10 +114,10 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
       items.push({ id: 'dlq', tone: 'warning', label: `${queueDlq} dead-letter job${queueDlq === 1 ? '' : 's'} awaiting replay`, hint: 'Inspect and replay failed jobs from the Security & M2M console.', target: 'security', params: { focus: 'jobs' } });
     }
     if (!queue.loading && queueState && queueState.configured === false) {
-      items.push({ id: 'queue-config', tone: 'warning', label: 'Durable job queue is not configured', hint: 'Background jobs cannot be processed until the Firestore outbox is configured.', target: 'security', params: { focus: 'jobs' } });
+      items.push({ id: 'queue-config', tone: 'warning', label: 'Durable job queue is not configured', hint: 'Background jobs cannot be processed until the MariaDB outbox worker is configured.', target: 'security', params: { focus: 'jobs' } });
     }
     if (!dataPlane.loading && planeState && !planeOk) {
-      items.push({ id: 'plane', tone: 'danger', label: 'Data plane is reporting unavailable', hint: 'Enterprise documents and audit writes will fail until Firestore connectivity is restored.', target: 'overview' });
+      items.push({ id: 'plane', tone: 'danger', label: 'Data plane is reporting unavailable', hint: 'Enterprise documents and audit writes will fail until MariaDB connectivity is restored.', target: 'overview' });
     }
     if (!usage.loading && quotaRatio >= 0.8) {
       items.push({ id: 'quota', tone: quotaRatio >= 1 ? 'danger' : 'warning', label: quotaRatio >= 1
@@ -354,7 +354,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
         <div className="enterprise-card">
           <h3 className="enterprise-card-title">
             <FiShield aria-hidden="true" /> Infrastructure & Security Posture
-            <HelpTooltip text="Live verification of Firestore persistence, HMAC outbox queue worker, encryption tier, and system metrics" />
+            <HelpTooltip text="Live verification of MariaDB persistence, transactional outbox workers, encryption tier, and system metrics" />
           </h3>
           <p className="enterprise-card-subtitle">Live subsystem status</p>
           <ul className="enterprise-health-list">
@@ -369,7 +369,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
             <li className="enterprise-health-item">
               <div className={`enterprise-health-status ${dataPlane.loading ? 'checking' : (planeOk ? 'online' : 'offline')}`} />
               <div className="enterprise-health-copy">
-                <strong>Firestore Data Plane</strong>
+                <strong>MariaDB Data Plane</strong>
                 <small>
                   {dataPlane.loading ? 'Checking…' : planeState
                     ? `Canonical durable store · encryption: ${planeState.encryption === 'server-key' ? 'ServerKey AES-256-GCM' : planeState.encryption || 'none'} · quotas: ${planeState.quotaStore || 'unavailable'}`
@@ -386,7 +386,7 @@ export default function EnterpriseOverviewTab({ onNavigate, workspaces = [] }) {
                 <strong>Durable Job Outbox</strong>
                 <small>
                   {queue.loading ? 'Checking…' : queueState
-                    ? `Firestore-backed · ${formatNumber(queueState.activeQueued || 0)} active · ${formatNumber(queueDlq)} dead-lettered`
+                    ? `MariaDB transactional outbox · ${formatNumber(queueState.activeQueued || 0)} active · ${formatNumber(queueDlq)} dead-lettered`
                     : 'Queue status unavailable'}
                 </small>
               </div>

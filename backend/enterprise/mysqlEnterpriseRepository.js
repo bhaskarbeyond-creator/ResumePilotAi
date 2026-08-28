@@ -31,6 +31,14 @@ function requiresEncryption(classification) {
   return classification !== 'PUBLIC';
 }
 
+function nonNegativeInteger(value, label, maximum = Number.MAX_SAFE_INTEGER) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > maximum) {
+    throw Object.assign(new Error(`${label} must be a non-negative integer`), { code: 'INVALID_AI_USAGE_EVENT', status: 400 });
+  }
+  return parsed;
+}
+
 function assertResourceInScope(context, resource) {
   if (!resource || String(context.tenantId) !== String(resource.tenantId)) {
     const error = new Error('Resource is not available in the active tenant');
@@ -129,22 +137,39 @@ class MySqlEnterpriseRepository {
     const type = normalizedResourceType(resourceType);
     const cls = normalizedClassification(classification);
     const sealed = this.sealPayload(context, payload, cls);
-
-    const [existing] = await this.pool.query(
-      'SELECT id FROM enterprise_resources WHERE tenantId = ? AND resourceType = ? AND id = ?',
-      [context.tenantId, type, id]
-    );
-    if (existing.length > 0) {
-      throw Object.assign(new Error('Resource already exists'), { code: 'RESOURCE_CONFLICT', status: 409 });
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      try {
+        await connection.query(
+          `INSERT INTO enterprise_resources (id, tenantId, workspaceId, resourceType, classification, data, revision, created_by, updated_by)
+           VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+          [id, context.tenantId, context.workspaceId, type, cls, JSON.stringify(sealed), context.principalId, context.principalId]
+        );
+      } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+          throw Object.assign(new Error('Resource already exists'), { code: 'RESOURCE_CONFLICT', status: 409 });
+        }
+        throw error;
+      }
+      await this.appendAuditEvent(context, {
+        action: 'RESOURCE_CREATED', category: 'tenant.resource', severity: 'INFO',
+        resource: { type, id }, metadata: { revision: 1, classification: cls },
+      }, connection);
+      const [rows] = await connection.query(
+        'SELECT * FROM enterprise_resources WHERE tenantId = ? AND id = ? FOR UPDATE',
+        [context.tenantId, id]
+      );
+      const resource = this.mapResource(rows[0]);
+      assertResourceInScope(context, resource);
+      await connection.commit();
+      return resource;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
     }
-
-    await this.pool.query(
-      `INSERT INTO enterprise_resources (id, tenantId, workspaceId, resourceType, classification, data, revision, created_by, updated_by)
-       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
-      [id, context.tenantId, context.workspaceId, type, cls, JSON.stringify(sealed), context.principalId, context.principalId]
-    );
-
-    return this.getResource(context, id);
   }
 
   async getResource(context, resourceId) {
@@ -164,6 +189,11 @@ class MySqlEnterpriseRepository {
 
   async listResources(context, { resourceType = null, limit = 50, cursor = null } = {}) {
     this.assertContext(context);
+    if (cursor !== null && cursor !== undefined && cursor !== '') {
+      throw Object.assign(new Error('Resource pagination cursors are not supported by this endpoint'), {
+        code: 'RESOURCE_CURSOR_UNSUPPORTED', status: 400,
+      });
+    }
     const bounded = Math.max(1, Math.min(Number(limit) || 50, 200));
     let sql = 'SELECT * FROM enterprise_resources WHERE tenantId = ?';
     const params = [context.tenantId];
@@ -193,49 +223,113 @@ class MySqlEnterpriseRepository {
   async updateResource(context, resourceId, { payload = null, classification = null, expectedRevision = null } = {}) {
     this.assertContext(context);
     resourceId = assertUuid(resourceId, 'Resource identifier');
-    const current = await this.getResource(context, resourceId);
-
-    if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== Number(current.revision)) {
-      throw Object.assign(new Error('Resource revision conflict'), { code: 'REVISION_CONFLICT', status: 409 });
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.query(
+        'SELECT * FROM enterprise_resources WHERE tenantId = ? AND id = ? FOR UPDATE',
+        [context.tenantId, resourceId]
+      );
+      if (!rows.length) throw Object.assign(new Error('Resource was not found in the active tenant'), { code: 'TENANT_RESOURCE_NOT_FOUND', status: 404 });
+      const current = this.mapResource(rows[0]);
+      assertResourceInScope(context, current);
+      const revision = Number(current.revision);
+      if (expectedRevision !== null && expectedRevision !== undefined && Number(expectedRevision) !== revision) {
+        throw Object.assign(new Error('Resource revision conflict'), { code: 'REVISION_CONFLICT', status: 409 });
+      }
+      const cls = classification ? normalizedClassification(classification) : current.classification;
+      const nextPayload = payload !== null && payload !== undefined ? payload : current.payload;
+      const sealed = this.sealPayload(context, nextPayload, cls);
+      const [updated] = await connection.query(
+        `UPDATE enterprise_resources
+         SET data = ?, classification = ?, revision = revision + 1, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE tenantId = ? AND id = ? AND revision = ?`,
+        [JSON.stringify(sealed), cls, context.principalId, context.tenantId, resourceId, revision]
+      );
+      if (Number(updated.affectedRows || 0) !== 1) {
+        throw Object.assign(new Error('Resource revision conflict'), { code: 'REVISION_CONFLICT', status: 409 });
+      }
+      await this.appendAuditEvent(context, {
+        action: 'RESOURCE_UPDATED', category: 'tenant.resource', severity: 'INFO',
+        resource: { type: current.resourceType, id: resourceId },
+        metadata: { revision: revision + 1, classification: cls },
+      }, connection);
+      const [updatedRows] = await connection.query(
+        'SELECT * FROM enterprise_resources WHERE tenantId = ? AND id = ? FOR UPDATE',
+        [context.tenantId, resourceId]
+      );
+      const resource = this.mapResource(updatedRows[0]);
+      await connection.commit();
+      return resource;
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
     }
-
-    const cls = classification ? normalizedClassification(classification) : current.classification;
-    const nextPayload = payload !== null && payload !== undefined ? payload : current.payload;
-    const sealed = this.sealPayload(context, nextPayload, cls);
-
-    await this.pool.query(
-      `UPDATE enterprise_resources
-       SET data = ?, classification = ?, revision = revision + 1, updated_by = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE tenantId = ? AND id = ?`,
-      [JSON.stringify(sealed), cls, context.principalId, context.tenantId, resourceId]
-    );
-
-    return this.getResource(context, resourceId);
   }
 
   async deleteResource(context, resourceId) {
     this.assertContext(context);
     resourceId = assertUuid(resourceId, 'Resource identifier');
-    await this.getResource(context, resourceId);
-    await this.pool.query('DELETE FROM enterprise_resources WHERE tenantId = ? AND id = ?', [context.tenantId, resourceId]);
-    return { success: true };
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [rows] = await connection.query(
+        'SELECT * FROM enterprise_resources WHERE tenantId = ? AND id = ? FOR UPDATE',
+        [context.tenantId, resourceId]
+      );
+      if (!rows.length) throw Object.assign(new Error('Resource was not found in the active tenant'), { code: 'TENANT_RESOURCE_NOT_FOUND', status: 404 });
+      const current = this.mapResource(rows[0]);
+      assertResourceInScope(context, current);
+      const [deleted] = await connection.query(
+        'DELETE FROM enterprise_resources WHERE tenantId = ? AND id = ? AND revision = ?',
+        [context.tenantId, resourceId, current.revision]
+      );
+      if (Number(deleted.affectedRows || 0) !== 1) {
+        throw Object.assign(new Error('Resource revision conflict'), { code: 'REVISION_CONFLICT', status: 409 });
+      }
+      await this.appendAuditEvent(context, {
+        action: 'RESOURCE_DELETED', category: 'tenant.resource', severity: 'HIGH',
+        resource: { type: current.resourceType, id: resourceId }, metadata: { revision: current.revision },
+      }, connection);
+      await connection.commit();
+      return { success: true };
+    } catch (error) {
+      await connection.rollback().catch(() => {});
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 
-  async appendAuditEvent(context, event) {
+  async appendAuditEvent(context, event, executor = this.pool) {
     this.assertContext(context);
     const id = event?.id || crypto.randomUUID();
     const action = String(event.action || 'UNKNOWN');
     const category = String(event.category || 'tenant');
     const severity = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(String(event.severity || '').toUpperCase()) ? String(event.severity).toUpperCase() : 'INFO';
+    const outcome = ['SUCCESS', 'DENIED', 'FAILURE'].includes(String(event.outcome || '').toUpperCase()) ? String(event.outcome).toUpperCase() : 'SUCCESS';
+    const actorType = String(event.actorType || context.actorType || 'user').slice(0, 32);
+    const subjectId = String(event.subjectId || context.subjectId || '').slice(0, 128) || null;
+    const requestId = String(event.requestId || context.requestId || '').slice(0, 128) || null;
+    const correlationId = String(event.correlationId || context.correlationId || '').slice(0, 128) || null;
+    const occurredAt = event.occurredAt ? new Date(event.occurredAt) : new Date();
+    if (!Number.isFinite(occurredAt.getTime())) throw Object.assign(new Error('Audit event time is invalid'), { code: 'INVALID_TENANT_AUDIT', status: 400 });
     const metadata = event.metadata ? JSON.stringify(event.metadata) : null;
 
-    await this.pool.query(
-      `INSERT INTO enterprise_audit_events (id, tenantId, workspaceId, actorPrincipalId, action, category, severity, resourceType, resourceId, metadata, occurredAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      [id, context.tenantId, context.workspaceId || null, context.principalId, action, category, severity, event.resource?.type || null, event.resource?.id || null, metadata]
+    await executor.query(
+      `INSERT INTO enterprise_audit_events
+       (id, tenantId, workspaceId, actorPrincipalId, action, category, severity, outcome,
+        actorType, subjectId, requestId, correlationId, resourceType, resourceId, metadata, occurredAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, context.tenantId, context.workspaceId || null, context.principalId, action, category,
+        severity, outcome, actorType, subjectId, requestId, correlationId,
+        event.resource?.type || event.resourceType || null, event.resource?.id || event.resourceId || null,
+        metadata, occurredAt]
     );
 
-    return { id, tenantId: context.tenantId, action, category, severity };
+    return { id, tenantId: context.tenantId, action, category, severity, outcome, actorSubjectId: subjectId, occurredAt: occurredAt.toISOString() };
   }
 
   async listAuditEvents(context, { limit = 100, action = null, actor = null, outcome = null, severity = null, category = null, since = null, until = null, cursor = null } = {}) {
@@ -243,60 +337,154 @@ class MySqlEnterpriseRepository {
     const boundedLimit = Math.max(1, Math.min(Number(limit) || 100, 250));
     let sql = 'SELECT * FROM enterprise_audit_events WHERE tenantId = ?';
     const params = [context.tenantId];
+    const appendTime = (value, label) => {
+      if (!value) return null;
+      const parsed = new Date(value);
+      if (!Number.isFinite(parsed.getTime())) throw Object.assign(new Error(`Audit ${label} time is invalid`), { code: 'INVALID_TENANT_AUDIT_FILTER', status: 400 });
+      return parsed;
+    };
 
-    if (action) {
-      sql += ' AND action LIKE ?';
-      params.push(`%${String(action).toUpperCase()}%`);
+    if (action) { sql += ' AND action LIKE ?'; params.push(`%${String(action).toUpperCase()}%`); }
+    if (actor) { sql += ' AND (subjectId = ? OR actorPrincipalId = ?)'; params.push(String(actor), String(actor)); }
+    if (outcome) { sql += ' AND outcome = ?'; params.push(String(outcome).toUpperCase()); }
+    if (category) { sql += ' AND category LIKE ?'; params.push(`%${String(category).toLowerCase()}%`); }
+    if (severity) { sql += ' AND severity = ?'; params.push(String(severity).toUpperCase()); }
+    const from = appendTime(since, 'start');
+    const through = appendTime(until, 'end');
+    if (from) { sql += ' AND occurredAt >= ?'; params.push(from); }
+    if (through) { sql += ' AND occurredAt <= ?'; params.push(through); }
+    if (cursor) {
+      let decoded;
+      try { decoded = JSON.parse(Buffer.from(String(cursor), 'base64url').toString('utf8')); } catch { decoded = null; }
+      const cursorTime = decoded?.occurredAt ? new Date(decoded.occurredAt) : null;
+      if (!decoded?.id || !cursorTime || !Number.isFinite(cursorTime.getTime())) {
+        throw Object.assign(new Error('Audit cursor is invalid'), { code: 'INVALID_TENANT_AUDIT_CURSOR', status: 400 });
+      }
+      sql += ' AND (occurredAt < ? OR (occurredAt = ? AND id < ?))';
+      params.push(cursorTime, cursorTime, String(decoded.id));
     }
-    if (category) {
-      sql += ' AND category LIKE ?';
-      params.push(`%${String(category).toLowerCase()}%`);
-    }
-    if (severity) {
-      sql += ' AND severity = ?';
-      params.push(String(severity).toUpperCase());
-    }
-    sql += ' ORDER BY occurredAt DESC LIMIT ?';
-    params.push(boundedLimit);
+    sql += ' ORDER BY occurredAt DESC, id DESC LIMIT ?';
+    params.push(boundedLimit + 1);
 
     const [rows] = await this.pool.query(sql, params);
-    const items = rows.map(r => ({
+    const hasMore = rows.length > boundedLimit;
+    const items = rows.slice(0, boundedLimit).map(r => ({
       ...r,
+      principalId: r.actorPrincipalId,
+      actorSubjectId: r.subjectId || null,
+      identityIssuer: r.identityIssuer || (r.actorType === 'service' ? 'service' : 'firebase'),
       metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : (r.metadata || {}),
       occurredAt: r.occurredAt ? new Date(r.occurredAt).toISOString() : null,
     }));
+    if (hasMore && items.length) {
+      const last = items.at(-1);
+      Object.defineProperty(items, 'nextCursor', { value: Buffer.from(JSON.stringify({ occurredAt: last.occurredAt, id: last.id })).toString('base64url'), enumerable: false });
+    }
     return items;
   }
 
   async recordAiUsage(context, usageEvent = {}) {
     this.assertContext(context);
-    const id = crypto.randomUUID();
-    const dayKey = usageEvent.dayKey || new Date().toISOString().slice(0, 10);
-    const promptTokens = Number(usageEvent.promptTokens || 0);
-    const completionTokens = Number(usageEvent.completionTokens || 0);
-    const totalTokens = promptTokens + completionTokens;
+    const inputTokens = nonNegativeInteger(usageEvent.inputTokens ?? usageEvent.promptTokens, 'Input tokens', 4_294_967_295);
+    const outputTokens = nonNegativeInteger(usageEvent.outputTokens ?? usageEvent.completionTokens, 'Output tokens', 4_294_967_295);
+    const estimatedCostMicros = nonNegativeInteger(usageEvent.estimatedCostMicros, 'Estimated cost');
+    const totalTokens = inputTokens + outputTokens;
+    if (!Number.isSafeInteger(totalTokens) || totalTokens > 4_294_967_295) {
+      throw Object.assign(new Error('Total tokens exceed the supported ledger range'), { code: 'INVALID_AI_USAGE_EVENT', status: 400 });
+    }
+    const eventSource = String(usageEvent.idempotencyKey || usageEvent.correlationId || context.correlationId || crypto.randomUUID()).slice(0, 300);
+    const eventKey = crypto.createHash('sha256').update(`${context.tenantId}\u0000${eventSource}`).digest('hex');
+    const id = eventKey;
+    const now = usageEvent.now ? new Date(usageEvent.now) : new Date();
+    if (!Number.isFinite(now.getTime())) throw Object.assign(new Error('Usage event time is invalid'), { code: 'INVALID_TENANT_USAGE', status: 400 });
+    const dayKey = String(usageEvent.dayKey || now.toISOString().slice(0, 10));
+    const provider = String(usageEvent.provider || 'unknown').slice(0, 80);
+    const model = String(usageEvent.model || 'default').slice(0, 128);
+    const operation = String(usageEvent.operation || 'unknown').slice(0, 120);
+    const correlationId = String(usageEvent.correlationId || context.correlationId || '').slice(0, 160);
+    const policyVersion = nonNegativeInteger(context.policyVersion, 'Policy version', 4_294_967_295);
 
-    await this.pool.query(
-      `INSERT INTO enterprise_ai_usage (id, tenantId, workspaceId, principalId, dayKey, model, promptTokens, completionTokens, totalTokens, costEstimate)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, context.tenantId, context.workspaceId || null, context.principalId, dayKey, usageEvent.model || 'default', promptTokens, completionTokens, totalTokens, Number(usageEvent.costEstimate || 0)]
+    const [result] = await this.pool.query(
+      `INSERT INTO enterprise_ai_usage
+       (id, tenantId, workspaceId, principalId, dayKey, provider, model, operation,
+        eventKey, correlationId, policyVersion, promptTokens, completionTokens,
+        totalTokens, costEstimate, costMicros, recordedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE id = VALUES(id)`,
+      [
+        id, context.tenantId, context.workspaceId || null, context.principalId, dayKey,
+        provider, model, operation, eventKey, correlationId, policyVersion,
+        inputTokens, outputTokens, totalTokens, estimatedCostMicros / 1_000_000,
+        estimatedCostMicros, now,
+      ]
     );
+    const usage = {
+      id, tenantId: context.tenantId, workspaceId: context.workspaceId || null,
+      principalId: context.principalId, provider, model, operation, inputTokens,
+      outputTokens, estimatedCostMicros, totalTokens, dayKey,
+    };
+    if (Number(result.affectedRows || 0) === 1) return { ...usage, outcome: 'RECORDED' };
 
-    return { id, totalTokens, dayKey };
+    const [rows] = await this.pool.query(
+      `SELECT id, workspaceId, principalId, provider, model, operation, correlationId,
+              policyVersion, promptTokens, completionTokens, totalTokens, costMicros
+       FROM enterprise_ai_usage WHERE tenantId = ? AND eventKey = ?`,
+      [context.tenantId, eventKey]
+    );
+    const existing = rows[0];
+    const sameIntent = existing
+      && existing.id === id
+      && (existing.workspaceId || null) === (context.workspaceId || null)
+      && existing.principalId === context.principalId
+      && existing.provider === provider
+      && existing.model === model
+      && existing.operation === operation
+      && String(existing.correlationId || '') === correlationId
+      && Number(existing.policyVersion) === policyVersion
+      && Number(existing.promptTokens) === inputTokens
+      && Number(existing.completionTokens) === outputTokens
+      && Number(existing.totalTokens) === totalTokens
+      && Number(existing.costMicros) === estimatedCostMicros;
+    if (!sameIntent) {
+      throw Object.assign(new Error('AI usage idempotency key is already bound to a different ledger event'), {
+        code: 'AI_USAGE_IDEMPOTENCY_CONFLICT', status: 409,
+      });
+    }
+    return { ...usage, outcome: 'DUPLICATE_IGNORED' };
   }
 
   async getAiUsageSummary(context, { days = 30 } = {}) {
     this.assertContext(context);
-    const boundedDays = Math.max(1, Math.min(Number(days) || 30, 365));
-    const [rows] = await this.pool.query(
-      `SELECT dayKey, SUM(promptTokens) as promptTokens, SUM(completionTokens) as completionTokens, SUM(totalTokens) as totalTokens, COUNT(*) as requestCount
-       FROM enterprise_ai_usage
-       WHERE tenantId = ? AND recordedAt >= DATE_SUB(NOW(), INTERVAL ? DAY)
-       GROUP BY dayKey
-       ORDER BY dayKey DESC`,
-      [context.tenantId, boundedDays]
-    );
-    return rows;
+    const boundedDays = Math.max(1, Math.min(Number(days) || 30, 366));
+    const where = 'tenantId = ? AND recordedAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)';
+    const params = [context.tenantId, boundedDays - 1];
+    const [dayRows, workspaceRows, userRows, providerRows, modelRows] = await Promise.all([
+      this.pool.query(`SELECT dayKey AS day, COUNT(*) AS requests, SUM(promptTokens) AS inputTokens, SUM(completionTokens) AS outputTokens, SUM(costMicros) AS estimatedCostMicros FROM enterprise_ai_usage WHERE ${where} GROUP BY dayKey ORDER BY dayKey ASC`, params).then(([rows]) => rows),
+      this.pool.query(`SELECT COALESCE(workspaceId, 'unassigned') AS bucket, COUNT(*) AS requests, SUM(promptTokens) AS inputTokens, SUM(completionTokens) AS outputTokens FROM enterprise_ai_usage WHERE ${where} GROUP BY workspaceId`, params).then(([rows]) => rows),
+      this.pool.query(`SELECT principalId AS bucket, COUNT(*) AS requests, SUM(promptTokens) AS inputTokens, SUM(completionTokens) AS outputTokens FROM enterprise_ai_usage WHERE ${where} GROUP BY principalId`, params).then(([rows]) => rows),
+      this.pool.query(`SELECT COALESCE(provider, 'unknown') AS bucket, COUNT(*) AS requests FROM enterprise_ai_usage WHERE ${where} GROUP BY provider`, params).then(([rows]) => rows),
+      this.pool.query(`SELECT COALESCE(model, 'unknown') AS bucket, COUNT(*) AS requests FROM enterprise_ai_usage WHERE ${where} GROUP BY model`, params).then(([rows]) => rows),
+    ]);
+    // The first query uses the same bounded parameters; keep it explicit to
+    // prevent accidental interpolation of tenant identity into SQL.
+    if (!Array.isArray(dayRows)) throw Object.assign(new Error('Usage summary is unavailable'), { code: 'ENTERPRISE_USAGE_UNAVAILABLE', status: 503 });
+    const byDay = dayRows.map(row => ({
+      day: row.day, requests: Number(row.requests || 0), inputTokens: Number(row.inputTokens || 0),
+      outputTokens: Number(row.outputTokens || 0), estimatedCostMicros: Number(row.estimatedCostMicros || 0),
+    }));
+    const summary = {
+      tenantId: context.tenantId, days: boundedDays,
+      requests: byDay.reduce((sum, row) => sum + row.requests, 0),
+      inputTokens: byDay.reduce((sum, row) => sum + row.inputTokens, 0),
+      outputTokens: byDay.reduce((sum, row) => sum + row.outputTokens, 0),
+      estimatedCostMicros: byDay.reduce((sum, row) => sum + row.estimatedCostMicros, 0),
+      byDay, byWorkspace: {}, byUser: {}, byProvider: {}, byModel: {},
+    };
+    for (const row of workspaceRows) summary.byWorkspace[row.bucket] = { requests: Number(row.requests || 0), inputTokens: Number(row.inputTokens || 0), outputTokens: Number(row.outputTokens || 0) };
+    for (const row of userRows) summary.byUser[row.bucket] = { requests: Number(row.requests || 0), inputTokens: Number(row.inputTokens || 0), outputTokens: Number(row.outputTokens || 0) };
+    for (const row of providerRows) summary.byProvider[row.bucket] = Number(row.requests || 0);
+    for (const row of modelRows) summary.byModel[row.bucket] = Number(row.requests || 0);
+    return summary;
   }
 
   async listAiUsageEvents(context, { limit = 100 } = {}) {
@@ -306,7 +494,14 @@ class MySqlEnterpriseRepository {
       'SELECT * FROM enterprise_ai_usage WHERE tenantId = ? ORDER BY recordedAt DESC LIMIT ?',
       [context.tenantId, bounded]
     );
-    return rows;
+    return rows.map(row => ({
+      id: row.id, tenantId: row.tenantId, workspaceId: row.workspaceId || null,
+      principalId: row.principalId, provider: row.provider || null, model: row.model || null,
+      operation: row.operation || null, inputTokens: Number(row.promptTokens || 0),
+      outputTokens: Number(row.completionTokens || 0), estimatedCostMicros: Number(row.costMicros || 0),
+      correlationId: row.correlationId || null,
+      createdAt: row.recordedAt ? new Date(row.recordedAt).toISOString() : null,
+    }));
   }
 }
 

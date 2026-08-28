@@ -1,40 +1,32 @@
 import { test, expect } from '@playwright/test';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { applicationDefault, initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 import path from 'path';
-import { createRequire } from 'module';
 
-const require = createRequire(import.meta.url);
-const { FirestoreTenantRegistry } = require('../backend/enterprise/tenantRegistry.js');
-
-// Load production backend env to get Firebase credentials
 dotenv.config({ path: path.resolve('backend/.env') });
 
+const liveBaseUrl = String(process.env.LIVE_PRODUCTION_BASE_URL || '').replace(/\/$/, '');
+const liveApproved = process.env.RUN_LIVE_PRODUCTION_MUTATIONS === 'true';
+const evidenceDirectory = path.resolve('scratch/live-enterprise');
 let testEmail = `playwright-e2e-${Date.now()}@northwind.example`;
-let testPassword = crypto.randomBytes(16).toString('hex');
+let testPassword = crypto.randomBytes(24).toString('base64url');
 let testUid = null;
 let tenantId = null;
+let liveIdToken = null;
 
 test.describe('Live Authenticated Enterprise E2E Audit', () => {
   test.setTimeout(180000);
+  test.skip(!liveBaseUrl || !liveApproved,
+    'NOT VERIFIED: set LIVE_PRODUCTION_BASE_URL and explicitly approve isolated live mutations.');
 
   test.beforeAll(async () => {
-    // 1. Initialize Firebase Admin SDK
+    fs.mkdirSync(evidenceDirectory, { recursive: true });
     if (getApps().length === 0) {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        })
-      });
+      initializeApp({ credential: applicationDefault(), projectId: process.env.FIREBASE_PROJECT_ID });
     }
-
-    // 2. Create the temporary test user
-    console.log(`Creating test user: ${testEmail}`);
     const userRecord = await getAuth().createUser({
       email: testEmail,
       password: testPassword,
@@ -42,25 +34,29 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
       displayName: 'Enterprise Administrator'
     });
     testUid = userRecord.uid;
-
-    // 3. Set custom claims to make them an ADMIN
     await getAuth().setCustomUserClaims(testUid, { role: 'ADMIN' });
-    console.log(`Created user ${testUid} with ADMIN claims.`);
-
-    // 4. Ensure tenant and default workspace in Firestore so context resolves instantly
-    const db = getFirestore();
-    const registry = new FirestoreTenantRegistry({ db, admin: { firestore: { FieldValue } } });
-    const ensured = await registry.ensurePersonalTenant(testUid, { displayName: 'Enterprise Administrator' });
-    tenantId = ensured.tenantId;
-    console.log(`Ensured tenant ${tenantId} for test user.`);
   });
 
   test.afterAll(async () => {
-    // Clean up the test user
-    if (testUid) {
-      console.log(`Cleaning up test user: ${testUid}`);
-      await getAuth().deleteUser(testUid);
+    let cleanupError = null;
+    if (liveIdToken && liveBaseUrl) {
+      try {
+        const response = await fetch(`${liveBaseUrl}/api/account/delete`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${liveIdToken}`, 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (!response.ok && response.status !== 401 && response.status !== 404) {
+          cleanupError = new Error(`Live account-data cleanup returned HTTP ${response.status}`);
+        }
+      } catch (error) { cleanupError = error; }
     }
+    if (testUid) {
+      await getAuth().deleteUser(testUid).catch(error => {
+        if (error?.code !== 'auth/user-not-found' && !cleanupError) cleanupError = error;
+      });
+    }
+    if (cleanupError) throw cleanupError;
   });
 
   test('10/10 Enterprise UI/UX Flow (Live)', async ({ page }) => {
@@ -75,25 +71,24 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     console.log('Minting custom token for test user...');
     const customToken = await getAuth().createCustomToken(testUid);
 
-    // 2. Navigate to live site and sign in via Firebase Auth in browser
-    console.log('Navigating to live site...');
-    await page.goto('https://airesume.projectdemo.guru/', { waitUntil: 'domcontentloaded' });
-    
-    console.log('Authenticating in browser context via Firebase SDK...');
-    await page.waitForFunction(() => window.fire && window.fire.auth, { timeout: 30000 });
+    // Authenticate through the retained Firebase Authentication client. Tenant
+    // provisioning must occur through the backend API, never a direct data-store write.
+    await page.goto(`${liveBaseUrl}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.fire && window.fire.auth, { timeout: 30_000 });
     await page.evaluate(token => window.fire.auth().signInWithCustomToken(token), customToken);
-    
-    // Wait for the auth state to settle
-    await page.waitForFunction(() => window.fire.auth().currentUser !== null, { timeout: 15000 });
-    console.log('Live Firebase session successfully established in browser!');
+    await page.waitForFunction(() => window.fire.auth().currentUser !== null, { timeout: 15_000 });
+    liveIdToken = await page.evaluate(() => window.fire.auth().currentUser.getIdToken(true));
 
-    // 3. Navigate directly to Enterprise Console
-    console.log('Navigating to Enterprise Console...');
-    await page.goto('https://airesume.projectdemo.guru/enterprise', { waitUntil: 'domcontentloaded' });
-    
-    // Wait for the full enterprise shell to load
-    await page.locator('.enterprise-shell').waitFor({ timeout: 20000 });
-    console.log('Enterprise Console successfully mounted.');
+    const contextResponse = await page.request.get(`${liveBaseUrl}/api/enterprise/context`, {
+      headers: { Authorization: `Bearer ${liveIdToken}` },
+    });
+    expect(contextResponse.status()).toBe(200);
+    const contextPayload = await contextResponse.json();
+    tenantId = contextPayload.context?.tenantId;
+    expect(tenantId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    await page.goto(`${liveBaseUrl}/enterprise`, { waitUntil: 'domcontentloaded' });
+    await page.locator('.enterprise-shell').waitFor({ timeout: 20_000 });
 
     // Assert Topbar & Context Switchers
     await expect(page.locator('.enterprise-brand-title')).toHaveText('ResumePilot Enterprise');
@@ -151,7 +146,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await page.locator('button.enterprise-nav-item').filter({ hasText: /Talent & Resumes|Documents & Resumes/ }).click();
     await expect(page.locator('h2.enterprise-tab-title').filter({ hasText: /Talent & Resume Repository|Enterprise Document Library/ })).toBeVisible();
     await page.waitForTimeout(1500);
-    await page.screenshot({ path: 'enterprise_live_talent_resumes.png', fullPage: true });
+    await page.screenshot({ path: path.join(evidenceDirectory, 'enterprise_live_talent_resumes.png'), fullPage: true });
 
     // ─────────────────────────────────────────────────────────────
     // Module 3: Users (IAM)
@@ -181,7 +176,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     if (await inspectBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await inspectBtn.click();
       await page.waitForTimeout(600);
-      await page.screenshot({ path: path.resolve('enterprise_live_users_modal.png'), fullPage: true });
+      await page.screenshot({ path: path.join(evidenceDirectory, 'enterprise_live_users_modal.png'), fullPage: true });
       // Close details modal
       await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
     }
@@ -212,7 +207,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     if (await teamMembersBtn.isVisible()) {
       await teamMembersBtn.click();
       await page.waitForTimeout(500);
-      await page.screenshot({ path: path.resolve('enterprise_live_teams_drawer.png'), fullPage: true });
+      await page.screenshot({ path: path.join(evidenceDirectory, 'enterprise_live_teams_drawer.png'), fullPage: true });
       await page.locator('.enterprise-modal-header button.enterprise-button-icon').click();
     }
 
@@ -312,7 +307,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
       await expect(page.locator('.enterprise-toast-success, .enterprise-toast')).toBeVisible({ timeout: 8000 });
     }
     
-    await page.screenshot({ path: path.resolve('enterprise_live_email_templates.png'), fullPage: true });
+    await page.screenshot({ path: path.join(evidenceDirectory, 'enterprise_live_email_templates.png'), fullPage: true });
 
     // ─────────────────────────────────────────────────────────────
     // Module 10: Audit Logs
@@ -375,18 +370,17 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
 
     // Capture Evidence Screenshot of Audit Trail
     console.log('Capturing Live E2E Screenshot...');
-    await page.screenshot({ path: 'enterprise_live_authenticated_audit_success.png', fullPage: true });
+    await page.screenshot({ path: path.join(evidenceDirectory, 'enterprise_live_authenticated_audit_success.png'), fullPage: true });
 
     // Switch to Security tab to capture Security Posture alignment and HelpTooltip
     await page.locator('button.enterprise-nav-item').filter({ hasText: 'Security & M2M' }).click();
     await page.waitForTimeout(1000);
     await expect(page.locator('h3.enterprise-card-title').filter({ hasText: 'Security Posture' })).toBeVisible();
-    await page.screenshot({ path: 'enterprise_live_security_posture_success.png', fullPage: true });
+    await page.screenshot({ path: path.join(evidenceDirectory, 'enterprise_live_security_posture_success.png'), fullPage: true });
 
     // Verify console errors
     console.log('Live Console Errors logged during run:', consoleErrors);
     const fatalErrors = consoleErrors.filter(e => !e.includes('favicon') && !e.includes('third-party') && !e.includes('Failed to load resource'));
-    expect(fatalErrors.length).toBeLessThan(10);
-    console.log('✓ 10/10 Live Authenticated Enterprise E2E Verification PASSED!');
+    expect(fatalErrors, `unexpected browser console errors: ${fatalErrors.join(' | ')}`).toEqual([]);
   });
 });

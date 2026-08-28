@@ -14,8 +14,6 @@ export function normalizeProfileData(input = {}) {
   result.hobbies = list(profile.hobbies || profile.interests, 50).map(item => typeof item === 'string' ? clean(item, 200) : (item && typeof item === 'object' ? clean(item.name || item.hobby || item.title || '', 200) : '')).filter(Boolean);
   result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date']));
   result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','description','link']));
-  result.isLinkedinConnected = profile.isLinkedinConnected === true;
-  result.linkedinConnectedName = clean(profile.linkedinConnectedName, 240);
   result.revision = Math.max(0, Number(profile.revision) || 0);
   return result;
 }
@@ -33,6 +31,6 @@ export function normalizeProfileImage(value) {
   return null;
 }
 
-export function profileFitsFirestore(profile) {
+export function profileFitsPersistenceLimit(profile) {
   return new Blob([JSON.stringify(normalizeProfileData(profile))]).size <= 850_000;
 }

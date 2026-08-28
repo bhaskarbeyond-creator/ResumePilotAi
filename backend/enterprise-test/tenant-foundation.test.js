@@ -2,25 +2,27 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const {
   InMemoryTenantRegistry,
   membershipDocumentId,
-} = require('../enterprise/tenantRegistry');
+} = require('../test/helpers/inMemoryTenantRegistry');
 const { canonicalPrincipalId, freezeContext, tenantContextAuditProjection } = require('../enterprise/tenantContext');
 const { hasTenantPermission } = require('../enterprise/tenantPolicy');
 const { globalCacheKey, tenantCacheKey, tenantCachePrefix, tenantRateLimitKey } = require('../enterprise/tenantCache');
 const { createTenantJobEnvelope, validateTenantJobEnvelope } = require('../enterprise/tenantJobs');
 const { assertStorageContext, tenantObjectKey } = require('../enterprise/tenantStorage');
-const { classifyLegacyResource, createMigrationLedgerRecord } = require('../enterprise/firebaseBridge');
 const { queueEmailInTransaction } = require('../services/notificationOutbox');
-const { InMemoryAtomicCounterStore, TenantQuotaGuard } = require('../enterprise/tenantQuota');
+const { InMemoryAtomicCounterStore } = require('../test/helpers/inMemoryAtomicCounterStore');
+const { InMemoryEnterpriseRepository } = require('../test/helpers/inMemoryEnterpriseRepository');
+const { TenantQuotaGuard } = require('../enterprise/tenantQuota');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
 const { createApiKeyMaterial, verifyApiKeyRecord } = require('../enterprise/serviceIdentity');
-const { buildPersonalResumeMigrationPlan, reconcileAggregate, reconcileCollection } = require('../enterprise/firebaseMigrationAdapter');
 const { createTenantArtifactToken, verifyTenantArtifactToken } = require('../enterprise/tenantSignedArtifacts');
 const { buildTenantTelemetry, tenantMetricLabels } = require('../enterprise/tenantTelemetry');
 const { assertSameInfrastructureRoute, resolveTenantInfrastructure } = require('../enterprise/tenantRouting');
-const { legacyDocumentPath, tenantMigrationTarget } = require('../enterprise/certifiedModuleBridge');
+const { normalizeProvider } = require('../enterprise/enterpriseRepository');
+const { canonicalize, checksum } = require('../enterprise/enterpriseBackup');
 
 const PRINCIPAL_A = 'firebase-user-a';
 const PRINCIPAL_B = 'firebase-user-b';
@@ -53,21 +55,17 @@ test('personal tenants are deterministic per principal and cross-tenant membersh
   assert.equal(membershipDocumentId(first.tenantId, PRINCIPAL_A), membershipDocumentId(first.tenantId, PRINCIPAL_A));
 });
 
-test('certified-module Firebase bridge only maps a personal tenant to its verified legacy UID tree', async () => {
+test('enterprise data ownership is immutable to MariaDB for personal and organization tenants', async () => {
   const registry = new InMemoryTenantRegistry();
-  const resolved = await registry.resolveMembership({ principalId: PRINCIPAL_A, profile: { displayName: 'Asha' } });
-  const context = await contextFor(registry, PRINCIPAL_A);
-  const path = legacyDocumentPath({ context, tenant: resolved.tenant, sourceUid: PRINCIPAL_A, collection: 'RESUME', documentId: 'resume_001' });
-  assert.equal(path, `users/${PRINCIPAL_A}/resumes/resume_001`);
-  assert.equal(tenantMigrationTarget({ tenantId: context.tenantId, workspaceId: context.workspaceId, resourceType: 'resume', legacyDocumentId: 'resume_001' }).tenantId, context.tenantId);
+  const personal = await contextFor(registry, PRINCIPAL_A);
   const business = await registry.provisionTenant({ ownerPrincipalId: PRINCIPAL_B, displayName: 'Acme', slug: 'acme' });
-  await registry.grantMembership({ tenantId: business.tenantId, principalId: PRINCIPAL_A, workspaceId: business.workspaceId, roles: ['MEMBER'] });
-  const businessContext = await contextFor(registry, PRINCIPAL_A, business.tenantId);
-  const businessTenant = await registry.getTenant(business.tenantId);
-  assert.throws(() => legacyDocumentPath({ context: businessContext, tenant: businessTenant, sourceUid: PRINCIPAL_A, collection: 'RESUME', documentId: 'resume_001' }), error => error.code === 'LEGACY_TENANT_RESOURCE_NOT_FOUND');
+  assert.equal(personal.dataPlane.type, 'MYSQL');
+  assert.equal((await registry.getTenant(business.tenantId)).dataPlane.type, 'MYSQL');
+  assert.equal(normalizeProvider('mariadb'), 'mysql');
+  assert.throws(() => normalizeProvider('firestore'), error => error.code === 'ENTERPRISE_DATA_PROVIDER_IMMUTABLE');
 });
 
-test('verified external identity subjects map deterministically to canonical UUID principals for PostgreSQL', async () => {
+test('verified Firebase identity subjects map deterministically to canonical UUID principals for MariaDB', async () => {
   const first = canonicalPrincipalId(PRINCIPAL_A);
   assert.match(first, /^[0-9a-f-]{36}$/i);
   assert.equal(canonicalPrincipalId(PRINCIPAL_A), first);
@@ -106,7 +104,7 @@ test('membership grants verify known server-side identities when an identity pro
   const registry = new InMemoryTenantRegistry();
   const owner = await contextFor(registry, PRINCIPAL_A);
   const { TenantService } = require('../enterprise/tenantService');
-  const service = new TenantService({ registry, admin: { auth: () => ({ getUser: async uid => {
+  const service = new TenantService({ registry, repository: new InMemoryEnterpriseRepository(), admin: { auth: () => ({ getUser: async uid => {
     if (uid === 'known-principal') return { uid, disabled: false };
     const error = new Error('not found');
     error.code = 'auth/user-not-found';
@@ -124,7 +122,7 @@ test('workspace access consistently uses external subject for control-plane memb
   const business = await registry.provisionTenant({ ownerPrincipalId: PRINCIPAL_B, displayName: 'Northwind', slug: 'northwind-subject-check' });
   await registry.grantMembership({ tenantId: business.tenantId, principalId: PRINCIPAL_A, workspaceId: business.workspaceId, roles: ['MEMBER'] });
   const { TenantService } = require('../enterprise/tenantService');
-  const service = new TenantService({ registry });
+  const service = new TenantService({ registry, repository: new InMemoryEnterpriseRepository() });
   const resolved = await service.resolveContext({ user: { uid: PRINCIPAL_A, email: 'a@example.com', claims: {} }, requestedTenantId: business.tenantId, requestedWorkspaceId: business.workspaceId, requestId: 'subject-check' });
   assert.notEqual(resolved.context.principalId, PRINCIPAL_A);
   assert.equal(resolved.context.subjectId, PRINCIPAL_A);
@@ -252,30 +250,19 @@ test('tenant AI policy rejects client-controlled authority and prevents cross-te
   assert.throws(() => applyTenantAiPolicy({ primary: 'gemini', providers: { gemini: { enabled: true } } }, a, { allowedProviders: ['gemini'] }), error => error.code === 'TENANT_AI_PROVIDER_UNAVAILABLE');
 });
 
-test('tenant repository enforces tenant partitioning and workspace scope in queries', async () => {
-  const { MemoryFirestore, createMemoryAdmin } = require('../test/helpers/memoryFirestore');
-  const { FirestoreEnterpriseRepository } = require('../enterprise/firestoreEnterpriseRepository');
+test('tenant repository contract enforces tenant partitioning and workspace scope in queries', async () => {
   const { ServerKeyEncryptionProvider } = require('../enterprise/encryptionProvider');
-  const db = new MemoryFirestore();
-  const admin = createMemoryAdmin({ db });
-  const repository = new FirestoreEnterpriseRepository({
-    db,
-    admin,
-    encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', require('node:crypto').randomBytes(32)]]) }),
+  const repository = new InMemoryEnterpriseRepository({
+    encryptionProvider: new ServerKeyEncryptionProvider({ keys: new Map([['v1', crypto.randomBytes(32)]]) }),
   });
   const context = { ...(await contextFor(new InMemoryTenantRegistry(), PRINCIPAL_A)), workspaceScope: 'WORKSPACE' };
   const otherWorkspaceContext = { ...context, workspaceId: '99999999-9999-4999-8999-999999999999', workspaceScope: 'WORKSPACE' };
-  await repository.createResource(context, { id: '11111111-1111-4111-8111-111111111111', resourceType: 'NOTE', payload: { a: 1 } });
-  // A different workspace of the same tenant cannot list or read it.
-  assert.equal((await repository.listResources(otherWorkspaceContext, {})).length, 0, 'listing applies the workspace predicate');
-  await assert.rejects(
-    () => repository.getResource(otherWorkspaceContext, '11111111-1111-4111-8111-111111111111'),
-    error => error.code === 'WORKSPACE_RESOURCE_NOT_FOUND' && error.status === 404,
-    'cross-workspace reads must fail closed'
-  );
-  const own = await repository.getResource(context, '11111111-1111-4111-8111-111111111111');
-  assert.equal(own.tenantId, context.tenantId);
-  assert.ok(db.documents.has(`tenants/${context.tenantId}/resources/11111111-1111-4111-8111-111111111111`), 'writes land in the tenant partition');
+  const resourceId = '11111111-1111-4111-8111-111111111111';
+  await repository.createResource(context, { id: resourceId, resourceType: 'NOTE', payload: { a: 1 } });
+  assert.equal((await repository.listResources(otherWorkspaceContext, {})).length, 0);
+  await assert.rejects(() => repository.getResource(otherWorkspaceContext, resourceId), error => error.code === 'WORKSPACE_RESOURCE_NOT_FOUND' && error.status === 404);
+  assert.equal((await repository.getResource(context, resourceId)).tenantId, context.tenantId);
+  assert.ok(repository.resources.has(`${context.tenantId}:${resourceId}`));
 });
 
 test('tenant jobs are signed, context complete, tamper resistant, and expire', async () => {
@@ -306,7 +293,7 @@ test('tenant-bound notification outbox records persist immutable tenant context 
   // MySQL transaction connection double: captures the INSERT row.
   const connection = {
     async query(sql, params) {
-      assert.match(sql, /INSERT IGNORE INTO notification_outbox/);
+      assert.match(sql, /INSERT INTO notification_outbox/);
       written = {
         id: params[0],
         recipient: params[2],
@@ -328,7 +315,7 @@ test('tenant outbox reauthorization resolves current membership, lifecycle and r
   const registry = new InMemoryTenantRegistry();
   const context = await contextFor(registry, PRINCIPAL_A);
   const { TenantService } = require('../enterprise/tenantService');
-  const service = new TenantService({ registry });
+  const service = new TenantService({ registry, repository: new InMemoryEnterpriseRepository() });
   const event = { tenant: tenantContextAuditProjection(context) };
   assert.equal(await service.authorizeOutboxEvent(event), true);
   assert.equal(await service.authorizeOutboxEvent({ tenant: { ...event.tenant, identityIssuer: 'oidc:example' } }), false);
@@ -337,40 +324,21 @@ test('tenant outbox reauthorization resolves current membership, lifecycle and r
   assert.equal(await service.authorizeOutboxEvent(event), false);
 });
 
-test('legacy bridge permits deterministic personal resources and blocks ambiguous ownership', () => {
-  const resume = classifyLegacyResource('resume', { userId: PRINCIPAL_A });
-  assert.equal(resume.migrationStatus, 'ELIGIBLE_AFTER_ADAPTER');
-  const ledger = createMigrationLedgerRecord({
-    sourceStore: 'firestore', sourcePath: `users/${PRINCIPAL_A}/resumes/r1`, sourceUid: PRINCIPAL_A,
-    sourceData: { id: 'r1', summary: 'private' }, tenantId: '11111111-1111-4111-8111-111111111111', workspaceId: '22222222-2222-4222-8222-222222222222', resourceType: 'resume', ownership: resume,
+test('logical MariaDB backup values are canonical and checksums expose ownership drift', () => {
+  const source = canonicalize({
+    id: 'resource-1', tenantId: '11111111-1111-4111-8111-111111111111',
+    workspaceId: '22222222-2222-4222-8222-222222222222', data: { summary: 'private' },
+    updatedAt: new Date('2026-08-28T00:00:00.000Z'),
   });
-  assert.equal(ledger.status, 'PLANNED');
-  const company = classifyLegacyResource('company', { employerId: PRINCIPAL_A });
-  assert.equal(company.migrationStatus, 'BLOCKED_OWNERSHIP');
-  assert.throws(() => createMigrationLedgerRecord({ sourcePath: 'companies/c1', sourceData: {}, resourceType: 'company', ownership: company }), error => error.code === 'LEGACY_OWNERSHIP_AMBIGUOUS');
+  assert.equal(checksum(source), checksum(JSON.parse(JSON.stringify(source))));
+  assert.notEqual(checksum(source), checksum({ ...source, tenantId: '33333333-3333-4333-8333-333333333333' }));
 });
 
-test('Firebase adapter creates reversible personal-resume migration plans and checksum reconciliation', () => {
-  const source = { revision: 3, firstname: 'Asha', employments: [{ id: 'e1', jobTitle: 'Engineer' }] };
-  const plan = buildPersonalResumeMigrationPlan({
-    uid: PRINCIPAL_A,
-    resumeId: 'resume_1234',
-    source,
-    personalTenantId: '11111111-1111-4111-8111-111111111111',
-    personalWorkspaceId: '22222222-2222-4222-8222-222222222222',
-  });
-  assert.equal(plan.mode, 'ADAPTER_FIRST');
-  assert.equal(plan.rollback.sourceRemainsAuthoritative, true);
-  assert.equal(plan.target.tenantId, '11111111-1111-4111-8111-111111111111');
-  assert.equal(reconcileAggregate({ source, target: { ...source } }).matches, true);
-  assert.equal(reconcileAggregate({ source, target: { ...source, firstname: 'Different' } }).matches, false);
-  const reconciliation = reconcileCollection({
-    sourceRecords: [{ id: 'a', data: { name: 'A' } }, { id: 'b', data: { name: 'B' } }],
-    targetRecords: [{ legacyDocumentId: 'a', data: { name: 'A' } }, { legacyDocumentId: 'b', data: { name: 'Different' } }, { legacyDocumentId: 'extra', data: {} }],
-  });
-  assert.deepEqual(reconciliation.checksumMismatches, ['b']);
-  assert.deepEqual(reconciliation.unexpectedTarget, ['extra']);
-  assert.equal(reconciliation.matches, false);
+test('removed Firestore migration providers fail closed instead of creating an adapter fallback', () => {
+  for (const provider of ['firestore', 'postgres', 'firebase']) {
+    assert.throws(() => normalizeProvider(provider), error => error.code === 'ENTERPRISE_DATA_PROVIDER_IMMUTABLE');
+  }
+  assert.equal(normalizeProvider('mysql'), 'mysql');
 });
 
 test('database, job, artifact, cache, queue and AI profiles derive from one canonical infrastructure route', async () => {

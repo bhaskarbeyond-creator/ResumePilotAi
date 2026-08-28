@@ -19,6 +19,7 @@
 import { chromium } from 'playwright';
 import { createServer } from 'vite';
 import fs from 'node:fs';
+import { rejectFirebaseDataPlaneRequests } from './helpers/firebase-data-plane-guard.mjs';
 
 const API_KEY = process.env.VITE_FIREBASE_KEY || 'demo-browser-api-key';
 function makeMockJwt(o = {}) { const h = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url'); const now = Math.floor(Date.now() / 1000); const c = Buffer.from(JSON.stringify({ iss: 'https://securetoken.google.com/fixture', aud: 'fixture', auth_time: now, user_id: 'test-superadmin', sub: 'test-superadmin', iat: now, exp: now + 3600, email: 'superadmin@test.com', email_verified: true, admin: true, superAdmin: true, firebase: { identities: { email: ['superadmin@test.com'] }, sign_in_provider: 'password' }, ...o })).toString('base64url'); return `${h}.${c}.mock`; }
@@ -33,7 +34,8 @@ async function main() {
   console.log('║  BATCH 3: ADMIN / SUPER ADMIN — REAL BROWSER EXECUTION     ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
-  const vite = await createServer({ server: { port: 0, host: '127.0.0.1', strictPort: false }, logLevel: 'error', define: { 'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'), 'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY), 'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'), 'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'), 'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'), 'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'), 'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'), 'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture') } });
+  const vite = await createServer({ server: { port: 0, host: '127.0.0.1', strictPort: false }, logLevel: 'error', define: { 'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'), 'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY), 'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'), 'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'), 'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'), 'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture') } });
+
   const server = await vite.listen();
   const base = `http://127.0.0.1:${server.config.server.port}`;
   console.log(`Vite: ${base}\n`);
@@ -57,9 +59,9 @@ async function main() {
     }, { key: `firebase:authUser:${API_KEY}:[DEFAULT]`, apiKey: API_KEY, token: mockToken });
 
     // Firebase intercepts
-    await page.route('**/securetoken.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: mockToken, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fix', id_token: mockToken, user_id: 'test-superadmin' }) }));
+    await rejectFirebaseDataPlaneRequests(page);
+  await page.route('**/securetoken.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: mockToken, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fix', id_token: mockToken, user_id: 'test-superadmin' }) }));
     await page.route('**/identitytoolkit.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ users: [{ localId: 'test-superadmin', email: 'superadmin@test.com', emailVerified: true, displayName: 'Super Admin', customAttributes: JSON.stringify({ admin: true, superAdmin: true }) }] }) }));
-    await page.route('**/*firestore.googleapis.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     await page.route('**/www.google-analytics.com/**', r => r.abort());
     await page.route('**/www.googletagmanager.com/**', r => r.abort());
     await page.route('**/maps.googleapis.com/**', r => r.abort());

@@ -21,7 +21,7 @@ const router = express.Router();
 
 router.use((req, res, next) => {
     try {
-        req.repository = getRepository(req.app.get('db'));
+        req.repository = getRepository();
         next();
     } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
@@ -84,45 +84,40 @@ router.get('/favourites/:itemId/check', requireAuth, async (req, res) => {
 // Stats (public read; authenticated/admin write)
 // ───────────────────────────────────────────────────────────────────────────
 
-// GET /api/stats — public platform stats
+// GET /api/stats — public, measured operational counters only. Marketing
+// display content has a separate revisioned owner under public configuration.
 router.get('/stats', async (req, res) => {
     try {
         const stats = await req.repository.getStats();
-        return res.json({ success: true, stats });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to load stats' });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, stats, source: 'MARIADB_OPERATIONAL_COUNTERS' });
+    } catch (error) {
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'STATS_UNAVAILABLE',
+            error: 'Operational statistics are unavailable.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
-// POST /api/stats/increment — authenticated counter increments (downloads, views, users)
+// POST /api/stats/increment — authenticated, atomic counter increments.
 router.post('/stats/increment', requireAuth, express.json({ limit: '64kb' }), async (req, res) => {
-    try {
-        const key = String(req.body.key || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64);
-        const delta = Math.max(-100000, Math.min(100000, Number(req.body.delta) || 1));
-        if (!key) return res.status(400).json({ success: false, error: 'key is required' });
-        await req.repository.incrementStat(key, delta);
-        return res.json({ success: true });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to update stats' });
+    const key = String(req.body.key || '');
+    const delta = req.body.delta === undefined ? 1 : Number(req.body.delta);
+    if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key) || !Number.isSafeInteger(delta) || Math.abs(delta) > 100000) {
+        return res.status(400).json({ success: false, code: 'INVALID_STAT_INCREMENT', error: 'A valid counter key and integer delta are required.' });
     }
-});
-
-// POST /api/stats — admin-only full stats write
-router.post('/stats', requireAuth, requirePermission('system.config.write'), express.json({ limit: '256kb' }), async (req, res) => {
     try {
-        const stats = (req.body.stats && typeof req.body.stats === 'object') ? req.body.stats : {};
-        const merged = { ...(await req.repository.getStats()), ...stats };
-        await req.repository.saveSetting('stats', merged);
-        await req.repository.incrementStat('_stats_updated', 0); // ensure row exists
-        const pool = require('../database/mysql').getPool();
-        await pool.query(
-            `INSERT INTO stats (id, data, updated_at) VALUES ('global_stats', ?, CURRENT_TIMESTAMP)
-             ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = CURRENT_TIMESTAMP`,
-            [JSON.stringify(merged)]
-        );
-        return res.json({ success: true, stats: merged });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to save stats' });
+        const counter = await req.repository.incrementStat(key, delta);
+        return res.json({ success: true, counter });
+    } catch (error) {
+        return res.status(error.status || 503).json({
+            success: false,
+            code: error.code || 'STATS_UNAVAILABLE',
+            error: error.status && error.status < 500 ? error.message : 'Operational statistics are unavailable.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -130,18 +125,21 @@ router.post('/stats', requireAuth, requirePermission('system.config.write'), exp
 // Public reviews (homepage testimonials)
 // ───────────────────────────────────────────────────────────────────────────
 
-// GET /api/reviews?limit=3 — public APPROVED reviews
+// GET /api/reviews?limit=3 — public APPROVED reviews from the relational
+// reviews owner. An outage is not represented as a valid empty testimonial set.
 router.get('/reviews', async (req, res) => {
     try {
         const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 3));
-        const docs = await req.repository.listDocuments('reviews', { limit: 500 });
-        const approved = (docs || [])
-            .filter(doc => String(doc.status || 'APPROVED').toUpperCase() === 'APPROVED')
-            .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-            .slice(0, limit);
-        return res.json({ success: true, reviews: approved });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to load reviews' });
+        const reviews = await req.repository.getReviews({ approvedOnly: true, limit });
+        res.setHeader('Cache-Control', 'no-store');
+        return res.json({ success: true, reviews, source: 'MARIADB_REVIEWS' });
+    } catch (_error) {
+        return res.status(503).json({
+            success: false,
+            code: 'REVIEWS_UNAVAILABLE',
+            error: 'Reviews are temporarily unavailable.',
+            requestId: res.locals.requestId,
+        });
     }
 });
 
@@ -153,8 +151,8 @@ router.get('/reviews', async (req, res) => {
 router.get('/phrases', async (req, res) => {
     try {
         const docs = await req.repository.listDocuments('phrases', { limit: 500 });
-        const payloads = (docs || []).map(doc => ({ id: doc.id, ...doc.payload }));
-        return res.json({ success: true, categories: payloads });
+        const categories = (docs || []).map(doc => ({ ...doc, id: doc.id }));
+        return res.json({ success: true, categories });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to load phrases' });
     }
@@ -165,9 +163,12 @@ router.post('/phrases', requireAuth, requirePermission('system.config.write'), e
     try {
         const categories = (req.body.categories && typeof req.body.categories === 'object') ? req.body.categories : {};
         for (const [name, phrases] of Object.entries(categories)) {
-            await req.repository.saveDocument('phrases', String(name).slice(0, 128), {
-                name: String(name).slice(0, 128),
+            const id = String(name).slice(0, 128);
+            const current = await req.repository.getDocument('phrases', id);
+            await req.repository.saveDocument('phrases', id, {
+                name: id,
                 phrases: Array.isArray(phrases) ? phrases : [],
+                revision: Number(current?.revision || 0) + 1,
                 updatedAt: new Date().toISOString(),
             });
         }
@@ -182,7 +183,7 @@ router.get('/phrases/:category', async (req, res) => {
     try {
         const doc = await req.repository.getDocument('phrases', req.params.category);
         if (!doc) return res.status(404).json({ success: false, error: 'Category not found' });
-        return res.json({ success: true, category: { id: doc.id, ...doc.payload } });
+        return res.json({ success: true, category: { ...doc, id: doc.id } });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to load phrase category' });
     }

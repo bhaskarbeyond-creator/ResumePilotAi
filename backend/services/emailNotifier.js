@@ -5,10 +5,11 @@
  * FIX: Admin email is now resolved dynamically from DB/SMTP config — never hardcoded.
  */
 
-/**
- * Resolve the admin email from Firestore SMTP settings.
- * Falls back to a series of env vars if DB is unavailable.
- */
+const crypto = require('crypto');
+const { getPool } = require('../database/mysql');
+const { queueEmail } = require('./notificationOutbox');
+
+/** Resolve the administrative recipient through the MariaDB-owned mail runtime. */
 function humanizeName(raw, fallback = 'Team Member') {
     if (!raw || typeof raw !== 'string') return fallback;
     let name = raw.trim();
@@ -21,67 +22,18 @@ function humanizeName(raw, fallback = 'Team Member') {
     return name.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 }
 
-function humanizeRole(role, fallback = 'Enterprise Team Member') {
-    if (!role || typeof role !== 'string') return fallback;
-    const r = role.trim().toUpperCase();
-    const map = {
-        'TENANT_OWNER': 'Workspace Owner & Administrator',
-        'OWNER': 'Workspace Owner & Administrator',
-        'TENANT_ADMIN': 'Enterprise Administrator',
-        'ADMIN': 'Enterprise Administrator',
-        'TENANT_MEMBER': 'Enterprise Team Member',
-        'MEMBER': 'Enterprise Team Member',
-        'TENANT_BILLING': 'Billing & Financial Manager',
-        'BILLING': 'Billing & Financial Manager',
-        'TENANT_SECURITY': 'Security & Compliance Officer',
-        'SECURITY': 'Security & Compliance Officer',
-        'TENANT_AUDITOR': 'Compliance Auditor (Read-Only)',
-        'AUDITOR': 'Compliance Auditor (Read-Only)'
-    };
-    if (map[r]) return map[r];
-    if (r.startsWith('CUSTOM_')) {
-        return humanizeName(r.replace(/^CUSTOM_/, '')) + ' (Custom Role)';
+async function getAdminEmail() {
+    const emailRoute = require('../routes/email');
+    if (!emailRoute || typeof emailRoute.getEmailConfig !== 'function') {
+        throw Object.assign(new Error('Email configuration service is unavailable'), { code: 'EMAIL_CONFIGURATION_UNAVAILABLE', status: 503 });
     }
-    return humanizeName(r, fallback);
-}
-
-function humanizeOrgName(name, fallback = 'your enterprise workspace') {
-    if (!name || typeof name !== 'string' || name === 'an enterprise organization') return fallback;
-    return name.trim();
-}
-
-async function getAdminEmail(db) {
-    // Priority 1: Unified Email Config via backend/routes/email.js (MySQL system_settings)
-    try {
-        const emailRoute = require('../routes/email');
-        if (emailRoute && typeof emailRoute.getEmailConfig === 'function') {
-            const cfg = await emailRoute.getEmailConfig(db);
-            if (cfg?.smtp?.adminEmail && cfg.smtp.adminEmail.includes('@')) {
-                return cfg.smtp.adminEmail;
-            }
-        }
-    } catch (_e) {
-        // Non-fatal — proceed to fallback checks
+    const config = await emailRoute.getEmailConfig();
+    const adminEmail = String(config?.smtp?.adminEmail || '').trim().toLowerCase();
+    if (!adminEmail) return null;
+    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(adminEmail)) {
+        throw Object.assign(new Error('Administrative email recipient is invalid'), { code: 'EMAIL_CONFIGURATION_INVALID', status: 503 });
     }
-
-    // Priority 2: Authoritative MySQL settings store (never Firestore).
-    try {
-        const { getRepository } = require('../repositories');
-        const repo = getRepository(db);
-        const data = (await repo.getSetting('system_settings').catch(() => ({}))) || {};
-        const stored = data.smtp || data || {};
-        const adminEmail = stored.adminEmail || data.adminEmail;
-        if (adminEmail && String(adminEmail).includes('@')) return adminEmail;
-        const smtp = (await repo.getSetting('smtp').catch(() => ({}))) || {};
-        const smtpAdmin = smtp.adminEmail || smtp.smtp?.adminEmail || smtp.username;
-        if (smtpAdmin && String(smtpAdmin).includes('@')) return smtpAdmin;
-    } catch (_) {}
-
-    // Priority 3: Environment variable fallback
-    const envAdmin = process.env.ADMIN_EMAIL || process.env.SMTP_ADMIN_EMAIL || process.env.SMTP_USERNAME;
-    if (envAdmin && envAdmin.includes('@')) return envAdmin;
-
-    return null;
+    return adminEmail;
 }
 
 const { resolvePublicAppOrigin } = require('./publicAppUrl');
@@ -96,51 +48,37 @@ function publicSiteOrigin() {
  * like a mail outage, and drove notification endpoints to answer 502 on a
  * perfectly healthy deployment that simply has no mail provider yet.
  */
-const sendNotification = async (db, { to, templateType, vars, customSubject, customBody }) => {
+const SENSITIVE_TEMPLATES = new Set(['password_reset', 'email_verification']);
+const sendNotification = async ({ to, templateType, vars, customSubject, customBody, eventId = null }) => {
     if (!to) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Notification recipient unavailable' };
-    try {
-        const emailRoute = require('../routes/email');
-        if (emailRoute && typeof emailRoute.dispatchNotification === 'function') {
-            const result = await emailRoute.dispatchNotification(db, { to, templateType, vars, customSubject, customBody });
-            if (result?.success) {
-                return { success: true, deliveryState: 'DELIVERY_ATTEMPTED', providerAccepted: true };
-            }
-            const notConfigured = result?.code === 'EMAIL_NOT_CONFIGURED';
-            return {
-                success: false,
-                deliveryState: notConfigured ? 'NOT_CONFIGURED' : 'DELIVERY_FAILED',
-                code: result?.code || 'EMAIL_DELIVERY_FAILED',
-                error: result?.error || 'Provider rejected delivery attempt',
-            };
-        }
-    } catch (e) {
-        console.warn(`[EmailNotifier Direct Error] Template '${templateType}' fallback:`, e.message);
-        const notConfigured = e.code === 'EMAIL_NOT_CONFIGURED';
-        return {
-            success: false,
-            deliveryState: notConfigured ? 'NOT_CONFIGURED' : 'DELIVERY_FAILED',
-            code: notConfigured ? 'EMAIL_NOT_CONFIGURED' : 'EMAIL_DELIVERY_FAILED',
-            error: e.message,
-        };
-    }
-    return { success: false, deliveryState: 'DELIVERY_FAILED', code: 'EMAIL_DISPATCHER_UNAVAILABLE', error: 'Email dispatcher unavailable' };
+    const identity = eventId || `notification:${templateType}:${crypto.randomUUID()}`;
+    const notificationId = await queueEmail(getPool(), {
+        eventId: identity,
+        recipient: to,
+        templateType,
+        vars: vars || {},
+        metadata: { source: 'server_notification_service', customSubject, customBody },
+        idempotencyKey: identity,
+        sensitive: SENSITIVE_TEMPLATES.has(templateType),
+    });
+    return { success: true, deliveryState: 'NOTIFICATION_QUEUED', providerAccepted: false, notificationId };
 };
 
 class EmailNotifier {
     /**
      * 1. User Registration → Trigger Welcome Email to User & Admin Alert
      */
-    static async notifyUserRegistration(db, { userEmail, userName = 'Valued User' }) {
+    static async notifyUserRegistration({ userEmail, userName = 'Valued User' }) {
         if (!userEmail) return;
         const name = humanizeName(userName || userEmail, 'Valued Member');
-        const userDelivery = await sendNotification(db, {
+        const userDelivery = await sendNotification({
             to: userEmail,
             templateType: 'welcome',
             vars: { candidate_name: name, user_name: name, site_url: publicSiteOrigin() }
         });
-        const adminEmail = await getAdminEmail(db);
+        const adminEmail = await getAdminEmail();
         const adminDelivery = adminEmail
-            ? await sendNotification(db, { to: adminEmail, templateType: 'account_created_admin', vars: { candidate_name: `${name} (${userEmail})`, date: new Date().toLocaleDateString('en-IN') } })
+            ? await sendNotification({ to: adminEmail, templateType: 'account_created_admin', vars: { candidate_name: `${name} (${userEmail})`, date: new Date().toLocaleDateString('en-IN') } })
             : { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Admin recipient unavailable' };
         return { userDelivery, adminDelivery };
     }
@@ -148,10 +86,10 @@ class EmailNotifier {
     /**
      * 2. Password Reset Requested
      */
-    static async notifyPasswordReset(db, { userEmail, userName = 'User', resetLink }) {
+    static async notifyPasswordReset({ userEmail, userName = 'User', resetLink }) {
         if (!userEmail) return;
         const name = humanizeName(userName || userEmail, 'User');
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'password_reset',
             vars: { candidate_name: name, user_name: name, reset_link: resetLink }
@@ -161,9 +99,9 @@ class EmailNotifier {
     /**
      * 3. Password Changed Confirmation
      */
-    static async notifyPasswordChanged(db, { userEmail, userName = 'User' }) {
+    static async notifyPasswordChanged({ userEmail, userName = 'User' }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'password_changed_confirm',
             vars: { candidate_name: userName, date: new Date().toLocaleDateString('en-IN') }
@@ -173,9 +111,9 @@ class EmailNotifier {
     /**
      * 4. Email OTP Verification Code
      */
-    static async notifyEmailOTP(db, { userEmail, userName = 'User', otpCode }) {
+    static async notifyEmailOTP({ userEmail, userName = 'User', otpCode }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'email_verification',
             vars: { candidate_name: userName, otp_code: otpCode }
@@ -185,9 +123,9 @@ class EmailNotifier {
     /**
      * 4b. Email Verification Link (Crypto Signed)
      */
-    static async notifyEmailVerificationLink(db, { userEmail, userName = 'User', verificationLink }) {
+    static async notifyEmailVerificationLink({ userEmail, userName = 'User', verificationLink }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'email_verification',
             vars: { candidate_name: userName, verification_link: verificationLink }
@@ -197,10 +135,10 @@ class EmailNotifier {
     /**
      * 5. Payment Failure Alert
      */
-    static async notifyPaymentFailed(db, { userEmail, userName = 'Customer', amount = 'Amount unavailable', retryUrl }) {
+    static async notifyPaymentFailed({ userEmail, userName = 'Customer', amount = 'Amount unavailable', retryUrl }) {
         if (!userEmail) return;
         const siteUrl = publicSiteOrigin();
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'payment_failed',
             vars: { candidate_name: userName, amount, retry_url: retryUrl || `${siteUrl}/pricing` }
@@ -210,9 +148,9 @@ class EmailNotifier {
     /**
      * 6. Subscription Renewal Notice
      */
-    static async notifySubscriptionRenewal(db, { userEmail, userName = 'Customer', planName = 'Plan unavailable', amount = 'Amount unavailable', renewalDate }) {
+    static async notifySubscriptionRenewal({ userEmail, userName = 'Customer', planName = 'Plan unavailable', amount = 'Amount unavailable', renewalDate }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'subscription_renewal',
             vars: {
@@ -227,9 +165,9 @@ class EmailNotifier {
     /**
      * 7. Subscription Cancellation Confirmation
      */
-    static async notifySubscriptionCancelled(db, { userEmail, userName = 'Customer', planName = 'Pro Plan' }) {
+    static async notifySubscriptionCancelled({ userEmail, userName = 'Customer', planName = 'Pro Plan' }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'subscription_cancelled',
             vars: { candidate_name: userName, plan_name: planName }
@@ -239,9 +177,9 @@ class EmailNotifier {
     /**
      * 8. Refund Processed Confirmation
      */
-    static async notifyRefundProcessed(db, { userEmail, invoiceNumber = 'Invoice unavailable', amount = 'Amount unavailable' }) {
+    static async notifyRefundProcessed({ userEmail, invoiceNumber = 'Invoice unavailable', amount = 'Amount unavailable' }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'refund_processed',
             vars: { invoice_number: invoiceNumber, amount }
@@ -251,22 +189,23 @@ class EmailNotifier {
     /**
      * 9. AI Resume Ready Completed Alert
      */
-    static async notifyAIResumeReady(db, { userEmail, userName = 'Candidate', atsScore = 'Not measured' }) {
+    static async notifyAIResumeReady({ userEmail, userName = 'Candidate', atsScore = 'Not measured', eventId = null }) {
         if (!userEmail) return;
         const siteUrl = publicSiteOrigin();
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'ai_resume_ready',
-            vars: { candidate_name: userName, ats_score: atsScore, site_url: siteUrl }
+            vars: { candidate_name: userName, ats_score: atsScore, site_url: siteUrl },
+            eventId
         });
     }
 
     /**
      * 10. AI Cover Letter Ready Completed Alert
      */
-    static async notifyAICoverLetterReady(db, { userEmail, userName = 'Candidate', jobTitle = 'Software Engineer' }) {
+    static async notifyAICoverLetterReady({ userEmail, userName = 'Candidate', jobTitle = 'Software Engineer' }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'ai_cover_letter_ready',
             vars: { candidate_name: userName, job_title: jobTitle }
@@ -276,9 +215,9 @@ class EmailNotifier {
     /**
      * 11. Job Application Received (Recruiter Alert)
      */
-    static async notifyJobApplicationReceived(db, { recruiterEmail, applicantName, jobTitle, companyName }) {
+    static async notifyJobApplicationReceived({ recruiterEmail, applicantName, jobTitle, companyName }) {
         if (!recruiterEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: recruiterEmail,
             templateType: 'job_application_received',
             vars: {
@@ -293,9 +232,9 @@ class EmailNotifier {
     /**
      * 12. Application Status Update (Candidate Alert)
      */
-    static async notifyJobStatusUpdate(db, { applicantEmail, applicantName, jobTitle, companyName, status }) {
+    static async notifyJobStatusUpdate({ applicantEmail, applicantName, jobTitle, companyName, status }) {
         if (!applicantEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: applicantEmail,
             templateType: 'job_status_update',
             vars: {
@@ -310,9 +249,9 @@ class EmailNotifier {
     /**
      * 13. Job Posted Confirmation (Employer Alert)
      */
-    static async notifyJobPosted(db, { employerEmail, jobTitle, companyName }) {
+    static async notifyJobPosted({ employerEmail, jobTitle, companyName }) {
         if (!employerEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: employerEmail,
             templateType: 'job_posted_employer',
             vars: { job_title: jobTitle, company_name: companyName }
@@ -322,9 +261,9 @@ class EmailNotifier {
     /**
      * 14. Security Alert (Unrecognized Device Sign-In)
      */
-    static async notifySecurityAlert(db, { userEmail, deviceInfo, ipAddress }) {
+    static async notifySecurityAlert({ userEmail, deviceInfo, ipAddress }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'security_alert',
             vars: {
@@ -338,9 +277,9 @@ class EmailNotifier {
     /**
      * 15. Web Portfolio Published Alert
      */
-    static async notifyPortfolioPublished(db, { userEmail, userName, portfolioSlug }) {
+    static async notifyPortfolioPublished({ userEmail, userName, portfolioSlug }) {
         if (!userEmail) return;
-        return sendNotification(db, {
+        return sendNotification({
             to: userEmail,
             templateType: 'portfolio_published',
             vars: { candidate_name: userName, portfolio_slug: portfolioSlug }
@@ -350,81 +289,34 @@ class EmailNotifier {
     /**
      * 16. Admin Operational System Alert — dynamically resolves admin email from DB config
      */
-    static async notifyAdminSystemAlert(db, { alertTitle, alertMessage }) {
-        const adminEmail = await getAdminEmail(db);
+    static async notifyAdminSystemAlert({ alertTitle, alertMessage }) {
+        const adminEmail = await getAdminEmail();
         if (!adminEmail) {
             console.warn('[EmailNotifier] Admin email not configured — skipping system alert:', alertTitle);
             return;
         }
-        return sendNotification(db, {
+        return sendNotification({
             to: adminEmail,
             templateType: 'admin_system_alert',
             vars: { alert_title: alertTitle, alert_message: alertMessage }
         });
     }
 
-    /**
-     * 17. OAuth Social Login — new user via LinkedIn/GitHub
-     */
-    /**
-     * Enterprise tenant invitation → invitee receives access instructions
-     */
-    static async notifyEnterpriseInvitation(db, { userEmail, organizationName = 'an enterprise organization', inviterEmail = '', roleTitle = 'Enterprise Member', actionUrl = '' }) {
-        if (!userEmail) return { success: false, deliveryState: 'DELIVERY_FAILED', error: 'Invitation recipient unavailable' };
-        const siteUrl = publicSiteOrigin();
-        const url = actionUrl || `${siteUrl}/enterprise`;
-        const humanName = humanizeName(userEmail, 'Team Member');
-        const humanInviter = humanizeName(inviterEmail, 'Your team administrator');
-        const humanOrg = humanizeOrgName(organizationName, 'your enterprise workspace');
-        const humanRoleTitle = humanizeRole(roleTitle, 'Enterprise Team Member');
-
-        return sendNotification(db, {
-            to: userEmail,
-            templateType: 'enterprise-invitation',
-            vars: {
-                user_name: humanName,
-                candidate_name: humanName,
-                inviter_name: humanInviter,
-                organization_name: humanOrg,
-                role_title: humanRoleTitle,
-                action_url: url,
-                expires_in: '7 days',
-            },
-            customSubject: `You're invited to join ${humanOrg} on ResumePilot Enterprise`,
-            customBody: [
-                `Hi ${humanName},`,
-                ``,
-                `${humanInviter} has invited you to join the **${humanOrg}** team workspace on ResumePilot AI.`,
-                ``,
-                `**Your Assigned Role:** ${humanRoleTitle}`,
-                ``,
-                `As part of this workspace, you'll have full access to our collaborative resume builders, AI-assisted content generators, team templates, and candidate evaluation tools.`,
-                ``,
-                `To activate your workspace access and get started, simply click the link below:`,
-                `${url}`,
-                ``,
-                `*Note: For your security, this invitation remains active for 7 days. If you weren't expecting this invitation, feel free to ignore this email or reach out to ${humanInviter}.*`,
-                ``,
-                `Warm regards,`,
-                `The ${humanOrg} Team`,
-            ].join('\n'),
-        });
-    }
-
-    static async notifyOAuthNewUser(db, { userEmail, userName = 'User', provider = 'Social' }) {
+    /** OAuth Social Login — new user via a federated provider. */
+    static async notifyOAuthNewUser({ userEmail, userName = 'User', provider = 'Social' }) {
         if (!userEmail) return;
         const siteUrl = publicSiteOrigin();
         // Send user welcome email
-        sendNotification(db, {
+        sendNotification({
             to: userEmail,
             templateType: 'welcome',
             vars: { candidate_name: userName, site_url: siteUrl }
         }).catch(err => console.error('[Notifier] OAuth Welcome error:', err.message));
 
         // Admin alert — dynamically resolved
-        getAdminEmail(db).then(adminEmail => {
+        getAdminEmail().then(adminEmail => {
             if (!adminEmail) return;
-            sendNotification(db, {
+            sendNotification({
                 to: adminEmail,
                 templateType: 'account_created_admin',
                 vars: {

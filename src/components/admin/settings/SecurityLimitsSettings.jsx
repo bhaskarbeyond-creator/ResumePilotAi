@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSystemSettings, saveSystemSettings } from '../../../firestore/dbOperations';
+import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaLock, FaCheck, FaTimes, FaSpinner, FaShieldAlt } from 'react-icons/fa';
 
 const SecurityLimitsSettings = () => {
@@ -14,7 +14,7 @@ const SecurityLimitsSettings = () => {
     const [statusMessage, setStatusMessage] = useState(null);
 
     useEffect(() => {
-        getSystemSettings().then((settings) => {
+        getAdminSystemSettings().then((settings) => {
             if (settings && settings.security) {
                 setSecurityConfig({ ...securityConfig, ...settings.security });
             }

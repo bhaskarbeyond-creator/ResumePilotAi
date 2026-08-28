@@ -42,11 +42,12 @@ test('admin UI removes invented health and trend claims and uses verified summar
 });
 
 test('administrative user and employer changes carry stale-target preconditions and confirmations', async () => {
-  const [operations, users, employers, backend] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+  const [operations, users, employers, backend, deletion] = await Promise.all([
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('src/components/admin/usersManager/UsersManager.jsx', 'utf8'),
     fs.readFile('src/components/admin/employerApplications/EmployerApplications.jsx', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/services/accountDeletion.js', 'utf8'),
   ]);
   assert.match(operations, /expectedSuspended/);
   assert.match(operations, /expectedMembership/);
@@ -55,16 +56,18 @@ test('administrative user and employer changes carry stale-target preconditions 
   assert.match(users, /The current target state will be verified/);
   assert.match(employers, /A reason is required/);
   assert.match(backend, /ADMIN_TARGET_CHANGED/);
-  assert.match(backend, /USER_DELETION_INCOMPLETE/);
-  assert.match(backend, /blog_posts/);
+  assert.match(deletion, /ACCOUNT_IDENTITY_DELETE_FAILED/);
+  assert.match(deletion, /IDENTITY_PENDING/);
+  assert.match(deletion, /UPDATE blog SET author_id = NULL/);
   assert.match(backend, /SYSTEM_HEALTH_SETTINGS_UPDATED/);
 });
 
 test('generic admin settings use audited backend persistence without cross-account browser cache or secret responses', async () => {
-  const [operations, backend, rules, email] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+  const [operations, backend, policy, migration, email] = await Promise.all([
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
+    fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
     fs.readFile('src/components/admin/settings/EmailSmtpSettings.jsx', 'utf8'),
   ]);
   assert.doesNotMatch(operations, /localStorage\.(?:getItem|setItem)\('system_settings_cache'/);
@@ -73,17 +76,20 @@ test('generic admin settings use audited backend persistence without cross-accou
   assert.match(backend, /ADMIN_SETTINGS_CONFLICT/);
   assert.match(operations, /expectedRevision/);
   assert.match(backend, /publicAdminSettings/);
-  assert.match(rules, /admin_configuration/);
+  assert.match(backend, /INSERT INTO system_settings/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS system_settings/);
+  assert.match(policy, /'\/admin\/'/);
+  assert.match(policy, /system\.config\.write/);
   assert.match(email, /if \(!response\.ok \|\| !result\.success\)/);
 });
 
 test('job moderation is stale-safe, audited, confirmation-gated, and preserves applications', async () => {
-  const [jobs, operations, index, mutations, rules] = await Promise.all([
+  const [jobs, operations, index, mutations, policy] = await Promise.all([
     fs.readFile('src/components/admin/jobsManager/JobsManager.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('backend/services/resilientMutations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
   ]);
   const backend = index + '\n' + mutations;
   assert.doesNotMatch(jobs, /window\.confirm|createNotification/);
@@ -94,16 +100,17 @@ test('job moderation is stale-safe, audited, confirmation-gated, and preserves a
   assert.match(backend, /JOB_STATUS_UPDATED/);
   assert.match(backend, /JOB_HAS_APPLICATIONS/);
   assert.match(backend, /resilientMutations\.deleteJob/);
-  assert.doesNotMatch(rules.match(/match \/jobs\/\{id\}[\s\S]*?match \/jobApplications/)?.[0] || '', /allow update: if admin\(\)/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
+  assert.match(policy, /hasPermission\(req, 'system\.config\.write'\)/);
 });
 
 test('company moderation is backend-only, stale-safe, reasoned, and confirmation-gated', async () => {
-  const [companies, operations, indexSrc, mutationsSrc, rules] = await Promise.all([
+  const [companies, operations, indexSrc, mutationsSrc, policy] = await Promise.all([
     fs.readFile('src/components/admin/companyManagement/CompanyManagement.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
     fs.readFile('backend/services/resilientMutations.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
   ]);
   const backend = indexSrc + '\n' + mutationsSrc;
   assert.match(companies, /role="alertdialog"/);
@@ -112,15 +119,16 @@ test('company moderation is backend-only, stale-safe, reasoned, and confirmation
   assert.match(operations, /\/api\/admin\/companies\//);
   assert.match(backend, /COMPANY_STATUS_UPDATED/);
   assert.match(backend, /expectedFeatured/);
-  assert.doesNotMatch(rules.match(/match \/companies\/\{id\}[\s\S]*?match \/jobs/)?.[0] || '', /allow update: if admin\(\)/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
+  assert.match(policy, /system\.config\.write/);
 });
 
 test('review and rating administration is validated, confirmed, audited, and backend-only', async () => {
-  const [reviews, operations, backend, rules] = await Promise.all([
+  const [reviews, operations, backend, policy] = await Promise.all([
     fs.readFile('src/components/admin/reviews/Reviews.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
   ]);
   assert.match(reviews, /role="alertdialog"/);
   assert.match(reviews, /validRatings/);
@@ -128,13 +136,14 @@ test('review and rating administration is validated, confirmed, audited, and bac
   assert.match(backend, /REVIEW_CREATED/);
   assert.match(backend, /REVIEW_DELETED/);
   assert.match(backend, /GLOBAL_RATING_UPDATED/);
-  assert.match(rules, /match \/reviews\/\{id\}[^\n]+allow write: if false/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
+  assert.match(policy, /system\.config\.write/);
 });
 
 test('contact messages expose truthful loading, error, search, filter, pagination, and accessible expansion states', async () => {
   const [messages, operations] = await Promise.all([
     fs.readFile('src/components/admin/messages/Messages.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
   ]);
   assert.doesNotMatch(messages, /console\.log|>Search<|>Filter</);
   assert.match(messages, /PAGE_SIZE = 20/);
@@ -145,13 +154,14 @@ test('contact messages expose truthful loading, error, search, filter, paginatio
   assert.match(operations, /\/api\/messages\/conversations/);
 });
 
-test('Trusted By lifecycle is revisioned, publish-aware, audited, sanitized, and backend-only', async () => {
-  const [adminView, publicView, operations, backend, rules] = await Promise.all([
+test('Trusted By lifecycle is relational, revisioned, publish-aware, audited, sanitized, and backend-only', async () => {
+  const [adminView, publicView, operations, backend, repository, policy] = await Promise.all([
     fs.readFile('src/components/admin/TrustedBy/TrustedBy.jsx', 'utf8'),
     fs.readFile('src/components/Dashboard2/elements/HomepageTrustedBy.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/repositories/MySQLRepository.js', 'utf8'),
+    fs.readFile('backend/security/policy.js', 'utf8'),
   ]);
   assert.match(adminView, /role="alertdialog"/);
   assert.match(adminView, /Private draft/);
@@ -160,38 +170,57 @@ test('Trusted By lifecycle is revisioned, publish-aware, audited, sanitized, and
   assert.match(backend, /TRUSTED_LOGO_CREATED/);
   assert.match(backend, /TRUSTED_LOGO_UPDATED/);
   assert.match(backend, /TRUSTED_LOGO_DELETED/);
-  assert.match(rules, /match \/trustedBy\/\{id\}[\s\S]*?allow write: if false/);
+  assert.match(backend, /getTrustedBy\(\{ publishedOnly: true/);
+  assert.match(repository, /UPDATE trusted_by[\s\S]*WHERE id = \? AND revision = \?/);
+  assert.match(repository, /DATABASE_OWNERSHIP_VIOLATION/);
+  assert.doesNotMatch(backend, /listDocuments\('trusted_by'/);
+  assert.match(policy, /ADMIN_PREFIXES[\s\S]*'\/admin\/'/);
 });
 
-test('landing marketing content is honestly labelled, revisioned, confirmed, audited, and backend-only', async () => {
-  const [view, operations, backend, rules] = await Promise.all([
+test('landing marketing content is evidence-backed, revisioned, confirmed, audited, and separate from counters', async () => {
+  const [view, operations, backend, statsRoutes, platformRoutes, hero] = await Promise.all([
     fs.readFile('src/components/admin/landingPages/LandingPages.jsx', 'utf8'),
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
-    fs.readFile('SecurityRules.txt', 'utf8'),
+    fs.readFile('backend/routes/miscData.js', 'utf8'),
+    fs.readFile('backend/routes/platform.js', 'utf8'),
+    fs.readFile('src/components/JobsLanding/JobsLandingHero.jsx', 'utf8'),
   ]);
-  assert.match(view, /not live operational statistics/);
+  assert.match(view, /Evidence URL/);
+  assert.match(view, /reviewed again within 180 days/);
   assert.match(view, /role="alertdialog"/);
-  assert.match(operations, /expectedRevision/);
-  assert.match(backend, /LANDING_CONTENT_UPDATED/);
-  assert.match(rules, /'frontendstats','public_config'/);
+  assert.doesNotMatch(view, /10,000\+|50,000\+|2,500\+|4\.8/);
+  assert.match(operations, /landingMarketing/);
+  assert.match(operations, /Authoritative landing marketing content is unavailable/);
+  assert.match(backend, /LANDING_MARKETING_PUBLISHED/);
+  assert.match(backend, /LANDING_MARKETING_EVIDENCE_REQUIRED/);
+  assert.doesNotMatch(statsRoutes, /router\.post\('\/stats'/);
+  assert.match(platformRoutes, /repo\.getSetting\('public_config'\)/);
+  assert.match(platformRoutes, /_settingsSource: 'mariadb'/);
+  assert.doesNotMatch(hero, /10,000\+|4\.8/);
 });
 
 test('billing admin uses authoritative ledgers without inferred user/subscription payments or fabricated invoices', async () => {
-  const [operations, invoices, backend] = await Promise.all([
-    fs.readFile('src/firestore/dbOperations.js', 'utf8'),
+  const [operations, invoices, backend, repository] = await Promise.all([
+    fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/repositories/MySQLRepository.js', 'utf8'),
   ]);
   const ledger = operations.match(/export async function getAllAdminTransactions\(\)[\s\S]*?export async function refundOrderTransaction/)?.[0] || '';
   assert.match(ledger, /\/api\/admin\/payment-orders/);
-  assert.match(invoices, /Server-Verified Payment Receipt/);
+  assert.match(invoices, /isAuthoritativeInvoice/);
+  assert.match(invoices, /isAuthoritativeCreditNote/);
+  assert.match(invoices, /printAuthoritativeInvoice/);
+  assert.match(invoices, /printAuthoritativeCreditNote/);
   assert.doesNotMatch(ledger, /collection\(['"]users['"]\)|collection\(['"]subscriptions['"]\)|price \|\| 199|Date\.now/);
   assert.doesNotMatch(operations, /subscriptions_cache/);
-  assert.match(invoices, /Server-Verified Payment Receipt/);
+  assert.doesNotMatch(invoices, /Server-Verified Payment Receipt/);
   assert.match(invoices, /inv\.source === 'payment_orders'/);
   assert.match(invoices, /Multiple currencies/);
-  assert.match(backend, /order\.status !== 'ACTIVE'/);
+  assert.match(repository, /Only an active payment can be refunded/);
+  assert.match(repository, /WHERE id = \? FOR UPDATE/);
+  assert.match(backend, /executeOrReconcileProviderRefund/);
 });
 
 test('maintenance configuration is enforced by the web shell with a claim-based admin bypass', async () => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getSystemSettings } from '../firestore/dbOperations';
+import { getSystemSettings } from '../services/api/platform';
 import { sanitizeUrl } from '../utils/sanitizeHtml';
 import { getAnalyticsConsent, setAnalyticsConsent } from '../utils/privacyConsent';
 

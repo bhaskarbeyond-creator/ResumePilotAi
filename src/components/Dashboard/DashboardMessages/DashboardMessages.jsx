@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FiSearch, FiPaperclip, FiSend, FiMoreVertical, FiEdit, FiChevronUp, FiMessageCircle, FiUser, FiUsers } from 'react-icons/fi';
-import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage } from '../../../firestore/dbOperations';
+import { getConversationParticipantProfile, getConversations, subscribeConversationMessages, getMessagesPaginated, sendMessage } from '../../../services/api/platform';
 import fire from '../../../conf/fire';
 import userPlaceholder from '../../../assets/user.png';
 

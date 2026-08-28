@@ -79,24 +79,28 @@ class Cv2 extends Component {
                 {skills.map((skillItem, index) => {
                     const name = this.getSkillName(skillItem);
                     if (!name) return null;
-                    const rating = typeof skillItem === 'object' ? (skillItem.rating || skillItem.level || 80) : 80;
-                    const bulletCount = rating > 70 ? 5 : rating > 40 ? 4 : rating > 20 ? 3 : 2;
+                    const rating = typeof skillItem === 'object' && typeof skillItem.rating === 'number' && Number.isFinite(skillItem.rating)
+                        ? Math.min(100, Math.max(0, skillItem.rating))
+                        : null;
+                    const bulletCount = rating === null ? 0 : rating > 70 ? 5 : rating > 40 ? 4 : rating > 20 ? 3 : 2;
 
                     return (
                         <div key={index} className="skill-card-item">
                             <span className="skill-name">{name}</span>
-                            <div className="rating-bullets">
-                                {Array.from({ length: 5 }).map((_, bIdx) => (
-                                    <div
-                                        key={bIdx}
-                                        className="bullet"
-                                        style={{
-                                            backgroundColor: bIdx < bulletCount ? primaryColor : '#E2E8F0',
-                                            opacity: bIdx < bulletCount ? 1 : 0.4
-                                        }}
-                                    />
-                                ))}
-                            </div>
+                            {rating !== null && (
+                                <div className="rating-bullets" aria-label={`${rating}% proficiency`}>
+                                    {Array.from({ length: 5 }).map((_, bIdx) => (
+                                        <div
+                                            key={bIdx}
+                                            className="bullet"
+                                            style={{
+                                                backgroundColor: bIdx < bulletCount ? primaryColor : '#E2E8F0',
+                                                opacity: bIdx < bulletCount ? 1 : 0.4
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 })}

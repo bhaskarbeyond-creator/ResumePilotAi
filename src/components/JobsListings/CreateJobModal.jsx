@@ -4,7 +4,7 @@ import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaImage, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../main';
-import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../firestore/dbOperations';
+import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../services/api/platform';
 import EmployerApplicationForm from './EmployerApplicationForm';
 import CustomLocationAutocomplete from './CustomLocationAutocomplete';
 

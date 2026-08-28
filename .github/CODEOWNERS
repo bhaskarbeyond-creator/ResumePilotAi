@@ -1,0 +1,15 @@
+# Production delivery controls and executable operator tooling require explicit owner review.
+/.github/workflows/ @bhaskarbeyond-creator
+/ops/deploy/ @bhaskarbeyond-creator
+/scripts/ @bhaskarbeyond-creator
+/scratch/*.py @bhaskarbeyond-creator
+/scratch/*.sh @bhaskarbeyond-creator
+/scratch/*.js @bhaskarbeyond-creator
+/scratch/*.cjs @bhaskarbeyond-creator
+/scratch/*.mjs @bhaskarbeyond-creator
+/scripts/create-production-release.sh @bhaskarbeyond-creator
+/scripts/production-release-client.sh @bhaskarbeyond-creator
+/scripts/sign-production-release.mjs @bhaskarbeyond-creator
+/scripts/verify-production-release.mjs @bhaskarbeyond-creator
+/scripts/hostinger-release.sh @bhaskarbeyond-creator
+/docs/SAFE_PRODUCTION_WORKFLOW.md @bhaskarbeyond-creator

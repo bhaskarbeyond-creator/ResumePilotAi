@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { applyAnalyticsConsent, initGA, trackPageView } from '../utils/ga4';
 import { CONSENT_EVENT, getAnalyticsConsent } from '../utils/privacyConsent';
-import { getWebsiteData } from '../firestore/dbOperations';
+import { getWebsiteData } from '../services/api/platform';
 
 const GA4Provider = ({ children }) => {
     const location = useLocation();

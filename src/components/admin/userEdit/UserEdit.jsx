@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { editUser, getUserById } from '../../../firestore/dbOperations';
+import { editUser, getUserById } from '../../../services/api/platform';
 import { fetchAdminWithReauth } from '../../../services/adminReauth';
 import fire from '../../../conf/fire';
 import { useLocation } from 'react-router-dom';
@@ -58,7 +58,7 @@ class UserEdit extends Component {
             // Only update role if it changed from initial props
             const initialRole = this.state.initialRole || 'USER';
             if (role !== initialRole && this.props.isSuperAdmin) {
-                const { setUserRole } = await import('../../../firestore/dbOperations');
+                const { setUserRole } = await import('../../../services/api/platform');
                 const roleRes = await setUserRole(userId, role, initialRole);
                 if (!roleRes.success) throw new Error(roleRes.error || 'Failed to update user role');
             }

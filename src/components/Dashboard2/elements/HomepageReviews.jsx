@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaChevronLeft, FaChevronRight, FaStar, FaCheck, FaQuoteLeft, FaQuoteRight, FaPause, FaPlay, FaPen } from 'react-icons/fa';
-import { getAllReviews } from '../../../firestore/dbOperations';
+import { getAllReviews } from '../../../services/api/platform';
 import { useTranslation } from 'react-i18next';
 const HomepageReviews = () => {
     const { t } = useTranslation('common');

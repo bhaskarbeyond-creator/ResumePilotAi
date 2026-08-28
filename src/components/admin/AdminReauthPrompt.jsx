@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import fire from '../../conf/fire';
-import { reauthenticateUser } from '../../firestore/dbOperations';
+import { reauthenticateUser } from '../../services/api/platform';
 import { registerAdminReauthHandler } from '../../services/adminReauth';
 
 function reauthErrorMessage(error) {

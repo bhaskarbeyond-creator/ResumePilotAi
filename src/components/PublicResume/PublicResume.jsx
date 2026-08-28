@@ -6,7 +6,7 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import download from 'downloadjs';
-import { getJsonById } from '../../firestore/dbOperations';
+import { getJsonById } from '../../services/api/platform';
 import { isKnownTemplate } from '../../utils/templateRegistry';
 import { trackDownload, trackEvent } from '../../utils/ga4';
 import { toValidatedPdfBlob } from '../../utils/pdfDownload';

@@ -22,6 +22,7 @@ import { createServer } from 'vite';
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 import { RealBrowserEvidenceEngine, sha256 } from './helpers/real-evidence-engine.mjs';
+import { rejectFirebaseDataPlaneRequests } from './helpers/firebase-data-plane-guard.mjs';
 
 const gitSha = (() => {
   try { return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(); }
@@ -313,7 +314,8 @@ async function setupBrowserPage(browser, roleName, viewport = { width: 1440, hei
       } catch {}
     }, { key: `firebase:authUser:${API_KEY}:[DEFAULT]`, apiKey: API_KEY, token, uid: r.uid, email: r.email, displayName: r.displayName || roleName });
     
-    await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({
+    await rejectFirebaseDataPlaneRequests(page);
+  await page.route('**/securetoken.googleapis.com/**', route => route.fulfill({
       status: 200, contentType: 'application/json',
       body: JSON.stringify({ access_token: token, expires_in: '3600', token_type: 'Bearer', refresh_token: 'fixture-refresh', id_token: token, user_id: r.uid, project_id: 'fixture-project' }),
     }));
@@ -328,8 +330,7 @@ async function setupBrowserPage(browser, roleName, viewport = { width: 1440, hei
     });
   }
   
-  await page.route('**/*firestore.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
-  await page.route('**/googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+  await page.route('**/identitytoolkit.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
   await page.route('**/www.google-analytics.com/**', route => route.abort());
   await page.route('**/www.googletagmanager.com/**', route => route.abort());
   await page.route('**/maps.googleapis.com/**', route => route.abort());
@@ -365,9 +366,7 @@ async function main() {
       'import.meta.env.VITE_ENTERPRISE_TENANCY_ENABLED': JSON.stringify('true'),
       'import.meta.env.VITE_FIREBASE_KEY': JSON.stringify(API_KEY),
       'import.meta.env.VITE_FIREBASE_DOMAIN': JSON.stringify('fixture.firebaseapp.com'),
-      'import.meta.env.VITE_FIREBASE_DATABASE_URL': JSON.stringify('https://fixture-default-rtdb.firebaseio.com'),
       'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify('fixture-project'),
-      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify('fixture.appspot.com'),
       'import.meta.env.VITE_FIREBASE_SENDER_ID': JSON.stringify('000000000000'),
       'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify('1:000000000000:web:fixture'),
     },

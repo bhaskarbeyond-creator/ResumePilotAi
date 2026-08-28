@@ -20,7 +20,7 @@ export default [
   {
     ignores: [
       'dist/**', 'node_modules/**', 'scratch/**', 'coverage/**',
-      'backend/Backend/**', 'backend/frontend-example.js', 'backend/check_log_script.js',
+      'backend/Backend/**', 'backend/check_log_script.js',
     ],
   },
   {

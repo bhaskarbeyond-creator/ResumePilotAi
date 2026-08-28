@@ -609,7 +609,7 @@ class SimpleTextarea extends Component {
         experience: "",
         skills: "",
         achievement: "",
-        summaryType: "professional",
+        summaryType: "balanced",
       },
       generatedSummary: "",
       isGenerating: false,
@@ -699,8 +699,8 @@ class SimpleTextarea extends Component {
       },
       {
         id: "experience",
-        title: "How many years of experience do you have?",
-        placeholder: "e.g., 5 years, Entry level, 10+ years",
+        title: "What experience level or verified duration should the summary state?",
+        placeholder: "Use your actual dates, e.g. 5 years, or enter Entry level",
         icon: <FiTarget className="w-4 h-4" />,
         type: "text",
       },
@@ -713,8 +713,8 @@ class SimpleTextarea extends Component {
       },
       {
         id: "achievement",
-        title: "What's your biggest professional achievement?",
-        placeholder: "Describe a key accomplishment or project you're proud of",
+        title: "What verified responsibility, project, or achievement should be included?",
+        placeholder: "State only facts you can verify; include metrics only when they are documented",
         icon: <FiAward className="w-4 h-4" />,
         type: "textarea",
       },
@@ -748,7 +748,7 @@ class SimpleTextarea extends Component {
             experience: "",
             skills: "",
             achievement: "",
-            summaryType: "professional",
+            summaryType: "balanced",
           }
         : prevState.aiAnswers,
     }));
@@ -1124,7 +1124,12 @@ class SimpleTextarea extends Component {
     this.aiSummaryController?.abort();
     const requestController = new AbortController();
     this.aiSummaryController = requestController;
-    this.setState({ isGenerating: true, generationError: null }); // Reset error on new attempt
+    this.setState({
+      isGenerating: true,
+      generationError: null,
+      generatedSummary: "",
+      currentStep: this.aiQuestions.length,
+    });
 
     const { aiAnswers } = this.state;
 
@@ -1142,7 +1147,12 @@ class SimpleTextarea extends Component {
         experience: aiAnswers.experience,
         skills: aiAnswers.skills,
         achievement: aiAnswers.achievement,
-        summaryType: aiAnswers.summaryType,
+        tone: aiAnswers.summaryType,
+        sourceFacts: [
+          aiAnswers.experience,
+          aiAnswers.skills,
+          aiAnswers.achievement,
+        ].filter(Boolean).join(" | "),
         language: currentLanguage,
       },
       { signal: requestController.signal }
@@ -1150,9 +1160,19 @@ class SimpleTextarea extends Component {
     .then((data) => {
       if (this.aiSummaryController !== requestController) return;
       this.aiSummaryController = null;
+      if (typeof data?.summary !== "string" || !data.summary.trim()) {
+        this.setState({
+          generatedSummary: "",
+          isGenerating: false,
+          generationError: "No source-supported summary was returned. Your answers were not changed.",
+          currentStep: this.aiQuestions ? this.aiQuestions.length : 0,
+        });
+        return;
+      }
       this.setState({
-        generatedSummary: data.summary || "",
+        generatedSummary: data.summary.trim(),
         isGenerating: false,
+        generationError: null,
         currentStep: this.aiQuestions ? this.aiQuestions.length : 0,
       });
     })
@@ -1162,7 +1182,10 @@ class SimpleTextarea extends Component {
       console.error("Error generating summary:", error);
       this.setState({
         isGenerating: false,
-        generationError: "Failed to generate summary. Please try again.",
+        generatedSummary: "",
+        generationError: error?.code === "INVALID_AI_INPUT"
+          ? error.message
+          : "A source-supported rewrite is unavailable. Your answers were not changed.",
       });
     });
   }
@@ -1183,7 +1206,7 @@ class SimpleTextarea extends Component {
         experience: "",
         skills: "",
         achievement: "",
-        summaryType: "professional",
+        summaryType: "balanced",
       },
       generatedSummary: "",
       isGenerating: false,
@@ -1461,7 +1484,7 @@ class SimpleTextarea extends Component {
                 AI Summary Assistant
               </h3>
               <p className="text-xs text-white text-opacity-80">
-                Let AI create your professional summary
+                AI rewrites only the facts you provide; review before applying
               </p>
             </div>
           </div>
@@ -1588,10 +1611,10 @@ class SimpleTextarea extends Component {
                     <FiRefreshCw className="w-8 h-8 text-[#4a6cf7] animate-spin" />
                   </div>
                   <h4 className="text-[16px] font-semibold text-gray-800 mb-2">
-                    Generating Your Professional Summary
+                    Rewriting Your Supplied Facts
                   </h4>
                   <p className="text-[#98a1b3] text-[14px]">
-                    Please wait while our AI crafts your personalized summary...
+                    AI is rephrasing your answers without adding candidate claims...
                   </p>
                 </div>
               ) : (
@@ -1648,7 +1671,7 @@ class SimpleTextarea extends Component {
                           : ""
                       }`}
                       disabled={
-                        this.state.isGenerating || !!this.state.generationError
+                        this.state.isGenerating || !!this.state.generationError || !this.state.generatedSummary
                       }
                     >
                       <FiCheck className="w-4 h-4 mr-2" /> Use This Summary

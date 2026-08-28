@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { getAllMessages } from '../../../firestore/dbOperations';
+import { getAllMessages } from '../../../services/api/platform';
 import { FaEnvelope, FaUser, FaCalendar, FaEye, FaChevronUp, FaClock, FaInbox, FaSearch, FaSyncAlt } from 'react-icons/fa';
 
 const PAGE_SIZE = 20;

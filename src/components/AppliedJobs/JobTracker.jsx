@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../../main';
-import { createTrackedJob, deleteTrackedJob, getTrackedJobs, updateTrackedJob } from '../../firestore/dbOperations';
+import { createTrackedJob, deleteTrackedJob, getTrackedJobs, updateTrackedJob } from '../../services/api/platform';
 import { filterAndSortTrackedJobs, JOB_TRACKER_STATUSES, validateTrackedJob } from '../../utils/jobTracker';
 
 const COLUMNS = Object.freeze([
@@ -90,7 +90,7 @@ export default function JobTracker({ showToast }) {
             closeForm();
         } catch (error) {
             setErrors({ form: error.message || 'The job could not be saved' });
-            if (error.code === 'TRACKER_CONFLICT') setRetryCount(count => count + 1);
+            if (error.code === 'JOB_TRACKER_CONFLICT') setRetryCount(count => count + 1);
         } finally {
             setSaving(false);
         }
@@ -121,7 +121,7 @@ export default function JobTracker({ showToast }) {
         } catch (error) {
             setJobs(previous);
             showToast?.(error.message || 'Unable to move job', 'error');
-            if (error.code === 'TRACKER_CONFLICT') setRetryCount(count => count + 1);
+            if (error.code === 'JOB_TRACKER_CONFLICT') setRetryCount(count => count + 1);
         }
     };
 
@@ -134,7 +134,7 @@ export default function JobTracker({ showToast }) {
             showToast?.('Tracked job deleted', 'success');
         } catch (error) {
             showToast?.(error.message || 'Unable to delete job', 'error');
-            if (error.code === 'TRACKER_CONFLICT') { setDeleteTarget(null); setRetryCount(count => count + 1); }
+            if (error.code === 'JOB_TRACKER_CONFLICT') { setDeleteTarget(null); setRetryCount(count => count + 1); }
         }
     };
 

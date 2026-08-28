@@ -62,12 +62,18 @@ class Cv5 extends Component {
     returnSkills() {
         var elements = [];
         for (let index = 0; index < (this.props.values.skills || []).length; index++) {
+            const skill = this.props.values.skills[index];
+            const rating = typeof skill.rating === 'number' && Number.isFinite(skill.rating)
+                ? Math.min(100, Math.max(0, skill.rating))
+                : null;
             elements.push(
                 <div key={index} className="cv5-skillItem">
-                    <span> {this.props.values.skills[index].name}</span>
-                    <div className="cv5-ratingWrapper" style={{ border: `2px solid ${this.getPrimaryColor()}` }}>
-                        <div style={{ width: (this.props.values.skills[index].rating || 75) + '%', backgroundColor: this.getPrimaryColor() }} className="cv5-rating"></div>
-                    </div>
+                    <span> {skill.name}</span>
+                    {rating !== null && (
+                        <div className="cv5-ratingWrapper" style={{ border: `2px solid ${this.getPrimaryColor()}` }} aria-label={`${rating}% proficiency`}>
+                            <div style={{ width: `${rating}%`, backgroundColor: this.getPrimaryColor() }} className="cv5-rating"></div>
+                        </div>
+                    )}
                 </div>
             );
         }

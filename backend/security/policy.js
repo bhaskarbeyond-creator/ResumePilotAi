@@ -10,15 +10,10 @@ const ADMIN_EXACT = new Set([
   '/admin',
   '/platform',
   '/send-sms',
-  '/invoice',
-  '/invoice/generate',
+  '/email/logs',
   '/auth/purge-orphaned-auth',
   '/auth/linkedin/test-credentials',
   '/auth/github/test-credentials',
-  '/email/logs', '/logs',
-  '/email/resend', '/resend',
-  '/email/templates', '/templates',
-  '/send-email', '/email/send-email',
   '/notify/security-alert',
   '/notify/job-application',
   '/notify/job-status-update',
@@ -27,28 +22,12 @@ const ADMIN_EXACT = new Set([
 
 const VERIFIED_PREFIXES = [
   '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
-  '/paytm/', '/phonepe/', '/export', '/invoice', '/send-invoice-email',
-  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/admin/ai', '/platform/'
+  '/paytm/', '/phonepe/', '/export', '/invoice',
+  '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/email/', '/admin/ai', '/platform/'
 ];
 
-const RECENT_AUTH_PATHS = new Set([]);
-
-// The email router retains these historical /api/admin aliases for compatibility in
-// addition to its canonical /api/email/admin namespace. Both paths must receive the
-// same recent-auth policy so an alias can never bypass the canonical middleware.
-const LEGACY_EMAIL_ADMIN_PATHS = new Set([
-  '/admin/circuit-breaker-status',
-  '/admin/reset-circuit-breaker',
-  '/admin/save-template-customization',
-  '/admin/custom-templates',
-  '/admin/test-connection',
-  '/admin/settings',
-  '/admin/save-smtp',
-  '/admin/test-imap'
-]);
-
 function isAdminPath(pathname) {
-  return ADMIN_EXACT.has(pathname) || ADMIN_PREFIXES.some(prefix => pathname.startsWith(prefix)) || LEGACY_EMAIL_ADMIN_PATHS.has(pathname);
+  return ADMIN_EXACT.has(pathname) || ADMIN_PREFIXES.some(prefix => pathname.startsWith(prefix));
 }
 
 function requiresVerifiedEmail(pathname) {

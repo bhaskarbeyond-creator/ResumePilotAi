@@ -1,7 +1,6 @@
 'use strict';
 
-const crypto = require('crypto');
-const { assertUuid, assertPrincipalId } = require('./tenantContext');
+const { assertUuid } = require('./tenantContext');
 const { createSupportGrant, activeGrant } = require('./supportAccessStore');
 
 class MySqlSupportGrantStore {
@@ -24,8 +23,8 @@ class MySqlSupportGrantStore {
     this.assertAvailable();
     const grant = createSupportGrant(input);
     await this.pool.query(
-      `INSERT INTO enterprise_support_grants (id, tenantId, workspaceId, grantedBy, grantedTo, reason, status, expiresAt)
-       VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
+      `INSERT INTO enterprise_support_grants (id, tenantId, workspaceId, grantedBy, grantedTo, reason, scopes, status, expiresAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
       [
         grant.id,
         grant.tenantId,
@@ -33,6 +32,7 @@ class MySqlSupportGrantStore {
         grant.requestedBySubjectId,
         grant.supportSubjectId,
         grant.reason,
+        JSON.stringify(grant.scopes),
         new Date(grant.expiresAt),
       ]
     );
@@ -57,14 +57,14 @@ class MySqlSupportGrantStore {
       status: r.status,
       expiresAt: r.expiresAt ? new Date(r.expiresAt).toISOString() : null,
       createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
-      scopes: ['tenant.audit.read'],
+      scopes: typeof r.scopes === 'string' ? JSON.parse(r.scopes) : (r.scopes || []),
     };
     return activeGrant(grant, { supportSubjectId, tenantId, workspaceId, now }) ? grant : null;
   }
 
   async revoke(grantId, { tenantId = null, workspaceId = null } = {}) {
     this.assertAvailable();
-    let sql = 'UPDATE enterprise_support_grants SET status = "REVOKED" WHERE id = ?';
+    let sql = `UPDATE enterprise_support_grants SET status = 'REVOKED', revokedAt = CURRENT_TIMESTAMP WHERE id = ? AND status = 'ACTIVE'`;
     const params = [String(grantId || '')];
     if (tenantId) {
       sql += ' AND tenantId = ?';
@@ -97,7 +97,7 @@ class MySqlSupportGrantStore {
       status: r.status,
       expiresAt: r.expiresAt ? new Date(r.expiresAt).toISOString() : null,
       createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
-      scopes: ['tenant.audit.read'],
+      scopes: typeof r.scopes === 'string' ? JSON.parse(r.scopes) : (r.scopes || []),
     }));
   }
 }

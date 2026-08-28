@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FiBriefcase, FiMapPin, FiClock, FiDollarSign, FiStar, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 import { BiBuilding, BiTime } from 'react-icons/bi';
-import { getFrontendStats, getFeaturedJobs } from '../../firestore/dbOperations';
+import { getFrontendStats, getFeaturedJobs } from '../../services/api/platform';
 import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 
 
@@ -112,17 +112,21 @@ const LandingJobsFeatured = ({ t }) => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                // Fetch both public marketing content and verified featured jobs
-                const [stats, jobs] = await Promise.all([
+                // Job records and audited marketing claims fail independently.
+                const [marketingResult, jobsResult] = await Promise.allSettled([
                     getFrontendStats(),
-                    getFeaturedJobs(6) // Get 6 featured jobs
+                    getFeaturedJobs(6)
                 ]);
-
-                setFrontendStats(stats);
-                setFeaturedJobs(jobs);
-                setError(null);
+                setFrontendStats(marketingResult.status === 'fulfilled' ? marketingResult.value : {});
+                if (jobsResult.status === 'fulfilled') {
+                    setFeaturedJobs(jobsResult.value);
+                    setError(null);
+                } else {
+                    setFeaturedJobs([]);
+                    setError(jobsResult.reason?.message || 'Featured jobs are unavailable.');
+                }
             } catch (err) {
-                console.error('❌ Error fetching data:', err);
+                console.error('Error loading featured jobs:', err);
                 setError(err.message);
                 setFeaturedJobs([]);
             } finally {
@@ -139,9 +143,11 @@ const LandingJobsFeatured = ({ t }) => {
     };
 
     const handleViewAllJobs = () => {
-        // Navigate to all jobs page
         window.location.href = '/jobs/browse';
     };
+    const evidenceUrl = sanitizeImageUrl(frontendStats.sourceUrl);
+    const evidenceDate = new Date(frontendStats.verifiedAt);
+    const hasPublishedEvidence = Boolean(evidenceUrl && Number.isFinite(evidenceDate.getTime()));
 
     return (
         <section className="py-16 sm:py-20 md:py-24">
@@ -165,7 +171,7 @@ const LandingJobsFeatured = ({ t }) => {
 
                     {/* Description */}
                     <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                        {t('JobsUpdate.LandingJobsFeatured.description', 'Explore hand-picked opportunities from top companies. These featured positions offer exceptional career growth, competitive compensation, and amazing work environments.')}
+                        {t('JobsUpdate.LandingJobsFeatured.description', 'Explore featured opportunities from participating employers. Review each listing for its role, compensation, location, and application requirements.')}
                     </p>
                 </div>
 
@@ -189,7 +195,12 @@ const LandingJobsFeatured = ({ t }) => {
                 )}
 
                 {/* Jobs Grid */}
-                {!loading && (
+                {!loading && !error && featuredJobs.length === 0 && (
+                    <div className="mb-12 rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">
+                        {t('JobsUpdate.LandingJobsFeatured.empty', 'No jobs are currently featured.')}
+                    </div>
+                )}
+                {!loading && featuredJobs.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
                         {featuredJobs.map((job) => (
                             <JobCard
@@ -202,15 +213,19 @@ const LandingJobsFeatured = ({ t }) => {
                     </div>
                 )}
 
-                {/* Stats & CTA Section */}
+                {/* Audited claims & CTA Section */}
                 <div className="bg-white/80 backdrop-blur-sm p-8 sm:p-12 rounded-2xl shadow-lg border border-blue-100/50">
+                    {(hasPublishedEvidence && frontendStats.featuredJobs && frontendStats.successRate && frontendStats.topCompanies) && <>
                     <div className="text-center mb-8">
                         <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                            {t('JobsUpdate.LandingJobsFeatured.statsTitle', 'Join Thousands of Successful Professionals')}
+                            {t('JobsUpdate.LandingJobsFeatured.statsTitle', 'Published Platform Snapshot')}
                         </h3>
                         <p className="text-gray-600 max-w-2xl mx-auto">
-                            {t('JobsUpdate.LandingJobsFeatured.statsDescription', 'Our platform has helped countless professionals find their dream jobs at top companies worldwide.')}
+                            {t('JobsUpdate.LandingJobsFeatured.statsDescription', 'These public display values are revisioned and backed by the evidence reviewed by the platform administrator.')}
                         </p>
+                        <a href={evidenceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm font-medium text-blue-700 underline">
+                            {t('JobsUpdate.LandingJobsFeatured.evidenceReviewed', 'Evidence reviewed')} {evidenceDate.toLocaleDateString()}
+                        </a>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center mb-8">
@@ -218,7 +233,7 @@ const LandingJobsFeatured = ({ t }) => {
                             <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-3 group-hover:bg-blue-200 transition-colors duration-300">
                                 <FiBriefcase className="w-6 h-6 text-blue-600" />
                             </div>
-                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.featuredJobs || '2,500+'}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.featuredJobs}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobsFeatured.stats.jobs', 'Featured Jobs')}</div>
                         </div>
 
@@ -226,7 +241,7 @@ const LandingJobsFeatured = ({ t }) => {
                             <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-3 group-hover:bg-green-200 transition-colors duration-300">
                                 <FiTrendingUp className="w-6 h-6 text-green-600" />
                             </div>
-                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.successRate || '95%'}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{String(frontendStats.successRate).endsWith('%') ? frontendStats.successRate : `${frontendStats.successRate}%`}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobsFeatured.stats.success', 'Success Rate')}</div>
                         </div>
 
@@ -234,10 +249,11 @@ const LandingJobsFeatured = ({ t }) => {
                             <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-3 group-hover:bg-purple-200 transition-colors duration-300">
                                 <BiBuilding className="w-6 h-6 text-purple-600" />
                             </div>
-                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.topCompanies || '500+'}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">{frontendStats.topCompanies}</div>
                             <div className="text-sm text-gray-600">{t('JobsUpdate.LandingJobsFeatured.stats.companies', 'Top Companies')}</div>
                         </div>
                     </div>
+                    </>}
 
                     {/* CTA Button */}
                     <div className="text-center">

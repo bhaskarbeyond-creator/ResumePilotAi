@@ -211,7 +211,7 @@
     "unlimitedResumes": "CV illimités",
     "nonRecuring": "Paiement non récurrent.",
     "upgradeAndDownload": "Mettre à niveau et télécharger",
-    "payment1": "Obtenez l'emploi de vos rêves",
+    "payment1": "Créez votre CV",
     "payment2": "Paiement via un service de paiement sécurisé",
     "payment3": "Paiement sécurisé SSL / SSL 256 bits",
     "payment4": "Garantie de remboursement de 7 jours",
@@ -243,7 +243,7 @@
     "featuresNav": "Fonctionnalités",
     "resumeBuilderFeatures": "Fonctionnalités du constructeur de CV",
     "featureTagline": "Tout ce dont vous avez besoin pour un CV parfait",
-    "userCount": "Plus de 50 000 utilisateurs",
+    "userCount": "Aperçu des fonctions",
     "exploreFeatures": "Explorer toutes les fonctionnalités",
     "freeToTry": "Essai gratuit",
     "startBuilding": "Commencer à construire",
@@ -345,12 +345,12 @@
       "sentence5": "Réussissez vos entretiens avec les outils de préparation IA"
     },
     "badge": "Constructeur de CV basé sur l'IA",
-    "description": "Créez des CV et lettres de motivation impressionnants, compatibles ATS, avec l'aide de l'IA. Choisissez parmi des modèles professionnels, obtenez des commentaires en temps réel et décrochez l'emploi de vos rêves plus rapidement.",
+    "description": "Créez et modifiez des CV et des lettres de motivation avec des outils guidés, des modèles configurables, un aperçu en direct et une assistance IA facultative.",
     "createResume": "Créer un CV",
     "createCoverLetter": "Créer une lettre de motivation",
     "stats": {
-      "users": "Plus de 5 000 utilisateurs satisfaits",
-      "rating": "4.9/5"
+      "users": "Outils de CV guidés",
+      "rating": "Aperçu en direct"
     },
     "features": {
       "freeToStart": "Démarrage gratuit",
@@ -374,18 +374,18 @@
     }
   },
   "HomepageSteps": {
-    "badge": "RÉSULTATS PROUVÉS • CONFIANCE DE PLUS DE 50 000 PROFESSIONNELS",
+    "badge": "CRÉATION GUIDÉE DE CV",
     "title": {
       "part1": "Transformez",
       "part2": "votre parcours",
       "part3": "professionnel"
     },
-    "description": "Rejoignez des milliers de professionnels qui ont accéléré leur carrière avec notre constructeur de CV basé sur l'IA. Faites-vous remarquer, décrochez des entretiens et obtenez l'emploi de vos rêves plus rapidement que jamais.",
+    "description": "Utilisez des sections guidées, des mises en page configurables, des aperçus et une assistance IA facultative pour préparer et vérifier un CV.",
     "benefits": [
       {
         "title": "Obtenez plus d'entretiens d'embauche",
         "description": "Nos modèles optimisés ATS et nos suggestions de contenu basées sur l'IA aident votre CV à passer les systèmes de sélection automatisés et à arriver entre les mains des responsables du recrutement.",
-        "detail": "Rejoignez des milliers de professionnels qui ont multiplié par 3 leur taux d'entretiens en utilisant notre système éprouvé."
+        "detail": "Vérifiez et adaptez chaque suggestion avant de l’utiliser dans une candidature."
       },
       {
         "title": "Démarquez-vous de la concurrence",
@@ -396,24 +396,6 @@
         "title": "Renforcez la confiance dans votre recherche d'emploi",
         "description": "Présentez votre meilleur profil professionnel avec un CV soigné et sans erreur qui reflète votre véritable potentiel et vos réalisations professionnelles.",
         "detail": "Soyez confiant en sachant que vos documents de candidature sont rédigés de manière professionnelle et conformes aux normes de l'industrie."
-      }
-    ],
-    "stats": [
-      {
-        "number": "50K+",
-        "label": "Utilisateurs satisfaits"
-      },
-      {
-        "number": "98.7%",
-        "label": "Taux de réussite"
-      },
-      {
-        "number": "50+",
-        "label": "Modèles"
-      },
-      {
-        "number": "24h",
-        "label": "Temps moyen"
       }
     ],
     "badges": {
@@ -427,8 +409,8 @@
       }
     },
     "cta": {
-      "title": "Prêt à décrocher l'emploi de vos rêves ?",
-      "description": "Rejoignez plus de 50 000 professionnels qui ont transformé leur carrière. Commencez à construire votre CV gagnant dès aujourd'hui.",
+      "title": "Prêt à créer votre CV ?",
+      "description": "Créez, vérifiez et exportez votre CV avec l’éditeur guidé.",
       "button": "Lancez votre succès",
       "noCredit": "✨ Pas de carte de crédit requise • Modèles gratuits inclus"
     }
@@ -440,7 +422,7 @@
       "part2": "utilisateurs",
       "part3": "en disent"
     },
-    "description": "Rejoignez des milliers de demandeurs d'emploi satisfaits qui ont décroché l'emploi de leurs rêves grâce à notre constructeur de CV basé sur l'IA.",
+    "description": "Consultez les avis clients approuvés et publiés par le processus de modération de la plateforme.",
     "navigation": {
       "previous": "Précédent",
       "next": "Suivant",
@@ -514,48 +496,48 @@
     },
     "contactSupport": {
       "title": "Toujours besoin d'aide ?",
-      "description": "Notre équipe de support est là 24/7 pour vous aider à réussir",
+      "description": "Utilisez le formulaire de contact pour toute question sur le compte ou le produit. Les délais de réponse ne sont pas garantis.",
       "contactButton": "Contacter le support",
-      "docsButton": "Parcourir la documentation"
+      "docsButton": "Articles sur la carrière"
     },
     "cta": {
       "badge": "Prêt à créer votre CV ?",
-      "title": "Transformez votre carrière avec les CV basés sur l'IA",
-      "description": "Rejoignez des milliers de professionnels qui ont créé des CV impressionnants en quelques secondes. Lancez votre parcours professionnel dès aujourd'hui avec notre plateforme de design intelligente.",
+      "title": "Créez et vérifiez votre CV",
+      "description": "Consultez les questions fréquentes ou commencez un CV avec l’éditeur guidé.",
       "button": "Commencer la création gratuite",
-      "freeCredits": "3 crédits gratuits • Pas de carte de crédit requise",
-      "support": "Support 24/7",
-      "secure": "Sécurisé et privé",
-      "instant": "Résultats instantanés"
+      "freeCredits": "",
+      "support": "Brouillons liés au compte",
+      "secure": "Vérifier avant exportation",
+      "instant": "Assistance IA facultative"
     },
     "trustIndicators": {
-      "secure": "Sécurisé et privé",
-      "instant": "Résultats instantanés",
-      "support": "Support 24/7"
+      "secure": "Vérifier avant exportation",
+      "instant": "Assistance IA facultative",
+      "support": "Brouillons liés au compte"
     },
     "q1": {
-      "question": "Comment commencer avec la génération de CV par IA ?",
-      "answer": "C'est extrêmement simple ! Inscrivez-vous gratuitement, saisissez vos informations et observez notre IA créer des CV magnifiques en quelques secondes."
+      "question": "Comment commencer à utiliser l’éditeur de CV ?",
+      "answer": "Créez un compte, ouvrez l’éditeur, saisissez des informations vérifiées, choisissez une mise en page et contrôlez l’aperçu avant d’enregistrer ou d’exporter. L’assistance IA est facultative et peut être désactivée."
     },
     "q2": {
-      "question": "Quelle est la rapidité du processus de génération ?",
-      "answer": "Notre IA génère plusieurs déclinaisons de CV en moins de 5 minutes ! Ce qui prenait des jours se fait maintenant instantanément."
+      "question": "L’assistance IA garantit-elle un entretien ou un emploi ?",
+      "answer": "Non. Une sortie IA peut être incomplète ou inexacte et ne garantit ni acceptation ATS, ni entretien, ni emploi. Vérifiez et modifiez chaque suggestion."
     },
     "q3": {
-      "question": "Que comprend le forfait gratuit ?",
-      "answer": "Les nouveaux utilisateurs reçoivent des crédits gratuits pour créer et télécharger des CV aux formats PDF et Word."
+      "question": "Où consulter les limites et tarifs actuels ?",
+      "answer": "La page de tarification affiche les offres, droits, taxes et moyens de paiement actuels fournis par le serveur. La disponibilité peut varier selon le compte et la configuration."
     },
     "q4": {
-      "question": "Puis-je personnaliser les CV générés ?",
-      "answer": "Oui ! Vous pouvez régénérer avec différents styles, couleurs et mises en page."
+      "question": "Puis-je personnaliser mon CV ?",
+      "answer": "Oui. Vous pouvez modifier les sections, choisir une mise en page disponible et vérifier l’aperçu rendu. Les suggestions IA restent modifiables et doivent être contrôlées."
     },
     "q5": {
-      "question": "Quels formats de fichier fournissez-vous ?",
-      "answer": "Tous les CV sont disponibles au format PDF et Word haute qualité."
+      "question": "Quels formats d’exportation sont disponibles ?",
+      "answer": "Les exports PDF et DOCX sont proposés lorsque la route d’exportation et le droit du compte correspondants sont disponibles. Vérifiez toujours le fichier avant de l’envoyer."
     },
     "q6": {
-      "question": "Comment fonctionne le système de crédits ?",
-      "answer": "Chaque génération consomme 1 crédit. Les crédits n'expirent jamais et vous pouvez en acheter d'autres à tout moment."
+      "question": "Comment les brouillons et données du compte sont-ils stockés ?",
+      "answer": "Firebase Authentication gère l’identité. Les brouillons et autres données applicatives sont stockés via l’API adossée à MariaDB. Consultez la politique de confidentialité et les contrôles d’exportation ou de suppression du compte."
     }
   },
   "HomepageFooter": {
@@ -565,7 +547,7 @@
       "stayUpdated": "Restez informé",
       "securePayments": "Paiements sécurisés"
     },
-    "aboutText": "Nous aidons les demandeurs d'emploi à créer des CV professionnels en quelques minutes. Notre mission est de permettre aux individus de décrocher l'emploi de leurs rêves avec des documents de candidature de haute qualité, créés par l'IA.",
+    "aboutText": "ResumePilot AI fournit des outils pour créer, vérifier et exporter des CV et des documents de carrière associés.",
     "links": {
       "pricing": "Tarifs",
       "contact": "Contact"
@@ -1146,8 +1128,8 @@
       "clickToView": "Cliquez pour afficher en taille réelle",
       "changeTemplate": "Changer de modèle",
       "viewFullSize": "Afficher en taille réelle",
-      "trustedBy": "Recommandé par plus de 50K professionnels",
-      "joinSuccess": "Rejoignez les réussites",
+      "trustedBy": "Aperçu avant exportation",
+      "joinSuccess": "Vérifiez le contenu et la mise en forme",
       "resumePdf": "Resume.pdf"
     },
     "templates": {
@@ -1529,26 +1511,6 @@
         "label": "Date de Délivrance",
         "placeholder": "p. ex. 2024"
       }
-    },
-    "ai": {
-      "panelTitle": "Recommandations de Certifications par IA",
-      "recommend": "Recommander Certifications (IA)",
-      "tooltip": "Générer des recommandations de certifications par IA adaptées à votre profil",
-      "generating": "Analyse et génération...",
-      "tailoredSubtitle": "Certifications reconnues adaptées pour {{role}}",
-      "genericSubtitle": "Principales certifications accréditées selon vos compétences et votre parcours",
-      "promptTitle": "Boostez votre CV avec des Certifications Reconnues",
-      "promptDescRole": "Laissez l'IA analyser votre expérience en tant que {{role}} et recommander les certifications les plus recherchées.",
-      "promptDescGeneric": "Générez des certifications reconnues adaptées à votre domaine pour optimiser votre score ATS.",
-      "generateNow": "Générer les Recommandations IA",
-      "refresh": "Actualiser les Recommandations",
-      "getRecommendations": "Obtenir des Recommandations",
-      "addAll": "Ajouter Toutes les Recommandées",
-      "added": "Ajouté",
-      "addedBadge": "Ajouté",
-      "add": "Ajouter",
-      "mandatoryBadge": "Norme de l'Industrie",
-      "recommendedBadge": "Recommandé"
     }
   },
   "EducationSuggestionModal": {
@@ -1912,7 +1874,7 @@
   "JobsUpdate": {
     "JobsLandingHero": {
       "typingEffect": {
-        "sentence1": "Trouvez le poste de vos rêves aujourd'hui",
+        "sentence1": "Consulter les offres d’emploi actuelles",
         "sentence2": "Connectez-vous avec les meilleurs employeurs",
         "sentence3": "Faites progresser votre carrière",
         "sentence4": "Découvrez des opportunités à distance",
@@ -1935,83 +1897,40 @@
       "resources": "Ressources",
       "resourcesDesc": "Orientation et conseils de carrière",
       "stats": {
-        "jobs": "10 000+ emplois actifs",
-        "rating": "Note de 4,8/5"
+        "jobs": "Offres d’emploi actuelles",
+        "rating": "Détails d’emploi vérifiés"
       },
       "features": {
         "freeToApply": "Candidature gratuite",
-        "verifiedEmployers": "Employeurs vérifiés"
+        "verifiedEmployers": "Employeurs modérés"
       }
     },
     "LandingJobTopCompanies": {
-      "badge": "Meilleurs employeurs",
-      "title": "Rejoignez des entreprises leaders",
-      "description": "Découvrez des opportunités au sein d'entreprises de classe mondiale qui recrutent activement. Des startups aux entreprises du Fortune 500, trouvez votre match parfait.",
+      "badge": "Employeurs en vedette",
+      "title": "Parcourir les profils d’employeurs",
+      "description": "Parcourez les profils d’employeurs en vedette ayant des offres actives. Ouvrez le portail d’emploi pour consulter les postes et les modalités de candidature.",
       "featured": "En vedette",
       "viewAll": "Voir toutes les entreprises",
       "stats": {
-        "companies": "Entreprises partenaires",
+        "companies": "Entreprises en vedette",
         "jobs": "Emplois actifs",
         "hires": "Embauches réussies"
-      }
-    },
-    "LandingJobsProcess": {
-      "badge": "Comment ça marche",
-      "title": "Décrochez le poste de vos rêves en",
-      "titleHighlight": "4 étapes simples",
-      "description": "Notre processus simplifié rend la recherche d'emploi facile. De la découverte à l'embauche, nous vous guidons à chaque étape pour vous assurer de trouver l'opportunité parfaite.",
-      "featuresTitle": "Pourquoi choisir notre plateforme ?",
-      "featuresDescription": "Nous fournissons des outils et des fonctionnalités de pointe pour rendre votre recherche d'emploi plus efficace et efficiente.",
-      "steps": {
-        "0": {
-          "title": "Rechercher et découvrir",
-          "description": "Parcourez des milliers d'offres d'emploi des meilleures entreprises. Utilisez nos filtres avancés pour trouver le match parfait pour vos compétences et préférences."
-        },
-        "1": {
-          "title": "Créer un profil",
-          "description": "Créez votre profil professionnel avec notre générateur de CV. Mettez en valeur vos compétences, votre expérience et vos réalisations pour vous démarquer de la foule."
-        },
-        "2": {
-          "title": "Postuler instantanément",
-          "description": "Postulez à plusieurs emplois en un seul clic. Notre système de candidature intelligent adapte automatiquement votre profil à chaque poste."
-        },
-        "3": {
-          "title": "Être embauché",
-          "description": "Connectez-vous avec les responsables du recrutement, planifiez des entretiens et décrochez le poste de vos rêves. Nous vous accompagnons tout au long du processus."
-        }
       },
-      "features": {
-        "0": {
-          "title": "Correspondance alimentée par l'IA",
-          "description": "Notre algorithme intelligent vous met en relation avec des opportunités pertinentes"
-        },
-        "1": {
-          "title": "Optimisation de CV",
-          "description": "Optimisez automatiquement votre CV pour chaque candidature"
-        },
-        "2": {
-          "title": "Entreprises vérifiées",
-          "description": "Tous les employeurs sont vérifiés pour leur authenticité et leur qualité"
-        }
-      },
-      "cta": {
-        "title": "Prêt à commencer votre voyage ?",
-        "description": "Rejoignez des milliers de professionnels qui ont trouvé le poste de leurs rêves grâce à notre plateforme. Votre prochaine opportunité n'est qu'à un clic.",
-        "searchButton": "Commencer la recherche d'emploi",
-        "profileButton": "Créer un profil"
-      }
+      "empty": "Aucun employeur n’est actuellement en vedette.",
+      "unavailable": "Les employeurs en vedette sont temporairement indisponibles.",
+      "evidenceReviewed": "Preuve examinée"
     },
     "LandingJobsFeatured": {
       "badge": "Emplois en vedette",
-      "title": "Découvrez votre prochaine",
-      "titleHighlight": "Opportunité de rêve",
+      "title": "Parcourir les",
+      "titleHighlight": "Offres en vedette",
       "description": "Explorez des opportunités triées sur le volet auprès des meilleures entreprises. Ces postes en vedette offrent une croissance de carrière exceptionnelle, une rémunération compétitive et des environnements de travail incroyables.",
-      "statsTitle": "Rejoignez des milliers de professionnels qui ont réussi",
-      "statsDescription": "Notre plateforme a aidé d'innombrables professionnels à trouver le poste de leurs rêves dans les meilleures entreprises du monde entier.",
+      "statsTitle": "Aperçu publié de la plateforme",
+      "statsDescription": "Ces valeurs sont versionnées et liées aux preuves examinées par l’administrateur de la plateforme.",
       "stats": {
         "jobs": "Emplois en vedette",
         "success": "Taux de réussite",
-        "companies": "Meilleures entreprises"
+        "companies": "Entreprises en vedette"
       },
       "JobCard": {
         "skills": {
@@ -2026,7 +1945,9 @@
           "applyNow": "Postuler maintenant"
         }
       },
-      "viewAll": "Voir tous les emplois"
+      "viewAll": "Voir tous les emplois",
+      "empty": "Aucune offre n’est actuellement en vedette.",
+      "evidenceReviewed": "Preuve examinée"
     },
     "MainJobListings": {
       "jobSingular": "emploi",
