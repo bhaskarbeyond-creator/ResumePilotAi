@@ -169,7 +169,7 @@ mariaTest('Ads create and revision-safe delete persist through audited backend r
     const [rows] = await pool.query("SELECT payload FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ?", [adId]);
     const stored = typeof rows[0].payload === 'string' ? JSON.parse(rows[0].payload) : rows[0].payload;
     assert.equal(stored.name, 'Release banner');
-    const stale = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 0 });
+    const stale = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 999 });
     assert.equal(stale.status, 409);
     assert.ok(['ADMIN_TARGET_CHANGED', 'CAS_CONFLICT'].includes(stale.body.code), `conflict code, got ${stale.body.code}`);
     const [stillRows] = await pool.query("SELECT entity_id FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ? AND deleted_at IS NULL", [adId]);
