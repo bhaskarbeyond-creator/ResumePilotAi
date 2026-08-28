@@ -415,6 +415,21 @@ try {
     duplicatePreflightFailure: true,
     constraints: true,
   }));
+} catch (error) {
+  const detail = {
+    status: 'NOT VERIFIED',
+    code: error.code || null,
+    migration: error.migration || null,
+    message: String(error.message || error),
+  };
+  console.error(JSON.stringify(detail));
+  if (process.env.GITHUB_ACTIONS) {
+    const annotation = `${detail.migration ? `${detail.migration}: ` : ''}${detail.code ? `${detail.code}: ` : ''}${detail.message}`
+      .replace(/\r?\n/g, ' ')
+      .slice(0, 500);
+    console.error(`::error title=MariaDB migration verifier failed::${annotation}`);
+  }
+  process.exitCode = 1;
 } finally {
   if (pool) await pool.end().catch(() => {});
   if (admin) {
