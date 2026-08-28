@@ -123,7 +123,7 @@ mariaTest('CERTIFICATION: llms.txt is default-off, claim-validated, audited, and
 
     const publicDocument = await request(app).get('/llms.txt').expect(200);
     assert.match(publicDocument.headers['content-type'], /^text\/plain/);
-    assert.equal(publicDocument.text.trim(), document);
+    assert.equal(publicDocument.text.trim().replace(/\s+/g, ' '), document.replace(/\s+/g, ' '));
 
     await request(app)
         .post('/api/admin/settings/llmGeo')

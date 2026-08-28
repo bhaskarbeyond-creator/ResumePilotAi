@@ -20,24 +20,31 @@ let buffer = '';
 function capture(chunk, stream) {
   const text = String(chunk);
   buffer += text;
-  if (buffer.length > 120_000) buffer = buffer.slice(-120_000);
+  if (buffer.length > 240_000) buffer = buffer.slice(-240_000);
   stream.write(chunk);
 }
+
+function annotationSafe(text, limit = 1800) {
+  return String(text || '')
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A')
+    .slice(0, limit);
+}
+
 child.stdout.on('data', chunk => capture(chunk, process.stdout));
 child.stderr.on('data', chunk => capture(chunk, process.stderr));
 child.on('exit', (code, signal) => {
-  if (code || signal) {
+  if ((code || signal) && process.env.GITHUB_ACTIONS) {
     const lines = buffer.split(/\r?\n/);
     const notOk = lines
       .map((line, index) => ({ line, index }))
       .filter(item => /^not ok\b/.test(item.line));
-    const source = notOk.length
-      ? notOk.flatMap(item => lines.slice(Math.max(0, item.index - 3), Math.min(lines.length, item.index + 18)))
-      : lines.slice(-80);
-    const excerpt = source.join(' ').replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').slice(0, 1800);
-    if (process.env.GITHUB_ACTIONS) {
-      console.error(`::error title=Backend node:test failure::${excerpt || `node --test exited ${code || signal}`}`);
-    }
+    const failures = notOk.length ? notOk.slice(0, 8) : [{ line: `node --test exited ${code || signal}`, index: Math.max(0, lines.length - 60) }];
+    failures.forEach((item, failureIndex) => {
+      const excerpt = lines.slice(Math.max(0, item.index - 6), Math.min(lines.length, item.index + 28)).join('\n');
+      console.error(`::error title=Backend node:test failure ${failureIndex + 1}::${annotationSafe(excerpt)}`);
+    });
   }
   process.exit(code || (signal ? 1 : 0));
 });
