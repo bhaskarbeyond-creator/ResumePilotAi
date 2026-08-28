@@ -316,6 +316,7 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
   });
 
   await t.test('rolls outbox entries back with the business transaction and safely reclaims expired leases', async () => {
+    await pool.query('DELETE FROM notification_outbox WHERE event_id LIKE ?', [`user-welcome:${runId}%`]).catch(() => {});
     const rolledBackEvent = `${runId}_rolled_back`;
     let connection = await pool.getConnection();
     await connection.beginTransaction();

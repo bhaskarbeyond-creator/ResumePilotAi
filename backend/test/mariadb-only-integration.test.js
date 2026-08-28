@@ -144,7 +144,7 @@ mariaTest('CERTIFICATION: user profile create/read/update with optimistic revisi
     const created = await request(app)
         .post('/api/users-data/profile')
         .set(bearer('user'))
-        .send({ userId: 'maria-only-user-1', expectedRevision: 0, email: 'maria-only-user@example.com', firstname: 'MariaDB', lastname: 'Only', profile: { name: 'MariaDB Only', revision: 1 } })
+        .send({ userId: 'maria-only-user-1', expectedRevision: 0, profile: { email: 'maria-only-user@example.com', firstname: 'MariaDB', lastname: 'Only', name: 'MariaDB Only', revision: 1 } })
         .expect(200);
     assert.equal(created.body.success, true);
 
