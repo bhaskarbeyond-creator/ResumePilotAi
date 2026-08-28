@@ -58,17 +58,17 @@ SELECT
 FROM canonical_documents cd
 WHERE cd.entity_type = 'custom_pages' AND cd.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
-  title = IF(VALUES(updated_at) >= updated_at, VALUES(title), title),
-  slug = IF(VALUES(updated_at) >= updated_at, VALUES(slug), slug),
-  description = IF(VALUES(updated_at) >= updated_at, VALUES(description), description),
-  content = IF(VALUES(updated_at) >= updated_at, VALUES(content), content),
-  published = IF(VALUES(updated_at) >= updated_at, VALUES(published), published),
-  status = IF(VALUES(updated_at) >= updated_at, VALUES(status), status),
-  nav_order = IF(VALUES(updated_at) >= updated_at, VALUES(nav_order), nav_order),
-  show_in_nav = IF(VALUES(updated_at) >= updated_at, VALUES(show_in_nav), show_in_nav),
-  show_in_footer = IF(VALUES(updated_at) >= updated_at, VALUES(show_in_footer), show_in_footer),
-  revision = GREATEST(revision, VALUES(revision)),
-  updated_at = GREATEST(updated_at, VALUES(updated_at));
+  title = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(title), title),
+  slug = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(slug), slug),
+  description = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(description), description),
+  content = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(content), content),
+  published = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(published), published),
+  status = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(status), status),
+  nav_order = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(nav_order), nav_order),
+  show_in_nav = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(show_in_nav), show_in_nav),
+  show_in_footer = IF(VALUES(updated_at) >= custom_pages.updated_at, VALUES(show_in_footer), show_in_footer),
+  revision = GREATEST(custom_pages.revision, VALUES(revision)),
+  updated_at = GREATEST(custom_pages.updated_at, VALUES(updated_at));
 
 INSERT INTO trusted_by
   (id, name, logo_url, website_url, display_order, active, revision, created_at, updated_at)
@@ -89,13 +89,13 @@ SELECT
 FROM canonical_documents cd
 WHERE cd.entity_type = 'trusted_by' AND cd.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
-  name = IF(VALUES(updated_at) >= updated_at, VALUES(name), name),
-  logo_url = IF(VALUES(updated_at) >= updated_at, VALUES(logo_url), logo_url),
-  website_url = IF(VALUES(updated_at) >= updated_at, VALUES(website_url), website_url),
-  display_order = IF(VALUES(updated_at) >= updated_at, VALUES(display_order), display_order),
-  active = IF(VALUES(updated_at) >= updated_at, VALUES(active), active),
-  revision = GREATEST(revision, VALUES(revision)),
-  updated_at = GREATEST(updated_at, VALUES(updated_at));
+  name = IF(VALUES(updated_at) >= trusted_by.updated_at, VALUES(name), name),
+  logo_url = IF(VALUES(updated_at) >= trusted_by.updated_at, VALUES(logo_url), logo_url),
+  website_url = IF(VALUES(updated_at) >= trusted_by.updated_at, VALUES(website_url), website_url),
+  display_order = IF(VALUES(updated_at) >= trusted_by.updated_at, VALUES(display_order), display_order),
+  active = IF(VALUES(updated_at) >= trusted_by.updated_at, VALUES(active), active),
+  revision = GREATEST(trusted_by.revision, VALUES(revision)),
+  updated_at = GREATEST(trusted_by.updated_at, VALUES(updated_at));
 
 INSERT INTO reviews
   (id, name, role, company, avatar, content, rating, featured, status,
@@ -128,13 +128,13 @@ SELECT
 FROM canonical_documents cd
 WHERE cd.entity_type = 'reviews' AND cd.deleted_at IS NULL
 ON DUPLICATE KEY UPDATE
-  name = IF(VALUES(updated_at) >= updated_at, VALUES(name), name),
-  role = IF(VALUES(updated_at) >= updated_at, VALUES(role), role),
-  company = IF(VALUES(updated_at) >= updated_at, VALUES(company), company),
-  avatar = IF(VALUES(updated_at) >= updated_at, VALUES(avatar), avatar),
-  content = IF(VALUES(updated_at) >= updated_at, VALUES(content), content),
-  rating = IF(VALUES(updated_at) >= updated_at, VALUES(rating), rating),
-  featured = IF(VALUES(updated_at) >= updated_at, VALUES(featured), featured),
-  status = IF(VALUES(updated_at) >= updated_at, VALUES(status), status),
-  revision = GREATEST(revision, VALUES(revision)),
-  updated_at = GREATEST(updated_at, VALUES(updated_at));
+  name = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(name), name),
+  role = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(role), role),
+  company = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(company), company),
+  avatar = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(avatar), avatar),
+  content = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(content), content),
+  rating = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(rating), rating),
+  featured = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(featured), featured),
+  status = IF(VALUES(updated_at) >= reviews.updated_at, VALUES(status), status),
+  revision = GREATEST(reviews.revision, VALUES(revision)),
+  updated_at = GREATEST(reviews.updated_at, VALUES(updated_at));
