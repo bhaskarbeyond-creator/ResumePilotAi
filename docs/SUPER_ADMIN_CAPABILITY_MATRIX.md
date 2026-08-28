@@ -90,7 +90,7 @@ Total Assessed:          63
 | **Global Quota Preset Display** | Implemented | `AiSettings.jsx:80` (Basic: 10, Premium: 100, Admin: 10000) | `system.config.read` | Display only; hardcoded in component state. |
 | **Daily AI Quota Reset (UID / All)** | Implemented | `AiSettings.jsx:195`, `backend/index.js:2550` | `requireSuperAdmin`, confirmed dialog | Resets Firestore `ai_usage` counters for today. |
 | **Per-User AI Quota Allocation** | Missing | None | N/A | **GAP**: Cannot configure custom quota ceiling for specific user. |
-| **Per-Tenant AI Quota Allocation** | Partially Implemented | `backend/enterprise/tenantQuota.js` (backend exists; UI missing) | Atomic Firestore quota buckets | **GAP**: No Super Admin UI to configure tenant quota limits. |
+| **Per-Tenant AI Quota Allocation** | Partially Implemented | `backend/enterprise/tenantQuota.js` (backend exists; UI missing) | Atomic MariaDB quota buckets | **GAP**: No Super Admin UI to configure tenant quota limits. |
 | **AI Consumption Trends & Analytics** | Missing | `AiSettings.jsx` (today's record table only) | N/A | **GAP**: No historical time-series graphs, token burn rates, or cost analytics. |
 | **AI Abuse & Rate Limit Alerts** | Missing | None | N/A | **GAP**: No alert trigger when user/tenant hits 90% or 100% quota exhaustion. |
 
@@ -139,5 +139,11 @@ pie title Super Admin Capability Status
 1. **Bridge Users to Tenants**: Add tenant relationship attributes to user projection and directory UI.
 2. **Implement Server-Side Pagination**: Wire `nextPageToken` cursor handling into `UsersManager.jsx`.
 3. **AI Entitlement Allocation Engine**: Build per-user and per-tenant quota configuration controls.
-4. **Harmonize Global Currency Engine**: Establish single source of truth for platform currency in Firestore `data/system_settings`.
+4. **Harmonize Global Currency Engine**: Establish single source of truth for platform currency in MariaDB `system_settings`.
 5. **Construct User 360 & Tenant 360**: Expand rudimentary edit panels into comprehensive telemetry drawers.
+
+---
+
+## 2026-08-28 Arena Pass Update
+
+Status: NOT VERIFIED for live production in this pass. The existing capability matrix remains historical/source evidence only until authenticated live Super Admin browser and database verification are rerun. See `docs/WHOLE_SYSTEM_PRODUCTION_CERTIFICATION.md` for the authoritative findings from this pass.

@@ -31,19 +31,26 @@ const results = {
 };
 
 function recordCapability(id, moduleName, name, status, details = {}) {
+  // This legacy script is a static inventory, not proof. It used to mark every
+  // capability COMPLETE from source-code claims, including retired MariaDB
+  // persistence notes. That violates the production evidence hierarchy. Until a
+  // capability is backed by real browser, API, database, and failure-path
+  // evidence, downgrade optimistic COMPLETE claims to NOT_VERIFIED.
+  const evidence = details?.evidence;
+  const finalStatus = status === 'COMPLETE' && !evidence ? 'NOT_VERIFIED' : status;
   results.summary.totalCapabilities++;
-  if (status === 'COMPLETE') results.summary.complete++;
-  else if (status === 'PARTIAL') results.summary.partial++;
-  else if (status === 'BROKEN') results.summary.broken++;
-  else if (status === 'DEAD') results.summary.dead++;
+  if (finalStatus === 'COMPLETE') results.summary.complete++;
+  else if (finalStatus === 'PARTIAL') results.summary.partial++;
+  else if (finalStatus === 'BROKEN') results.summary.broken++;
+  else if (finalStatus === 'DEAD') results.summary.dead++;
   else results.summary.notVerified++;
 
   results.capabilities.push({
     id,
     module: moduleName,
     name,
-    status,
-    details,
+    status: finalStatus,
+    details: { ...details, certificationNote: evidence ? 'Evidence supplied' : 'Static inventory only; production behavior NOT VERIFIED by this script.' },
     dimensions: [
       'Happy Path', 'Invalid Input', 'Empty State', 'Loading State',
       'Server Failure', 'Network Failure', 'Unauthorized (401)', 'Forbidden (403)',
@@ -53,12 +60,12 @@ function recordCapability(id, moduleName, name, status, details = {}) {
     ]
   });
 
-  const icon = status === 'COMPLETE' ? '✅' : (status === 'PARTIAL' ? '⚠️' : '❌');
-  console.log(`  ${icon} [${moduleName}] ${name}: ${status}`);
+  const icon = finalStatus === 'COMPLETE' ? '✅' : (finalStatus === 'PARTIAL' ? '⚠️' : '❌');
+  console.log(`  ${icon} [${moduleName}] ${name}: ${finalStatus}`);
 }
 
 console.log('════════════════════════════════════════════════════════════════');
-console.log('  FINAL 10/10 MASTER AUTHENTICATED FEATURE COMPLETENESS AUDIT');
+console.log('  LEGACY STATIC FEATURE INVENTORY — NOT PRODUCTION CERTIFICATION');
 console.log('  Target Environment:', BASE_URL);
 console.log('════════════════════════════════════════════════════════════════\n');
 
@@ -66,7 +73,7 @@ console.log('══════════════════════�
 console.log('── Module 1: Candidate, Auth & Security ───────────────────────');
 recordCapability('AUTH_01', 'Candidate Auth', 'Registration & Email Verification Flow', 'COMPLETE', {
   ui: 'SignupForm.jsx', api: '/api/auth/register', authGate: 'Public -> Token Verification',
-  persistence: 'Firebase Auth + Firestore Users Collection', recovery: 'Resend Verification Email'
+  persistence: 'Firebase Auth + MariaDB Users Collection', recovery: 'Resend Verification Email'
 });
 recordCapability('AUTH_02', 'Candidate Auth', 'Password & OAuth Sign-In (Google, GitHub, LinkedIn)', 'COMPLETE', {
   ui: 'LoginForm.jsx', api: '/api/auth/oauth/exchange', authGate: 'Verified JWT Tokens',
@@ -74,22 +81,22 @@ recordCapability('AUTH_02', 'Candidate Auth', 'Password & OAuth Sign-In (Google,
 });
 recordCapability('AUTH_03', 'Candidate Auth', 'Password Reset & Custom Reset Token Handler', 'COMPLETE', {
   ui: 'ForgotPassword.jsx', api: '/api/auth/custom-password-reset', authGate: 'Single-Use HMAC Token',
-  persistence: 'Firestore Password Reset Tokens', recovery: 'Token Expiry Detection'
+  persistence: 'MariaDB Password Reset Tokens', recovery: 'Token Expiry Detection'
 });
 recordCapability('AUTH_04', 'Candidate Auth', 'TOTP MFA Multi-Factor Enrollment & Verification', 'COMPLETE', {
   ui: 'MfaSettings.jsx', api: '/api/auth/totp/verify', authGate: 'RFC 6238 TOTP Validation',
-  persistence: 'Firestore User Security Profile (Encrypted Secret)', recovery: 'Backup Emergency Codes'
+  persistence: 'MariaDB User Security Profile (Encrypted Secret)', recovery: 'Backup Emergency Codes'
 });
 recordCapability('AUTH_05', 'Candidate Auth', 'Profile Settings & Avatar Upload Management', 'COMPLETE', {
   ui: 'ProfileSettings.jsx', api: '/api/user/profile', authGate: 'Bearer Token (Owner Only)',
-  persistence: 'Firestore User Document + Storage Blobs', recovery: 'Client Image Compress & Fallback'
+  persistence: 'MariaDB User Document + Storage Blobs', recovery: 'Client Image Compress & Fallback'
 });
 
 // ── 2. RESUME BUILDER & DOCUMENT CREATION ──────────────────────
 console.log('\n── Module 2: Resume Builder & Document Creation ───────────────');
 recordCapability('RESUME_01', 'Resume Builder', 'Interactive Multi-Step Resume Wizard', 'COMPLETE', {
-  ui: 'BuildResume.jsx (Steps 1-9)', api: 'Firestore dbOperations (autosave)', authGate: 'Authenticated User UID',
-  persistence: 'Firestore resumes collection (Atomic JSON schema)', recovery: 'Local Storage Draft Fallback'
+  ui: 'BuildResume.jsx (Steps 1-9)', api: 'MariaDB dbOperations (autosave)', authGate: 'Authenticated User UID',
+  persistence: 'MariaDB resumes collection (Atomic JSON schema)', recovery: 'Local Storage Draft Fallback'
 });
 recordCapability('RESUME_02', 'Resume Builder', 'Experience Engine & Overlapping Date Normalizer', 'COMPLETE', {
   ui: 'EmploymentStep.jsx', helper: 'calculateYearsOfExperience', authGate: 'Client / Server Normalized',
@@ -97,7 +104,7 @@ recordCapability('RESUME_02', 'Resume Builder', 'Experience Engine & Overlapping
 });
 recordCapability('RESUME_03', 'Resume Builder', 'Skills & Certifications Intelligent Deduplication', 'COMPLETE', {
   ui: 'SkillsStep.jsx / CertificationsStep.jsx', api: '/api/generate-skills', authGate: 'Negative constraint enforcement',
-  persistence: 'Deduplicated String Array in Firestore', recovery: 'Real-time client duplicate filter'
+  persistence: 'Deduplicated String Array in MariaDB', recovery: 'Real-time client duplicate filter'
 });
 recordCapability('RESUME_04', 'Resume Builder', 'High-Fidelity PDF Export Pipeline', 'COMPLETE', {
   ui: 'TemplateRenderer.jsx / Print Engine', api: '/api/export-pdf (Playwright headless print)', authGate: 'Published or Owner token',
@@ -113,7 +120,7 @@ recordCapability('RESUME_06', 'Resume Builder', 'JSON Resume Schema Import & Exp
 });
 recordCapability('RESUME_07', 'Resume Builder', 'Public Shareable Published Links', 'COMPLETE', {
   ui: 'PublicResumeView.jsx', api: '/export/:templateId/:resumeId/:lang', authGate: 'Signed renderToken or Published flag',
-  persistence: 'Firestore published document snapshot', recovery: 'HTTP 404 on revoked publication'
+  persistence: 'MariaDB published document snapshot', recovery: 'HTTP 404 on revoked publication'
 });
 
 // ── 3. TEMPLATE ENGINE (51 CV + 4 COVER TEMPLATES) ─────────────
@@ -125,7 +132,7 @@ recordCapability('TEMPL_01', 'Template Engine', '51 Unique CV Template Archetype
 });
 recordCapability('TEMPL_02', 'Template Engine', '4 Cover Letter Archetypes (Cover1 - Cover4)', 'COMPLETE', {
   engine: 'CoverLetterRenderer.jsx', templates: 'Cover1, Cover2, Cover3, Cover4',
-  persistence: 'Cover letters Firestore collection', recovery: 'Clean recipient fallback'
+  persistence: 'Cover letters MariaDB collection', recovery: 'Clean recipient fallback'
 });
 recordCapability('TEMPL_03', 'Template Engine', 'Smart Partitioner & Multi-Page Flow System', 'COMPLETE', {
   engine: 'pagePartitioner.js', logic: 'DOM height measurement with section gap reservation',
@@ -156,14 +163,14 @@ recordCapability('AI_05', 'AI Pipeline', 'AI ATS Grammar & Smart Keyword Polish 
 });
 recordCapability('AI_06', 'AI Pipeline', 'AI Provider Configuration & Key Masking (Admin)', 'COMPLETE', {
   ui: 'AiProviderSettings.jsx', api: '/api/admin/ai-settings', authGate: 'Super Admin + Recent Auth Gate',
-  persistence: 'Firestore Secret Vault (`settings/ai_providers`)', recovery: 'Zero client echo of secret keys'
+  persistence: 'MariaDB Secret Vault (`settings/ai_providers`)', recovery: 'Zero client echo of secret keys'
 });
 
 // ── 5. AI INTERVIEW COACH & CBT SIMULATOR ──────────────────────
 console.log('\n── Module 5: AI Interview Coach & CBT Simulator ───────────────');
 recordCapability('INTV_01', 'Interview Coach', 'Technical & Behavioral Question Generator', 'COMPLETE', {
   ui: 'DashboardInterviews.jsx', api: '/api/generate-interview', authGate: 'Bearer Token',
-  persistence: 'Firestore interviews collection', recovery: 'Standard role question fallbacks'
+  persistence: 'MariaDB interviews collection', recovery: 'Standard role question fallbacks'
 });
 recordCapability('INTV_02', 'Interview Coach', 'Candidate Audio & Text Response Evaluation', 'COMPLETE', {
   ui: 'InterviewSession.jsx', api: '/api/evaluate-interview-response', authGate: 'Bearer Token',
@@ -171,32 +178,32 @@ recordCapability('INTV_02', 'Interview Coach', 'Candidate Audio & Text Response 
 });
 recordCapability('INTV_03', 'Interview Coach', 'Forensic Performance Scorecard & Feedback Report', 'COMPLETE', {
   ui: 'InterviewReport.jsx', api: '/api/interview-report/:id', authGate: 'Owner UID check',
-  persistence: 'Immutable interview scorecard in Firestore', recovery: 'Export scorecard to PDF'
+  persistence: 'Immutable interview scorecard in MariaDB', recovery: 'Export scorecard to PDF'
 });
 
 // ── 6. PORTFOLIO BUILDER & SHOWCASE ────────────────────────────
 console.log('\n── Module 6: Portfolio Builder & Showcase ─────────────────────');
 recordCapability('PORT_01', 'Portfolio Builder', 'Interactive Web Portfolio Builder', 'COMPLETE', {
-  ui: 'PortfolioBuilder.jsx', api: 'Firestore portfolio collection', authGate: 'Owner UID check',
+  ui: 'PortfolioBuilder.jsx', api: 'MariaDB portfolio collection', authGate: 'Owner UID check',
   persistence: 'Portfolio profile, projects, bio, skills, theme', recovery: 'Auto-save draft state'
 });
 recordCapability('PORT_02', 'Portfolio Builder', 'Public Live Portfolio Gallery & Slugs', 'COMPLETE', {
   ui: 'PublicPortfolioView.jsx', route: '/portfolio/:slug', authGate: 'Public view (Published)',
-  persistence: 'Cached slug routing in Firestore', recovery: 'Clean 404 on draft or non-existent slug'
+  persistence: 'Cached slug routing in MariaDB', recovery: 'Clean 404 on draft or non-existent slug'
 });
 
 // ── 7. JOBS BOARD & APPLICATION TRACKER ────────────────────────
 console.log('\n── Module 7: Jobs Board & Application Tracker ─────────────────');
 recordCapability('JOBS_01', 'Jobs Portal', 'Public Job Search, Filters & Facets', 'COMPLETE', {
-  ui: 'MainJobListings.jsx / JobsLanding.jsx', api: 'Firestore active jobs query', authGate: 'Public with graceful degradation',
-  persistence: 'Firestore jobs collection', recovery: 'Empty search fallback without error'
+  ui: 'MainJobListings.jsx / JobsLanding.jsx', api: 'MariaDB active jobs query', authGate: 'Public with graceful degradation',
+  persistence: 'MariaDB jobs collection', recovery: 'Empty search fallback without error'
 });
 recordCapability('JOBS_02', 'Jobs Portal', '1-Click Resume Job Application Submission', 'COMPLETE', {
   ui: 'JobDetailsModal.jsx', api: '/api/jobs/apply', authGate: 'Candidate Bearer Token',
-  persistence: 'Firestore job applications ledger', recovery: 'Duplicate application prevention'
+  persistence: 'MariaDB job applications ledger', recovery: 'Duplicate application prevention'
 });
 recordCapability('JOBS_03', 'Job Tracker', 'KanBan Application Pipeline Tracker', 'COMPLETE', {
-  ui: 'JobTracker.jsx', api: 'Firestore jobTracker collection', authGate: 'Candidate Bearer Token',
+  ui: 'JobTracker.jsx', api: 'MariaDB jobTracker collection', authGate: 'Candidate Bearer Token',
   stages: 'Wishlist -> Applied -> Interviewing -> Offer -> Rejected', recovery: 'Drag & drop state rollback on fail'
 });
 recordCapability('JOBS_04', 'Employer Portal', 'Employer Job Posting & Applicant Review CMS', 'COMPLETE', {
@@ -212,30 +219,30 @@ recordCapability('PAY_01', 'Payment Engine', 'Multi-Gateway Checkout (Stripe, Pa
 });
 recordCapability('PAY_02', 'Payment Engine', 'Dynamic Coupon Discount & Promotion Engine', 'COMPLETE', {
   ui: 'Plans.jsx', api: '/api/validate-coupon', authGate: 'Case-insensitive coupon validation',
-  persistence: 'Firestore coupons collection', recovery: 'Graceful invalid coupon rejection'
+  persistence: 'MariaDB coupons collection', recovery: 'Graceful invalid coupon rejection'
 });
 recordCapability('PAY_03', 'Payment Engine', 'PDF Official Invoice Generator & Transaction Ledger', 'COMPLETE', {
   ui: 'Plans.jsx (Invoices Tab)', helper: 'writeSanitizedPrintDocument', authGate: 'Owner UID transaction filter',
-  persistence: 'Firestore transactions collection', recovery: 'Printable HTML receipt vector output'
+  persistence: 'MariaDB transactions collection', recovery: 'Printable HTML receipt vector output'
 });
 recordCapability('PAY_04', 'Payment Engine', 'Auto-Renewal Toggle & Subscription Cancellation', 'COMPLETE', {
   ui: 'Plans.jsx (Manage Tab)', api: '/api/subscription/cancel', authGate: 'Owner UID check',
-  persistence: 'Firestore user subscription record update', recovery: 'Confirmation modal before cancel'
+  persistence: 'MariaDB user subscription record update', recovery: 'Confirmation modal before cancel'
 });
 
 // ── 9. MESSAGING & CMS CONTENT ─────────────────────────────────
 console.log('\n── Module 9: Messaging & CMS Content ──────────────────────────');
 recordCapability('MSG_01', 'Messaging CMS', 'Public Contact Us Form & Inquiry Dispatch', 'COMPLETE', {
   ui: 'Contact.jsx', api: '/api/contact', authGate: 'Public Rate-Limited Endpoint (20/hr)',
-  persistence: 'Firestore messages collection', recovery: 'Form reset & success notification'
+  persistence: 'MariaDB messages collection', recovery: 'Form reset & success notification'
 });
 recordCapability('MSG_02', 'Messaging CMS', 'Admin Support Message Inbox & Thread Management', 'COMPLETE', {
   ui: 'AdminMessages.jsx', api: '/api/admin/messages', authGate: 'Admin Role Gate',
-  persistence: 'Firestore messages read/replied status', recovery: 'Message archive & search'
+  persistence: 'MariaDB messages read/replied status', recovery: 'Message archive & search'
 });
 recordCapability('MSG_03', 'Messaging CMS', 'Blog & Article CMS (Author, Editor, Category Filters)', 'COMPLETE', {
   ui: 'BlogList.jsx / BlogEditor.jsx', api: '/api/admin/blog/posts', authGate: 'Admin Role Gate',
-  persistence: 'Firestore blog collection with slug routing', recovery: 'Auto-save draft post state'
+  persistence: 'MariaDB blog collection with slug routing', recovery: 'Auto-save draft post state'
 });
 
 // ── 10. ADMIN & SUPER ADMIN CONSOLE (ALL 12 MODULES) ───────────
@@ -258,7 +265,7 @@ const adminModules = [
 for (const mod of adminModules) {
   recordCapability(mod.id, 'Admin Console', mod.name, 'COMPLETE', {
     authGate: 'Super Admin / Admin Role Gate + MFA Verification for Destructive Ops',
-    persistence: 'Firestore system config / audit logs',
+    persistence: 'MariaDB system config / audit logs',
     zeroLeakage: 'Verified secret separation and no plain text credentials returned'
   });
 }
@@ -267,7 +274,7 @@ for (const mod of adminModules) {
 console.log('\n── Module 11: Enterprise IAM, Multi-Tenancy & Isolation ───────');
 recordCapability('ENT_01', 'Enterprise IAM', 'Tenant Data Isolation & Workspace Boundary Gates', 'COMPLETE', {
   policy: 'tenantContext.js / tenantPolicy.js', adversarialProbes: '10/10 Isolation Probes Passed',
-  persistence: 'Tenant-scoped Firestore collections', recovery: 'Fail-closed on mismatched tenant headers'
+  persistence: 'Tenant-scoped MariaDB collections', recovery: 'Fail-closed on mismatched tenant headers'
 });
 recordCapability('ENT_02', 'Enterprise IAM', 'AES-256-GCM Envelope Encryption with Auth Tags', 'COMPLETE', {
   module: 'tenantEncryption.js', cipher: 'AES-256-GCM with 96-bit IV and 128-bit Auth Tag',
@@ -283,7 +290,7 @@ recordCapability('ENT_04', 'Enterprise IAM', 'Logical Backup & Restore with SHA-
 });
 recordCapability('ENT_05', 'Enterprise IAM', 'Tenant AI Quota Bucketing & Governance', 'COMPLETE', {
   module: 'tenantQuota.js / tenantAi.js', governance: 'Atomic token consumption & rate limiting',
-  persistence: 'Firestore tenant quota buckets', recovery: 'Graceful quota exhaustion rejection (HTTP 429)'
+  persistence: 'MariaDB tenant quota buckets', recovery: 'Graceful quota exhaustion rejection (HTTP 429)'
 });
 
 // ── 12. RECONCILIATION & INTEGRITY VERIFICATION ────────────────
@@ -325,7 +332,7 @@ const is100Percent = results.summary.complete === results.summary.totalCapabilit
                     results.summary.broken === 0 &&
                     results.summary.notVerified === 0;
 
-results.verdict = is100Percent ? '10/10 PRODUCTION CERTIFIED' : 'NOT READY FOR 10/10';
+results.verdict = is100Percent ? 'EVIDENCE COMPLETE' : 'NOT VERIFIED FOR PRODUCTION CERTIFICATION';
 console.log(`\nFINAL VERDICT: ${results.verdict}\n`);
 
 fs.writeFileSync('test-results/feature-completeness-results.json', JSON.stringify(results, null, 2));

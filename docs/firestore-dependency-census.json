@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-08-28T03:31:49.869Z",
+    "generatedAt": "2026-08-28T20:05:15.189Z",
     "status": "VERIFIED",
     "retainedFirebaseSurface": [
       "Firebase Authentication client",
@@ -12,14 +12,14 @@
       "scripts",
       "tests"
     ],
-    "sourceFilesScanned": 852,
-    "productionFilesScanned": 618,
-    "testFilesScanned": 234,
+    "sourceFilesScanned": 855,
+    "productionFilesScanned": 614,
+    "testFilesScanned": 241,
     "prohibitedProductionHits": 0,
     "activeDataPlaneHits": 0,
     "testOnlyHits": 1,
     "retainedIdentityImports": 16,
-    "terminologyReferences": 185,
+    "terminologyReferences": 155,
     "pathBasedRuntimeExemptions": 0
   },
   "productionFindings": [],
@@ -134,91 +134,77 @@
     },
     {
       "file": "backend/index.js",
-      "line": 1524,
+      "line": 1692,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// (migrated from Firebase Realtime Database); no Firebase database is",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 1672,
+      "line": 1840,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// Authoritative profile read from MySQL; Firestore is never consulted.",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 1717,
+      "line": 1885,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// Authoritative notification record goes to MySQL; the Firestore",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 2123,
+      "line": 2291,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// MySQL is the authoritative configuration store; Firestore is never",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 2380,
+      "line": 2625,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// MySQL system_settings is the authoritative store; Firestore is never",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 3664,
+      "line": 3926,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "* Firestore has no part in readiness — the data plane was removed from the",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 3721,
+      "line": 3983,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// MySQL-backed (repository), independent of any Firestore availability.",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 4739,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "// 'custom_pages'); Firestore is never required.",
-      "testOnly": false
-    },
-    {
-      "file": "backend/index.js",
-      "line": 4857,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "// MySQL is the authoritative trusted-by store; Firestore is never consulted.",
-      "testOnly": false
-    },
-    {
-      "file": "backend/index.js",
-      "line": 5334,
+      "line": 5490,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// system_settings.system_settings). Firestore is never consulted.",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 5462,
+      "line": 5618,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// surfaced as a controlled error — never silently redirected to Firestore.",
       "testOnly": false
     },
     {
       "file": "backend/index.js",
-      "line": 5569,
+      "line": 5725,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "* provider configured (zero-Firestore certification mode). This endpoint lets",
       "testOnly": false
     },
     {
       "file": "backend/repositories/MySQLRepository.js",
-      "line": 1332,
+      "line": 1638,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// 9b. FAVOURITES (MySQL authoritative; formerly Firestore users/{uid}/favourites)",
       "testOnly": false
@@ -462,76 +448,6 @@
       "testOnly": false
     },
     {
-      "file": "src/data/applicationData.js",
-      "line": 967,
-      "kind": "RETAINED_IDENTITY_IMPORT",
-      "text": "firebase/auth",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 989,
-      "kind": "RETAINED_IDENTITY_IMPORT",
-      "text": "firebase/auth",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 1000,
-      "kind": "RETAINED_IDENTITY_IMPORT",
-      "text": "firebase/auth",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 4,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "* ARCHITECTURE (zero-Firestore):",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 6,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "*  MySQL/MariaDB — the single authoritative store. There is NO Firestore",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 8,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "*  fallback to Firestore. Firebase Auth remains the identity plane only.",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 13,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "*  Firestore.",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 126,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "// Realtime chat delivery is read through the backend API (never Firestore).",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 1660,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "// to Firestore (which no longer exists on this path).",
-      "testOnly": false
-    },
-    {
-      "file": "src/data/applicationData.js",
-      "line": 2292,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "// the legacy Firestore realtime listener no longer exists on this path.",
-      "testOnly": false
-    },
-    {
       "file": "src/data/entitlements.js",
       "line": 8,
       "kind": "TERMINOLOGY_REFERENCE",
@@ -539,17 +455,80 @@
       "testOnly": false
     },
     {
-      "file": "src/identity/accountProfile.js",
-      "line": 28,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "* entitlement. There is no Firestore fallback.",
-      "testOnly": false
-    },
-    {
       "file": "src/main.jsx",
       "line": 260,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// eliminating any direct browser network dependency on Firestore.",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 960,
+      "kind": "RETAINED_IDENTITY_IMPORT",
+      "text": "firebase/auth",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 982,
+      "kind": "RETAINED_IDENTITY_IMPORT",
+      "text": "firebase/auth",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 993,
+      "kind": "RETAINED_IDENTITY_IMPORT",
+      "text": "firebase/auth",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 4,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "* ARCHITECTURE (zero-Firestore):",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 6,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "*  MySQL/MariaDB — the single authoritative store. There is NO Firestore",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 8,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "*  fallback to Firestore. Firebase Auth remains the identity plane only.",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 13,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "*  Firestore.",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 126,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "// Realtime chat delivery is read through the backend API (never Firestore).",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 1688,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "// to Firestore (which no longer exists on this path).",
+      "testOnly": false
+    },
+    {
+      "file": "src/services/api/platform.js",
+      "line": 2343,
+      "kind": "TERMINOLOGY_REFERENCE",
+      "text": "// the legacy Firestore realtime listener no longer exists on this path.",
       "testOnly": false
     },
     {
@@ -743,14 +722,14 @@
     },
     {
       "file": "tests/ats-module-toggle.test.mjs",
-      "line": 174,
+      "line": 176,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "// Settings are read from the MySQL-backed platform config API, never Firestore.",
       "testOnly": true
     },
     {
       "file": "tests/ats-module-toggle.test.mjs",
-      "line": 237,
+      "line": 239,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "assert.doesNotMatch(main, /onSnapshot|settingsFromSnapshot|firestore-server/);",
       "testOnly": true
@@ -1096,195 +1075,6 @@
       "line": 195,
       "kind": "TERMINOLOGY_REFERENCE",
       "text": "!/net::|Failed to load resource|firestore|WebChannel|analytics/i.test(entry));",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 69,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firebase Auth + Firestore Users Collection', recovery: 'Resend Verification Email'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 77,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore Password Reset Tokens', recovery: 'Token Expiry Detection'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 81,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore User Security Profile (Encrypted Secret)', recovery: 'Backup Emergency Codes'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 85,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore User Document + Storage Blobs', recovery: 'Client Image Compress & Fallback'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 91,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "ui: 'BuildResume.jsx (Steps 1-9)', api: 'Firestore dbOperations (autosave)', authGate: 'Authenticated User UID',",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 92,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore resumes collection (Atomic JSON schema)', recovery: 'Local Storage Draft Fallback'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 100,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Deduplicated String Array in Firestore', recovery: 'Real-time client duplicate filter'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 116,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore published document snapshot', recovery: 'HTTP 404 on revoked publication'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 128,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Cover letters Firestore collection', recovery: 'Clean recipient fallback'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 159,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore Secret Vault (`settings/ai_providers`)', recovery: 'Zero client echo of secret keys'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 166,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore interviews collection', recovery: 'Standard role question fallbacks'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 174,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Immutable interview scorecard in Firestore', recovery: 'Export scorecard to PDF'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 180,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "ui: 'PortfolioBuilder.jsx', api: 'Firestore portfolio collection', authGate: 'Owner UID check',",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 185,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Cached slug routing in Firestore', recovery: 'Clean 404 on draft or non-existent slug'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 191,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "ui: 'MainJobListings.jsx / JobsLanding.jsx', api: 'Firestore active jobs query', authGate: 'Public with graceful degradation',",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 192,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore jobs collection', recovery: 'Empty search fallback without error'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 196,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore job applications ledger', recovery: 'Duplicate application prevention'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 199,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "ui: 'JobTracker.jsx', api: 'Firestore jobTracker collection', authGate: 'Candidate Bearer Token',",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 215,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore coupons collection', recovery: 'Graceful invalid coupon rejection'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 219,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore transactions collection', recovery: 'Printable HTML receipt vector output'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 223,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore user subscription record update', recovery: 'Confirmation modal before cancel'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 230,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore messages collection', recovery: 'Form reset & success notification'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 234,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore messages read/replied status', recovery: 'Message archive & search'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 238,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore blog collection with slug routing', recovery: 'Auto-save draft post state'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 261,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore system config / audit logs',",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 270,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Tenant-scoped Firestore collections', recovery: 'Fail-closed on mismatched tenant headers'",
-      "testOnly": true
-    },
-    {
-      "file": "tests/feature-completeness-audit.mjs",
-      "line": 286,
-      "kind": "TERMINOLOGY_REFERENCE",
-      "text": "persistence: 'Firestore tenant quota buckets', recovery: 'Graceful quota exhaustion rejection (HTTP 429)'",
       "testOnly": true
     },
     {

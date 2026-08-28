@@ -1541,7 +1541,7 @@
         "placeholder": "e.g. Amazon Web Services"
       },
       "date": {
-        "label": "Date Issued",
+        "label": "Date Earned",
         "placeholder": "e.g. 2024"
       }
     }
