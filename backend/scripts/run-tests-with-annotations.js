@@ -28,8 +28,13 @@ child.stderr.on('data', chunk => capture(chunk, process.stderr));
 child.on('exit', (code, signal) => {
   if (code || signal) {
     const lines = buffer.split(/\r?\n/);
-    const failureIndex = lines.findLastIndex(line => /^not ok\b|^# (AssertionError|Error|Subtest:)/.test(line));
-    const excerpt = lines.slice(Math.max(0, failureIndex - 8), failureIndex + 35).join(' ').replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').slice(0, 1200);
+    const notOk = lines
+      .map((line, index) => ({ line, index }))
+      .filter(item => /^not ok\b/.test(item.line));
+    const source = notOk.length
+      ? notOk.flatMap(item => lines.slice(Math.max(0, item.index - 3), Math.min(lines.length, item.index + 18)))
+      : lines.slice(-80);
+    const excerpt = source.join(' ').replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').slice(0, 1800);
     if (process.env.GITHUB_ACTIONS) {
       console.error(`::error title=Backend node:test failure::${excerpt || `node --test exited ${code || signal}`}`);
     }
