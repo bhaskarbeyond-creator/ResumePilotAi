@@ -310,7 +310,7 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
                                     {/* Date issued */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <InputField
-                                            label={t('CertificationsStep.fields.date.label', 'Date Issued')}
+                                            label={t('CertificationsStep.fields.date.label', 'Date Earned')}
                                             name={`certification-date-${certification.id}`}
                                             placeholder={t(
                                                 'CertificationsStep.fields.date.placeholder',

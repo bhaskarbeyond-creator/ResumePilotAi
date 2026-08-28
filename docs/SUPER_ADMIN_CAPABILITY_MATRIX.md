@@ -139,5 +139,11 @@ pie title Super Admin Capability Status
 1. **Bridge Users to Tenants**: Add tenant relationship attributes to user projection and directory UI.
 2. **Implement Server-Side Pagination**: Wire `nextPageToken` cursor handling into `UsersManager.jsx`.
 3. **AI Entitlement Allocation Engine**: Build per-user and per-tenant quota configuration controls.
-4. **Harmonize Global Currency Engine**: Establish single source of truth for platform currency in Firestore `data/system_settings`.
+4. **Harmonize Global Currency Engine**: Establish single source of truth for platform currency in MariaDB `system_settings`.
 5. **Construct User 360 & Tenant 360**: Expand rudimentary edit panels into comprehensive telemetry drawers.
+
+---
+
+## 2026-08-28 Arena Pass Update
+
+Status: NOT VERIFIED for live production in this pass. The existing capability matrix remains historical/source evidence only until authenticated live Super Admin browser and database verification are rerun. See `docs/WHOLE_SYSTEM_PRODUCTION_CERTIFICATION.md` for the authoritative findings from this pass.

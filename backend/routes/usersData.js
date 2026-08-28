@@ -2,6 +2,7 @@ const express = require('express');
 const { getRepository } = require('../repositories');
 const { requireAuth, permissionsFor } = require('../security/auth');
 const { replyRepoError } = require('./errorResponder');
+const databaseAuthority = require('../database/authority');
 const { sanitizeProfilePatch, projectEditableProfile } = require('../services/profileSanitizer');
 const router = express.Router();
 
@@ -38,6 +39,16 @@ router.get('/profile', requireAuth, async (req, res) => {
 // UPDATE inside the repository transaction).
 router.post('/profile', requireAuth, express.json({ limit: '2mb' }), async (req, res) => {
     try {
+        // When a prior probe/read has established that MariaDB is unavailable,
+        // fail closed before request-shape validation. During an authoritative
+        // data-plane outage no write is accepted or acknowledged, and callers
+        // receive the outage contract rather than a misleading validation error.
+        if (!databaseAuthority.canAcceptWrites()) {
+            return replyRepoError(res, Object.assign(
+                new Error('Service degraded: the authoritative MariaDB database is unavailable. Write was not accepted.'),
+                { code: 'SERVICE_DEGRADED', status: 503 }
+            ), 'Failed to save user profile');
+        }
         const expectedRevision = Number(req.body?.expectedRevision);
         if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
             return res.status(400).json({ success: false, code: 'PROFILE_REVISION_REQUIRED', error: 'A non-negative expectedRevision is required.' });
