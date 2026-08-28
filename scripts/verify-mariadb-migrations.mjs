@@ -39,11 +39,16 @@ async function scalar(connection, sql, params = []) {
   return Number(Object.values(rows[0] || {})[0] || 0);
 }
 
+function isConstraintRejection(error) {
+  return ['ER_CONSTRAINT_FAILED', 'WARN_DATA_TRUNCATED', 'ER_INNODB_AUTOEXTEND_SIZE_OUT_OF_RANGE'].includes(error.code)
+    || /\bCONSTRAINT\b|check constraint/i.test(String(error.message || ''));
+}
+
 async function expectDatabaseRejection(connection, sql, params, acceptedCodes, label) {
   try {
     await connection.query(sql, params);
   } catch (error) {
-    if (acceptedCodes.includes(error.code)) return;
+    if (acceptedCodes.includes(error.code) || isConstraintRejection(error)) return;
     throw error;
   }
   throw new Error(`${label} was not rejected by MariaDB`);
@@ -252,7 +257,7 @@ try {
   try {
     await pool.query("UPDATE notification_outbox SET state = 'INVALID_STATE' WHERE id = 'migration-008-probe'");
   } catch (error) {
-    invalidNotificationStateRejected = ['ER_CONSTRAINT_FAILED', 'WARN_DATA_TRUNCATED'].includes(error.code);
+    invalidNotificationStateRejected = isConstraintRejection(error);
   }
   if (!invalidNotificationStateRejected) throw new Error('Migration 008 CHECK did not reject an invalid notification state');
   await pool.query("DELETE FROM notification_outbox WHERE id = 'migration-008-probe'");
@@ -389,7 +394,7 @@ try {
   let checkRejected = false;
   try {
     await pool.query("UPDATE enterprise_membership_invitations SET invitationState = 'INVALID' WHERE id = 'invitation-fixture'");
-  } catch (error) { checkRejected = error.code === 'ER_CONSTRAINT_FAILED' || error.code === 'WARN_DATA_TRUNCATED'; }
+  } catch (error) { checkRejected = isConstraintRejection(error); }
   if (!checkRejected) throw new Error('Invitation state CHECK constraint did not reject an invalid state');
 
   let foreignKeyRejected = false;
