@@ -5,7 +5,7 @@ Generated: 2026-08-29T00:00:00+05:30
 ## Identity
 
 1. Starting SHA: f434b90f32e560c4e8ca0eeb183f29ff2316f341
-2. Final local SHA before commit: f434b90f32e560c4e8ca0eeb183f29ff2316f341
+2. Final local SHA: ccdf0d4b0114971294cd072d5faee5ff167e237f
 3. origin/main SHA: f434b90f32e560c4e8ca0eeb183f29ff2316f341
 4. Production SHA: NOT VERIFIED as deployed artifact; unauthenticated health page returned the JSON below when accessible through Arena fetch tooling.
 5. Production deployment timestamp: NOT VERIFIED — deployment was not performed in this turn.
@@ -33,6 +33,7 @@ Local Python/curl TLS probes from the sandbox still failed with `SSLZeroReturnEr
 | RP-P1-006 | P1 | Certification / audit tooling integrity | `tests/feature-completeness-audit.mjs` claimed `10/10 PRODUCTION CERTIFIED` from static assertions and retained retired Firestore persistence descriptions. | Legacy audit script treated source inventory as production proof, violating the evidence hierarchy. | Downgraded optimistic COMPLETE claims without attached evidence to NOT_VERIFIED and changed the verdict/title so the script cannot certify production by itself. | `tests/feature-completeness-audit.mjs` | None | `node tests/feature-completeness-audit.mjs` now reports 54 NOT_VERIFIED and verdict `NOT VERIFIED FOR PRODUCTION CERTIFICATION` | N/A | N/A | N/A | Evidence-hierarchy failure path verified | FIXED |
 | RP-P2-007 | P2 | Architecture documentation | `docs/SUPER_ADMIN_TARGET_OPERATING_MODEL.md` still described Firestore tenant context, Firestore quota transactions, and Firestore currency source of truth. | Historical TOM not updated after MariaDB ownership cutover. | Reworded active target model to MariaDB tenant context, MariaDB quota transactions, and MariaDB `system_settings.currency`. | `docs/SUPER_ADMIN_TARGET_OPERATING_MODEL.md` | None | Static grep after cleanup | N/A | N/A | N/A | N/A | FIXED |
 | RP-P1-008 | P1 | Authentication UI / security messaging | Login/register/OAuth error handlers could echo raw Firebase/SDK error messages to end users for unmapped provider failures. | Error branches used `error.message`/`e.message` as the display fallback. | Added `getSafeAuthErrorMessage()` and routed login/register email and OAuth fallback errors through user-safe messages while preserving specific account-collision, popup, invalid-credential, and configuration guidance. | `src/utils/authErrorMessages.js`, `src/components/auth/login/Login.jsx`, `src/components/auth/register/Register.jsx`, `tests/auth-error-messages.test.mjs`, `package.json` | None | `npm run test:security:static` = 44/44 passed; `npm run lint` passed; `npm run build` passed | NOT VERIFIED (browser unavailable) | N/A | NOT DEPLOYED | Unmapped provider-internal error message no longer echoed in unit regression | FIXED |
+| RP-P1-009 | P1 | CI migration gate / release safety | PR quality gate failed before lint/tests because `scripts/verify-mariadb-migrations.mjs` only accepted migrations through 012 while the repository contains 013 and 014. | The isolated migration verifier was not extended when CMS relational authority and fail-closed discovery-default migrations landed. | Updated the verifier to require latest version 014, validate 013 CMS columns/check constraint and 014 fail-closed public defaults, roll back 014/013 before 012-005, and reapply 005-014 after rollback. | `scripts/verify-mariadb-migrations.mjs` | Verifier logic only; live isolated MariaDB rerun is pending CI because local sandbox has no `MARIADB_ADMIN_PASSWORD`/Docker DB. | `node --check scripts/verify-mariadb-migrations.mjs`, `npm run lint`, `npm run db:verify`, `npm run test:security:static` passed | N/A | NOT VERIFIED locally against MariaDB 11.4; expected to be verified by CI | GitHub PR check evidence showed failure at migration verifier step for old head `234b58d...` | Missing-env local run returns controlled requirement for isolated DB credentials | FIXED LOCALLY / NOT VERIFIED IN CI |
 
 ## Verification Performed
 
@@ -42,6 +43,8 @@ Local Python/curl TLS probes from the sandbox still failed with `SSLZeroReturnEr
 - `npm run lint`: passed after auth/UI changes.
 - `npm run test:product`: 383 tests, 383 passed; additional template/doc suites passed (1, 8, and 3 tests respectively).
 - `npm run db:verify`: 14/14 passed including zero-Firestore static checks.
+- `node --check scripts/verify-mariadb-migrations.mjs`: syntax passed after extending migration verifier to version 014.
+- Local `node scripts/verify-mariadb-migrations.mjs`: NOT VERIFIED against MariaDB because `MARIADB_ADMIN_PASSWORD` is absent in sandbox; GitHub CI is the intended isolated MariaDB evidence gate.
 - `npm run test:enterprise`: backend enterprise suite plus enterprise UI tests passed; final UI test block showed 23/23 passed.
 - `node --test --test-force-exit --test-concurrency=1 tests/certification/mysql-outage.test.mjs`: 6/6 passed after fix.
 - `node tests/feature-completeness-audit.mjs`: legacy static audit now reports 54 NOT_VERIFIED and cannot certify production by itself.
@@ -72,4 +75,4 @@ No credible p50/p95/p99 production performance benchmark was executed. Performan
 
 ## Final Decision
 
-DEFERRED for production certification. Local defects RP-P0-001, RP-P1-002, RP-P1-006, RP-P2-007, and RP-P1-008 are FIXED with regression evidence. Whole-system production certification remains NOT VERIFIED because production deployment/live browser/database/backup/restore/outbox verification could not be completed in this turn.
+DEFERRED for production certification. Local defects RP-P0-001, RP-P1-002, RP-P1-006, RP-P2-007, RP-P1-008, and RP-P1-009 are FIXED with regression evidence. Whole-system production certification remains NOT VERIFIED because production deployment/live browser/database/backup/restore/outbox verification could not be completed in this turn.
