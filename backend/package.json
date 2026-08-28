@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test --test-concurrency=1 --test-force-exit test/*.test.js",
+    "test": "node scripts/run-tests-with-annotations.js",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js"
