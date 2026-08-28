@@ -31,19 +31,26 @@ const results = {
 };
 
 function recordCapability(id, moduleName, name, status, details = {}) {
+  // This legacy script is a static inventory, not proof. It used to mark every
+  // capability COMPLETE from source-code claims, including retired Firestore
+  // persistence notes. That violates the production evidence hierarchy. Until a
+  // capability is backed by real browser, API, database, and failure-path
+  // evidence, downgrade optimistic COMPLETE claims to NOT_VERIFIED.
+  const evidence = details?.evidence;
+  const finalStatus = status === 'COMPLETE' && !evidence ? 'NOT_VERIFIED' : status;
   results.summary.totalCapabilities++;
-  if (status === 'COMPLETE') results.summary.complete++;
-  else if (status === 'PARTIAL') results.summary.partial++;
-  else if (status === 'BROKEN') results.summary.broken++;
-  else if (status === 'DEAD') results.summary.dead++;
+  if (finalStatus === 'COMPLETE') results.summary.complete++;
+  else if (finalStatus === 'PARTIAL') results.summary.partial++;
+  else if (finalStatus === 'BROKEN') results.summary.broken++;
+  else if (finalStatus === 'DEAD') results.summary.dead++;
   else results.summary.notVerified++;
 
   results.capabilities.push({
     id,
     module: moduleName,
     name,
-    status,
-    details,
+    status: finalStatus,
+    details: { ...details, certificationNote: evidence ? 'Evidence supplied' : 'Static inventory only; production behavior NOT VERIFIED by this script.' },
     dimensions: [
       'Happy Path', 'Invalid Input', 'Empty State', 'Loading State',
       'Server Failure', 'Network Failure', 'Unauthorized (401)', 'Forbidden (403)',
@@ -53,12 +60,12 @@ function recordCapability(id, moduleName, name, status, details = {}) {
     ]
   });
 
-  const icon = status === 'COMPLETE' ? '✅' : (status === 'PARTIAL' ? '⚠️' : '❌');
-  console.log(`  ${icon} [${moduleName}] ${name}: ${status}`);
+  const icon = finalStatus === 'COMPLETE' ? '✅' : (finalStatus === 'PARTIAL' ? '⚠️' : '❌');
+  console.log(`  ${icon} [${moduleName}] ${name}: ${finalStatus}`);
 }
 
 console.log('════════════════════════════════════════════════════════════════');
-console.log('  FINAL 10/10 MASTER AUTHENTICATED FEATURE COMPLETENESS AUDIT');
+console.log('  LEGACY STATIC FEATURE INVENTORY — NOT PRODUCTION CERTIFICATION');
 console.log('  Target Environment:', BASE_URL);
 console.log('════════════════════════════════════════════════════════════════\n');
 
@@ -325,7 +332,7 @@ const is100Percent = results.summary.complete === results.summary.totalCapabilit
                     results.summary.broken === 0 &&
                     results.summary.notVerified === 0;
 
-results.verdict = is100Percent ? '10/10 PRODUCTION CERTIFIED' : 'NOT READY FOR 10/10';
+results.verdict = is100Percent ? 'EVIDENCE COMPLETE' : 'NOT VERIFIED FOR PRODUCTION CERTIFICATION';
 console.log(`\nFINAL VERDICT: ${results.verdict}\n`);
 
 fs.writeFileSync('test-results/feature-completeness-results.json', JSON.stringify(results, null, 2));

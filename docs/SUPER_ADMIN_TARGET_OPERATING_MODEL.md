@@ -54,7 +54,7 @@ graph TD
 | `ADMIN` | Platform Operational | `users.*`, `tenants.*`, `system.config.*`, `payments.manage`, `email.*`, `notifications.send` | Multi-factor auth required. Cannot mutate `SUPER_ADMIN` claims. |
 | `AUDITOR` | Global Read-Only | `audit.read`, `security.read`, `users.read`, `tenants.read`, `billing.read`, `ai.read` | Cannot execute state modifications. Read-only compliance inspection. |
 | `SUPPORT` | Platform Triage | `users.read`, `email.logs.read`, `tenants.read`, `tickets.manage` | Read-only identity access; cannot view hashed secrets or alter billing. |
-| `ENTERPRISE_ADMIN` | Tenant-Scoped | `tenant.members.manage`, `tenant.roles.manage`, `tenant.ai.policy`, `tenant.billing.view`, `tenant.audit.read` | Restricted strictly to tenant namespace via Firestore context filter. |
+| `ENTERPRISE_ADMIN` | Tenant-Scoped | `tenant.members.manage`, `tenant.roles.manage`, `tenant.ai.policy`, `tenant.billing.view`, `tenant.audit.read` | Restricted strictly to tenant namespace via server-side MariaDB tenant context filters. |
 | `ENTERPRISE_MEMBER` | Tenant-Scoped | `tenant.resumes.write`, `tenant.interviews.execute`, `tenant.ai.consume` | Subject to tenant quota bucket policies and model allowlists. |
 | `EMPLOYER` | Domain-Scoped | `jobs.manage`, `applications.review`, `candidates.contact` | Governed by Employer verification and review gates. |
 | `USER` | Consumer Scope | `resumes.manage`, `coverletters.manage`, `interviews.execute`, `subscription.self` | Default self-service consumer account. |
@@ -64,18 +64,16 @@ graph TD
 To bridge the critical disconnect between platform users and enterprise organizations, the database model and API projections must bind users to tenant memberships bi-directionally:
 
 ```
-Firestore Schema:
-users/{uid}
-├── email, displayName, role (platform-level), preferredCurrency
-├── tenantMemberships: [
-│     { tenantId: "acme-corp", role: "ENTERPRISE_ADMIN", joinedAt: Timestamp },
-│     { tenantId: "dev-labs", role: "ENTERPRISE_MEMBER", joinedAt: Timestamp }
-│   ]
-└── aiQuotaOverride: { dailyLimit: 500, expiresAt: Timestamp, reason: "Enterprise Pilot" }
+MariaDB tenant schema:
+users
+├── id, email, displayName, role reference, preferredCurrency
+├── profile and entitlement metadata
+└── server-owned AI quota override metadata where enabled
 
-tenants/{tenantId}/members/{uid}
-├── uid: "usr_...", email: "john@acme.com", role: "ENTERPRISE_ADMIN"
-└── status: "ACTIVE", joinedAt: Timestamp, invitedBy: "usr_superadmin"
+tenants / tenant_memberships
+├── tenants.id, tenant slug, lifecycle status, configuration
+├── tenant_memberships.tenant_id, principal_id, subject_id, role, status
+└── tenant-scoped resource tables and audit/outbox rows keyed by tenant_id/workspace_id
 ```
 
 ---
@@ -118,7 +116,7 @@ LEVEL 3: USER-LEVEL OVERRIDES & GRANTS (Configured in User 360)
 
 ### 4.2 Architectural Rules for AI Control-Plane
 1. **Zero Client Authority**: AI generation endpoints must never accept client-supplied model overrides, quota balances, or token limits. All constraints derive from server-verified tenant policies (`tenantAi.js`).
-2. **Atomic Quota Bucketing**: Usage increments must execute via atomic Firestore transaction buckets (`tenantQuota.js`) preventing concurrency race overflows.
+2. **Atomic Quota Bucketing**: Usage increments must execute via atomic MariaDB transactions (`tenantQuota.js`) preventing concurrency race overflows.
 3. **Exhaustion Telemetry & Alerts**: System must trigger automated administrative notifications when a tenant or user reaches 80%, 90%, and 100% of their allocation limit.
 
 ---
@@ -127,7 +125,7 @@ LEVEL 3: USER-LEVEL OVERRIDES & GRANTS (Configured in User 360)
 
 ### 5.1 Single Platform Currency Truth
 
-1. **Centralized Platform Currency**: A single source of truth in Firestore (`data/system_settings.currency`) governing platform pricing, invoices, and analytics.
+1. **Centralized Platform Currency**: A single source of truth in MariaDB (`system_settings.currency`) governing platform pricing, invoices, and analytics.
 2. **Multi-Gateway Price Normalization**: Payment intents generated for Stripe (USD/EUR), Razorpay (INR), PayPal, Paytm, or PhonePe must dynamically resolve exchange rates and smallest currency units (cents/paise) against the central catalog.
 3. **Currency-Aware Tax Engine**: GST rules (CGST, SGST, IGST) must automatically apply exclusively to INR domestic transactions, while international foreign-currency orders default to export tax-exempt status.
 
