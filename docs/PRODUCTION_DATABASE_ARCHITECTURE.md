@@ -5,7 +5,7 @@ Target System: ResumePilot AI
 Authoritative Store: MariaDB 11.8.8-MariaDB-log (`u727965524_airesume` on `127.0.0.1:3306`)
 Identity Plane: Firebase Authentication (Tokens & MFA Only)
 Production Host: `https://airesume.projectdemo.guru`
-Release Commit SHA: `51db3b1efa02f7dc2c4bf1e2fb44e6df0150f502`
+Release Commit SHA: `778adf20cc18cdc2e5becca8ec98fc98ccd2b648`
 
 ---
 
@@ -39,7 +39,7 @@ ResumePilot AI enforces a **single-owner, cloud-first, ACID-compliant database a
 
 ## 2. MariaDB 11.8.8-log Engine Configuration (Live Verified)
 
-Empirical telemetry extracted directly from production MariaDB instance:
+Empirical telemetry extracted directly from production MariaDB instance (audit: 2026-08-29):
 
 | Configuration Variable | Production Value | Architectural Rationale |
 |---|---|---|
@@ -48,9 +48,15 @@ Empirical telemetry extracted directly from production MariaDB instance:
 | **InnoDB Buffer Pool Size** | `107,803,049,984 bytes` (~100.4 GB) | Retains working datasets and indexes entirely in RAM, minimizing disk I/O. |
 | **InnoDB Log File Size** | `32,212,254,720 bytes` (~30.0 GB) | Large redo log capacity accommodating high-throughput write bursts and crash recovery. |
 | **Transaction Isolation** | `READ-COMMITTED` | Eliminates gap-lock contention; enhances concurrency while guaranteeing committed reads. |
-| **Max Connections** | `2,000` (Max Used: `425`, Current: `59`) | Substantial concurrency headroom without memory exhaustion risks. |
-| **Slow Query Log** | `ON` (`long_query_time: 3.0s`) | Continuous audit of queries exceeding latency budget. |
+| **Max Connections** | `2,000` (Max Used: `425`, Current: `66`) | Substantial concurrency headroom without memory exhaustion risks. |
+| **Slow Query Log** | `ON` (`long_query_time: 3.0s`) | Continuous audit of queries exceeding latency budget. Zero slow queries recorded. |
 | **Total Query Volume** | `72.83+ Billion queries` (Average: `13,275 QPS`) | Proven sustained production workload. |
+| **innodb_flush_log_at_trx_commit** | **`2`** | OS-BUFFERED: redo log written per commit but flushed by OS (~1s loss on OS crash). Hosting provider setting. |
+| **sync_binlog** | **`0`** | Binary log not synced per commit. Currently moot (binlog disabled). |
+| **log_bin** | **`0` (DISABLED)** | Binary logging is disabled at the server level. PITR is structurally impossible. |
+| **innodb_doublewrite** | `ON` | Partial-write crash protection enabled. |
+| **Database Size** | `10.75 MB` | Entire working dataset fits in memory. |
+| **Buffer Pool Hit Ratio** | `99.9689%` | Near-perfect RAM cache efficiency. |
 
 ---
 
@@ -144,11 +150,16 @@ Side effects (email notifications, webhook deliveries, enterprise sync) are deco
 
 ---
 
-## 7. Operational Resilience & Fallback Posture
+## 7. Operational Resilience & Failure Behavior
 
-| Scenario | System Reaction | Data Integrity Guarantee |
-|---|---|---|
-| **MariaDB Unreachable** | Express middleware catches pool timeout; returns HTTP 503 `DATABASE_UNAVAILABLE`. | Zero data written to unauthorized fallback stores; zero data fabricated. |
-| **Worker Process Crash** | PM2 auto-restarts daemon; unacknowledged outbox leases expire and are picked up. | Exactly-at-least-once task delivery guaranteed. |
-| **Duplicate Webhook** | Idempotency guard checks `payment_webhook_events` primary key; returns HTTP 200 without duplicate billing. | No duplicate invoice or subscription records. |
-| **Concurrent Edit Collision** | CAS guard detects revision mismatch (`affectedRows === 0`); returns HTTP 409 Conflict. | Zero lost updates. |
+| Scenario | System Reaction | Data Integrity Guarantee | Status |
+|---|---|---|---|
+| **MariaDB Unreachable** | Express middleware catches pool timeout; returns HTTP 503 `DATABASE_UNAVAILABLE`. | Zero data written to unauthorized fallback stores; zero data fabricated. | **VERIFIED** (mysql-outage.test.mjs 6/6 PASS) |
+| **Worker Process Crash** | PM2 auto-restarts daemon; unacknowledged outbox leases expire and are picked up. | Exactly-at-least-once task delivery guaranteed. | **VERIFIED** (PM2 restart: 1,272 ms) |
+| **Duplicate Webhook** | Idempotency guard checks `payment_webhook_events` primary key; returns HTTP 200 without duplicate billing. | No duplicate invoice or subscription records. | **DESIGNED** |
+| **Concurrent Edit Collision** | CAS guard detects revision mismatch (`affectedRows === 0`); returns HTTP 409 Conflict. | Zero lost updates. | **DESIGNED** |
+
+> **Important distinction:** The system exhibits **fail-closed behavior** (HTTP 503, zero data fabrication) when the database is unavailable. This is NOT the same as **database failover** — no secondary database exists that can take over writes. There is no HA failover capability.
+>
+> - **Database failure behavior (fail-closed): VERIFIED**
+> - **Database failover (HA): NOT VERIFIED** — standalone primary, no replica, no automatic failover target.

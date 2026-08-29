@@ -106,10 +106,17 @@ Before considering secondary datastores, the primary MariaDB database is fully o
 ```
 
 ### Replica Entry Criteria:
-- Sustained database CPU $> 70\%$ on Primary, OR
-- Read query volume exceeding $25,000\text{ QPS}$, OR
+
+> **Status: NOT MEASURED** — No load testing has been performed. The thresholds below are architectural guidelines, not empirically validated breakpoints.
+
+Suggested architectural triggers (require load testing to validate):
+- Sustained database CPU > 70% on Primary, OR
+- Read query volume causing observable latency degradation, OR
 - Heavy analytics/reporting workloads impacting user CRUD operations.
-- *Current Status:* **NOT REQUIRED** (Primary utilization is currently $< 5\%$).
+
+**To establish actual thresholds, load testing at progressive QPS levels (100, 500, 1K, 2.5K, 5K, 10K) would need to measure:** p50/p95/p99 latency, CPU, RAM, DB connections, lock contention, slow queries, I/O, error rate, and outbox throughput.
+
+*Current observed baseline:* Primary CPU utilization is 0.0%–0.2%. The single primary handles all current production load with substantial headroom. A read replica is **NOT REQUIRED** at present scale.
 
 ---
 
@@ -119,7 +126,8 @@ Before considering secondary datastores, the primary MariaDB database is fully o
 - Single authoritative MariaDB 11.8.8 Primary with 100 GB InnoDB Buffer Pool.
 - Transactional Outbox for all background operations.
 - In-memory Node.js query optimization + atomic SQL revision guards.
-- Automated daily/pre-deploy snapshots + SHA-256 validation.
+- Pre-deployment snapshots + SHA-256 validation.
+- **Note:** No automated periodic backup schedule. No binary logging. No offsite backup.
 
 ### Stage 2 — Growth Tier ($100\text{k} - 500\text{k}$ Active Users)
 - Introduce MariaDB Read Replica for public resumes, blog posts, and job board catalogs.
