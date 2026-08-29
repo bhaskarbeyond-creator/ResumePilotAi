@@ -2031,7 +2031,7 @@ router.post('/send-invoice-email', (_req, res) => {
     });
 });
 
-router.get('/logs', requirePermission('system.config.read'), async (_req, res) => {
+router.get('/logs', requirePermission('email.logs.read'), async (_req, res) => {
     try {
         const [rows] = await getPool().query(
             `SELECT id, recipient, subject, template_type, status, message_id, error, transport, sent_at

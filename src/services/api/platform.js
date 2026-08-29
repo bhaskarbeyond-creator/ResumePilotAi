@@ -122,6 +122,47 @@ async function apiJson(url, options = {}) {
     return data;
 }
 
+export async function getAdminSupportTickets(status) {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/support/tickets${query}`);
+    if (!response.ok || data?.success === false) {
+        throw new Error(data?.error?.message || data?.error || 'Unable to load support tickets.');
+    }
+    return data;
+}
+
+export async function getAdminSupportTicket(ticketId) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/support/tickets/${encodeURIComponent(ticketId)}`);
+    if (!response.ok || data?.success === false) {
+        throw new Error(data?.error?.message || data?.error || 'Unable to load support ticket.');
+    }
+    return data;
+}
+
+export async function replyAdminSupportTicket(ticketId, body) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/support/tickets/${encodeURIComponent(ticketId)}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+    });
+    if (!response.ok || data?.success === false) {
+        throw new Error(data?.error?.message || data?.error || 'Unable to send ticket reply.');
+    }
+    return data;
+}
+
+export async function updateAdminSupportTicketStatus(ticketId, status) {
+    const { response, data } = await fetchAdminWithReauth(`/api/admin/support/tickets/${encodeURIComponent(ticketId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+    if (!response.ok || data?.success === false) {
+        throw new Error(data?.error?.message || data?.error || 'Unable to update ticket status.');
+    }
+    return data;
+}
+
 export async function getAllMessages() {
     // Realtime chat delivery is read through the backend API (never Firestore).
     try {
@@ -255,14 +296,14 @@ export async function checkIfAdmin(uid) {
         if (currentUser) {
             const tokenResult = await currentUser.getIdTokenResult();
             const tokenRole = String(tokenResult?.claims?.role || '').toUpperCase();
-            if (['ADMIN', 'SUPER_ADMIN'].includes(tokenRole) || tokenResult?.claims?.admin === true || tokenResult?.claims?.superAdmin === true || tokenResult?.claims?.permissions?.includes('*')) {
+            if (['ADMIN', 'SUPER_ADMIN', 'AUDITOR', 'SUPPORT'].includes(tokenRole) || tokenResult?.claims?.admin === true || tokenResult?.claims?.superAdmin === true || tokenResult?.claims?.permissions?.includes('*')) {
                 return true;
             }
         }
         const { getUserProfile } = await import('./users.js');
         const data = await getUserProfile(uid);
         const role = String(data?.role || '').toUpperCase();
-        return ['ADMIN', 'SUPER_ADMIN'].includes(role) || data?.isAdmin === true;
+        return ['ADMIN', 'SUPER_ADMIN', 'AUDITOR', 'SUPPORT'].includes(role) || data?.isAdmin === true;
     } catch {
         return false;
     }

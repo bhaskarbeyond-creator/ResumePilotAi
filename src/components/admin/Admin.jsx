@@ -8,6 +8,7 @@ import UserEdit from './userEdit/UserEdit';
 import UsersManager from './usersManager/UsersManager';
 import Phrases from './phrases/Phrases';
 import Messages from './messages/Messages';
+import HelpDesk from './HelpDesk';
 import fire from '../../conf/fire';
 import { checkIfAdmin } from '../../services/api/platform';
 import signOutUser from '../../utils/signOut';
@@ -163,7 +164,7 @@ const Admin = () => {
             mfaVerified = false;
         }
         const claimsRole = String(token?.claims?.role || '').toUpperCase();
-        const hasAdminClaim = ['ADMIN', 'SUPER_ADMIN'].includes(claimsRole) || token?.claims?.admin === true || token?.claims?.superAdmin === true || token?.claims?.permissions?.includes('*');
+        const hasAdminClaim = ['ADMIN', 'SUPER_ADMIN', 'AUDITOR', 'SUPPORT'].includes(claimsRole) || token?.claims?.admin === true || token?.claims?.superAdmin === true || token?.claims?.permissions?.includes('*');
         const allowed = hasAdminClaim || (await checkIfAdmin(user.uid));
 
         setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, mfaVerified, mfaEnrolled, hasMfa: mfaVerified, user });
@@ -208,7 +209,7 @@ const Admin = () => {
                         </div>
                     </div>
                 )}
-                <main className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6">
+                <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6" tabIndex={-1}>
                     <Routes>
                         <Route path="/" element={<Navigate to="dashboard" replace />} />
                         <Route path="dashboard" element={<Dashboard />} />
@@ -224,6 +225,7 @@ const Admin = () => {
                         <Route path="user/ss" element={<UserEdit />} />
                         <Route path="users" element={<UsersManager />} />
                         <Route path="messages" element={<Messages />} />
+                        <Route path="help-desk" element={<HelpDesk />} />
                         <Route path="reviews" element={<Reviews />} />
                         <Route path="trustedby" element={<TrustedBy />} />
                         <Route path="employer-applications" element={<EmployerApplications />} />

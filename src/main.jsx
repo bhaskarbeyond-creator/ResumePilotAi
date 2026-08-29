@@ -75,7 +75,7 @@ const Welcome = lazy(() => import('./components/welcome/Welcome'));
 const Dashboard = lazy(() => import('./components/Dashboard/DashboardMain/DashboardMain'));
 const Admin = lazy(() => import('./components/admin/Admin'));
 const Contact = lazy(() => import('./components/Contact/Contact'));
-const Front = lazy(() => import('./components/Front/Front'));
+
 const Exporter = lazy(() => import('./components/Exporter/Exporter'));
 const Billing = lazy(() => import('./components/Billing/Plans/Plans'));
 const CustomePage = lazy(() => import('./components/CustomPage/CustomePage'));
@@ -418,10 +418,10 @@ const AuthWrapper = () => {
                             <Route path="/" element={<Welcome key={user?.uid || 'guest'} user={user} />} />
                             <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Welcome key="guest" user={null} />} />
                             <Route path="/sign-up" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
-                            <Route path="/coverletter" element={<CoverLetter key={user?.uid || 'guest'} />} />
-                            <Route path="/coverletter/*" element={<CoverLetter key={user?.uid || 'guest'} />} />
-                            <Route path="/cover-letter" element={<CoverLetter key={user?.uid || 'guest'} />} />
-                            <Route path="/cover-letter/*" element={<CoverLetter key={user?.uid || 'guest'} />} />
+                            <Route path="/coverletter" element={<RequireAuthenticated user={user}><CoverLetter key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/coverletter/*" element={<RequireAuthenticated user={user}><CoverLetter key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/cover-letter" element={<RequireAuthenticated user={user}><CoverLetter key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/cover-letter/*" element={<RequireAuthenticated user={user}><CoverLetter key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/dashboard/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/enterprise/*" element={<RequireAuthenticated user={user}><EnterpriseConsole key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/contact" element={<Contact user={user} />} />
@@ -445,7 +445,7 @@ const AuthWrapper = () => {
                             <Route path="/admin/*" element={<AdminAliasRedirect />} />
                             <Route path="/platform/*" element={<PlatformAliasRedirect />} />
                             <Route path="/adm/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
-                            <Route path="/front" element={<Front />} />
+                            <Route path="/front" element={<Navigate to="/" replace />} />
                             <Route path="/features" element={<Features user={user} />} />
                             <Route path="/jobs" element={<JobsLanding />} />
                             <Route path="/jobs/portal" element={<MainJobListings key={user?.uid || 'guest'} />} />

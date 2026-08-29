@@ -25,7 +25,7 @@ module.exports = {
         ENTERPRISE_TENANCY_ENABLED: 'false',
         ENTERPRISE_DATA_PROVIDER: 'mysql',
         ENTERPRISE_OUTBOX_WORKER_ENABLED: 'false',
-        NOTIFICATION_OUTBOX_WORKER_ENABLED: 'false',
+        NOTIFICATION_OUTBOX_WORKER_ENABLED: 'true',
         CMS_SCHEDULER_ENABLED: 'false',
         TENANT_GC_WORKER_ENABLED: 'false',
       },

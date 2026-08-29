@@ -67,7 +67,7 @@ try {
   const clean = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-verifier' });
   const discovered = discoverMigrations();
   const latestMigrationVersion = discovered.at(-1)?.version;
-  if (!clean.current || latestMigrationVersion !== '014') throw new Error(`Clean-state migration application did not reach version 014 (observed ${latestMigrationVersion || 'none'})`);
+  if (!clean.current || latestMigrationVersion !== '015') throw new Error(`Clean-state migration application did not reach version 015 (observed ${latestMigrationVersion || 'none'})`);
 
   const invitationTableCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'enterprise_membership_invitations'`,
@@ -174,6 +174,10 @@ try {
     `SELECT COUNT(*) AS count FROM system_settings
      WHERE category = 'website_meta' AND revision = 0
        AND JSON_CONTAINS_PATH(data, 'one', '$.rating')`);
+  const supportTicketTableCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ('support_tickets', 'support_ticket_messages')`,
+    [databaseName]);
   if (invitationTableCount !== 1 || membershipIndexCount !== 2
       || aiMetadataColumnCount !== 6 || aiIdempotencyIndexCount !== 2 || aiForeignKeyCount !== 2
       || trackerColumnCount !== 2 || trackerIndexCount !== 2 || notificationStateConstraintCount !== 1
@@ -182,9 +186,10 @@ try {
       || refundReferenceTableCount !== 1 || refundReferenceForeignKeyCount !== 1
       || billingEvidenceConstraintCount !== 3 || configurationCategoryCount !== 4
       || cmsRelationalColumnCount !== 5 || customPageStatusConstraintCount !== 1
-      || failClosedDefaultsCount !== 1 || unevidencedRatingCount !== 0) {
+      || failClosedDefaultsCount !== 1 || unevidencedRatingCount !== 0
+      || supportTicketTableCount !== 2) {
     // information_schema.STATISTICS has one row per indexed column.
-    throw new Error('Migration 005-014 tables, columns, indexes, constraints, bootstrap rows, or fail-closed defaults are missing');
+    throw new Error('Migration 005-015 tables, columns, indexes, constraints, bootstrap rows, or fail-closed defaults are missing');
   }
 
   const paymentProbeSql = `INSERT INTO payment_orders
@@ -264,6 +269,11 @@ try {
 
   const connection = await pool.getConnection();
   try {
+    await executeFile(connection, path.join(ROOT, 'backend/database/migrations/015_support_tickets.down.sql'));
+    if (await scalar(connection,
+      `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ('support_tickets', 'support_ticket_messages')`, [databaseName])) {
+      throw new Error('Migration 015 rollback did not remove support ticket tables');
+    }
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/014_fail_closed_discovery_defaults.down.sql'));
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/013_cms_relational_authority.down.sql'));
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/012_billing_snapshot_refund_references.down.sql'));
@@ -315,7 +325,7 @@ try {
        )`, [databaseName])) {
       throw new Error('Migration 013 rollback did not remove CMS relational metadata');
     }
-    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012', '013', '014')");
+    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015')");
   } finally {
     connection.release();
   }

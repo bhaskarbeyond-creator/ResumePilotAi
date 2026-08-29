@@ -157,7 +157,7 @@ graph TB
 | Working Tree | Clean (only untracked `architecture-flowchart.md`) | `git status --short` |
 | Last Commit | `chore(deploy): add auto-prune for server deploy backups` | `git log -1` |
 | Backend Entry | 5,872 lines / 344KB | `backend/index.js` |
-| Migrations | 14 (001_baseline through 014_fail_closed) | `backend/database/migrations/` |
+| Migrations | 15 (001_baseline through 015_support_tickets) | `backend/database/migrations/` |
 | CV Templates | 51 (Cv1–Cv51) | `src/cv-templates/` |
 | Cover Templates | 4 (Cover1–Cover4) | `src/cv-templates/` |
 | Frontend Test Files | 94 (83 .test + 11 .spec) | `tests/` |
@@ -2018,3 +2018,38 @@ TOP REMAINING GAPS:
 9.  GAP-09 (P2): No Application Performance Monitoring
 10. GAP-10 (P2): No automated alerting on health degradation
 ```
+
+---
+
+## 63. Gap-closure register (2026-08-29)
+
+Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live production (`https://airesume.projectdemo.guru`) was not redeployed in this session; live proof is therefore **not claimed**.
+
+| ID | Pri | Status | Evidence | Tests | Live proof |
+|---|---|---|---|---|---|
+| GAP-01 | P1 | CLOSED | Method-aware `policy.js`; GET least-privilege; L429 mutations `system.config.write` except `/support*` `tickets.manage`; Admin.jsx / `checkIfAdmin` allow ADMIN, SUPER_ADMIN, AUDITOR, SUPPORT | `backend/test/support-tickets.test.js` RBAC source contract | Not claimed |
+| GAP-02 | P1 | CLOSED | PM2 `NOTIFICATION_OUTBOX_WORKER_ENABLED='true'`; CMS/enterprise/GC remain `false` | `ecosystem.config.js` source | Not claimed |
+| GAP-03 | P2 | CLOSED | `src/main.jsx` wraps `/coverletter`, `/coverletter/*`, `/cover-letter`, `/cover-letter/*` in `RequireAuthenticated` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-04 | P2 | ACCEPTED | `backend/index.js` remains the payment/auth composition root; routers already exist | Standing instruction: no blind extract | N/A |
+| GAP-05 | P2 | ACCEPTED | Backup scripts exist; crontab cannot be installed onto Hostinger from this sandbox | `ops/dr/install-backup-schedule.sh` | Not claimed |
+| GAP-06 | P2 | CLOSED | Migration 015 `support_tickets` / `support_ticket_messages`; owner-scoped `/api/support`; admin `/api/admin/support` + Help Desk; deletion + ownership registry | `backend/test/support-tickets.test.js`, `backend/test/p1-gap-source-contract.test.js`, `tests/dr-hardening.test.mjs` (15 migrations) | Not claimed |
+| GAP-07 | P2 | ACCEPTED | Impersonation would mint another user's session | Support uses `users.read` + tickets | N/A |
+| GAP-08 | P2 | CLOSED | `POST /api/paytm/callback` HTML 200 after HMAC `/v3/order/status`; `POST /api/phonepe/callback` X-VERIFY then status API; claim → activate → release; outbox reconcile LIMIT 25 | `backend/test/indian-gateway-activation.test.js` (9 cases) | Not claimed |
+| GAP-09 | P2 | ACCEPTED | No APM vendor/credentials | healthz/readyz/request IDs remain | N/A |
+| GAP-10 | P2 | CLOSED | Consecutive `/readyz` failures ≥2 enqueue `admin_system_alert:readyz:<hourBucket>` fire-and-forget; never awaited before 503 | `backend/test/readyz-alerts.test.js` | Not claimed |
+| GAP-11 | P2 | ACCEPTED | `501 STORAGE_PROVIDER_UNSUPPORTED` is intentional | StorageSettings informational | N/A |
+| GAP-12 | P3 | CLOSED | `/front` → `<Navigate to="/" replace />` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-13 | P3 | ACCEPTED | Dead `initailisation/` unused | No runtime import | N/A |
+| GAP-14 | P3 | ACCEPTED | Dead `addAds/`, `About/` unused | No runtime import | N/A |
+| GAP-15 | P3 | ACCEPTED | `Analytics.jsx` unused helper | No runtime import | N/A |
+| GAP-16 | P3 | ACCEPTED | PM2 stays `instances: 1, exec_mode: 'fork'` | Cluster would duplicate in-memory limiters | N/A |
+| GAP-17 | P3 | ACCEPTED | Skip-link + `#main-content` landed; **no WCAG 2.1 AA claim** | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-18 | P3 | ACCEPTED | No k6/Artillery run | Do not invent capacity numbers | Not claimed |
+| GAP-19 | P3 | ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
+| GAP-20 | P3 | ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
+
+**Remainder after this register:** P0=0, P1=0 open, P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20). CLOSED=7 (01,02,03,06,08,10,12). BLOCKED=0.
+
+**MariaDB authority:** 15 checksummed migrations; `ownership.js` registers `support_ticket` / `support_ticket_message`; account deletion deletes ticket rows after notifications. Zero Firestore data-plane.
+
+**Workers (production PM2):** notification outbox **true**; CMS scheduler, enterprise outbox, tenant GC **false**.

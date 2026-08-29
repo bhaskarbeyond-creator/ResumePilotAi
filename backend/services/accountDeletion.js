@@ -80,6 +80,11 @@ async function applicationDataCleanup({ uid, actorUid, requestId, mutationId, ex
       // pseudonymized and no longer authenticatable after the identity step.
       await connection.query('DELETE FROM notification_outbox WHERE metadata IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(metadata, \'$.uid\')) = ?', [uid]);
       await connection.query('DELETE FROM notifications WHERE user_id = ?', [uid]);
+      await connection.query(
+        'DELETE m FROM support_ticket_messages m INNER JOIN support_tickets t ON t.id = m.ticket_id WHERE t.user_id = ?',
+        [uid]
+      );
+      await connection.query('DELETE FROM support_tickets WHERE user_id = ?', [uid]);
       await connection.query('DELETE FROM favourites WHERE user_id = ?', [uid]);
       await connection.query('DELETE FROM job_tracker WHERE user_id = ?', [uid]);
       await connection.query('DELETE FROM public_resumes WHERE owner_uid = ?', [uid]);

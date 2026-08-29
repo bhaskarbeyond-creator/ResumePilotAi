@@ -53,6 +53,9 @@ const { adminPlatformOperationsRouter } = require('./routes/adminPlatformOperati
 const { resumesRouter } = require('./routes/resumes');
 const { portfoliosRouter } = require('./routes/portfolios');
 const { coversRouter } = require('./routes/covers');
+const { supportUserRouter, supportAdminRouter } = require('./routes/support');
+const indianGatewayActivation = require('./services/indianGatewayActivation');
+const { maybeQueueReadyzAlert } = require('./services/readyzAlerts');
 const { jobsDataRouter } = require('./routes/jobsData');
 const { blogDataRouter } = require('./routes/blogData');
 const { notificationsDataRouter } = require('./routes/notificationsData');
@@ -344,6 +347,7 @@ const publicApiPaths = new Set([
     '/custom-pages', '/custom-pages.json',
     '/trusted-by', '/trusted-by.json',
     '/blog-data', '/jobs-data',
+    '/paytm/callback', '/phonepe/callback',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
     '/stats', '/reviews', '/phrases', '/portfolios/public'
 ]);
@@ -388,6 +392,7 @@ app.use('/api', (req, res, next) => {
 app.use('/api/resumes', resumesRouter);
 app.use('/api/portfolios', portfoliosRouter);
 app.use('/api/covers', coversRouter);
+app.use('/api/support', supportUserRouter);
 app.use('/api/jobs-data', jobsDataRouter);
 app.use('/api/blog-data', blogDataRouter);
 app.use('/api/notifications-data', notificationsDataRouter);
@@ -426,7 +431,13 @@ app.use('/api/contact', contactAccountLimiter);
 app.use('/api/messages', messagingAccountLimiter);
 // Defense in depth for administrative namespaces. The route policy also protects aliases
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
-app.use(['/api/admin', '/api/email/admin'], requirePermission('system.config.write'));
+app.use(['/api/admin', '/api/email/admin'], (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    if (req.path === '/support' || req.path.startsWith('/support/')) {
+        return requirePermission('tickets.manage')(req, res, next);
+    }
+    return requirePermission('system.config.write')(req, res, next);
+});
 
 const Stripe = require('stripe');
 // Webhook signature verification does not call the Stripe API. Provider API
@@ -1293,6 +1304,52 @@ app.post('/api/phonepe/status', async (req, res) => {
     } catch (err) {
         console.error('[PhonePe status]', err.message);
         return res.status(err.status || 502).json({ verified: false, error: 'PhonePe verification unavailable' });
+    }
+});
+
+app.post('/api/paytm/callback', async (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    try {
+        const orderId = String(req.body?.ORDERID || req.body?.orderId || '').trim();
+        await indianGatewayActivation.handlePaytmCallback({
+            orderId,
+            getPaytmConfig,
+            fetchImpl: fetch,
+            activation: paymentActivation,
+        });
+    } catch (error) {
+        console.warn('[Paytm callback]', error.code || error.message);
+    }
+    return res.status(200).send(indianGatewayActivation.paytmCallbackHtml());
+});
+
+app.post('/api/phonepe/callback', async (req, res) => {
+    try {
+        const base64Response = String(req.body?.response || req.body?.RESPONSE || '').trim();
+        const verifyHeader = String(req.get('X-VERIFY') || req.get('x-verify') || '');
+        await indianGatewayActivation.handlePhonePeCallback({
+            base64Response,
+            verifyHeader,
+            getPhonePeConfig,
+            fetchImpl: fetch,
+            activation: paymentActivation,
+        });
+        return res.status(200).json({ success: true, received: true });
+    } catch (error) {
+        if (error.code === 'PHONEPE_SIGNATURE_INVALID' || Number(error.status) === 400) {
+            return res.status(400).json({
+                success: false,
+                error: { code: error.code || 'PHONEPE_SIGNATURE_INVALID', message: 'Invalid PhonePe callback signature', requestId: res.locals.requestId },
+            });
+        }
+        console.warn('[PhonePe callback]', error.code || error.message);
+        if (Number(error.status) === 503) {
+            return res.status(503).json({
+                success: false,
+                error: { code: error.code || 'PAYMENT_PROVIDER_UNAVAILABLE', message: 'PhonePe is not configured', requestId: res.locals.requestId },
+            });
+        }
+        return res.status(200).json({ success: true, received: true });
     }
 });
 
@@ -3969,12 +4026,20 @@ async function computeReadyzPayload() {
 app.get('/readyz', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const payload = await computeReadyzPayload();
-    return res.status(payload.status === 'ready' ? 200 : 503).json(payload);
+    const healthy = payload.status === 'ready';
+    try { maybeQueueReadyzAlert({ healthy, pool: getPool() }); } catch (error) {
+        console.error('[readyz] alert dispatch failed:', error.message);
+    }
+    return res.status(healthy ? 200 : 503).json(payload);
 });
 app.get('/api/readyz', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const payload = await computeReadyzPayload();
-    return res.status(payload.status === 'ready' ? 200 : 503).json(payload);
+    const healthy = payload.status === 'ready';
+    try { maybeQueueReadyzAlert({ healthy, pool: getPool() }); } catch (error) {
+        console.error('[readyz] alert dispatch failed:', error.message);
+    }
+    return res.status(healthy ? 200 : 503).json(payload);
 });
 
 
@@ -4034,6 +4099,13 @@ if (require.main === module) {
                         customSubject: event.metadata?.customSubject,
                         customBody: event.metadata?.customBody,
                     })
+                });
+                await indianGatewayActivation.reconcilePendingIndianGatewayOrders({
+                    pool: getPool(),
+                    getPaytmConfig,
+                    getPhonePeConfig,
+                    fetchImpl: fetch,
+                    activation: paymentActivation,
                 });
             } catch (error) { console.error('[Notification outbox]', error.message); }
             finally { workerRunning = false; }
@@ -5215,6 +5287,7 @@ app.delete('/api/admin/jobs/:jobId', async (req, res) => {
     }
 });
 
+app.use('/api/admin/support', supportAdminRouter);
 app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin', adminPlatformOperationsRouter);
 // Durable account deletion removes the subject's personal content and credentials,

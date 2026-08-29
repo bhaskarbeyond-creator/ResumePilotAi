@@ -39,6 +39,25 @@ body {
     font-size: 16px; /* Standard font size */
 }
 
+.skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -100px;
+    z-index: 10000;
+    padding: 0.5rem 0.85rem;
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: 0.35rem;
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+.skip-link:focus {
+    top: 0.75rem;
+}
+#main-content:focus {
+    outline: none;
+}
+
 /* Keep some useful link styles */
 a {
     font-weight: 500;

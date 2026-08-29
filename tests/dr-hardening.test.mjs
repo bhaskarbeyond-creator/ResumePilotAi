@@ -700,10 +700,10 @@ test('reconciliation passes when the restore matches the backup', () => {
   const r = evaluateRestoreReconciliation({
     expectedTables: ['users', 'resumes', 'schema_migrations'],
     restoredTables: ['users', 'resumes', 'schema_migrations'],
-    expectedMigrations: 14,
-    restoredMigrations: 14,
+    expectedMigrations: 15,
+    restoredMigrations: 15,
     criticalTables: ['users', 'schema_migrations'],
-    rowCounts: { users: 42, schema_migrations: 14 },
+    rowCounts: { users: 42, schema_migrations: 15 },
   });
   assert.equal(r.status, 'PASS');
   assert.deepEqual(r.problems, []);
@@ -724,7 +724,7 @@ test('reconciliation fails when tables present in the backup are missing', () =>
 test('reconciliation fails when the migration ledger did not survive', () => {
   const r = evaluateRestoreReconciliation({
     expectedTables: ['schema_migrations'], restoredTables: ['schema_migrations'],
-    expectedMigrations: 14, restoredMigrations: 0,
+    expectedMigrations: 15, restoredMigrations: 0,
     criticalTables: [], rowCounts: {},
   });
   assert.equal(r.status, 'FAIL');

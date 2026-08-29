@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiGrid, FiSettings, FiUsers, FiFileText, FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase, FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit, FiActivity, FiLock, FiTool, FiAlertTriangle, FiType, FiExternalLink } from 'react-icons/fi';
+import { FiHome, FiGrid, FiSettings, FiUsers, FiFileText, FiMail, FiLogOut, FiSearch, FiShield, FiBriefcase, FiLayers, FiGlobe, FiChevronDown, FiChevronRight, FiEdit, FiActivity, FiLock, FiTool, FiAlertTriangle, FiType, FiExternalLink, FiHelpCircle } from 'react-icons/fi';
 import { FaRegBuilding, FaCog, FaCreditCard, FaShareAlt, FaChartLine, FaFile, FaBullhorn, FaRobot, FaEnvelope, FaFilePdf, FaSearch as FaSearchIcon, FaMapMarkerAlt, FaPaintBrush, FaFileCode, FaShieldAlt, FaHeartbeat, FaFire, FaFacebook, FaCloud, FaLinkedin, FaStamp, FaCode, FaCookieBite, FaCommentAlt, FaGlobeAsia, FaBrain, FaCubes, FaReceipt, FaServer, FaDatabase } from 'react-icons/fa';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { MdOutlineReviews } from 'react-icons/md';
@@ -186,6 +186,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                 { path: '/adm/reviews', icon: MdOutlineReviews, label: 'Reviews', badgeColor: 'bg-pink-50 text-pink-600 border-pink-100' },
                 { path: '/adm/trustedby', icon: FiShield, label: 'Trusted by', badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
                 { path: '/adm/messages', icon: FiMail, label: 'Messages', badgeColor: 'bg-purple-50 text-purple-600 border-purple-100' },
+                { path: '/adm/help-desk', icon: FiHelpCircle, label: 'Help Desk', badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
                 { path: '/adm/phrases', icon: FiType, label: 'Phrases', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200' },
             ],
         },

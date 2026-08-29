@@ -70,7 +70,8 @@ const PERMISSIONS = Object.freeze({
     'payments.manage', 'payments.read',
     'notifications.send',
     'ai.entitlements.manage', 'ai.usage.read',
-    'audit.read', 'security.read'
+    'audit.read', 'security.read',
+    'tickets.manage'
   ],
   AUDITOR: [
     'users.read', 'tenants.read', 'email.logs.read', 'system.config.read',

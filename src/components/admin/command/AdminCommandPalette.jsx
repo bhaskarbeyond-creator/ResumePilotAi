@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiGrid, FiUsers, FiSettings, FiShield, FiServer, FiActivity, FiFileText, FiLayers, FiMail, FiBriefcase, FiX, FiCommand, FiRefreshCw, FiZap, FiLock } from 'react-icons/fi';
+import { FiSearch, FiGrid, FiUsers, FiSettings, FiShield, FiServer, FiActivity, FiFileText, FiLayers, FiMail, FiBriefcase, FiX, FiCommand, FiRefreshCw, FiZap, FiLock, FiHelpCircle } from 'react-icons/fi';
 import { FaRobot, FaCreditCard, FaEnvelope, FaGlobeAsia, FaReceipt, FaDatabase, FaFire } from 'react-icons/fa';
 import { searchPlatform } from '../../../services/platformApi';
 
@@ -15,6 +15,7 @@ const COMMAND_ITEMS = [
   { id: 'nav-jobs', label: 'Jobs Manager', category: 'Navigation', icon: FiLayers, path: '/adm/jobs-manager' },
   { id: 'nav-blog', label: 'Blog Engine', category: 'Navigation', icon: FiFileText, path: '/adm/blog-management' },
   { id: 'nav-messages', label: 'Contact Messages', category: 'Navigation', icon: FiMail, path: '/adm/messages' },
+  { id: 'nav-helpdesk', label: 'Help Desk', category: 'Navigation', icon: FiHelpCircle, path: '/adm/help-desk' },
   { id: 'nav-security', label: 'Security Events', category: 'Navigation', icon: FiLock, path: '/adm/security' },
   { id: 'nav-ops', label: 'Platform Operations', category: 'Navigation', icon: FiActivity, path: '/adm/operations' },
   { id: 'nav-reviews', label: 'Reviews', category: 'Navigation', icon: FiFileText, path: '/adm/reviews' },
