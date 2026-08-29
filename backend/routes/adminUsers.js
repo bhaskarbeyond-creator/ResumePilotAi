@@ -117,13 +117,47 @@ router.get('/', async (req, res) => {
   const pageToken = req.query?.pageToken ? String(req.query.pageToken) : undefined;
   try {
     const listed = await identityAdmin.auth().listUsers(limit, pageToken);
-    const usersList = await Promise.all((listed.users || []).map(async identity => {
-      const [profile, memberships] = await Promise.all([
-        repo.getUser(identity.uid),
-        tenantService.registry.listMemberships(identity.uid),
-      ]);
-      return adminUserProjection(identity, profile || {}, identity.uid, memberships);
-    }));
+    const identities = listed.users || [];
+    const uids = [...new Set(identities.map(identity => String(identity?.uid || '')).filter(Boolean))];
+
+    // A directory page previously issued two MariaDB reads per identity (profile
+    // + tenant memberships). At the documented maximum page size that is 400
+    // simultaneous acquisitions against a 15-connection pool whose queue limit is
+    // 200, which queues or rejects requests and starves user-facing traffic behind
+    // an administrative listing. The page is now read in two batched queries, with
+    // the per-identity path retained for repositories without a batch reader.
+    const loadProfiles = async () => {
+      if (uids.length && typeof repo.getUsersByIds === 'function') {
+        try {
+          const rows = await repo.getUsersByIds(uids);
+          return new Map((rows || []).map(row => [String(row?.id ?? row?.userId ?? ''), row]));
+        } catch (error) {
+          console.warn('[Admin user directory] batch profile read failed, using per-identity read:', error.code || error.message);
+        }
+      }
+      const entries = await Promise.all(uids.map(async uid => [uid, await repo.getUser(uid)]));
+      return new Map(entries.filter(([, profile]) => profile));
+    };
+    const loadMemberships = async () => {
+      if (uids.length && typeof tenantService.registry.listMembershipsForPrincipals === 'function') {
+        try {
+          const grouped = await tenantService.registry.listMembershipsForPrincipals(uids);
+          if (grouped instanceof Map) return grouped;
+          console.warn('[Admin user directory] batch membership reader returned an unsupported shape; using per-identity read');
+        } catch (error) {
+          console.warn('[Admin user directory] batch membership read failed, using per-identity read:', error.code || error.message);
+        }
+      }
+      const entries = await Promise.all(uids.map(async uid => [uid, await tenantService.registry.listMemberships(uid)]));
+      return new Map(entries);
+    };
+    const [profilesById, membershipsById] = await Promise.all([loadProfiles(), loadMemberships()]);
+    const usersList = identities.map(identity => adminUserProjection(
+      identity,
+      profilesById.get(String(identity?.uid || '')) || {},
+      identity.uid,
+      membershipsById.get(identity.uid) || []
+    ));
     const filtered = usersList.filter(user => {
       const matchesQuery = !query || [user.id, user.email, user.displayName, user.primaryTenant?.displayName, user.primaryTenant?.slug]
         .some(value => String(value || '').toLowerCase().includes(query));

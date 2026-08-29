@@ -722,6 +722,49 @@ class MySqlTenantRegistry {
     return { tenant, membership, workspace };
   }
 
+  async listMembershipsForPrincipals(principalIds = []) {
+    this.assertAvailable();
+    const requested = [...new Set((Array.isArray(principalIds) ? principalIds : [])
+      .map(value => String(value || ''))
+      .filter(value => value.length > 0))].slice(0, 200);
+    const grouped = new Map(requested.map(principalId => [principalId, []]));
+    if (!requested.length) return grouped;
+    const placeholders = requested.map(() => '?').join(',');
+    const [rows] = await this.pool.query(
+      `SELECT m.*, t.displayName, t.slug, t.lifecycleState AS tenantLifecycleState,
+              i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
+              i.expiresAt AS invitationExpiresAt, i.invitationState,
+              COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
+              i.notificationId AS invitationNotificationId, i.queueRevision AS invitationQueueRevision
+       FROM enterprise_memberships m
+       JOIN enterprise_tenants t ON m.tenantId = t.id
+       LEFT JOIN enterprise_membership_invitations i ON i.membershipId = m.id
+       LEFT JOIN notification_outbox o ON o.id = i.notificationId
+       WHERE m.principalId IN (${placeholders})
+       ORDER BY m.principalId, m.id`,
+      requested
+    );
+    // Every row is bucketed under, and revalidated against, its OWN principalId.
+    // A row cannot be attributed to a different subject than the one it names,
+    // so batching does not widen membership visibility for any caller.
+    for (const row of rows || []) {
+      const owner = String(row.principalId || '');
+      if (!grouped.has(owner)) continue;
+      try {
+        const mem = validateMembership(row, owner);
+        grouped.get(owner).push({
+          ...mem,
+          displayName: row.displayName || row.tenantId,
+          slug: row.slug || row.tenantId,
+          tenantLifecycleState: row.tenantLifecycleState || 'ACTIVE',
+        });
+      } catch {
+        // Fail closed, identically to the single-principal read.
+      }
+    }
+    return grouped;
+  }
+
   async listMemberships(principalId) {
     this.assertAvailable();
     principalId = assertPrincipalId(principalId);

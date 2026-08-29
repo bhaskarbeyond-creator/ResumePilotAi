@@ -19,6 +19,19 @@ function phonePeCallbackChecksum(base64Response, saltKey, saltIndex) {
   return `${digest}###${saltIndex}`;
 }
 
+/**
+ * Provider status calls run from the shared notification-outbox worker tick.
+ * `timeout` is honoured by node-fetch v2 but silently ignored by the global
+ * fetch (undici) that production actually passes in, so the same 10s bound is
+ * also carried as an AbortSignal. Without it a slow or unreachable gateway can
+ * pin the tick and stall every queued notification behind a payment probe.
+ */
+function providerRequestTimeout() {
+  return (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function')
+    ? { signal: AbortSignal.timeout(10_000) }
+    : {};
+}
+
 async function queryPaytmOrderStatus({ orderId, config, fetchImpl = fetch }) {
   const mid = config.mid;
   const key = config.key;
@@ -41,6 +54,7 @@ async function queryPaytmOrderStatus({ orderId, config, fetchImpl = fetch }) {
     },
     body: verifyBody,
     timeout: 10_000,
+    ...providerRequestTimeout(),
   });
   const providerData = await providerRes.json().catch(() => ({}));
   if (!providerRes.ok) {
@@ -61,6 +75,7 @@ async function queryPhonePeOrderStatus({ orderId, config, fetchImpl = fetch }) {
       Accept: 'application/json',
     },
     timeout: 10_000,
+    ...providerRequestTimeout(),
   });
   const providerData = await providerRes.json().catch(() => ({}));
   if (!providerRes.ok) {
@@ -178,26 +193,49 @@ async function reconcilePendingIndianGatewayOrders({
   getPhonePeConfig,
   fetchImpl = fetch,
   activation = paymentActivation,
+  limit = 25,
 } = {}) {
-  if (!pool) return { processed: 0 };
+  if (!pool) return { processed: 0, examined: 0 };
+  const batchSize = Number.isSafeInteger(limit) && limit > 0 ? Math.min(limit, 50) : 25;
   const [rows] = await pool.query(
     `SELECT id, provider FROM payment_orders
      WHERE provider IN ('paytm', 'phonepe')
        AND status IN ('PENDING_PAYMENT', 'PAYMENT_CREATED')
      ORDER BY created_at ASC
-     LIMIT 25`
+     LIMIT ?`,
+    [batchSize]
   );
+  const pending = Array.isArray(rows) ? rows : [];
+  if (!pending.length) return { processed: 0, examined: 0 };
+
+  // Credentials are resolved at most once per provider per reconciliation pass.
+  // Provider configuration lives in `system_settings` and cannot change while a
+  // single pass is running, so re-reading it for every pending order previously
+  // multiplied an identical, cacheable read across the whole batch (2 x N extra
+  // pool round trips per tick) and starved the shared user-facing pool. The
+  // resolved value — including a resolution failure — is memoized for this pass
+  // only, so no stale credential is ever reused across ticks.
+  const configs = new Map();
+  const resolveConfig = (provider, loader) => {
+    if (!configs.has(provider)) {
+      configs.set(provider, Promise.resolve().then(() => loader()).catch(error => ({ reconcileConfigError: error })));
+    }
+    return configs.get(provider);
+  };
+
   let processed = 0;
-  for (const row of rows || []) {
+  for (const row of pending) {
     try {
       if (row.provider === 'paytm') {
-        const config = await getPaytmConfig();
+        const config = await resolveConfig('paytm', getPaytmConfig);
+        if (config?.reconcileConfigError) throw config.reconcileConfigError;
         if (!config?.mid || !config?.key) continue;
         const statusPayload = await queryPaytmOrderStatus({ orderId: row.id, config, fetchImpl });
         await activatePaytmFromStatus({ orderId: row.id, statusPayload, activation });
         processed += 1;
       } else if (row.provider === 'phonepe') {
-        const config = await getPhonePeConfig();
+        const config = await resolveConfig('phonepe', getPhonePeConfig);
+        if (config?.reconcileConfigError) throw config.reconcileConfigError;
         if (!config?.merchantId || !config?.saltKey || !Number.isSafeInteger(config.saltIndex) || config.saltIndex < 1) continue;
         const statusPayload = await queryPhonePeOrderStatus({ orderId: row.id, config, fetchImpl });
         await activatePhonePeFromStatus({ orderId: row.id, statusPayload, activation });
@@ -207,7 +245,7 @@ async function reconcilePendingIndianGatewayOrders({
       console.warn('[payments] indian-gateway reconcile', row.provider, row.id, error.code || error.message);
     }
   }
-  return { processed };
+  return { processed, examined: pending.length };
 }
 
 module.exports = {

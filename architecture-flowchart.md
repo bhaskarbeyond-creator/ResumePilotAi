@@ -1437,12 +1437,22 @@ graph TD
 |---|---|---|
 | PM2 instances | 1 (fork mode) | ðŸŸ¡ Single point of failure |
 | Memory limit | 600MB | ðŸŸ¢ |
-| DB connection pool | Default 15 | ðŸŸ¢ |
+| DB connection pool | `connectionLimit` 15 / `queueLimit` 200, one module-level pool | PARTIAL - shared with all background workers; a burst beyond `queueLimit` queues and then hard-fails `Queue limit reached.` |
+| Worker/user pool isolation | None - outbox, payment reconcile, CMS and GC use the same pool as user traffic | ACCEPTED (single PM2 instance); mitigated by pinned per-request query budgets, see GAP-23 |
+| Per-request SQL budget | Measured on the real code path: conversations list = 3 round trips (was 1+2N), admin directory page = 2 batched reads (was 2N), reconcile tick = 1-3 (was 1+2N) | OK - regression-pinned by `backend/test/mariadb-query-budget.test.js` |
 | AI config cache | 15-second TTL | ðŸŸ¢ |
 | Feature flag cache | 30-second TTL | ðŸŸ¢ |
 | Frontend code splitting | All routes lazy-loaded | ðŸŸ¢ |
 | Load testing baseline | **NOT PERFORMED** | ðŸŸ  UNVERIFIED |
 | APM profiling | **NOT CONFIGURED** | ðŸ”´ MISSING |
+
+> **Round-trip accounting, not latency accounting.** Every figure in this section is a
+> measured count of MariaDB round trips executed by the real route or service under test
+> doubles. Wall-clock production latency is deliberately NOT claimed: there is no APM, no
+> live-database access from the audit environment, and no load-test run. `/api/readyz` on the
+> live instance reported `mysql.latencyMs: 0` for `SELECT 1`, which is the evidence that this
+> was never a database execution-speed problem - it was a round-trip-count and pool-contention
+> problem on a shared pool.
 
 ---
 

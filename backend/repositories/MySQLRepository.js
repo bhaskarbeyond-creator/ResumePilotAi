@@ -439,11 +439,7 @@ class MySQLRepository {
     // ==========================================
     // 2. USERS
     // ==========================================
-    async getUser(userId) {
-        const pool = this._getPool();
-        const [rows] = await pool.query('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
-        if (!rows.length) return null;
-        const r = rows[0];
+    _projectUserRow(r) {
         let extra = {};
         if (r.extra_data) {
             try { extra = typeof r.extra_data === 'string' ? JSON.parse(r.extra_data) : r.extra_data; } catch (_e) {}
@@ -455,6 +451,36 @@ class MySQLRepository {
             cancellationRequested: r.cancellationRequested === 1,
             ...extra
         };
+    }
+
+    async getUser(userId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query('SELECT * FROM users WHERE id = ? LIMIT 1', [userId]);
+        if (!rows.length) return null;
+        return this._projectUserRow(rows[0]);
+    }
+
+    /**
+     * Bounded batch profile read used by the administrative directory.
+     * Returns rows in the same projection as getUser(); callers group by id.
+     * A missing id simply has no row, exactly as a getUser() miss.
+     *
+     * The identifier list is deliberately capped: an unbounded `IN (...)` would
+     * trade many small indexed lookups for one oversized statement whose plan and
+     * packet size grow with the caller, so callers page instead of batching hard.
+     */
+    async getUsersByIds(userIds = []) {
+        const ids = [...new Set((Array.isArray(userIds) ? userIds : [])
+            .map(value => String(value || '').trim())
+            .filter(value => value.length > 0 && value.length <= 128))].slice(0, 200);
+        if (!ids.length) return [];
+        const pool = this._getPool();
+        const placeholders = ids.map(() => '?').join(',');
+        const [rows] = await pool.query(
+            `SELECT * FROM users WHERE id IN (${placeholders})`,
+            ids
+        );
+        return rows.map(r => this._projectUserRow(r));
     }
 
     async getUserByEmail(email) {
