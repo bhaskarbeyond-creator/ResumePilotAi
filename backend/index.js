@@ -3892,6 +3892,7 @@ function livenessPayload() {
     return {
         status: 'ok',
         identityProviderConfigured: Boolean(admin && admin.apps && admin.apps.length > 0),
+        firebaseAdminConfigured: Boolean(admin && admin.apps && admin.apps.length > 0),
         firestoreDataPlane: 'REMOVED',
         authoritativeDatabase: 'MARIADB',
         date: new Date().toISOString(),

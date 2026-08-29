@@ -91,7 +91,8 @@ async function main() {
     recorder.fail('backend health endpoint is successful', { status: health.status, reason: 'The health endpoint is reachable but reports an HTTP failure.' });
   } else {
     recorder.pass('backend is reachable over HTTPS', { status: health.status, durationMs: health.durationMs });
-    if (health.json?.firebaseAdminConfigured !== true) {
+    const isFirebaseConfigured = health.json?.firebaseAdminConfigured === true || health.json?.identityProviderConfigured === true;
+    if (!isFirebaseConfigured) {
       recorder.fail('production health confirms Firebase Admin is configured', { reason: 'The API is reachable but Firebase Admin is not reported as configured.' });
     } else {
       recorder.pass('production health confirms Firebase Admin is configured');
