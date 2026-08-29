@@ -24,7 +24,7 @@ const app = require(path.join(root, 'backend/index.js'));
 const admin = require(path.join(root, 'backend/services/firebaseAdmin.js'));
 
 const BASE_URL = (process.env.PROD_BASE_URL || 'https://airesume.projectdemo.guru').replace(/\/$/, '');
-const FIREBASE_API_KEY = process.env.VITE_FIREBASE_KEY || process.env.FIREBASE_API_KEY || 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+const FIREBASE_API_KEY = process.env.VITE_FIREBASE_KEY || process.env.FIREBASE_API_KEY || '';
 
 // Initialize Firebase Admin if needed
 if (!admin.apps.length) {
