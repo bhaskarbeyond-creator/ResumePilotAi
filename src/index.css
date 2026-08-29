@@ -49,13 +49,30 @@ a:hover {
     color: #6c7ee1;
 }
 
-/* Modern button base reset (preserves Tailwind utilities & component styles) */
+/* Modern button interactive base & accessibility standards */
 button {
     font-family: inherit;
     font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
     cursor: pointer;
-    background: transparent;
-    border: none;
+    text-decoration: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 button:focus-visible,
@@ -63,8 +80,23 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-    outline: 2px solid #4f46e5;
-    outline-offset: 2px;
+    outline: 2px solid #4f46e5 !important;
+    outline-offset: 2px !important;
+}
+
+button:disabled,
+button[disabled],
+[role="button"][aria-disabled="true"],
+[aria-disabled="true"],
+input:disabled,
+select:disabled,
+textarea:disabled,
+.btn:disabled,
+.btn-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.55 !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
 }
 
 /* Enhanced Native Dropdowns (<select>) */

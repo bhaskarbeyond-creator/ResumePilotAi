@@ -42,6 +42,7 @@ a[href],
 summary,
 select:not(:disabled),
 .cursor-pointer,
+.btn,
 .btn-default,
 .inputSubmit,
 .googleAuthItem,
@@ -53,28 +54,179 @@ select:not(:disabled),
 }
 
 button:disabled,
+button[disabled],
 [role="button"][aria-disabled="true"],
 [aria-disabled="true"],
 input:disabled,
 select:disabled,
-.cursor-not-allowed {
+textarea:disabled,
+.cursor-not-allowed,
+.btn:disabled,
+.btn-disabled {
     cursor: not-allowed !important;
+    opacity: 0.55 !important;
+    pointer-events: none !important;
 }
 
+/* ==========================================================================
+   Platform-Wide Core Button & Interactive Design System
+   ========================================================================== */
+.btn,
 .btn-default {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     font-family: $font;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
     background-color: $btn-default;
-    color: white;
-    font-size: 16px;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 7px;
+    color: #ffffff;
     cursor: pointer;
     text-decoration: none !important;
+    white-space: nowrap;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(74, 108, 247, 0.2);
+
+    &:hover:not(:disabled) {
+        background-color: darken($btn-default, 6%);
+        box-shadow: 0 4px 14px rgba(74, 108, 247, 0.35);
+        transform: translateY(-1px);
+        color: #ffffff;
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0) scale(0.98);
+        box-shadow: 0 1px 3px rgba(74, 108, 247, 0.2);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #4f46e5;
+        outline-offset: 2px;
+    }
 }
-.btn-default:focus {
-    outline: none;
-    border: none;
+
+.btn-primary {
+    @extend .btn;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+
+    &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+        transform: translateY(-1px);
+        color: #ffffff;
+    }
+}
+
+.btn-secondary {
+    @extend .btn;
+    background: #ffffff;
+    color: #334155;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+    &:hover:not(:disabled) {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+        color: #0f172a;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+}
+
+.btn-outline {
+    @extend .btn;
+    background: transparent;
+    color: $btn-default;
+    border-color: $btn-default;
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+        background-color: rgba($btn-default, 0.08);
+        border-color: darken($btn-default, 10%);
+        color: darken($btn-default, 10%);
+        transform: translateY(-1px);
+    }
+}
+
+.btn-ghost {
+    @extend .btn;
+    background: transparent;
+    color: #475569;
+    border-color: transparent;
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        transform: none;
+    }
+}
+
+.btn-danger {
+    @extend .btn;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+
+    &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        transform: translateY(-1px);
+        color: #ffffff;
+    }
+}
+
+.btn-success {
+    @extend .btn;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+
+    &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        transform: translateY(-1px);
+        color: #ffffff;
+    }
+}
+
+/* Sizing Modifiers */
+.btn-sm {
+    padding: 6px 14px !important;
+    font-size: 12.5px !important;
+    border-radius: 6px !important;
+}
+
+.btn-lg {
+    padding: 14px 28px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+}
+
+.btn-icon {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent;
+    color: #64748b;
+    border: 1px solid transparent;
+
+    &:hover:not(:disabled) {
+        background-color: #f1f5f9;
+        color: #0f172a;
+    }
 }
 // Mobile Stylings
 .custom-hidden {
