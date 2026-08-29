@@ -1444,6 +1444,8 @@ graph TD
 | Query timeout | Not configured; `.query()` used at 570 sites, `.execute()` at 0 | PARTIAL - no per-statement deadline, and no prepared-statement reuse |
 | `idleTimeout: 60_000` | **Inert.** mysql2 only starts its idle reaper when `maxIdle < connectionLimit`; `maxIdle` defaults to `connectionLimit` (15), so the reaper never runs | OK for latency (warm connections are retained and reused - no reconnect churn); note `wait_timeout` is instead covered by `enableKeepAlive` |
 | Health snapshot cache | `PLATFORM_HEALTH_CACHE_MS` 15s TTL, single-flight, `MIN_FORCED_INTERVAL_MS` 3s floor; Admin polls at 60s | PARTIAL - a 60s poll always misses a 15s TTL, so an idle Admin tab recomputes the snapshot (incl. one unbounded outbox aggregate) 60x/hour |
+| Background workers on the user pool | Declared: notification outbox only. **Live `readyz` also reports CMS scheduler and tenant GC as enabled** (GAP-25 drift) | PARTIAL - each enabled worker adds periodic scans to the same 15-connection pool; `publishDueBlogPostsAtomic` currently runs an unindexed `FOR UPDATE` scan of `blog` because no `(status, scheduled_at)` index exists |
+| SQL client mode | `.query()` at 570 sites, `.execute()` at 0; `multipleStatements: false` retained | OK - injection posture unchanged; no prepared-statement reuse, which is acceptable at this scale and not worth a 570-site refactor |
 | AI config cache | 15-second TTL | ðŸŸ¢ |
 | Feature flag cache | 30-second TTL | ðŸŸ¢ |
 | Frontend code splitting | All routes lazy-loaded | ðŸŸ¢ |
