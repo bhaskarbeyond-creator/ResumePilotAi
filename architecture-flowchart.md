@@ -1,12 +1,12 @@
 # ResumePilot AI — Exhaustive Enterprise Architecture & System Flowchart
 
 **Document Type:** Implementation-Traceable Architecture Map (Zero-Assumption Forensic Audit)
-**Production Baseline SHA:** `7ee0cbae673d9a00ba6e7ee2ea40d09ff1682421`
-**Cloud Branch SHA:** `efef6b1a39b825dd600e214c252fdb81ac833b84` (`arena/01a04cb4-resumepilotai`)
-**Current Reconciled SHA:** `efef6b1a39b825dd600e214c252fdb81ac833b84`
-**Branch:** `main` (fast-forward merged from cloud branch)
+**Production Baseline SHA:** `127ec160f968fb6fb0f4bac49d59171456e2c642`
+**Cloud Source Commit:** `548d328a2487bc758f2146d84f01520b47b44b15` (`arena/01a04d22-resumepilotai`)
+**Integrated Release Commit:** `8fe9b3db7780cc4c303cb92115e3cbc2fa9830aa`
+**Branch:** `main` (tracking `origin/main`)
 **Working Tree:** Clean (all test suites passing 100%)
-**Last Commit:** `fix: harden primary resume workflow UX` (efef6b1)
+**Last Commit:** `test: align enterprise migration assertion to 015 and fix regex lint spaces` (8fe9b3d)
 **Audit Date:** 2026-08-29
 **Live URL:** `https://airesume.projectdemo.guru`
 **Hosting:** Hostinger VPS (Ubuntu 22.04, Node.js 20, MariaDB 10.11, PM2, Apache 2.4)
