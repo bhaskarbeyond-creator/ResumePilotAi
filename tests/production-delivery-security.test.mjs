@@ -7,7 +7,34 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
+const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8').replace(/\r\n/g, '\n');
+
+const bashBin = process.platform === 'win32' && fs.existsSync('C:\\Program Files\\Git\\bin\\bash.exe')
+  ? 'C:\\Program Files\\Git\\bin\\bash.exe'
+  : 'bash';
+
+const hasPython3 = (() => {
+  try {
+    const res = spawnSync(bashBin, ['-c', 'python3 -c "import sys; print(1)"'], { encoding: 'utf8' });
+    return res.status === 0 && res.stdout.trim() === '1';
+  } catch (_) {
+    return false;
+  }
+})();
+
+function runScript(scriptPath, args = [], options = {}) {
+  if (process.platform === 'win32' || scriptPath.endsWith('.sh')) {
+    return spawnSync(bashBin, [scriptPath, ...args], options);
+  }
+  return spawnSync(scriptPath, args, options);
+}
+
+function execScript(scriptPath, args = [], options = {}) {
+  if (process.platform === 'win32' || scriptPath.endsWith('.sh')) {
+    return execFileSync(bashBin, [scriptPath, ...args], options);
+  }
+  return execFileSync(scriptPath, args, options);
+}
 
 const activeDeliveryFiles = [
   '.github/workflows/production-release.yml',
@@ -134,11 +161,12 @@ test('all production shell scripts pass bash syntax validation', () => {
     'ops/deploy/install-production-gateway.sh',
     'ops/deploy/remote-deploy.sh',
   ]) {
-    execFileSync('bash', ['-n', path.join(root, relative)], { stdio: 'pipe' });
+    execFileSync(bashBin, ['-n', path.join(root, relative)], { stdio: 'pipe' });
   }
 });
 
-test('release builder emits only the fixed outer payload and allow-listed backend', () => {
+test('release builder emits only the fixed outer payload and allow-listed backend', (t) => {
+  if (!hasPython3) { t.skip('python3 is required for release builder execution'); return; }
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'resumepilot-release-test-'));
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'resumepilot-release-output-'));
   try {
@@ -172,7 +200,7 @@ test('release builder emits only the fixed outer payload and allow-listed backen
     execFileSync('git', ['add', '.'], { cwd: fixture });
     execFileSync('git', ['commit', '-qm', 'fixture'], { cwd: fixture });
     const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: fixture, encoding: 'utf8' }).trim();
-    const staleBuild = spawnSync(
+    const staleBuild = runScript(
       path.join(root, 'scripts/create-production-release.sh'),
       [sha, path.join(outputDir, 'stale.tar.gz')],
       { cwd: root, env: { ...process.env, RELEASE_SOURCE_ROOT: fixture }, encoding: 'utf8' },
@@ -186,7 +214,7 @@ test('release builder emits only the fixed outer payload and allow-listed backen
     );
     const output = path.join(outputDir, 'release.tar.gz');
 
-    execFileSync(path.join(root, 'scripts/create-production-release.sh'), [sha, output], {
+    execScript(path.join(root, 'scripts/create-production-release.sh'), [sha, output], {
       cwd: root,
       env: { ...process.env, RELEASE_SOURCE_ROOT: fixture },
       stdio: 'pipe',
@@ -208,7 +236,8 @@ test('release builder emits only the fixed outer payload and allow-listed backen
   }
 });
 
-test('release builder fails closed when public build contains a credential-shaped file', () => {
+test('release builder fails closed when public build contains a credential-shaped file', (t) => {
+  if (!hasPython3) { t.skip('python3 is required for release builder execution'); return; }
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'resumepilot-release-reject-'));
   try {
     fs.writeFileSync(path.join(fixture, '.gitignore'), 'dist/\n');
@@ -231,7 +260,7 @@ test('release builder fails closed when public build contains a credential-shape
     execFileSync('git', ['commit', '-qm', 'fixture'], { cwd: fixture });
     const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: fixture, encoding: 'utf8' }).trim();
     fs.writeFileSync(path.join(fixture, 'dist/index.html'), `<meta data-build-sha="${sha}" content="${sha}">`);
-    const result = spawnSync(path.join(root, 'scripts/create-production-release.sh'), [sha, path.join(fixture, 'release.tar.gz')], {
+    const result = runScript(path.join(root, 'scripts/create-production-release.sh'), [sha, path.join(fixture, 'release.tar.gz')], {
       cwd: root,
       env: { ...process.env, RELEASE_SOURCE_ROOT: fixture },
       encoding: 'utf8',
@@ -243,7 +272,8 @@ test('release builder fails closed when public build contains a credential-shape
   }
 });
 
-test('release builder rejects private-key material inside an allow-listed backend file', () => {
+test('release builder rejects private-key material inside an allow-listed backend file', (t) => {
+  if (!hasPython3) { t.skip('python3 is required for release builder execution'); return; }
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'resumepilot-release-key-reject-'));
   try {
     fs.writeFileSync(path.join(fixture, '.gitignore'), 'dist/\n');
@@ -268,7 +298,7 @@ test('release builder rejects private-key material inside an allow-listed backen
     execFileSync('git', ['commit', '-qm', 'fixture'], { cwd: fixture });
     const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: fixture, encoding: 'utf8' }).trim();
     fs.writeFileSync(path.join(fixture, 'dist/index.html'), `<meta data-build-sha="${sha}" content="${sha}">`);
-    const result = spawnSync(path.join(root, 'scripts/create-production-release.sh'), [sha, path.join(fixture, 'release.tar.gz')], {
+    const result = runScript(path.join(root, 'scripts/create-production-release.sh'), [sha, path.join(fixture, 'release.tar.gz')], {
       cwd: root,
       env: { ...process.env, RELEASE_SOURCE_ROOT: fixture },
       encoding: 'utf8',

@@ -13,6 +13,19 @@ const releaseSigner = path.join(root, 'scripts/sign-production-release.mjs');
 const receiver = path.join(root, 'ops/deploy/remote-deploy.sh');
 const gatewayInstaller = path.join(root, 'ops/deploy/install-production-gateway.sh');
 
+const bashBin = process.platform === 'win32' && fs.existsSync('C:\\Program Files\\Git\\bin\\bash.exe')
+  ? 'C:\\Program Files\\Git\\bin\\bash.exe'
+  : 'bash';
+
+const hasPython3 = (() => {
+  try {
+    const res = spawnSync(bashBin, ['-c', 'python3 -c "import sys; print(1)"'], { encoding: 'utf8' });
+    return res.status === 0 && res.stdout.trim() === '1';
+  } catch (_) {
+    return false;
+  }
+})();
+
 function write(target, content, mode) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, content);
@@ -41,7 +54,9 @@ function commitFixture(source, marker) {
 }
 
 function buildBundle(source, sha, destination) {
-  execFileSync(releaseBuilder, [sha, destination], {
+  const runner = process.platform === 'win32' || releaseBuilder.endsWith('.sh') ? bashBin : releaseBuilder;
+  const args = runner === bashBin ? [releaseBuilder, sha, destination] : [sha, destination];
+  execFileSync(runner, args, {
     cwd: root,
     env: { ...process.env, RELEASE_SOURCE_ROOT: source },
     stdio: 'pipe',
@@ -53,7 +68,11 @@ function signBundle(bundle, sha, privateKeyFile) {
   return Object.fromEntries(output.trim().split('\n').map((line) => line.split('=', 2)));
 }
 
-test('gateway installer creates an idempotent forced-command key and denies arbitrary SSH commands', { timeout: 15_000 }, () => {
+test('gateway installer creates an idempotent forced-command key and denies arbitrary SSH commands', { timeout: 15_000 }, (t) => {
+  if (!hasPython3) {
+    t.skip('python3 is required for gateway installer test');
+    return;
+  }
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'resumepilot-installer-test-'));
   try {
     const home = path.join(sandbox, 'home');
@@ -85,7 +104,7 @@ exit 0
       DEPLOY_SIGNING_PUBLIC_KEY_B64: Buffer.from(signingPublicPem).toString('base64'),
     };
 
-    const privateKeyAsPublic = spawnSync('bash', [gatewayInstaller], {
+    const privateKeyAsPublic = spawnSync(bashBin, [gatewayInstaller], {
       env: {
         ...installEnv,
         DEPLOY_SIGNING_PUBLIC_KEY_B64: Buffer.from(signingPrivatePem).toString('base64'),
@@ -95,8 +114,8 @@ exit 0
     assert.notEqual(privateKeyAsPublic.status, 0, 'the server must never accept signing private material');
     assert.match(`${privateKeyAsPublic.stdout}\n${privateKeyAsPublic.stderr}`, /PUBLIC KEY PEM block/);
 
-    execFileSync('bash', [gatewayInstaller], { env: installEnv, stdio: 'pipe' });
-    execFileSync('bash', [gatewayInstaller], { env: installEnv, stdio: 'pipe' });
+    execFileSync(bashBin, [gatewayInstaller], { env: installEnv, stdio: 'pipe' });
+    execFileSync(bashBin, [gatewayInstaller], { env: installEnv, stdio: 'pipe' });
 
     const authorizedKeys = fs.readFileSync(path.join(home, '.ssh/authorized_keys'), 'utf8');
     const managedLines = authorizedKeys.split('\n').filter((line) => line.includes('resumepilot-github-actions'));
@@ -104,7 +123,9 @@ exit 0
     assert.match(managedLines[0], /^restrict,command="[^"]+\/forced-command-gateway\.sh" ssh-ed25519 /);
 
     const installedGateway = path.join(home, '.local/lib/resumepilot-deploy/forced-command-gateway.sh');
-    const status = spawnSync(installedGateway, [], {
+    const runner = process.platform === 'win32' || installedGateway.endsWith('.sh') ? bashBin : installedGateway;
+    const runnerArgs = runner === bashBin ? [installedGateway] : [];
+    const status = spawnSync(runner, runnerArgs, {
       env: { ...process.env, HOME: home, SSH_ORIGINAL_COMMAND: 'status' },
       encoding: 'utf8',
     });
@@ -112,7 +133,7 @@ exit 0
     assert.match(status.stdout, /active_sha=0000000000000000000000000000000000000000/);
     assert.match(status.stdout, /pm2_status=online/);
 
-    const arbitrary = spawnSync(installedGateway, [], {
+    const arbitrary = spawnSync(runner, runnerArgs, {
       env: { ...process.env, HOME: home, SSH_ORIGINAL_COMMAND: 'id' },
       encoding: 'utf8',
     });
@@ -123,7 +144,11 @@ exit 0
   }
 });
 
-test('receiver rejects tampering, activates healthy code, and rolls back interruption or failed health', { timeout: 30_000 }, () => {
+test('receiver rejects tampering, activates healthy code, and rolls back interruption or failed health', { timeout: 30_000 }, (t) => {
+  if (!hasPython3) {
+    t.skip('python3 is required for release receiver integration test');
+    return;
+  }
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'resumepilot-remote-test-'));
   try {
     const home = path.join(sandbox, 'home');
