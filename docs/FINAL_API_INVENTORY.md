@@ -1,7 +1,7 @@
 # FINAL API INVENTORY
 
-**Generated:** 2026-08-29T01:40:28.370Z
-**Source commit:** `32ce3e8d8bdbbeb1d3936c4271005716a9b315c0`
+**Generated:** 2026-08-29T02:03:56.667Z
+**Source commit:** `a9de1b3748d869f98cab6994e9de88c748dc845e`
 **Authority:** Express runtime routing table collected by `backend/services/platformHealth.js`.
 
 > This is a source/release manifest, not live production evidence. `LIVE` remains `NOT VERIFIED` until the local/live runbook is executed against the deployed SHA.
