@@ -1,7 +1,7 @@
 # Whole-System Production Certification Report
 
-Generated: 2026-08-29T02:05:00Z
-Deployment Commit SHA: `a9de1b3748d869f98cab6994e9de88c748dc845e`
+Generated: 2026-08-29T02:30:00Z
+Deployment Commit SHA: `8221127ecab7fd43d2e9ab322dc7b029546d4392`
 Target Production Host: `https://airesume.projectdemo.guru`
 Authoritative Database: MariaDB 11.8.8-MariaDB-log (`u727965524_airesume`)
 Identity Plane: Firebase Authentication (Identity & Token Issuance only)
@@ -10,11 +10,11 @@ Identity Plane: Firebase Authentication (Identity & Token Issuance only)
 
 ## 1. Identity & Synchronized Production State
 
-1. **Repository Commit SHA:** `a9de1b3748d869f98cab6994e9de88c748dc845e`
-2. **Deployed Production Commit SHA:** `a9de1b3748d869f98cab6994e9de88c748dc845e`
+1. **Repository Commit SHA:** `8221127ecab7fd43d2e9ab322dc7b029546d4392`
+2. **Deployed Production Commit SHA:** `8221127ecab7fd43d2e9ab322dc7b029546d4392`
 3. **Live Endpoint Verifications (`https://airesume.projectdemo.guru`):**
-   - `/api/platform/version` => `{"commitSha":"a9de1b3748d869f98cab6994e9de88c748dc845e","service":"resumepilot-backend","apiVersion":"platform-v2"}`
-   - `/api/healthz` => `{"status":"ok","identityProviderConfigured":true,"firebaseAdminConfigured":true,"firestoreDataPlane":"REMOVED","authoritativeDatabase":"MARIADB","commitSha":"a9de1b3748d869f98cab6994e9de88c748dc845e"}`
+   - `/api/platform/version` => `{"commitSha":"8221127ecab7fd43d2e9ab322dc7b029546d4392","service":"resumepilot-backend","apiVersion":"platform-v2"}`
+   - `/api/healthz` => `{"status":"ok","identityProviderConfigured":true,"firebaseAdminConfigured":true,"firestoreDataPlane":"REMOVED","authoritativeDatabase":"MARIADB","commitSha":"8221127ecab7fd43d2e9ab322dc7b029546d4392"}`
    - `/api/readyz` => `{"status":"ready","authoritativeDatabase":"MARIADB","checks":{"mysql":{"status":"READY","latencyMs":0,"version":"11.8.8-MariaDB-log","host":"127.0.0.1","database":"u727965524_airesume"},"schema":"INITIALIZED","identityProvider":"CONFIGURED","firestoreDataPlane":"REMOVED","enterprise":{"dataProvider":"mysql","dataPlaneConfigured":true,"encryption":"server-key","quotaStore":"mariadb-atomic","queue":"mysql-transactional-outbox"}}}`
    - Root HTML `<meta name="build-sha">` => `a9de1b3748d869f98cab6994e9de88c748dc845e`
    - PM2 Daemon `airesume-backend` => Online, 0 unstable restarts, Node.js 20.19.4.
