@@ -12,6 +12,7 @@ const { assertSupportScopes } = require('./serviceIdentity');
 const { TenantQuotaGuard } = require('./tenantQuota');
 const { assertUuid, canonicalPrincipalId, freezeContext } = require('./tenantContext');
 const { permissionsForRoles } = require('./tenantPolicy');
+const { tenantType } = require('./platformTenantClassification');
 
 function profileFromUser(user) {
   return {
@@ -652,6 +653,7 @@ class TenantService {
       lifecycleState: tenant.lifecycleState,
       isolationTier: tenant.isolationTier,
       region: tenant.dataPlane.region,
+      type: tenantType(tenant),
       createdAt: tenant.createdAt || null,
     }));
   }

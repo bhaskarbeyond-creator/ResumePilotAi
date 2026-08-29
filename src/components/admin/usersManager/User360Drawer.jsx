@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard, FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw, FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign, FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff } from 'react-icons/fi';
 import { getUser360, assignUserTenant, removeUserTenant, updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, unenrollUserMfa, exportUserData } from '../../../services/platformApi';
 
@@ -38,6 +38,16 @@ export default function User360Drawer({
   const [selectedTenantId, setSelectedTenantId] = useState('');
   const [selectedTenantRole, setSelectedTenantRole] = useState('ENTERPRISE_MEMBER');
 
+  const drawerRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+
+  // Only true ORGANIZATION tenants are assignable. 1:1 personal sandboxes are
+  // excluded so an administrator never triggers the backend UUID/tenant-isolation
+  // rejection by selecting `personal-<hash>`.
+  const organizationTenants = (availableTenants || []).filter(
+    t => t.type === 'ORGANIZATION' || !String(t?.slug || t?.id || '').startsWith('personal-')
+  );
+
   const loadData = useCallback(async () => {
     if (!uid) return;
     setLoading(true);
@@ -73,6 +83,41 @@ export default function User360Drawer({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  // Modal focus management: move focus into the dialog, trap Tab within it,
+  // and restore focus to the opener on close.
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement;
+    const handleTrap = (e) => {
+      if (e.key !== 'Tab' || !drawerRef.current) return;
+      const focusable = Array.from(
+        drawerRef.current.querySelectorAll(
+          'button:not([disabled]), a[href], select, input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter(el => el.offsetParent !== null);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleTrap);
+    const initial = drawerRef.current?.querySelector(
+      'button:not([disabled]), a[href], select, input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    initial?.focus?.();
+    return () => {
+      window.removeEventListener('keydown', handleTrap);
+      if (previouslyFocusedRef.current && document.contains(previouslyFocusedRef.current)) {
+        previouslyFocusedRef.current.focus();
+      }
+    };
+  }, []);
 
   const handleRoleChange = async () => {
     if (uid === currentAdminUid && selectedRole !== 'ADMIN' && selectedRole !== 'SUPER_ADMIN') {
@@ -377,6 +422,7 @@ export default function User360Drawer({
 
   return (
     <div
+      ref={drawerRef}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-sm transition-all animate-fade-in"
       onClick={onClose}
       role="dialog"
@@ -786,21 +832,21 @@ export default function User360Drawer({
                           <label className="block text-[11px] font-bold text-slate-700 mb-1">Select Organization</label>
                           <select
                             required
-                            disabled={availableTenants.length === 0}
+                            disabled={organizationTenants.length === 0}
                             value={selectedTenantId}
                             onChange={(e) => setSelectedTenantId(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold disabled:bg-slate-100 disabled:text-slate-400"
                           >
                             <option value="">
-                              {availableTenants.length === 0
+                              {organizationTenants.length === 0
                                 ? '-- No Organizations Found --'
                                 : '-- Choose Organization --'}
                             </option>
-                            {availableTenants.map(t => (
+                            {organizationTenants.map(t => (
                               <option key={t.id} value={t.id}>{t.displayName} ({t.slug})</option>
                             ))}
                           </select>
-                          {availableTenants.length === 0 && (
+                          {organizationTenants.length === 0 && (
                             <p className="text-[10px] text-amber-700 mt-1 font-semibold">
                               ℹ No organizations exist yet. Provision a tenant in <a href="/adm/tenants" className="underline font-bold">Tenants Registry</a> first.
                             </p>
@@ -809,7 +855,7 @@ export default function User360Drawer({
                         <div>
                           <label className="block text-[11px] font-bold text-slate-700 mb-1">Assigned Tenant Role</label>
                           <select
-                            disabled={availableTenants.length === 0}
+                            disabled={organizationTenants.length === 0}
                             value={selectedTenantRole}
                             onChange={(e) => setSelectedTenantRole(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold disabled:bg-slate-100 disabled:text-slate-400"

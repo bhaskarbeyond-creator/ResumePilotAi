@@ -13,9 +13,15 @@ export async function platformFetch(path, options = {}) {
   if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
   const { response, data } = await fetchAdminWithReauth(path, { ...options, headers });
   if (!response.ok) {
-    const error = new Error(data.error?.message || data.message || `HTTP ${response.status}`);
+    // Backend errors may carry `error` as a string (e.g. "Invalid Tenant
+    // identifier"), as an object (`{ code, message }`), or as data.message.
+    // Normalize all three so the UI never shows a bare "HTTP 400".
+    const rawError = data?.error;
+    const error = new Error(
+      typeof rawError === 'string' ? rawError : rawError?.message || data?.message || `HTTP ${response.status}`
+    );
     error.status = response.status;
-    error.code = data.error?.code || data.code;
+    error.code = rawError?.code || data?.code;
     error.body = data;
     throw error;
   }

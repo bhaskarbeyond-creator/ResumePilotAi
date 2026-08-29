@@ -1621,15 +1621,6 @@ export async function getStatesOfUser(_userId) {
     return [];
 }
 
-export async function uploadImageToFirebase(imageData, _path = 'images') {
-    // Images are embedded as bounded data URLs in profile/resume JSON stored in
-    // MariaDB. No browser object-storage client is initialized.
-    if (typeof imageData === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(imageData)) {
-        return { url: imageData };
-    }
-    return { url: imageData || null };
-}
-
 export async function addFieldToProfile(userId, key, value) {
     const { getUserProfile, saveCurrentUserProfile } = await import('./users.js');
     const profile = await getUserProfile(userId);
