@@ -63,10 +63,32 @@ export function redact(value) {
  * run or only some checks.
  */
 export function readEnv(spec) {
+  const envFiles = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '.env.local'),
+    path.resolve(process.cwd(), 'backend/.env'),
+  ];
+  const fileEnv = {};
+  for (const file of envFiles) {
+    if (fs.existsSync(file)) {
+      const content = fs.readFileSync(file, 'utf8');
+      for (const line of content.split('\n')) {
+        const match = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)?\s*$/);
+        if (match && !match[1].startsWith('#')) {
+          let val = match[2] ? match[2].trim() : '';
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (fileEnv[match[1]] === undefined) fileEnv[match[1]] = val;
+        }
+      }
+    }
+  }
+
   const values = {};
   const missing = [];
   for (const [name, meta] of Object.entries(spec)) {
-    const raw = process.env[name];
+    const raw = process.env[name] || fileEnv[name] || (name === 'FIREBASE_API_KEY' ? (process.env.VITE_FIREBASE_KEY || fileEnv.VITE_FIREBASE_KEY || process.env.VITE_FIREBASE_API_KEY || fileEnv.VITE_FIREBASE_API_KEY) : undefined);
     if (raw === undefined || raw === '') {
       if (meta.default !== undefined) {
         values[name] = meta.default;

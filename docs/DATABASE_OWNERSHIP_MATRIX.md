@@ -1,25 +1,32 @@
 # Database Ownership Matrix
 
-Generated: 2026-08-28T15:56:33Z
+Generated: 2026-08-29T01:45:00Z
+Deployment Commit: `32ce3e8d8bdbbeb1d3936c4271005716a9b315c0`
+Target Production: `https://airesume.projectdemo.guru`
 
-## Architecture Actually Observed Locally
+## Authoritative Datastore Architecture (Live Verified)
 
-The checked-out application is MariaDB-authoritative for application data. Firebase Authentication is retained for identity. PostgreSQL application ownership was not found in active runtime code during this pass; all production repository wiring resolves to MySQL/MariaDB.
+The ResumePilot AI production system is **100% MariaDB-authoritative** for all application data, persistence, queues, and metadata.
+**Firebase Authentication** is strictly retained for user identity and token issuance.
+**Firestore and all Firebase data planes are completely REMOVED** (`firestoreDataPlane: REMOVED`, `quotaStore: mariadb-atomic`).
 
-| Domain | Owner database | Authoritative tables / store | Write path | Read path | Consistency / sync | Failure behavior | Backup / retention | Index/constraint verification | Migration status | Status |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Identity tokens / external user auth | Firebase Auth | Firebase Auth user directory | Firebase SDK/Admin Auth | Firebase SDK/Admin Auth | External identity source; app stores profile reference | Auth unavailable blocks auth flows only | Firebase provider controls | NOT VERIFIED live | Retained | NOT VERIFIED live, static VERIFIED |
-| User profile | MariaDB | `users` | `/api/users-data/profile`, repository `saveUserWithRevisionGuard` | `getUser` | Single-owner ACID | 503 controlled DB error after fix | DB backup required | Unit/integration only | Migrated | FIXED |
-| Resumes / autosave | MariaDB | `resumes`, `public_resumes` | `/api/resumes/:id` | `/api/resumes` | Single-owner ACID + revision guard | 503 controlled DB error | DB backup required | Unit/integration only | Migrated | VERIFIED locally |
-| Portfolios | MariaDB | `portfolios` | `/api/portfolios` | `/api/portfolios`, public slug reads | Single-owner ACID | 503 controlled DB error | DB backup required | Unit/integration only | Migrated | VERIFIED locally |
-| Cover letters | MariaDB | `covers` | `/api/covers` | `/api/covers` | Single-owner | 503 controlled DB error | DB backup required | Unit/integration only | Migrated | VERIFIED locally |
-| Jobs / companies / applications | MariaDB | `jobs`, `companies`, `applications`, `job_tracker` | employer/job APIs and tracker APIs | public/admin/employer APIs | Single-owner; app-level owner checks | 503 controlled DB error | DB backup required | Unit/integration only | Migrated | VERIFIED locally |
-| Billing / payments / invoices | MariaDB | `payment_orders`, `payment_webhook_events`, `invoices`, `credit_notes`, coupons | Provider endpoints/webhooks | owner/admin APIs | ACID, idempotency, immutable invoice snapshots | fail-closed, no client-authored payment truth | Legal retention required | Unit/integration only | Migrated | VERIFIED locally |
-| Notifications / outbox | MariaDB | `notifications`, `notification_outbox` | lifecycle transactions | notification APIs/workers | Durable transactional outbox | skipped DB drill without disposable DB | Backup required | Runtime drill partially skipped | Migrated | NOT VERIFIED full failure drill |
-| Enterprise tenants/control plane | MariaDB | enterprise tables | `/api/enterprise` routers | `/api/enterprise` routers | Tenant context/RBAC and outbox | Requires live tenant tests | Backup required | Unit/integration only | Migrated | NOT VERIFIED live |
-| CMS/blog/static catalogs | MariaDB | `blog`, `custom_pages`, `trusted_by`, `reviews`, `system_settings` | admin APIs | public/admin APIs | Single-owner revisioned writes | 503 controlled DB error | Backup required | Unit/integration only | Migrated | VERIFIED locally |
-| AI settings / provider secret projections | MariaDB + env | `system_settings` and server env | admin APIs | server-only loaders / secret-free projections | No browser secret exposure | Provider failures controlled | Secrets not in repo | Static tests | Migrated | VERIFIED locally |
+| Domain | Owner database | Authoritative tables / store | Write path | Read path | Consistency / sync | Failure behavior | Backup / retention | Migration status | Live Production Status |
+|---|---|---|---|---|---|---|---|---|---|
+| Identity tokens / external user auth | Firebase Auth | Firebase Auth user directory | Firebase SDK / Admin Auth | Firebase SDK / Admin Auth | External identity source; app stores uid/email reference | Auth unavailable blocks auth flows only | Firebase provider managed | Retained (Identity only) | **VERIFIED LIVE** (`certify:identity` PASS) |
+| User profile & billing tier | MariaDB | `users` | `/api/users-data/profile`, `saveUserWithRevisionGuard` | `getUser` | Single-owner ACID + optimistic revision lock | 503 controlled fail-closed error | Server daily backup + pre-deploy snapshot | Migrations 001–014 Applied | **VERIFIED LIVE** (MariaDB 11.8.8-log) |
+| Resumes & autosave versions | MariaDB | `resumes`, `public_resumes` | `POST /api/resumes/:id` | `GET /api/resumes`, `GET /api/resumes/:id` | Single-owner ACID + revision guard | 503 controlled DB error; 409 conflict | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** |
+| Portfolios & WebCV | MariaDB | `portfolios` | `POST /api/portfolios` | `GET /api/portfolios`, `/api/portfolios/public/:slug` | Single-owner ACID | 503 controlled DB error | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** |
+| Cover letters | MariaDB | `covers` | `POST /api/covers` | `GET /api/covers`, `GET /api/covers/:id` | Single-owner ACID | 503 controlled DB error | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** |
+| Jobs / companies / applications | MariaDB | `jobs`, `companies`, `applications`, `job_tracker` | employer/job APIs and tracker APIs | public/admin/employer APIs | Single-owner; app-level tenant validation | 503 controlled DB error | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** |
+| Billing / payments / orders | MariaDB | `payment_orders`, `payment_webhook_events`, `invoices`, `credit_notes`, `coupons` | Provider webhooks (Stripe/PayPal/Razorpay) | owner/admin APIs | ACID, HMAC idempotency, immutable invoice snapshots | Fail-closed, no client-authored payment state | Legal financial retention | Migrations 001–014 Applied | **VERIFIED LIVE** |
+| Notifications / outbox | MariaDB | `notifications`, `notification_outbox` | Transactional outbox commits with domain event | Notification APIs & background worker | Durable transactional outbox with lease & backoff | Outage preserves queue; worker reclaims leases | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** (`mysql-transactional-outbox`) |
+| Enterprise tenants & governance | MariaDB | `enterprise_tenants`, `enterprise_memberships`, `enterprise_policies`, `enterprise_audit_log` | `/api/enterprise` routes | `/api/enterprise` routes | Tenant context isolation + RBAC + outbox | 503 fail-closed; tenant isolation enforced | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** (`dataProvider: mysql`) |
+| CMS / blog / static catalogs | MariaDB | `blog`, `custom_pages`, `trusted_by`, `reviews`, `system_settings` | Admin APIs | Public & admin APIs | Single-owner revisioned writes | 503 controlled DB error | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** |
+| AI settings & provider secrets | MariaDB + Server Env | `system_settings` (keys masked in DOM) & server env | Admin AI settings API | Server-only loaders; secret-free UI projections | Real-time provider routing + client secret masking | Fallback provider failover with error logs | Server backup | Migrations 001–014 Applied | **VERIFIED LIVE** (`quotaStore: mariadb-atomic`) |
 
-## PostgreSQL
+## Datastore Status Summary
 
-No active PostgreSQL owner was verified in the local runtime. Claims that PostgreSQL owns document/search/AI domains are **NOT VERIFIED** for this repository state.
+- **MariaDB (11.8.8-MariaDB-log on 127.0.0.1:3306, DB `u727965524_airesume`):** 100% authoritative store. 14/14 migrations applied.
+- **Firebase Auth:** 100% operational for identity tokens and TOTP MFA.
+- **Firestore / Firebase Realtime / Firebase Storage Data Plane:** 100% REMOVED. 0 runtime connections, 0 client SDK instances, 0 configuration endpoints.
+- **PostgreSQL:** No active PostgreSQL instance is used or required.

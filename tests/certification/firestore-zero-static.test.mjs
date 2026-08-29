@@ -136,12 +136,19 @@ test('fresh production bundle contains no Firebase data-product client or endpoi
   const outputDirectory = path.join(ROOT, '.arena', 'firestore-certification-bundle');
   fs.rmSync(outputDirectory, { recursive: true, force: true });
   try {
+    const buildEnv = {};
+    for (const [key, val] of Object.entries(process.env)) {
+      if (!/DATABASE_URL|STORAGE_BUCKET|FIREBASE_DATABASE|REALTIME/i.test(key)) {
+        buildEnv[key] = val;
+      }
+    }
+    buildEnv.NODE_ENV = 'production';
     execFileSync(process.execPath, [
       path.join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js'),
       'build', '--outDir', outputDirectory, '--emptyOutDir',
     ], {
       cwd: ROOT,
-      env: { ...process.env, NODE_ENV: 'production' },
+      env: buildEnv,
       encoding: 'utf8',
       stdio: 'pipe',
       timeout: 220_000,

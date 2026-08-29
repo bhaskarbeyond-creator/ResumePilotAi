@@ -1,28 +1,14 @@
 # FINAL API INVENTORY
 
-> **⚠ FORENSIC AUDIT CORRECTION (2026-08-24).** Independently re-measured from
-> source (mount prefixes and array-form registrations resolved):
-> **276 route verbs across 236 unique paths**, not 266/409.
-> **0** frontend calls without a backend route. **7** backend routes without a
-> frontend consumer, all public/infra by design: `/healthz`, `/readyz`,
-> `/llms.txt`, `/custom-pages.json`, `/public/custom-pages.json`,
-> `/trusted-by.json`, `/public/trusted-by.json`.
-> One authorisation divergence was found and fixed: `GET /api/platform/payment-settings`
-> was `requireSuperAdmin` while its alias `GET /api/admin/payment-settings` was
-> `requirePermission('system.config.read')`; both are now
-> `system.config.read`. The **write** is unchanged (SUPER_ADMIN + MFA + recent
-> auth). See `FINAL_FORENSIC_CODEBASE_AUDIT.md`.
-
-
-**Generated:** 2026-08-24T05:40:09.631Z
-**Source commit:** `1808506eefae5c6b19ce1081a3272f560b91acea`
+**Generated:** 2026-08-29T01:40:28.370Z
+**Source commit:** `32ce3e8d8bdbbeb1d3936c4271005716a9b315c0`
 **Authority:** Express runtime routing table collected by `backend/services/platformHealth.js`.
 
 > This is a source/release manifest, not live production evidence. `LIVE` remains `NOT VERIFIED` until the local/live runbook is executed against the deployed SHA.
 
 ## 1. Reconciled source counts
 
-- Unique reachable `METHOD + path` entries: **276**.
+- Unique reachable `METHOD + path` entries: **286**.
 - The count includes dual-mounted email aliases and the `/api/enterprise/m2m` service-key namespace.
 - Parameterised routes are legitimate but require a disposable fixture id; they are not probed with guessed ids.
 - No source count is presented as a production count.
@@ -63,6 +49,7 @@ npm run certify:ui
 | METHOD | PATH | AUTH | ROLE | TENANT | SA | OK | FAIL | EXTERNAL DEP | OBS | PROJ | STATUS | UI CONSUMER | AUDIT | LIVE |
 | --- | --- | --- | --- | --- | :-: | --- | --- | --- | --- | --- | --- | --- | :-: | --- |
 | POST | `/api/account/delete` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| POST | `/api/account/export` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/admin/ads` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/admin/ads` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | DELETE | `/api/admin/ads/:adId` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
@@ -97,14 +84,10 @@ npm run certify:ui
 | PATCH | `/api/admin/employer-applications/:uid` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/admin/firebase-service-account` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/admin/firebase-service-account` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
-| POST | `/api/admin/gdpr-settings` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
-| POST | `/api/admin/global-rating` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/admin/health-summary` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/admin/jobs` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | DELETE | `/api/admin/jobs/:jobId` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | PATCH | `/api/admin/jobs/:jobId` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
-| GET | `/api/admin/landing-content` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
-| POST | `/api/admin/landing-content` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/admin/pages` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | DELETE | `/api/admin/pages/:slug` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | PUT | `/api/admin/pages/:slug` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
@@ -130,10 +113,6 @@ npm run certify:ui
 | PATCH | `/api/admin/trusted-by/:logoId` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/admin/twilio-settings` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/admin/twilio-settings` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
-| GET | `/api/admin/users` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
-| GET | `/api/admin/users/:uid` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
-| PATCH | `/api/admin/users/:uid` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
-| GET | `/api/admin/users/:uid/audit` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/admin/website-meta` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/auth/custom-password-reset` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/auth/github` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
@@ -143,6 +122,7 @@ npm run certify:ui
 | GET | `/api/auth/linkedin/callback` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/auth/linkedin/test-credentials` | BEARER_ADMIN | ADMIN+ | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/auth/oauth/exchange` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| POST | `/api/auth/preview-login` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/auth/purge-orphaned-auth` | BEARER_ADMIN | SUPER_ADMIN | - | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/auth/send-verification-email` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/auth/set-user-password` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
@@ -166,9 +146,12 @@ npm run certify:ui
 | POST | `/api/email/send-invoice-email` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/email/templates` | BEARER_ADMIN | ADMIN+ | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/email/templates` | BEARER_ADMIN | ADMIN+ | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| POST | `/api/employer-applications` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| GET | `/api/employer/companies` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/employer/companies` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | DELETE | `/api/employer/companies/:companyId` | BEARER_USER | AUTHENTICATED | - | - | 200/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | PATCH | `/api/employer/companies/:companyId` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| GET | `/api/employer/jobs` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/employer/jobs` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | DELETE | `/api/employer/jobs/:jobId` | BEARER_USER | AUTHENTICATED | - | - | 200/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | PATCH | `/api/employer/jobs/:jobId` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
@@ -247,15 +230,21 @@ npm run certify:ui
 | POST | `/api/generate-summary` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/generate-work-description` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/health` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/api/health/databases` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/healthz` | PUBLIC | PUBLIC | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | - | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/invoice` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/invoice/generate` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| GET | `/api/invoices` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/api/invoices/:paymentOrderId` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | PATCH | `/api/job-applications/:applicationId/status` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| GET | `/api/jobs/:jobId/applications` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/jobs/:jobId/applications` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/jobs/naukri` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/linkedin-scraper` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/logs` | BEARER_ADMIN | ADMIN+ | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/api/messages/conversations` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/messages/conversations` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| GET | `/api/messages/conversations/:conversationId/messages` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/messages/conversations/:conversationId/participant-profile` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/messages/send` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/notify/email-otp` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
@@ -271,6 +260,7 @@ npm run certify:ui
 | POST | `/api/notify/user-signup` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/parse-resume` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/pay` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
+| GET | `/api/payment-orders` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/payment-orders/:orderId` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/payment/razorpay-order` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/paypal/create-order` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
@@ -303,19 +293,25 @@ npm run certify:ui
 | POST | `/api/platform/operational-status/refresh` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/operators` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/platform/operators` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
+| POST | `/api/platform/operators/:uid/revoke-sessions` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/overview` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/payment-settings` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/payments-health` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
+| GET | `/api/platform/public-config` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/queues` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
+| POST | `/api/platform/queues/purge` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/platform/queues/retry` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/search` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/security-events` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | GET | `/api/platform/tenants/:tenantId` | BEARER_ADMIN | ADMIN+ | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | PATCH | `/api/platform/tenants/:tenantId` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | POST | `/api/platform/tenants/:tenantId/decommission` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
+| POST | `/api/platform/tenants/garbage-collect` | BEARER_ADMIN | SUPER_ADMIN | PLATFORM | YES | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | YES | NOT VERIFIED |
 | GET | `/api/platform/version` | PUBLIC | PUBLIC | PLATFORM | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | src/components/admin | NO | NOT VERIFIED |
 | POST | `/api/public-export` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | GET | `/api/public/custom-pages` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/api/public/custom-pages/:slug` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
+| GET | `/api/public/featured-companies` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | GET | `/api/public/trusted-by` | BEARER_USER | AUTHENTICATED | - | - | 200 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | NO | NOT VERIFIED |
 | POST | `/api/razorpay/create-order` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |
 | POST | `/api/razorpay/verify-payment` | BEARER_USER | AUTHENTICATED | - | - | 200/201/202/204 | 400/401/403/404/409/429/500/501/502/503 | SEE HEALTH | NOT MEASURED | NOT MEASURED | NOT VERIFIED | consumer/runtime | YES | NOT VERIFIED |

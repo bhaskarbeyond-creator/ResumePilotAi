@@ -17,7 +17,7 @@ function runSsh(remoteCommand, options = {}) {
   const sshArgs = [
     '-i', SSH_KEY,
     '-p', SSH_PORT,
-    '-o', 'StrictHostKeyChecking=accept-new',
+    '-o', 'StrictHostKeyChecking=yes',
     '-o', 'PasswordAuthentication=no',
     `${SSH_USER}@${SSH_HOST}`,
     remoteCommand
@@ -77,7 +77,8 @@ async function main() {
   execFileSync('ssh', [
     '-i', SSH_KEY,
     '-p', SSH_PORT,
-    '-o', 'StrictHostKeyChecking=accept-new',
+    '-o', 'StrictHostKeyChecking=yes',
+    '-o', 'PasswordAuthentication=no',
     `${SSH_USER}@${SSH_HOST}`,
     'tar -xzf - -C /home/u727965524/staging_backend'
   ], { input: backendTar.stdout });
@@ -103,7 +104,8 @@ async function main() {
   execFileSync('ssh', [
     '-i', SSH_KEY,
     '-p', SSH_PORT,
-    '-o', 'StrictHostKeyChecking=accept-new',
+    '-o', 'StrictHostKeyChecking=yes',
+    '-o', 'PasswordAuthentication=no',
     `${SSH_USER}@${SSH_HOST}`,
     'tar -xzf - -C /home/u727965524/staging_webroot'
   ], { input: frontendTar.stdout });
