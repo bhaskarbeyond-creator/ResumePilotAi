@@ -1,0 +1,15 @@
+# DR policy regression gate — BLOCKED from automated push
+#
+# The GitHub App used by this workspace does not hold the `workflows` permission,
+# so .github/workflows/quality-gate.yml cannot be modified automatically:
+#   ! [remote rejected] (refusing to allow a GitHub App to create or update
+#      workflow `.github/workflows/quality-gate.yml` without `workflows` permission)
+#
+# Apply manually (by a user with workflow permission) in
+# .github/workflows/quality-gate.yml, immediately after the
+# "Product regression tests" step and before "Production build":
+
+      # DR policy logic decides which recovery points get destroyed and when
+      # humans get paged, so it is gated on every commit. It needs no database.
+      - name: Disaster-recovery policy regression tests
+        run: npm run dr:test

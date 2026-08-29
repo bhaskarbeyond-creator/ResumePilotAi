@@ -479,6 +479,23 @@ sh ops/dr/install-backup-schedule.sh --uninstall     # remove only the managed b
 Monitor exit codes are deliberate: `2` is critical **and** includes the "no recovery points
 at all" case, so a cron job that emails on failure will surface silence as loudly as an error.
 
+### 12.1 Continuous-integration gate — BLOCKED, needs manual application
+
+`npm run dr:test` should run on every commit, because the retention policy decides which
+recovery points get destroyed. Adding it to `.github/workflows/quality-gate.yml` was
+**rejected by the remote**:
+
+```text
+! [remote rejected] arena/01a04b8a-resumepilotai -> arena/01a04b8a-resumepilotai
+  (refusing to allow a GitHub App to create or update workflow
+   `.github/workflows/quality-gate.yml` without `workflows` permission)
+```
+
+The GitHub App associated with this workspace does not hold the `workflows` scope. The step
+was therefore reverted and is supplied as a patch at
+**[`ops/dr/quality-gate-dr-step.patch`](../ops/dr/quality-gate-dr-step.patch)** for a user
+with workflow permission to apply. Until it is applied, run `npm run dr:test` locally.
+
 ---
 
 ## 13. Certification statement
