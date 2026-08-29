@@ -51,11 +51,12 @@ async function main() {
   const remoteUser = runSsh('whoami').trim();
   console.log(`Connected to host as user: ${remoteUser}`);
 
-  // 4. Create server-side backup
+  // 4. Create server-side backup & prune older backups (keep last 3)
   const timestamp = Date.now();
   console.log(`\nCreating server-side backup (${timestamp})...`);
   runSsh(`mkdir -p /home/u727965524/deploy_backups/backup-${timestamp}/backend /home/u727965524/deploy_backups/backup-${timestamp}/webroot && cp -r /home/u727965524/backend/. /home/u727965524/deploy_backups/backup-${timestamp}/backend/ 2>/dev/null || true`);
-  console.log(`Server-side backup created at /home/u727965524/deploy_backups/backup-${timestamp}`);
+  runSsh(`cd /home/u727965524/deploy_backups && ls -dt backup-* | tail -n +4 | xargs rm -rf 2>/dev/null || true`);
+  console.log(`Server-side backup created at /home/u727965524/deploy_backups/backup-${timestamp} (older backups pruned)`);
 
   // 5. Create staging directory
   console.log('\nCreating server-side staging directories...');
