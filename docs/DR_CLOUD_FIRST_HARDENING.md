@@ -4,7 +4,7 @@
 Authoritative Remote Main SHA : f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b
 Production Release SHA        : f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b
                                 (observed 2026-08-29T03:39:00.604Z)
-Cloud/SRE Certification Commit: <RECORDED_AT_END_OF_THIS_DOCUMENT>
+Cloud/SRE Certification Commit: c2ab0e0124e3aecabed293f09cb4d33a350384ca
 Restore Point                 : NOT CREATED — BLOCKED (see §3)
 ```
 
@@ -489,7 +489,7 @@ Production Release SHA        : f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b
                                 (observed 2026-08-29T03:39:00.604Z via /api/healthz
                                  and /api/platform/version; superseding an earlier
                                  observation of 778adf2 at 03:23:37.649Z)
-Cloud/SRE Certification Commit: <RECORDED BELOW>
+Cloud/SRE Certification Commit: c2ab0e0124e3aecabed293f09cb4d33a350384ca
 Restore Point                 : NOT CREATED — BLOCKED (no production credentials,
                                 no SSH, no shell network path to production)
 ```
@@ -516,3 +516,11 @@ measurement. Each requires production access or a MariaDB instance that this env
 could not obtain.
 
 **No certification evidence was manufactured.**
+> **Note on the certification SHA.** `c2ab0e0…` is the DR-hardening *implementation*
+> commit: it carries every script, test and configuration change described here, and it is
+> the commit whose regression results are quoted in §5.1. A document cannot contain its own
+> commit hash, so if later commits on this branch refine this text, the exact tip SHA is the
+> one reported in the session delivery summary and obtainable with
+> `git rev-parse arena/01a04b8a-resumepilotai`. `c2ab0e0…` is never superseded as the
+> identifier of the work itself.
+
