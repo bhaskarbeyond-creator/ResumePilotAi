@@ -50,7 +50,13 @@
     "certify:backup": "node scripts/verify-backup-rollback.mjs",
     "certify:endpoints": "node scripts/certify-all-286-endpoints-live.mjs",
     "certify:ui": "playwright test --config=playwright.live-admin.config.js",
-    "certify:all": "npm run certify:identity && npm run certify:endpoints"
+    "certify:all": "npm run certify:identity && npm run certify:endpoints",
+    "dr:backup": "node scripts/dr-backup-run.mjs",
+    "dr:backup:dry": "node scripts/dr-backup-run.mjs --dry-run",
+    "dr:retain": "node scripts/dr-backup-run.mjs --retain-only --no-offsite",
+    "dr:restore-point": "node scripts/dr-restore-point.mjs",
+    "dr:monitor": "node scripts/dr-monitor.mjs",
+    "dr:test": "node --test tests/dr-hardening.test.mjs"
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",

@@ -80,6 +80,11 @@ jobs:
           NODE_ENV: test
         run: npm run test:product
 
+      # DR policy logic decides which recovery points get destroyed and when
+      # humans get paged, so it is gated on every commit. It needs no database.
+      - name: Disaster-recovery policy regression tests
+        run: npm run dr:test
+
       - name: Production build
         env:
           VITE_BUILD_SHA: ${{ github.sha }}

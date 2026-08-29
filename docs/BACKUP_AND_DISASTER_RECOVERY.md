@@ -8,6 +8,32 @@ Production Host: `https://airesume.projectdemo.guru`
 
 ---
 
+## Release identity reconciliation (added 2026-08-29T03:39Z)
+
+This document's findings remain valid, but it must not be read as the current release-identity
+record. Reconciled against `origin/main` on 2026-08-29:
+
+```text
+AUTHORITATIVE_REMOTE_MAIN_SHA = f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b
+PRODUCTION_RELEASE_SHA        = f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b   (observed 2026-08-29T03:39:00.604Z)
+```
+
+Production reported `778adf20cc18cdc2e5becca8ec98fc98ccd2b648` at `2026-08-29T03:23:37.649Z`
+and `f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b` at `2026-08-29T03:39:00.604Z`. Production was
+redeployed during the audit window and now matches `origin/main`.
+
+**Superseded status:** the "no automated backup schedule" finding below is addressed by
+`ops/dr/install-backup-schedule.sh` + `scripts/dr-backup-run.mjs` — but as **DESIGNED**, not
+**VERIFIED**. Nothing in this document is upgraded to VERIFIED until it has been executed
+against production.
+
+Current programme status, exact SHAs, and full evidence:
+**[`docs/DR_CLOUD_FIRST_HARDENING.md`](./DR_CLOUD_FIRST_HARDENING.md)**
+
+---
+
+---
+
 ## Evidence Classification Legend
 
 This document uses strict evidence-based status labels:

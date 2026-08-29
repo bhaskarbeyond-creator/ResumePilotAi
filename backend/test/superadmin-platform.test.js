@@ -133,6 +133,28 @@ test('Platform API: /api/platform/health returns structured diagnostic data', as
   assert.ok(res.body.commitSha);
 });
 
+test('Platform API: /api/platform/version exposes both halves of the release identity', async () => {
+  const res = await request(app).get('/api/platform/version');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.service, 'resumepilot-backend');
+  assert.ok(res.body.commitSha, 'the backend commit SHA must always be reported');
+
+  // The frontend SHA is null unless dist/index.html is deployed next to the API,
+  // but the field must always exist so callers can distinguish "not deployed"
+  // from "not reported".
+  assert.ok(Object.prototype.hasOwnProperty.call(res.body, 'frontendBuildSha'));
+  assert.ok(
+    res.body.frontendBuildSha === null || /^[0-9a-f]{40}$/.test(res.body.frontendBuildSha),
+    'frontendBuildSha must be null or a full 40-character SHA',
+  );
+
+  assert.ok(res.body.releaseIdentity);
+  assert.equal(res.body.releaseIdentity.backendSha, res.body.commitSha);
+  assert.equal(res.body.releaseIdentity.frontendSha, res.body.frontendBuildSha);
+  assert.equal(typeof res.body.releaseIdentity.aligned, 'boolean');
+});
+
 test('Platform API: /api/platform/health rejects unauthenticated & non-admin callers', async () => {
   const anon = await request(app).get('/api/platform/health');
   assert.equal(anon.status, 401);

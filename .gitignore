@@ -92,3 +92,19 @@ test-results/
 
 # Certification evidence / scratch workspace (regenerable)
 .arena/
+
+# ── Database recovery artifacts ────────────────────────────────────────────
+# Backup output must never enter Git. A committed dump is a credential and PII
+# disclosure, and it is also not a backup: it lives in the same place as the
+# code it is supposed to protect. Rules are scoped to backup directories so
+# tracked schema migrations under backend/database/migrations/*.sql stay tracked.
+/backups/scheduled/
+/backups/restore-points/
+/backups/runs/
+/backups/**/*.sql
+/backups/**/*.sql.gz
+/backups/**/*.sql.gz.enc
+/backups/**/*.enc
+/backups/**/*.sha256
+/backups/**/recovery-points.json
+/backups/**/restore-point-*.json

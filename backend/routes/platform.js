@@ -21,6 +21,40 @@ const { getPlatformCurrencyConfig } = require('../services/platformCurrency');
 
 const router = express.Router();
 
+let cachedFrontendSha = null;
+let frontendShaResolved = false;
+
+/**
+ * Frontend build identity, read from the built index.html that the API serves.
+ *
+ * The backend already reports its own commit SHA; without this the frontend half
+ * of a release could only be verified by parsing HTML, which is exactly what
+ * happens today and is why a stale CDN bundle can look like a correct deploy.
+ * Exposing it over JSON makes the whole release identity checkable by a single
+ * unauthenticated request. Returns null (never a guess) when the built file is
+ * not deployed alongside the API.
+ */
+function getFrontendBuildSha() {
+  if (frontendShaResolved) return cachedFrontendSha;
+  frontendShaResolved = true;
+  const candidates = [
+    path.join(__dirname, '..', '..', 'dist', 'index.html'),
+    path.join(__dirname, '..', 'dist', 'index.html'),
+  ];
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const html = fs.readFileSync(file, 'utf8');
+      const match = html.match(/data-build-sha=["']([0-9a-f]{40})["']/i);
+      if (match) {
+        cachedFrontendSha = match[1].toLowerCase();
+        return cachedFrontendSha;
+      }
+    } catch (_) { /* ignore and try the next candidate */ }
+  }
+  return null;
+}
+
 let cachedCommitSha = null;
 function getCommitSha() {
   if (cachedCommitSha) return cachedCommitSha;
@@ -146,7 +180,21 @@ async function buildHealthPayload(req) {
 // stale frontend/backend pair cannot be mistaken for a tested release.
 router.get('/version', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  return res.json({ commitSha: getCommitSha(), service: 'resumepilot-backend', apiVersion: 'platform-v2' });
+  const commitSha = getCommitSha();
+  const frontendBuildSha = getFrontendBuildSha();
+  return res.json({
+    commitSha,
+    frontendBuildSha,
+    service: 'resumepilot-backend',
+    apiVersion: 'platform-v2',
+    // Aggregated so a caller does not have to infer release alignment by hand.
+    releaseIdentity: {
+      backendSha: commitSha,
+      frontendSha: frontendBuildSha,
+      aligned: Boolean(frontendBuildSha) && frontendBuildSha === commitSha,
+      verified: Boolean(frontendBuildSha) && frontendBuildSha === commitSha,
+    },
+  });
 });
 
 // Public platform and module configuration (Public, 100% MariaDB-backed)
