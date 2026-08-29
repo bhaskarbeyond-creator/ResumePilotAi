@@ -1231,8 +1231,8 @@ export async function getBlogPostBySlug(slug, includeUnpublished = false) {
     try {
         const data = await apiJson(`/api/blog-data/slug/${encodeURIComponent(slug)}`);
         const post = data.post || data.blogPost;
-        if (!post) return null;
-        if (!includeUnpublished && String(post.status || 'published').toLowerCase() !== 'published') return null;
+        const isPubliclyReadable = Boolean(post.published) || ['published', 'approved'].includes(String(post.status || '').toLowerCase());
+        if (!includeUnpublished && !isPubliclyReadable) return null;
         return post;
     } catch {
         return null;

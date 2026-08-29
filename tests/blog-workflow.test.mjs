@@ -67,6 +67,8 @@ test('CMS implementation uses revisions, private drafts, scheduling, sanitized p
   assert.match(backend, /CMS_SCHEDULED_POSTS_PUBLISHED/);
   assert.match(backend, /\/api\/admin\/blog\/posts\/:postId/);
   assert.match(backend, /INVALID_BLOG_TRANSITION/);
-  assert.match(backend, /blog_scheduled_published/);
-  assert.match(operations, /\/api\/blog-data/);
+  assert.match(backend, /blog-data\\\/slug/);
+  assert.match(operations, /isPubliclyReadable/);
+  assert.match(operations, /\/api\/blog-data\/slug\//);
 });
+

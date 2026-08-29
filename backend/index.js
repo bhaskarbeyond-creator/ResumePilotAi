@@ -348,7 +348,11 @@ const publicApiPaths = new Set([
     '/stats', '/reviews', '/phrases', '/portfolios/public'
 ]);
 function isPublicApiPath(pathname) {
+    if (pathname.startsWith('/jobs-data/tracker')) return false;
     return publicApiPaths.has(pathname)
+        || /^\/blog-data\/slug\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/i.test(pathname)
+        || /^\/jobs-data\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
+        || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/portfolios\/public\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/.test(pathname)
         || /^\/public\/custom-pages\/[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(pathname);
 }
