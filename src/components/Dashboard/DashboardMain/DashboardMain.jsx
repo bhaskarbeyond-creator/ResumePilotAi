@@ -1,6 +1,6 @@
 import React, { Component, Suspense, lazy } from 'react';
 import './DashboardMain.scss';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthContext } from '../../../main';
 import Toasts from '../../Toasts/Toats';
 import fire from '../../../conf/fire';
@@ -24,7 +24,6 @@ const DashboardSettings = lazy(() => import('../DashboardSettings/DashboardSetti
 const DashboardFavourites = lazy(() => import('../DashboardFavourites/DashboardFavourites'));
 const DashboardInterviews = lazy(() => import('../DashboardInterviews/DashboardInterviews'));
 const DashboardPortfolios = lazy(() => import('../DashboardPortfolios/DashboardPortfolios'));
-const DashboardJobMatching = lazy(() => import('../DashbaordJobMatching/DashboardJobMatching'));
 const AppliedJobs = lazy(() => import('../../AppliedJobs/AppliedJobs'));
 const JobTracker = lazy(() => import('../../AppliedJobs/JobTracker'));
 const EmployerDashboard = lazy(() => import('../EmployerDashboard/EmployerDashboard'));
@@ -501,7 +500,7 @@ class DashboardMain extends Component {
                                 <Route path="job-tracker" element={<JobTracker showToast={this.showToast} />} />
                                 <Route path="my-employments" element={<EmployerDashboard showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="my-companies" element={<CompaniesManagement showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
-                                <Route path="job-matching" element={<DashboardJobMatching showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
+                                <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
                                 <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
                             </Routes>
                         </Suspense>

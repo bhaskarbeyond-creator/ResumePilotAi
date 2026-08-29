@@ -75,6 +75,7 @@ input[type="reset"] {
     -webkit-tap-highlight-color: transparent;
 }
 
+a[href]:focus-visible,
 button:focus-visible,
 [role="button"]:focus-visible,
 input:focus-visible,

@@ -16,7 +16,7 @@ const defaultSentences = [
     'Ace interviews with AI prep tools',
 ];
 
-const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, _goToStepByStepBuilder, _goToPortfolioBuilder }) => {
+const HomepageHero = ({ t }) => {
     const user = useContext(AuthContext);
     const navigate = useNavigate();
     const [displayText, setDisplayText] = useState('');
@@ -136,74 +136,38 @@ const HomepageHero = ({ t, goToResumeSelectionStep, goToCoverSelection, _goToSte
                         {t('HomepageHero.description')}
                     </p>
 
-                    {/* CTA Buttons */}
-                    <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-8 sm:mb-12 md:mb-16 px-2 sm:px-4 md:px-0">
-                        {/* Quick Builder - Primary */}
-                        <button
-                            onClick={() => goToResumeSelectionStep && goToResumeSelectionStep()}
-                            className=" cursor-pointer relative flex items-center justify-center gap-2 px-5 py-3 bg-[#4a6cf7] text-white rounded-lg hover:bg-[#3b5ce6] transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg min-w-[140px] group">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span>{t('missing1.quickBuilder.title', 'Quick')}</span>
-                            <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none">
-                                {t('missing1.quickBuilder.badge', 'RECOMMENDED')}
-                            </span>
-                        </button>
+                    {/* Supported product workflows — one clear primary resume path. */}
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8 md:mb-10 px-2 sm:px-4 md:px-0" aria-label="Start building">
+                        <Link
+                            to="/build-resume/heading"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#4a6cf7] px-5 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#3b5ce6] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4a6cf7]">
+                            <BiFile className="h-4 w-4" aria-hidden="true" />
+                            <span>{t('missing1.stepByStep.title', 'Build Resume')}</span>
+                        </Link>
 
-                        {/* Step-by-Step Builder - Secondary */}
-                        <a
-                            href="/build-resume/heading"
-                            className="relative flex items-center justify-center gap-2 px-5 py-3 bg-white border border-[#4a6cf7] text-[#4a6cf7] rounded-lg hover:bg-blue-50 transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg min-w-[140px] group">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>{t('missing1.stepByStep.title', 'Guided')}</span>
-                            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none">
-                                {t('missing1.stepByStep.badge', 'NEW')}
-                            </span>
-                        </a>
-
-                        {/* Portfolio Builder */}
                         <button
+                            type="button"
                             onClick={handlePortfolioClick}
-                            className="relative flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg min-w-[140px] group cursor-pointer">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                                />
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-purple-200 bg-white px-5 py-3 text-sm font-semibold text-purple-700 shadow-sm transition-all duration-200 hover:border-purple-300 hover:bg-purple-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            <span>{t('missing1.portfolioBuilder.title', 'Portfolio')}</span>
-                            <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold leading-none">
-                                {t('missing1.portfolioBuilder.badge', 'NEW')}
-                            </span>
+                            <span>{t('missing1.portfolioBuilder.title', 'Build Portfolio')}</span>
                         </button>
 
-                        {/* Cover Letter */}
-                        <button
-                            onClick={() => goToCoverSelection && goToCoverSelection()}
-                            className=" cursor-pointer flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg min-w-[140px]">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
+                        <Link
+                            to="/cover-letter"
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span>{t('HomepageHero.createCoverLetter', 'Cover Letter')}</span>
-                        </button>
+                            <span>{t('HomepageHero.createCoverLetter', 'Create Cover Letter')}</span>
+                        </Link>
                     </div>
 
-                    {/* Simple explanation */}
-                    <div className="text-center text-xs text-gray-500 mb-6 max-w-lg mx-auto">
-                        <span className="font-medium text-[#4a6cf7]">{t('HomepageHero.quick', 'Quick')}</span> - {t('HomepageHero.quickDesc', 'Choose template & write')} •{' '}
-                        <span className="font-medium text-[#4a6cf7]">{t('HomepageHero.guided', 'Guided')}</span> - {t('HomepageHero.guidedDesc', 'AI-powered step-by-step')} •{' '}
-                        <span className="font-medium text-purple-600">{t('HomepageHero.portfolio', 'Portfolio')}</span> - {t('HomepageHero.portfolioDesc', 'Drag & drop website builder')}
-                    </div>
+                    <p className="mx-auto mb-6 max-w-xl text-center text-xs leading-relaxed text-slate-500">
+                        Build a resume step by step, create a portfolio, or tailor a cover letter for your next application.
+                    </p>
 
                     {/* Product conditions — factual, non-quantified, and mobile responsive. */}
                     <div className="flex items-center justify-center text-gray-600 bg-white/80 backdrop-blur-sm p-3 sm:p-4 md:p-5 rounded-2xl shadow-sm border border-blue-100/50 hover:shadow-md transition-all duration-300 ease-out mx-2 sm:mx-auto w-auto max-w-3xl">

@@ -3,7 +3,7 @@ import { FiStar, FiFileText, FiZap, FiTarget, FiTrendingUp, FiAward, FiUsers, Fi
 import { BiFile, BiPalette, BiShield } from 'react-icons/bi';
 import { useLottie } from "lottie-react";
 import { withTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import LoaderAnimation from '../../assets/animations/lottie-loader.json';
 import { getPages, getWebsiteData, getSocialLinks } from '../../services/api/platform';
 import HomepageFooter from '../../components/Dashboard2/elements/HomepageFooter';  
@@ -13,6 +13,7 @@ import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 
 const Features = ({ _t }) => {
+  const location = useLocation();
   // Get user from AuthContext
   const user = useContext(AuthContext);
   const [state, setState] = useState({
@@ -34,6 +35,18 @@ const Features = ({ _t }) => {
   };
 
   const { View } = useLottie(loaderOptions);
+
+  // Feature-menu links use anchors on this canonical page. React Router does
+  // not guarantee a delayed, lazy-rendered hash target is scrolled into view,
+  // so resolve it once the Features surface has rendered.
+  useEffect(() => {
+    const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+    if (!id) return undefined;
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [location.hash]);
 
   useEffect(() => {
     // Apply custom styles for page
@@ -101,7 +114,9 @@ const Features = ({ _t }) => {
       description: "Choose from registered resume layouts with configurable sections, typography, and ATS-conscious structure.",
       category: "Templates",
       highlight: "Layout Library",
-      stats: "50+ designs"
+      stats: "50+ designs",
+      id: "templates",
+      href: "/build-resume/heading"
     },
     {
       icon: FiCpu,
@@ -109,7 +124,9 @@ const Features = ({ _t }) => {
       description: "Advanced artificial intelligence analyzes job descriptions and suggests optimized content, keywords, and phrasing to maximize your impact.",
       category: "AI Technology",
       highlight: "Smart Suggestions",
-      stats: "Writing suggestions"
+      stats: "Writing suggestions",
+      id: "ai-builder",
+      href: "/build-resume/heading"
     },
     {
       icon: FiTarget,
@@ -117,7 +134,9 @@ const Features = ({ _t }) => {
       description: "Optional checks review common resume structure, wording, and job-description keywords without promising an employer outcome.",
       category: "Optimization",
       highlight: "ATS checks",
-      stats: "Compatibility review"
+      stats: "Compatibility review",
+      id: "ats-optimization",
+      href: "/build-resume/heading"
     },
     {
       icon: FiEdit3,
@@ -125,7 +144,8 @@ const Features = ({ _t }) => {
       description: "Guided editing controls and a live preview let you review changes while building your resume.",
       category: "Editor",
       highlight: "Live Preview",
-      stats: "Instant updates"
+      stats: "Instant updates",
+      href: "/build-resume/heading"
     },
     {
       icon: FiDownload,
@@ -133,7 +153,8 @@ const Features = ({ _t }) => {
       description: "Export your resume in PDF, Word, PNG, or HTML formats with high-quality rendering optimized for both digital and print viewing.",
       category: "Export",
       highlight: "High Quality",
-      stats: "4 formats"
+      stats: "4 formats",
+      href: "/build-resume/heading"
     },
     {
       icon: FiShare2,
@@ -141,7 +162,8 @@ const Features = ({ _t }) => {
       description: "Create shareable links, build online portfolios, and track engagement analytics to see who views your resume.",
       category: "Sharing",
       highlight: "Analytics",
-      stats: "Track views"
+      stats: "Track views",
+      href: "/portfolio/builder"
     }
   ];
 
@@ -168,7 +190,8 @@ const Features = ({ _t }) => {
       icon: FiLock,
       title: "Enterprise-Grade Security",
       description: "Bank-level encryption and privacy protection for your sensitive information",
-      category: "Security"
+      category: "Security",
+      id: "security"
     },
     {
       icon: FiRefreshCw,
@@ -362,7 +385,8 @@ const Features = ({ _t }) => {
             {mainFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                id={feature.id}
+                className="group relative overflow-hidden rounded-2xl border border-white/20 bg-white/80 shadow-lg transition-all duration-300 hover:shadow-xl"
               >
                 {/* Simple category badge */}
                 <div className="absolute top-4 right-4 z-10">
@@ -405,10 +429,10 @@ const Features = ({ _t }) => {
                         {feature.stats}
                       </span>
                       
-                      <div className="flex items-center text-[#4a6cf7] font-medium text-xs group-hover:gap-1 transition-all duration-300">
-                        <span>Learn more</span>
-                        <FiArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-300" />
-                      </div>
+                      <Link to={feature.href} className="inline-flex items-center gap-1 rounded-md text-xs font-semibold text-[#4a6cf7] transition-colors hover:text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                        <span>Explore feature</span>
+                        <FiArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -451,7 +475,8 @@ const Features = ({ _t }) => {
             {additionalFeatures.map((feature, index) => (
               <div
                 key={index}
-                className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                id={feature.id}
+                className="group relative overflow-hidden rounded-2xl border border-white/20 bg-white/80 shadow-lg transition-all duration-300 hover:shadow-xl"
               >
                 {/* Simple category badge */}
                 <div className="absolute top-3 right-3 z-10">
@@ -479,15 +504,8 @@ const Features = ({ _t }) => {
                       {feature.description}
                     </p>
                     
-                    {/* Simple action indicator */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <div className="flex items-center text-[#4a6cf7] font-medium text-xs group-hover:gap-1 transition-all duration-300">
-                        <span>Learn More</span>
-                        <FiArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-300" />
-                      </div>
-                      
-                      {/* Simple indicator dot */}
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div className="border-t border-gray-100 pt-3 text-xs font-medium text-slate-500">
+                      Included in the ResumePilot workspace
                     </div>
                   </div>
                 </div>

@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { checkIfAdmin, getSystemSettings } from '../../../services/api/platform';
 import logo from '../../../assets/logo/logo.png';
 import { FaEnvelope, FaBars, FaTimes, FaChevronDown, FaArrowRight, FaShieldAlt, FaSmile, FaLifeRing, FaBook, FaVideo, FaUsers, FaGraduationCap, FaNewspaper, FaQuestionCircle, FaExternalLinkAlt, FaDownload, FaPlay, FaStar, FaRocket, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
-import { FiTarget, FiTrendingUp, FiAward, FiFileText, FiZap, FiEdit3 } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { FiGrid, FiTarget, FiTrendingUp, FiAward, FiFileText, FiZap, FiEdit3 } from 'react-icons/fi';
+import { Link, useLocation } from 'react-router-dom';
 import HomepageLanguages from './HomepageLanguages';
 const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
     const { t } = useTranslation('common');
+    const location = useLocation();
+    const isDashboardActive = location.pathname === '/dashboard' || location.pathname.startsWith('/dashboard/');
     const [isOpen, setIsOpen] = useState(false);
     const [featuresOpen, setFeaturesOpen] = useState(false);
     const [_resourcesOpen, setResourcesOpen] = useState(false);
@@ -99,7 +101,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
             title: t('navbar.features.atsOptimization.title'),
             description: t('navbar.features.atsOptimization.description'),
             gradient: 'from-violet-500 to-purple-600',
-            href: '/features/ats-optimization',
+            href: '/features#ats-optimization',
             badge: t('navbar.features.atsOptimization.badge'),
             popular: true,
         },
@@ -108,7 +110,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
             title: t('navbar.features.aiBuilder.title'),
             description: t('navbar.features.aiBuilder.description'),
             gradient: 'from-emerald-500 to-teal-600',
-            href: '/features/ai-builder',
+            href: '/features#ai-builder',
             badge: t('navbar.features.aiBuilder.badge'),
         },
         {
@@ -116,7 +118,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
             title: t('navbar.features.templates.title'),
             description: t('navbar.features.templates.description'),
             gradient: 'from-blue-500 to-indigo-600',
-            href: '/features/templates',
+            href: '/features#templates',
         },
 
         {
@@ -124,7 +126,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
             title: t('navbar.features.security.title'),
             description: t('navbar.features.security.description'),
             gradient: 'from-green-500 to-emerald-600',
-            href: '/features/security',
+            href: '/features#security',
             badge: t('navbar.features.security.badge'),
         }
     ];
@@ -196,7 +198,14 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                 {/* Features Dropdown */}
                                 <div className="relative" ref={featuresDropdownRef}>
                                     <button
+                                        type="button"
+                                        id="features-menu-button"
+                                        aria-haspopup="true"
+                                        aria-expanded={featuresOpen}
+                                        aria-controls="features-menu"
                                         className="flex items-center text-gray-700 hover:text-purple-600 font-medium transition-colors duration-200 relative group"
+                                        onClick={() => setFeaturesOpen((open) => !open)}
+                                        onKeyDown={(event) => { if (event.key === 'Escape') setFeaturesOpen(false); }}
                                         onMouseEnter={() => handleDropdownEnter('features')}
                                         onMouseLeave={() => handleDropdownLeave('features')}>
                                         {t('navbar.featuresNav')}
@@ -207,6 +216,8 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                     {/* Features Dropdown */}
                                     {featuresOpen && (
                                         <div
+                                            id="features-menu"
+                                            aria-labelledby="features-menu-button"
                                             className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 opacity-100 visible transition-all duration-200 animate-fadeIn"
                                             onMouseEnter={() => handleDropdownEnter('features')}
                                             onMouseLeave={() => handleDropdownLeave('features')}>
@@ -229,9 +240,11 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                                 <div className="p-4">
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {featuresData.map((feature, index) => (
-                                                            <div
+                                                            <Link
                                                                 key={index}
-                                                                className="group/item cursor-pointer relative p-3 rounded-lg hover:bg-purple-50 transition-all duration-200 border border-transparent hover:border-purple-200">
+                                                                to={feature.href}
+                                                                onClick={() => setFeaturesOpen(false)}
+                                                                className="group/item relative block rounded-lg border border-transparent p-3 transition-all duration-200 hover:border-purple-200 hover:bg-purple-50">
                                                                 {/* Badge */}
                                                                 {feature.badge && (
                                                                     <div className="absolute -top-0.5 -right-0.5 z-10">
@@ -274,7 +287,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                                                         <p className="text-xs text-gray-500 leading-tight">{feature.description}</p>
                                                                     </div>
                                                                 </div>
-                                                            </div>
+                                                            </Link>
                                                         ))}
                                                     </div>
 
@@ -367,10 +380,15 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                 
                                 <Link
                                     to="/dashboard"
-                                    className="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                                    aria-current={isDashboardActive ? 'page' : undefined}
+                                    className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                                        isDashboardActive
+                                            ? 'border-indigo-200 bg-indigo-50 text-indigo-800 shadow-sm'
+                                            : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800 hover:shadow'
+                                    }`}
                                 >
-                                    {user.plan || t('navbar.dashboard')}
-                                    <FiTarget className="ml-2 w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                                    <FiGrid className="h-4 w-4" aria-hidden="true" />
+                                    <span>{t('navbar.dashboard', 'Dashboard')}</span>
                                 </Link>
                             </>
                         ) : (
@@ -388,16 +406,19 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                     <div className="lg:hidden flex items-center space-x-4">
                         <HomepageLanguages />
                         <button
+                            type="button"
                             onClick={() => setIsOpen(!isOpen)}
-                            className="p-2 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
-                            aria-label="Toggle menu">
+                            className="min-h-11 min-w-11 rounded-lg p-2 text-gray-700 transition-all duration-200 hover:bg-purple-50 hover:text-purple-600"
+                            aria-label="Toggle menu"
+                            aria-expanded={isOpen}
+                            aria-controls="mobile-navigation">
                             {isOpen ? <FaTimes className="w-5 h-5" /> : <FaBars className="w-5 h-5" />}
                         </button>
                     </div>
                 </div>
 
                 {/* Mobile Navigation Menu */}
-                <div className={`lg:hidden transition-all duration-300 ${isOpen ? 'max-h-[80vh] opacity-100 visible overflow-y-auto' : 'max-h-0 opacity-0 invisible overflow-hidden'}`}>
+                <div id="mobile-navigation" className={`lg:hidden transition-all duration-300 ${isOpen ? 'max-h-[80vh] opacity-100 visible overflow-y-auto' : 'max-h-0 opacity-0 invisible overflow-hidden'}`}>
                     <div className="px-6 pt-4 pb-6 space-y-4 bg-white rounded-2xl mt-4 border border-gray-200 shadow-xl mx-4">
                         {/* Mobile Links */}
                         <Link to="/" onClick={clearStorage} className="block px-3 py-2 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50/70 transition-all duration-300 font-medium">
@@ -407,14 +428,17 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                         {/* Mobile Features */}
                         <div className="space-y-2">
                             <button
+                                type="button"
                                 onClick={() => toggleMobileDropdown('features')}
+                                aria-expanded={activeMobileDropdown === 'features'}
+                                aria-controls="mobile-features-menu"
                                 className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-700 hover:text-purple-600 hover:bg-purple-50/70 transition-all duration-300 font-medium">
                                 {t('navbar.featuresNav')}
                                 <FaChevronDown className={`w-3 h-3 transition-transform duration-300 ${activeMobileDropdown === 'features' ? 'rotate-180' : ''}`} />
                             </button>
 
                             {activeMobileDropdown === 'features' && (
-                                <div className="pl-2 sm:pl-4 space-y-2 animate-fadeIn">
+                                <div id="mobile-features-menu" className="pl-2 sm:pl-4 space-y-2 animate-fadeIn">
                                     {featuresData.slice(0, 4).map((feature, index) => (
                                         <Link key={index} to={feature.href} className="flex items-center space-x-3 px-2 sm:px-3 py-2 rounded-lg hover:bg-purple-50/70 transition-all duration-300">
                                             <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r ${feature.gradient} flex items-center justify-center`}>
@@ -458,9 +482,13 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                                     )}
                                     <Link
                                         to="/dashboard"
-                                        className="flex items-center justify-center w-full px-4 py-2.5 text-gray-700 hover:text-purple-600 font-medium transition-colors duration-300 rounded-lg hover:bg-purple-50/70">
-                                        <FiTarget className="mr-2" />
-                                        {user.plan || t('navbar.dashboard')}
+                                        onClick={() => setIsOpen(false)}
+                                        aria-current={isDashboardActive ? 'page' : undefined}
+                                        className={`flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors duration-200 ${
+                                            isDashboardActive ? 'border-indigo-200 bg-indigo-50 text-indigo-800' : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800'
+                                        }`}>
+                                        <FiGrid className="h-4 w-4" aria-hidden="true" />
+                                        {t('navbar.dashboard', 'Dashboard')}
                                     </Link>
                                     <button
                                         onClick={() => logout && logout()}

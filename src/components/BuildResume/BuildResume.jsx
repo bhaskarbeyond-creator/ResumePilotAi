@@ -14,6 +14,7 @@ import CertificationsStep from './steps/CertificationsStep';
 import AchievementsStep from './steps/AchievementsStep';
 import ReferencesStep from './steps/ReferencesStep';
 import CustomSectionsStep from './steps/CustomSectionsStep';
+import ReviewStep from './steps/ReviewStep';
 
 import TemplateRenderer from '../TemplateRenderer';
 import { getTemplateMeta } from '../../utils/templateCatalog';
@@ -293,6 +294,17 @@ const BuildResume = () => {
                 </svg>
             ),
         }] : []),
+        {
+            id: 12,
+            name: 'Review & export',
+            path: 'review',
+            component: ReviewStep,
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+        },
     ];
     const sectionKeyForPath = path => ({ 'work-history': 'employment' }[path] || path);
     const sectionOrderList = Array.isArray(resumeData?.sectionOrder) && resumeData.sectionOrder.length
@@ -381,18 +393,26 @@ const BuildResume = () => {
         saveTimerRef.current = setTimeout(() => persistLatest(), delay);
     }, [persistLatest]);
 
+    // Guests can explore the guided builder, but authenticated users must not
+    // navigate away from an unsaved server error or revision conflict. Local
+    // recovery remains a safety net; it is not presented as a successful save.
+    const persistBeforeNavigation = async () => {
+        if (!userIdRef.current) return true;
+        return persistLatest({ manual: true });
+    };
+
     const handleNext = async () => {
-        await persistLatest({ manual: true });
+        if (!await persistBeforeNavigation()) return;
         if (currentStepIndex < orderedSteps.length - 1) navigate(`/build-resume/${orderedSteps[currentStepIndex + 1].path}`);
     };
 
     const handlePrevious = async () => {
-        await persistLatest({ manual: true });
+        if (!await persistBeforeNavigation()) return;
         if (currentStepIndex > 0) navigate(`/build-resume/${orderedSteps[currentStepIndex - 1].path}`);
     };
 
     const handleStepClick = async (stepPath) => {
-        await persistLatest({ manual: true });
+        if (!await persistBeforeNavigation()) return;
         navigate(`/build-resume/${stepPath}`);
     };
 
@@ -669,7 +689,7 @@ const BuildResume = () => {
     };
 
     const handleExitBuilder = async () => {
-        if (changeVersionRef.current > savedVersionRef.current && !await persistLatest({ manual: true })) return;
+        if (userIdRef.current && changeVersionRef.current > savedVersionRef.current && !await persistLatest({ manual: true })) return;
         navigate(userData.user ? '/dashboard' : '/');
     };
 
@@ -941,6 +961,13 @@ const BuildResume = () => {
 
     // Complete and save resume handler
     const handleCompleteResume = async () => {
+        const requiredPersonalFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
+        const missingPersonalFields = requiredPersonalFields.filter((field) => !String(resumeDataRef.current?.[field] || '').trim());
+        if (missingPersonalFields.length) {
+            setSaveState({ status: 'error', message: 'Complete your required personal details before finishing.' });
+            navigate('/build-resume/heading');
+            return;
+        }
         const userId = userIdRef.current;
         if (!userId) {
             alert('Please sign in to save your resume');
@@ -1148,7 +1175,9 @@ const BuildResume = () => {
         }
     }, [location.pathname, navigate]);
 
-    const progressPercentage = Math.round((resumeData.completedSteps.length / orderedSteps.length) * 100);
+    const contentSteps = orderedSteps.filter((step) => step.path !== 'review');
+    const completedStepCount = contentSteps.filter((step) => isStepCompleted(step.id)).length;
+    const progressPercentage = contentSteps.length ? Math.round((completedStepCount / contentSteps.length) * 100) : 0;
 
     if (isLoading) {
         return (
@@ -1356,7 +1385,7 @@ const BuildResume = () => {
                                     </div>
 
                                     <p className="text-xs text-slate-600">
-                                        {resumeData.completedSteps.length}/{orderedSteps.length} {t('BuildResume.progress.completed')}
+                                        {completedStepCount}/{contentSteps.length} {t('BuildResume.progress.completed')}
                                     </p>
                                 </div>
                             </div>
@@ -1527,13 +1556,7 @@ const BuildResume = () => {
 
                                     {/* Resume Content */}
                                     <div className="relative h-80 overflow-hidden bg-gradient-to-br from-slate-50 to-gray-50">
-                                        <div
-                                            className="cursor-pointer"
-                                            onClick={() => {
-                                                setShowPreview(true);
-                                                setIsMobilePreviewOpen(false);
-                                            }}
-                                            style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
+                                        <div style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
                                             <TemplateRenderer
                                                 templateId={currentTemplate}
                                                 values={previewData}
@@ -1541,6 +1564,13 @@ const BuildResume = () => {
                                                 onError={(error) => console.error('Template preview failed:', error)}
                                             />
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowPreview(true); setIsMobilePreviewOpen(false); }}
+                                            aria-label="Open full-size resume preview"
+                                            className="absolute inset-0 flex items-center justify-center bg-transparent text-transparent focus-visible:bg-slate-950/20 focus-visible:text-slate-800">
+                                            <span className="rounded-md bg-white/95 px-3 py-2 text-xs font-semibold shadow-sm">Open full preview</span>
+                                        </button>
                                     </div>
 
                                     {/* Progress indicator */}
@@ -1737,7 +1767,7 @@ const BuildResume = () => {
                         </div>
 
                         <p className="text-xs text-slate-600">
-                            {resumeData.completedSteps.length}/{orderedSteps.length} {t('BuildResume.progress.completed')}
+                            {completedStepCount}/{contentSteps.length} {t('BuildResume.progress.completed')}
                         </p>
                     </div>
                 </div>
@@ -1832,6 +1862,7 @@ const BuildResume = () => {
                                 <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                                 <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                                <Route path="review" element={<ReviewStep resumeData={resumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
                                 <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
                             </Routes>
                         </div>
@@ -2031,24 +2062,21 @@ const BuildResume = () => {
 
                         {/* Resume Content with Loading State - A4 Proportion Container */}
                         <div className="relative aspect-[1/1.414] w-full overflow-hidden bg-gradient-to-br from-slate-50 to-gray-50">
-                            {/* Loading Overlay for better UX */}
-                            <div className="absolute inset-0 bg-white bg-opacity-50 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                <div onClick={() => setShowPreview(true)} className="cursor-pointer bg-white px-3 py-2 rounded-lg shadow-lg border">
-                                    <span className="text-xs text-slate-600">{t('BuildResume.preview.clickToView')}</span>
-                                </div>
-                            </div>
-
-                            <div
-                                className="cursor-pointer transition-transform duration-200 group-hover:scale-105"
-                                onClick={() => setShowPreview(true)}
-                                style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
+                            <div className="transition-transform duration-200 group-hover:scale-105" style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
                                 <TemplateRenderer
-                                                templateId={currentTemplate}
-                                                values={previewData}
-                                                language={i18n.language}
-                                                onError={(error) => console.error('Template preview failed:', error)}
-                                            />
+                                    templateId={currentTemplate}
+                                    values={previewData}
+                                    language={i18n.language}
+                                    onError={(error) => console.error('Template preview failed:', error)}
+                                />
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowPreview(true)}
+                                aria-label="Open full-size live resume preview"
+                                className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/0 text-transparent transition-colors duration-200 hover:bg-slate-950/20 hover:text-slate-800 focus-visible:bg-slate-950/20 focus-visible:text-slate-800">
+                                <span className="rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold shadow-lg">{t('BuildResume.preview.clickToView')}</span>
+                            </button>
                         </div>
 
                         {/* Progress indicator */}

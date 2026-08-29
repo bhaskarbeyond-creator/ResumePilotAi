@@ -12,14 +12,14 @@ import GridBackground from './elements/GridBackground';
 
 class MyPageComponent extends React.Component {
     render() {
-        const { authBtnHandler, user, logout, goToResumeSelectionStep, goToCoverSelection } = this.props;
+        const { authBtnHandler, user, logout } = this.props;
 
         return (
             <div className="relative min-h-screen h-full w-full">
                 <GridBackground className="z-0" />
                 <div className="relative z-10 bg-transparent h-full w-full">
                     <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
-                    <HomepageHero goToResumeSelectionStep={goToResumeSelectionStep} goToCoverSelection={goToCoverSelection} />
+                    <HomepageHero />
                     <HomepageTrustedBy />
                     <HomepageSteps />
                     <HomepageReviews />

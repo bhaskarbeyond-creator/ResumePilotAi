@@ -428,7 +428,10 @@ const AuthWrapper = () => {
                             <Route path="/build-resume/*" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
                             <Route path="/create-resume/*" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
                             <Route path="/create-resume" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
-                            <Route path="/resume/:step" element={<Welcome key={user?.uid || 'guest'} />} />
+                            {/* Legacy in-page builder URLs previously mounted an obsolete client-only workflow.
+                                Keep old links useful, but route every variant into the maintained,
+                                MariaDB-backed builder rather than reviving two competing drafts. */}
+                            <Route path="/resume/:step" element={<Navigate to="/build-resume/heading" replace />} />
                             <Route path="/billing/plans" element={<Billing key={user?.uid || 'guest'} user={user} />} />
                             <Route path="/p/:custompage" element={<CustomePage user={user} />} />
                             <Route path="/shared/:resumeId" element={<PublicResume />} />

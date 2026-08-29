@@ -1096,13 +1096,17 @@ class DashboardHomepage extends Component {
                       {/* Header */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0 pr-2">
-                          <h3 className="text-base font-semibold text-slate-900 cursor-pointer hover:text-blue-600 transition-colors truncate" onClick={() => this.setAsCurrentResume(document.id, document)}>
+                          <button
+                            type="button"
+                            onClick={() => this.setAsCurrentResume(document.id, document)}
+                            className="block max-w-full truncate text-left text-base font-semibold text-slate-900 transition-colors hover:text-blue-600"
+                          >
                             {document.item?.title && document.item.title !== 'Untitled Resume'
                               ? document.item.title
                               : document.item?.firstname || document.item?.lastname
                               ? `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.trim()
                               : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
-                          </h3>
+                          </button>
                           <p className="text-sm text-slate-500 mt-1">
                             {t("DashboardHomepage.card.created", "Created")}{" "}
                             {new Date(
@@ -1117,7 +1121,13 @@ class DashboardHomepage extends Component {
 
                         {/* Action Menu */}
                         <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" onClick={(e) => {
+                          <button
+                            type="button"
+                            aria-label={`More actions for ${document.item?.title || document.item?.firstname || 'this resume'}`}
+                            aria-expanded={this.state.openDropdownId === document.id}
+                            aria-controls={`resume-actions-${document.id}`}
+                            className="min-h-10 min-w-10 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                            onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               this.setState({
@@ -1127,21 +1137,21 @@ class DashboardHomepage extends Component {
                                     : document.id,
                               });
                             }}>
-                            <FaEllipsisH className="w-4 h-4" />
+                            <FaEllipsisH className="w-4 h-4" aria-hidden="true" />
                           </button>
                           {this.state.openDropdownId === document.id && (
-                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-10 border border-slate-200">
+                            <div id={`resume-actions-${document.id}`} role="menu" className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-10 border border-slate-200">
                               <div className="py-1">
-                                <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
                                   <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
                                 </button>
-                                <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
                                   <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
                                 </button>
-                                <button className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
                                   <FaFileAlt className="w-3 h-3 mr-3" /><span>Duplicate</span>
                                 </button>
-                                <button className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     const resumeName =
@@ -1174,21 +1184,26 @@ class DashboardHomepage extends Component {
                       </div>
 
                       {/* Document Preview (Positioned right below Header) */}
-                      <div className="relative h-72 bg-slate-50 cursor-pointer overflow-hidden rounded-lg mb-4 border border-slate-200/80 shadow-inner group/preview" onClick={() => this.openDocumentPreview(document)}>
+                      <div className="group/preview relative mb-4 h-72 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50 shadow-inner">
                         {/* Resume Preview with Dynamic Template Component */}
-                        <div className="absolute inset-0 overflow-hidden transform-gpu flex items-start justify-center">
-                          <div className="w-[794px] h-[1123px] bg-white scale-[0.45] origin-top">
+                        <div className="absolute inset-0 flex items-start justify-center overflow-hidden transform-gpu">
+                          <div className="w-[794px] h-[1123px] origin-top scale-[0.45] bg-white">
                             {this.renderTemplatePreview(document)}
                           </div>
                         </div>
 
-                        {/* Full Preview Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/25 transition-all duration-300 flex items-center justify-center">
-                          <div className="transform scale-0 group-hover/preview:scale-100 transition-transform duration-200 bg-white/95 backdrop-blur px-4 py-2 rounded-full shadow-lg flex items-center space-x-2 text-slate-800 font-semibold text-xs border border-slate-200">
-                            <FaEye className="w-3.5 h-3.5 text-blue-600" />
-                            <span>{t("DashboardHomepage.actions.viewFullPreview", "Full Size Preview")}</span>
-                          </div>
-                        </div>
+                        {/* A real button sits over the visual canvas so the interaction is keyboard-accessible without nesting controls from resume content. */}
+                        <button
+                          type="button"
+                          aria-label={`Open full preview for ${document.item?.title || document.item?.firstname || 'this resume'}`}
+                          onClick={() => this.openDocumentPreview(document)}
+                          className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 transition-all duration-300 hover:bg-black/25 focus-visible:bg-black/25"
+                        >
+                          <span className="scale-0 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-800 shadow-lg backdrop-blur transition-transform duration-200 group-hover/preview:scale-100 group-focus-within/preview:scale-100">
+                            <FaEye className="mr-2 inline h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
+                            {t("DashboardHomepage.actions.viewFullPreview", "Full Size Preview")}
+                          </span>
+                        </button>
                       </div>
 
                       {/* Action Buttons */}
