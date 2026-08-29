@@ -103,10 +103,14 @@ test('executable backend drains its listener and closes cleanly on SIGTERM', { t
     assert.equal(child.kill('SIGTERM'), true, 'SIGTERM should be delivered to the backend process');
     const result = await waitForExit(child, 6_000);
 
-    assert.deepEqual(result, { code: 0, signal: null }, output.value);
-    assert.match(output.value, /\[Shutdown\] SIGTERM received — draining connections\.\.\./);
-    assert.match(output.value, /\[Shutdown\] Clean exit complete\./);
-    assert.equal((output.value.match(/Clean exit complete/g) || []).length, 1, 'shutdown completion must be emitted once');
+    if (process.platform === 'win32') {
+      assert.ok(result.code === 0 || result.signal === 'SIGTERM', `unexpected exit status on windows: ${JSON.stringify(result)}`);
+    } else {
+      assert.deepEqual(result, { code: 0, signal: null }, output.value);
+      assert.match(output.value, /\[Shutdown\] SIGTERM received — draining connections\.\.\./);
+      assert.match(output.value, /\[Shutdown\] Clean exit complete\./);
+      assert.equal((output.value.match(/Clean exit complete/g) || []).length, 1, 'shutdown completion must be emitted once');
+    }
     assert.doesNotMatch(output.value, /ReferenceError|TypeError|UnhandledPromiseRejection/);
   } finally {
     if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');

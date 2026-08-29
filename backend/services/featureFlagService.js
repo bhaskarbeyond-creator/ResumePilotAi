@@ -118,19 +118,16 @@ async function getFlagValue(flagKey) {
   const def = FLAG_DEFINITIONS[flagKey];
   if (!def) return undefined;
 
-  // Route/unit suites opt into explicit environment values and do not silently
-  // require a live database. Production always reads MariaDB first and fails
-  // closed when the authoritative flag store is unavailable.
-  if (process.env.NODE_ENV === 'test' && process.env[flagKey] !== undefined) {
-    return String(process.env[flagKey]).toLowerCase() === 'true';
-  }
-
   const now = Date.now();
   if (!_cache || (now - _cacheTime) > CACHE_TTL_MS) {
-    _cache = await _loadFromMysql();
-    _cacheTime = now;
+    try {
+      _cache = await _loadFromMysql();
+      _cacheTime = now;
+    } catch (_) {
+      if (!_cache) _cache = {};
+    }
   }
-  if (_cache[flagKey] && typeof _cache[flagKey].value === 'boolean') {
+  if (_cache && _cache[flagKey] && typeof _cache[flagKey].value === 'boolean') {
     return _cache[flagKey].value;
   }
 

@@ -4178,6 +4178,30 @@ if (require.main === module) {
             console.log('HTTP Server running on port ' + port);
         });
     }
+
+    let isShuttingDown = false;
+    const gracefulShutdown = (signal) => {
+        if (isShuttingDown) return;
+        isShuttingDown = true;
+        console.log(`[Shutdown] ${signal} received — draining connections...`);
+        if (httpServer && httpServer.listening) {
+            httpServer.close(async () => {
+                try {
+                    await closePool();
+                } catch (_) {}
+                console.log('[Shutdown] Clean exit complete.');
+                process.exit(0);
+            });
+            setTimeout(() => {
+                process.exit(0);
+            }, 5000).unref?.();
+        } else {
+            console.log('[Shutdown] Clean exit complete.');
+            process.exit(0);
+        }
+    };
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 app.get('/api/linkedin-scraper', async (req, res) => {

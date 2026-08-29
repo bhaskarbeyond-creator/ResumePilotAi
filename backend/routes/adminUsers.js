@@ -538,6 +538,19 @@ router.patch('/:uid', async (req, res) => {
     return res.json({ success: true, message: 'User updated successfully.', user: adminUserProjection(updatedIdentity, freshProfile || {}, uid) });
   } catch (error) {
     console.error('[Admin user PATCH error]', error.message);
+    const isDirectoryUnavailable = error.code === 'IDENTITY_DIRECTORY_UNAVAILABLE'
+      || error.code === 'APPLICATION_DATABASE_UNAVAILABLE'
+      || error.code === 'ECONNREFUSED'
+      || error.code === 'PROTOCOL_CONNECTION_LOST'
+      || /connect ECONNREFUSED/i.test(error.message);
+    if (isDirectoryUnavailable) {
+      return res.status(503).json({
+        success: false,
+        code: 'USER_DIRECTORY_UNAVAILABLE',
+        error: 'User directory unavailable.',
+        requestId: res.locals.requestId,
+      });
+    }
     const status = error.status || (error.code === 'auth/user-not-found' ? 404 : 500);
     return res.status(status).json({ success: false, code: error.code || 'USER_UPDATE_FAILED', error: status >= 500 ? 'Unable to update user.' : error.message, requestId: res.locals.requestId });
   }
