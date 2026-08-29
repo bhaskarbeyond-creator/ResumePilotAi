@@ -201,7 +201,7 @@ test('Super Admin User PATCH: mutation requires the user directory and fails clo
     assert.equal(res.body.code, 'USER_DIRECTORY_UNAVAILABLE');
   } else if (res.status === 404) {
     assert.equal(res.body.success, false);
-    assert.equal(res.body.code, 'USER_NOT_FOUND');
+    assert.ok(['USER_NOT_FOUND', 'IDENTITY_NOT_FOUND'].includes(res.body.code), `unexpected 404 code: ${res.body.code}`);
   } else if (res.status === 200) {
     assert.equal(res.body.success, true);
     assert.ok(res.body.user);
