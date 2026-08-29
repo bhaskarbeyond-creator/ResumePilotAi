@@ -56,6 +56,7 @@
     "dr:retain": "node scripts/dr-backup-run.mjs --retain-only --no-offsite",
     "dr:restore-point": "node scripts/dr-restore-point.mjs",
     "dr:monitor": "node scripts/dr-monitor.mjs",
+    "dr:observe": "node scripts/dr-observability.mjs",
     "dr:test": "node --test tests/dr-hardening.test.mjs"
   },
   "dependencies": {

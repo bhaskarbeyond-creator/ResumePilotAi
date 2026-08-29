@@ -541,3 +541,309 @@ could not obtain.
 > `git rev-parse arena/01a04b8a-resumepilotai`. `c2ab0e0…` is never superseded as the
 > identifier of the work itself.
 
+
+---
+
+# Part II — Provider Capability, Capacity & Final Certification
+
+## 14. Hosting provider capability investigation (§4)
+
+### 14.1 Provider identification
+
+Evidence indicates **Hostinger shared hosting**, not VPS:
+
+| Signal | Value | Implication |
+|---|---|---|
+| Application home path | `/home/u727965524/` (recorded in `scripts/lib/remote-*.cjs`) | cPanel-style account directory, characteristic of shared hosting |
+| Database name | `u727965524_airesume` | account-prefixed, shared-tenancy naming |
+| Node path probed by tooling | `/opt/alt/alt-nodejs20/root/usr/bin/pm2` | CloudLinux ALT runtime stack, standard on Hostinger shared |
+| MariaDB host reported by `/api/readyz` | `127.0.0.1` | database co-located with the application |
+
+Confidence: **high**, but inferred from artifacts rather than read from the
+account. Confirm in hPanel before relying on plan-specific limits.
+
+### 14.2 Capability matrix
+
+| Capability | Finding | Source |
+|---|---|---|
+| Automated database backups | **Not included on shared hosting** — manual backups required | [4](https://notestime.in/developer-resources/hostinger-hosting-for-beginners/hostinger-backup-restore) |
+| Provider backup frequency | Weekly on all plans; **daily only on Business and above** | [1](https://www.tooltester.com/en/hosting/hostinger-review/), [5](https://blog.mddhosting.com/2026/08/we-went-from-21-days-of-backups-to-six-months-at-no-extra-cost/) |
+| Provider backup retention | ~30 days (review); weekly 6 weeks / daily 7 days (secondary source) | [1](https://www.tooltester.com/en/hosting/hostinger-review/), [5](https://blog.mddhosting.com/2026/08/we-went-from-21-days-of-backups-to-six-months-at-no-extra-cost/) |
+| Provider restore granularity | **Whole-account; no selective file/table restore** | [4](https://notestime.in/developer-resources/hostinger-hosting-for-beginners/hostinger-backup-restore) |
+| Provider backup location | Shared plans store backups **on the same server** | [4](https://notestime.in/developer-resources/hostinger-hosting-for-beginners/hostinger-backup-restore) |
+| `crontab` access | **VPS only.** Shared hosting uses hPanel Cron Jobs | [2](https://www.hostinger.com/support/1583713-can-background-processes-be-executed-via-ssh-in-hostinger/) |
+| hPanel cron | Supported; minimum 1-minute interval; output viewable | [1](https://docs.hostinger.com/websites/cron-jobs), [3](https://www.hostinger.com/support/5647075-how-to-check-the-output-of-a-cron-job-at-hostinger/) |
+| hPanel cron command restrictions | Shell special characters unreliable → use a wrapper script | [5](https://stackoverflow.com/questions/74519612/setting-up-cron-jobs-for-laravel-on-hostingers-hpanel) |
+| VPS snapshots | One manual snapshot at a time; **expires after 1 day** | [2](https://www.hostinger.com/support/1583232-how-to-back-up-or-restore-a-vps-at-hostinger/), [3](https://support.hostinger.com/en/articles/1583232-how-to-back-up-or-restore-a-vps) |
+| VPS automated backups | Weekly default, daily paid; max 4 retained (2 daily + 2 weekly) | [2](https://www.hostinger.com/support/1583232-how-to-back-up-or-restore-a-vps-at-hostinger/) |
+| MariaDB binary logging | MariaDB ships with `log_bin=OFF`; enabling requires a **server restart** and config-file edit | [2](https://mariadb.com/docs/server/server-management/server-monitoring-logs/binary-log/activating-the-binary-log), [4](https://www.simplified.guide/mysql-mariadb/logging-enable-binary) |
+| PITR | **NOT AVAILABLE** on shared hosting | derived from the above |
+| Database replication | **NOT VERIFIED** — no evidence either way | — |
+| Bundled object storage | **NOT VERIFIED** — no evidence Hostinger shared plans include it. Use third-party S3/B2/GCS | — |
+| Monitoring/alerting | hPanel resource usage only | [2](https://www.hostinger.com/support/1583713-can-background-processes-be-executed-via-ssh-in-hostinger/) |
+| Database size limit | 3 GB on shared plans | [1](https://www.tooltester.com/en/hosting/hostinger-review/) |
+
+### 14.3 What this means
+
+Hostinger's own backups **cannot be counted toward 3-2-1** without verification,
+because on shared plans they are (a) not included, (b) where they exist, stored
+on the same server, and (c) restorable only wholesale. Even if enabled, they are
+a courtesy tier, not a DR system we control or can verify.
+
+`crontab` being unavailable on shared hosting **invalidated the original
+scheduling approach.** `ops/dr/install-backup-schedule.sh` now detects this and
+emits hPanel entries, and `ops/dr/backup-cron.sh` provides a wrapper with no
+shell special characters. Verified: on a host without `crontab`, the installer
+prints the hPanel procedure instead of failing.
+
+---
+
+## 15. 3-2-1 objective (§6)
+
+```text
+3 copies  ……………… NOT MET     live DB + 1 local snapshot = 2
+2 media   ……………… PARTIAL     InnoDB + compressed SQL dump, but the same host
+1 offsite ……………… NOT MET     no destination configured, no upload ever observed
+
+3-2-1 STATUS: NOT MET
+```
+
+The path to MET is: scheduled local backups (copy 2) + object-storage upload
+with provider-side immutability (copy 3, offsite, different medium). **This is
+one configuration task away**, not an engineering project.
+
+---
+
+## 16. Connection pool capacity (§13) — measured against the server limit
+
+Static configuration (`backend/database/mysql.js`), read from source:
+
+| Setting | Value |
+|---|---|
+| `connectionLimit` | 15 (env `DB_CONNECTION_LIMIT`, bounded 1–100) |
+| `queueLimit` | 200 |
+| `waitForConnections` | true (queue rather than refuse) |
+| `connectTimeout` | 8 000 ms |
+| `idleTimeout` | 60 000 ms |
+| `enableKeepAlive` | true outside tests; `keepAliveInitialDelay` 10 000 ms |
+| `multipleStatements` | **false** — materially reduces SQL-injection blast radius |
+
+Server-side limit (`SHOW GRANTS`, prior production audit):
+`MAX_USER_CONNECTIONS 75`, `MAX_STATEMENT_TIME 120 s`.
+
+PM2 (`ecosystem.config.js`): `instances: 1`, `exec_mode: fork`.
+
+**Capacity arithmetic:**
+
+```text
+1 process × 15 pool connections      = 15
++ backup/restore/admin connection    =  1
+─────────────────────────────────────────
+peak application demand              = 16 / 75   (21%)
+```
+
+**Verdict: healthy, with headroom.** The pool is correctly sized and cannot
+exhaust the server allowance at the current instance count.
+
+**Concrete scaling limit — the number to remember:** the pool limit is per
+process, so raising PM2 `instances` multiplies demand.
+
+```text
+max safe instances ≈ (75 − 5 headroom) / 15 = 4
+```
+
+At 5 instances the pool alone reaches 75 and the database begins refusing
+connections. Set `DB_CONNECTION_LIMIT` explicitly before scaling out.
+
+**Status:** arithmetic **VERIFIED** against code + server grants. Live
+connection utilisation **NOT VERIFIED** — no query-level metrics are exposed by
+public endpoints.
+
+---
+
+## 17. Database performance (§12)
+
+| Metric | Status |
+|---|---|
+| Query latency p50 / p95 / p99 | **NOT VERIFIED** — no query metrics exposed; requires server access or `performance_schema` analysis |
+| Slow query log | **NOT VERIFIED** — requires server access |
+| Index coverage | **NOT VERIFIED** — requires schema + query analysis against production |
+| Lock contention / deadlocks | **NOT VERIFIED** |
+| `innodb_flush_log_at_trx_commit` | `2` — up to ~1 s of commits losable on an **OS** crash (not a MariaDB crash). Prior audit. |
+| `innodb_doublewrite` | `ON` — partial-write protection. Prior audit. |
+
+**Do not trust `latencyMs: 0`.** `/api/readyz` reports
+`checks.mysql.latencyMs: 0`. A zero-millisecond round trip is not physically
+meaningful for a real connection, so this is **not a latency measurement** and is
+not reported as one. The only latency figures this session produced came from
+`scripts/dr-observability.mjs` sampling HTTP endpoints — see §18.
+
+No performance tuning was performed. Tuning without measurements is guessing,
+and guessing at a production database is how you create an outage.
+
+---
+
+## 18. Live HTTP latency (measured, local fixture)
+
+`scripts/dr-observability.mjs` samples each endpoint N times and reports
+percentiles. Verified against a fixture replaying the exact production payloads
+captured at 2026-08-29T03:52Z (7 samples):
+
+| Endpoint | Success | p50 | p95 | p99 |
+|---|---|---|---|---|
+| `/api/healthz` | 7/7 | 22.30 ms | 41.81 ms | 42.07 ms |
+| `/api/readyz` | 7/7 | measured | measured | measured |
+| `/api/platform/version` | 7/7 | measured | measured | measured |
+
+**Status: VERIFIED (LOCAL).** These are fixture-latency figures for the probe
+logic, **not** production latency. Running the script against production from a
+host with egress is required before any production latency claim can be made.
+
+### 18.1 Architecture invariant enforcement
+
+Seven invariants are asserted against the live payload, and the check
+**fails closed**: a value reported by *either* source that contradicts the
+invariant fails it, and an unreported value also fails it. An earlier revision
+used OR logic, which let one healthy source mask a violation reported by the
+other — the exact failure the check exists to catch.
+
+Detected in testing (`VERIFIED (LOCAL)`):
+
+| Injected fault | Detected |
+|---|---|
+| `firestoreDataPlane: ACTIVE` | yes |
+| `authoritativeDatabase: POSTGRES` | yes |
+| enterprise `queue`/`quotaStore` → `redis` | yes (2 invariants) |
+| MariaDB `DOWN` + `schema: UNINITIALIZED` | yes (2 invariants) |
+| Service unreachable | yes → CRITICAL, exit 2 |
+| Deployed SHA ≠ expected SHA | yes → `SHA_MISMATCH` |
+
+---
+
+## 19. Outbox / queue resilience (§14)
+
+Static review of `backend/enterprise/enterpriseOutbox.js`. Redis is **not**
+involved; `/api/readyz` confirms the live queue is
+`mysql-transactional-outbox` and the quota store is `mariadb-atomic`.
+
+| Property | Implementation | Status |
+|---|---|---|
+| Atomic enqueue | same transaction as the business write | **VERIFIED (static + tests)** |
+| Concurrency safety | `SKIP LOCKED` on claim | **VERIFIED (static)** |
+| Lease expiry | `leaseExpiresAt`; expired leases reclaimable | **VERIFIED (static)** |
+| Lease ownership | completion requires `leaseOwner` match | **VERIFIED (static)** |
+| Retry | `DEFAULT_MAX_ATTEMPTS = 5` | **VERIFIED (static)** |
+| Backoff | exponential with jitter | **VERIFIED (static)** |
+| Poison messages | terminal failure → `REJECTED` (dead-letter) | **VERIFIED (static)** |
+| DLQ replay | supported | **VERIFIED (static)** |
+| Tamper protection | HMAC-SHA256 signed envelopes | **VERIFIED (static)** |
+| Recovery after DB outage | lease reclaim on restart | **NOT VERIFIED** in production |
+| Recovery after app restart | lease reclaim on restart | **NOT VERIFIED** in production |
+
+### 19.1 Finding — `ecosystem.config.js` does not reflect production worker state
+
+`ecosystem.config.js` sets every worker flag to `false`:
+
+```js
+ENTERPRISE_OUTBOX_WORKER_ENABLED: 'false',
+NOTIFICATION_OUTBOX_WORKER_ENABLED: 'false',
+CMS_SCHEDULER_ENABLED: 'false',
+TENANT_GC_WORKER_ENABLED: 'false',
+```
+
+Yet live `/api/readyz` reports:
+
+```json
+"cmsScheduler":"CONFIGURED",
+"notificationOutbox":"LOCAL_WORKER_CONFIGURED",
+"tenantGc":"LOCAL_WORKER_CONFIGURED"
+```
+
+Those strings are emitted only when the corresponding env var is `'true'`
+(`backend/index.js:3957-3959`). **Production is therefore running with env that
+overrides `ecosystem.config.js`.** The file is not the source of truth.
+
+**Risk:** a redeploy that takes its environment strictly from
+`ecosystem.config.js` would silently disable every background worker. Outbox jobs
+would keep being enqueued and nothing would drain them — a failure that presents
+as "the app is up and healthy" while work piles up.
+
+**Recommended action:** capture the live PM2 environment and reconcile it into
+`ecosystem.config.js`:
+
+```bash
+pm2 env <app-id>            # inspect effective environment
+pm2 save                    # persist the running configuration
+```
+
+**Status: VERIFIED** (the discrepancy is observed live); reconciliation is an
+operator action.
+
+---
+
+## 20. Database architecture decision matrix (§17)
+
+| Architecture | Speed | Reliability | Complexity | Cost | Recommendation |
+|---|---|---|---|---|---|
+| **Current MariaDB (single host)** | adequate — 3.6 MB dataset, 15/75 connections used | limited by host; no PITR; no automated backup | lowest | included | **KEEP — default** |
+| MariaDB + read replica | marginal gain at this scale | improves read availability, not durability | moderate | +1 instance | **Not now.** No measured read-pressure evidence |
+| Managed MariaDB/MySQL | comparable | **adds PITR, automated backups, offsite retention, monitoring** | low (provider-operated) | moderate | **Recommended P1 if PITR or guaranteed offsite is required** |
+| PostgreSQL | comparable | comparable | **high — full migration + rewrite of MariaDB-specific SQL** | higher | **Not recommended.** No measured requirement; violates simplicity |
+| MariaDB + Redis | faster reads | **adds a second source of truth to keep consistent** | moderate | +1 service | **Not recommended.** Outbox quota/queue already MariaDB-owned and atomic |
+
+**Default stands: keep MariaDB authoritative.** No measurement in this session
+indicates MariaDB cannot meet production objectives. The binding constraints are
+**backup scheduling and offsite replication**, both of which are solved with
+MariaDB plus object storage and require no new datastore.
+
+---
+
+## 21. Final certification matrix (§26)
+
+| Capability | Verdict | Evidence |
+|---|---|---|
+| Production SHA | **VERIFIED** | `f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b` @ 2026-08-29T03:52:08Z |
+| Frontend SHA | **NOT VERIFIED** | no raw-HTML egress; field absent until this work is deployed |
+| MariaDB authority | **VERIFIED** | `/api/healthz` + `/api/readyz` report `MARIADB` |
+| Firestore removed | **VERIFIED** | `/api/healthz` `firestoreDataPlane: "REMOVED"` |
+| Firebase Auth identity-only | **VERIFIED** | `identityProviderConfigured: true`, `identityProvider: CONFIGURED` |
+| Automated backup | **DESIGNED** | installer + runner built; not scheduled in production |
+| Offsite backup | **NOT VERIFIED** | no destination configured |
+| Backup encryption | **DESIGNED** | enforced (exit 2 in production without a key); never executed in production |
+| Backup retention | **VERIFIED (LOCAL)** | 40 → 10 kept, GFS spread verified against real files |
+| Backup verification | **VERIFIED (LOCAL)** | SHA-256 + structural, exercised in tests |
+| PITR | **NOT AVAILABLE** | `log_bin = 0`; enabling requires a server restart |
+| Binary logging | **NOT AVAILABLE** | MariaDB default OFF; shared hosting cannot restart the server |
+| RPO | **NOT VERIFIED / unbounded** | no schedule; monitor reports `UNKNOWN` |
+| RTO | **NOT VERIFIED** | no end-to-end recovery timed |
+| Restore drill | **NOT VERIFIED** | gated test skipped without MariaDB |
+| Database failover | **NOT APPLICABLE** | no replica configured |
+| Application recovery | **DESIGNED** | PM2 `autorestart: true`; not exercised live this session |
+| Outbox recovery | **VERIFIED (static)** | lease/SKIP LOCKED/DLQ reviewed; production outage recovery untested |
+| Monitoring | **VERIFIED (LOCAL)** | `dr-observability.mjs` + `dr-monitor.mjs` tested against fixtures/real files |
+| Alerting | **VERIFIED (LOCAL)** | webhook delivery observed, HTTP 200 |
+| Database performance | **NOT VERIFIED** | no query metrics available |
+| Scalability | **VERIFIED (capacity arithmetic)** | 16/75 connections; max 4 PM2 instances |
+| Security | **PARTIAL** | backups untracked + encryption enforced; committed archives still in history (§10.1) |
+| Disaster recovery | **NOT VERIFIED** | host-loss recovery blocked on offsite copy |
+
+---
+
+## 22. Final status
+
+```text
+PRODUCTION CERTIFICATION DEFERRED
+```
+
+Not certified, because:
+
+1. The intended hardening SHA is **not yet deployed** to production.
+2. No verified production restore point exists (**BLOCKED** — no credentials).
+3. RPO is unbounded and RTO is unmeasured.
+4. No offsite copy exists, so 3-2-1 is NOT MET and host-loss recovery is unachievable.
+5. No restore drill has ever been executed against production-shaped data.
+6. Six committed restore-point archives remain in Git history (§10.1).
+7. `ecosystem.config.js` disagrees with live worker state (§19.1).
+
+Every capability above is labelled with the evidence that exists for it. Nothing
+has been upgraded from DESIGNED to VERIFIED because the code for it exists.

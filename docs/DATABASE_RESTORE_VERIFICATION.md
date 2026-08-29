@@ -175,3 +175,40 @@ GRANT ALL PRIVILEGES ON `u727965524_airesume`.* TO `u727965524_airesume`@`127.0.
 | **PITR** | `log_bin=0`; structurally impossible | **NOT VERIFIED** |
 | **Offsite Backup** | No tools, no destination, no copies | **NOT VERIFIED** |
 | **Full DB Restore into MariaDB** | Parse-verified only; not loaded into actual MariaDB instance | **NOT VERIFIED** |
+
+---
+
+## 2026-08-29 addendum — restore verification status
+
+The 2026-08-29 structural verification above (76/76 tables, 14/14 migrations,
+SHA-256 match) remains valid for the artifact it inspected.
+
+**It is not a restore test.** Parsing a dump proves the artifact is well-formed;
+loading it into a running MariaDB proves it is restorable. The latter has never
+been performed against production-shaped data.
+
+| Check | Verdict |
+|---|---|
+| Artifact integrity (SHA-256) | **VERIFIED** (prior audit) |
+| Structural parse (tables/migrations) | **VERIFIED** (prior audit) |
+| Full restore into a running MariaDB | **NOT VERIFIED** |
+| Post-restore row-level reconciliation | **NOT VERIFIED** |
+
+Automated drill: `tests/certification/backup-restore.test.mjs` performs a real
+backup → `DROP DATABASE` → restore → reconciliation cycle, but is gated behind
+`RUN_MARIADB_BACKUP_RESTORE_DRILL=true` and a disposable loopback database. It is
+**skipped** wherever MariaDB is unavailable, so it currently contributes no
+evidence.
+
+To produce real evidence:
+
+```bash
+# CI or any host with a disposable MariaDB
+export RUN_MARIADB_BACKUP_RESTORE_DRILL=true
+export MARIADB_TEST_ALLOW_RESET=true
+export NODE_ENV=test
+node --test tests/certification/backup-restore.test.mjs
+```
+
+Restore procedure and safety rails: **[`docs/BACKUP_RUNBOOK.md`](./BACKUP_RUNBOOK.md)** §5.
+Recovery scenarios: **[`docs/DISASTER_RECOVERY_RUNBOOK.md`](./DISASTER_RECOVERY_RUNBOOK.md)**.

@@ -321,3 +321,121 @@ test('whichSync rejects names that could escape the PATH lookup', () => {
   assert.equal(whichSync('../evil', { pathValue: '/bin', existsSync: () => true }), null);
   assert.equal(whichSync('rclone; rm -rf /', { pathValue: '/bin', existsSync: () => true }), null);
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// Production observability — latency statistics and architecture invariants
+// ───────────────────────────────────────────────────────────────────────────
+
+const { checkInvariants, percentile, summarise } = await import('../scripts/dr-observability.mjs');
+
+test('percentile interpolates correctly and never exceeds observed bounds', () => {
+  const samples = [10, 20, 30, 40, 50];
+  assert.equal(percentile(samples, 50), 30);
+  assert.equal(percentile(samples, 0), 10);
+  assert.equal(percentile(samples, 100), 50);
+  // p95 of 5 samples sits between the 4th and 5th value.
+  const p95 = percentile(samples, 95);
+  assert.ok(p95 > 40 && p95 < 50, `p95 should interpolate between 40 and 50, got ${p95}`);
+});
+
+test('percentile handles degenerate inputs', () => {
+  assert.equal(percentile([], 50), null);
+  assert.equal(percentile(null, 50), null);
+  assert.equal(percentile([42], 99), 42);
+});
+
+test('latency summary counts failures and orders percentiles monotonically', () => {
+  const s = summarise([
+    { ok: true, latencyMs: 120 }, { ok: true, latencyMs: 20 }, { ok: true, latencyMs: 60 },
+    { ok: false, latencyMs: 500 }, { ok: true, latencyMs: 40 },
+  ]);
+  assert.equal(s.attempts, 5);
+  assert.equal(s.successes, 4);
+  assert.equal(s.failures, 1);
+  assert.equal(s.successRate, 0.8);
+  const { min, p50, p95, p99, max } = s.latencyMs;
+  assert.equal(min, 20);
+  assert.equal(max, 120);
+  assert.ok(min <= p50 && p50 <= p95 && p95 <= p99 && p99 <= max, 'percentiles must be monotonic');
+});
+
+test('latency summary survives a total outage without throwing', () => {
+  const s = summarise([{ ok: false, latencyMs: 1 }, { ok: false, latencyMs: 2 }]);
+  assert.equal(s.successes, 0);
+  assert.equal(s.latencyMs, null, 'no successful sample means no latency statistics');
+  assert.equal(s.successRate, 0);
+});
+
+// Fixtures shaped exactly like the live production responses observed on
+// 2026-08-29T03:52Z from https://airesume.projectdemo.guru
+function productionHealthz(overrides = {}) {
+  return { last: { json: {
+    status: 'ok', identityProviderConfigured: true, firebaseAdminConfigured: true,
+    firestoreDataPlane: 'REMOVED', authoritativeDatabase: 'MARIADB',
+    commitSha: 'f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b',
+    databases: { mariadb: { status: 'UP', healthy: true } },
+    ...overrides,
+  } } };
+}
+function productionReadyz(overrides = {}) {
+  return { last: { json: {
+    status: 'ready', authoritativeDatabase: 'MARIADB',
+    checks: {
+      mysql: { status: 'READY', version: '11.8.8-MariaDB-log', host: '127.0.0.1', database: 'u727965524_airesume' },
+      schema: 'INITIALIZED', identityProvider: 'CONFIGURED', firestoreDataPlane: 'REMOVED',
+      enterprise: { dataProvider: 'mysql', queue: 'mysql-transactional-outbox', quotaStore: 'mariadb-atomic' },
+      ...overrides,
+    },
+  } } };
+}
+
+test('all architecture invariants pass against the live production payload shape', () => {
+  const r = checkInvariants({ healthz: productionHealthz(), readyz: productionReadyz() });
+  assert.equal(r.status, 'PASS');
+  assert.equal(r.failed, 0);
+  assert.equal(r.checks.length, 7);
+});
+
+test('reintroducing the Firestore data plane is detected, not assumed absent', () => {
+  const r = checkInvariants({
+    healthz: productionHealthz({ firestoreDataPlane: 'ACTIVE' }),
+    readyz: productionReadyz(),
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.ok(r.checks.find((c) => c.name.includes('Firestore')).pass === false);
+});
+
+test('silently swapping the authoritative datastore is detected', () => {
+  const r = checkInvariants({
+    healthz: productionHealthz({ authoritativeDatabase: 'POSTGRES' }),
+    readyz: productionReadyz({ authoritativeDatabase: 'POSTGRES' }),
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.ok(r.checks.find((c) => c.name.includes('authoritative')).pass === false);
+});
+
+test('introducing Redis for queue or quota is detected', () => {
+  const r = checkInvariants({
+    healthz: productionHealthz(),
+    readyz: productionReadyz({ enterprise: { queue: 'redis', quotaStore: 'redis' } }),
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.equal(r.failed, 2, 'both the queue and quota-store invariants must fail');
+});
+
+test('a database outage is detected', () => {
+  const r = checkInvariants({
+    healthz: productionHealthz({ databases: { mariadb: { status: 'DOWN', healthy: false } } }),
+    readyz: productionReadyz({ mysql: { status: 'DOWN' }, schema: 'UNINITIALIZED' }),
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.ok(r.failed >= 2, 'database health and schema must both fail');
+  assert.ok(r.checks.find((c) => c.name.includes('healthy')).pass === false);
+  assert.ok(r.checks.find((c) => c.name.includes('Schema')).pass === false);
+});
+
+test('missing payloads fail closed rather than reporting healthy', () => {
+  const r = checkInvariants({ healthz: { last: { json: null } }, readyz: { last: { json: null } } });
+  assert.equal(r.status, 'FAIL');
+  assert.equal(r.passed, 0);
+});

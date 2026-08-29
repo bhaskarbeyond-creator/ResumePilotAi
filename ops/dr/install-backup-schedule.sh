@@ -106,15 +106,53 @@ $END
 EOF
 )
 
-printf '%s\n%s\n' "$STRIPPED" "$BLOCK" | grep -v '^[[:space:]]*$' | crontab -
+# Hostinger SHARED hosting does not provide crontab access - scheduled tasks
+# must be created in hPanel (Advanced -> Cron Jobs). Only VPS plans allow
+# editing crontab directly. Detect which world we are in rather than failing.
+CRONTAB_AVAILABLE="0"
+if command -v crontab >/dev/null 2>&1; then
+  if crontab -l >/dev/null 2>&1; then CRONTAB_AVAILABLE="1"; fi
+fi
 
-echo "Installed the ResumePilot DR backup schedule:"
-echo "  backups   : $BACKUP_SCHEDULE  (interval ${INTERVAL}h, RPO target ${INTERVAL}h)"
-echo "  retention : daily 03:43"
-echo "  monitor   : every 30 minutes"
+if [ "$CRONTAB_AVAILABLE" = "1" ]; then
+  printf '%s\n%s\n' "$STRIPPED" "$BLOCK" | grep -v '^[[:space:]]*$' | crontab -
+  echo "Installed the ResumePilot DR backup schedule via crontab:"
+  echo "  backups   : $BACKUP_SCHEDULE  (interval ${INTERVAL}h, RPO target ${INTERVAL}h)"
+  echo "  retention : daily 03:43"
+  echo "  monitor   : every 30 minutes"
+  echo
+  echo "Verify with: crontab -l"
+else
+  echo "crontab is NOT available on this host."
+  echo
+  echo "This is expected on Hostinger SHARED hosting, where scheduled tasks are"
+  echo "managed in hPanel and crontab access is reserved for VPS plans."
+  echo "Use ops/dr/backup-cron.sh as the cron entrypoint; it needs no shell"
+  echo "special characters, which hPanel does not accept reliably."
+  echo
+  echo "Create these three jobs in hPanel -> Advanced -> Cron Jobs:"
+  echo
+  echo "  1) Backups    ($BACKUP_SCHEDULE, RPO target ${INTERVAL}h)"
+  echo "     /bin/sh $REPO/ops/dr/backup-cron.sh backup"
+  echo
+  echo "  2) Retention  (43 3 * * *)"
+  echo "     /bin/sh $REPO/ops/dr/backup-cron.sh retain"
+  echo
+  echo "  3) Monitoring (*/30 * * * *)"
+  echo "     /bin/sh $REPO/ops/dr/backup-cron.sh monitor"
+  echo
+  echo "Each run's output is viewable with hPanel's \"View Output\" and is also"
+  echo "appended to $REPO/logs/dr-<command>.log"
+  echo
+  echo "Managed block (for reference, if you later move to a VPS with crontab):"
+  printf '%s\n' "$BLOCK"
+fi
+
 echo
-echo "Verify with: crontab -l"
-echo
-echo "Two things must be configured in backend/.env before the first run will succeed:"
+echo "Two things must be configured before the first run will succeed:"
 echo "  BACKUP_ENCRYPTION_KEY_BASE64   openssl rand -base64 32"
 echo "  BACKUP_OFFSITE_DESTINATION     object-storage target for the independent copy"
+echo
+echo "Put them in $REPO/ops/dr/backup.env (chmod 600, untracked)."
+echo "hPanel cron does not inherit a login shell, so the wrapper loads them"
+echo "from that file explicitly."

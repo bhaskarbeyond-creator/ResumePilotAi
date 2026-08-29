@@ -138,3 +138,52 @@ Suggested architectural triggers (require load testing to validate):
 - Multi-node load-balanced application tier behind Cloudflare Enterprise.
 - High-Availability MariaDB Primary + Multi-Replica cluster with automated failover (MaxScale or Orchestrator).
 - Dedicated Outbox Worker daemon nodes isolated from user-facing API pods.
+
+---
+
+## 2026-08-29 addendum — measured capacity, not assumed tuning
+
+### Connection pool (measured against the server limit)
+
+| Setting | Value |
+|---|---|
+| `connectionLimit` | 15 per process (`DB_CONNECTION_LIMIT`, bounded 1–100) |
+| `queueLimit` | 200 |
+| `connectTimeout` / `idleTimeout` | 8 000 ms / 60 000 ms |
+| `multipleStatements` | false |
+| Server `MAX_USER_CONNECTIONS` | **75** |
+| Server `MAX_STATEMENT_TIME` | 120 s |
+| PM2 | `instances: 1`, `exec_mode: fork` |
+
+```text
+peak demand = (1 × 15) + 1 admin/backup = 16 / 75   (21%)
+max safe PM2 instances ≈ (75 − 5) / 15 = 4
+```
+
+The pool limit is **per process**, so scaling out multiplies demand linearly: at
+5 instances the pool alone reaches the server cap and MariaDB begins refusing
+connections. Set `DB_CONNECTION_LIMIT` explicitly before increasing instances.
+
+Status: **VERIFIED** (arithmetic over code + server grants). Live connection
+utilisation: **NOT VERIFIED**.
+
+### Deliberately not measured
+
+| Metric | Status |
+|---|---|
+| Query p50 / p95 / p99 | **NOT VERIFIED** — no query metrics exposed publicly |
+| Slow query log | **NOT VERIFIED** — requires server access |
+| Index coverage | **NOT VERIFIED** — requires schema + query analysis |
+| Lock contention / deadlocks | **NOT VERIFIED** |
+| Disk I/O, CPU, memory | **NOT VERIFIED** |
+
+**`/api/readyz` reports `checks.mysql.latencyMs: 0`.** A zero-millisecond round
+trip is not physically meaningful, so this is not treated as a latency
+measurement and must not be quoted as one.
+
+HTTP-endpoint latency can be sampled with `node scripts/dr-observability.mjs`,
+which reports p50/p95/p99 over N samples. It was validated against a fixture
+replaying production payloads (7 samples: p50 22.30 ms, p95 41.81 ms, p99
+42.07 ms) — **VERIFIED (LOCAL)**, not production latency.
+
+No tuning was performed. Optimising without measurements is guessing.

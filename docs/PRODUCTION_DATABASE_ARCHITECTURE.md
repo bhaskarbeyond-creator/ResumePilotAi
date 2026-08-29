@@ -163,3 +163,49 @@ Side effects (email notifications, webhook deliveries, enterprise sync) are deco
 >
 > - **Database failure behavior (fail-closed): VERIFIED**
 > - **Database failover (HA): NOT VERIFIED** — standalone primary, no replica, no automatic failover target.
+
+---
+
+## 2026-08-29 addendum — live architecture confirmation
+
+`/api/readyz` at 2026-08-29T03:52Z confirms the architecture invariants
+independently of any document:
+
+```json
+{
+  "status":"ready",
+  "authoritativeDatabase":"MARIADB",
+  "checks":{
+    "mysql":{"status":"READY","version":"11.8.8-MariaDB-log","host":"127.0.0.1","database":"u727965524_airesume"},
+    "schema":"INITIALIZED",
+    "identityProvider":"CONFIGURED",
+    "firestoreDataPlane":"REMOVED",
+    "enterprise":{"dataProvider":"mysql","encryption":"server-key","quotaStore":"mariadb-atomic","queue":"mysql-transactional-outbox"}
+  }
+}
+```
+
+| Invariant | Verdict |
+|---|---|
+| MariaDB authoritative | **VERIFIED** (live) |
+| Firestore removed | **VERIFIED** (live) |
+| Firebase identity-only | **VERIFIED** (live) |
+| Queue = MariaDB transactional outbox (no Redis) | **VERIFIED** (live) |
+| Quota store = MariaDB atomic (no Redis) | **VERIFIED** (live) |
+| PostgreSQL absent | **VERIFIED** (live — no Postgres in the stack) |
+
+These seven checks are now asserted continuously by
+`scripts/dr-observability.mjs`, which fails closed: a violating value from any
+source fails the check, and an unreported value fails it too.
+
+### Recovery posture of this architecture
+
+| Property | Status |
+|---|---|
+| Automated backup | **NOT CONFIGURED** (automation built, not scheduled) |
+| Offsite copy | **NOT CONFIGURED** |
+| PITR | **NOT AVAILABLE** (`log_bin = 0`; no server restart on shared hosting) |
+| Replication | **NOT CONFIGURED** |
+| 3-2-1 | **NOT MET** |
+
+Full analysis: **[`docs/DR_CLOUD_FIRST_HARDENING.md`](./DR_CLOUD_FIRST_HARDENING.md)**.

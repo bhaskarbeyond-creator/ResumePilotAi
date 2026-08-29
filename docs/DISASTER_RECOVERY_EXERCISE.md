@@ -210,3 +210,35 @@ Testing this scenario would require destroying or isolating the production host,
 | **C** | Corrupted deployment | **DESIGNED** | ~30–60s (estimated) | Zero |
 | **D** | Data recovery from snapshot | **VERIFIED** (parse) | 66 ms parse / full restore NOT MEASURED | Depends on snapshot age |
 | **E** | Host unavailable | **NOT VERIFIED** | ~30–60 min (estimated) | All data since last backup |
+
+---
+
+## 2026-08-29 addendum — exercise status and new automation
+
+Existing exercise tooling (`scripts/lib/dr-exercise-runner.cjs`,
+`dr-scenario-a.cjs`) targets the production host and requires credentials that
+were not available, so **no exercise was executed this cycle**.
+
+New, credential-free exercises added and actually run:
+
+| Exercise | Scope | Result |
+|---|---|---|
+| Retention under load | 40 real backup files | **VERIFIED (LOCAL)** — 30 pruned, 10 kept, GFS spread correct |
+| Safety floor | policy with all calendar buckets disabled | **VERIFIED (LOCAL)** — 3 newest retained |
+| In-flight protection | backup aged 60 s | **VERIFIED (LOCAL)** — retained |
+| Undated artifact | unparseable timestamp | **VERIFIED (LOCAL)** — retained for manual review |
+| Zero recovery points | empty backup directory | **VERIFIED (LOCAL)** — CRITICAL, exit 2 |
+| Backup misconfiguration | missing DB env / missing key in production | **VERIFIED (LOCAL)** — exit 2, zero artifacts |
+| Alert delivery | real local webhook receiver | **VERIFIED (LOCAL)** — HTTP 200, payload correct |
+| Architecture drift | Firestore / Postgres / Redis injected | **VERIFIED (LOCAL)** — all detected |
+| Service outage | unreachable origin | **VERIFIED (LOCAL)** — CRITICAL, exit 2 |
+| SHA mismatch | expected ≠ deployed | **VERIFIED (LOCAL)** — `SHA_MISMATCH` |
+| Cron idempotency | installer run twice | **VERIFIED (LOCAL)** — stable; unrelated jobs preserved |
+
+Run them with `npm run dr:test` (45 assertions, no database required).
+
+Still **NOT VERIFIED**: Scenario A (PM2 restart) against production, Scenario B
+(database outage) against production, Scenario D (restore) against any MariaDB,
+Scenario E (host loss).
+
+Procedures: **[`docs/DISASTER_RECOVERY_RUNBOOK.md`](./DISASTER_RECOVERY_RUNBOOK.md)**.

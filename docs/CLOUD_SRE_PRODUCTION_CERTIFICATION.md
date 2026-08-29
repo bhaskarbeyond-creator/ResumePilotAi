@@ -120,3 +120,39 @@ FINAL CLOUD / SRE CERTIFICATION: CLOUD/SRE PRODUCTION CERTIFIED
 - **Application Certification:** **`PRODUCTION CERTIFIED`**
 - **Cloud / SRE Certification:** **`PRODUCTION CERTIFIED`**
 - **Whole System Production Certification:** **`PRODUCTION CERTIFIED`**
+
+---
+
+## 2026-08-29 addendum — cloud-first DR hardening
+
+Superseded for DR/backup status by
+**[`docs/DR_CLOUD_FIRST_HARDENING.md`](./DR_CLOUD_FIRST_HARDENING.md)**.
+
+```text
+Authoritative origin/main SHA : f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b
+Production release SHA        : f51e055ed25f3d83b24a1f5eb475d2efb77aeb7b
+                                (observed 2026-08-29T03:52:08.514Z)
+Cloud/SRE hardening commit    : c2ab0e0124e3aecabed293f09cb4d33a350384ca
+Restore point                 : NOT CREATED — BLOCKED
+```
+
+Additions this cycle, all status-labelled:
+
+| Capability | Verdict | Evidence |
+|---|---|---|
+| Backup automation | **DESIGNED** | `scripts/dr-backup-run.mjs` + `ops/dr/install-backup-schedule.sh` |
+| Retention (GFS) | **VERIFIED (LOCAL)** | 40 real files → 10 kept; 30 pruned with sidecars |
+| Backup monitoring | **VERIFIED (LOCAL)** | exit 0/1/2/3; zero recovery points ⇒ CRITICAL |
+| Alerting | **VERIFIED (LOCAL)** | webhook delivered, HTTP 200 |
+| Architecture invariants | **VERIFIED (LOCAL)** | 7 checks; fault-injection detected |
+| Release identity | **DESIGNED** | `/api/platform/version` gained `frontendBuildSha` + `releaseIdentity` |
+| Offsite copy | **NOT VERIFIED** | no destination configured |
+| PITR | **NOT AVAILABLE** | `log_bin = 0`; shared hosting cannot restart the server |
+| RPO / RTO | **NOT VERIFIED** | unbounded / unmeasured |
+| 3-2-1 | **NOT MET** | 2 copies, 1 host, 0 offsite |
+
+Regression at the hardening commit: DR 45/45, static security 44/44, backend
+482 (458 pass, 0 fail), product 395/395, eslint clean.
+
+`PRODUCTION CERTIFICATION DEFERRED` — the hardening SHA is not yet deployed and
+no verified production restore point exists.
