@@ -379,3 +379,39 @@ test('indian gateway status probes carry an enforced request deadline', async ()
     assert.equal(options.timeout, 10_000, 'the node-fetch compatible bound must remain');
   }
 });
+
+// ---------------------------------------------------------------------------
+// 6. Health snapshot: the public availability surface must stay cache-served
+// ---------------------------------------------------------------------------
+test('operational-status snapshot is bounded and served from cache on repeat reads', async () => {
+  const express = require('express');
+  const { getHealthSnapshot, resetHealthCache } = require('../services/platformHealth');
+  const pool = recordingPool({
+    onQuery: async sql => {
+      if (/SELECT category, data FROM system_settings/.test(sql)) {
+        return [{ category: 'public_config', data: '{}' }, { category: 'system_settings', data: '{}' }];
+      }
+      if (/FROM notification_outbox/.test(sql)) return [];
+      return [{ alive: 1, version: 'test' }];
+    },
+  });
+  setPoolForTests(pool);
+  const healthApp = express();
+  resetHealthCache();
+  try {
+    await getHealthSnapshot(healthApp);
+    const cold = pool.log.sql.length;
+    const outboxAggregates = pool.log.sql.filter(e => /FROM notification_outbox/.test(e.sql)).length;
+    assert.ok(cold > 0 && cold <= 8, `a cold snapshot must stay a bounded number of round trips (measured ${cold})`);
+    assert.equal(outboxAggregates, 1, 'exactly one outbox aggregation per cold snapshot');
+
+    // Repeat read inside the cache window must not touch the pool at all: this is
+    // what protects /api/service-availability (public, mounted on the pricing and
+    // dashboard pages) from turning every page view into a MariaDB aggregation.
+    pool.log.sql.length = 0;
+    await getHealthSnapshot(healthApp);
+    assert.equal(pool.log.sql.length, 0, 'a cached snapshot must issue zero pool round trips');
+  } finally {
+    resetHealthCache();
+  }
+});

@@ -1440,6 +1440,10 @@ graph TD
 | DB connection pool | `connectionLimit` 15 / `queueLimit` 200, one module-level pool | PARTIAL - shared with all background workers; a burst beyond `queueLimit` queues and then hard-fails `Queue limit reached.` |
 | Worker/user pool isolation | None - outbox, payment reconcile, CMS and GC use the same pool as user traffic | ACCEPTED (single PM2 instance); mitigated by pinned per-request query budgets, see GAP-23 |
 | Per-request SQL budget | Measured on the real code path: conversations list = 3 round trips (was 1+2N), admin directory page = 2 batched reads (was 2N), reconcile tick = 1-3 (was 1+2N) | OK - regression-pinned by `backend/test/mariadb-query-budget.test.js` |
+| Connection acquire timeout | **None exists in mysql2** - `waitForConnections: true` queues with no deadline; only `queueLimit` 200 bounds it (then `Queue limit reached.`) | PARTIAL - a saturated pool makes requests WAIT rather than fail fast; `connectTimeout` bounds handshakes only, not queue waits |
+| Query timeout | Not configured; `.query()` used at 570 sites, `.execute()` at 0 | PARTIAL - no per-statement deadline, and no prepared-statement reuse |
+| `idleTimeout: 60_000` | **Inert.** mysql2 only starts its idle reaper when `maxIdle < connectionLimit`; `maxIdle` defaults to `connectionLimit` (15), so the reaper never runs | OK for latency (warm connections are retained and reused - no reconnect churn); note `wait_timeout` is instead covered by `enableKeepAlive` |
+| Health snapshot cache | `PLATFORM_HEALTH_CACHE_MS` 15s TTL, single-flight, `MIN_FORCED_INTERVAL_MS` 3s floor; Admin polls at 60s | PARTIAL - a 60s poll always misses a 15s TTL, so an idle Admin tab recomputes the snapshot (incl. one unbounded outbox aggregate) 60x/hour |
 | AI config cache | 15-second TTL | ðŸŸ¢ |
 | Feature flag cache | 30-second TTL | ðŸŸ¢ |
 | Frontend code splitting | All routes lazy-loaded | ðŸŸ¢ |
