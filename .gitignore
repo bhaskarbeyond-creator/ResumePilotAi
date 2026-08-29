@@ -64,6 +64,7 @@ backend/COMMIT_SHA
 **/id_ed25519*
 **/id_rsa*
 **/id_ecdsa*
+**/dev_key*
 **/known_hosts*
 /.release/
 
