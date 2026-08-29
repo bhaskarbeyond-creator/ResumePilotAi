@@ -1,4 +1,4 @@
-# ResumePilot AI — Exhaustive Enterprise Architecture & System Flowchart
+﻿# ResumePilot AI â€” Exhaustive Enterprise Architecture & System Flowchart
 
 **Document Type:** Implementation-Traceable Architecture Map (Zero-Assumption Forensic Audit)
 **Production Baseline SHA:** `127ec160f968fb6fb0f4bac49d59171456e2c642`
@@ -96,12 +96,12 @@ graph TB
     end
 
     subgraph "Frontend (Vite + React 18)"
-        SPA[SPA Router — 97+ routes<br/>src/main.jsx 491 lines]
-        BR[Build Resume — 12 steps, 51 templates]
-        CL[Cover Letter — 4 templates]
-        IC[Interview Coach — AI-powered]
-        AD[Admin Console — 22 modules]
-        EC[Enterprise Console — 15 tabs]
+        SPA[SPA Router â€” 97+ routes<br/>src/main.jsx 491 lines]
+        BR[Build Resume â€” 12 steps, 51 templates]
+        CL[Cover Letter â€” 4 templates]
+        IC[Interview Coach â€” AI-powered]
+        AD[Admin Console â€” 22 modules]
+        EC[Enterprise Console â€” 15 tabs]
         PB[Portfolio Builder]
         BL[Blog Engine]
         JB[Jobs Board]
@@ -112,20 +112,20 @@ graph TB
         API[API Gateway<br/>backend/index.js 5,872 lines]
         R18[18 Route Modules]
         S24[24 Service Modules]
-        SEC[Security Layer — 10 modules]
-        ENT[Enterprise Layer — 29 modules]
+        SEC[Security Layer â€” 10 modules]
+        ENT[Enterprise Layer â€” 29 modules]
     end
 
     subgraph "Data Layer"
         MDB[(MariaDB 10.11<br/>60+ tables, 14 migrations<br/>SOLE AUTHORITY)]
-        FB[Firebase Auth<br/>Identity Only — zero Firestore]
+        FB[Firebase Auth<br/>Identity Only â€” zero Firestore]
     end
 
     subgraph "External Services"
-        AI6[6 AI Providers<br/>NVIDIA→Gemini→OpenAI→Groq→OpenRouter→DeepSeek]
+        AI6[6 AI Providers<br/>NVIDIAâ†’Geminiâ†’OpenAIâ†’Groqâ†’OpenRouterâ†’DeepSeek]
         SMTP[SMTP Email]
         STRIPE[Stripe + 4 more gateways]
-        PW[Playwright Chromium — PDF]
+        PW[Playwright Chromium â€” PDF]
     end
 
     U & E & EA & EM & A & SA & AU & SU --> SPA
@@ -138,7 +138,7 @@ graph TB
 - **Frontend:** React 18 + Vite 6, React Router 6, SCSS + Tailwind CSS, i18n (15 languages), Framer Motion
 - **Backend:** Node.js 20 + Express 4, monolithic `backend/index.js` (5,872 lines) + 18 route modules + 24 service modules
 - **Database:** MariaDB 10.11 (100% authoritative, 14 migrations, 60+ tables including enterprise)
-- **Identity:** Firebase Auth (ID token verification only — **zero Firestore runtime dependency verified**)
+- **Identity:** Firebase Auth (ID token verification only â€” **zero Firestore runtime dependency verified**)
 - **AI:** 6-provider failover chain with source grounding, daily quotas, and control-character sanitization
 - **Export:** Dual-engine (Playwright Chromium PDF + native OpenXML DOCX), 51 CV + 4 cover letter templates
 - **Process:** PM2 `fork` mode, single instance, 600MB memory limit, graceful SIGTERM/SIGINT shutdown
@@ -158,8 +158,8 @@ graph TB
 | Last Commit | `chore(deploy): add auto-prune for server deploy backups` | `git log -1` |
 | Backend Entry | 5,872 lines / 344KB | `backend/index.js` |
 | Migrations | 15 (001_baseline through 015_support_tickets) | `backend/database/migrations/` |
-| CV Templates | 51 (Cv1–Cv51) | `src/cv-templates/` |
-| Cover Templates | 4 (Cover1–Cover4) | `src/cv-templates/` |
+| CV Templates | 51 (Cv1â€“Cv51) | `src/cv-templates/` |
+| Cover Templates | 4 (Cover1â€“Cover4) | `src/cv-templates/` |
 | Frontend Test Files | 94 (83 .test + 11 .spec) | `tests/` |
 | Backend Test Files | 68 | `backend/test/` |
 | Docs | 152+ files | `docs/` |
@@ -174,61 +174,61 @@ graph TB
 
 | # | Module | Path | Route | Status |
 |---|---|---|---|---|
-| 1 | Welcome / Landing | `src/components/welcome/Welcome.jsx` | `/` | 🟢 COMPLETE |
-| 2 | Login / Registration | `src/components/welcome/Welcome.jsx` (tabs) | `/login` | 🟢 COMPLETE |
-| 3 | Password Recovery | `src/components/auth/recoverPassword/` | modal overlay | 🟢 COMPLETE |
-| 4 | Password Reset | `src/components/auth/resetPassword/ResetPasswordModal.jsx` | deep-link modal | 🟢 COMPLETE |
-| 5 | Consumer Dashboard | `src/components/Dashboard/DashboardMain/DashboardMain.jsx` | `/dashboard/*` | 🟢 COMPLETE |
-| 6 | Dashboard Homepage | `src/components/Dashboard/DashboardHomepage/` | `/dashboard` (index) | 🟢 COMPLETE |
-| 7 | Dashboard Settings | `src/components/Dashboard/DashboardSettings/` | `/dashboard/settings` | 🟢 COMPLETE |
-| 8 | Dashboard Messages | `src/components/Dashboard/DashboardMessages/` | `/dashboard/messages` | 🟢 COMPLETE |
-| 9 | Dashboard Favorites | `src/components/Dashboard/DashboardFavourites/` | `/dashboard/favorites` | 🟢 COMPLETE |
-| 10 | Dashboard Portfolios | `src/components/Dashboard/DashboardPortfolios/` | `/dashboard/portfolios` | 🟢 COMPLETE |
-| 11 | Interview Coach | `src/components/Dashboard/DashboardInterviews/` | `/dashboard/interview` | 🟢 COMPLETE |
-| 12 | Job Matching | `src/components/Dashboard/DashbaordJobMatching/` | `/dashboard/job-matching` | 🟢 COMPLETE |
-| 13 | Resume Builder | `src/components/BuildResume/BuildResume.jsx` | `/build-resume/*` | 🟢 COMPLETE |
-| 14 | Template Selection | `src/components/BuildResume/TemplateSelectionModal.jsx` | modal | 🟢 COMPLETE |
-| 15 | ATS Score Analyzer | `src/components/BuildResume/AtsScoreMeter.jsx` | in-builder panel | 🟢 COMPLETE |
-| 16 | Resume Preview | `src/components/BuildResume/PreviewModal.jsx` | modal | 🟢 COMPLETE |
-| 17 | Resume Import | `src/components/BuildResume/ResumeImportModal.jsx` | modal | 🟢 COMPLETE |
-| 18 | PDF Exporter | `src/components/Exporter/Exporter.jsx` | `/export/Cv{N}/:id/:lang` | 🟢 COMPLETE |
-| 19 | DOCX Exporter | `src/utils/docxDownload.js` | client-initiated | 🟢 COMPLETE |
-| 20 | Public Resume | `src/components/PublicResume/PublicResume.jsx` | `/shared/:resumeId` | 🟢 COMPLETE |
-| 21 | Cover Letter | `src/components/CoverLetter/CoverLetter.jsx` | `/coverletter` | 🟡 PARTIAL — **missing auth guard** |
-| 22 | Portfolio Builder | `src/components/PortfolioBuilder/PortfolioBuilder.jsx` | `/portfolio/builder` | 🟢 COMPLETE |
-| 23 | Public Portfolio | `src/components/PublicPortfolio/PublicPortfolio.jsx` | `/portfolio/:slug` | 🟢 COMPLETE |
-| 24 | Portfolio Gallery | `src/components/PortfolioGallery/PortfolioGallery.jsx` | `/portfolios` | 🟢 COMPLETE |
-| 25 | Blog List | `src/components/Blog/BlogList/BlogList.jsx` | `/blog` | 🟢 COMPLETE |
-| 26 | Blog Post | `src/components/Blog/BlogPost/BlogPost.jsx` | `/blog/:slug` | 🟢 COMPLETE |
-| 27 | Blog Editor | `src/components/Blog/BlogEditor/BlogEditor.jsx` | `/blog-editor` | 🟢 COMPLETE |
-| 28 | Jobs Landing | `src/components/JobsLanding/JobsLanding.jsx` | `/jobs` | 🟢 COMPLETE |
-| 29 | Jobs Portal | `src/components/JobsListings/MainJobListings.jsx` | `/jobs/portal` | 🟢 COMPLETE |
-| 30 | Job Tracker | `src/components/AppliedJobs/JobTracker.jsx` | `/dashboard/job-tracker` | 🟢 COMPLETE |
-| 31 | Applied Jobs | `src/components/AppliedJobs/AppliedJobs.jsx` | `/dashboard/applied-jobs` | 🟢 COMPLETE |
-| 32 | Employer Dashboard | `src/components/Dashboard/EmployerDashboard/` | `/dashboard/my-employments` | 🟢 COMPLETE |
-| 33 | Companies Management | `src/components/Dashboard/EmployerDashboard/CompaniesManagement` | `/dashboard/my-companies` | 🟢 COMPLETE |
-| 34 | Billing / Plans | `src/components/Billing/Plans/Plans.jsx` | `/billing/plans`, `/pricing` | 🟢 COMPLETE |
-| 35 | Contact | `src/components/Contact/Contact.jsx` | `/contact` | 🟢 COMPLETE |
-| 36 | Features | `src/components/Features/Features.jsx` | `/features` | 🟢 COMPLETE |
-| 37 | Custom CMS Pages | `src/components/CustomPage/CustomePage.jsx` | `/p/:custompage` | 🟢 COMPLETE |
-| 38 | Admin Console | `src/components/admin/Admin.jsx` | `/adm/*` | 🟢 COMPLETE |
-| 39 | Enterprise Console | `src/enterprise/EnterpriseConsole.jsx` | `/enterprise/*` | 🟢 COMPLETE |
-| 40 | Privacy Consent | `src/components/PrivacyConsentBanner.jsx` | global overlay | 🟢 COMPLETE |
-| 41 | GA4 Analytics | `src/components/GA4Provider.jsx` | global provider | 🟢 COMPLETE |
-| 42 | Route SEO | `src/components/RouteSeo.jsx` (104 lines) | global | 🟢 COMPLETE |
-| 43 | Route Focus (a11y) | `src/components/RouteFocus.jsx` (17 lines) | global | 🟢 COMPLETE |
-| 44 | NotFound | Inline in `main.jsx:96` | `*` catch-all | 🟢 COMPLETE |
+| 1 | Welcome / Landing | `src/components/welcome/Welcome.jsx` | `/` | ðŸŸ¢ COMPLETE |
+| 2 | Login / Registration | `src/components/welcome/Welcome.jsx` (tabs) | `/login` | ðŸŸ¢ COMPLETE |
+| 3 | Password Recovery | `src/components/auth/recoverPassword/` | modal overlay | ðŸŸ¢ COMPLETE |
+| 4 | Password Reset | `src/components/auth/resetPassword/ResetPasswordModal.jsx` | deep-link modal | ðŸŸ¢ COMPLETE |
+| 5 | Consumer Dashboard | `src/components/Dashboard/DashboardMain/DashboardMain.jsx` | `/dashboard/*` | ðŸŸ¢ COMPLETE |
+| 6 | Dashboard Homepage | `src/components/Dashboard/DashboardHomepage/` | `/dashboard` (index) | ðŸŸ¢ COMPLETE |
+| 7 | Dashboard Settings | `src/components/Dashboard/DashboardSettings/` | `/dashboard/settings` | ðŸŸ¢ COMPLETE |
+| 8 | Dashboard Messages | `src/components/Dashboard/DashboardMessages/` | `/dashboard/messages` | ðŸŸ¢ COMPLETE |
+| 9 | Dashboard Favorites | `src/components/Dashboard/DashboardFavourites/` | `/dashboard/favorites` | ðŸŸ¢ COMPLETE |
+| 10 | Dashboard Portfolios | `src/components/Dashboard/DashboardPortfolios/` | `/dashboard/portfolios` | ðŸŸ¢ COMPLETE |
+| 11 | Interview Coach | `src/components/Dashboard/DashboardInterviews/` | `/dashboard/interview` | ðŸŸ¢ COMPLETE |
+| 12 | Job Matching | `src/components/Dashboard/DashbaordJobMatching/` | `/dashboard/job-matching` | ðŸŸ¢ COMPLETE |
+| 13 | Resume Builder | `src/components/BuildResume/BuildResume.jsx` | `/build-resume/*` | ðŸŸ¢ COMPLETE |
+| 14 | Template Selection | `src/components/BuildResume/TemplateSelectionModal.jsx` | modal | ðŸŸ¢ COMPLETE |
+| 15 | ATS Score Analyzer | `src/components/BuildResume/AtsScoreMeter.jsx` | in-builder panel | ðŸŸ¢ COMPLETE |
+| 16 | Resume Preview | `src/components/BuildResume/PreviewModal.jsx` | modal | ðŸŸ¢ COMPLETE |
+| 17 | Resume Import | `src/components/BuildResume/ResumeImportModal.jsx` | modal | ðŸŸ¢ COMPLETE |
+| 18 | PDF Exporter | `src/components/Exporter/Exporter.jsx` | `/export/Cv{N}/:id/:lang` | ðŸŸ¢ COMPLETE |
+| 19 | DOCX Exporter | `src/utils/docxDownload.js` | client-initiated | ðŸŸ¢ COMPLETE |
+| 20 | Public Resume | `src/components/PublicResume/PublicResume.jsx` | `/shared/:resumeId` | ðŸŸ¢ COMPLETE |
+| 21 | Cover Letter | `src/components/CoverLetter/CoverLetter.jsx` | `/coverletter` | ðŸŸ¡ PARTIAL â€” **missing auth guard** |
+| 22 | Portfolio Builder | `src/components/PortfolioBuilder/PortfolioBuilder.jsx` | `/portfolio/builder` | ðŸŸ¢ COMPLETE |
+| 23 | Public Portfolio | `src/components/PublicPortfolio/PublicPortfolio.jsx` | `/portfolio/:slug` | ðŸŸ¢ COMPLETE |
+| 24 | Portfolio Gallery | `src/components/PortfolioGallery/PortfolioGallery.jsx` | `/portfolios` | ðŸŸ¢ COMPLETE |
+| 25 | Blog List | `src/components/Blog/BlogList/BlogList.jsx` | `/blog` | ðŸŸ¢ COMPLETE |
+| 26 | Blog Post | `src/components/Blog/BlogPost/BlogPost.jsx` | `/blog/:slug` | ðŸŸ¢ COMPLETE |
+| 27 | Blog Editor | `src/components/Blog/BlogEditor/BlogEditor.jsx` | `/blog-editor` | ðŸŸ¢ COMPLETE |
+| 28 | Jobs Landing | `src/components/JobsLanding/JobsLanding.jsx` | `/jobs` | ðŸŸ¢ COMPLETE |
+| 29 | Jobs Portal | `src/components/JobsListings/MainJobListings.jsx` | `/jobs/portal` | ðŸŸ¢ COMPLETE |
+| 30 | Job Tracker | `src/components/AppliedJobs/JobTracker.jsx` | `/dashboard/job-tracker` | ðŸŸ¢ COMPLETE |
+| 31 | Applied Jobs | `src/components/AppliedJobs/AppliedJobs.jsx` | `/dashboard/applied-jobs` | ðŸŸ¢ COMPLETE |
+| 32 | Employer Dashboard | `src/components/Dashboard/EmployerDashboard/` | `/dashboard/my-employments` | ðŸŸ¢ COMPLETE |
+| 33 | Companies Management | `src/components/Dashboard/EmployerDashboard/CompaniesManagement` | `/dashboard/my-companies` | ðŸŸ¢ COMPLETE |
+| 34 | Billing / Plans | `src/components/Billing/Plans/Plans.jsx` | `/billing/plans`, `/pricing` | ðŸŸ¢ COMPLETE |
+| 35 | Contact | `src/components/Contact/Contact.jsx` | `/contact` | ðŸŸ¢ COMPLETE |
+| 36 | Features | `src/components/Features/Features.jsx` | `/features` | ðŸŸ¢ COMPLETE |
+| 37 | Custom CMS Pages | `src/components/CustomPage/CustomePage.jsx` | `/p/:custompage` | ðŸŸ¢ COMPLETE |
+| 38 | Admin Console | `src/components/admin/Admin.jsx` | `/adm/*` | ðŸŸ¢ COMPLETE |
+| 39 | Enterprise Console | `src/enterprise/EnterpriseConsole.jsx` | `/enterprise/*` | ðŸŸ¢ COMPLETE |
+| 40 | Privacy Consent | `src/components/PrivacyConsentBanner.jsx` | global overlay | ðŸŸ¢ COMPLETE |
+| 41 | GA4 Analytics | `src/components/GA4Provider.jsx` | global provider | ðŸŸ¢ COMPLETE |
+| 42 | Route SEO | `src/components/RouteSeo.jsx` (104 lines) | global | ðŸŸ¢ COMPLETE |
+| 43 | Route Focus (a11y) | `src/components/RouteFocus.jsx` (17 lines) | global | ðŸŸ¢ COMPLETE |
+| 44 | NotFound | Inline in `main.jsx:96` | `*` catch-all | ðŸŸ¢ COMPLETE |
 
 ### 3.2 Dead / Orphaned Modules (6)
 
 | # | Module | Path | Evidence | Status |
 |---|---|---|---|---|
-| D1 | Front Stub | `src/components/Front/Front.jsx` | Returns `<div>front</div>` — 13 lines | 🔴 DEAD |
-| D2 | Initialisation | `src/components/initailisation/` | 4 subdirs, unreachable — platform.js returns `SERVER_MANAGED` | 🔴 DEAD |
-| D3 | AddAds | `src/components/addAds/` | Never imported by any component | 🔴 DEAD |
-| D4 | About | `src/components/About/` | Never imported by any route | 🔴 DEAD |
-| D5 | Analytics Helper | `src/components/Analytics.jsx` | 7-line helper misplaced in components | 🔴 ORPHANED |
-| D6 | Dashboard2 | `src/components/Dashboard2/` | Lazy-loaded in `main.jsx:82` but `/dashboard2` renders the main Dashboard | 🔴 REDUNDANT |
+| D1 | Front Stub | `src/components/Front/Front.jsx` | Returns `<div>front</div>` â€” 13 lines | ðŸ”´ DEAD |
+| D2 | Initialisation | `src/components/initailisation/` | 4 subdirs, unreachable â€” platform.js returns `SERVER_MANAGED` | ðŸ”´ DEAD |
+| D3 | AddAds | `src/components/addAds/` | Never imported by any component | ðŸ”´ DEAD |
+| D4 | About | `src/components/About/` | Never imported by any route | ðŸ”´ DEAD |
+| D5 | Analytics Helper | `src/components/Analytics.jsx` | 7-line helper misplaced in components | ðŸ”´ ORPHANED |
+| D6 | Dashboard2 | `src/components/Dashboard2/` | Lazy-loaded in `main.jsx:82` but `/dashboard2` renders the main Dashboard | ðŸ”´ REDUNDANT |
 
 ### 3.3 Backend Service Modules (24)
 
@@ -294,7 +294,7 @@ graph TB
 | 6 | `exportTokens.js` | Single-use, TTL-expiring PDF render tokens | 5KB |
 | 7 | `oauth.js` | LinkedIn/GitHub server-side PKCE + anti-CSRF states | 3KB |
 | 8 | `payments.js` | Provider-specific payment validation (5 gateways) | 6KB |
-| 9 | `network.js` | SSRF prevention — `assertPublicNetworkTarget()` | 3KB |
+| 9 | `network.js` | SSRF prevention â€” `assertPublicNetworkTarget()` | 3KB |
 | 10 | `reset.js` | Password reset token hashing + lease-based consumption | 2KB |
 
 ### 3.6 Enterprise Backend Modules (29)
@@ -307,7 +307,7 @@ All in `backend/enterprise/`. Covering: `tenantService.js` (65KB), `mysqlTenantR
 
 ```mermaid
 graph TD
-    VISIT[Visit Site] --> HOME[/ — Welcome/Landing]
+    VISIT[Visit Site] --> HOME[/ â€” Welcome/Landing]
     HOME --> |Sign Up| REG[Registration]
     HOME --> |Log In| LOGIN[/login]
     HOME --> |Browse| PUBLIC_ROUTES
@@ -334,7 +334,7 @@ graph TD
     POST_LOGIN --> |ENTERPRISE_ADMIN| ENT[Enterprise Console]
     POST_LOGIN --> |ENTERPRISE_MEMBER| ENT
 
-    DASH --> BUILD[Build Resume — 12 Steps]
+    DASH --> BUILD[Build Resume â€” 12 Steps]
     DASH --> COVER[Cover Letter Builder]
     DASH --> INTERVIEW[Interview Coach]
     DASH --> PORT_BUILD[Portfolio Builder]
@@ -345,7 +345,7 @@ graph TD
     DASH --> SETTINGS[Profile Settings]
     DASH --> PLANS[Billing Plans]
 
-    BUILD --> TEMPLATE[Template Selection — 51]
+    BUILD --> TEMPLATE[Template Selection â€” 51]
     BUILD --> PREVIEW[Live Preview]
     BUILD --> ATS[ATS Score Check]
     BUILD --> PDF_DL[PDF Download]
@@ -357,11 +357,11 @@ graph TD
 
 ## 5. Frontend Architecture
 
-### 5.1 Application Shell (`src/main.jsx` — 491 lines)
+### 5.1 Application Shell (`src/main.jsx` â€” 491 lines)
 
 ```mermaid
 graph TD
-    ROOT[index.html] --> MAIN[src/main.jsx — AuthWrapper]
+    ROOT[index.html] --> MAIN[src/main.jsx â€” AuthWrapper]
     MAIN --> |Step 1| DEEP_LINK[Process Deep Links<br/>verifyEmail, resetPassword, OAuth]
     MAIN --> |Step 2| OAUTH_REDIRECT[Handle Google/Facebook Redirect]
     MAIN --> |Step 3| AUTH_SUB[Firebase onAuthStateChanged]
@@ -376,11 +376,11 @@ graph TD
 
 **Key Implementation Details:**
 - **Token injection:** Axios interceptor + `window.fetch` monkey-patch attach `Authorization: Bearer <token>` to all `/api/*` requests (lines 50-67)
-- **Null-auth stub:** `src/conf/fire.js` (245 lines) — when Firebase config is absent, provides a full API-compatible null-auth stub; supports local auth mode with `VITE_LOCAL_AUTH=true`
+- **Null-auth stub:** `src/conf/fire.js` (245 lines) â€” when Firebase config is absent, provides a full API-compatible null-auth stub; supports local auth mode with `VITE_LOCAL_AUTH=true`
 - **Config authority:** `systemSettingsUpdated` CustomEvent dispatched from public-config API (MariaDB-sourced, rejects non-MariaDB sources)
 - **Code splitting:** All route components use `React.lazy()` with `<Suspense fallback={<Spinner />}>`
 - **Auth context:** `AuthContext` (React Context) provides `user` to all components
-- **Service Worker:** `serviceWorker.unregister()` — SW is explicitly disabled (line 490)
+- **Service Worker:** `serviceWorker.unregister()` â€” SW is explicitly disabled (line 490)
 
 ---
 
@@ -390,47 +390,47 @@ graph TD
 
 | # | Route | Component | Auth Guard | Notes | Status |
 |---|---|---|---|---|---|
-| 1 | `/` | Welcome | None | Landing page | 🟢 |
-| 2 | `/login` | Welcome (login mode) | Redirect if authed | → `/dashboard` | 🟢 |
-| 3 | `/sign-up` | Navigate | Redirect | → `/login` or `/dashboard` | 🟢 |
-| 4 | `/coverletter` | CoverLetter | **NONE** | ⚠️ Missing `RequireAuthenticated` | 🟡 |
-| 5 | `/coverletter/*` | CoverLetter | **NONE** | ⚠️ Same gap | 🟡 |
-| 6 | `/cover-letter` | CoverLetter | **NONE** | ⚠️ Same gap | 🟡 |
-| 7 | `/cover-letter/*` | CoverLetter | **NONE** | ⚠️ Same gap | 🟡 |
-| 8 | `/dashboard/*` | DashboardMain | `RequireAuthenticated` | 12 sub-routes | 🟢 |
-| 9 | `/enterprise/*` | EnterpriseConsole | `RequireAuthenticated` | 15-tab console | 🟢 |
-| 10 | `/contact` | Contact | None | Public | 🟢 |
-| 11 | `/build-resume/*` | BuildResume | `MaybeApplicationShell` | Auth optional — guest can build | 🟢 |
-| 12 | `/create-resume/*` | BuildResume (alias) | `MaybeApplicationShell` | Same as `/build-resume` | 🟢 |
-| 13 | `/create-resume` | BuildResume (alias) | `MaybeApplicationShell` | Same | 🟢 |
-| 14 | `/resume/:step` | Welcome | None | Legacy alias | 🟢 |
-| 15 | `/billing/plans` | Plans | None | Public pricing | 🟢 |
-| 16 | `/p/:custompage` | CustomePage | None | CMS pages | 🟢 |
-| 17 | `/shared/:resumeId` | PublicResume | None | Public view | 🟢 |
-| 18 | `/pricing` | Plans (alias) | None | → same as `/billing/plans` | 🟢 |
-| 19 | `/portfolio/builder` | PortfolioBuilder | `RequireAuthenticated` | — | 🟢 |
-| 20 | `/portfolio/:slug` | PublicPortfolio | None | Public view | 🟢 |
-| 21 | `/portfolios` | PortfolioGallery | None | Public gallery | 🟢 |
-| 22 | `/admin/*` | AdminAliasRedirect → `/adm/*` | Redirect | — | 🟢 |
-| 23 | `/platform/*` | PlatformAliasRedirect → `/adm/*` | Redirect | — | 🟢 |
-| 24 | `/adm/*` | Admin | `RequireAuthenticated` | Admin console | 🟢 |
-| 25 | `/front` | Front | None | `<div>front</div>` | 🔴 DEAD |
-| 26 | `/features` | Features | None | Public | 🟢 |
-| 27 | `/jobs` | JobsLanding | None | Public | 🟢 |
-| 28 | `/jobs/portal` | MainJobListings | None | Public | 🟢 |
-| 29 | `/jobs/portal/:jobId` | MainJobListings | None | Public | 🟢 |
-| 30 | `/jobs/browse` | MainJobListings | None | Public | 🟢 |
-| 31 | `/jobs/categories` | JobsLanding | None | Public | 🟢 |
-| 32 | `/jobs/category/:catName` | MainJobListings | None | Public | 🟢 |
-| 33 | `/blog` | BlogList | None | Public | 🟢 |
-| 34 | `/blog/:slug` | BlogPost | None | Public | 🟢 |
-| 35 | `/blog-editor` | BlogEditor | `RequireAuthenticated` | — | 🟢 |
-| 36 | `/blog-editor/:postId` | BlogEditor | `RequireAuthenticated` | — | 🟢 |
-| 37-87 | `/export/Cv{1-51}/:id/:lang` | Exporter | `RequireExportAccess` | 51 CV routes | 🟢 |
-| 88-91 | `/export/Cover{1-4}/:id/:lang` | Exporter | `RequireExportAccess` | 4 cover routes | 🟢 |
-| 92 | `/dashboard2/*` | Dashboard (alias) | `RequireAuthenticated` | Redundant | 🟢 |
-| 93 | `/dashboard2` | Dashboard (alias) | `RequireAuthenticated` | Redundant | 🟢 |
-| 94 | `*` | NotFound | None | Catch-all | 🟢 |
+| 1 | `/` | Welcome | None | Landing page | ðŸŸ¢ |
+| 2 | `/login` | Welcome (login mode) | Redirect if authed | â†’ `/dashboard` | ðŸŸ¢ |
+| 3 | `/sign-up` | Navigate | Redirect | â†’ `/login` or `/dashboard` | ðŸŸ¢ |
+| 4 | `/coverletter` | CoverLetter | **NONE** | âš ï¸ Missing `RequireAuthenticated` | ðŸŸ¡ |
+| 5 | `/coverletter/*` | CoverLetter | **NONE** | âš ï¸ Same gap | ðŸŸ¡ |
+| 6 | `/cover-letter` | CoverLetter | **NONE** | âš ï¸ Same gap | ðŸŸ¡ |
+| 7 | `/cover-letter/*` | CoverLetter | **NONE** | âš ï¸ Same gap | ðŸŸ¡ |
+| 8 | `/dashboard/*` | DashboardMain | `RequireAuthenticated` | 12 sub-routes | ðŸŸ¢ |
+| 9 | `/enterprise/*` | EnterpriseConsole | `RequireAuthenticated` | 15-tab console | ðŸŸ¢ |
+| 10 | `/contact` | Contact | None | Public | ðŸŸ¢ |
+| 11 | `/build-resume/*` | BuildResume | `MaybeApplicationShell` | Auth optional â€” guest can build | ðŸŸ¢ |
+| 12 | `/create-resume/*` | BuildResume (alias) | `MaybeApplicationShell` | Same as `/build-resume` | ðŸŸ¢ |
+| 13 | `/create-resume` | BuildResume (alias) | `MaybeApplicationShell` | Same | ðŸŸ¢ |
+| 14 | `/resume/:step` | Welcome | None | Legacy alias | ðŸŸ¢ |
+| 15 | `/billing/plans` | Plans | None | Public pricing | ðŸŸ¢ |
+| 16 | `/p/:custompage` | CustomePage | None | CMS pages | ðŸŸ¢ |
+| 17 | `/shared/:resumeId` | PublicResume | None | Public view | ðŸŸ¢ |
+| 18 | `/pricing` | Plans (alias) | None | â†’ same as `/billing/plans` | ðŸŸ¢ |
+| 19 | `/portfolio/builder` | PortfolioBuilder | `RequireAuthenticated` | â€” | ðŸŸ¢ |
+| 20 | `/portfolio/:slug` | PublicPortfolio | None | Public view | ðŸŸ¢ |
+| 21 | `/portfolios` | PortfolioGallery | None | Public gallery | ðŸŸ¢ |
+| 22 | `/admin/*` | AdminAliasRedirect â†’ `/adm/*` | Redirect | â€” | ðŸŸ¢ |
+| 23 | `/platform/*` | PlatformAliasRedirect â†’ `/adm/*` | Redirect | â€” | ðŸŸ¢ |
+| 24 | `/adm/*` | Admin | `RequireAuthenticated` | Admin console | ðŸŸ¢ |
+| 25 | `/front` | Front | None | `<div>front</div>` | ðŸ”´ DEAD |
+| 26 | `/features` | Features | None | Public | ðŸŸ¢ |
+| 27 | `/jobs` | JobsLanding | None | Public | ðŸŸ¢ |
+| 28 | `/jobs/portal` | MainJobListings | None | Public | ðŸŸ¢ |
+| 29 | `/jobs/portal/:jobId` | MainJobListings | None | Public | ðŸŸ¢ |
+| 30 | `/jobs/browse` | MainJobListings | None | Public | ðŸŸ¢ |
+| 31 | `/jobs/categories` | JobsLanding | None | Public | ðŸŸ¢ |
+| 32 | `/jobs/category/:catName` | MainJobListings | None | Public | ðŸŸ¢ |
+| 33 | `/blog` | BlogList | None | Public | ðŸŸ¢ |
+| 34 | `/blog/:slug` | BlogPost | None | Public | ðŸŸ¢ |
+| 35 | `/blog-editor` | BlogEditor | `RequireAuthenticated` | â€” | ðŸŸ¢ |
+| 36 | `/blog-editor/:postId` | BlogEditor | `RequireAuthenticated` | â€” | ðŸŸ¢ |
+| 37-87 | `/export/Cv{1-51}/:id/:lang` | Exporter | `RequireExportAccess` | 51 CV routes | ðŸŸ¢ |
+| 88-91 | `/export/Cover{1-4}/:id/:lang` | Exporter | `RequireExportAccess` | 4 cover routes | ðŸŸ¢ |
+| 92 | `/dashboard2/*` | Dashboard (alias) | `RequireAuthenticated` | Redundant | ðŸŸ¢ |
+| 93 | `/dashboard2` | Dashboard (alias) | `RequireAuthenticated` | Redundant | ðŸŸ¢ |
+| 94 | `*` | NotFound | None | Catch-all | ðŸŸ¢ |
 
 **Total: 94 unique route patterns + 51 dynamic CV + 4 dynamic Cover = 149 total route entries**
 
@@ -452,8 +452,8 @@ sequenceDiagram
     Browser->>Backend: Any /api/* + Authorization: Bearer token
     Backend->>Firebase: admin.auth().verifyIdToken(token, checkRevoked=true)
     Firebase-->>Backend: Decoded claims {uid, email, role, auth_time, email_verified}
-    Backend->>Backend: requireAuth() → freeze req.user (immutable)
-    Backend->>Backend: enforceApiPolicy() → RBAC + email check + recent auth
+    Backend->>Backend: requireAuth() â†’ freeze req.user (immutable)
+    Backend->>Backend: enforceApiPolicy() â†’ RBAC + email check + recent auth
     Backend->>MariaDB: Query with req.user.uid
     MariaDB-->>Backend: Data
     Backend-->>Browser: JSON Response
@@ -463,27 +463,27 @@ sequenceDiagram
 
 | Method | Implementation | Server Enforced | Status |
 |---|---|---|---|
-| Email/Password | Firebase Auth native | ✅ `verifyIdToken` | 🟢 |
-| Google OAuth | Redirect-based via `getRedirectResult()` | ✅ | 🟢 |
-| Facebook OAuth | Redirect-based | ✅ | 🟢 |
-| LinkedIn OAuth | Server-side PKCE via `backend/security/oauth.js` | ✅ | 🟢 |
-| GitHub OAuth | Server-side PKCE via `backend/security/oauth.js` | ✅ | 🟢 |
-| Local Auth (Dev) | `VITE_LOCAL_AUTH=true` → `POST /api/auth/preview-login` | ✅ (non-production only) | 🟢 |
-| TOTP MFA | Firebase native `multiFactor.enroll()` via `totpHelper.js` | ✅ (Super Admin) | 🟢 |
+| Email/Password | Firebase Auth native | âœ… `verifyIdToken` | ðŸŸ¢ |
+| Google OAuth | Redirect-based via `getRedirectResult()` | âœ… | ðŸŸ¢ |
+| Facebook OAuth | Redirect-based | âœ… | ðŸŸ¢ |
+| LinkedIn OAuth | Server-side PKCE via `backend/security/oauth.js` | âœ… | ðŸŸ¢ |
+| GitHub OAuth | Server-side PKCE via `backend/security/oauth.js` | âœ… | ðŸŸ¢ |
+| Local Auth (Dev) | `VITE_LOCAL_AUTH=true` â†’ `POST /api/auth/preview-login` | âœ… (non-production only) | ðŸŸ¢ |
+| TOTP MFA | Firebase native `multiFactor.enroll()` via `totpHelper.js` | âœ… (Super Admin) | ðŸŸ¢ |
 
 ### 7.2 Email Verification Flow
 
-1. Registration → `POST /api/auth/request-verification` → hashed token → `email_verification_tokens` table
+1. Registration â†’ `POST /api/auth/request-verification` â†’ hashed token â†’ `email_verification_tokens` table
 2. Email with link `?mode=verifyEmail&token=X&email=Y`
-3. Frontend `main.jsx:168-193` intercepts → `POST /api/auth/verify-email-token` → token consumed
+3. Frontend `main.jsx:168-193` intercepts â†’ `POST /api/auth/verify-email-token` â†’ token consumed
 4. Firebase Admin `updateUser({ emailVerified: true })` called server-side
-5. Frontend shows success banner → forces token refresh via `user.reload()` + `getIdToken(true)`
+5. Frontend shows success banner â†’ forces token refresh via `user.reload()` + `getIdToken(true)`
 
 ### 7.3 Password Reset Flow
 
-1. `POST /api/auth/request-password-reset` → hashed token → `password_reset_tokens` table
-2. Email with reset link → deep-link to frontend `main.jsx:194-198`
-3. `ResetPasswordModal` → `POST /api/auth/reset-password` → atomic lease + consumption
+1. `POST /api/auth/request-password-reset` â†’ hashed token â†’ `password_reset_tokens` table
+2. Email with reset link â†’ deep-link to frontend `main.jsx:194-198`
+3. `ResetPasswordModal` â†’ `POST /api/auth/reset-password` â†’ atomic lease + consumption
 4. Firebase Admin `updateUser({ password })` called server-side
 5. `password_reset_state.consumed_at` set
 
@@ -517,7 +517,7 @@ const PERMISSIONS = Object.freeze({
 
 ### 8.2 Policy Enforcement (`backend/security/policy.js`)
 
-**CRITICAL FINDING — Line 53:**
+**CRITICAL FINDING â€” Line 53:**
 ```javascript
 if (isAdminPath(pathname) && !hasPermission(req, 'system.config.write')) {
     return res.status(403).json({ error: { code: 'FORBIDDEN' } });
@@ -531,7 +531,7 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 | Elevated endpoints | `/admin/firebase-service-account` | `secrets.manage` |
 | Payment endpoints | `/admin/payments/*` | `payments.manage` |
 | Employer apps | `/admin/employer-applications/*` | `users.update` |
-| **All admin paths** | `isAdminPath(pathname)` | **`system.config.write` — blocks Auditor/Support** |
+| **All admin paths** | `isAdminPath(pathname)` | **`system.config.write` â€” blocks Auditor/Support** |
 | Email verification | AI, billing, admin paths | `req.user.emailVerified` |
 | Recent auth | `/account/delete` only | `auth_time` < 10 minutes |
 
@@ -544,13 +544,13 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 | Property | Value |
 |---|---|
 | **Authentication** | Firebase Auth + TOTP MFA enforced in production |
-| **Authorization** | Wildcard `['*']` — all permissions |
-| **Dashboard** | `/adm/*` — full admin console (22 modules) |
+| **Authorization** | Wildcard `['*']` â€” all permissions |
+| **Dashboard** | `/adm/*` â€” full admin console (22 modules) |
 | **API Access** | All endpoints including destructive operations |
 | **UI Visibility** | All admin modules + MFA banner if not MFA-verified |
-| **Backend Enforcement** | `hasPermission('*')` → always true |
+| **Backend Enforcement** | `hasPermission('*')` â†’ always true |
 | **Denial Behavior** | MFA banner blocks destructive ops if not MFA-verified |
-| **Status** | 🟢 COMPLETE |
+| **Status** | ðŸŸ¢ COMPLETE |
 
 ### ADMIN
 
@@ -558,11 +558,11 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 |---|---|
 | **Authentication** | Firebase Auth (MFA optional) |
 | **Authorization** | 15 permissions including `system.config.write` |
-| **Dashboard** | `/adm/*` — full admin console |
+| **Dashboard** | `/adm/*` â€” full admin console |
 | **API Access** | All admin endpoints |
 | **UI Visibility** | All admin modules |
-| **Backend Enforcement** | `system.config.write` → passes policy gate |
-| **Status** | 🟢 COMPLETE |
+| **Backend Enforcement** | `system.config.write` â†’ passes policy gate |
+| **Status** | ðŸŸ¢ COMPLETE |
 
 ### AUDITOR
 
@@ -570,13 +570,13 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 |---|---|
 | **Authentication** | Firebase Auth |
 | **Authorization** | 8 read-only permissions (`users.read`, `audit.read`, `security.read`, etc.) |
-| **Dashboard** | `/adm/*` — frontend renders admin console |
-| **API Access** | **ALL admin API calls return HTTP 403** — policy.js:53 blocks |
+| **Dashboard** | `/adm/*` â€” frontend renders admin console |
+| **API Access** | **ALL admin API calls return HTTP 403** â€” policy.js:53 blocks |
 | **UI Visibility** | Admin sidebar renders, pages load, **API calls fail with 403** |
 | **Backend Enforcement** | Blocked by `system.config.write` gate |
 | **Denial Behavior** | "Insufficient permission" JSON error on every admin API call |
-| **Gap** | UI renders but backend blocks → **BROKEN USER EXPERIENCE** |
-| **Status** | 🔴 BROKEN |
+| **Gap** | UI renders but backend blocks â†’ **BROKEN USER EXPERIENCE** |
+| **Status** | ðŸ”´ BROKEN |
 
 ### SUPPORT
 
@@ -584,15 +584,15 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 |---|---|
 | **Authentication** | Firebase Auth |
 | **Authorization** | 4 permissions (`users.read`, `email.logs.read`, `tenants.read`, `tickets.manage`) |
-| **Dashboard** | `/adm/*` — frontend renders admin console |
+| **Dashboard** | `/adm/*` â€” frontend renders admin console |
 | **API Access** | **ALL admin API calls return HTTP 403** |
 | **UI Visibility** | Admin sidebar renders, pages load, **API calls fail with 403** |
 | **Backend Enforcement** | Blocked by `system.config.write` gate |
 | **Ticket System** | `tickets.manage` permission exists but **zero backend API endpoints for tickets** |
-| **Support Dashboard** | **MISSING** — no `/support` route, no `SupportDashboard.jsx` |
-| **User Impersonation** | **MISSING** — zero code matches for impersonation |
+| **Support Dashboard** | **MISSING** â€” no `/support` route, no `SupportDashboard.jsx` |
+| **User Impersonation** | **MISSING** â€” zero code matches for impersonation |
 | **Gap** | UI rendered but non-functional + no ticket system + no support dashboard |
-| **Status** | 🔴 BROKEN |
+| **Status** | ðŸ”´ BROKEN |
 
 ### ENTERPRISE_ADMIN
 
@@ -600,10 +600,10 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 |---|---|
 | **Authentication** | Firebase Auth + Enterprise tenant context (`x-tenant-id` header) |
 | **Authorization** | 9 permissions scoped to tenant |
-| **Dashboard** | `/enterprise/*` — 15-tab enterprise console |
-| **API Access** | `/api/enterprise/*` — authenticated via `createEnterpriseAuthMiddleware` |
+| **Dashboard** | `/enterprise/*` â€” 15-tab enterprise console |
+| **API Access** | `/api/enterprise/*` â€” authenticated via `createEnterpriseAuthMiddleware` |
 | **Backend Enforcement** | Tenant-scoped RBAC via `tenantPolicy.js` |
-| **Status** | 🟢 COMPLETE |
+| **Status** | ðŸŸ¢ COMPLETE |
 
 ### ENTERPRISE_MEMBER
 
@@ -611,8 +611,8 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 |---|---|
 | **Authentication** | Firebase Auth + Enterprise tenant context |
 | **Authorization** | 4 permissions (`tenant.resumes.write`, `tenant.ai.consume`, etc.) |
-| **Dashboard** | `/enterprise/*` — limited tabs |
-| **Status** | 🟢 COMPLETE |
+| **Dashboard** | `/enterprise/*` â€” limited tabs |
+| **Status** | ðŸŸ¢ COMPLETE |
 
 ### EMPLOYER
 
@@ -622,7 +622,7 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 | **Authorization** | 3 permissions (`jobs.manage`, `applications.review`, `candidates.contact`) |
 | **Dashboard** | `/dashboard/my-employments`, `/dashboard/my-companies` |
 | **API Access** | Jobs/employer API endpoints |
-| **Status** | 🟢 COMPLETE |
+| **Status** | ðŸŸ¢ COMPLETE |
 
 ### USER
 
@@ -630,9 +630,9 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 |---|---|
 | **Authentication** | Firebase Auth |
 | **Authorization** | 4 permissions (`resumes.manage`, `coverletters.manage`, `interviews.execute`, `subscription.self`) |
-| **Dashboard** | `/dashboard/*` — 12 sub-routes |
+| **Dashboard** | `/dashboard/*` â€” 12 sub-routes |
 | **API Access** | Consumer CRUD endpoints (resumes, covers, portfolios, messages, jobs) |
-| **Status** | 🟢 COMPLETE |
+| **Status** | ðŸŸ¢ COMPLETE |
 
 ---
 
@@ -644,19 +644,19 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 
 | Sub-Route | Component | Actions Available | API | Status |
 |---|---|---|---|---|
-| `/dashboard` (index) | DashboardHomepage | View stats, quick actions, recent resumes | Profile API | 🟢 |
-| `/dashboard/settings` | DashboardSettings | Profile edit, password change, MFA, delete account | `/api/users-data`, `/api/account/delete` | 🟢 |
-| `/dashboard/messages` | DashboardMessages | Send/receive messages, conversation threads | `/api/messages/*` | 🟢 |
-| `/dashboard/favorites` | DashboardFavourites | View bookmarked items | `/api/favourites` | 🟢 |
-| `/dashboard/interview` | DashboardInterviews | AI interview practice, CBT simulation | `/api/ai/interview/*` | 🟢 |
-| `/dashboard/cover-letters` | CoverLetter | Create/edit cover letters | `/api/covers/*` | 🟢 |
-| `/dashboard/portfolios` | DashboardPortfolios | Manage portfolios | `/api/portfolios/*` | 🟢 |
-| `/dashboard/applied-jobs` | AppliedJobs | Track job applications | `/api/jobs-data/applied` | 🟢 |
-| `/dashboard/job-tracker` | JobTracker | Personal job tracking board | `/api/jobs-data/tracker` | 🟢 |
-| `/dashboard/my-employments` | EmployerDashboard | Job posting, application review | `/api/jobs-data`, `/api/employer/*` | 🟢 |
-| `/dashboard/my-companies` | CompaniesManagement | Company profile management | `/api/companies` | 🟢 |
-| `/dashboard/job-matching` | DashboardJobMatching | AI-powered job matching | `/api/jobs-data/matching` | 🟢 |
-| `/dashboard/plans` | Plans (Billing) | Subscription management | `/api/pay/*` | 🟢 |
+| `/dashboard` (index) | DashboardHomepage | View stats, quick actions, recent resumes | Profile API | ðŸŸ¢ |
+| `/dashboard/settings` | DashboardSettings | Profile edit, password change, MFA, delete account | `/api/users-data`, `/api/account/delete` | ðŸŸ¢ |
+| `/dashboard/messages` | DashboardMessages | Send/receive messages, conversation threads | `/api/messages/*` | ðŸŸ¢ |
+| `/dashboard/favorites` | DashboardFavourites | View bookmarked items | `/api/favourites` | ðŸŸ¢ |
+| `/dashboard/interview` | DashboardInterviews | AI interview practice, CBT simulation | `/api/ai/interview/*` | ðŸŸ¢ |
+| `/dashboard/cover-letters` | CoverLetter | Create/edit cover letters | `/api/covers/*` | ðŸŸ¢ |
+| `/dashboard/portfolios` | DashboardPortfolios | Manage portfolios | `/api/portfolios/*` | ðŸŸ¢ |
+| `/dashboard/applied-jobs` | AppliedJobs | Track job applications | `/api/jobs-data/applied` | ðŸŸ¢ |
+| `/dashboard/job-tracker` | JobTracker | Personal job tracking board | `/api/jobs-data/tracker` | ðŸŸ¢ |
+| `/dashboard/my-employments` | EmployerDashboard | Job posting, application review | `/api/jobs-data`, `/api/employer/*` | ðŸŸ¢ |
+| `/dashboard/my-companies` | CompaniesManagement | Company profile management | `/api/companies` | ðŸŸ¢ |
+| `/dashboard/job-matching` | DashboardJobMatching | AI-powered job matching | `/api/jobs-data/matching` | ðŸŸ¢ |
+| `/dashboard/plans` | Plans (Billing) | Subscription management | `/api/pay/*` | ðŸŸ¢ |
 
 **Dashboard Features:**
 - **Sidebar:** `ProfileDisplay` component with collapsible sidebar, mobile hamburger toggle
@@ -666,32 +666,32 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 
 ### 10.2 Admin Console (`/adm/*`)
 
-**Shell:** `Admin.jsx` (246 lines) — `RequireAuthenticated` + admin role check via `checkIfAdmin()`
+**Shell:** `Admin.jsx` (246 lines) â€” `RequireAuthenticated` + admin role check via `checkIfAdmin()`
 
 | Sub-Route | Component | Purpose | Status |
 |---|---|---|---|
-| `/adm/dashboard` | Dashboard | Stats overview, metrics | 🟢 |
-| `/adm/users` | UsersManager | User CRUD, role management | 🟢 |
-| `/adm/user/ss` | UserEdit | Individual user editing | 🟢 |
-| `/adm/messages` | Messages | Admin messaging | 🟢 |
-| `/adm/reviews` | Reviews | Customer testimonials | 🟢 |
-| `/adm/trustedby` | TrustedBy | Partner logos | 🟢 |
-| `/adm/employer-applications` | EmployerApplications | Employer approval | 🟢 |
-| `/adm/jobs-manager` | JobsManager | Job moderation | 🟢 |
-| `/adm/company-management` | CompanyManagement | Company management | 🟢 |
-| `/adm/blog-management` | BlogManagement | CMS | 🟢 |
-| `/adm/landing-pages` | LandingPages | Custom pages | 🟢 |
-| `/adm/phrases` | Phrases | i18n translation keys | 🟢 |
-| `/adm/audit-logs` | AdminAuditLogs | Audit trail viewer | 🟢 |
-| `/adm/queues` | PlatformQueues | Outbox status | 🟢 |
-| `/adm/tenants` | PlatformTenants | Enterprise tenants | 🟢 |
-| `/adm/security` | PlatformSecurity | Security events | 🟢 |
-| `/adm/operations` | PlatformOperations | Batch ops | 🟢 |
-| `/adm/attention` | PlatformAttention | Action items | 🟢 |
-| `/adm/health` | PlatformHealth | Real-time health | 🟢 |
-| `/adm/operators` | PlatformOperators | IAM management | 🟢 |
-| `/adm/settings` | Settings | 30+ sub-panels | 🟢 |
-| `/adm/*` (catch-all) | → `/adm/dashboard` | Redirect | 🟢 |
+| `/adm/dashboard` | Dashboard | Stats overview, metrics | ðŸŸ¢ |
+| `/adm/users` | UsersManager | User CRUD, role management | ðŸŸ¢ |
+| `/adm/user/ss` | UserEdit | Individual user editing | ðŸŸ¢ |
+| `/adm/messages` | Messages | Admin messaging | ðŸŸ¢ |
+| `/adm/reviews` | Reviews | Customer testimonials | ðŸŸ¢ |
+| `/adm/trustedby` | TrustedBy | Partner logos | ðŸŸ¢ |
+| `/adm/employer-applications` | EmployerApplications | Employer approval | ðŸŸ¢ |
+| `/adm/jobs-manager` | JobsManager | Job moderation | ðŸŸ¢ |
+| `/adm/company-management` | CompanyManagement | Company management | ðŸŸ¢ |
+| `/adm/blog-management` | BlogManagement | CMS | ðŸŸ¢ |
+| `/adm/landing-pages` | LandingPages | Custom pages | ðŸŸ¢ |
+| `/adm/phrases` | Phrases | i18n translation keys | ðŸŸ¢ |
+| `/adm/audit-logs` | AdminAuditLogs | Audit trail viewer | ðŸŸ¢ |
+| `/adm/queues` | PlatformQueues | Outbox status | ðŸŸ¢ |
+| `/adm/tenants` | PlatformTenants | Enterprise tenants | ðŸŸ¢ |
+| `/adm/security` | PlatformSecurity | Security events | ðŸŸ¢ |
+| `/adm/operations` | PlatformOperations | Batch ops | ðŸŸ¢ |
+| `/adm/attention` | PlatformAttention | Action items | ðŸŸ¢ |
+| `/adm/health` | PlatformHealth | Real-time health | ðŸŸ¢ |
+| `/adm/operators` | PlatformOperators | IAM management | ðŸŸ¢ |
+| `/adm/settings` | Settings | 30+ sub-panels | ðŸŸ¢ |
+| `/adm/*` (catch-all) | â†’ `/adm/dashboard` | Redirect | ðŸŸ¢ |
 
 **Admin Features:**
 - **Health indicator:** Header bar polls `GET /api/healthz`, shows green/red dot
@@ -703,30 +703,30 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 
 ### 10.3 Enterprise Console (`/enterprise/*`)
 
-**Shell:** `EnterpriseConsole.jsx` (870 lines) — 15 navigation tabs + command palette
+**Shell:** `EnterpriseConsole.jsx` (870 lines) â€” 15 navigation tabs + command palette
 
 | Tab ID | Label | Permission Gate | Component | Status |
 |---|---|---|---|---|
-| `overview` | Overview | None | EnterpriseOverviewTab (25KB) | 🟢 |
-| `resumes` | Talent & Resumes | None | EnterpriseResumesTab (58KB) | 🟢 |
-| `members` | Users & IAM | `tenant.members.read` | EnterpriseUsersTab (50KB) | 🟢 |
-| `teams` | Teams | `workspace.read` | EnterpriseTeamsTab (29KB) | 🟢 |
-| `workspaces` | Workspaces | `workspace.read` | EnterpriseWorkspacesTab (26KB) | 🟢 |
-| `access` | Roles & Permissions | `tenant.roles.manage` | EnterpriseRolesTab (38KB) | 🟢 |
-| `ai` | AI Workspace | `tenant.ai.manage` | EnterpriseAiTab (15KB) | 🟢 |
-| `security` | Security & M2M | `tenant.security.read` | EnterpriseSecurityTab (35KB) | 🟢 |
-| `usage` | Usage & Quotas | `tenant.usage.read` | EnterpriseUsageTab (23KB) | 🟢 |
-| `email` | Email & Notifications | `tenant.settings.write` | EnterpriseEmailTab (27KB) | 🟢 |
-| `audit` | Audit Logs | `tenant.audit.read` | EnterpriseAuditTab (26KB) | 🟢 |
-| `support` | Support Access | `tenant.settings.write` | EnterpriseSupportTab (19KB) | 🟢 |
-| `settings` | Organization Settings | `tenant.settings.write` | EnterpriseSettingsTab (17KB) | 🟢 |
-| `platform` | Platform Administration | `platformOnly: true` | EnterprisePlatformTab (16KB) | 🟢 |
+| `overview` | Overview | None | EnterpriseOverviewTab (25KB) | ðŸŸ¢ |
+| `resumes` | Talent & Resumes | None | EnterpriseResumesTab (58KB) | ðŸŸ¢ |
+| `members` | Users & IAM | `tenant.members.read` | EnterpriseUsersTab (50KB) | ðŸŸ¢ |
+| `teams` | Teams | `workspace.read` | EnterpriseTeamsTab (29KB) | ðŸŸ¢ |
+| `workspaces` | Workspaces | `workspace.read` | EnterpriseWorkspacesTab (26KB) | ðŸŸ¢ |
+| `access` | Roles & Permissions | `tenant.roles.manage` | EnterpriseRolesTab (38KB) | ðŸŸ¢ |
+| `ai` | AI Workspace | `tenant.ai.manage` | EnterpriseAiTab (15KB) | ðŸŸ¢ |
+| `security` | Security & M2M | `tenant.security.read` | EnterpriseSecurityTab (35KB) | ðŸŸ¢ |
+| `usage` | Usage & Quotas | `tenant.usage.read` | EnterpriseUsageTab (23KB) | ðŸŸ¢ |
+| `email` | Email & Notifications | `tenant.settings.write` | EnterpriseEmailTab (27KB) | ðŸŸ¢ |
+| `audit` | Audit Logs | `tenant.audit.read` | EnterpriseAuditTab (26KB) | ðŸŸ¢ |
+| `support` | Support Access | `tenant.settings.write` | EnterpriseSupportTab (19KB) | ðŸŸ¢ |
+| `settings` | Organization Settings | `tenant.settings.write` | EnterpriseSettingsTab (17KB) | ðŸŸ¢ |
+| `platform` | Platform Administration | `platformOnly: true` | EnterprisePlatformTab (16KB) | ðŸŸ¢ |
 
 **Enterprise Features:**
 - **Quick Actions (9):** Command palette actions for invite, pending review, new workspace/team/resume/SA, DLQ inspect, denied ops investigation
 - **Confirm Modal:** `EnterpriseConfirmModal` for destructive operations
 - **Help Tooltips:** `HelpTooltip.jsx` contextual help
-- **Navigation groups:** Home → Organization → Governance → Administration
+- **Navigation groups:** Home â†’ Organization â†’ Governance â†’ Administration
 - **Recent tabs:** Persisted in `sessionStorage` under `enterprise_recent_tabs`
 
 ---
@@ -735,7 +735,7 @@ This blocks **ALL** `/admin/*` and `/platform/*` API requests for any role lacki
 
 ```mermaid
 graph TD
-    START[Dashboard → Build Resume] --> IMPORT{Import Resume?}
+    START[Dashboard â†’ Build Resume] --> IMPORT{Import Resume?}
     IMPORT --> |Yes| PARSE[ResumeImportModal<br/>JSON/PDF parse]
     IMPORT --> |No| S1
     PARSE --> S1
@@ -767,9 +767,9 @@ graph TD
 - **Step Inventory (13 Steps):** 12 content editing steps (`heading`, `summary`, `workHistory`, `education`, `skills`, `projects`, `certifications`, `achievements`, `languages`, `references`, `customSections`, `finalize`) + dedicated Step 13 (`review` via `ReviewStep.jsx`, 120 lines) offering one-click preview, template switcher, ATS score calculation, and dual-format download.
 - **Dirty State Protection:** `persistBeforeNavigation()` in `BuildResume.jsx` flushes unsaved edits to MariaDB before routing between steps or jumping into export/review.
 - **Required Data Validation:** Finish workflow enforces presence of primary personal details (firstname, lastname, email) before marking the resume ready for export.
-- **Autosave:** `writeResumeRecovery(userId, resumeId, revision, data)` → LocalStorage key `resume_recovery_v1:{uid}:{id}`
-- **Conflict Detection:** Server enforces `expectedRevision` on `POST /api/resumes/:id`; mismatch → `RESUME_CONFLICT` (HTTP 409) with `remoteRevision` + `remoteData`
-- **Experience Engine:** `src/utils/resumeData.js` — `calculateYearsOfExperience` merges overlapping date intervals
+- **Autosave:** `writeResumeRecovery(userId, resumeId, revision, data)` â†’ LocalStorage key `resume_recovery_v1:{uid}:{id}`
+- **Conflict Detection:** Server enforces `expectedRevision` on `POST /api/resumes/:id`; mismatch â†’ `RESUME_CONFLICT` (HTTP 409) with `remoteRevision` + `remoteData`
+- **Experience Engine:** `src/utils/resumeData.js` â€” `calculateYearsOfExperience` merges overlapping date intervals
 - **AI Grounding:** Summary step transmits accurate years + complete education, certifications, projects, skills payload to prevent hallucination
 - **Recommendation Dedup:** Skills/Certifications steps suppress already-added items + send `existingSkills` to AI
 
@@ -780,7 +780,7 @@ graph TD
 ```mermaid
 graph TD
     REQ[AI Generation Request] --> VAL[Input Validation<br/>normalizePayload: 4000 char limit, 100 array items]
-    VAL --> QUOTA[Quota Check<br/>ai_usage table — SELECT FOR UPDATE]
+    VAL --> QUOTA[Quota Check<br/>ai_usage table â€” SELECT FOR UPDATE]
     QUOTA --> |Exceeded| DENY[429 AI_DAILY_QUOTA_EXCEEDED]
     QUOTA --> |OK| CFG[Load Provider Config<br/>15s cache from system_settings]
 
@@ -801,15 +801,15 @@ graph TD
 
 | Operation | Endpoint | Source Grounding | Hallucination Guard | Status |
 |---|---|---|---|---|
-| Summary Generation | `POST /api/generate-summary` | Work history, education, skills, certs, projects, years | Negative: "Do not invent" + `FACTUAL_SOURCE_FIELDS` | 🟢 |
-| Work Description | `POST /api/generate-work-description` | Existing text, notes, responsibilities, achievements | Source-bound | 🟢 |
-| Education Description | `POST /api/generate-education-description` | Existing text, coursework, projects | Source-bound | 🟢 |
-| Skills Suggestion | `POST /api/generate-skills` | Job title, existing skills, `existingSkills` exclusion | Deduplication constraint | 🟢 |
-| Bullet Enhancement | `POST /api/enhance-single-bullet` | Existing bullet text | Enhancement-only | 🟢 |
-| Grammar Check | `POST /api/check-grammar` | Input text | Correction-only | 🟢 |
-| Autocomplete | `POST /api/ai/autocomplete` | Type + partial input | `AUTOCOMPLETE_TYPES` whitelist | 🟢 |
-| Interview Questions | `POST /api/ai/interview/generate` | Job title, experience, skills | Contextual generation | 🟢 |
-| Interview Feedback | `POST /api/ai/interview/feedback` | User answer + question context | Assessment-only | 🟢 |
+| Summary Generation | `POST /api/generate-summary` | Work history, education, skills, certs, projects, years | Negative: "Do not invent" + `FACTUAL_SOURCE_FIELDS` | ðŸŸ¢ |
+| Work Description | `POST /api/generate-work-description` | Existing text, notes, responsibilities, achievements | Source-bound | ðŸŸ¢ |
+| Education Description | `POST /api/generate-education-description` | Existing text, coursework, projects | Source-bound | ðŸŸ¢ |
+| Skills Suggestion | `POST /api/generate-skills` | Job title, existing skills, `existingSkills` exclusion | Deduplication constraint | ðŸŸ¢ |
+| Bullet Enhancement | `POST /api/enhance-single-bullet` | Existing bullet text | Enhancement-only | ðŸŸ¢ |
+| Grammar Check | `POST /api/check-grammar` | Input text | Correction-only | ðŸŸ¢ |
+| Autocomplete | `POST /api/ai/autocomplete` | Type + partial input | `AUTOCOMPLETE_TYPES` whitelist | ðŸŸ¢ |
+| Interview Questions | `POST /api/ai/interview/generate` | Job title, experience, skills | Contextual generation | ðŸŸ¢ |
+| Interview Feedback | `POST /api/ai/interview/feedback` | User answer + question context | Assessment-only | ðŸŸ¢ |
 
 ---
 
@@ -819,21 +819,21 @@ graph TD
 
 ```mermaid
 graph TD
-    REQ[Incoming Request] --> RAW[express.raw — /api/stripe-webhook only L263]
-    RAW --> JSON[express.json — 256kb limit L264]
+    REQ[Incoming Request] --> RAW[express.raw â€” /api/stripe-webhook only L263]
+    RAW --> JSON[express.json â€” 256kb limit L264]
     JSON --> URLENC[express.urlencoded L265]
     URLENC --> HELMET[Helmet security headers L300]
-    HELMET --> CORS[CORS — origin allowlist L284-294]
-    CORS --> REQID[Request ID — crypto.randomUUID L252-259]
-    REQID --> GLOBAL[Global Rate Limiter — 2500/15min L306-315]
-    GLOBAL --> AUTH_LIM[Auth Rate Limiter — 20/hr on /auth, /email L320-326]
+    HELMET --> CORS[CORS â€” origin allowlist L284-294]
+    CORS --> REQID[Request ID â€” crypto.randomUUID L252-259]
+    REQID --> GLOBAL[Global Rate Limiter â€” 2500/15min L306-315]
+    GLOBAL --> AUTH_LIM[Auth Rate Limiter â€” 20/hr on /auth, /email L320-326]
     AUTH_LIM --> PUBLIC{Public Path? L336-358}
     PUBLIC --> |Yes| HANDLER[Route Handler]
     PUBLIC --> |No /enterprise/| ENT_AUTH[Enterprise Auth L362-373]
     PUBLIC --> |No other| REQ_AUTH[requireAuth L374]
     ENT_AUTH --> POLICY[enforceApiPolicy L376-384]
     REQ_AUTH --> POLICY
-    POLICY --> AI_LIM[AI Account Limiter — 12/min L418-419]
+    POLICY --> AI_LIM[AI Account Limiter â€” 12/min L418-419]
     AI_LIM --> AI_QUOTA[enforceDailyAiQuota L418]
     AI_QUOTA --> HANDLER
 ```
@@ -841,8 +841,8 @@ graph TD
 ### Graceful Shutdown
 
 Two shutdown handlers registered (L240-250 and L4187-4209):
-1. HTTP server `close()` → drain in-flight connections
-2. `closePool()` → drain MariaDB pool
+1. HTTP server `close()` â†’ drain in-flight connections
+2. `closePool()` â†’ drain MariaDB pool
 3. 5-second forced exit timeout (L4200-4202)
 4. `process.on('SIGTERM')` + `process.on('SIGINT')` registered
 
@@ -874,16 +874,16 @@ Categorized:
 
 ## 15. Database Architecture
 
-### MariaDB — Sole Authoritative Data Plane
+### MariaDB â€” Sole Authoritative Data Plane
 
 **Zero Firestore dependency confirmed.**
-- **Backend:** `grep -i firestore backend/index.js` → 0 results
-- **Frontend:** All 16 `firestore` matches in `src/` are documentation comments — zero runtime calls
-- **`src/conf/fire.js`:** Only imports `firebase/compat/app` and `firebase/compat/auth` — explicitly states "Firestore, Realtime Database and Functions compat modules are intentionally NOT loaded"
+- **Backend:** `grep -i firestore backend/index.js` â†’ 0 results
+- **Frontend:** All 16 `firestore` matches in `src/` are documentation comments â€” zero runtime calls
+- **`src/conf/fire.js`:** Only imports `firebase/compat/app` and `firebase/compat/auth` â€” explicitly states "Firestore, Realtime Database and Functions compat modules are intentionally NOT loaded"
 
 ### Complete Table Inventory (60+ tables)
 
-**Migration 001 — Baseline (40+ tables):** `users`, `resumes`, `public_resumes`, `portfolios`, `covers`, `favourites`, `jobs`, `applications`, `job_tracker`, `companies`, `blog`, `custom_pages`, `trusted_by`, `reviews`, `contact_messages`, `conversations`, `conversation_participants`, `conversation_messages`, `notifications`, `payment_orders`, `transactions`, `subscriptions`, `coupons`, `coupon_redemptions`, `system_settings`, `stats`, `admin_audit_logs`, `security_audit_logs`, `payment_webhook_events`, `canonical_documents`, `oauth_states`, `oauth_exchange_codes`, `export_render_tokens`, `password_reset_tokens`, `password_reset_state`, `email_verification_tokens`, `email_verification_state`, `email_logs`, `ai_usage`, `notification_outbox`, `platform_announcements`
+**Migration 001 â€” Baseline (40+ tables):** `users`, `resumes`, `public_resumes`, `portfolios`, `covers`, `favourites`, `jobs`, `applications`, `job_tracker`, `companies`, `blog`, `custom_pages`, `trusted_by`, `reviews`, `contact_messages`, `conversations`, `conversation_participants`, `conversation_messages`, `notifications`, `payment_orders`, `transactions`, `subscriptions`, `coupons`, `coupon_redemptions`, `system_settings`, `stats`, `admin_audit_logs`, `security_audit_logs`, `payment_webhook_events`, `canonical_documents`, `oauth_states`, `oauth_exchange_codes`, `export_render_tokens`, `password_reset_tokens`, `password_reset_state`, `email_verification_tokens`, `email_verification_state`, `email_logs`, `ai_usage`, `notification_outbox`, `platform_announcements`
 
 **Enterprise (migrations 002-006):** `enterprise_tenants`, `enterprise_workspaces`, `enterprise_memberships`, `enterprise_workspace_memberships`, `enterprise_tenant_configurations`, `enterprise_principal_tenants`, `enterprise_teams`, `enterprise_team_members`, `enterprise_resources`, `enterprise_audit_events`, `enterprise_ai_usage`, `enterprise_service_accounts`, `enterprise_support_grants`, `enterprise_outbox`, `enterprise_quota_buckets`, `enterprise_observability_rollups`, `enterprise_membership_invitations`
 
@@ -895,7 +895,7 @@ Categorized:
 
 ## 16. Data Ownership Registry
 
-**Source:** `backend/database/ownership.js` (162 lines) — Canonical ownership registry
+**Source:** `backend/database/ownership.js` (162 lines) â€” Canonical ownership registry
 
 Every entity has exactly one owner. The `getOwnership(entityType)` function fails closed with `DATABASE_OWNERSHIP_UNREGISTERED` for unknown domains.
 
@@ -917,12 +917,12 @@ All 40+ domain entities registered. **Zero secondary data paths.** **Zero fallba
 
 | Storage Type | Provider | Status | Evidence |
 |---|---|---|---|
-| **Application Data** | MariaDB 10.11 | 🟢 COMPLETE | All CRUD through parameterized queries |
-| **Identity** | Firebase Auth | 🟢 COMPLETE | `verifyIdToken` only |
-| **Object/File Storage** | **NOT IMPLEMENTED** | 🔴 MISSING | `backend/index.js:2672-2677` returns `501 STORAGE_PROVIDER_UNSUPPORTED` |
-| **Session Storage** | Stateless JWT | 🟢 COMPLETE | No server sessions |
-| **Client State** | LocalStorage | 🟢 COMPLETE | Resume recovery, language, auth |
-| **Cache** | In-memory (Node.js process) | 🟢 COMPLETE | AI config 15s cache, feature flags 30s cache |
+| **Application Data** | MariaDB 10.11 | ðŸŸ¢ COMPLETE | All CRUD through parameterized queries |
+| **Identity** | Firebase Auth | ðŸŸ¢ COMPLETE | `verifyIdToken` only |
+| **Object/File Storage** | **NOT IMPLEMENTED** | ðŸ”´ MISSING | `backend/index.js:2672-2677` returns `501 STORAGE_PROVIDER_UNSUPPORTED` |
+| **Session Storage** | Stateless JWT | ðŸŸ¢ COMPLETE | No server sessions |
+| **Client State** | LocalStorage | ðŸŸ¢ COMPLETE | Resume recovery, language, auth |
+| **Cache** | In-memory (Node.js process) | ðŸŸ¢ COMPLETE | AI config 15s cache, feature flags 30s cache |
 
 **Storage Gap:** The admin settings panel for "Cloud Storage" exists (`StorageSettings.jsx`) but the backend explicitly rejects storage configuration with `501 STORAGE_PROVIDER_UNSUPPORTED`. No S3, Cloudinary, or Firebase Storage adapter is implemented.
 
@@ -932,13 +932,13 @@ All 40+ domain entities registered. **Zero secondary data paths.** **Zero fallba
 
 | Operation | Implementation | Limit | Status |
 |---|---|---|---|
-| JSON request body | `express.json` | 256KB | 🟢 |
-| URL-encoded body | `express.urlencoded` | 64KB | 🟢 |
-| Stripe webhook body | `express.raw` | 1MB | 🟢 |
-| Resume data storage | MariaDB JSON columns | No explicit limit | 🟢 |
-| Image upload | **NOT IMPLEMENTED** | — | 🔴 MISSING (no multer, no upload endpoint) |
-| File/document upload | **NOT IMPLEMENTED** | — | 🔴 MISSING |
-| Profile photo | Firebase Auth photoURL only | — | 🟡 PARTIAL (OAuth photos only) |
+| JSON request body | `express.json` | 256KB | ðŸŸ¢ |
+| URL-encoded body | `express.urlencoded` | 64KB | ðŸŸ¢ |
+| Stripe webhook body | `express.raw` | 1MB | ðŸŸ¢ |
+| Resume data storage | MariaDB JSON columns | No explicit limit | ðŸŸ¢ |
+| Image upload | **NOT IMPLEMENTED** | â€” | ðŸ”´ MISSING (no multer, no upload endpoint) |
+| File/document upload | **NOT IMPLEMENTED** | â€” | ðŸ”´ MISSING |
+| Profile photo | Firebase Auth photoURL only | â€” | ðŸŸ¡ PARTIAL (OAuth photos only) |
 
 ---
 
@@ -969,11 +969,11 @@ sequenceDiagram
 
 | Provider | Server Webhook | Client Polling | Refund | Status |
 |---|---|---|---|---|
-| **Stripe** | ✅ `POST /api/stripe-webhook` (sig verified) | ✅ | ✅ Full (`providerRefunds.js`) | 🟢 |
-| **PayPal** | ❌ No webhook | ✅ Client polling | ❌ | 🟡 |
-| **Razorpay** | ❌ No webhook | ✅ Client polling | ❌ | 🟡 |
-| **Paytm** | ❌ No webhook | ✅ Client polling | ❌ | 🟡 |
-| **PhonePe** | ❌ No webhook | ✅ Client polling | ❌ | 🟡 |
+| **Stripe** | âœ… `POST /api/stripe-webhook` (sig verified) | âœ… | âœ… Full (`providerRefunds.js`) | ðŸŸ¢ |
+| **PayPal** | âŒ No webhook | âœ… Client polling | âŒ | ðŸŸ¡ |
+| **Razorpay** | âŒ No webhook | âœ… Client polling | âŒ | ðŸŸ¡ |
+| **Paytm** | âŒ No webhook | âœ… Client polling | âŒ | ðŸŸ¡ |
+| **PhonePe** | âŒ No webhook | âœ… Client polling | âŒ | ðŸŸ¡ |
 
 ---
 
@@ -981,21 +981,21 @@ sequenceDiagram
 
 | Limiter | Namespace | Limit | Window | Store | Status |
 |---|---|---|---|---|---|
-| Global API | IP/UID | 2,500 | 15 min | `express-rate-limit` (in-memory) | 🟢 |
-| Auth/Email | IP | 20 | 1 hour | `express-rate-limit` (in-memory) | 🟢 |
-| AI Burst | `consumer-rate:ai` | 12 | 1 min | MariaDB atomic counter | 🟢 |
-| AI Daily | `ai_usage` table | 10 (Basic), 100 (Pro), 10000 (Admin) | 24 hours | MariaDB `SELECT FOR UPDATE` | 🟢 |
-| Notifications | `consumer-rate:notification` | 8 | 1 hour | MariaDB atomic counter | 🟢 |
-| Document Export | `consumer-rate:document-export` | 20 | 1 hour | MariaDB atomic counter | 🟢 |
-| Job Scraper | `consumer-rate:job-scraper` | 2 | 1 hour | MariaDB atomic counter | 🟢 |
-| Contact Form | `consumer-rate:contact` | 3 | 1 hour | MariaDB atomic counter | 🟢 |
-| Messaging | `consumer-rate:messaging` | 30 | 5 min | MariaDB atomic counter | 🟢 |
+| Global API | IP/UID | 2,500 | 15 min | `express-rate-limit` (in-memory) | ðŸŸ¢ |
+| Auth/Email | IP | 20 | 1 hour | `express-rate-limit` (in-memory) | ðŸŸ¢ |
+| AI Burst | `consumer-rate:ai` | 12 | 1 min | MariaDB atomic counter | ðŸŸ¢ |
+| AI Daily | `ai_usage` table | 10 (Basic), 100 (Pro), 10000 (Admin) | 24 hours | MariaDB `SELECT FOR UPDATE` | ðŸŸ¢ |
+| Notifications | `consumer-rate:notification` | 8 | 1 hour | MariaDB atomic counter | ðŸŸ¢ |
+| Document Export | `consumer-rate:document-export` | 20 | 1 hour | MariaDB atomic counter | ðŸŸ¢ |
+| Job Scraper | `consumer-rate:job-scraper` | 2 | 1 hour | MariaDB atomic counter | ðŸŸ¢ |
+| Contact Form | `consumer-rate:contact` | 3 | 1 hour | MariaDB atomic counter | ðŸŸ¢ |
+| Messaging | `consumer-rate:messaging` | 30 | 5 min | MariaDB atomic counter | ðŸŸ¢ |
 
 ---
 
 ## 21. Admin Architecture
 
-22 admin modules, 30+ settings sub-panels, Ctrl+K command palette, real-time health indicator. See [Dashboard Forensics §10.2](#102-admin-console-adm) for complete route listing.
+22 admin modules, 30+ settings sub-panels, Ctrl+K command palette, real-time health indicator. See [Dashboard Forensics Â§10.2](#102-admin-console-adm) for complete route listing.
 
 ---
 
@@ -1003,7 +1003,7 @@ sequenceDiagram
 
 ```mermaid
 graph TD
-    subgraph "🟢 IMPLEMENTED"
+    subgraph "ðŸŸ¢ IMPLEMENTED"
         ESG[Enterprise Break-Glass Support<br/>EnterpriseSupportTab.jsx 19KB]
         GRANT[Time-Bound Grants<br/>enterprise_support_grants table]
         SCOPE[Scoped Diagnostic Access<br/>workspace-bound]
@@ -1012,7 +1012,7 @@ graph TD
         HEADER[x-support-grant-id header<br/>Verified by enterprise auth]
     end
 
-    subgraph "🔴 MISSING"
+    subgraph "ðŸ”´ MISSING"
         HELPDESK["Platform Help Desk UI<br/>No /support route exists"]
         TICKETS["Ticket System Backend<br/>No API for tickets.manage perm"]
         IMPERSONATE["User Impersonation<br/>Zero code matches"]
@@ -1022,21 +1022,21 @@ graph TD
         TEMPLATES["Response Templates"]
     end
 
-    subgraph "🔴 BROKEN"
-        POLICY_BLOCK["policy.js:53 blocks SUPPORT role<br/>from ALL /admin/* and /platform/*<br/>→ HTTP 403 FORBIDDEN on every call"]
+    subgraph "ðŸ”´ BROKEN"
+        POLICY_BLOCK["policy.js:53 blocks SUPPORT role<br/>from ALL /admin/* and /platform/*<br/>â†’ HTTP 403 FORBIDDEN on every call"]
     end
 ```
 
 **Support Ticket Flow:**
-1. User → Support request → **🔴 MISSING** (no ticket creation UI or API)
-2. Ticket storage → **🔴 MISSING** (no tickets table)
-3. Assignment → **🔴 MISSING** (no assignment logic)
-4. Support agent → **🔴 BROKEN** (blocked by policy.js:53)
-5. Status/Communication → **🔴 MISSING**
-6. Escalation → **🔴 MISSING**
-7. Resolution → **🔴 MISSING**
-8. Audit trail → **🟢 COMPLETE** (for enterprise break-glass grants only)
-9. User notification → **🔴 MISSING**
+1. User â†’ Support request â†’ **ðŸ”´ MISSING** (no ticket creation UI or API)
+2. Ticket storage â†’ **ðŸ”´ MISSING** (no tickets table)
+3. Assignment â†’ **ðŸ”´ MISSING** (no assignment logic)
+4. Support agent â†’ **ðŸ”´ BROKEN** (blocked by policy.js:53)
+5. Status/Communication â†’ **ðŸ”´ MISSING**
+6. Escalation â†’ **ðŸ”´ MISSING**
+7. Resolution â†’ **ðŸ”´ MISSING**
+8. Audit trail â†’ **ðŸŸ¢ COMPLETE** (for enterprise break-glass grants only)
+9. User notification â†’ **ðŸ”´ MISSING**
 
 ---
 
@@ -1044,16 +1044,16 @@ graph TD
 
 | Feature | Evidence | Status |
 |---|---|---|
-| Job Posting | `/api/jobs-data` POST, `EmployerDashboard` | 🟢 |
-| Job Browsing | `/jobs`, `/jobs/portal`, `/jobs/browse`, `/jobs/categories` | 🟢 |
-| Job Detail | `/jobs/portal/:jobId` | 🟢 |
-| Job Categories | `/jobs/category/:catName` | 🟢 |
-| Job Application | `/api/job-applications` | 🟢 |
-| Applied Jobs | `/dashboard/applied-jobs` | 🟢 |
-| Job Tracker | `/dashboard/job-tracker`, `job_tracker` table | 🟢 |
-| Job Matching | `/dashboard/job-matching` | 🟢 |
-| Company Profiles | `/dashboard/my-companies`, `companies` table | 🟢 |
-| Admin Job Moderation | `/adm/jobs-manager` | 🟢 |
+| Job Posting | `/api/jobs-data` POST, `EmployerDashboard` | ðŸŸ¢ |
+| Job Browsing | `/jobs`, `/jobs/portal`, `/jobs/browse`, `/jobs/categories` | ðŸŸ¢ |
+| Job Detail | `/jobs/portal/:jobId` | ðŸŸ¢ |
+| Job Categories | `/jobs/category/:catName` | ðŸŸ¢ |
+| Job Application | `/api/job-applications` | ðŸŸ¢ |
+| Applied Jobs | `/dashboard/applied-jobs` | ðŸŸ¢ |
+| Job Tracker | `/dashboard/job-tracker`, `job_tracker` table | ðŸŸ¢ |
+| Job Matching | `/dashboard/job-matching` | ðŸŸ¢ |
+| Company Profiles | `/dashboard/my-companies`, `companies` table | ðŸŸ¢ |
+| Admin Job Moderation | `/adm/jobs-manager` | ðŸŸ¢ |
 
 ---
 
@@ -1061,12 +1061,12 @@ graph TD
 
 | Feature | Evidence | Status |
 |---|---|---|
-| Blog List | `/blog`, `blogData.js` router | 🟢 |
-| Blog Post View | `/blog/:slug` | 🟢 |
-| Blog Editor | `/blog-editor/:postId`, `RequireAuthenticated` | 🟢 |
-| Admin Blog Mgmt | `/adm/blog-management` | 🟢 |
-| Scheduled Publishing | `cmsScheduler.js` — **disabled by default** (`CMS_SCHEDULER_ENABLED='false'`) | 🟡 DESIGNED |
-| DB Table | `blog` (migration 001) | 🟢 |
+| Blog List | `/blog`, `blogData.js` router | ðŸŸ¢ |
+| Blog Post View | `/blog/:slug` | ðŸŸ¢ |
+| Blog Editor | `/blog-editor/:postId`, `RequireAuthenticated` | ðŸŸ¢ |
+| Admin Blog Mgmt | `/adm/blog-management` | ðŸŸ¢ |
+| Scheduled Publishing | `cmsScheduler.js` â€” **disabled by default** (`CMS_SCHEDULER_ENABLED='false'`) | ðŸŸ¡ DESIGNED |
+| DB Table | `blog` (migration 001) | ðŸŸ¢ |
 
 ---
 
@@ -1074,22 +1074,22 @@ graph TD
 
 | Feature | Evidence | Status |
 |---|---|---|
-| Portfolio Builder | `/portfolio/builder`, `RequireAuthenticated` | 🟢 |
-| Public Portfolio | `/portfolio/:slug` | 🟢 |
-| Portfolio Gallery | `/portfolios` | 🟢 |
-| Dashboard Management | `/dashboard/portfolios` | 🟢 |
-| CRUD API | `/api/portfolios/*` | 🟢 |
-| DB Table | `portfolios` (migration 001) | 🟢 |
+| Portfolio Builder | `/portfolio/builder`, `RequireAuthenticated` | ðŸŸ¢ |
+| Public Portfolio | `/portfolio/:slug` | ðŸŸ¢ |
+| Portfolio Gallery | `/portfolios` | ðŸŸ¢ |
+| Dashboard Management | `/dashboard/portfolios` | ðŸŸ¢ |
+| CRUD API | `/api/portfolios/*` | ðŸŸ¢ |
+| DB Table | `portfolios` (migration 001) | ðŸŸ¢ |
 
 ---
 
 ## 26. Templates Architecture
 
-- **51 CV Templates:** `src/cv-templates/cv1–cv51/` — each with individual JSX + CSS
-- **4 Cover Letter Templates:** `src/cv-templates/cover1–cover4/`
+- **51 CV Templates:** `src/cv-templates/cv1â€“cv51/` â€” each with individual JSX + CSS
+- **4 Cover Letter Templates:** `src/cv-templates/cover1â€“cover4/`
 - **Template Utilities:** `src/cv-templates/templateUtils.js`, `shared/` directory
-- **DOCX Themes:** `backend/services/docxThemes.js` (23KB) — 51 template-specific color/layout configs
-- **Status:** 🟢 COMPLETE
+- **DOCX Themes:** `backend/services/docxThemes.js` (23KB) â€” 51 template-specific color/layout configs
+- **Status:** ðŸŸ¢ COMPLETE
 
 ---
 
@@ -1117,8 +1117,8 @@ sequenceDiagram
 
 | Export Engine | Implementation | Templates | Status |
 |---|---|---|---|
-| **PDF** | Playwright Chromium headless | 51 CV + 4 Cover | 🟢 |
-| **DOCX** | Native OpenXML (`docxExport.js` 57KB) | 51 CV (theme-mapped) | 🟢 |
+| **PDF** | Playwright Chromium headless | 51 CV + 4 Cover | ðŸŸ¢ |
+| **DOCX** | Native OpenXML (`docxExport.js` 57KB) | 51 CV (theme-mapped) | ðŸŸ¢ |
 
 ---
 
@@ -1126,13 +1126,13 @@ sequenceDiagram
 
 | Component | Implementation | Status |
 |---|---|---|
-| SMTP Transport | `emailNotifier.js` (13KB) via Nodemailer | 🟢 |
-| Email Templates | HTML templates for welcome, verification, reset, payment, etc. | 🟢 |
-| Email Routing | `routes/email.js` (134KB) — comprehensive dispatcher | 🟢 |
-| Email Audit | `email_logs` table | 🟢 |
-| Outbox Pattern | `notification_outbox` table — lease-based processing | 🟢 |
-| Outbox Worker | `NOTIFICATION_OUTBOX_WORKER_ENABLED` — **disabled by default** | 🟡 |
-| Recipient Binding | `bindNotificationRecipient` — prevents email to others | 🟢 |
+| SMTP Transport | `emailNotifier.js` (13KB) via Nodemailer | ðŸŸ¢ |
+| Email Templates | HTML templates for welcome, verification, reset, payment, etc. | ðŸŸ¢ |
+| Email Routing | `routes/email.js` (134KB) â€” comprehensive dispatcher | ðŸŸ¢ |
+| Email Audit | `email_logs` table | ðŸŸ¢ |
+| Outbox Pattern | `notification_outbox` table â€” lease-based processing | ðŸŸ¢ |
+| Outbox Worker | `NOTIFICATION_OUTBOX_WORKER_ENABLED` â€” **disabled by default** | ðŸŸ¡ |
+| Recipient Binding | `bindNotificationRecipient` â€” prevents email to others | ðŸŸ¢ |
 
 ---
 
@@ -1143,7 +1143,7 @@ graph TD
     BIZ[Business Transaction] --> |Same DB Tx| OUTBOX[notification_outbox<br/>State: NOTIFICATION_QUEUED]
     OUTBOX --> WORKER{Outbox Worker}
     WORKER --> |ENABLED| LEASE[Lease acquired]
-    WORKER --> |"DISABLED (default)"| STUCK[Messages stay QUEUED<br/>⚠️ Never delivered]
+    WORKER --> |"DISABLED (default)"| STUCK[Messages stay QUEUED<br/>âš ï¸ Never delivered]
     LEASE --> SMTP[SMTP Provider]
     SMTP --> |Success| DELIVERED[State: NOTIFICATION_DELIVERED]
     SMTP --> |Failure| RETRY[Retry with backoff + jitter<br/>attempt_count++]
@@ -1158,24 +1158,24 @@ graph TD
 
 | Control | Implementation | Server-Enforced | Evidence | Status |
 |---|---|---|---|---|
-| Authentication | Firebase ID Token verification | ✅ | `requireAuth` | 🟢 |
-| RBAC | `permissionsFor()` + 8 roles | ✅ | `auth.js:63-96` | 🟢 |
-| API Policy | `enforceApiPolicy` on all auth routes | ✅ | `policy.js:43-68` | 🟢 |
-| Rate Limiting | Global IP + 7 account-based MariaDB counters | ✅ | `abuse.js` | 🟢 |
-| AI Quota | Per-user daily quota via `SELECT FOR UPDATE` | ✅ | `enforceDailyAiQuota` | 🟢 |
-| Input Sanitization | `profileSanitizer.js` XSS prevention | ✅ | 7KB module | 🟢 |
-| Payment Validation | Provider-specific signature verification | ✅ | `payments.js` | 🟢 |
-| Export Tokens | Single-use, TTL-expiring render tokens | ✅ | `exportTokens.js` | 🟢 |
-| OAuth CSRF | `oauth_states` table + PKCE | ✅ | `oauth.js` | 🟢 |
-| Audit Logging | Admin actions → `admin_audit_logs` | ✅ | `adminAudit.js` | 🟢 |
-| MFA | Super Admin requires TOTP in production | ✅ | `auth.js` | 🟢 |
-| Recent Auth | Account deletion requires fresh auth_time | ✅ | `policy.js:59-66` | 🟢 |
-| Secret Storage | API keys in MariaDB, never echoed to client | ✅ | Write-only projection | 🟢 |
-| SSRF Prevention | `assertPublicNetworkTarget()` for external calls | ✅ | `network.js` | 🟢 |
-| SQL Injection | Parameterized queries via mysql2 | ✅ | All `?` params | 🟢 |
-| CORS | Origin allowlist | ✅ | `index.js:273-293` | 🟢 |
-| Security Headers | Helmet | ✅ | `index.js:300` | 🟢 |
-| Request IDs | `crypto.randomUUID()` on every request | ✅ | `index.js:252-259` | 🟢 |
+| Authentication | Firebase ID Token verification | âœ… | `requireAuth` | ðŸŸ¢ |
+| RBAC | `permissionsFor()` + 8 roles | âœ… | `auth.js:63-96` | ðŸŸ¢ |
+| API Policy | `enforceApiPolicy` on all auth routes | âœ… | `policy.js:43-68` | ðŸŸ¢ |
+| Rate Limiting | Global IP + 7 account-based MariaDB counters | âœ… | `abuse.js` | ðŸŸ¢ |
+| AI Quota | Per-user daily quota via `SELECT FOR UPDATE` | âœ… | `enforceDailyAiQuota` | ðŸŸ¢ |
+| Input Sanitization | `profileSanitizer.js` XSS prevention | âœ… | 7KB module | ðŸŸ¢ |
+| Payment Validation | Provider-specific signature verification | âœ… | `payments.js` | ðŸŸ¢ |
+| Export Tokens | Single-use, TTL-expiring render tokens | âœ… | `exportTokens.js` | ðŸŸ¢ |
+| OAuth CSRF | `oauth_states` table + PKCE | âœ… | `oauth.js` | ðŸŸ¢ |
+| Audit Logging | Admin actions â†’ `admin_audit_logs` | âœ… | `adminAudit.js` | ðŸŸ¢ |
+| MFA | Super Admin requires TOTP in production | âœ… | `auth.js` | ðŸŸ¢ |
+| Recent Auth | Account deletion requires fresh auth_time | âœ… | `policy.js:59-66` | ðŸŸ¢ |
+| Secret Storage | API keys in MariaDB, never echoed to client | âœ… | Write-only projection | ðŸŸ¢ |
+| SSRF Prevention | `assertPublicNetworkTarget()` for external calls | âœ… | `network.js` | ðŸŸ¢ |
+| SQL Injection | Parameterized queries via mysql2 | âœ… | All `?` params | ðŸŸ¢ |
+| CORS | Origin allowlist | âœ… | `index.js:273-293` | ðŸŸ¢ |
+| Security Headers | Helmet | âœ… | `index.js:300` | ðŸŸ¢ |
+| Request IDs | `crypto.randomUUID()` on every request | âœ… | `index.js:252-259` | ðŸŸ¢ |
 
 ---
 
@@ -1183,14 +1183,14 @@ graph TD
 
 | Check | Where | What | Status |
 |---|---|---|---|
-| Bearer token required | All non-public paths | `requireAuth` | 🟢 |
-| Token revocation check | `verifyIdToken(token, true)` | `checkRevoked=true` | 🟢 |
-| Admin gate | `/admin/*`, `/platform/*` | `system.config.write` | 🟢 (but over-restrictive) |
-| Email verification | AI, billing, admin paths | `requiresVerifiedEmail` | 🟢 |
-| Notification recipient binding | All notification sends | `bindNotificationRecipient` | 🟢 |
-| Tenant header rejection on legacy | Non-enterprise routes | `TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE` | 🟢 |
-| Retired API rejection | Old CMS/notification paths | `410 API_RETIRED` | 🟢 |
-| **Cover letter auth gap** | `/coverletter` | **No `RequireAuthenticated`** | 🔴 MISSING |
+| Bearer token required | All non-public paths | `requireAuth` | ðŸŸ¢ |
+| Token revocation check | `verifyIdToken(token, true)` | `checkRevoked=true` | ðŸŸ¢ |
+| Admin gate | `/admin/*`, `/platform/*` | `system.config.write` | ðŸŸ¢ (but over-restrictive) |
+| Email verification | AI, billing, admin paths | `requiresVerifiedEmail` | ðŸŸ¢ |
+| Notification recipient binding | All notification sends | `bindNotificationRecipient` | ðŸŸ¢ |
+| Tenant header rejection on legacy | Non-enterprise routes | `TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE` | ðŸŸ¢ |
+| Retired API rejection | Old CMS/notification paths | `410 API_RETIRED` | ðŸŸ¢ |
+| **Cover letter auth gap** | `/coverletter` | **No `RequireAuthenticated`** | ðŸ”´ MISSING |
 
 ---
 
@@ -1198,35 +1198,35 @@ graph TD
 
 | Audit Trail | Table | Content | Status |
 |---|---|---|---|
-| Admin Actions | `admin_audit_logs` | All admin API mutations | 🟢 |
-| Security Events | `security_audit_logs` | Auth failures, policy denials | 🟢 |
-| Enterprise Audit | `enterprise_audit_events` | Tenant operations | 🟢 |
-| Email Delivery | `email_logs` | Send attempts + outcomes | 🟢 |
-| Payment Webhooks | `payment_webhook_events` | Idempotent webhook ledger | 🟢 |
-| AI Usage | `ai_usage` | Daily per-user AI call counters | 🟢 |
+| Admin Actions | `admin_audit_logs` | All admin API mutations | ðŸŸ¢ |
+| Security Events | `security_audit_logs` | Auth failures, policy denials | ðŸŸ¢ |
+| Enterprise Audit | `enterprise_audit_events` | Tenant operations | ðŸŸ¢ |
+| Email Delivery | `email_logs` | Send attempts + outcomes | ðŸŸ¢ |
+| Payment Webhooks | `payment_webhook_events` | Idempotent webhook ledger | ðŸŸ¢ |
+| AI Usage | `ai_usage` | Daily per-user AI call counters | ðŸŸ¢ |
 
 ---
 
 ## 33. Error Handling Architecture
 
-**Error Middleware:** `backend/routes/errorResponder.js` (40 lines) — `replyRepoError(res, err, fallbackMessage)`
+**Error Middleware:** `backend/routes/errorResponder.js` (40 lines) â€” `replyRepoError(res, err, fallbackMessage)`
 
 | Failure Type | Error Code | HTTP Status | User Message | Recovery | Status |
 |---|---|---|---|---|---|
-| DB unavailable | `DATABASE_UNAVAILABLE` | 503 | "The database is temporarily unavailable" | PM2 restart | 🟢 |
-| AI provider fail | `AI_UNAVAILABLE` | 500 | Raw provider error preserved | 6-provider failover | 🟢 |
-| AI quota exceeded | `AI_DAILY_QUOTA_EXCEEDED` | 429 | "Daily AI quota reached" | Wait 24h | 🟢 |
-| Rate limited | `RATE_LIMITED` | 429 | "Too many requests" | `Retry-After` header | 🟢 |
-| Auth required | `AUTH_REQUIRED` | 401 | "Authentication required" | Login redirect | 🟢 |
-| Token invalid | `INVALID_AUTH_TOKEN` | 401 | — | Re-login | 🟢 |
-| Email not verified | `EMAIL_VERIFICATION_REQUIRED` | 403 | "A verified email address is required" | Verify email | 🟢 |
-| RBAC denied | `FORBIDDEN` | 403 | "Insufficient permission" | — | 🟢 |
-| Recent auth required | `RECENT_AUTH_REQUIRED` | 403 | "Please reauthenticate" | Re-login | 🟢 |
-| Resume conflict | `RESUME_CONFLICT` | 409 | — + `remoteRevision` + `remoteData` | Conflict dialog | 🟢 |
-| Storage unsupported | `STORAGE_PROVIDER_UNSUPPORTED` | 501 | — | N/A | 🟢 |
-| Retired API | `API_RETIRED` | 410 | "The duplicate CMS pages API is retired" | Use replacement | 🟢 |
+| DB unavailable | `DATABASE_UNAVAILABLE` | 503 | "The database is temporarily unavailable" | PM2 restart | ðŸŸ¢ |
+| AI provider fail | `AI_UNAVAILABLE` | 500 | Raw provider error preserved | 6-provider failover | ðŸŸ¢ |
+| AI quota exceeded | `AI_DAILY_QUOTA_EXCEEDED` | 429 | "Daily AI quota reached" | Wait 24h | ðŸŸ¢ |
+| Rate limited | `RATE_LIMITED` | 429 | "Too many requests" | `Retry-After` header | ðŸŸ¢ |
+| Auth required | `AUTH_REQUIRED` | 401 | "Authentication required" | Login redirect | ðŸŸ¢ |
+| Token invalid | `INVALID_AUTH_TOKEN` | 401 | â€” | Re-login | ðŸŸ¢ |
+| Email not verified | `EMAIL_VERIFICATION_REQUIRED` | 403 | "A verified email address is required" | Verify email | ðŸŸ¢ |
+| RBAC denied | `FORBIDDEN` | 403 | "Insufficient permission" | â€” | ðŸŸ¢ |
+| Recent auth required | `RECENT_AUTH_REQUIRED` | 403 | "Please reauthenticate" | Re-login | ðŸŸ¢ |
+| Resume conflict | `RESUME_CONFLICT` | 409 | â€” + `remoteRevision` + `remoteData` | Conflict dialog | ðŸŸ¢ |
+| Storage unsupported | `STORAGE_PROVIDER_UNSUPPORTED` | 501 | â€” | N/A | ðŸŸ¢ |
+| Retired API | `API_RETIRED` | 410 | "The duplicate CMS pages API is retired" | Use replacement | ðŸŸ¢ |
 
-**Transport Code Normalization:** `ECONNREFUSED`, `ECONNRESET`, `ETIMEDOUT`, `PROTOCOL_CONNECTION_LOST`, etc. → all normalized to `DATABASE_UNAVAILABLE` (503).
+**Transport Code Normalization:** `ECONNREFUSED`, `ECONNRESET`, `ETIMEDOUT`, `PROTOCOL_CONNECTION_LOST`, etc. â†’ all normalized to `DATABASE_UNAVAILABLE` (503).
 
 ---
 
@@ -1234,12 +1234,12 @@ graph TD
 
 | Worker | Env Flag | Default | Interval | DB Table | Status |
 |---|---|---|---|---|---|
-| **Notification Outbox** | `NOTIFICATION_OUTBOX_WORKER_ENABLED` | `'false'` | 15s (configurable) | `notification_outbox` | 🟡 DISABLED |
-| **CMS Scheduler** | `CMS_SCHEDULER_ENABLED` | `'false'` | 5min (configurable) | `blog` | 🟡 DISABLED |
-| **Enterprise Outbox** | `ENTERPRISE_OUTBOX_WORKER_ENABLED` | `'false'` | 15s (configurable) | `enterprise_outbox` | 🟡 DISABLED |
-| **Tenant GC** | `TENANT_GC_WORKER_ENABLED` | `'false'` | 1hr (configurable) | enterprise tables | 🟡 DISABLED |
+| **Notification Outbox** | `NOTIFICATION_OUTBOX_WORKER_ENABLED` | `'false'` | 15s (configurable) | `notification_outbox` | ðŸŸ¡ DISABLED |
+| **CMS Scheduler** | `CMS_SCHEDULER_ENABLED` | `'false'` | 5min (configurable) | `blog` | ðŸŸ¡ DISABLED |
+| **Enterprise Outbox** | `ENTERPRISE_OUTBOX_WORKER_ENABLED` | `'false'` | 15s (configurable) | `enterprise_outbox` | ðŸŸ¡ DISABLED |
+| **Tenant GC** | `TENANT_GC_WORKER_ENABLED` | `'false'` | 1hr (configurable) | enterprise tables | ðŸŸ¡ DISABLED |
 
-All workers use mutex guards (`workerRunning` flag) to prevent concurrent execution. Enterprise outbox requires `TENANT_JOB_SIGNING_SECRET` ≥32 bytes — without it, worker idles (fail closed).
+All workers use mutex guards (`workerRunning` flag) to prevent concurrent execution. Enterprise outbox requires `TENANT_JOB_SIGNING_SECRET` â‰¥32 bytes â€” without it, worker idles (fail closed).
 
 ---
 
@@ -1247,12 +1247,12 @@ All workers use mutex guards (`workerRunning` flag) to prevent concurrent execut
 
 | Operation | Mechanism | Automated | Status |
 |---|---|---|---|
-| Blog scheduled publishing | `cmsScheduler.js` → `publishDueBlogPosts()` | ❌ Worker disabled | 🟡 DESIGNED |
-| Notification delivery | `notificationOutbox.js` → `processOutboxOnce()` | ❌ Worker disabled | 🟡 DESIGNED |
-| Enterprise job processing | `enterpriseOutbox.js` → `runOutboxWorkerOnce()` | ❌ Worker disabled | 🟡 DESIGNED |
-| Tenant garbage collection | `tenantService.executeTenantGarbageCollection()` | ❌ Worker disabled | 🟡 DESIGNED |
-| Database backup | `scripts/db-backup.mjs` + `ops/dr/backup-cron.sh` | ❌ Cron not installed | 🔵 DESIGNED ONLY |
-| Expired job sweep | `sweepExpiredJobs()` in enterprise outbox worker | ❌ Worker disabled | 🟡 DESIGNED |
+| Blog scheduled publishing | `cmsScheduler.js` â†’ `publishDueBlogPosts()` | âŒ Worker disabled | ðŸŸ¡ DESIGNED |
+| Notification delivery | `notificationOutbox.js` â†’ `processOutboxOnce()` | âŒ Worker disabled | ðŸŸ¡ DESIGNED |
+| Enterprise job processing | `enterpriseOutbox.js` â†’ `runOutboxWorkerOnce()` | âŒ Worker disabled | ðŸŸ¡ DESIGNED |
+| Tenant garbage collection | `tenantService.executeTenantGarbageCollection()` | âŒ Worker disabled | ðŸŸ¡ DESIGNED |
+| Database backup | `scripts/db-backup.mjs` + `ops/dr/backup-cron.sh` | âŒ Cron not installed | ðŸ”µ DESIGNED ONLY |
+| Expired job sweep | `sweepExpiredJobs()` in enterprise outbox worker | âŒ Worker disabled | ðŸŸ¡ DESIGNED |
 
 ---
 
@@ -1260,13 +1260,13 @@ All workers use mutex guards (`workerRunning` flag) to prevent concurrent execut
 
 | Component | Implementation | Status |
 |---|---|---|
-| Backup script | `scripts/db-backup.mjs` (10KB) | 🟢 IMPLEMENTED |
-| DR backup runner | `scripts/dr-backup-run.mjs` (22KB) | 🟢 IMPLEMENTED |
-| Cron template | `ops/dr/backup-cron.sh` (4KB) | 🔵 DESIGNED — not installed |
-| Cron installer | `ops/dr/install-backup-schedule.sh` (6KB) | 🔵 DESIGNED — not executed |
-| Config template | `ops/dr/backup.example.env` (6KB) — references S3/R2 | 🔵 DESIGNED — offsite not configured |
-| Encryption | `BACKUP_ENCRYPTION_KEY_BASE64` in `.env.example` | 🔵 DESIGNED — key not provisioned |
-| Verify rollback | `scripts/verify-backup-rollback.mjs` (8KB) | 🟢 IMPLEMENTED |
+| Backup script | `scripts/db-backup.mjs` (10KB) | ðŸŸ¢ IMPLEMENTED |
+| DR backup runner | `scripts/dr-backup-run.mjs` (22KB) | ðŸŸ¢ IMPLEMENTED |
+| Cron template | `ops/dr/backup-cron.sh` (4KB) | ðŸ”µ DESIGNED â€” not installed |
+| Cron installer | `ops/dr/install-backup-schedule.sh` (6KB) | ðŸ”µ DESIGNED â€” not executed |
+| Config template | `ops/dr/backup.example.env` (6KB) â€” references S3/R2 | ðŸ”µ DESIGNED â€” offsite not configured |
+| Encryption | `BACKUP_ENCRYPTION_KEY_BASE64` in `.env.example` | ðŸ”µ DESIGNED â€” key not provisioned |
+| Verify rollback | `scripts/verify-backup-rollback.mjs` (8KB) | ðŸŸ¢ IMPLEMENTED |
 
 ---
 
@@ -1274,16 +1274,16 @@ All workers use mutex guards (`workerRunning` flag) to prevent concurrent execut
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Restore drill script | `scripts/dr-restore-drill.mjs` (16KB) | 🟢 IMPLEMENTED |
-| Restore point script | `scripts/dr-restore-point.mjs` (17KB) | 🟢 IMPLEMENTED |
-| External monitoring | `scripts/dr-external-watch.mjs` (17KB) | 🟢 IMPLEMENTED |
-| DR monitor | `scripts/dr-monitor.mjs` (10KB) | 🟢 IMPLEMENTED |
-| DR observability | `scripts/dr-observability.mjs` (12KB) | 🟢 IMPLEMENTED |
-| Automated cron | `ops/dr/install-backup-schedule.sh` | 🔵 DESIGNED — not deployed |
-| Offsite sync | `backup.example.env` references S3/R2 | 🔵 DESIGNED — not configured |
-| PITR | — | 🔴 MISSING |
-| HA/Failover | — | 🔴 MISSING |
-| Automated alerting | — | 🔴 MISSING (scripts exist but alerts not wired) |
+| Restore drill script | `scripts/dr-restore-drill.mjs` (16KB) | ðŸŸ¢ IMPLEMENTED |
+| Restore point script | `scripts/dr-restore-point.mjs` (17KB) | ðŸŸ¢ IMPLEMENTED |
+| External monitoring | `scripts/dr-external-watch.mjs` (17KB) | ðŸŸ¢ IMPLEMENTED |
+| DR monitor | `scripts/dr-monitor.mjs` (10KB) | ðŸŸ¢ IMPLEMENTED |
+| DR observability | `scripts/dr-observability.mjs` (12KB) | ðŸŸ¢ IMPLEMENTED |
+| Automated cron | `ops/dr/install-backup-schedule.sh` | ðŸ”µ DESIGNED â€” not deployed |
+| Offsite sync | `backup.example.env` references S3/R2 | ðŸ”µ DESIGNED â€” not configured |
+| PITR | â€” | ðŸ”´ MISSING |
+| HA/Failover | â€” | ðŸ”´ MISSING |
+| Automated alerting | â€” | ðŸ”´ MISSING (scripts exist but alerts not wired) |
 
 ---
 
@@ -1291,15 +1291,15 @@ All workers use mutex guards (`workerRunning` flag) to prevent concurrent execut
 
 | Capability | Evidence | Status |
 |---|---|---|
-| `/healthz` | Lightweight liveness probe | 🟢 |
-| `/readyz` | Deep readiness (MariaDB ping + migration check) | 🟢 |
-| `/api/platform/version` | Backend SHA + frontend SHA + uptime | 🟢 |
-| Platform Health UI | Admin console `PlatformHealth.jsx` | 🟢 |
-| Health Header | Admin header polls `/api/healthz` | 🟢 |
-| Platform Health Service | `platformHealth.js` (44KB) — 17+ service probes | 🟢 |
-| APM / Distributed Tracing | — | 🔴 MISSING |
-| Centralized Logging | PM2 stdout/stderr only | 🔴 MISSING |
-| External Alerting | Script exists (`dr-external-watch.mjs`) but not wired to PagerDuty/email | 🟡 PARTIAL |
+| `/healthz` | Lightweight liveness probe | ðŸŸ¢ |
+| `/readyz` | Deep readiness (MariaDB ping + migration check) | ðŸŸ¢ |
+| `/api/platform/version` | Backend SHA + frontend SHA + uptime | ðŸŸ¢ |
+| Platform Health UI | Admin console `PlatformHealth.jsx` | ðŸŸ¢ |
+| Health Header | Admin header polls `/api/healthz` | ðŸŸ¢ |
+| Platform Health Service | `platformHealth.js` (44KB) â€” 17+ service probes | ðŸŸ¢ |
+| APM / Distributed Tracing | â€” | ðŸ”´ MISSING |
+| Centralized Logging | PM2 stdout/stderr only | ðŸ”´ MISSING |
+| External Alerting | Script exists (`dr-external-watch.mjs`) but not wired to PagerDuty/email | ðŸŸ¡ PARTIAL |
 
 ---
 
@@ -1307,7 +1307,7 @@ All workers use mutex guards (`workerRunning` flag) to prevent concurrent execut
 
 ```mermaid
 graph TD
-    DEV[Local Development] --> |git push| REPO[GitHub — main branch]
+    DEV[Local Development] --> |git push| REPO[GitHub â€” main branch]
     REPO --> |PR/push| QG[Quality Gate CI<br/>quality-gate.yml]
     REPO --> |Manual dispatch| RELEASE[Production Release<br/>production-release.yml]
 
@@ -1334,12 +1334,12 @@ graph TD
 
 ## 40. CI/CD Architecture
 
-**PREVIOUSLY REPORTED AS MISSING — CORRECTED: CI/CD EXISTS**
+**PREVIOUSLY REPORTED AS MISSING â€” CORRECTED: CI/CD EXISTS**
 
 | Workflow | File | Trigger | Purpose | Status |
 |---|---|---|---|---|
-| **Quality Gate** | `.github/workflows/quality-gate.yml` (94 lines) | PR + push to main + manual | Lint, security tests, product tests, build, audit | 🟢 IMPLEMENTED |
-| **Production Release** | `.github/workflows/production-release.yml` (335 lines) | Manual dispatch only | Gated release with SHA validation, full tests, deploy | 🟢 IMPLEMENTED |
+| **Quality Gate** | `.github/workflows/quality-gate.yml` (94 lines) | PR + push to main + manual | Lint, security tests, product tests, build, audit | ðŸŸ¢ IMPLEMENTED |
+| **Production Release** | `.github/workflows/production-release.yml` (335 lines) | Manual dispatch only | Gated release with SHA validation, full tests, deploy | ðŸŸ¢ IMPLEMENTED |
 
 **Quality Gate Pipeline:**
 1. Checkout source
@@ -1389,22 +1389,22 @@ graph TD
 
 | # | Migration | Purpose | Rollback | Status |
 |---|---|---|---|---|
-| 001 | `001_baseline.sql` (41KB) | Core schema — 40+ tables | N/A (destructive) | 🟢 |
-| 002 | `002_single_owner_enterprise.sql` | Enterprise tenancy tables | ✅ `.down.sql` | 🟢 |
-| 003 | `003_billing_invoice_ledger.sql` | Invoices + counters | ✅ `.down.sql` | 🟢 |
-| 004 | `004_single_owner_runtime_hardening.sql` | Workspace memberships, support grants, quota | ✅ `.down.sql` | 🟢 |
-| 005 | `005_enterprise_invitation_outbox.sql` | Membership invitations, outbox, observability | ✅ `.down.sql` | 🟢 |
-| 006 | `006_enterprise_ai_usage_ledger.sql` | Enterprise AI metering | ✅ `.down.sql` | 🟢 |
-| 007 | `007_job_tracker_revision.sql` | Job tracker revision column | ✅ `.down.sql` | 🟢 |
-| 008 | `008_notification_outbox_state_constraint.sql` | Outbox state constraint | ✅ `.down.sql` | 🟢 |
-| 009 | `009_authoritative_configuration_bootstrap.sql` (8KB) | System settings bootstrap | ✅ `.down.sql` | 🟢 |
-| 010 | `010_payment_refund_state_machine.sql` | Refund state machine | ✅ `.down.sql` | 🟢 |
-| 011 | `011_refund_reconciliation_credit_notes.sql` | Credit notes | ✅ `.down.sql` | 🟢 |
-| 012 | `012_billing_snapshot_refund_references.sql` | Billing snapshots | ✅ `.down.sql` | 🟢 |
-| 013 | `013_cms_relational_authority.sql` (7KB) | CMS relational authority | ✅ `.down.sql` | 🟢 |
-| 014 | `014_fail_closed_discovery_defaults.sql` | Fail-closed discovery defaults | ✅ `.down.sql` | 🟢 |
+| 001 | `001_baseline.sql` (41KB) | Core schema â€” 40+ tables | N/A (destructive) | ðŸŸ¢ |
+| 002 | `002_single_owner_enterprise.sql` | Enterprise tenancy tables | âœ… `.down.sql` | ðŸŸ¢ |
+| 003 | `003_billing_invoice_ledger.sql` | Invoices + counters | âœ… `.down.sql` | ðŸŸ¢ |
+| 004 | `004_single_owner_runtime_hardening.sql` | Workspace memberships, support grants, quota | âœ… `.down.sql` | ðŸŸ¢ |
+| 005 | `005_enterprise_invitation_outbox.sql` | Membership invitations, outbox, observability | âœ… `.down.sql` | ðŸŸ¢ |
+| 006 | `006_enterprise_ai_usage_ledger.sql` | Enterprise AI metering | âœ… `.down.sql` | ðŸŸ¢ |
+| 007 | `007_job_tracker_revision.sql` | Job tracker revision column | âœ… `.down.sql` | ðŸŸ¢ |
+| 008 | `008_notification_outbox_state_constraint.sql` | Outbox state constraint | âœ… `.down.sql` | ðŸŸ¢ |
+| 009 | `009_authoritative_configuration_bootstrap.sql` (8KB) | System settings bootstrap | âœ… `.down.sql` | ðŸŸ¢ |
+| 010 | `010_payment_refund_state_machine.sql` | Refund state machine | âœ… `.down.sql` | ðŸŸ¢ |
+| 011 | `011_refund_reconciliation_credit_notes.sql` | Credit notes | âœ… `.down.sql` | ðŸŸ¢ |
+| 012 | `012_billing_snapshot_refund_references.sql` | Billing snapshots | âœ… `.down.sql` | ðŸŸ¢ |
+| 013 | `013_cms_relational_authority.sql` (7KB) | CMS relational authority | âœ… `.down.sql` | ðŸŸ¢ |
+| 014 | `014_fail_closed_discovery_defaults.sql` | Fail-closed discovery defaults | âœ… `.down.sql` | ðŸŸ¢ |
 
-**Migration Runner:** `backend/database/migrationRunner.js` (10KB) — checksummed migration ledger in `schema_migrations` table. Verified by CI via `scripts/verify-mariadb-migrations.mjs`.
+**Migration Runner:** `backend/database/migrationRunner.js` (10KB) â€” checksummed migration ledger in `schema_migrations` table. Verified by CI via `scripts/verify-mariadb-migrations.mjs`.
 
 ---
 
@@ -1412,22 +1412,22 @@ graph TD
 
 | Service | Purpose | Auth | Failure Behavior | Fallback | UI Impact | Status |
 |---|---|---|---|---|---|---|
-| **Firebase Auth** | Identity verification | Service account / ADC | `401 AUTH_REQUIRED` | Null-auth stub (dev only) | Login fails | 🟢 |
-| **NVIDIA NIM** | Primary AI provider | API key | Failover to Gemini | 5 more providers | Transparent | 🟢 |
-| **Google Gemini** | AI provider #2 | API key | Failover to OpenAI | 4 more providers | Transparent | 🟢 |
-| **OpenAI** | AI provider #3 | API key | Failover to Groq | 3 more providers | Transparent | 🟢 |
-| **Groq** | AI provider #4 | API key | Failover to OpenRouter | 2 more providers | Transparent | 🟢 |
-| **OpenRouter** | AI provider #5 | API key | Failover to DeepSeek | 1 more provider | Transparent | 🟢 |
-| **DeepSeek** | AI provider #6 | API key | `500 AI_UNAVAILABLE` | None | Error message | 🟢 |
-| **Stripe** | Primary payment gateway | Secret key + webhook secret | Payment error | Client retry | Error toast | 🟢 |
-| **PayPal** | Payment gateway | Client ID + secret | Payment error | No server webhook | Error toast | 🟡 |
-| **Razorpay** | Payment gateway (India) | Key ID + secret | Payment error | No server webhook | Error toast | 🟡 |
-| **Paytm** | Payment gateway (India) | MID + key | Payment error | No server webhook | Error toast | 🟡 |
-| **PhonePe** | Payment gateway (India) | Merchant ID + key | Payment error | No server webhook | Error toast | 🟡 |
-| **SMTP** | Email delivery | Configurable | Queued in outbox | Retry with backoff | Silent | 🟢 |
-| **Google Maps** | Location autocomplete (Jobs) | Browser API key | Feature degrades | None | Input disabled | 🟢 |
-| **Google Analytics 4** | Usage analytics | Measurement ID | Silent fail | None | None | 🟢 |
-| **Playwright** | PDF rendering | Local binary | Export fails | Error toast | Error message | 🟢 |
+| **Firebase Auth** | Identity verification | Service account / ADC | `401 AUTH_REQUIRED` | Null-auth stub (dev only) | Login fails | ðŸŸ¢ |
+| **NVIDIA NIM** | Primary AI provider | API key | Failover to Gemini | 5 more providers | Transparent | ðŸŸ¢ |
+| **Google Gemini** | AI provider #2 | API key | Failover to OpenAI | 4 more providers | Transparent | ðŸŸ¢ |
+| **OpenAI** | AI provider #3 | API key | Failover to Groq | 3 more providers | Transparent | ðŸŸ¢ |
+| **Groq** | AI provider #4 | API key | Failover to OpenRouter | 2 more providers | Transparent | ðŸŸ¢ |
+| **OpenRouter** | AI provider #5 | API key | Failover to DeepSeek | 1 more provider | Transparent | ðŸŸ¢ |
+| **DeepSeek** | AI provider #6 | API key | `500 AI_UNAVAILABLE` | None | Error message | ðŸŸ¢ |
+| **Stripe** | Primary payment gateway | Secret key + webhook secret | Payment error | Client retry | Error toast | ðŸŸ¢ |
+| **PayPal** | Payment gateway | Client ID + secret | Payment error | No server webhook | Error toast | ðŸŸ¡ |
+| **Razorpay** | Payment gateway (India) | Key ID + secret | Payment error | No server webhook | Error toast | ðŸŸ¡ |
+| **Paytm** | Payment gateway (India) | MID + key | Payment error | No server webhook | Error toast | ðŸŸ¡ |
+| **PhonePe** | Payment gateway (India) | Merchant ID + key | Payment error | No server webhook | Error toast | ðŸŸ¡ |
+| **SMTP** | Email delivery | Configurable | Queued in outbox | Retry with backoff | Silent | ðŸŸ¢ |
+| **Google Maps** | Location autocomplete (Jobs) | Browser API key | Feature degrades | None | Input disabled | ðŸŸ¢ |
+| **Google Analytics 4** | Usage analytics | Measurement ID | Silent fail | None | None | ðŸŸ¢ |
+| **Playwright** | PDF rendering | Local binary | Export fails | Error toast | Error message | ðŸŸ¢ |
 
 ---
 
@@ -1435,14 +1435,14 @@ graph TD
 
 | Metric | Current State | Status |
 |---|---|---|
-| PM2 instances | 1 (fork mode) | 🟡 Single point of failure |
-| Memory limit | 600MB | 🟢 |
-| DB connection pool | Default 15 | 🟢 |
-| AI config cache | 15-second TTL | 🟢 |
-| Feature flag cache | 30-second TTL | 🟢 |
-| Frontend code splitting | All routes lazy-loaded | 🟢 |
-| Load testing baseline | **NOT PERFORMED** | 🟠 UNVERIFIED |
-| APM profiling | **NOT CONFIGURED** | 🔴 MISSING |
+| PM2 instances | 1 (fork mode) | ðŸŸ¡ Single point of failure |
+| Memory limit | 600MB | ðŸŸ¢ |
+| DB connection pool | Default 15 | ðŸŸ¢ |
+| AI config cache | 15-second TTL | ðŸŸ¢ |
+| Feature flag cache | 30-second TTL | ðŸŸ¢ |
+| Frontend code splitting | All routes lazy-loaded | ðŸŸ¢ |
+| Load testing baseline | **NOT PERFORMED** | ðŸŸ  UNVERIFIED |
+| APM profiling | **NOT CONFIGURED** | ðŸ”´ MISSING |
 
 ---
 
@@ -1450,17 +1450,17 @@ graph TD
 
 | Failure | Detection | User Impact | Recovery | Status |
 |---|---|---|---|---|
-| MariaDB unavailable | Pool connection error | 503 errors | PM2 auto-restart (max 10, 4s delay) | 🟢 |
-| AI provider timeout | HTTP timeout | "AI temporarily unavailable" | 6-provider failover chain | 🟢 |
-| Auth failure | Token verification error | Redirect to login | Re-authenticate | 🟢 |
-| Session expiry | Firebase token expired | Redirect to login | Auto token refresh | 🟢 |
-| AI quota exceeded | `ai_usage` counter check | "Daily limit reached" | Wait for daily reset | 🟢 |
-| Payment failure | Provider validation error | Error message | Retry payment | 🟢 |
-| Email failure | SMTP send error | Silent (queued in outbox) | Outbox worker retry | 🟡 (worker disabled) |
-| Export failure | Playwright crash | Error toast | Retry download | 🟢 |
-| Resume conflict | Revision mismatch | Conflict dialog + remote data | User chooses merge/overwrite | 🟢 |
-| Port collision | `EADDRINUSE` | Server won't start | Manual port change | 🟢 |
-| Backup failure | Script error | None (admin ops) | Manual investigation | 🟢 |
+| MariaDB unavailable | Pool connection error | 503 errors | PM2 auto-restart (max 10, 4s delay) | ðŸŸ¢ |
+| AI provider timeout | HTTP timeout | "AI temporarily unavailable" | 6-provider failover chain | ðŸŸ¢ |
+| Auth failure | Token verification error | Redirect to login | Re-authenticate | ðŸŸ¢ |
+| Session expiry | Firebase token expired | Redirect to login | Auto token refresh | ðŸŸ¢ |
+| AI quota exceeded | `ai_usage` counter check | "Daily limit reached" | Wait for daily reset | ðŸŸ¢ |
+| Payment failure | Provider validation error | Error message | Retry payment | ðŸŸ¢ |
+| Email failure | SMTP send error | Silent (queued in outbox) | Outbox worker retry | ðŸŸ¡ (worker disabled) |
+| Export failure | Playwright crash | Error toast | Retry download | ðŸŸ¢ |
+| Resume conflict | Revision mismatch | Conflict dialog + remote data | User chooses merge/overwrite | ðŸŸ¢ |
+| Port collision | `EADDRINUSE` | Server won't start | Manual port change | ðŸŸ¢ |
+| Backup failure | Script error | None (admin ops) | Manual investigation | ðŸŸ¢ |
 
 ---
 
@@ -1490,15 +1490,15 @@ graph TD
 
 | Component | Responsive Implementation | Mobile Behavior | Status |
 |---|---|---|---|
-| Admin Console | `lg:hidden` hamburger menu, mobile sidebar overlay | ✅ Hamburger + overlay | 🟢 |
-| Consumer Dashboard | `sidebarCollapsed` state, mobile toggle | ✅ Collapsible sidebar | 🟢 |
-| Enterprise Console | Mobile-responsive sidebar + command palette | ✅ | 🟢 |
-| Welcome/Landing | Responsive layout | ✅ | 🟢 |
-| Build Resume | Step-by-step wizard | ✅ | 🟢 |
-| Admin Settings | Card-based layout | ✅ | 🟢 |
-| Verification Banner | `maxWidth: 480px, width: 90%` | ✅ Responsive width | 🟢 |
+| Admin Console | `lg:hidden` hamburger menu, mobile sidebar overlay | âœ… Hamburger + overlay | ðŸŸ¢ |
+| Consumer Dashboard | `sidebarCollapsed` state, mobile toggle | âœ… Collapsible sidebar | ðŸŸ¢ |
+| Enterprise Console | Mobile-responsive sidebar + command palette | âœ… | ðŸŸ¢ |
+| Welcome/Landing | Responsive layout | âœ… | ðŸŸ¢ |
+| Build Resume | Step-by-step wizard | âœ… | ðŸŸ¢ |
+| Admin Settings | Card-based layout | âœ… | ðŸŸ¢ |
+| Verification Banner | `maxWidth: 480px, width: 90%` | âœ… Responsive width | ðŸŸ¢ |
 
-**BROWSER VERIFICATION STATUS:** UI visual correctness is **NOT VERIFIED** by this audit — code inspection only. No real-browser viewport testing performed during this documentation audit.
+**BROWSER VERIFICATION STATUS:** UI visual correctness is **NOT VERIFIED** by this audit â€” code inspection only. No real-browser viewport testing performed during this documentation audit.
 
 ---
 
@@ -1506,32 +1506,32 @@ graph TD
 
 | Feature | Implementation | Evidence | Status |
 |---|---|---|---|
-| Route Focus Management | `RouteFocus.jsx` (17 lines) — focuses `main h1` or `main` on navigation | `target.focus({ preventScroll: true })` | 🟢 |
-| ARIA Labels | Admin buttons have `aria-label` attributes | `Admin.jsx:81, 88` | 🟢 |
-| Breadcrumb Navigation | `aria-label="Admin breadcrumbs"` | `Admin.jsx:72` | 🟢 |
-| Status Indicators | `role="status"` on verification banner, loading states | `DashboardMain.jsx`, `Admin.jsx:176, 202` | 🟢 |
-| Semantic HTML | `<main>`, `<header>`, `<nav>` elements used | Throughout | 🟢 |
-| Keyboard Navigation | Ctrl+K command palette, Tab focus | Admin + Enterprise | 🟢 |
-| WCAG 2.1 AA Audit | **NOT PERFORMED** | — | 🟠 UNVERIFIED |
+| Route Focus Management | `RouteFocus.jsx` (17 lines) â€” focuses `main h1` or `main` on navigation | `target.focus({ preventScroll: true })` | ðŸŸ¢ |
+| ARIA Labels | Admin buttons have `aria-label` attributes | `Admin.jsx:81, 88` | ðŸŸ¢ |
+| Breadcrumb Navigation | `aria-label="Admin breadcrumbs"` | `Admin.jsx:72` | ðŸŸ¢ |
+| Status Indicators | `role="status"` on verification banner, loading states | `DashboardMain.jsx`, `Admin.jsx:176, 202` | ðŸŸ¢ |
+| Semantic HTML | `<main>`, `<header>`, `<nav>` elements used | Throughout | ðŸŸ¢ |
+| Keyboard Navigation | Ctrl+K command palette, Tab focus | Admin + Enterprise | ðŸŸ¢ |
+| WCAG 2.1 AA Audit | **NOT PERFORMED** | â€” | ðŸŸ  UNVERIFIED |
 
 ---
 
 ## 49. SEO & Public Routes
 
-**Implementation:** `RouteSeo.jsx` (104 lines) — dynamic title + meta management per route
+**Implementation:** `RouteSeo.jsx` (104 lines) â€” dynamic title + meta management per route
 
 | Public Route | Title | Meta Description | Canonical | robots | Status |
 |---|---|---|---|---|---|
-| `/` | `ResumePilot AI — ATS Resume Builder & CV Maker` | ✅ | ✅ | `index,follow` | 🟢 |
-| `/features` | `ResumePilot AI Features` | ✅ | ✅ | `index,follow` | 🟢 |
-| `/pricing` | `Plans & Pricing` | ✅ | `/pricing` (canonical) | `index,follow` | 🟢 |
-| `/jobs` | `Jobs and Career Opportunities` | ✅ | ✅ | `index,follow` | 🟢 |
-| `/blog` | `Career Blog` | ✅ | ✅ | `index,follow` | 🟢 |
-| `/portfolios` | `Professional Portfolio Gallery` | ✅ | ✅ | `index,follow` | 🟢 |
-| `/contact` | `Contact ResumePilot AI` | ✅ | ✅ | `index,follow` | 🟢 |
-| Private routes | Descriptive titles | No description | — | `noindex,nofollow` | 🟢 |
-| `/blog/:slug` | Skipped — blog post component manages | — | — | — | 🟢 |
-| `/portfolio/:slug` | Skipped — portfolio component manages | — | — | — | 🟢 |
+| `/` | `ResumePilot AI â€” ATS Resume Builder & CV Maker` | âœ… | âœ… | `index,follow` | ðŸŸ¢ |
+| `/features` | `ResumePilot AI Features` | âœ… | âœ… | `index,follow` | ðŸŸ¢ |
+| `/pricing` | `Plans & Pricing` | âœ… | `/pricing` (canonical) | `index,follow` | ðŸŸ¢ |
+| `/jobs` | `Jobs and Career Opportunities` | âœ… | âœ… | `index,follow` | ðŸŸ¢ |
+| `/blog` | `Career Blog` | âœ… | âœ… | `index,follow` | ðŸŸ¢ |
+| `/portfolios` | `Professional Portfolio Gallery` | âœ… | âœ… | `index,follow` | ðŸŸ¢ |
+| `/contact` | `Contact ResumePilot AI` | âœ… | âœ… | `index,follow` | ðŸŸ¢ |
+| Private routes | Descriptive titles | No description | â€” | `noindex,nofollow` | ðŸŸ¢ |
+| `/blog/:slug` | Skipped â€” blog post component manages | â€” | â€” | â€” | ðŸŸ¢ |
+| `/portfolio/:slug` | Skipped â€” portfolio component manages | â€” | â€” | â€” | ðŸŸ¢ |
 
 **OG Tags:** `og:title`, `og:description`, `og:url`, `og:type` set on all public pages.
 
@@ -1541,16 +1541,16 @@ graph TD
 
 | Layer | File Count | Evidence | Status |
 |---|---|---|---|
-| **Frontend tests** | 83 `.test.*` + 11 `.spec.*` = 94 | `tests/` directory | 🟢 |
-| **Backend tests** | 68 `.test.*` | `backend/test/` directory | 🟢 |
-| **Total** | 162 test files | — | 🟢 |
-| **CI Pipeline** | 2 workflows | `.github/workflows/` | 🟢 |
-| **DB Migration Tests** | `scripts/verify-mariadb-migrations.mjs` (26KB) | Run in CI | 🟢 |
-| **Live Production Tests** | `tests/live-production-audit.spec.cjs`, etc. | Manual scripts | 🟢 |
-| **Real DOM Census** | `scripts/crawl-real-dom-census.mjs` (35KB) | Playwright-based | 🟢 |
-| **DR Tests** | `tests/dr-hardening.test.mjs` (50KB) | — | 🟢 |
-| **Visual Regression** | — | **NOT IMPLEMENTED** | 🔴 MISSING |
-| **Browser E2E (automated)** | Playwright scripts exist | **BROWSER VERIFICATION BLOCKED** in this audit | 🟠 |
+| **Frontend tests** | 83 `.test.*` + 11 `.spec.*` = 94 | `tests/` directory | ðŸŸ¢ |
+| **Backend tests** | 68 `.test.*` | `backend/test/` directory | ðŸŸ¢ |
+| **Total** | 162 test files | â€” | ðŸŸ¢ |
+| **CI Pipeline** | 2 workflows | `.github/workflows/` | ðŸŸ¢ |
+| **DB Migration Tests** | `scripts/verify-mariadb-migrations.mjs` (26KB) | Run in CI | ðŸŸ¢ |
+| **Live Production Tests** | `tests/live-production-audit.spec.cjs`, etc. | Manual scripts | ðŸŸ¢ |
+| **Real DOM Census** | `scripts/crawl-real-dom-census.mjs` (35KB) | Playwright-based | ðŸŸ¢ |
+| **DR Tests** | `tests/dr-hardening.test.mjs` (50KB) | â€” | ðŸŸ¢ |
+| **Visual Regression** | â€” | **NOT IMPLEMENTED** | ðŸ”´ MISSING |
+| **Browser E2E (automated)** | Playwright scripts exist | **BROWSER VERIFICATION BLOCKED** in this audit | ðŸŸ  |
 
 ---
 
@@ -1560,29 +1560,29 @@ graph TD
 
 | Workflow | Entry | Components | API | Success | Loading | Empty | Error | Recovery | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| **Home** | `/` | Welcome | None | Landing renders | Spinner | N/A | N/A | N/A | 🟢 |
-| **Login** | `/login` | Welcome (login tab) | Firebase Auth | Redirect to `/dashboard` | Spinner | N/A | Error banner | Re-enter creds | 🟢 |
-| **Signup** | `/login` (register tab) | Welcome + register form | Firebase Auth + `/api/users-data` | Profile created | Spinner | N/A | Error banner | Re-enter | 🟢 |
-| **Build Resume** | `/build-resume` | BuildResume (12 steps) | CRUD + AI | Resume saved | Per-step spinner | Blank step | Toast error | Autosave recovery | 🟢 |
-| **AI Generate** | SummaryStep, etc. | Processing modal (5 stages) | `/api/generate-*` | Text inserted | Processing modal + timer + tips | N/A | Error message | Cancel/retry | 🟢 |
-| **Preview** | PreviewModal | Template render | Client-side | Preview shown | Spinner | N/A | Render error | Close/retry | 🟢 |
-| **PDF Download** | FinalizeStep | Exporter | `/api/export/pdf/render` | File downloads | Loading | N/A | Error toast | Retry | 🟢 |
-| **DOCX Download** | FinalizeStep | docxDownload | `/api/export/docx` | File downloads | Loading | N/A | Error toast | Retry | 🟢 |
-| **Profile Settings** | `/dashboard/settings` | DashboardSettings | `/api/users-data` | Saved | Loading | Blank | Toast error | Retry | 🟢 |
-| **Billing** | `/pricing` | Plans | `/api/pay/*` | Subscription activated | Payment modal | No plans configured | Payment error | Re-try | 🟢 |
-| **Admin** | `/adm/*` | Admin console (22 modules) | `/api/admin/*` | Data loaded | Loading | Empty state | Error toast | Retry/refresh | 🟢 |
-| **Enterprise** | `/enterprise/*` | 15-tab console | `/api/enterprise/*` | Data loaded | Loading | Empty state | Error toast | Retry | 🟢 |
-| **Not Found** | `*` | NotFound inline | None | "Page not found" + home link | N/A | N/A | N/A | Navigate home | 🟢 |
+| **Home** | `/` | Welcome | None | Landing renders | Spinner | N/A | N/A | N/A | ðŸŸ¢ |
+| **Login** | `/login` | Welcome (login tab) | Firebase Auth | Redirect to `/dashboard` | Spinner | N/A | Error banner | Re-enter creds | ðŸŸ¢ |
+| **Signup** | `/login` (register tab) | Welcome + register form | Firebase Auth + `/api/users-data` | Profile created | Spinner | N/A | Error banner | Re-enter | ðŸŸ¢ |
+| **Build Resume** | `/build-resume` | BuildResume (12 steps) | CRUD + AI | Resume saved | Per-step spinner | Blank step | Toast error | Autosave recovery | ðŸŸ¢ |
+| **AI Generate** | SummaryStep, etc. | Processing modal (5 stages) | `/api/generate-*` | Text inserted | Processing modal + timer + tips | N/A | Error message | Cancel/retry | ðŸŸ¢ |
+| **Preview** | PreviewModal | Template render | Client-side | Preview shown | Spinner | N/A | Render error | Close/retry | ðŸŸ¢ |
+| **PDF Download** | FinalizeStep | Exporter | `/api/export/pdf/render` | File downloads | Loading | N/A | Error toast | Retry | ðŸŸ¢ |
+| **DOCX Download** | FinalizeStep | docxDownload | `/api/export/docx` | File downloads | Loading | N/A | Error toast | Retry | ðŸŸ¢ |
+| **Profile Settings** | `/dashboard/settings` | DashboardSettings | `/api/users-data` | Saved | Loading | Blank | Toast error | Retry | ðŸŸ¢ |
+| **Billing** | `/pricing` | Plans | `/api/pay/*` | Subscription activated | Payment modal | No plans configured | Payment error | Re-try | ðŸŸ¢ |
+| **Admin** | `/adm/*` | Admin console (22 modules) | `/api/admin/*` | Data loaded | Loading | Empty state | Error toast | Retry/refresh | ðŸŸ¢ |
+| **Enterprise** | `/enterprise/*` | 15-tab console | `/api/enterprise/*` | Data loaded | Loading | Empty state | Error toast | Retry | ðŸŸ¢ |
+| **Not Found** | `*` | NotFound inline | None | "Page not found" + home link | N/A | N/A | N/A | Navigate home | ðŸŸ¢ |
 
 ### Dead/Broken Controls
 
 | Control | Location | Issue | Status |
 |---|---|---|---|
-| `/front` page | Front.jsx | Returns literal `<div>front</div>` — no content | 🔴 DEAD |
-| Auditor admin actions | Admin console | All API calls return 403 from policy.js:53 | 🔴 BROKEN |
-| Support admin actions | Admin console | Same — 403 on all admin API calls | 🔴 BROKEN |
-| Tickets system | SUPPORT role | `tickets.manage` permission, no backend API | 🔴 MISSING |
-| Storage settings save | Admin StorageSettings | Server returns `501 STORAGE_PROVIDER_UNSUPPORTED` | 🔵 DESIGNED ONLY |
+| `/front` page | Front.jsx | Returns literal `<div>front</div>` â€” no content | ðŸ”´ DEAD |
+| Auditor admin actions | Admin console | All API calls return 403 from policy.js:53 | ðŸ”´ BROKEN |
+| Support admin actions | Admin console | Same â€” 403 on all admin API calls | ðŸ”´ BROKEN |
+| Tickets system | SUPPORT role | `tickets.manage` permission, no backend API | ðŸ”´ MISSING |
+| Storage settings save | Admin StorageSettings | Server returns `501 STORAGE_PROVIDER_UNSUPPORTED` | ðŸ”µ DESIGNED ONLY |
 
 ---
 
@@ -1590,21 +1590,21 @@ graph TD
 
 | Control | Location | Frontend Handler | API | Authorization | DB Effect | Success UX | Failure UX | Status |
 |---|---|---|---|---|---|---|---|---|
-| Save Resume | BuildResume | `POST /api/resumes/:id` | `requireAuth` | UID ownership | UPDATE `resumes` | Toast success | 409 conflict dialog | 🟢 |
-| Download PDF | FinalizeStep | `POST /api/export/pdf/render` | Token-gated | Entitlement check | `export_render_tokens` | File download | Error toast | 🟢 |
-| Download DOCX | FinalizeStep | `POST /api/export/docx` | `requireAuth` | Entitlement check | None | File download | Error toast | 🟢 |
-| AI Generate | SummaryStep | `POST /api/generate-summary` | `requireAuth` + quota | AI quota + rate limit | `ai_usage` increment | Text inserted | Error message | 🟢 |
-| Apply Coupon | Billing | `POST /api/pay/validate-coupon` | `requireAuth` | Coupon validation | `coupon_redemptions` | Discount applied | Invalid code msg | 🟢 |
-| Pay Stripe | Billing | `POST /api/pay/stripe/create-intent` | `requireAuth` | Payment validation | `payment_orders` | Stripe redirect | Payment error | 🟢 |
-| Create Job | Employer | `POST /api/jobs-data` | `requireAuth` | Employer check | INSERT `jobs` | Success redirect | Error toast | 🟢 |
-| Send Message | Messages | `POST /api/messages` | `requireAuth` | Rate limit | INSERT `conversation_messages` | Message sent | Rate limit error | 🟢 |
-| Delete Account | Settings | `DELETE /api/account/delete` | `requireAuth` + recent auth | GDPR compliance | Cascade delete | Signed out | Re-auth prompt | 🟢 |
-| Publish Portfolio | Portfolio | `POST /api/portfolios/:id/publish` | `requireAuth` | UID ownership | UPDATE `portfolios` | Published URL | Error message | 🟢 |
-| Create Tenant | Enterprise | `POST /api/enterprise/tenants` | Enterprise auth | Enterprise admin | INSERT `enterprise_tenants` | Tenant created | Error | 🟢 |
-| Grant Support | Enterprise | `POST /api/enterprise/support/grants` | Enterprise auth | Enterprise admin | INSERT `enterprise_support_grants` | Grant active | Error | 🟢 |
-| Resend Verification | Dashboard | `POST /api/auth/request-verification` | `requireAuth` | Own account | INSERT `email_verification_tokens` | Banner update | Error banner | 🟢 |
-| Ctrl+K | Admin | `AdminCommandPalette` | Client-only | Client-only | None | Palette opens | N/A | 🟢 |
-| Health Check | Admin header | `GET /api/healthz` | None | None | None | Green dot | Red dot | 🟢 |
+| Save Resume | BuildResume | `POST /api/resumes/:id` | `requireAuth` | UID ownership | UPDATE `resumes` | Toast success | 409 conflict dialog | ðŸŸ¢ |
+| Download PDF | FinalizeStep | `POST /api/export/pdf/render` | Token-gated | Entitlement check | `export_render_tokens` | File download | Error toast | ðŸŸ¢ |
+| Download DOCX | FinalizeStep | `POST /api/export/docx` | `requireAuth` | Entitlement check | None | File download | Error toast | ðŸŸ¢ |
+| AI Generate | SummaryStep | `POST /api/generate-summary` | `requireAuth` + quota | AI quota + rate limit | `ai_usage` increment | Text inserted | Error message | ðŸŸ¢ |
+| Apply Coupon | Billing | `POST /api/pay/validate-coupon` | `requireAuth` | Coupon validation | `coupon_redemptions` | Discount applied | Invalid code msg | ðŸŸ¢ |
+| Pay Stripe | Billing | `POST /api/pay/stripe/create-intent` | `requireAuth` | Payment validation | `payment_orders` | Stripe redirect | Payment error | ðŸŸ¢ |
+| Create Job | Employer | `POST /api/jobs-data` | `requireAuth` | Employer check | INSERT `jobs` | Success redirect | Error toast | ðŸŸ¢ |
+| Send Message | Messages | `POST /api/messages` | `requireAuth` | Rate limit | INSERT `conversation_messages` | Message sent | Rate limit error | ðŸŸ¢ |
+| Delete Account | Settings | `DELETE /api/account/delete` | `requireAuth` + recent auth | GDPR compliance | Cascade delete | Signed out | Re-auth prompt | ðŸŸ¢ |
+| Publish Portfolio | Portfolio | `POST /api/portfolios/:id/publish` | `requireAuth` | UID ownership | UPDATE `portfolios` | Published URL | Error message | ðŸŸ¢ |
+| Create Tenant | Enterprise | `POST /api/enterprise/tenants` | Enterprise auth | Enterprise admin | INSERT `enterprise_tenants` | Tenant created | Error | ðŸŸ¢ |
+| Grant Support | Enterprise | `POST /api/enterprise/support/grants` | Enterprise auth | Enterprise admin | INSERT `enterprise_support_grants` | Grant active | Error | ðŸŸ¢ |
+| Resend Verification | Dashboard | `POST /api/auth/request-verification` | `requireAuth` | Own account | INSERT `email_verification_tokens` | Banner update | Error banner | ðŸŸ¢ |
+| Ctrl+K | Admin | `AdminCommandPalette` | Client-only | Client-only | None | Palette opens | N/A | ðŸŸ¢ |
+| Health Check | Admin header | `GET /api/healthz` | None | None | None | Green dot | Red dot | ðŸŸ¢ |
 
 ---
 
@@ -1623,7 +1623,7 @@ sequenceDiagram
     User->>Builder: Enter resume data (12 steps)
     Builder->>LS: writeResumeRecovery(uid, id, rev, data)
     Builder->>API: POST /api/resumes/:id {data, expectedRevision}
-    API->>API: requireAuth → enforceApiPolicy
+    API->>API: requireAuth â†’ enforceApiPolicy
     API->>DB: SELECT revision FROM resumes WHERE id=? AND user_id=?
     alt Revision Match
         DB-->>API: Matches
@@ -1649,7 +1649,7 @@ sequenceDiagram
     User->>SPA: Sign in
     SPA->>Firebase: signInWithEmailAndPassword()
     Firebase-->>SPA: User + ID Token
-    SPA->>SPA: onAuthStateChanged → setUser
+    SPA->>SPA: onAuthStateChanged â†’ setUser
     SPA->>SPA: Axios interceptor attaches Bearer token
 
     SPA->>API: GET /api/platform/public-config
@@ -1658,7 +1658,7 @@ sequenceDiagram
     API-->>SPA: {modules: {...}, _settingsSource: 'mariadb'}
 
     SPA->>API: GET /api/users-data/profile
-    API->>API: requireAuth → verifyIdToken
+    API->>API: requireAuth â†’ verifyIdToken
     API->>DB: SELECT FROM users WHERE id = uid
     API-->>SPA: Profile data
 ```
@@ -1702,13 +1702,13 @@ graph TD
 graph TB
     subgraph "Users & Roles"
         U[Consumer] & E[Employer] & EA[Enterprise Admin] & EM[Enterprise Member]
-        A[Admin] & SA[Super Admin] & AU[Auditor ⚠️] & SU[Support ⚠️]
+        A[Admin] & SA[Super Admin] & AU[Auditor âš ï¸] & SU[Support âš ï¸]
     end
 
     subgraph "Frontend Layer"
         SPA[SPA Router<br/>149 route entries]
         SPA --> DASH[Consumer Dashboard<br/>12 sub-routes]
-        SPA --> BUILDER[Resume Builder<br/>12 steps • 51 templates]
+        SPA --> BUILDER[Resume Builder<br/>12 steps â€¢ 51 templates]
         SPA --> INTERVIEW[Interview Coach]
         SPA --> ADMIN_UI[Admin Console<br/>22 modules]
         SPA --> ENT_UI[Enterprise Console<br/>15 tabs]
@@ -1718,12 +1718,12 @@ graph TB
     subgraph "Security Boundary"
         CORS[CORS] --> RATE[Rate Limiters<br/>Global + 7 account]
         RATE --> TOKEN[Firebase Token Verify]
-        TOKEN --> RBAC[RBAC Policy<br/>8 roles • 40+ perms]
+        TOKEN --> RBAC[RBAC Policy<br/>8 roles â€¢ 40+ perms]
         RBAC --> QUOTA[AI Quota<br/>MariaDB FOR UPDATE]
     end
 
     subgraph "API Layer"
-        GW[API Gateway<br/>5,872 lines • 176+ handlers]
+        GW[API Gateway<br/>5,872 lines â€¢ 176+ handlers]
         GW --> AI_RT[AI Runtime<br/>6-provider chain]
         GW --> PAY[Payments<br/>5 gateways]
         GW --> EXPORT[Export<br/>PDF + DOCX]
@@ -1731,7 +1731,7 @@ graph TB
     end
 
     subgraph "Data Layer"
-        MDB[(MariaDB 10.11<br/>60+ tables • 14 migrations<br/>SOLE AUTHORITY)]
+        MDB[(MariaDB 10.11<br/>60+ tables â€¢ 14 migrations<br/>SOLE AUTHORITY)]
         FB[Firebase Auth<br/>IDENTITY ONLY]
     end
 
@@ -1754,33 +1754,33 @@ graph TB
 
 | # | Strength | Evidence |
 |---|---|---|
-| S1 | **100% MariaDB authority** — zero Firestore runtime dependency | `ownership.js` registry + grep verification: 0 backend Firestore calls |
-| S2 | **Comprehensive resume builder** — 12 steps, 51 templates, dual export | `BuildResume.jsx` + 12 step components + `docxExport.js` 57KB |
-| S3 | **6-provider AI failover** — industry-leading resilience | `aiRuntime.js` PROVIDERS chain with per-provider config + `extractJson` |
-| S4 | **Full enterprise multi-tenancy** — 15-tab console, 60+ tables | `enterprise/` 29 backend modules + 17 UI components |
-| S5 | **Server-side RBAC** — all admin actions enforced by backend policy | `auth.js` + `policy.js` + `entitlements.js` |
-| S6 | **CI/CD pipeline** — automated quality gate on every PR | `.github/workflows/quality-gate.yml` + `production-release.yml` |
-| S7 | **Transactional outbox pattern** — guaranteed email delivery design | `notification_outbox` table with lease-based processing |
-| S8 | **Optimistic locking** — resume conflict detection | `expectedRevision` on all resume saves |
-| S9 | **Full billing lifecycle** — 5 gateways, invoices, refunds, coupons | 14 payment/billing-related files |
-| S10 | **AI source grounding** — negative constraints prevent hallucination | `FACTUAL_SOURCE_FIELDS` + "Do not invent" system prompts |
-| S11 | **Data ownership registry** — fail-closed domain enforcement | `ownership.js` 40+ entities with `getOwnership()` |
-| S12 | **Graceful shutdown** — clean SIGTERM/SIGINT with drain | `index.js:235-250` + `4187-4209` |
+| S1 | **100% MariaDB authority** â€” zero Firestore runtime dependency | `ownership.js` registry + grep verification: 0 backend Firestore calls |
+| S2 | **Comprehensive resume builder** â€” 12 steps, 51 templates, dual export | `BuildResume.jsx` + 12 step components + `docxExport.js` 57KB |
+| S3 | **6-provider AI failover** â€” industry-leading resilience | `aiRuntime.js` PROVIDERS chain with per-provider config + `extractJson` |
+| S4 | **Full enterprise multi-tenancy** â€” 15-tab console, 60+ tables | `enterprise/` 29 backend modules + 17 UI components |
+| S5 | **Server-side RBAC** â€” all admin actions enforced by backend policy | `auth.js` + `policy.js` + `entitlements.js` |
+| S6 | **CI/CD pipeline** â€” automated quality gate on every PR | `.github/workflows/quality-gate.yml` + `production-release.yml` |
+| S7 | **Transactional outbox pattern** â€” guaranteed email delivery design | `notification_outbox` table with lease-based processing |
+| S8 | **Optimistic locking** â€” resume conflict detection | `expectedRevision` on all resume saves |
+| S9 | **Full billing lifecycle** â€” 5 gateways, invoices, refunds, coupons | 14 payment/billing-related files |
+| S10 | **AI source grounding** â€” negative constraints prevent hallucination | `FACTUAL_SOURCE_FIELDS` + "Do not invent" system prompts |
+| S11 | **Data ownership registry** â€” fail-closed domain enforcement | `ownership.js` 40+ entities with `getOwnership()` |
+| S12 | **Graceful shutdown** â€” clean SIGTERM/SIGINT with drain | `index.js:235-250` + `4187-4209` |
 
 ### Weaknesses (Repository-Evidenced)
 
 | # | Weakness | Evidence |
 |---|---|---|
-| W1 | **Monolithic backend** — 5,872-line `index.js` | Single file handles payments, export, admin, auth |
-| W2 | **Policy.js blocks Auditor/Support** — all admin read endpoints return 403 | `policy.js:53` checks only `system.config.write` |
-| W3 | **Background workers disabled by default** — emails never delivered | `ecosystem.config.js` all workers `'false'` |
-| W4 | **No APM/centralized logging** — blind to production issues | No Datadog/New Relic/ELK integration |
-| W5 | **Dead code** — 6 orphaned modules in frontend | `Front.jsx`, `initailisation/`, `addAds/`, `About/`, `Analytics.jsx`, `Dashboard2/` |
-| W6 | **PayPal/Razorpay/Paytm/PhonePe lack server webhooks** — rely on client polling | Only Stripe has `POST /api/stripe-webhook` |
-| W7 | **Cover letter auth gap** — `/coverletter` has no `RequireAuthenticated` | `main.jsx:421-424` — no wrapper |
-| W8 | **No user impersonation** — Support cannot debug user issues | Zero code matches for impersonation |
-| W9 | **Single-instance PM2** — no horizontal scaling | `instances: 1, exec_mode: 'fork'` |
-| W10 | **No object storage** — server returns 501 on storage config | `index.js:2672-2677` |
+| W1 | **Monolithic backend** â€” 5,872-line `index.js` | Single file handles payments, export, admin, auth |
+| W2 | **Policy.js blocks Auditor/Support** â€” all admin read endpoints return 403 | `policy.js:53` checks only `system.config.write` |
+| W3 | **Background workers disabled by default** â€” emails never delivered | `ecosystem.config.js` all workers `'false'` |
+| W4 | **No APM/centralized logging** â€” blind to production issues | No Datadog/New Relic/ELK integration |
+| W5 | **Dead code** â€” 6 orphaned modules in frontend | `Front.jsx`, `initailisation/`, `addAds/`, `About/`, `Analytics.jsx`, `Dashboard2/` |
+| W6 | **PayPal/Razorpay/Paytm/PhonePe lack server webhooks** â€” rely on client polling | Only Stripe has `POST /api/stripe-webhook` |
+| W7 | **Cover letter auth gap** â€” `/coverletter` has no `RequireAuthenticated` | `main.jsx:421-424` â€” no wrapper |
+| W8 | **No user impersonation** â€” Support cannot debug user issues | Zero code matches for impersonation |
+| W9 | **Single-instance PM2** â€” no horizontal scaling | `instances: 1, exec_mode: 'fork'` |
+| W10 | **No object storage** â€” server returns 501 on storage config | `index.js:2672-2677` |
 
 ### Opportunities
 
@@ -1799,9 +1799,9 @@ graph TB
 
 | # | Threat | Mitigation |
 |---|---|---|
-| T1 | Single DB instance failure → data loss | Automate offsite backups |
-| T2 | Undelivered transactional emails → churn | Enable notification worker |
-| T3 | No alerting → extended outages | Wire dr-external-watch to alerts |
+| T1 | Single DB instance failure â†’ data loss | Automate offsite backups |
+| T2 | Undelivered transactional emails â†’ churn | Enable notification worker |
+| T3 | No alerting â†’ extended outages | Wire dr-external-watch to alerts |
 | T4 | Monolithic backend merge conflicts | Progressive router extraction |
 
 ---
@@ -1810,28 +1810,28 @@ graph TB
 
 | # | Domain | Score | Status | Evidence | Gap |
 |---|---|---|---|---|---|
-| 1 | Architecture | 7/10 | 🟡 | Full stack, monolithic backend | Extract index.js |
-| 2 | Frontend | 9/10 | 🟢 | React 18, code splitting, i18n, responsive | Remove dead code |
-| 3 | UI/UX | 8/10 | 🟢 | Modern design, animations, mobile | Auditor/Support broken UX |
-| 4 | Build Resume | 10/10 | 🟢 | 12 steps, 51 templates, AI, autosave, recovery, ATS | — |
-| 5 | Authentication | 10/10 | 🟢 | 5 OAuth + email + TOTP MFA + null-auth stub | — |
-| 6 | Authorization | 7/10 | 🟡 | 8 roles, 40+ perms | policy.js blocks 2 roles |
-| 7 | AI | 9/10 | 🟢 | 6 providers, failover, grounding, quota | — |
-| 8 | Database | 9/10 | 🟢 | 60+ tables, 14 migrations, ownership registry | No PITR |
-| 9 | Security | 9/10 | 🟢 | RBAC, MFA, rate limiting, audit, SSRF prevention | Cover letter auth |
-| 10 | Billing | 8/10 | 🟢 | 5 gateways, invoices, Stripe refunds, coupons | Non-Stripe webhooks |
-| 11 | Support | 4/10 | 🟡 | Enterprise break-glass only | No platform support UI/API |
-| 12 | Admin | 9/10 | 🟢 | 22 modules, Ctrl+K, 30+ settings, health | — |
-| 13 | CI/CD | 8/10 | 🟢 | 2 GitHub Actions workflows | No staging environment |
-| 14 | Notifications | 6/10 | 🟡 | Outbox pattern complete | Worker disabled |
-| 15 | Observability | 5/10 | 🟡 | Health UI, healthz/readyz | No APM, no centralized logs |
-| 16 | DR/Backup | 7/10 | 🟡 | Scripts exist, drill verified | Not automated in prod |
-| 17 | Deployment | 8/10 | 🟢 | SSH deploy + CI release pipeline | No blue-green |
-| 18 | Testing | 8/10 | 🟢 | 162 test files, migration verification in CI | No visual regression |
-| 19 | Scalability | 5/10 | 🟡 | Single instance, single DB | No clustering |
-| 20 | Accessibility | 7/10 | 🟡 | RouteFocus, ARIA, semantic HTML | No WCAG audit |
-| 21 | SEO | 8/10 | 🟢 | RouteSeo, OG tags, canonical URLs, robots | — |
-| 22 | Storage | 3/10 | 🔴 | No object storage adapter | Server returns 501 |
+| 1 | Architecture | 7/10 | ðŸŸ¡ | Full stack, monolithic backend | Extract index.js |
+| 2 | Frontend | 9/10 | ðŸŸ¢ | React 18, code splitting, i18n, responsive | Remove dead code |
+| 3 | UI/UX | 8/10 | ðŸŸ¢ | Modern design, animations, mobile | Auditor/Support broken UX |
+| 4 | Build Resume | 10/10 | ðŸŸ¢ | 12 steps, 51 templates, AI, autosave, recovery, ATS | â€” |
+| 5 | Authentication | 10/10 | ðŸŸ¢ | 5 OAuth + email + TOTP MFA + null-auth stub | â€” |
+| 6 | Authorization | 7/10 | ðŸŸ¡ | 8 roles, 40+ perms | policy.js blocks 2 roles |
+| 7 | AI | 9/10 | ðŸŸ¢ | 6 providers, failover, grounding, quota | â€” |
+| 8 | Database | 9/10 | ðŸŸ¢ | 60+ tables, 14 migrations, ownership registry | No PITR |
+| 9 | Security | 9/10 | ðŸŸ¢ | RBAC, MFA, rate limiting, audit, SSRF prevention | Cover letter auth |
+| 10 | Billing | 8/10 | ðŸŸ¢ | 5 gateways, invoices, Stripe refunds, coupons | Non-Stripe webhooks |
+| 11 | Support | 4/10 | ðŸŸ¡ | Enterprise break-glass only | No platform support UI/API |
+| 12 | Admin | 9/10 | ðŸŸ¢ | 22 modules, Ctrl+K, 30+ settings, health | â€” |
+| 13 | CI/CD | 8/10 | ðŸŸ¢ | 2 GitHub Actions workflows | No staging environment |
+| 14 | Notifications | 6/10 | ðŸŸ¡ | Outbox pattern complete | Worker disabled |
+| 15 | Observability | 5/10 | ðŸŸ¡ | Health UI, healthz/readyz | No APM, no centralized logs |
+| 16 | DR/Backup | 7/10 | ðŸŸ¡ | Scripts exist, drill verified | Not automated in prod |
+| 17 | Deployment | 8/10 | ðŸŸ¢ | SSH deploy + CI release pipeline | No blue-green |
+| 18 | Testing | 8/10 | ðŸŸ¢ | 162 test files, migration verification in CI | No visual regression |
+| 19 | Scalability | 5/10 | ðŸŸ¡ | Single instance, single DB | No clustering |
+| 20 | Accessibility | 7/10 | ðŸŸ¡ | RouteFocus, ARIA, semantic HTML | No WCAG audit |
+| 21 | SEO | 8/10 | ðŸŸ¢ | RouteSeo, OG tags, canonical URLs, robots | â€” |
+| 22 | Storage | 3/10 | ðŸ”´ | No object storage adapter | Server returns 501 |
 
 **OVERALL ENTERPRISE READINESS: 7.5 / 10**
 
@@ -1866,27 +1866,27 @@ graph TB
 
 ## 59. Completion Matrix
 
-### 🟢 COMPLETE (verified in repository)
+### ðŸŸ¢ COMPLETE (verified in repository)
 
 Resume Builder (12 steps, 51 templates, dual export, autosave, recovery, ATS), Cover Letter (4 templates), Portfolio Builder, Interview Coach (AI + CBT), Consumer Dashboard (12 sub-routes), Employer Dashboard, Admin Console (22 modules + 30+ settings + Ctrl+K), Enterprise Console (15 tabs), Authentication (5 OAuth + email + TOTP MFA + null-auth), Email Verification, Password Reset, AI Engine (6 providers + failover + grounding + quota), Billing (5 gateways + invoices + Stripe refunds + coupons), Blog Engine, Jobs Board, Messaging, Notifications (in-app), Enterprise Multi-Tenancy (tenants + workspaces + memberships + teams + audit + AI + service accounts + break-glass), Database (60+ tables, 14 migrations, ownership registry), RBAC (8 roles, 40+ permissions), Health Monitoring, Audit Logging, Feature Flags (7 flags), i18n (15 languages), Privacy Consent (GDPR), SEO (RouteSeo), CI/CD (2 GitHub Actions), Graceful Shutdown, Error Handling (errorResponder + controlled codes)
 
-### 🟡 PARTIALLY IMPLEMENTED
+### ðŸŸ¡ PARTIALLY IMPLEMENTED
 
 Notification Delivery (outbox complete, worker disabled), Secondary Payment Gateways (client polling only), DR/Backup (scripts complete, not automated), Monitoring (health UI exists, no APM/alerting), Support (Enterprise break-glass only, no platform support), Cover Letter (UI works, missing auth guard), Blog Scheduling (scheduler code complete, worker disabled)
 
-### 🔴 MISSING
+### ðŸ”´ MISSING
 
 Platform Support Help Desk UI, User Impersonation, Ticket System, Object Storage Adapter, APM/Distributed Tracing, Centralized Logging, Visual Regression Testing, PITR, HA/Failover
 
-### 🔴 BROKEN
+### ðŸ”´ BROKEN
 
-Auditor Role (frontend renders admin UI, API returns 403 on all endpoints), Support Role (same — 403 on all admin API calls due to `policy.js:53`)
+Auditor Role (frontend renders admin UI, API returns 403 on all endpoints), Support Role (same â€” 403 on all admin API calls due to `policy.js:53`)
 
-### 🔵 DESIGNED ONLY
+### ðŸ”µ DESIGNED ONLY
 
 Automated Backup Cron (script exists, not installed), Offsite Backup Sync (config template exists), Storage adapter (settings UI exists, backend rejects), CMS Scheduling (code complete, worker disabled)
 
-### 🟠 UNVERIFIED
+### ðŸŸ  UNVERIFIED
 
 WCAG Accessibility Compliance Level, Production Load Capacity Baseline, Actual SMTP Delivery Rate, Visual UI correctness (no real-browser audit in this session)
 
@@ -1894,18 +1894,18 @@ WCAG Accessibility Compliance Level, Production Load Capacity Baseline, Actual S
 
 ## 60. P0/P1/P2/P3 Roadmap
 
-### P0 — Production Blockers
+### P0 â€” Production Blockers
 
 None identified. The platform is production-ready for core consumer, employer, and enterprise operations.
 
-### P1 — Must Fix Before Enterprise Scale
+### P1 â€” Must Fix Before Enterprise Scale
 
 | # | Item | What | Where | Done Criteria |
 |---|---|---|---|---|
 | 1 | GAP-01: Fix Auditor/Support gate | Differentiate GET (read) from mutating methods in policy.js | `policy.js:53` | Both roles can read admin data |
 | 2 | GAP-02: Enable notification worker | Set `NOTIFICATION_OUTBOX_WORKER_ENABLED='true'` in production | `ecosystem.config.js` / PM2 env | Emails arriving in mailbox |
 
-### P2 — Should Fix
+### P2 â€” Should Fix
 
 | # | Item | Done Criteria |
 |---|---|---|
@@ -1918,7 +1918,7 @@ None identified. The platform is production-ready for core consumer, employer, a
 | 9 | GAP-10: Configure alerting | Alert fires on /healthz failure |
 | 10 | GAP-11: Object storage adapter | File uploads work |
 
-### P3 — Future
+### P3 â€” Future
 
 | # | Item | Done Criteria |
 |---|---|---|
@@ -1935,42 +1935,42 @@ None identified. The platform is production-ready for core consumer, employer, a
 
 | # | Item | Status |
 |---|---|---|
-| 1 | All routes represented | ✅ 149 route entries documented |
-| 2 | All roles represented | ✅ 8 roles with full forensics |
-| 3 | All dashboards represented | ✅ 4 dashboards (Consumer, Admin, Enterprise, Employer) |
-| 4 | All major UI workflows represented | ✅ 12+ workflows in UI/UX forensics |
-| 5 | Build Resume fully represented | ✅ 12 steps with step-level completeness |
-| 6 | AI fully represented | ✅ 6 providers, 9 operations, quotas, grounding |
-| 7 | Authentication fully represented | ✅ 5 OAuth + email + MFA + null-auth |
-| 8 | Authorization fully represented | ✅ 8 roles, policy enforcement, permission map |
-| 9 | Support represented | ✅ Enterprise break-glass + platform gaps identified |
-| 10 | Admin represented | ✅ 22 modules, 30+ settings |
-| 11 | Billing represented | ✅ 5 gateways, invoices, refunds, coupons |
-| 12 | Quota represented | ✅ 7 rate limiters + daily AI quota |
-| 13 | Database represented | ✅ 60+ tables, 14 migrations, ownership registry |
-| 14 | MariaDB authority represented | ✅ Zero Firestore verified by grep |
-| 15 | Firestore status represented | ✅ "ZERO RUNTIME DEPENDENCY" confirmed |
-| 16 | Backup represented | ✅ Scripts documented, automation gap noted |
-| 17 | DR represented | ✅ 5 scripts, PITR/HA gaps noted |
-| 18 | Monitoring represented | ✅ Health endpoints + APM gap |
-| 19 | Deployment represented | ✅ SSH deploy + CI/CD pipeline |
-| 20 | Testing represented | ✅ 162 files, CI pipeline, visual gap |
-| 21 | Security represented | ✅ 16 controls documented |
-| 22 | Error paths represented | ✅ 11 failure scenarios + error codes |
-| 23 | Failure/recovery represented | ✅ PM2 restart, AI failover, conflict dialog |
-| 24 | Mobile/responsive represented | ✅ Hamburger menus, sidebar collapse |
-| 25 | Accessibility represented | ✅ RouteFocus, ARIA, WCAG gap noted |
-| 26 | SEO/public routes represented | ✅ RouteSeo, OG tags, robots |
-| 27 | External services represented | ✅ 15 services with failure behavior |
-| 28 | Data ownership represented | ✅ `ownership.js` 40+ entities |
-| 29 | Enterprise gaps represented | ✅ 20 gaps classified P0-P3 |
-| 30 | SWOT completed | ✅ 12 strengths, 10 weaknesses, 8 opps, 4 threats |
-| 31 | Enterprise readiness matrix completed | ✅ 22 domains scored |
-| 32 | CI/CD represented | ✅ CORRECTED — 2 GitHub Actions workflows |
-| 33 | Background workers represented | ✅ 4 workers, all disabled |
-| 34 | Environment config represented | ✅ `.env.example` 190 lines |
-| 35 | Storage represented | ✅ No object storage (501) |
-| 36 | File handling represented | ✅ JSON limits, no upload |
+| 1 | All routes represented | âœ… 149 route entries documented |
+| 2 | All roles represented | âœ… 8 roles with full forensics |
+| 3 | All dashboards represented | âœ… 4 dashboards (Consumer, Admin, Enterprise, Employer) |
+| 4 | All major UI workflows represented | âœ… 12+ workflows in UI/UX forensics |
+| 5 | Build Resume fully represented | âœ… 12 steps with step-level completeness |
+| 6 | AI fully represented | âœ… 6 providers, 9 operations, quotas, grounding |
+| 7 | Authentication fully represented | âœ… 5 OAuth + email + MFA + null-auth |
+| 8 | Authorization fully represented | âœ… 8 roles, policy enforcement, permission map |
+| 9 | Support represented | âœ… Enterprise break-glass + platform gaps identified |
+| 10 | Admin represented | âœ… 22 modules, 30+ settings |
+| 11 | Billing represented | âœ… 5 gateways, invoices, refunds, coupons |
+| 12 | Quota represented | âœ… 7 rate limiters + daily AI quota |
+| 13 | Database represented | âœ… 60+ tables, 14 migrations, ownership registry |
+| 14 | MariaDB authority represented | âœ… Zero Firestore verified by grep |
+| 15 | Firestore status represented | âœ… "ZERO RUNTIME DEPENDENCY" confirmed |
+| 16 | Backup represented | âœ… Scripts documented, automation gap noted |
+| 17 | DR represented | âœ… 5 scripts, PITR/HA gaps noted |
+| 18 | Monitoring represented | âœ… Health endpoints + APM gap |
+| 19 | Deployment represented | âœ… SSH deploy + CI/CD pipeline |
+| 20 | Testing represented | âœ… 162 files, CI pipeline, visual gap |
+| 21 | Security represented | âœ… 16 controls documented |
+| 22 | Error paths represented | âœ… 11 failure scenarios + error codes |
+| 23 | Failure/recovery represented | âœ… PM2 restart, AI failover, conflict dialog |
+| 24 | Mobile/responsive represented | âœ… Hamburger menus, sidebar collapse |
+| 25 | Accessibility represented | âœ… RouteFocus, ARIA, WCAG gap noted |
+| 26 | SEO/public routes represented | âœ… RouteSeo, OG tags, robots |
+| 27 | External services represented | âœ… 15 services with failure behavior |
+| 28 | Data ownership represented | âœ… `ownership.js` 40+ entities |
+| 29 | Enterprise gaps represented | âœ… 20 gaps classified P0-P3 |
+| 30 | SWOT completed | âœ… 12 strengths, 10 weaknesses, 8 opps, 4 threats |
+| 31 | Enterprise readiness matrix completed | âœ… 22 domains scored |
+| 32 | CI/CD represented | âœ… CORRECTED â€” 2 GitHub Actions workflows |
+| 33 | Background workers represented | âœ… 4 workers, all disabled |
+| 34 | Environment config represented | âœ… `.env.example` 190 lines |
+| 35 | Storage represented | âœ… No object storage (501) |
+| 36 | File handling represented | âœ… JSON limits, no upload |
 
 ---
 
@@ -2008,7 +2008,7 @@ FINAL ENTERPRISE READINESS:   CONDITIONALLY READY (7.5/10)
 
 TOP REMAINING GAPS:
 1.  GAP-01 (P1): policy.js:53 blocks Auditor & Support from ALL admin read endpoints
-2.  GAP-02 (P1): Background workers disabled by default → transactional emails never delivered
+2.  GAP-02 (P1): Background workers disabled by default â†’ transactional emails never delivered
 3.  GAP-03 (P2): /coverletter route missing RequireAuthenticated guard
 4.  GAP-04 (P2): backend/index.js is a 5,872-line monolith
 5.  GAP-05 (P2): Backup cron not automated in production
@@ -2027,30 +2027,30 @@ Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live product
 
 | ID | Pri | Status | Evidence | Tests | Live proof |
 |---|---|---|---|---|---|
-| GAP-01 | P1 | CLOSED | Method-aware `policy.js`; GET least-privilege; L429 mutations `system.config.write` except `/support*` `tickets.manage`; Admin.jsx / `checkIfAdmin` allow ADMIN, SUPER_ADMIN, AUDITOR, SUPPORT | `backend/test/support-tickets.test.js` RBAC source contract | Not claimed |
-| GAP-02 | P1 | CLOSED | PM2 `NOTIFICATION_OUTBOX_WORKER_ENABLED='true'`; CMS/enterprise/GC remain `false` | `ecosystem.config.js` source | Not claimed |
-| GAP-03 | P2 | CLOSED | `src/main.jsx` wraps `/coverletter`, `/coverletter/*`, `/cover-letter`, `/cover-letter/*` in `RequireAuthenticated` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
-| GAP-04 | P2 | ACCEPTED | `backend/index.js` remains the payment/auth composition root; routers already exist | Standing instruction: no blind extract | N/A |
-| GAP-05 | P2 | ACCEPTED | Backup scripts exist; crontab cannot be installed onto Hostinger from this sandbox | `ops/dr/install-backup-schedule.sh` | Not claimed |
-| GAP-06 | P2 | CLOSED | Migration 015 `support_tickets` / `support_ticket_messages`; owner-scoped `/api/support`; admin `/api/admin/support` + Help Desk; deletion + ownership registry | `backend/test/support-tickets.test.js`, `backend/test/p1-gap-source-contract.test.js`, `tests/dr-hardening.test.mjs` (15 migrations) | Not claimed |
-| GAP-07 | P2 | ACCEPTED | Impersonation would mint another user's session | Support uses `users.read` + tickets | N/A |
-| GAP-08 | P2 | CLOSED | `POST /api/paytm/callback` HTML 200 after HMAC `/v3/order/status`; `POST /api/phonepe/callback` X-VERIFY then status API; claim → activate → release; outbox reconcile LIMIT 25 | `backend/test/indian-gateway-activation.test.js` (9 cases) | Not claimed |
-| GAP-09 | P2 | ACCEPTED | No APM vendor/credentials | healthz/readyz/request IDs remain | N/A |
-| GAP-10 | P2 | CLOSED | Consecutive `/readyz` failures ≥2 enqueue `admin_system_alert:readyz:<hourBucket>` fire-and-forget; never awaited before 503 | `backend/test/readyz-alerts.test.js` | Not claimed |
-| GAP-11 | P2 | ACCEPTED | `501 STORAGE_PROVIDER_UNSUPPORTED` is intentional | StorageSettings informational | N/A |
-| GAP-12 | P3 | CLOSED | `/front` → `<Navigate to="/" replace />` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
-| GAP-13 | P3 | ACCEPTED | Dead `initailisation/` unused | No runtime import | N/A |
-| GAP-14 | P3 | ACCEPTED | Dead `addAds/`, `About/` unused | No runtime import | N/A |
-| GAP-15 | P3 | ACCEPTED | `Analytics.jsx` unused helper | No runtime import | N/A |
-| GAP-16 | P3 | ACCEPTED | PM2 stays `instances: 1, exec_mode: 'fork'` | Cluster would duplicate in-memory limiters | N/A |
-| GAP-17 | P3 | ACCEPTED | Skip-link + `#main-content` landed; **no WCAG 2.1 AA claim** | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
-| GAP-18 | P3 | ACCEPTED | No k6/Artillery run | Do not invent capacity numbers | Not claimed |
-| GAP-19 | P3 | ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
-| GAP-20 | P3 | ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
-| GAP-21 | P2 | OPEN | §64: personal-workspace (`personal-<id>`) rows appear in the User 360 assign-tenant dropdown and need auto-promotion/segregation design | Design decision required (§64 Strategies A/B); backend error normalization leg landed with GAP-22 | N/A |
-| GAP-22 | P0 | CLOSED | User 360 → Assign Tenant called `grantMembership` without the mandatory tenant-owned `workspaceId` → guaranteed HTTP 400. Fixed at the route boundary via `backend/enterprise/workspaceResolution.js` (canonical default-workspace resolution); strict registry contract unchanged | `backend/test/admin-tenant-assignment.test.js` (17), `tests/gap22-user360-tenant-assignment.test.mjs` (11) | Not claimed |
+| GAP-01 | P1 | 🟢 CLOSED | Method-aware `policy.js`; GET least-privilege; L429 mutations `system.config.write` except `/support*` `tickets.manage`; Admin.jsx / `checkIfAdmin` allow ADMIN, SUPER_ADMIN, AUDITOR, SUPPORT | `backend/test/support-tickets.test.js` RBAC source contract | Not claimed |
+| GAP-02 | P1 | 🟢 CLOSED | PM2 `NOTIFICATION_OUTBOX_WORKER_ENABLED='true'`; CMS/enterprise/GC remain `false` | `ecosystem.config.js` source | Not claimed |
+| GAP-03 | P2 | 🟢 CLOSED | `src/main.jsx` wraps `/coverletter`, `/coverletter/*`, `/cover-letter`, `/cover-letter/*` in `RequireAuthenticated` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-04 | P2 | 🟡 ACCEPTED | `backend/index.js` remains the payment/auth composition root; routers already exist | Standing instruction: no blind extract | N/A |
+| GAP-05 | P2 | 🟡 ACCEPTED | Backup scripts exist; crontab cannot be installed onto Hostinger from this sandbox | `ops/dr/install-backup-schedule.sh` | Not claimed |
+| GAP-06 | P2 | 🟢 CLOSED | Migration 015 `support_tickets` / `support_ticket_messages`; owner-scoped `/api/support`; admin `/api/admin/support` + Help Desk; deletion + ownership registry | `backend/test/support-tickets.test.js`, `backend/test/p1-gap-source-contract.test.js`, `tests/dr-hardening.test.mjs` (15 migrations) | Not claimed |
+| GAP-07 | P2 | 🟡 ACCEPTED | Impersonation would mint another user's session | Support uses `users.read` + tickets | N/A |
+| GAP-08 | P2 | 🟢 CLOSED | `POST /api/paytm/callback` HTML 200 after HMAC `/v3/order/status`; `POST /api/phonepe/callback` X-VERIFY then status API; claim â†’ activate â†’ release; outbox reconcile LIMIT 25 | `backend/test/indian-gateway-activation.test.js` (9 cases) | Not claimed |
+| GAP-09 | P2 | 🟡 ACCEPTED | No APM vendor/credentials | healthz/readyz/request IDs remain | N/A |
+| GAP-10 | P2 | 🟢 CLOSED | Consecutive `/readyz` failures â‰¥2 enqueue `admin_system_alert:readyz:<hourBucket>` fire-and-forget; never awaited before 503 | `backend/test/readyz-alerts.test.js` | Not claimed |
+| GAP-11 | P2 | 🟡 ACCEPTED | `501 STORAGE_PROVIDER_UNSUPPORTED` is intentional | StorageSettings informational | N/A |
+| GAP-12 | P3 | 🟢 CLOSED | `/front` â†’ `<Navigate to="/" replace />` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-13 | P3 | 🟡 ACCEPTED | Dead `initailisation/` unused | No runtime import | N/A |
+| GAP-14 | P3 | 🟡 ACCEPTED | Dead `addAds/`, `About/` unused | No runtime import | N/A |
+| GAP-15 | P3 | 🟡 ACCEPTED | `Analytics.jsx` unused helper | No runtime import | N/A |
+| GAP-16 | P3 | 🟡 ACCEPTED | PM2 stays `instances: 1, exec_mode: 'fork'` | Cluster would duplicate in-memory limiters | N/A |
+| GAP-17 | P3 | 🟡 ACCEPTED | Skip-link + `#main-content` landed; **no WCAG 2.1 AA claim** | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-18 | P3 | 🟡 ACCEPTED | No k6/Artillery run | Do not invent capacity numbers | Not claimed |
+| GAP-19 | P3 | 🟡 ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
+| GAP-20 | P3 | 🟡 ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
+| GAP-21 | P2 | 🟠 PENDING | Â§64: personal-workspace (`personal-<id>`) rows appear in the User 360 assign-tenant dropdown and need auto-promotion/segregation design | Design decision required (Â§64 Strategies A/B); backend error normalization leg landed with GAP-22 | N/A |
+| GAP-22 | P0 | 🟢 CLOSED | User 360 â†’ Assign Tenant called `grantMembership` without the mandatory tenant-owned `workspaceId` â†’ guaranteed HTTP 400. Fixed at the route boundary via `backend/enterprise/workspaceResolution.js` (canonical default-workspace resolution); strict registry contract unchanged | `backend/test/admin-tenant-assignment.test.js` (17), `tests/gap22-user360-tenant-assignment.test.mjs` (11) | Not claimed |
 
-**Remainder after this register:** P0=0, P1=0 open (GAP-22 CLOSED 2026-08-29, baseline `ee66b93`), P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20), P2 OPEN=1 (GAP-21). CLOSED=8 (01,02,03,06,08,10,12,22). BLOCKED=0.
+**Remainder after this register:** P0=0, P1=0 open (GAP-22 CLOSED 2026-08-29, baseline `ee66b93`), P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13â€“20), P2 OPEN=1 (GAP-21). CLOSED=8 (01,02,03,06,08,10,12,22). BLOCKED=0.
 
 **MariaDB authority:** 15 checksummed migrations; `ownership.js` registers `support_ticket` / `support_ticket_message`; account deletion deletes ticket rows after notifications. Zero Firestore data-plane.
 
@@ -2070,7 +2070,7 @@ When an administrator with `SUPER_ADMIN` or `ADMIN` privileges opens the **User 
 2. **Frontend Dropdown Ingestion:**
    * `UsersManager.jsx` calls `getPlatformTenants()`, mapping all raw tenant records without filtering by `type === 'ORGANIZATION'`.
 3. **Frontend Error Normalization Fallback:**
-   * `src/services/platformApi.js` (`platformFetch`) inspects `data.error?.message || data.message`. Because the backend returned `{ success: false, error: "Invalid Tenant identifier" }` (where `error` is a string), `platformFetch` fell back to `new Error('HTTP 400')`, rendering the literal string `⚠️ HTTP 400` in `User360Drawer.jsx`.
+   * `src/services/platformApi.js` (`platformFetch`) inspects `data.error?.message || data.message`. Because the backend returned `{ success: false, error: "Invalid Tenant identifier" }` (where `error` is a string), `platformFetch` fell back to `new Error('HTTP 400')`, rendering the literal string `âš ï¸ HTTP 400` in `User360Drawer.jsx`.
 
 ### Architectural Implementation Strategies for Cloud Developer
 
@@ -2083,7 +2083,7 @@ When an administrator with `SUPER_ADMIN` or `ADMIN` privileges opens the **User 
 
 #### Strategy B: Smart Dropdown Segregation + Client Normalization
 * Update `UsersManager.jsx` and `User360Drawer.jsx` to filter `availableTenants = tenants.filter(t => t.type === 'ORGANIZATION' || !t.id.startsWith('personal-'))`.
-* If a Personal Workspace is inspected, provide an explicit `[⚡ Upgrade to Enterprise Organization]` action.
+* If a Personal Workspace is inspected, provide an explicit `[âš¡ Upgrade to Enterprise Organization]` action.
 * Normalize `platformFetch` error handling: `const errorMsg = typeof data.error === 'string' ? data.error : data.error?.message || data.message || \`HTTP \${response.status}\`;`.
 
 ---
@@ -2165,7 +2165,7 @@ quadrantChart
 
 ---
 
-## 66. GAP-22: Super Admin User 360 Tenant Assignment — Missing Workspace Resolution (CLOSED 2026-08-29)
+## 66. GAP-22: Super Admin User 360 Tenant Assignment â€” Missing Workspace Resolution (CLOSED 2026-08-29)
 
 **Baseline under review:** `ee66b93f81c00394aac4f03672f0b0911539b974` (`main`)
 **Verdict of independent RCA:** local-developer finding CONFIRMED and reproduced from source. The defect is an honest UI/API contract defect, not intentional validation.
@@ -2173,98 +2173,98 @@ quadrantChart
 ### Forensic call-chain evidence
 
 ```
-User360Drawer.jsx  handleAddTenant → assignUserTenant(uid, { tenantId, role, isPrimary })
-        │            (frontend legitimately supplies NO workspaceId — it acts on a whole tenant)
-        ▼
+User360Drawer.jsx  handleAddTenant â†’ assignUserTenant(uid, { tenantId, role, isPrimary })
+        â”‚            (frontend legitimately supplies NO workspaceId â€” it acts on a whole tenant)
+        â–¼
 platformApi.js     POST /api/admin/users/:uid/tenants
-        ▼
-requireAuth + enforceApiPolicy   (mutation on /admin/users/** → system.config.write;
-        │                         SUPER_ADMIN/ADMIN pass; SUPPORT/AUDITOR/USER → 403)
-        ▼
+        â–¼
+requireAuth + enforceApiPolicy   (mutation on /admin/users/** â†’ system.config.write;
+        â”‚                         SUPER_ADMIN/ADMIN pass; SUPPORT/AUDITOR/USER â†’ 403)
+        â–¼
 backend/routes/adminUsers.js (old)  registry.grantMembership({ tenantId, principalId, roles, status })
-        │                            — no workspaceId ever resolved or supplied
-        ▼
+        â”‚                            â€” no workspaceId ever resolved or supplied
+        â–¼
 mysqlTenantRegistry.grantMembership  workspaceId = assertUuid(workspaceId, 'Workspace identifier')
-        ▼
+        â–¼
 HTTP 400  code=INVALID_TENANT_CONTEXT  "Workspace identifier must be a UUID"
-        ▼
+        â–¼
 platformApi error normalization (old) dropped string-form { error: "msg", code } payloads
-        ▼
-UI showed a bare "HTTP 400" — no tenant, workspace, or remediation context (GAP-21 normalization leg)
+        â–¼
+UI showed a bare "HTTP 400" â€” no tenant, workspace, or remediation context (GAP-21 normalization leg)
 ```
 
-The identical defect existed at a second call site: `POST /api/admin/platform/tenants/:tenantId/members` (`adminPlatformOperations.js`) — also repaired in this pass.
+The identical defect existed at a second call site: `POST /api/admin/platform/tenants/:tenantId/members` (`adminPlatformOperations.js`) â€” also repaired in this pass.
 
 ### RCA answers (verified against code, schema, migrations, and runtime tests)
 
-1. **workspaceId is genuinely mandatory** — `mysqlTenantRegistry.grantMembership` asserts it; every membership row binds the member's home workspace (used by `resolveMembership` fallback and the workspace-membership row insert). The contract was intentionally NOT weakened.
-2. **Every valid tenant has a default workspace by construction** — `createTenant`, `provisionTenant`, `ensurePersonalTenant` all create `isDefault=TRUE` + `ACTIVE` atomically with the tenant; `setWorkspaceLifecycleState` refuses to archive the default (`WORKSPACE_DEFAULT_PROTECTED`).
-3. **Default workspace identification** — `enterprise_workspaces.isDefault = TRUE`; `listWorkspaces(tenantId)` orders `isDefault DESC, name ASC` (deterministic).
-4. **Zero-workspace tenant** — unreachable through supported flows; possible only via storage drift. Now fails deterministically: `409 TENANT_NO_USABLE_WORKSPACE` with an actionable message instead of a generic 400.
-5. **Multiple workspaces** — legal (createWorkspace); non-default ones may be archived.
-6. **Auto-select for Super Admin assignment** — YES, at the route boundary, matching the pre-existing test-registry contract (`inMemoryTenantRegistry` already resolved: explicit → default → first-active → 409).
-7. **Existing helper** — none existed on the production path; the resolution semantic existed only inside the in-memory test double, which is why tests passed while production always 400'd (test-double divergence was part of the root cause).
-8. **Tenant isolation of auto-selection** — unaffected: resolution is `WHERE tenantId = ?`-scoped ACTIVE rows only; `grantMembership` re-validates `WHERE id = ? AND tenantId = ? FOR UPDATE` inside its transaction. Cross-tenant explicit picks fail closed `404 WORKSPACE_NOT_FOUND`.
-9. **Frontend workspace selection** — supported but optional: the route accepts an explicit tenant-owned `workspaceId` and validates it; the default flow remains a one-click tenant assignment.
-10. **No default workspace** — deterministic `409 TENANT_NO_USABLE_WORKSPACE` + actionable UI state (submit disabled with guidance when the preview proves it).
-11. **Multiple candidates** — canonical default (`isDefault`) wins; fallback is the deterministic first row of the registry ordering, never an arbitrary pick.
-12. **HTTP 400 nature** — actual contract defect (frontend could never succeed), now CLOSED.
+1. **workspaceId is genuinely mandatory** â€” `mysqlTenantRegistry.grantMembership` asserts it; every membership row binds the member's home workspace (used by `resolveMembership` fallback and the workspace-membership row insert). The contract was intentionally NOT weakened.
+2. **Every valid tenant has a default workspace by construction** â€” `createTenant`, `provisionTenant`, `ensurePersonalTenant` all create `isDefault=TRUE` + `ACTIVE` atomically with the tenant; `setWorkspaceLifecycleState` refuses to archive the default (`WORKSPACE_DEFAULT_PROTECTED`).
+3. **Default workspace identification** â€” `enterprise_workspaces.isDefault = TRUE`; `listWorkspaces(tenantId)` orders `isDefault DESC, name ASC` (deterministic).
+4. **Zero-workspace tenant** â€” unreachable through supported flows; possible only via storage drift. Now fails deterministically: `409 TENANT_NO_USABLE_WORKSPACE` with an actionable message instead of a generic 400.
+5. **Multiple workspaces** â€” legal (createWorkspace); non-default ones may be archived.
+6. **Auto-select for Super Admin assignment** â€” YES, at the route boundary, matching the pre-existing test-registry contract (`inMemoryTenantRegistry` already resolved: explicit â†’ default â†’ first-active â†’ 409).
+7. **Existing helper** â€” none existed on the production path; the resolution semantic existed only inside the in-memory test double, which is why tests passed while production always 400'd (test-double divergence was part of the root cause).
+8. **Tenant isolation of auto-selection** â€” unaffected: resolution is `WHERE tenantId = ?`-scoped ACTIVE rows only; `grantMembership` re-validates `WHERE id = ? AND tenantId = ? FOR UPDATE` inside its transaction. Cross-tenant explicit picks fail closed `404 WORKSPACE_NOT_FOUND`.
+9. **Frontend workspace selection** â€” supported but optional: the route accepts an explicit tenant-owned `workspaceId` and validates it; the default flow remains a one-click tenant assignment.
+10. **No default workspace** â€” deterministic `409 TENANT_NO_USABLE_WORKSPACE` + actionable UI state (submit disabled with guidance when the preview proves it).
+11. **Multiple candidates** â€” canonical default (`isDefault`) wins; fallback is the deterministic first row of the registry ordering, never an arbitrary pick.
+12. **HTTP 400 nature** â€” actual contract defect (frontend could never succeed), now CLOSED.
 
 ### Fix architecture (correct abstraction boundary)
 
 ```
 Super Admin / Admin requests tenant assignment
-        ↓
-requireAuth + enforceApiPolicy (RBAC: system.config.write; SUPPORT/AUDITOR/USER → 403)
-        ↓
-assertUuid/tenant lookup (getTenant → 404 TENANT_NOT_FOUND; lifecycle ≠ ACTIVE → 403 TENANT_INACTIVE)
-        ↓
+        â†“
+requireAuth + enforceApiPolicy (RBAC: system.config.write; SUPPORT/AUDITOR/USER â†’ 403)
+        â†“
+assertUuid/tenant lookup (getTenant â†’ 404 TENANT_NOT_FOUND; lifecycle â‰  ACTIVE â†’ 403 TENANT_INACTIVE)
+        â†“
 resolveAssignableWorkspace(registry, tenantId, requestedWorkspaceId?)
-        ├─ explicit workspaceId → UUID assert (400 INVALID_WORKSPACE_ID)
-        │     + tenant-scoped ACTIVE getWorkspace (404 WORKSPACE_NOT_FOUND on cross-tenant/inactive)
-        ├─ else canonical default workspace (isDefault=TRUE, resolution: DEFAULT)
-        ├─ else deterministic first ACTIVE (resolution: FIRST_ACTIVE)
-        └─ none → 409 TENANT_NO_USABLE_WORKSPACE (deterministic, actionable)
-        ↓
-grantMembership(userId, tenantId, workspaceId)   ← strict contract UNCHANGED
-        ↓
+        â”œâ”€ explicit workspaceId â†’ UUID assert (400 INVALID_WORKSPACE_ID)
+        â”‚     + tenant-scoped ACTIVE getWorkspace (404 WORKSPACE_NOT_FOUND on cross-tenant/inactive)
+        â”œâ”€ else canonical default workspace (isDefault=TRUE, resolution: DEFAULT)
+        â”œâ”€ else deterministic first ACTIVE (resolution: FIRST_ACTIVE)
+        â””â”€ none â†’ 409 TENANT_NO_USABLE_WORKSPACE (deterministic, actionable)
+        â†“
+grantMembership(userId, tenantId, workspaceId)   â† strict contract UNCHANGED
+        â†“
 MariaDB transaction (workspace FOR UPDATE, identity-collision guard, revision++,
         membership upsert + workspace-membership upsert, invitation auto-accept)
-        ↓
+        â†“
 200 { success, message naming tenant + workspace, membership,
       workspace { id, name, isDefault, resolution }, alreadyMember }
-        ↓
-User 360 reloads (loadData) — tenancy list now also shows the bound workspaceId
+        â†“
+User 360 reloads (loadData) â€” tenancy list now also shows the bound workspaceId
 ```
 
 ### Changes
 
 | File | Change |
 |---|---|
-| `backend/enterprise/workspaceResolution.js` | NEW — canonical assignable-workspace resolver (single source for both call sites) |
+| `backend/enterprise/workspaceResolution.js` | NEW â€” canonical assignable-workspace resolver (single source for both call sites) |
 | `backend/routes/adminUsers.js` | `POST /:uid/tenants` resolves workspace at the boundary; tenant lifecycle gate; `alreadyMember` detection; audit metadata gains workspaceId/resolution; User 360 tenancy projection gains `workspaceId` |
 | `backend/routes/adminPlatformOperations.js` | `POST /platform/tenants/:tenantId/members` same boundary fix + lifecycle gate |
 | `backend/routes/platform.js` | `GET /platform/tenants/:tenantId` now returns `workspaces.items` (id/name/lifecycle/isDefault) for the assignment preview |
-| `src/services/platformApi.js` | `platformFetch` normalizes string-form error payloads — a precise backend message can no longer collapse to `HTTP <status>` |
+| `src/services/platformApi.js` | `platformFetch` normalizes string-form error payloads â€” a precise backend message can no longer collapse to `HTTP <status>` |
 | `src/components/admin/usersManager/User360Drawer.jsx` | Workspace preview before submit (default workspace named; no-usable-workspace and inactive-tenant states disable submit with guidance); actionable error mapping per backend code; success state names workspace and already-member truth; membership list shows bound workspaceId |
 | `backend/test/helpers/inMemoryTenantRegistry.js` | Production parity: re-grant is an idempotent upsert (was a divergent 409); `removeTenantMembership` cascades workspace + team memberships (was leaving orphans vs production `DELETE`) |
-| `backend/test/admin-tenant-assignment.test.js` | NEW — 17 regression cases over the real HTTP surface with a strict production-parity `grantMembership` spy |
-| `tests/gap22-user360-tenant-assignment.test.mjs` | NEW — 11 static/UI contract guards (wired into `npm run test:product`) |
+| `backend/test/admin-tenant-assignment.test.js` | NEW â€” 17 regression cases over the real HTTP surface with a strict production-parity `grantMembership` spy |
+| `tests/gap22-user360-tenant-assignment.test.mjs` | NEW â€” 11 static/UI contract guards (wired into `npm run test:product`) |
 
 ### Tenant/workspace membership lifecycle audit outcomes
 
-CREATE TENANT → CREATE DEFAULT WORKSPACE: atomic in all three provisioning paths — no gap.
-CREATE USER (Firebase identity + MariaDB profile) → ASSIGN TENANT: **was broken (GAP-22), now fixed**.
-ASSIGN WORKSPACE (`addWorkspaceMember`): tenant-scoped lookup + ACTIVE membership required — no gap.
+CREATE TENANT â†’ CREATE DEFAULT WORKSPACE: atomic in all three provisioning paths â€” no gap.
+CREATE USER (Firebase identity + MariaDB profile) â†’ ASSIGN TENANT: **was broken (GAP-22), now fixed**.
+ASSIGN WORKSPACE (`addWorkspaceMember`): tenant-scoped lookup + ACTIVE membership required â€” no gap.
 MEMBERSHIP: transactional, deterministic ids (`tenantId_principalHash` / `workspaceId_principalHash`) make duplicates impossible; re-grant is an idempotent revision-bumping upsert (no duplicate/orphan rows).
-AUTHORIZATION: `resolveMembership` enforces tenant ACTIVE, membership ACTIVE, invitation acceptance with verified email, and workspace access — no privilege escalation found.
-REMOVAL/REVOCATION: production cascades memberships + workspace memberships + team memberships + pending-invitation cancellation in one transaction — no orphans. Test double aligned to the same cascade.
+AUTHORIZATION: `resolveMembership` enforces tenant ACTIVE, membership ACTIVE, invitation acceptance with verified email, and workspace access â€” no privilege escalation found.
+REMOVAL/REVOCATION: production cascades memberships + workspace memberships + team memberships + pending-invitation cancellation in one transaction â€” no orphans. Test double aligned to the same cascade.
 No cross-tenant membership, stale membership, or missing-workspace drift was reachable through supported flows; drift scenarios now fail deterministically at the assignment boundary.
 
 ### SUPPORT / AUDITOR unified-console verification (independent re-verification)
 
 Single console `/adm/*` confirmed: `Admin.jsx` admits `ADMIN|SUPER_ADMIN|AUDITOR|SUPPORT` claims into the same shell; no separate Support dashboard exists or is required (architecture intentionally unified).
-Backend enforcement is independent of menu visibility: `enforceApiPolicy` maps `/admin/users/**` mutations to `system.config.write` (SUPER_ADMIN/ADMIN hold it; SUPPORT: `users.read, email.logs.read, tenants.read, tickets.manage`; AUDITOR: read-only set) → both receive **403 FORBIDDEN** on tenant assignment (proven: `admin-tenant-assignment.test.js` case 10/17), support-desk paths route through `tickets.manage` so SUPPORT can manage tickets only where authorized, and AUDITOR receives 403 on every mutation while retaining least-privilege reads.
+Backend enforcement is independent of menu visibility: `enforceApiPolicy` maps `/admin/users/**` mutations to `system.config.write` (SUPER_ADMIN/ADMIN hold it; SUPPORT: `users.read, email.logs.read, tenants.read, tickets.manage`; AUDITOR: read-only set) â†’ both receive **403 FORBIDDEN** on tenant assignment (proven: `admin-tenant-assignment.test.js` case 10/17), support-desk paths route through `tickets.manage` so SUPPORT can manage tickets only where authorized, and AUDITOR receives 403 on every mutation while retaining least-privilege reads.
 
 ### Evidence
 
