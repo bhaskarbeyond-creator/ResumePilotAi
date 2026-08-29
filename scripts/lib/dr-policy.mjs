@@ -336,3 +336,283 @@ export function summariseDrPosture({
     evaluatedAt: new Date(nowMs).toISOString(),
   };
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Backup-pipeline safety helpers
+//
+// Pure functions covering the failure modes that make a backup system lie:
+// running out of disk mid-dump, silently writing a suspiciously small file,
+// and treating an upload that never landed as a success.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** Median of a numeric list. Returns null when there is nothing to compare. */
+export function median(values) {
+  const list = (Array.isArray(values) ? values : [])
+    .map((v) => Number(v))
+    .filter((v) => Number.isFinite(v) && v > 0)
+    .sort((a, b) => a - b);
+  if (list.length === 0) return null;
+  const mid = Math.floor(list.length / 2);
+  return list.length % 2 === 0 ? (list[mid - 1] + list[mid]) / 2 : list[mid];
+}
+
+/**
+ * Detect a backup whose size is implausible versus its own history.
+ *
+ * A backup that suddenly halves is very often a truncated or partially failed
+ * dump that still "succeeded". A backup that suddenly triples is usually an
+ * accidental full-table export or runaway table growth. Both deserve a human.
+ *
+ * Deliberately returns INSUFFICIENT_HISTORY rather than OK when there is not
+ * enough data to compare: absence of evidence is not evidence of health.
+ *
+ * @param {number} minRatio below this fraction of baseline => suspiciously small
+ * @param {number} maxRatio above this multiple of baseline => suspiciously large
+ */
+export function evaluateSizeAnomaly({
+  sizeBytes,
+  historicalSizes = [],
+  minRatio = 0.4,
+  maxRatio = 2.5,
+  minimumSamples = 3,
+} = {}) {
+  const size = Number(sizeBytes);
+  if (!Number.isFinite(size) || size <= 0) {
+    return { status: 'INVALID_SIZE', ratio: null, baselineBytes: null, sizeBytes: sizeBytes ?? null };
+  }
+
+  const history = (Array.isArray(historicalSizes) ? historicalSizes : [])
+    .map((v) => Number(v))
+    .filter((v) => Number.isFinite(v) && v > 0);
+
+  if (history.length < minimumSamples) {
+    return {
+      status: 'INSUFFICIENT_HISTORY',
+      ratio: null,
+      baselineBytes: null,
+      sizeBytes: size,
+      samples: history.length,
+      note: `Need ${minimumSamples} prior backups to judge size; have ${history.length}.`,
+    };
+  }
+
+  const baseline = median(history);
+  const ratio = size / baseline;
+  if (ratio < minRatio) return { status: 'ANOMALY_SUSPICIOUSLY_SMALL', ratio: Number(ratio.toFixed(4)), baselineBytes: baseline, sizeBytes: size, samples: history.length };
+  if (ratio > maxRatio) return { status: 'ANOMALY_SUSPICIOUSLY_LARGE', ratio: Number(ratio.toFixed(4)), baselineBytes: baseline, sizeBytes: size, samples: history.length };
+  return { status: 'OK', ratio: Number(ratio.toFixed(4)), baselineBytes: baseline, sizeBytes: size, samples: history.length };
+}
+
+/** Minimum free space required before starting a backup. */
+export function requiredFreeBytes(previousBackupBytes = 0, floorBytes = 256 * 1024 * 1024) {
+  const previous = Number(previousBackupBytes);
+  const expected = Number.isFinite(previous) && previous > 0 ? Math.ceil(previous * 2.5) : 0;
+  return Math.max(floorBytes, expected);
+}
+
+/**
+ * Refuse to start a backup that cannot fit. A dump that dies at 90% leaves a
+ * truncated artifact that looks like a backup until someone tries to restore it.
+ */
+export function evaluateDiskSpace({ freeBytes = null, previousBackupBytes = 0, floorBytes = 256 * 1024 * 1024 } = {}) {
+  // null/undefined mean "could not measure" (e.g. statfs unsupported), which is
+  // NOT the same as "zero bytes free". Treating them as zero would refuse every
+  // backup on any filesystem statfs cannot read. Unmeasurable => UNKNOWN, and
+  // the caller warns and proceeds: the artifact is checksummed and structurally
+  // verified afterwards anyway, which catches a truncated dump.
+  if (freeBytes === null || freeBytes === undefined) {
+    return { status: 'UNKNOWN', sufficient: false, freeBytes: null, requiredBytes: requiredFreeBytes(previousBackupBytes, floorBytes) };
+  }
+  const free = Number(freeBytes);
+  if (!Number.isFinite(free) || free < 0) {
+    return { status: 'UNKNOWN', sufficient: false, freeBytes: null, requiredBytes: requiredFreeBytes(previousBackupBytes, floorBytes) };
+  }
+  const requiredBytes = requiredFreeBytes(previousBackupBytes, floorBytes);
+  const sufficient = free >= requiredBytes;
+  return {
+    status: sufficient ? 'OK' : 'INSUFFICIENT',
+    sufficient,
+    freeBytes: free,
+    requiredBytes,
+    headroomBytes: free - requiredBytes,
+  };
+}
+
+/** Exponential backoff with optional jitter, for transport retries. */
+export function backoffDelayMs(attempt, { baseMs = 2000, maxMs = 60000, jitter = true } = {}) {
+  const attemptNumber = Math.max(0, Number(attempt) || 0);
+  const exponential = Math.min(maxMs, baseMs * (2 ** attemptNumber));
+  if (!jitter) return Math.round(exponential);
+  // Jitter in [0.5, 1.0] of the exponential value: enough to de-synchronise
+  // concurrent retries, not enough to make the delay meaningless.
+  return Math.round(exponential * (0.5 + Math.random() * 0.5));
+}
+
+/**
+ * Build the command that proves an uploaded object actually exists remotely.
+ *
+ * An upload that exits 0 can still have written nothing (redirected bucket,
+ * wrong credentials with a permissive endpoint, partial multipart failure).
+ * Verifying afterwards is what separates "we ran rclone" from "the backup is
+ * offsite".
+ *
+ * Returns null for providers with no cheap verification command; the caller
+ * must then report NOT VERIFIED rather than assume success.
+ */
+export function buildVerifyUploadCommand({ provider, binary, filePath, destination }) {
+  if (!provider || !binary || !filePath || !destination) return null;
+  const fileName = String(filePath).split('/').pop().split('\\').pop();
+
+  if (provider === 'rclone') {
+    return { provider, binary, argv: ['lsjson', `${destination}/${fileName}`], strategy: 'lsjson-size-match' };
+  }
+  if (provider === 'aws') {
+    const match = String(destination).match(/^s3:\/\/([^/]+)\/?(.*)$/);
+    if (!match) return null;
+    const key = [match[2].replace(/\/+$/, ''), fileName].filter(Boolean).join('/');
+    return { provider, binary, argv: ['s3api', 'head-object', '--bucket', match[1], '--key', key], strategy: 'head-object-size-match' };
+  }
+  if (provider === 'gsutil') {
+    return { provider, binary, argv: ['stat', `${destination}/${fileName}`], strategy: 'stat-exit-code' };
+  }
+  // `az storage blob show` exists, but its JSON shape varies by CLI version,
+  // so we do not claim to parse it.
+  return null;
+}
+
+/**
+ * Interpret verification output. Fails closed: anything unparseable or
+ * size-mismatched is NOT verified.
+ */
+export function verifyUploadResult({ provider, strategy, stdout = '', expectedBytes = null } = {}) {
+  if (provider === 'rclone') {
+    let parsed;
+    try { parsed = JSON.parse(String(stdout).trim() || '[]'); } catch (_) { parsed = null; }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return { verified: false, reason: 'rclone lsjson returned no object' };
+    }
+    const remoteSize = Number(parsed[0]?.Size);
+    if (!Number.isFinite(remoteSize)) return { verified: false, reason: 'remote size unreadable' };
+    if (Number.isFinite(Number(expectedBytes)) && remoteSize !== Number(expectedBytes)) {
+      return { verified: false, reason: `remote size ${remoteSize} != local ${expectedBytes}`, remoteBytes: remoteSize };
+    }
+    return { verified: true, remoteBytes: remoteSize };
+  }
+
+  if (provider === 'aws') {
+    let parsed;
+    try { parsed = JSON.parse(String(stdout).trim() || '{}'); } catch (_) { parsed = null; }
+    const remoteSize = Number(parsed?.ContentLength);
+    if (!Number.isFinite(remoteSize)) return { verified: false, reason: 'head-object did not report ContentLength' };
+    if (Number.isFinite(Number(expectedBytes)) && remoteSize !== Number(expectedBytes)) {
+      return { verified: false, reason: `remote size ${remoteSize} != local ${expectedBytes}`, remoteBytes: remoteSize };
+    }
+    return { verified: true, remoteBytes: remoteSize };
+  }
+
+  if (provider === 'gsutil') {
+    const text = String(stdout);
+    if (!text.trim()) return { verified: false, reason: 'gsutil stat produced no output' };
+    const sizeMatch = text.match(/Content-Length:\s*(\d+)/i);
+    if (sizeMatch) {
+      const remoteSize = Number(sizeMatch[1]);
+      if (Number.isFinite(Number(expectedBytes)) && remoteSize !== Number(expectedBytes)) {
+        return { verified: false, reason: `remote size ${remoteSize} != local ${expectedBytes}`, remoteBytes: remoteSize };
+      }
+      return { verified: true, remoteBytes: remoteSize };
+    }
+    return { verified: true, note: 'object exists; size not parsed from gsutil output' };
+  }
+
+  return { verified: false, reason: `no verification strategy for provider '${provider}'` };
+}
+
+/**
+ * Decide whether a run must fail because the offsite copy did not verify.
+ *
+ * Extracted as a pure function because "a backup is only a backup if an
+ * independent copy exists" is a policy decision, and policy decisions belong
+ * where they can be asserted rather than buried in control flow.
+ *
+ * A dry run never fails for this reason: a plan that intentionally uploads
+ * nothing is not a replication failure.
+ */
+export function evaluateOffsiteRequirement({
+  offsiteConfigured = false,
+  offsiteRequired = false,
+  offsiteOk = false,
+  dryRun = false,
+} = {}) {
+  if (dryRun) return { fail: false, reason: 'dry-run performs no upload' };
+  if (!offsiteRequired) {
+    return {
+      fail: false,
+      reason: offsiteConfigured
+        ? 'offsite destination configured but not required (BACKUP_OFFSITE_REQUIRED=false)'
+        : 'no offsite destination configured',
+    };
+  }
+  if (offsiteOk === true) return { fail: false, reason: 'offsite copy verified' };
+  return {
+    fail: true,
+    reason: 'offsite replication is required but did not verify',
+  };
+}
+
+/**
+ * Promote raw backup signals into monitor-visible classifications.
+ *
+ * The backup pipeline already *detects* size anomalies, disk shortfalls and
+ * unverified offsite uploads, but detection alone produces no operational
+ * signal: `dr-monitor` reported OK while those conditions were present. This
+ * function converts them into explicit problems/warnings so the monitor can
+ * fail closed on them.
+ *
+ * Pure and dependency-free; safe to import from tests.
+ */
+export function classifyBackupSignals({
+  sizeBytes = null,
+  historicalSizes = [],
+  sizeAnomalyStatus = null,
+  diskStatus = null,
+  offsiteConfigured = false,
+  offsiteVerified = null,
+  unverifiedRecoveryPoints = 0,
+} = {}) {
+  const problems = [];
+  const warnings = [];
+
+  // 1. Size anomaly — prefer the pipeline verdict, fall back to local history.
+  let anomaly = sizeAnomalyStatus;
+  // A zero-byte (or non-numeric) size is itself INVALID_SIZE and must never be
+  // skipped: `> 0` here would let a zero-byte backup pass silently.
+  if (!anomaly && sizeBytes !== null && sizeBytes !== undefined) {
+    anomaly = evaluateSizeAnomaly({ sizeBytes, historicalSizes }).status;
+  }
+  if (anomaly === 'ANOMALY_SUSPICIOUSLY_SMALL') {
+    problems.push('BACKUP_SIZE_SUSPICIOUSLY_SMALL');
+  } else if (anomaly === 'ANOMALY_SUSPICIOUSLY_LARGE') {
+    warnings.push('BACKUP_SIZE_SUSPICIOUSLY_LARGE');
+  } else if (anomaly === 'INVALID_SIZE') {
+    problems.push('BACKUP_SIZE_INVALID');
+  }
+
+  // 2. Disk headroom.
+  if (diskStatus === 'INSUFFICIENT') problems.push('DISK_HEADROOM_INSUFFICIENT');
+  else if (diskStatus === 'UNKNOWN') warnings.push('DISK_HEADROOM_UNKNOWN');
+
+  // 3. Offsite replication must be *verified*, not merely attempted.
+  if (offsiteConfigured && offsiteVerified === false) problems.push('OFFSITE_UPLOAD_NOT_VERIFIED');
+  else if (offsiteConfigured && offsiteVerified === null) warnings.push('OFFSITE_STATUS_UNKNOWN');
+
+  // 4. Recovery points that never completed verification.
+  if (unverifiedRecoveryPoints > 0) warnings.push('UNVERIFIED_RECOVERY_POINTS');
+
+  return {
+    problems,
+    warnings,
+    anomaly: anomaly || null,
+    // A monitor status is only trustworthy when every signal was actually observed.
+    complete: diskStatus !== null && (offsiteConfigured ? offsiteVerified !== null : true),
+  };
+}

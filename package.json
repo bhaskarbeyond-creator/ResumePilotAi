@@ -57,7 +57,9 @@
     "dr:restore-point": "node scripts/dr-restore-point.mjs",
     "dr:monitor": "node scripts/dr-monitor.mjs",
     "dr:observe": "node scripts/dr-observability.mjs",
-    "dr:test": "node --test tests/dr-hardening.test.mjs"
+    "dr:test": "node --test tests/dr-hardening.test.mjs",
+    "dr:drill": "node scripts/dr-restore-drill.mjs",
+    "dr:watch": "node scripts/dr-external-watch.mjs"
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",

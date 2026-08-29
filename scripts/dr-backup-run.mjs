@@ -34,7 +34,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { DEFAULT_POLICY, evaluateRpo, parseBackupTimestamp, planRetention, summariseDrPosture } from './lib/dr-policy.mjs';
+import {
+  DEFAULT_POLICY,
+  backoffDelayMs,
+  buildVerifyUploadCommand,
+  evaluateDiskSpace,
+  evaluateOffsiteRequirement,
+  evaluateRpo,
+  evaluateSizeAnomaly,
+  parseBackupTimestamp,
+  planRetention,
+  summariseDrPosture,
+  verifyUploadResult,
+} from './lib/dr-policy.mjs';
 import { buildOffsiteUpload, selectOffsiteProvider } from './lib/dr-offsite.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -121,6 +133,20 @@ function runDbBackup(args) {
  * warning for the run (the local copy still exists) but is recorded so the
  * monitor can report that no independent copy has ever been proven.
  */
+/**
+ * Offsite replication with retry and post-upload verification.
+ *
+ * Three things this refuses to do:
+ *   1. Give up after one transient failure   - retries with backoff + jitter.
+ *   2. Trust exit code 0                     - confirms the object exists
+ *      remotely and that its size matches the local file.
+ *   3. Claim verification for a provider with no verification strategy - returns
+ *      verified:false with a reason instead.
+ *
+ * A run where the offsite copy is required (BACKUP_OFFSITE_REQUIRED, default
+ * true whenever a destination is configured) fails when replication fails, so
+ * "backup succeeded" continues to mean "an independent copy exists".
+ */
 function replicate(file, report) {
   if (DRY_RUN) return { provider: 'none', ok: false, skipped: true, reason: 'dry-run' };
 
@@ -132,7 +158,11 @@ function replicate(file, report) {
   }
 
   if (!provider.installed) {
-    return { provider: provider.provider, ok: false, reason: 'No offsite transport installed (rclone/aws/gsutil/az). Install one to obtain an independent copy.' };
+    return {
+      provider: provider.provider,
+      ok: false,
+      reason: 'No offsite transport installed (rclone/aws/gsutil/az). Install one to obtain an independent copy.',
+    };
   }
 
   const destination = process.env.BACKUP_OFFSITE_DESTINATION
@@ -141,28 +171,83 @@ function replicate(file, report) {
       : null);
 
   if (!destination) {
-    return { provider: provider.provider, ok: false, reason: 'Offsite transport is installed but no destination is configured (BACKUP_OFFSITE_DESTINATION).' };
+    return {
+      provider: provider.provider,
+      ok: false,
+      reason: 'Offsite transport is installed but no destination is configured (BACKUP_OFFSITE_DESTINATION).',
+    };
   }
 
-  try {
-    const command = buildOffsiteUpload({ provider: provider.provider, binary: provider.binary, filePath: file, destination });
-    const startedAt = Date.now();
-    execFileSync(command.binary, command.argv, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30 * 60 * 1000 });
-    const result = {
-      provider: provider.provider,
-      binary: provider.binary,
-      destination: command.destination,
-      ok: true,
-      durationMs: Date.now() - startedAt,
-      note: command.note,
-    };
-    report.steps.replicate.push(result);
-    return result;
-  } catch (error) {
-    const result = { provider: provider.provider, ok: false, error: String(error.message || error).slice(0, 400) };
+  const maxAttempts = Math.max(1, Math.min(Number(process.env.BACKUP_OFFSITE_MAX_ATTEMPTS || 3) || 3, 10));
+  let command = null;
+  const attempts = [];
+  let uploaded = false;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxAttempts && !uploaded; attempt += 1) {
+    if (attempt > 0) {
+      const delayMs = backoffDelayMs(attempt - 1);
+      attempts.push({ attempt: attempt + 1, action: 'wait', delayMs });
+      // Synchronous sleep: this runs in an unattended cron job, and a busy-wait
+      // is acceptable for a bounded, seconds-scale backoff.
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs);
+    }
+    try {
+      command = buildOffsiteUpload({ provider: provider.provider, binary: provider.binary, filePath: file, destination });
+      const startedAt = Date.now();
+      execFileSync(command.binary, command.argv, {
+        encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30 * 60 * 1000,
+      });
+      attempts.push({ attempt: attempt + 1, action: 'upload', ok: true, durationMs: Date.now() - startedAt });
+      uploaded = true;
+    } catch (error) {
+      lastError = String(error.message || error).slice(0, 400);
+      attempts.push({ attempt: attempt + 1, action: 'upload', ok: false, error: lastError });
+    }
+  }
+
+  if (!uploaded) {
+    const result = { provider: provider.provider, destination, ok: false, attempts, error: lastError, verified: false };
     report.steps.replicate.push(result);
     return result;
   }
+
+  // ── Prove the object is actually there ───────────────────────────────────
+  const verifyCommand = buildVerifyUploadCommand({
+    provider: provider.provider, binary: provider.binary, filePath: file, destination,
+  });
+  let verification = { verified: false, reason: `no verification strategy for provider '${provider.provider}'` };
+  if (verifyCommand) {
+    try {
+      const stdout = execFileSync(verifyCommand.binary, verifyCommand.argv, {
+        encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000,
+      });
+      verification = verifyUploadResult({
+        provider: provider.provider,
+        strategy: verifyCommand.strategy,
+        stdout,
+        expectedBytes: fs.statSync(file).size,
+      });
+    } catch (error) {
+      verification = { verified: false, reason: String(error.message || error).slice(0, 300) };
+    }
+  }
+
+  const result = {
+    provider: provider.provider,
+    binary: provider.binary,
+    destination: command ? command.destination : destination,
+    ok: verification.verified === true,
+    uploaded: true,
+    verified: verification.verified === true,
+    verificationStrategy: verifyCommand ? verifyCommand.strategy : null,
+    verification,
+    attempts,
+    note: command ? command.note : null,
+  };
+  if (!result.ok) result.error = `upload completed but remote verification failed: ${verification.reason}`;
+  report.steps.replicate.push(result);
+  return result;
 }
 
 async function main() {
@@ -182,27 +267,63 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true, mode: 0o700 });
 
   // ── 1. Preflight ─────────────────────────────────────────────────────────
-  const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME'];
-  const missing = required.filter((name) => !String(process.env[name] || '').trim());
-  if (missing.length) {
-    report.status = 'BLOCKED';
-    report.error = `Missing database configuration: ${missing.join(', ')}`;
-    console.error(JSON.stringify(report, null, 2));
-    process.exit(2);
-  }
-
-  const isProduction = process.env.NODE_ENV === 'production';
+  // --retain-only prunes existing files; it never dumps, encrypts or connects.
+  // Requiring database credentials for it meant you could not free disk space
+  // on a host whose backup env is incomplete - exactly when pruning matters.
   const encryptionKey = process.env.BACKUP_ENCRYPTION_KEY_BASE64 || '';
-  if (isProduction && !encryptionKey) {
-    report.status = 'BLOCKED';
-    report.error = 'BACKUP_ENCRYPTION_KEY_BASE64 is required for production backups; refusing to write an unencrypted dump.';
-    console.error(JSON.stringify(report, null, 2));
-    process.exit(2);
-  }
-  if (!encryptionKey) {
-    report.warnings.push('No BACKUP_ENCRYPTION_KEY_BASE64 set — the backup will be written unencrypted.');
+
+  if (!RETAIN_ONLY) {
+    const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME'];
+    const missing = required.filter((name) => !String(process.env[name] || '').trim());
+    if (missing.length) {
+      report.status = 'BLOCKED';
+      report.error = `Missing database configuration: ${missing.join(', ')}`;
+      console.error(JSON.stringify(report, null, 2));
+      process.exit(2);
+    }
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && !encryptionKey) {
+      report.status = 'BLOCKED';
+      report.error = 'BACKUP_ENCRYPTION_KEY_BASE64 is required for production backups; refusing to write an unencrypted dump.';
+      console.error(JSON.stringify(report, null, 2));
+      process.exit(2);
+    }
+    if (!encryptionKey) {
+      report.warnings.push('No BACKUP_ENCRYPTION_KEY_BASE64 set — the backup will be written unencrypted.');
+    }
   }
   report.encrypted = Boolean(encryptionKey);
+
+  // ── 1b. Disk-space protection ────────────────────────────────────────────
+  // A dump that runs out of space at 90% leaves a truncated artifact that looks
+  // like a backup right up until someone tries to restore it. Refuse to start
+  // rather than discover that later.
+  let freeBytes = null;
+  try {
+    const stats = fs.statfsSync(OUT_DIR);
+    freeBytes = Number(stats.bavail) * Number(stats.bsize);
+  } catch (_) {
+    freeBytes = null;
+  }
+  const previousBackup = readIndex()
+    .filter((e) => Number(e.sizeBytes) > 0)
+    .sort((a, b) => b.timestampMs - a.timestampMs)[0] || null;
+  const disk = evaluateDiskSpace({
+    freeBytes,
+    previousBackupBytes: previousBackup ? Number(previousBackup.sizeBytes) : 0,
+  });
+  report.steps.disk = disk;
+
+  if (disk.status === 'INSUFFICIENT') {
+    report.status = 'FAILED';
+    report.error = `Insufficient disk space for a backup: ${disk.freeBytes} bytes free, ${disk.requiredBytes} required. Refusing to write a truncated dump.`;
+    finish(report);
+    process.exit(1);
+  }
+  if (disk.status === 'UNKNOWN') {
+    report.warnings.push('Free disk space could not be determined; proceeding without the disk-space guard.');
+  }
 
   // ── 2/3. Backup + verify ─────────────────────────────────────────────────
   let entry = null;
@@ -242,6 +363,27 @@ async function main() {
         finish(report);
         process.exit(1);
       }
+    }
+  }
+
+  // ── 3b. Size anomaly ─────────────────────────────────────────────────────
+  // A backup that suddenly halves is usually a truncated dump that still
+  // "succeeded". Compare against this system's own history, not a fixed
+  // threshold, because the database grows over time.
+  if (entry) {
+    const historicalSizes = readIndex()
+      .filter((e) => Number(e.sizeBytes) > 0)
+      .map((e) => Number(e.sizeBytes));
+    const sizeAnomaly = evaluateSizeAnomaly({ sizeBytes: entry.sizeBytes, historicalSizes });
+    report.steps.sizeAnomaly = sizeAnomaly;
+    if (sizeAnomaly.status === 'ANOMALY_SUSPICIOUSLY_SMALL') {
+      report.warnings.push(
+        `Backup is ${sizeAnomaly.ratio}x the median of ${sizeAnomaly.samples} prior backups - confirm it is not truncated before relying on it.`,
+      );
+    } else if (sizeAnomaly.status === 'ANOMALY_SUSPICIOUSLY_LARGE') {
+      report.warnings.push(
+        `Backup is ${sizeAnomaly.ratio}x the median of ${sizeAnomaly.samples} prior backups - investigate unexpected growth.`,
+      );
     }
   }
 
@@ -296,6 +438,34 @@ async function main() {
   } else if (NO_OFFSITE) {
     offsiteResult = { provider: 'none', ok: false, reason: 'disabled by --no-offsite' };
   }
+
+  // If an offsite destination is configured, an unverified upload is a FAILED
+  // run rather than a warning. Otherwise "backup succeeded" would quietly stop
+  // meaning "an independent copy exists", which is the entire point of 3-2-1.
+  const offsiteConfigured = Boolean(
+    process.env.BACKUP_OFFSITE_DESTINATION || process.env.BACKUP_OFFSITE_RCLONE_REMOTE,
+  );
+  const offsiteRequired = String(
+    process.env.BACKUP_OFFSITE_REQUIRED || (offsiteConfigured ? 'true' : 'false'),
+  ).toLowerCase() === 'true';
+  report.offsiteRequired = offsiteRequired;
+
+  const offsiteDecision = evaluateOffsiteRequirement({
+    offsiteConfigured,
+    offsiteRequired,
+    offsiteOk: offsiteResult.ok === true,
+    dryRun: DRY_RUN,
+  });
+  report.offsiteDecision = offsiteDecision;
+
+  if (offsiteDecision.fail) {
+    if (!DRY_RUN) writeIndex(kept);
+    report.status = 'FAILED';
+    report.error = `${offsiteDecision.reason}: ${offsiteResult.reason || offsiteResult.error || 'unknown'}`;
+    finish(report);
+    process.exit(1);
+  }
+
   if (!DRY_RUN) writeIndex(kept);
 
   // ── 7. Monitor: measure the real RPO ─────────────────────────────────────
@@ -308,7 +478,7 @@ async function main() {
   const posture = summariseDrPosture({
     rpoStatus: rpo.status,
     offsiteConfigured: Boolean(process.env.BACKUP_OFFSITE_DESTINATION || process.env.BACKUP_OFFSITE_RCLONE_REMOTE),
-    offsiteVerified: offsiteResult.ok === true || kept.some((e) => e.offsite && e.offsite.ok === true),
+    offsiteVerified: offsiteResult.verified === true || kept.some((e) => e.offsite && e.offsite.verified === true),
     lastRestoreDrillAtMs: process.env.DR_LAST_RESTORE_DRILL_AT_MS || null,
     encryptionEnabled: Boolean(encryptionKey),
     nowMs: Date.now(),
@@ -336,7 +506,14 @@ function finish(report) {
   console.log(JSON.stringify(report, null, 2));
 }
 
-main().catch((error) => {
-  console.error(JSON.stringify({ script: 'dr-backup-run', status: 'FAILED', error: String(error.message || error) }, null, 2));
-  process.exit(1);
-});
+// Only auto-run when invoked as a script; importing this module for tests must
+// not start a backup or call process.exit() mid-run.
+const invokedDirectly = Boolean(process.argv[1])
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly) {
+  main().catch((error) => {
+    console.error(JSON.stringify({ script: 'dr-backup-run', status: 'FAILED', error: String(error.message || error) }, null, 2));
+    process.exit(1);
+  });
+}

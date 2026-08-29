@@ -15,13 +15,22 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_POLICY,
+  backoffDelayMs,
+  buildVerifyUploadCommand,
+  classifyBackupSignals,
   dayKey,
+  evaluateDiskSpace,
+  evaluateOffsiteRequirement,
   evaluateRpo,
+  evaluateSizeAnomaly,
+  median,
   monthKey,
   normalizePolicy,
   parseBackupTimestamp,
   planRetention,
+  requiredFreeBytes,
   summariseDrPosture,
+  verifyUploadResult,
   weekKey,
 } from '../scripts/lib/dr-policy.mjs';
 
@@ -438,4 +447,587 @@ test('missing payloads fail closed rather than reporting healthy', () => {
   const r = checkInvariants({ healthz: { last: { json: null } }, readyz: { last: { json: null } } });
   assert.equal(r.status, 'FAIL');
   assert.equal(r.passed, 0);
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Backup pipeline safety: size anomaly, disk guard, retry, upload verification
+// ───────────────────────────────────────────────────────────────────────────
+
+test('median handles odd, even, empty and dirty input', () => {
+  assert.equal(median([5, 1, 3]), 3);
+  assert.equal(median([4, 1, 3, 2]), 2.5);
+  assert.equal(median([]), null);
+  assert.equal(median(null), null);
+  assert.equal(median([9, 'x', 3, null, 6]), 6, 'non-numeric entries are ignored');
+});
+
+test('a backup suspiciously smaller than its own history is flagged', () => {
+  const r = evaluateSizeAnomaly({ sizeBytes: 100, historicalSizes: [1000, 1000, 1000] });
+  assert.equal(r.status, 'ANOMALY_SUSPICIOUSLY_SMALL');
+  assert.equal(r.ratio, 0.1);
+});
+
+test('a backup suspiciously larger than its own history is flagged', () => {
+  const r = evaluateSizeAnomaly({ sizeBytes: 5000, historicalSizes: [1000, 1000, 1000] });
+  assert.equal(r.status, 'ANOMALY_SUSPICIOUSLY_LARGE');
+});
+
+test('a normal backup is not flagged', () => {
+  const r = evaluateSizeAnomaly({ sizeBytes: 1000, historicalSizes: [1000, 1000, 1000] });
+  assert.equal(r.status, 'OK');
+});
+
+test('size anomaly reports INSUFFICIENT_HISTORY rather than a false all-clear', () => {
+  const r = evaluateSizeAnomaly({ sizeBytes: 1000, historicalSizes: [1000] });
+  assert.equal(r.status, 'INSUFFICIENT_HISTORY');
+  assert.ok(r.note.includes('Need 3 prior backups'));
+});
+
+test('size anomaly rejects an invalid size outright', () => {
+  for (const bad of [0, -1, NaN, null, undefined, 'x']) {
+    assert.equal(evaluateSizeAnomaly({ sizeBytes: bad }).status, 'INVALID_SIZE', `must reject ${String(bad)}`);
+  }
+});
+
+test('required free space scales with the previous backup but never drops below the floor', () => {
+  const floor = 256 * 1024 * 1024;
+  assert.equal(requiredFreeBytes(0), floor);
+  assert.equal(requiredFreeBytes(1000), floor, 'small backups still get the floor');
+  assert.equal(requiredFreeBytes(1024 * 1024 * 1024), Math.ceil(1024 * 1024 * 1024 * 2.5));
+});
+
+test('disk guard refuses to start when the dump cannot fit', () => {
+  const r = evaluateDiskSpace({ freeBytes: 1000, previousBackupBytes: 0 });
+  assert.equal(r.sufficient, false);
+  assert.equal(r.status, 'INSUFFICIENT');
+  assert.ok(r.headroomBytes < 0);
+});
+
+test('disk guard passes with adequate headroom', () => {
+  const r = evaluateDiskSpace({ freeBytes: 1024 * 1024 * 1024, previousBackupBytes: 0 });
+  assert.equal(r.status, 'OK');
+  assert.equal(r.sufficient, true);
+});
+
+test('disk guard reports UNKNOWN rather than assuming there is room', () => {
+  for (const bad of [null, undefined, NaN, -1, 'x']) {
+    const r = evaluateDiskSpace({ freeBytes: bad });
+    assert.equal(r.status, 'UNKNOWN');
+    assert.equal(r.sufficient, false, 'unknown free space must never be treated as sufficient');
+  }
+});
+
+test('retry backoff grows exponentially, is capped, and stays inside jitter bounds', () => {
+  assert.equal(backoffDelayMs(0, { jitter: false }), 2000);
+  assert.equal(backoffDelayMs(1, { jitter: false }), 4000);
+  assert.equal(backoffDelayMs(2, { jitter: false }), 8000);
+  assert.equal(backoffDelayMs(50, { jitter: false }), 60000, 'must cap at maxMs');
+
+  for (let i = 0; i < 50; i += 1) {
+    const d = backoffDelayMs(2);
+    assert.ok(d >= 4000 && d <= 8000, `jittered delay ${d} outside [4000, 8000]`);
+  }
+});
+
+test('upload verification command is built per provider', () => {
+  const rclone = buildVerifyUploadCommand({ provider: 'rclone', binary: '/usr/bin/rclone', filePath: '/b/x.sql.enc', destination: 'remote:bk' });
+  assert.deepEqual(rclone.argv, ['lsjson', 'remote:bk/x.sql.enc']);
+
+  const aws = buildVerifyUploadCommand({ provider: 'aws', binary: '/usr/bin/aws', filePath: '/b/x.sql.enc', destination: 's3://bkp/db' });
+  assert.deepEqual(aws.argv, ['s3api', 'head-object', '--bucket', 'bkp', '--key', 'db/x.sql.enc']);
+
+  const gs = buildVerifyUploadCommand({ provider: 'gsutil', binary: '/usr/bin/gsutil', filePath: '/b/x.sql.enc', destination: 'gs://bkp/db' });
+  assert.equal(gs.argv[0], 'stat');
+});
+
+test('upload verification command returns null when it cannot be built', () => {
+  // `az` has no cheap, stable verification command; returning null forces the
+  // caller to report NOT VERIFIED instead of assuming success.
+  assert.equal(buildVerifyUploadCommand({ provider: 'az', binary: '/usr/bin/az', filePath: '/b/x.sql.enc', destination: 'ctr' }), null);
+  assert.equal(buildVerifyUploadCommand({ provider: 'aws', binary: '/usr/bin/aws', filePath: '/b/x.sql.enc', destination: 'not-a-valid-s3-target' }), null);
+  assert.equal(buildVerifyUploadCommand({ provider: 'rclone', binary: null, filePath: '/b/x', destination: 'r:b' }), null);
+});
+
+test('upload verification confirms a matching remote object', () => {
+  const r = verifyUploadResult({ provider: 'rclone', stdout: '[{"Size":1234}]', expectedBytes: 1234 });
+  assert.equal(r.verified, true);
+  assert.equal(r.remoteBytes, 1234);
+});
+
+test('upload verification fails closed on size mismatch, missing object and garbage output', () => {
+  assert.equal(verifyUploadResult({ provider: 'rclone', stdout: '[{"Size":9}]', expectedBytes: 1234 }).verified, false);
+  assert.equal(verifyUploadResult({ provider: 'rclone', stdout: '[]', expectedBytes: 1234 }).verified, false);
+  assert.equal(verifyUploadResult({ provider: 'rclone', stdout: 'not json', expectedBytes: 1234 }).verified, false);
+  assert.equal(verifyUploadResult({ provider: 'rclone', stdout: '', expectedBytes: 1234 }).verified, false);
+  assert.equal(verifyUploadResult({ provider: 'aws', stdout: '{}', expectedBytes: 1234 }).verified, false);
+  assert.equal(verifyUploadResult({ provider: 'gsutil', stdout: '', expectedBytes: 1234 }).verified, false);
+});
+
+test('upload verification refuses to assume success for an unknown provider', () => {
+  const r = verifyUploadResult({ provider: 'mystery', stdout: 'anything', expectedBytes: 1 });
+  assert.equal(r.verified, false);
+  assert.ok(r.reason.includes('mystery'));
+});
+
+test('a required but unverified offsite copy fails the run', () => {
+  const r = evaluateOffsiteRequirement({ offsiteConfigured: true, offsiteRequired: true, offsiteOk: false });
+  assert.equal(r.fail, true);
+});
+
+test('a verified offsite copy passes', () => {
+  const r = evaluateOffsiteRequirement({ offsiteConfigured: true, offsiteRequired: true, offsiteOk: true });
+  assert.equal(r.fail, false);
+});
+
+test('an offsite copy that is not required does not fail the run, but says so', () => {
+  const r = evaluateOffsiteRequirement({ offsiteConfigured: true, offsiteRequired: false, offsiteOk: false });
+  assert.equal(r.fail, false);
+  assert.ok(r.reason.includes('not required'));
+});
+
+test('a dry run never fails for not uploading', () => {
+  const r = evaluateOffsiteRequirement({ offsiteConfigured: true, offsiteRequired: true, offsiteOk: false, dryRun: true });
+  assert.equal(r.fail, false, 'a plan that intentionally uploads nothing is not a failure');
+  assert.ok(r.reason.includes('dry-run'));
+});
+
+test('offsite is required by default whenever a destination is configured', () => {
+  // Mirrors the default in dr-backup-run.mjs: required unless explicitly off.
+  const configured = true;
+  const envValue = undefined;
+  const required = String(envValue || (configured ? 'true' : 'false')).toLowerCase() === 'true';
+  assert.equal(evaluateOffsiteRequirement({ offsiteConfigured: configured, offsiteRequired: required, offsiteOk: false }).fail, true);
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Restore-drill safety guards — the controls that stop a drill destroying prod
+// ───────────────────────────────────────────────────────────────────────────
+
+const {
+  DEFAULT_PRODUCTION_DATABASES,
+  assertRestorableTarget,
+  evaluateRestoreReconciliation,
+  isDisposableDatabaseName,
+  isLoopbackHost,
+  productionDatabaseNames,
+} = await import('../scripts/lib/dr-restore-safety.mjs');
+
+const { inspectDump } = await import('../scripts/dr-restore-drill.mjs');
+
+test('loopback detection accepts only local hosts', () => {
+  for (const h of ['127.0.0.1', 'localhost', '::1']) assert.equal(isLoopbackHost(h), true, h);
+  for (const h of ['db.example.com', '10.0.0.5', '192.168.1.1', '', null]) assert.equal(isLoopbackHost(h), false, String(h));
+});
+
+test('known production databases are never disposable', () => {
+  for (const name of DEFAULT_PRODUCTION_DATABASES) {
+    assert.equal(isDisposableDatabaseName(name), false, `${name} must never be a restore target`);
+  }
+  // The live production database confirmed via /api/readyz.
+  assert.equal(isDisposableDatabaseName('u727965524_airesume'), false);
+});
+
+test('a disposable target may still carry the product name', () => {
+  // Regression: an earlier substring rule rejected this exact name, which is
+  // the one this repository's documentation recommends.
+  assert.equal(isDisposableDatabaseName('resumepilot_restore_drill'), true);
+  assert.equal(isDisposableDatabaseName('resumepilot_cert'), true);
+  assert.equal(isDisposableDatabaseName('resumepilot_test'), true);
+});
+
+test('a name with no disposability marker is refused', () => {
+  for (const name of ['just_a_database', 'mydb', '', null, undefined]) {
+    assert.equal(isDisposableDatabaseName(name), false, String(name));
+  }
+});
+
+test('operators can extend the production deny-list by environment', () => {
+  const names = productionDatabaseNames({ DR_PRODUCTION_DATABASES: 'billing_main, MyProd ' });
+  assert.ok(names.has('billing_main'));
+  assert.ok(names.has('myprod'), 'deny-list entries are case-insensitive');
+  assert.ok(names.has('u727965524_airesume'), 'defaults are preserved');
+  assert.equal(isDisposableDatabaseName('billing_main', { productionNames: names }), false);
+  assert.equal(isDisposableDatabaseName('billing_main_test', { productionNames: names }), true);
+});
+
+test('restore target is refused for a production database even with a valid confirm', () => {
+  assert.throws(
+    () => assertRestorableTarget({
+      host: '127.0.0.1', database: 'u727965524_airesume', confirm: 'RESTORE:u727965524_airesume', allowReset: true,
+    }),
+    /not an explicitly disposable database/,
+  );
+});
+
+test('restore target is refused off-loopback', () => {
+  assert.throws(
+    () => assertRestorableTarget({
+      host: 'db.example.com', database: 'resumepilot_restore_drill', confirm: 'RESTORE:resumepilot_restore_drill', allowReset: true,
+    }),
+    /not loopback/,
+  );
+});
+
+test('restore target is refused unless the confirm string matches exactly', () => {
+  const base = { host: '127.0.0.1', database: 'resumepilot_restore_drill', allowReset: true };
+  assert.throws(() => assertRestorableTarget({ ...base, confirm: 'RESTORE:wrong' }), /DB_RESTORE_CONFIRM must be exactly/);
+  assert.throws(() => assertRestorableTarget({ ...base, confirm: undefined }), /DB_RESTORE_CONFIRM/);
+  assert.throws(() => assertRestorableTarget({ ...base, confirm: 'restore:resumepilot_restore_drill' }), /must be exactly/, 'confirm is case-sensitive');
+});
+
+test('restore target is refused without the destructive-action opt-in', () => {
+  assert.throws(
+    () => assertRestorableTarget({
+      host: '127.0.0.1', database: 'resumepilot_restore_drill', confirm: 'RESTORE:resumepilot_restore_drill', allowReset: false,
+    }),
+    /MARIADB_TEST_ALLOW_RESET/,
+  );
+});
+
+test('a fully legitimate restore target is accepted', () => {
+  const t = assertRestorableTarget({
+    host: '127.0.0.1', database: 'resumepilot_restore_drill', confirm: 'RESTORE:resumepilot_restore_drill', allowReset: true,
+  });
+  assert.equal(t.database, 'resumepilot_restore_drill');
+  assert.equal(t.host, '127.0.0.1');
+});
+
+test('restore target requires a database name', () => {
+  assert.throws(() => assertRestorableTarget({ host: '127.0.0.1' }), /required/);
+});
+
+test('reconciliation passes when the restore matches the backup', () => {
+  const r = evaluateRestoreReconciliation({
+    expectedTables: ['users', 'resumes', 'schema_migrations'],
+    restoredTables: ['users', 'resumes', 'schema_migrations'],
+    expectedMigrations: 14,
+    restoredMigrations: 14,
+    criticalTables: ['users', 'schema_migrations'],
+    rowCounts: { users: 42, schema_migrations: 14 },
+  });
+  assert.equal(r.status, 'PASS');
+  assert.deepEqual(r.problems, []);
+});
+
+test('reconciliation fails when tables present in the backup are missing', () => {
+  const r = evaluateRestoreReconciliation({
+    expectedTables: ['users', 'resumes'],
+    restoredTables: ['users'],
+    criticalTables: [],
+    rowCounts: {},
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.ok(r.problems.some((p) => p.includes('missing')));
+  assert.ok(r.problems.some((p) => p.includes('restored 1 tables')));
+});
+
+test('reconciliation fails when the migration ledger did not survive', () => {
+  const r = evaluateRestoreReconciliation({
+    expectedTables: ['schema_migrations'], restoredTables: ['schema_migrations'],
+    expectedMigrations: 14, restoredMigrations: 0,
+    criticalTables: [], rowCounts: {},
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.ok(r.problems.some((p) => p.includes('migration ledger is empty')));
+});
+
+test('reconciliation fails when a critical table restored empty', () => {
+  const r = evaluateRestoreReconciliation({
+    expectedTables: ['users'], restoredTables: ['users'],
+    criticalTables: ['users'], rowCounts: { users: 0 },
+  });
+  assert.equal(r.status, 'FAIL');
+  assert.ok(r.problems.some((p) => p.includes("'users' is missing or empty")));
+});
+
+test('a newer target schema is a warning, not a failure', () => {
+  const r = evaluateRestoreReconciliation({
+    expectedTables: ['users'], restoredTables: ['users', 'new_table'],
+    criticalTables: ['users'], rowCounts: { users: 5 },
+  });
+  assert.equal(r.status, 'PASS');
+  assert.ok(r.warnings.some((w) => w.includes('newer')));
+});
+
+// ── Dump inspection ────────────────────────────────────────────────────────
+
+test('dump inspection counts tables, indexes, constraints and migrations', () => {
+  const sql = [
+    '-- ResumePilot AI logical backup',
+    'SET NAMES utf8mb4;',
+    'CREATE TABLE `users` (',
+    '  `id` int NOT NULL AUTO_INCREMENT,',
+    '  PRIMARY KEY (`id`),',
+    '  KEY `idx_users` (`id`),',
+    '  CONSTRAINT `fk_users` FOREIGN KEY (`id`) REFERENCES `users` (`id`),',
+    '  CONSTRAINT `chk_users` CHECK ((1 = 1))',
+    ');',
+    'INSERT INTO `users` VALUES (1);',
+    "INSERT INTO `schema_migrations` VALUES ('001','baseline'),('002','single_owner_enterprise');",
+    '-- completed_at: 2026-08-29T00:00:00.000Z',
+  ].join('\n');
+
+  const inv = inspectDump(sql);
+  assert.equal(inv.tableCount, 1);
+  assert.equal(inv.tables[0], 'users');
+  assert.equal(inv.indexCount, 1);
+  assert.equal(inv.foreignKeyCount, 1);
+  assert.equal(inv.checkConstraintCount, 1);
+  assert.equal(inv.migrationCount, 2);
+  assert.equal(inv.latestMigration, '002');
+  assert.equal(inv.complete, true);
+});
+
+test('dump inspection reads migrations from every insert, not just the first', () => {
+  // Regression: db-backup.mjs batches inserts, so migrations can span several
+  // statements. Reading only the first produced a silent zero.
+  const sql = "INSERT INTO `schema_migrations` VALUES (1);\n"
+    + "INSERT INTO `schema_migrations` VALUES ('001','baseline'),('002','b');\n";
+  assert.equal(inspectDump(sql).migrationCount, 2);
+
+  const rows = [];
+  for (let i = 1; i <= 300; i += 1) rows.push(`('${String(i).padStart(3, '0')}','m${i}')`);
+  const batched = `INSERT INTO \`schema_migrations\` VALUES ${rows.slice(0, 250).join(',')};\n`
+    + `INSERT INTO \`schema_migrations\` VALUES ${rows.slice(250).join(',')};\n`;
+  assert.equal(inspectDump(batched).migrationCount, 300);
+});
+
+test('dump inspection marks a truncated dump incomplete', () => {
+  const sql = 'CREATE TABLE `users` (`id` int);\nINSERT INTO `users` VALUES (1);\n';
+  const inv = inspectDump(sql);
+  assert.equal(inv.complete, false, 'a dump without the completion footer is incomplete');
+  assert.equal(inv.tableCount, 1);
+});
+
+test('dump inspection tolerates an empty dump without throwing', () => {
+  const inv = inspectDump('');
+  assert.equal(inv.tableCount, 0);
+  assert.equal(inv.complete, false);
+  assert.equal(inv.migrationCount, 0);
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Import purity — importing a DR module must never run it
+// ───────────────────────────────────────────────────────────────────────────
+
+test('the DR entry-point modules are importable without side effects', async () => {
+  // Regression: dr-monitor.mjs and dr-restore-point.mjs called main() at module
+  // scope, so merely importing them fired a scan / DB connection and called
+  // process.exit() - which killed the importing process.
+  const entryPoints = [
+    '../scripts/dr-backup-run.mjs',
+    '../scripts/dr-restore-drill.mjs',
+    '../scripts/dr-monitor.mjs',
+    '../scripts/dr-observability.mjs',
+    '../scripts/dr-restore-point.mjs',
+    '../scripts/lib/dr-policy.mjs',
+    '../scripts/lib/dr-offsite.mjs',
+    '../scripts/lib/dr-restore-safety.mjs',
+  ];
+  for (const spec of entryPoints) {
+    const mod = await import(spec);
+    assert.ok(mod, `${spec} must import without throwing`);
+  }
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// External synthetic monitoring — must fail closed, never assume health
+// ───────────────────────────────────────────────────────────────────────────
+
+const {
+  DEFAULT_ENDPOINTS,
+  evaluateExternalWatch,
+  shortSha,
+} = await import('../scripts/dr-external-watch.mjs');
+
+const healthyInput = (overrides = {}) => ({
+  endpoints: [{ name: 'healthz', expectStatus: 200, status: 200, latencyMs: 120 }],
+  tls: { ok: true, daysRemaining: 60 },
+  release: { backendSha: 'a'.repeat(40), frontendSha: 'a'.repeat(40) },
+  database: { status: 'READY' },
+  ...overrides,
+});
+
+test('external watch reports HEALTHY when every check passes', () => {
+  const r = evaluateExternalWatch(healthyInput());
+  assert.equal(r.status, 'HEALTHY');
+  assert.deepEqual(r.problems, []);
+});
+
+test('external watch fails when the database is not ready', () => {
+  const r = evaluateExternalWatch(healthyInput({ database: { status: 'DOWN' } }));
+  assert.equal(r.status, 'FAILED');
+  assert.ok(r.problems.some((p) => p.includes('DOWN')));
+});
+
+test('external watch fails on backend/frontend SHA misalignment', () => {
+  const r = evaluateExternalWatch(healthyInput({
+    release: { backendSha: 'a'.repeat(40), frontendSha: 'b'.repeat(40) },
+  }));
+  assert.equal(r.status, 'FAILED');
+  assert.ok(r.problems.some((p) => p.includes('MISALIGNED')));
+});
+
+test('external watch fails when the running SHA differs from the expected SHA', () => {
+  const r = evaluateExternalWatch(healthyInput({ expectedSha: 'c'.repeat(40) }));
+  assert.equal(r.status, 'FAILED');
+  assert.ok(r.problems.some((p) => p.includes('expected')));
+});
+
+test('external watch fails closed when TLS could not be inspected', () => {
+  // Regression class: an uninspected certificate must never be treated as a
+  // healthy certificate. This is the check that would otherwise silently pass
+  // during an expired-cert incident.
+  assert.equal(evaluateExternalWatch(healthyInput({ tls: null })).status, 'FAILED');
+  assert.equal(evaluateExternalWatch(healthyInput({ tls: { ok: false, error: 'boom' } })).status, 'FAILED');
+  assert.equal(evaluateExternalWatch(healthyInput({ tls: { ok: true, daysRemaining: null } })).status, 'FAILED');
+});
+
+test('external watch fails on an expired certificate', () => {
+  const r = evaluateExternalWatch(healthyInput({ tls: { ok: true, daysRemaining: -3 } }));
+  assert.equal(r.status, 'FAILED');
+  assert.ok(r.problems.some((p) => p.includes('EXPIRED')));
+});
+
+test('a certificate expiring soon warns but does not fail', () => {
+  const r = evaluateExternalWatch(healthyInput({ tls: { ok: true, daysRemaining: 5 } }));
+  assert.equal(r.status, 'HEALTHY');
+  assert.ok(r.warnings.some((w) => w.includes('expires in 5 days')));
+});
+
+test('external watch fails when an endpoint is unreachable', () => {
+  const r = evaluateExternalWatch(healthyInput({
+    endpoints: [{ name: 'readyz', expectStatus: 200, status: 0, error: 'fetch failed' }],
+  }));
+  assert.equal(r.status, 'FAILED');
+  assert.ok(r.problems.some((p) => p.includes('unreachable')));
+});
+
+test('external watch fails on an unexpected HTTP status', () => {
+  const r = evaluateExternalWatch(healthyInput({
+    endpoints: [{ name: 'healthz', expectStatus: 200, status: 503, latencyMs: 50 }],
+  }));
+  assert.equal(r.status, 'FAILED');
+  assert.ok(r.problems.some((p) => p.includes('HTTP 503')));
+});
+
+test('a slow-but-healthy response warns rather than failing', () => {
+  const r = evaluateExternalWatch(healthyInput({
+    endpoints: [{ name: 'healthz', expectStatus: 200, status: 200, latencyMs: 9000 }],
+  }));
+  assert.equal(r.status, 'HEALTHY');
+  assert.ok(r.warnings.some((w) => w.includes('slow')));
+});
+
+test('external watch is BLOCKED rather than healthy when nothing was checked', () => {
+  const r = evaluateExternalWatch({ endpoints: [] });
+  assert.equal(r.status, 'BLOCKED');
+});
+
+test('external watch treats an unreadable release identity as a problem', () => {
+  assert.equal(evaluateExternalWatch(healthyInput({ release: null })).status, 'FAILED');
+  assert.equal(evaluateExternalWatch(healthyInput({ release: { backendSha: null, frontendSha: null } })).status, 'FAILED');
+});
+
+test('shortSha abbreviates without leaking the full value', () => {
+  assert.equal(shortSha('a'.repeat(40)), 'aaaaaaa…');
+  assert.equal(shortSha('abc'), 'abc');
+  assert.equal(shortSha(null), '(none)');
+});
+
+test('the default endpoint set covers health, readiness and release identity', () => {
+  const paths = DEFAULT_ENDPOINTS.map((e) => e.path);
+  assert.ok(paths.includes('/api/healthz'));
+  assert.ok(paths.includes('/api/readyz'));
+  assert.ok(paths.includes('/api/platform/version'));
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Monitor signal classification — detection without escalation is silent failure
+// ───────────────────────────────────────────────────────────────────────────
+
+test('classifyBackupSignals reports nothing when every signal is healthy', () => {
+  const r = classifyBackupSignals({
+    sizeBytes: 10000000,
+    historicalSizes: [10000000, 10000000, 10000000],
+    diskStatus: 'OK',
+    offsiteConfigured: true,
+    offsiteVerified: true,
+    unverifiedRecoveryPoints: 0,
+  });
+  assert.deepEqual(r.problems, []);
+  assert.deepEqual(r.warnings, []);
+  assert.equal(r.complete, true);
+});
+
+test('classifyBackupSignals escalates a suspiciously small backup', () => {
+  const r = classifyBackupSignals({
+    sizeBytes: 900000,                                  // 0.09x of a 10 MB baseline
+    historicalSizes: [10000000, 10000000, 10000000],
+    diskStatus: 'OK',
+    offsiteVerified: true,
+  });
+  assert.ok(r.problems.includes('BACKUP_SIZE_SUSPICIOUSLY_SMALL'));
+});
+
+test('classifyBackupSignals warns (not fails) on a suspiciously large backup', () => {
+  const r = classifyBackupSignals({
+    sizeBytes: 40000000,                                // 4x of a 10 MB baseline
+    historicalSizes: [10000000, 10000000, 10000000],
+    diskStatus: 'OK',
+  });
+  assert.ok(r.warnings.includes('BACKUP_SIZE_SUSPICIOUSLY_LARGE'));
+  assert.deepEqual(r.problems, []);
+});
+
+test('classifyBackupSignals prefers the pipeline anomaly verdict over local history', () => {
+  const r = classifyBackupSignals({
+    sizeBytes: 10000000,
+    historicalSizes: [10000000, 10000000, 10000000],
+    sizeAnomalyStatus: 'ANOMALY_SUSPICIOUSLY_SMALL',
+    diskStatus: 'OK',
+  });
+  assert.ok(r.problems.includes('BACKUP_SIZE_SUSPICIOUSLY_SMALL'));
+  assert.equal(r.anomaly, 'ANOMALY_SUSPICIOUSLY_SMALL');
+});
+
+test('classifyBackupSignals escalates insufficient disk headroom', () => {
+  const r = classifyBackupSignals({ diskStatus: 'INSUFFICIENT' });
+  assert.ok(r.problems.includes('DISK_HEADROOM_INSUFFICIENT'));
+});
+
+test('classifyBackupSignals escalates an offsite upload that was never verified', () => {
+  const r = classifyBackupSignals({ offsiteConfigured: true, offsiteVerified: false, diskStatus: 'OK' });
+  assert.ok(r.problems.includes('OFFSITE_UPLOAD_NOT_VERIFIED'));
+});
+
+test('classifyBackupSignals warns when offsite status is unknown and marks itself incomplete', () => {
+  const r = classifyBackupSignals({ offsiteConfigured: true, offsiteVerified: null, diskStatus: 'OK' });
+  assert.ok(r.warnings.includes('OFFSITE_STATUS_UNKNOWN'));
+  assert.equal(r.complete, false, 'unknown offsite status must not read as healthy');
+});
+
+test('classifyBackupSignals marks itself incomplete when disk status is unknown', () => {
+  const r = classifyBackupSignals({ diskStatus: null });
+  assert.equal(r.complete, false);
+});
+
+test('classifyBackupSignals warns about unverified recovery points', () => {
+  const r = classifyBackupSignals({ diskStatus: 'OK', unverifiedRecoveryPoints: 2 });
+  assert.ok(r.warnings.includes('UNVERIFIED_RECOVERY_POINTS'));
+});
+
+test('classifyBackupSignals treats a zero-byte backup as a problem, not a baseline', () => {
+  const r = classifyBackupSignals({
+    sizeBytes: 0,
+    historicalSizes: [10000000, 10000000, 10000000],
+    diskStatus: 'OK',
+  });
+  assert.ok(r.problems.length > 0, 'a zero-byte backup must never pass silently');
+});
+
+test('classifyBackupSignals never throws when given nothing', () => {
+  const r = classifyBackupSignals();
+  assert.deepEqual(r.problems, []);
+  assert.equal(r.complete, false, 'no observed data means UNCERTAIN, not healthy');
 });

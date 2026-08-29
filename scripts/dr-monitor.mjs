@@ -31,7 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { DEFAULT_POLICY, evaluateRpo, summariseDrPosture } from './lib/dr-policy.mjs';
+import { DEFAULT_POLICY, evaluateRpo, summariseDrPosture, classifyBackupSignals } from './lib/dr-policy.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -108,8 +108,57 @@ async function main() {
     nowMs,
   });
 
+
+// The backup pipeline records disk headroom and its own size-anomaly verdict in a
+// run report. The recovery-point index does not carry them, so read it if present.
+// Absence is a legitimate state (no run yet) and must not be read as "healthy".
+function readLastRunReport() {
+  const candidates = [
+    process.env.DR_BACKUP_RUN_REPORT,
+    path.join(ROOT, 'test-results', 'dr-backup-run.json'),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      return JSON.parse(fs.readFileSync(candidate, 'utf8'));
+    } catch {
+      // An unreadable or corrupt report is itself a signal; keep looking, then give up.
+    }
+  }
+  return null;
+}
+
+const lastRun = readLastRunReport();
+
+  // Classify the conditions the pipeline detects but does not itself escalate:
+  // unusual backup size, exhausted disk headroom, and offsite uploads that were
+  // attempted but never verified. Detection without escalation is silent failure.
+  const sized = all
+    .filter((e) => Number(e.sizeBytes) > 0)
+    .sort((a, b) => Number(b.timestampMs || 0) - Number(a.timestampMs || 0));
+  const newestSize = sized.length ? Number(sized[0].sizeBytes) : null;
+  const historicalSizes = sized.slice(1).map((e) => Number(e.sizeBytes));
+
+  const offsiteConfigured = Boolean(
+    process.env.BACKUP_OFFSITE_DESTINATION || process.env.BACKUP_OFFSITE_RCLONE_REMOTE);
+  const newestOffsite = newest && newest.offsite ? newest.offsite : null;
+  const offsiteVerified = offsiteConfigured
+    ? (newestOffsite ? newestOffsite.verified === true : null)
+    : null;
+
+  const signals = classifyBackupSignals({
+    sizeBytes: newestSize,
+    historicalSizes,
+    diskStatus: lastRun?.steps?.disk?.status ?? null,
+    offsiteConfigured,
+    offsiteVerified,
+    unverifiedRecoveryPoints: all.length - verified.length,
+  });
+  posture.problems.push(...signals.problems);
+
   const report = {
     script: 'dr-monitor',
+    signals,
     evaluatedAt: new Date(nowMs).toISOString(),
     backupDir: DIR,
     counts: {
@@ -132,6 +181,7 @@ async function main() {
   else if (posture.status === 'DEGRADED') exitCode = 1;
   if (report.counts.unverified > 0 && report.counts.verified > 0) exitCode = Math.max(exitCode, 1);
   if (all.length === 0) exitCode = 2; // no recovery points at all is critical, not quiet
+  if (signals.problems.length > 0) exitCode = Math.max(exitCode, 2);
 
   report.exitCode = exitCode;
   report.alert = exitCode === 0 ? { sent: false, reason: 'status is healthy' } : await sendAlert(report);
@@ -145,13 +195,25 @@ async function main() {
     console.log(`  newest verified : ${report.newestVerified ? `${report.newestVerified.createdAt} (${report.newestVerified.ageSeconds}s ago)` : 'NONE'}`);
     console.log(`  RPO             : ${rpo.status} — ${rpo.reason}`);
     console.log(`  posture         : ${label}${posture.problems.length ? ` [${posture.problems.join(', ')}]` : ''}`);
+    if (signals.problems.length || signals.warnings.length) {
+      console.log(`  signals         : problems=[${signals.problems.join(', ') || 'none'}] warnings=[${signals.warnings.join(', ') || 'none'}]`);
+      if (!signals.complete) console.log('  signals         : INCOMPLETE — some signals could not be observed; status is UNCERTAIN, not healthy');
+    }
     console.log(`  alert           : ${report.alert.sent ? `sent (HTTP ${report.alert.status})` : (report.alert.reason || report.alert.error || 'not sent')}`);
   }
 
   process.exit(exitCode);
 }
 
-main().catch((error) => {
-  console.error(JSON.stringify({ script: 'dr-monitor', status: 'EVALUATION_FAILED', error: String(error.message || error) }, null, 2));
-  process.exit(3);
-});
+// Only execute when invoked directly. Importing this module (from a test, or
+// from another script that wants summariseDrPosture) must not run a scan, fire
+// an alert, or call process.exit().
+const invokedDirectly = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly) {
+  main().catch((error) => {
+    console.error(JSON.stringify({ script: 'dr-monitor', status: 'EVALUATION_FAILED', error: String(error.message || error) }, null, 2));
+    process.exit(3);
+  });
+}

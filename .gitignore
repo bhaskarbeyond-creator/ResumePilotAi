@@ -53,6 +53,7 @@ backend/COMMIT_SHA
 !example.env
 **/*.env
 !**/example.env
+!**/*.example.env
 # Service-account and key material
 *service-account*.json
 *serviceaccount*.json

@@ -386,7 +386,14 @@ async function main() {
   process.exit(manifest.verification.status === 'VERIFIED' ? 0 : 1);
 }
 
-main().catch((error) => {
-  console.error(JSON.stringify({ script: 'dr-restore-point', status: 'FAILED', error: String(error.message || error) }, null, 2));
-  process.exit(1);
-});
+// Only execute when invoked directly. Importing this module must not attempt a
+// database connection, write a manifest, or call process.exit().
+const invokedDirectly = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedDirectly) {
+  main().catch((error) => {
+    console.error(JSON.stringify({ script: 'dr-restore-point', status: 'FAILED', error: String(error.message || error) }, null, 2));
+    process.exit(1);
+  });
+}
