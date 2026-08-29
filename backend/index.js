@@ -63,6 +63,7 @@ const { usersDataRouter } = require('./routes/usersData');
 const { miscDataRouter } = require('./routes/miscData');
 const { databaseAdminRouter } = require('./routes/databaseAdmin');
 const { getRepository } = require('./repositories');
+const { createRequestObservabilityMiddleware } = require('./middleware/requestObservability');
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -261,6 +262,11 @@ app.use((req, res, next) => {
     res.setHeader('X-Request-Id', res.locals.requestId);
     next();
 });
+
+// Structured request observability: request-id, latency, status class, path.
+// Mounted after request-id generation and before routes; health probes are
+// intentionally skipped to avoid noisy fleet logs.
+app.use(createRequestObservabilityMiddleware({ enabled: process.env.NODE_ENV !== 'test', skipHealth: true }));
 
 // Stripe must receive the exact raw payload; install this before JSON parsing.
 app.use('/api/stripe-webhook', express.raw({ type: 'application/json', limit: '1mb' }));

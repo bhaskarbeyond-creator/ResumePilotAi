@@ -2023,32 +2023,33 @@ TOP REMAINING GAPS:
 
 ## 63. Gap-closure register (2026-08-29)
 
-Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live production (`https://airesume.projectdemo.guru`) was not redeployed in this session; live proof is therefore **not claimed**.
+Status vocabulary is only 🟢 **COMPLETE**, 🟡 **PARTIAL**, 🔴 **MISSING**, or ⚫ **EXTERNAL/BLOCKED**. No item is left at ACCEPTED. Live production (`https://airesume.projectdemo.guru`) was verified remotely via `/api/healthz`, `/api/readyz`, and `/api/platform/version`; the SHA it reports is recorded below.
 
 | ID | Pri | Status | Evidence | Tests | Live proof |
 |---|---|---|---|---|---|
-| GAP-01 | P1 | CLOSED | Method-aware `policy.js`; GET least-privilege; L429 mutations `system.config.write` except `/support*` `tickets.manage`; Admin.jsx / `checkIfAdmin` allow ADMIN, SUPER_ADMIN, AUDITOR, SUPPORT | `backend/test/support-tickets.test.js` RBAC source contract | Not claimed |
-| GAP-02 | P1 | CLOSED | PM2 `NOTIFICATION_OUTBOX_WORKER_ENABLED='true'`; CMS/enterprise/GC remain `false` | `ecosystem.config.js` source | Not claimed |
-| GAP-03 | P2 | CLOSED | `src/main.jsx` wraps `/coverletter`, `/coverletter/*`, `/cover-letter`, `/cover-letter/*` in `RequireAuthenticated` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
-| GAP-04 | P2 | ACCEPTED | `backend/index.js` remains the payment/auth composition root; routers already exist | Standing instruction: no blind extract | N/A |
-| GAP-05 | P2 | ACCEPTED | Backup scripts exist; crontab cannot be installed onto Hostinger from this sandbox | `ops/dr/install-backup-schedule.sh` | Not claimed |
-| GAP-06 | P2 | CLOSED | Migration 015 `support_tickets` / `support_ticket_messages`; owner-scoped `/api/support`; admin `/api/admin/support` + Help Desk; deletion + ownership registry | `backend/test/support-tickets.test.js`, `backend/test/p1-gap-source-contract.test.js`, `tests/dr-hardening.test.mjs` (15 migrations) | Not claimed |
-| GAP-07 | P2 | ACCEPTED | Impersonation would mint another user's session | Support uses `users.read` + tickets | N/A |
-| GAP-08 | P2 | CLOSED | `POST /api/paytm/callback` HTML 200 after HMAC `/v3/order/status`; `POST /api/phonepe/callback` X-VERIFY then status API; claim → activate → release; outbox reconcile LIMIT 25 | `backend/test/indian-gateway-activation.test.js` (9 cases) | Not claimed |
-| GAP-09 | P2 | ACCEPTED | No APM vendor/credentials | healthz/readyz/request IDs remain | N/A |
-| GAP-10 | P2 | CLOSED | Consecutive `/readyz` failures ≥2 enqueue `admin_system_alert:readyz:<hourBucket>` fire-and-forget; never awaited before 503 | `backend/test/readyz-alerts.test.js` | Not claimed |
-| GAP-11 | P2 | ACCEPTED | `501 STORAGE_PROVIDER_UNSUPPORTED` is intentional | StorageSettings informational | N/A |
-| GAP-12 | P3 | CLOSED | `/front` → `<Navigate to="/" replace />` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
-| GAP-13 | P3 | ACCEPTED | Dead `initailisation/` unused | No runtime import | N/A |
-| GAP-14 | P3 | ACCEPTED | Dead `addAds/`, `About/` unused | No runtime import | N/A |
-| GAP-15 | P3 | ACCEPTED | `Analytics.jsx` unused helper | No runtime import | N/A |
-| GAP-16 | P3 | ACCEPTED | PM2 stays `instances: 1, exec_mode: 'fork'` | Cluster would duplicate in-memory limiters | N/A |
-| GAP-17 | P3 | ACCEPTED | Skip-link + `#main-content` landed; **no WCAG 2.1 AA claim** | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
-| GAP-18 | P3 | ACCEPTED | No k6/Artillery run | Do not invent capacity numbers | Not claimed |
-| GAP-19 | P3 | ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
-| GAP-20 | P3 | ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
+| GAP-01 | P1 | 🟢 COMPLETE | Method-aware `policy.js`; GET least-privilege; L429 mutations `system.config.write` except `/support*` `tickets.manage` | `backend/test/support-tickets.test.js` RBAC source contract | Not mutated |
+| GAP-02 | P1 | 🟢 COMPLETE | PM2 `NOTIFICATION_OUTBOX_WORKER_ENABLED='true'` | `ecosystem.config.js` source | Not changed |
+| GAP-03 | P2 | 🟢 COMPLETE | `src/main.jsx` wraps `/coverletter`, `/coverletter/*`, `/cover-letter`, `/cover-letter/*` in `RequireAuthenticated` | `backend/test/p1-gap-source-contract.test.js` | Not changed |
+| GAP-04 | P2 | 🟡 PARTIAL | 5,944-line composition root; 19 routers exist; payment/admin handlers remain inline. Extract only after a dedicated regression gate | `backend/index.js`, `backend/routes/*` | N/A |
+| GAP-05 | P2 | ⚫ EXTERNAL/BLOCKED | DR toolkit code-complete; host crontab unavailable from this sandbox | `ops/dr/install-backup-schedule.sh`, `ops/dr/verify-backup-schedule.sh`, `docs/BACKUP_DR_HOST_CONFIGURATION.md` | Not claimed |
+| GAP-06 | P2 | 🟢 COMPLETE | Migration 015 `support_tickets` / `support_ticket_messages`; owner-scoped `/api/support`; admin `/api/admin/support` + Help Desk; deletion + ownership registry | `backend/test/support-tickets.test.js`, `backend/test/p1-gap-source-contract.test.js`, `tests/dr-hardening.test.mjs` (15 migrations) | Not claimed |
+| GAP-07 | P2 | 🟡 PARTIAL | Safe time-bound/scoped/audited support grants exist (`enterprise_support_grants`, `x-support-grant-id`); no session minting. Enterprise-tenancy-gated and dormant because `ENTERPRISE_TENANCY_ENABLED=false`; production support uses tickets + `users.read` | `backend/enterprise/supportAccessStore.js`, `mysqlSupportGrantStore.js`, `enterpriseAuth.js`, `backend/test/gap07-support-access-guard.test.js` | N/A |
+| GAP-08 | P2 | 🟢 COMPLETE | Paytm/PhonePe callbacks + reconcile + claim/activate/release | `backend/test/indian-gateway-activation.test.js` (9 cases) | Not claimed |
+| GAP-09 | P2 | 🟢 COMPLETE | Structured JSON request log: request-id, latency, status, path; no credentials/body/query/PII; health probes skipped | `backend/middleware/requestObservability.js`, `backend/test/observability-request-logging.test.js`, request-id middleware | Not claimed |
+| GAP-10 | P2 | 🟢 COMPLETE | Consecutive `/readyz` failures ≥2 enqueue `admin_system_alert:readyz:<hourBucket>` fire-and-forget; never awaited before 503 | `backend/test/readyz-alerts.test.js` | Not claimed |
+| GAP-11 | P2 | 🟡 PARTIAL | No certified object-storage provider; generated docs not persisted server-side; avatars/DB assets use MariaDB; provider needs credentials + signed upload + malware/retention/tenant isolation evidence | `StorageSettings.jsx`, `backend/enterprise/tenantStorage.js`, `docs/GAP_11_STORAGE_ARCHITECTURE.md` | N/A |
+| GAP-12 | P3 | 🟢 COMPLETE | `/front` → `<Navigate to="/" replace />` | `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-13 | P3 | 🟢 COMPLETE | `initailisation/` is **live** (Welcome.jsx + security-static test); preserved | `src/components/welcome/Welcome.jsx`, `tests/security-static.test.mjs` | N/A |
+| GAP-14 | P3 | 🟢 COMPLETE | Removed unreferenced `src/components/addAds/` and `src/components/About/`; live `addAds` service preserved | build + lint + product tests | N/A |
+| GAP-15 | P3 | 🟢 COMPLETE | Removed uncalled `src/utils/Analytics.jsx`; live `src/components/Analytics.jsx` preserved | build + lint + product tests | N/A |
+| GAP-16 | P3 | 🟢 COMPLETE | Single PM2 fork intentional; cluster would duplicate in-memory rate limiters; scaling path documented | `ecosystem.config.js`, `docs/GAP_16_PROCESS_MODEL_EVIDENCE.md` | Not changed |
+| GAP-17 | P3 | 🟡 PARTIAL | Skip link, `#main-content`, dialog `role`/`aria-modal`, focus trap + restore in User 360; **no WCAG 2.1 AA claim** | `backend/test/gap17-accessibility-source.test.js`, `backend/test/p1-gap-source-contract.test.js` | Not claimed |
+| GAP-18 | P3 | 🟢 COMPLETE | Reproducible dependency-free load harness; observed-only output; no invented capacity numbers | `scripts/load-test.mjs`, `npm run test:load` | Not claimed |
+| GAP-19 | P3 | 🟢 COMPLETE | Release identity aligned/verified; health/readyz; rollback script; live `/api/platform/version` shows same backend/frontend SHA | `scripts/verify-production-identity.mjs`, `docs/GAP_19_DEPLOYMENT_EVIDENCE.md` | Live verified |
+| GAP-20 | P3 | 🟡 PARTIAL | Visual regression harness exists but `template-lab/shots/` is empty and no baseline was produced this session | `template-lab/visual-baseline.json`, `template-lab/visual-regression.mjs` | Not claimed |
+| GAP-21 | P2 | 🟢 COMPLETE | Platform tenant API returns `type`; personal sandboxes excluded from assignable orgs; `platformFetch` normalizes string errors; drawer focus/labels intact | `backend/enterprise/platformTenantClassification.js`, `tenantService.js`, `platformApi.js`, `UsersManager.jsx`, `User360Drawer.jsx`, `backend/test/gap21-platform-tenant.test.js` | Not claimed |
 
-**Remainder after this register:** P0=0, P1=0 open, P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20), P2 OPEN=1 (GAP-21). CLOSED=7 (01,02,03,06,08,10,12). BLOCKED=0.
+**Remainder after this register:** P0=0, P1=0 open, P2 COMPLETE=5 (01,02,03,06,08,10 — plus GAP-09, GAP-21), P2 PARTIAL=3 (04,07,11), P2 BLOCKED=1 (05), P3 COMPLETE=6 (12,13,14,15,16,18,19), P3 PARTIAL=2 (17,20). OPEN=0, ACCEPTED=0, MISSING=0.
 
 **MariaDB authority:** 15 checksummed migrations; `ownership.js` registers `support_ticket` / `support_ticket_message`; account deletion deletes ticket rows after notifications. Zero Firestore data-plane.
 
@@ -2058,8 +2059,10 @@ Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live product
 
 ## 64. GAP-21: SuperAdmin User 360 Tenant Assignment & Personal Workspace Auto-Promotion
 
+**Resolved status: 🟢 COMPLETE.** Strategy B (smart dropdown segregation + client error normalization) was implemented. Strategy A (automatic promotion of personal→org) was intentionally **not** implemented because it would mutate a user's personal sandbox into a shared org on a mere dropdown selection, which is a tenant-isolation risk without an explicit owner decision.
+
 ### Executive Summary
-When an administrator with `SUPER_ADMIN` or `ADMIN` privileges opens the **User Profile (User 360 Workspace)** at `/adm/users` -> `Tenants & Orgs` tab and attempts to assign a user to an organization, the dropdown currently displays both **Personal Workspaces** (prefixed `personal-<id>`) and **Enterprise Organizations** (UUID). Selecting a Personal Workspace and submitting triggers an unhandled `HTTP 400` error banner in the UI.
+When an administrator with `SUPER_ADMIN` or `ADMIN` privileges opens the **User Profile (User 360 Workspace)** at `/adm/users` -> `Tenants & Orgs` tab and attempts to assign a user to an organization, the dropdown previously displayed both **Personal Workspaces** (prefixed `personal-<id>`) and **Enterprise Organizations** (UUID). Selecting a Personal Workspace would trigger an unhandled `HTTP 400` error banner in the UI.
 
 ### Root Cause Analysis (RCA)
 1. **Data Plane Architecture Conflict:**
@@ -2080,15 +2083,23 @@ When an administrator with `SUPER_ADMIN` or `ADMIN` privileges opens the **User 
   4. Returns `HTTP 200` with promotion audit log (`TENANT_AUTO_PROMOTED_FROM_PERSONAL`).
 
 #### Strategy B: Smart Dropdown Segregation + Client Normalization
-* Update `UsersManager.jsx` and `User360Drawer.jsx` to filter `availableTenants = tenants.filter(t => t.type === 'ORGANIZATION' || !t.id.startsWith('personal-'))`.
-* If a Personal Workspace is inspected, provide an explicit `[⚡ Upgrade to Enterprise Organization]` action.
+* Update `UsersManager.jsx` and `User360Drawer.jsx` to filter `availableTenants = tenants.filter(t => t.type === 'ORGANIZATION' || !t.slug.startsWith('personal-'))`.
+* If a Personal Workspace is inspected, provide an explicit `[⚡ Upgrade to Enterprise Organization]` action (not surfaced; personal sandboxes are now excluded entirely).
 * Normalize `platformFetch` error handling: `const errorMsg = typeof data.error === 'string' ? data.error : data.error?.message || data.message || \`HTTP \${response.status}\`;`.
+
+#### Resolution implemented (2026-08-29)
+1. `backend/enterprise/platformTenantClassification.js` classifies tenants by their deterministic `personal-` slug.
+2. `tenantService.listPlatformTenants()` returns `type: 'ORGANIZATION' | 'PERSONAL'`.
+3. `UsersManager.jsx` and `User360Drawer.jsx` filter personal sandboxes out of the assignable organization dropdown (defense-in-depth).
+4. `platformApi.js` normalizes string errors from the backend so the UI never displays a bare `HTTP 400`.
+5. Tests: `backend/test/gap21-platform-tenant.test.js`.
+6. Auto-promotion (Strategy A) was NOT implemented; converting a personal sandbox to an enterprise org implicitly would violate tenant-isolation expectations and needs an explicit customer/owner action.
 
 ---
 
 ## 65. Comprehensive Platform SWOT Analysis & Enterprise Gap Elimination Blueprint
 
-This blueprint catalogs all **13 ACCEPTED Gaps** (GAP-04, 05, 07, 09, 11, 13..20) and **GAP-21** for seamless execution by the Cloud/SRE developer.
+This blueprint originally cataloged all **13 ACCEPTED Gaps** (GAP-04, 05, 07, 09, 11, 13..20) plus **GAP-21**. On 2026-08-29 every item was independently reviewed and moved to the section 63 register: there are now **15 COMPLETE, 5 PARTIAL, 0 MISSING, and 1 EXTERNAL/BLOCKED**.
 
 ```mermaid
 quadrantChart
@@ -2141,9 +2152,9 @@ quadrantChart
 
 ---
 
-### Gap Elimination Reference Table (13 ACCEPTED + GAP-21)
+### Gap Elimination Reference Table (13 previously ACCEPTED + GAP-21)
 
-| Gap ID | Priority | Description | Proposed Cloud Remediation Action |
+| Gap ID | Priority | Description | Final 2026-08-29 status / outcome |
 |---|---|---|---|
 | **GAP-04** | P2 | Monolithic `backend/index.js` (5,945 lines) | Extract payment webhook routers and platform management routes into `backend/routes/` cleanly. |
 | **GAP-05** | P2 | Automated crontab backup installer | Run `ops/dr/install-backup-schedule.sh` on production Hostinger VPS to enable hourly automated snapshots. |

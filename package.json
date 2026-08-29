@@ -59,7 +59,9 @@
     "dr:observe": "node scripts/dr-observability.mjs",
     "dr:test": "node --test tests/dr-hardening.test.mjs",
     "dr:drill": "node scripts/dr-restore-drill.mjs",
-    "dr:watch": "node scripts/dr-external-watch.mjs"
+    "dr:watch": "node scripts/dr-external-watch.mjs",
+    "dr:verify:schedule": "sh ops/dr/verify-backup-schedule.sh",
+    "test:load": "node scripts/load-test.mjs"
   },
   "dependencies": {
     "@lexical/react": "^0.32.1",
