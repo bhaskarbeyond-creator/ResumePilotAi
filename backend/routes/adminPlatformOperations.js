@@ -15,6 +15,7 @@ const {
 } = require('../services/platformCurrency');
 const { getGlobalAiDashboardData } = require('../services/adminAiEntitlement');
 const { getPool } = require('../database/mysql');
+const { resolveAssignableWorkspace } = require('../enterprise/workspaceResolution');
 
 const router = express.Router();
 const TENANT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -186,14 +187,28 @@ router.post('/platform/tenants/:tenantId/members', requirePermission('system.con
     if (requestedEmail && identity.email?.toLowerCase() !== requestedEmail) {
       return res.status(400).json({ success: false, code: 'USER_IDENTITY_MISMATCH', error: 'UID and email do not identify the same account.' });
     }
-    await service.registry.getTenant(tenantId);
+    const tenant = await service.registry.getTenant(tenantId);
+    if (String(tenant.lifecycleState || '').toUpperCase() !== 'ACTIVE') {
+      throw Object.assign(new Error('This organization is not active. Reactivate it before adding members.'), { code: 'TENANT_INACTIVE', status: 403 });
+    }
+    // GAP-22: the strict membership contract requires a concrete tenant-owned
+    // workspaceId. Resolve the tenant's canonical default workspace here (or
+    // validate an explicit, tenant-owned workspaceId) — same boundary as the
+    // User 360 tenant assignment route, never inside the registry.
+    const workspace = await resolveAssignableWorkspace(service.registry, tenant.id, String(req.body?.workspaceId || '').trim() || null);
     const membership = await service.registry.grantMembership({
-      tenantId,
+      tenantId: tenant.id,
       principalId: identity.uid,
+      workspaceId: workspace.id,
       roles: [String(req.body?.role || 'MEMBER').toUpperCase()],
       status: 'ACTIVE',
     });
-    return res.status(201).json({ success: true, message: 'Member added to organization.', membership });
+    return res.status(201).json({
+      success: true,
+      message: `Member added to ${tenant.displayName} via ${workspace.isDefault ? 'the default workspace' : 'workspace'} "${workspace.name}".`,
+      membership,
+      workspace: { id: workspace.id, name: workspace.name, isDefault: workspace.isDefault === true, resolution: workspace.resolution },
+    });
   } catch (error) {
     return sendTenantError(res, error, 'MEMBER_ADD_FAILED', 'The member could not be added.');
   }

@@ -2047,8 +2047,10 @@ Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live product
 | GAP-18 | P3 | ACCEPTED | No k6/Artillery run | Do not invent capacity numbers | Not claimed |
 | GAP-19 | P3 | ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
 | GAP-20 | P3 | ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
+| GAP-21 | P2 | OPEN | §64: personal-workspace (`personal-<id>`) rows appear in the User 360 assign-tenant dropdown and need auto-promotion/segregation design | Design decision required (§64 Strategies A/B); backend error normalization leg landed with GAP-22 | N/A |
+| GAP-22 | P0 | CLOSED | User 360 → Assign Tenant called `grantMembership` without the mandatory tenant-owned `workspaceId` → guaranteed HTTP 400. Fixed at the route boundary via `backend/enterprise/workspaceResolution.js` (canonical default-workspace resolution); strict registry contract unchanged | `backend/test/admin-tenant-assignment.test.js` (17), `tests/gap22-user360-tenant-assignment.test.mjs` (11) | Not claimed |
 
-**Remainder after this register:** P0=0, P1=0 open, P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20), P2 OPEN=1 (GAP-21). CLOSED=7 (01,02,03,06,08,10,12). BLOCKED=0.
+**Remainder after this register:** P0=0, P1=0 open (GAP-22 CLOSED 2026-08-29, baseline `ee66b93`), P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20), P2 OPEN=1 (GAP-21). CLOSED=8 (01,02,03,06,08,10,12,22). BLOCKED=0.
 
 **MariaDB authority:** 15 checksummed migrations; `ownership.js` registers `support_ticket` / `support_ticket_message`; account deletion deletes ticket rows after notifications. Zero Firestore data-plane.
 
@@ -2160,3 +2162,113 @@ quadrantChart
 | **GAP-20** | P3 | Automated Visual Regression Testing | Integrate Playwright snapshot comparisons for all 51 template print views. |
 | **GAP-21** | P2 | SuperAdmin User 360 Tenant Assignment | Implement personal workspace auto-promotion to enterprise org and normalize frontend error string extraction. |
 
+
+---
+
+## 66. GAP-22: Super Admin User 360 Tenant Assignment — Missing Workspace Resolution (CLOSED 2026-08-29)
+
+**Baseline under review:** `ee66b93f81c00394aac4f03672f0b0911539b974` (`main`)
+**Verdict of independent RCA:** local-developer finding CONFIRMED and reproduced from source. The defect is an honest UI/API contract defect, not intentional validation.
+
+### Forensic call-chain evidence
+
+```
+User360Drawer.jsx  handleAddTenant → assignUserTenant(uid, { tenantId, role, isPrimary })
+        │            (frontend legitimately supplies NO workspaceId — it acts on a whole tenant)
+        ▼
+platformApi.js     POST /api/admin/users/:uid/tenants
+        ▼
+requireAuth + enforceApiPolicy   (mutation on /admin/users/** → system.config.write;
+        │                         SUPER_ADMIN/ADMIN pass; SUPPORT/AUDITOR/USER → 403)
+        ▼
+backend/routes/adminUsers.js (old)  registry.grantMembership({ tenantId, principalId, roles, status })
+        │                            — no workspaceId ever resolved or supplied
+        ▼
+mysqlTenantRegistry.grantMembership  workspaceId = assertUuid(workspaceId, 'Workspace identifier')
+        ▼
+HTTP 400  code=INVALID_TENANT_CONTEXT  "Workspace identifier must be a UUID"
+        ▼
+platformApi error normalization (old) dropped string-form { error: "msg", code } payloads
+        ▼
+UI showed a bare "HTTP 400" — no tenant, workspace, or remediation context (GAP-21 normalization leg)
+```
+
+The identical defect existed at a second call site: `POST /api/admin/platform/tenants/:tenantId/members` (`adminPlatformOperations.js`) — also repaired in this pass.
+
+### RCA answers (verified against code, schema, migrations, and runtime tests)
+
+1. **workspaceId is genuinely mandatory** — `mysqlTenantRegistry.grantMembership` asserts it; every membership row binds the member's home workspace (used by `resolveMembership` fallback and the workspace-membership row insert). The contract was intentionally NOT weakened.
+2. **Every valid tenant has a default workspace by construction** — `createTenant`, `provisionTenant`, `ensurePersonalTenant` all create `isDefault=TRUE` + `ACTIVE` atomically with the tenant; `setWorkspaceLifecycleState` refuses to archive the default (`WORKSPACE_DEFAULT_PROTECTED`).
+3. **Default workspace identification** — `enterprise_workspaces.isDefault = TRUE`; `listWorkspaces(tenantId)` orders `isDefault DESC, name ASC` (deterministic).
+4. **Zero-workspace tenant** — unreachable through supported flows; possible only via storage drift. Now fails deterministically: `409 TENANT_NO_USABLE_WORKSPACE` with an actionable message instead of a generic 400.
+5. **Multiple workspaces** — legal (createWorkspace); non-default ones may be archived.
+6. **Auto-select for Super Admin assignment** — YES, at the route boundary, matching the pre-existing test-registry contract (`inMemoryTenantRegistry` already resolved: explicit → default → first-active → 409).
+7. **Existing helper** — none existed on the production path; the resolution semantic existed only inside the in-memory test double, which is why tests passed while production always 400'd (test-double divergence was part of the root cause).
+8. **Tenant isolation of auto-selection** — unaffected: resolution is `WHERE tenantId = ?`-scoped ACTIVE rows only; `grantMembership` re-validates `WHERE id = ? AND tenantId = ? FOR UPDATE` inside its transaction. Cross-tenant explicit picks fail closed `404 WORKSPACE_NOT_FOUND`.
+9. **Frontend workspace selection** — supported but optional: the route accepts an explicit tenant-owned `workspaceId` and validates it; the default flow remains a one-click tenant assignment.
+10. **No default workspace** — deterministic `409 TENANT_NO_USABLE_WORKSPACE` + actionable UI state (submit disabled with guidance when the preview proves it).
+11. **Multiple candidates** — canonical default (`isDefault`) wins; fallback is the deterministic first row of the registry ordering, never an arbitrary pick.
+12. **HTTP 400 nature** — actual contract defect (frontend could never succeed), now CLOSED.
+
+### Fix architecture (correct abstraction boundary)
+
+```
+Super Admin / Admin requests tenant assignment
+        ↓
+requireAuth + enforceApiPolicy (RBAC: system.config.write; SUPPORT/AUDITOR/USER → 403)
+        ↓
+assertUuid/tenant lookup (getTenant → 404 TENANT_NOT_FOUND; lifecycle ≠ ACTIVE → 403 TENANT_INACTIVE)
+        ↓
+resolveAssignableWorkspace(registry, tenantId, requestedWorkspaceId?)
+        ├─ explicit workspaceId → UUID assert (400 INVALID_WORKSPACE_ID)
+        │     + tenant-scoped ACTIVE getWorkspace (404 WORKSPACE_NOT_FOUND on cross-tenant/inactive)
+        ├─ else canonical default workspace (isDefault=TRUE, resolution: DEFAULT)
+        ├─ else deterministic first ACTIVE (resolution: FIRST_ACTIVE)
+        └─ none → 409 TENANT_NO_USABLE_WORKSPACE (deterministic, actionable)
+        ↓
+grantMembership(userId, tenantId, workspaceId)   ← strict contract UNCHANGED
+        ↓
+MariaDB transaction (workspace FOR UPDATE, identity-collision guard, revision++,
+        membership upsert + workspace-membership upsert, invitation auto-accept)
+        ↓
+200 { success, message naming tenant + workspace, membership,
+      workspace { id, name, isDefault, resolution }, alreadyMember }
+        ↓
+User 360 reloads (loadData) — tenancy list now also shows the bound workspaceId
+```
+
+### Changes
+
+| File | Change |
+|---|---|
+| `backend/enterprise/workspaceResolution.js` | NEW — canonical assignable-workspace resolver (single source for both call sites) |
+| `backend/routes/adminUsers.js` | `POST /:uid/tenants` resolves workspace at the boundary; tenant lifecycle gate; `alreadyMember` detection; audit metadata gains workspaceId/resolution; User 360 tenancy projection gains `workspaceId` |
+| `backend/routes/adminPlatformOperations.js` | `POST /platform/tenants/:tenantId/members` same boundary fix + lifecycle gate |
+| `backend/routes/platform.js` | `GET /platform/tenants/:tenantId` now returns `workspaces.items` (id/name/lifecycle/isDefault) for the assignment preview |
+| `src/services/platformApi.js` | `platformFetch` normalizes string-form error payloads — a precise backend message can no longer collapse to `HTTP <status>` |
+| `src/components/admin/usersManager/User360Drawer.jsx` | Workspace preview before submit (default workspace named; no-usable-workspace and inactive-tenant states disable submit with guidance); actionable error mapping per backend code; success state names workspace and already-member truth; membership list shows bound workspaceId |
+| `backend/test/helpers/inMemoryTenantRegistry.js` | Production parity: re-grant is an idempotent upsert (was a divergent 409); `removeTenantMembership` cascades workspace + team memberships (was leaving orphans vs production `DELETE`) |
+| `backend/test/admin-tenant-assignment.test.js` | NEW — 17 regression cases over the real HTTP surface with a strict production-parity `grantMembership` spy |
+| `tests/gap22-user360-tenant-assignment.test.mjs` | NEW — 11 static/UI contract guards (wired into `npm run test:product`) |
+
+### Tenant/workspace membership lifecycle audit outcomes
+
+CREATE TENANT → CREATE DEFAULT WORKSPACE: atomic in all three provisioning paths — no gap.
+CREATE USER (Firebase identity + MariaDB profile) → ASSIGN TENANT: **was broken (GAP-22), now fixed**.
+ASSIGN WORKSPACE (`addWorkspaceMember`): tenant-scoped lookup + ACTIVE membership required — no gap.
+MEMBERSHIP: transactional, deterministic ids (`tenantId_principalHash` / `workspaceId_principalHash`) make duplicates impossible; re-grant is an idempotent revision-bumping upsert (no duplicate/orphan rows).
+AUTHORIZATION: `resolveMembership` enforces tenant ACTIVE, membership ACTIVE, invitation acceptance with verified email, and workspace access — no privilege escalation found.
+REMOVAL/REVOCATION: production cascades memberships + workspace memberships + team memberships + pending-invitation cancellation in one transaction — no orphans. Test double aligned to the same cascade.
+No cross-tenant membership, stale membership, or missing-workspace drift was reachable through supported flows; drift scenarios now fail deterministically at the assignment boundary.
+
+### SUPPORT / AUDITOR unified-console verification (independent re-verification)
+
+Single console `/adm/*` confirmed: `Admin.jsx` admits `ADMIN|SUPER_ADMIN|AUDITOR|SUPPORT` claims into the same shell; no separate Support dashboard exists or is required (architecture intentionally unified).
+Backend enforcement is independent of menu visibility: `enforceApiPolicy` maps `/admin/users/**` mutations to `system.config.write` (SUPER_ADMIN/ADMIN hold it; SUPPORT: `users.read, email.logs.read, tenants.read, tickets.manage`; AUDITOR: read-only set) → both receive **403 FORBIDDEN** on tenant assignment (proven: `admin-tenant-assignment.test.js` case 10/17), support-desk paths route through `tickets.manage` so SUPPORT can manage tickets only where authorized, and AUDITOR receives 403 on every mutation while retaining least-privilege reads.
+
+### Evidence
+
+- `backend/test/admin-tenant-assignment.test.js`: 17/17 PASS (valid default workspace; no-workspace 409; invalid tenant; cross-tenant workspace 404; malformed workspace UUID 400; duplicate membership honest `alreadyMember`; USER/SUPPORT/AUDITOR 403; anonymous 401; persistence via registry; removal cascade; tenant isolation; platform member registry parity).
+- `tests/gap22-user360-tenant-assignment.test.mjs`: 11/11 PASS (UI success/failure states, strict-contract non-weakening, error normalization).
+- Full backend suite 498/498, product suite 411/411, enterprise suite 210/210, templates 72/72, DR 112/112, static security 44/44, db:verify 14/14, firestore-zero 8/8, lint PASS, build PASS.
+- Live production redeploy did **not** occur in this session; live proof is **not claimed**.

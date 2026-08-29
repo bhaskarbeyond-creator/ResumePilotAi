@@ -1411,6 +1411,11 @@ router.get('/tenants/:tenantId', async (req, res) => {
       },
       users: { items: memberUsers, source: membershipsResult.ok && (admin?.auth || !memberships.length) ? 'AVAILABLE' : 'PARTIAL' },
       memberships: { items: memberships.map(item => ({ id: item.id, principalId: item.principalId, roles: item.roles, status: item.status, workspaceId: item.workspaceId || null, revision: item.revision || null, updatedAt: isoFrom(item.updatedAt) })), source: membershipsResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
+      // Full workspace inventory (id/name/lifecycle/isDefault only) so the
+      // Admin Console can show which canonical workspace a tenant assignment
+      // will bind before submitting (GAP-22). Measured from the registry,
+      // never assumed.
+      workspaces: { items: workspaces, source: workspacesResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },
       usage,
       plan: { value: tenant.plan || tenant.planId || null, source: tenant.plan || tenant.planId ? 'TENANT_RECORD' : 'NOT_RECORDED' },
       security: { configuration: configurationResult.ok ? configurationResult.value.securityPolicy || {} : null, identityPolicy: configurationResult.ok ? configurationResult.value.identityPolicy || {} : null, source: configurationResult.ok ? 'AVAILABLE' : 'UNAVAILABLE' },

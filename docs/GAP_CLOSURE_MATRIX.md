@@ -38,6 +38,8 @@ Do **not** grant SUPPORT all admin GETs. Least privilege is path-mapped.
 | GAP-18 | P3 | **ACCEPT** | No k6/Artillery run against live | Do not invent capacity numbers |
 | GAP-19 | P3 | **ACCEPT** | No blue-green infra | Single-instance PM2 restart remains the deploy model |
 | GAP-20 | P3 | **ACCEPT** | No Percy/Chromatic | Do not invent screenshot proof |
+| GAP-21 | P2 | **OPEN** | `architecture-flowchart.md` §64: personal-workspace (`personal-<id>`) rows surface in the User 360 assign-tenant dropdown | Design decision (auto-promotion vs dropdown segregation) is required before code; the backend string-error normalization leg landed as part of GAP-22 |
+| GAP-22 | P0 | **CLOSE** | `POST /api/admin/users/:uid/tenants` and `POST /api/admin/platform/tenants/:tenantId/members` called strict `grantMembership` without the mandatory tenant-owned `workspaceId` → every Super Admin User 360 tenant assignment failed with HTTP 400 `INVALID_TENANT_CONTEXT` | Fixed at the route boundary via `backend/enterprise/workspaceResolution.js`: tenant validated (404/403 lifecycle), canonical `isDefault` workspace resolved (deterministic `409 TENANT_NO_USABLE_WORKSPACE` otherwise), explicit `workspaceId` validated tenant-owned (400/404), strict registry contract unchanged. Evidence: `backend/test/admin-tenant-assignment.test.js` 17/17, `tests/gap22-user360-tenant-assignment.test.mjs` 11/11, full suite green. Live proof: **not claimed** (no redeploy this session) |
 
 ## Intentional worker state (production PM2)
 
@@ -49,3 +51,9 @@ Do **not** grant SUPPORT all admin GETs. Least privilege is path-mapped.
 | `TENANT_GC_WORKER_ENABLED` | false | Tenancy dark; GC would be idle |
 
 `.env.example` stays fail-closed (`false`) so a fresh clone does not start workers without operator intent.
+
+## 2026-08-29 enterprise-hardening pass (baseline `ee66b93`)
+
+**GAP-22 — OPEN → CLOSED.** Independent RCA reproduced the local-developer finding from source (route → strict registry contract → guaranteed HTTP 400) and from the API contract (frontend legitimately supplies `tenantId` only). Fixed at the correct abstraction boundary with a shared canonical workspace resolver; `mysqlTenantRegistry` and DB constraints were not weakened; no workspace is invented or arbitrarily selected; tenant/workspace isolation and RBAC remain enforced. Regression evidence: 17 backend HTTP-surface cases + 11 frontend/contract guards, all green; full platform suites green (`test:security`, `test:product`, `test:enterprise`, `test:templates`, `dr:test`, `db:verify`, `certify:firestore-zero`, lint, build). Production was not redeployed from this session — deployment handoff required before live proof can be claimed.
+
+**GAP-21 — remains OPEN.** The `platformFetch` error-normalization sub-item (precise backend message instead of a bare `HTTP <status>`) is delivered. The personal-workspace dropdown/auto-promotion decision is still a pending design choice (`architecture-flowchart.md` §64) and was intentionally not resolved in this pass.

@@ -13,9 +13,16 @@ export async function platformFetch(path, options = {}) {
   if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
   const { response, data } = await fetchAdminWithReauth(path, { ...options, headers });
   if (!response.ok) {
-    const error = new Error(data.error?.message || data.message || `HTTP ${response.status}`);
+    // Admin APIs answer errors in both shapes: { error: { message, code } } and
+    // { error: "message", code }. Normalize both so a user never sees a bare
+    // "HTTP 400" while the backend carried a precise explanation (GAP-21/22).
+    const serverMessage = (typeof data?.error === 'string' && data.error)
+      || data?.error?.message
+      || data?.message
+      || null;
+    const error = new Error(serverMessage || `HTTP ${response.status}`);
     error.status = response.status;
-    error.code = data.error?.code || data.code;
+    error.code = (typeof data?.error === 'object' && data.error?.code) || data?.code;
     error.body = data;
     throw error;
   }

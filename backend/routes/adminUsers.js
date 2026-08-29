@@ -11,6 +11,7 @@ const { getRepository } = require('../repositories');
 const { getPool } = require('../database/mysql');
 const { queueEmail } = require('../services/notificationOutbox');
 const { ALERT_TYPES, emitAlert } = require('../database/alerts');
+const { resolveAssignableWorkspace } = require('../enterprise/workspaceResolution');
 
 const router = express.Router();
 
@@ -290,6 +291,7 @@ router.get('/:uid/details', async (req, res) => {
               isolationTier: m.isolationTier || m.tenant?.isolationTier || 'STANDARD',
               roles: Array.isArray(tRoles) ? tRoles : [tRoles],
               status: tStatus,
+              workspaceId: m.workspaceId || m.membership?.workspaceId || null,
               isPrimary: baseUser.primaryTenant?.id === tId,
             };
           });
@@ -558,26 +560,59 @@ router.patch('/:uid', async (req, res) => {
 });
 
 // 5. USER TENANT BINDING (ASSIGN TO TENANT)
+// GAP-22: the strict registry contract requires a concrete tenant-owned
+// workspaceId. The route resolves the tenant's canonical default workspace
+// (or an explicit, tenant-owned workspaceId from the request) at this
+// abstraction boundary — never by weakening the registry contract, never by
+// inventing or arbitrarily picking a workspace.
 router.post('/:uid/tenants', async (req, res) => {
   const uid = String(req.params.uid || '');
   const tenantService = req.app.get('tenantService');
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.' });
-  if (!tenantService?.registry) return res.status(503).json({ success: false, code: 'TENANT_SERVICE_UNAVAILABLE', error: 'Tenant registry unavailable.' });
+  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
+  if (!tenantService?.registry) return res.status(503).json({ success: false, code: 'TENANT_SERVICE_UNAVAILABLE', error: 'Tenant registry unavailable.', requestId: res.locals.requestId });
   const tenantId = String(req.body?.tenantId || '').trim();
   const role = String(req.body?.role || 'MEMBER').toUpperCase();
-  if (!tenantId) return res.status(400).json({ success: false, code: 'TENANT_ID_REQUIRED', error: 'Tenant identifier is required.' });
+  const requestedWorkspaceId = String(req.body?.workspaceId || '').trim() || null;
+  if (!tenantId) return res.status(400).json({ success: false, code: 'TENANT_ID_REQUIRED', error: 'Tenant identifier is required.', requestId: res.locals.requestId });
   try {
     const tenant = await tenantService.registry.getTenant(tenantId);
-    const membership = await tenantService.registry.grantMembership({ tenantId, principalId: uid, roles: [role], status: 'ACTIVE' });
+    if (String(tenant.lifecycleState || '').toUpperCase() !== 'ACTIVE') {
+      return res.status(403).json({ success: false, code: 'TENANT_INACTIVE', error: 'This organization is not active. Reactivate it before assigning members.', requestId: res.locals.requestId });
+    }
+    // Distinguish a fresh assignment from an idempotent re-grant so the UI can
+    // state whether the user was already a member instead of implying a no-op.
+    const alreadyMember = await tenantService.registry.getMembership(tenant.id, uid)
+      .then(() => true)
+      .catch(error => {
+        if (error?.status === 404 || error?.code === 'TENANT_MEMBERSHIP_NOT_FOUND') return false;
+        throw error;
+      });
+    // Resolve the tenant's canonical/default workspace (or validate an
+    // explicitly requested tenant-owned one). Deterministic failure
+    // (TENANT_NO_USABLE_WORKSPACE 409 / INVALID_WORKSPACE_ID 400 /
+    // WORKSPACE_NOT_FOUND 404) replaces the old invalid-context HTTP 400.
+    const workspace = await resolveAssignableWorkspace(tenantService.registry, tenant.id, requestedWorkspaceId);
+    const membership = await tenantService.registry.grantMembership({ tenantId: tenant.id, principalId: uid, workspaceId: workspace.id, roles: [role], status: 'ACTIVE' });
     await recordAdminAuditLog(req, {
       actorUid: req.user?.uid, actorEmail: req.user?.email, action: 'USER_TENANT_MEMBERSHIP_GRANTED',
       category: 'enterprise.tenancy', severity: 'HIGH', method: 'POST', pathname: req.originalUrl,
-      resourceType: 'tenant_membership', resourceId: `${tenantId}:${uid}`,
-      metadata: { tenantId, uid, role }, requestId: res.locals.requestId,
+      resourceType: 'tenant_membership', resourceId: `${tenant.id}:${uid}`,
+      metadata: { tenantId: tenant.id, uid, role, workspaceId: workspace.id, workspaceResolution: workspace.resolution, alreadyMember }, requestId: res.locals.requestId,
     });
-    return res.json({ success: true, message: `User assigned to tenant ${tenant.displayName}.`, membership, source: 'MARIADB_TENANT_REGISTRY' });
+    const message = alreadyMember
+      ? `User is already a member of ${tenant.displayName}; the existing membership was updated (role: ${role}).`
+      : `User assigned to ${tenant.displayName} via ${workspace.isDefault ? 'the default workspace' : 'workspace'} "${workspace.name}".`;
+    return res.json({
+      success: true,
+      message,
+      membership,
+      workspace: { id: workspace.id, name: workspace.name, isDefault: workspace.isDefault === true, resolution: workspace.resolution },
+      alreadyMember,
+      source: 'MARIADB_TENANT_REGISTRY',
+      requestId: res.locals.requestId,
+    });
   } catch (error) {
-    return res.status(error.status || 500).json({ success: false, code: error.code || 'TENANT_ASSIGN_FAILED', error: error.status ? error.message : 'Tenant assignment failed.' });
+    return res.status(error.status || 500).json({ success: false, code: error.code || 'TENANT_ASSIGN_FAILED', error: error.status ? error.message : 'Tenant assignment failed.', requestId: res.locals.requestId });
   }
 });
 

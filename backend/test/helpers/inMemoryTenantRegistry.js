@@ -625,9 +625,11 @@ class InMemoryTenantRegistry {
 
     const id = membershipDocumentId(tenantId, principalId);
     const current = this.memberships.get(id) || null;
-    if (current?.status === 'ACTIVE') {
-      throw Object.assign(new Error('Tenant membership is already active'), { code: 'TENANT_MEMBERSHIP_EXISTS', status: 409 });
-    }
+    // Production parity (mysqlTenantRegistry.grantMembership): re-granting an
+    // ACTIVE membership is an idempotent upsert — roles/status/workspace are
+    // replaced and the revision increments — never a duplicate row. This test
+    // double previously threw TENANT_MEMBERSHIP_EXISTS here, diverging from
+    // the real contract it stands in for (see GAP-22 lifecycle audit).
     const now = new Date().toISOString();
     const normalizedRoles = normalizeRoles(roles, allowedRoles);
     const baseMembership = {
@@ -790,6 +792,15 @@ class InMemoryTenantRegistry {
     const current = this.memberships.get(id);
     if (!current) throw Object.assign(new Error('Tenant membership was not found'), { code: 'TENANT_MEMBERSHIP_NOT_FOUND', status: 404 });
     this.memberships.set(id, { ...current, status: 'REMOVED', revision: Number(current.revision || 0) + 1 });
+    // Production parity (mysqlTenantRegistry.removeTenantMembership): the
+    // cascade removes workspace + team memberships in the same transaction so
+    // no orphan memberships survive a tenant removal (GAP-22 lifecycle audit).
+    for (const [key, val] of this.workspaceMemberships.entries()) {
+      if (val.tenantId === tenantId && val.principalId === principalId) this.workspaceMemberships.delete(key);
+    }
+    for (const [key, val] of this.teamMembers.entries()) {
+      if (val.tenantId === tenantId && val.principalId === principalId) this.teamMembers.delete(key);
+    }
     const invitation = this.invitations.get(id);
     if (invitation?.invitationState === 'PENDING') {
       this.invitations.set(id, { ...invitation, invitationState: 'REVOKED', revokedAt: new Date().toISOString() });

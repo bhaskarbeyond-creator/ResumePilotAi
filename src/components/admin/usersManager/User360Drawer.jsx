@@ -1,9 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard, FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw, FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign, FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff } from 'react-icons/fi';
-import { getUser360, assignUserTenant, removeUserTenant, updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, unenrollUserMfa, exportUserData } from '../../../services/platformApi';
+import { getUser360, assignUserTenant, removeUserTenant, updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, unenrollUserMfa, exportUserData, getTenantDetail } from '../../../services/platformApi';
 
 import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../services/api/platform';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
+
+// GAP-22 UX contract: translate backend tenant-assignment failures into an
+// actionable admin-facing explanation instead of a generic "Bad Request".
+function describeTenantAssignmentError(err) {
+  const code = err?.code || err?.body?.code || '';
+  switch (code) {
+    case 'TENANT_NO_USABLE_WORKSPACE':
+      return 'This organization has no active workspace, so members cannot be assigned yet. Create or reactivate a workspace for the organization in the Tenants Registry, then retry the assignment.';
+    case 'TENANT_INACTIVE':
+      return 'This organization is suspended or decommissioned. Reactivate it from the Tenants Registry before assigning members.';
+    case 'TENANT_NOT_FOUND':
+      return 'The selected organization no longer exists. Refresh the list and choose a valid organization.';
+    case 'WORKSPACE_NOT_FOUND':
+      return 'The workspace selected for this assignment does not exist or does not belong to the organization. Refresh and retry.';
+    case 'WORKSPACE_INACTIVE':
+      return 'The workspace selected for this assignment is not active. Reactivate the workspace or choose another one.';
+    case 'INVALID_WORKSPACE_ID':
+      return 'The workspace reference is malformed. Refresh the drawer and retry the assignment.';
+    case 'INVALID_TENANT_ROLE':
+      return 'The selected tenant role is not valid for this organization.';
+    case 'FORBIDDEN':
+      return 'You do not have permission to assign users to organizations. This action requires an administrator with system configuration rights.';
+    case 'TENANT_SERVICE_UNAVAILABLE':
+      return 'The tenant registry is temporarily unavailable. Retry in a few moments.';
+    default:
+      return err?.message || 'Failed to assign tenant.';
+  }
+}
 
 export default function User360Drawer({
   uid,
@@ -37,6 +65,10 @@ export default function User360Drawer({
   const [showAddTenantModal, setShowAddTenantModal] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState('');
   const [selectedTenantRole, setSelectedTenantRole] = useState('ENTERPRISE_MEMBER');
+  // Workspace preview for tenant assignment (GAP-22): shows which canonical
+  // workspace the membership will bind before the admin submits. The backend
+  // remains authoritative; a preview failure never blocks assignment.
+  const [workspacePreview, setWorkspacePreview] = useState({ status: 'idle', workspace: null, lifecycleState: null });
 
   const loadData = useCallback(async () => {
     if (!uid) return;
@@ -73,6 +105,37 @@ export default function User360Drawer({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  // Preview the canonical workspace a tenant assignment will bind (GAP-22).
+  // Canonical semantics mirror the backend resolver: the ACTIVE default
+  // workspace wins; otherwise the first ACTIVE workspace is informational,
+  // and a tenant with zero ACTIVE workspaces must be flagged before submit.
+  useEffect(() => {
+    if (!showAddTenantModal || !selectedTenantId) {
+      setWorkspacePreview({ status: 'idle', workspace: null, lifecycleState: null });
+      return undefined;
+    }
+    let cancelled = false;
+    setWorkspacePreview({ status: 'loading', workspace: null, lifecycleState: null });
+    getTenantDetail(selectedTenantId)
+      .then((detail) => {
+        if (cancelled) return;
+        const items = Array.isArray(detail?.workspaces?.items) ? detail.workspaces.items : [];
+        const active = items.filter(w => String(w?.lifecycleState || 'ACTIVE').toUpperCase() === 'ACTIVE');
+        const workspace = active.find(w => w?.isDefault === true) || active[0] || null;
+        setWorkspacePreview({
+          status: 'ready',
+          workspace,
+          lifecycleState: detail?.tenant?.lifecycleState || null,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Preview is advisory only; the backend resolver is authoritative.
+        setWorkspacePreview({ status: 'unavailable', workspace: null, lifecycleState: null });
+      });
+    return () => { cancelled = true; };
+  }, [showAddTenantModal, selectedTenantId]);
 
   const handleRoleChange = async () => {
     if (uid === currentAdminUid && selectedRole !== 'ADMIN' && selectedRole !== 'SUPER_ADMIN') {
@@ -138,17 +201,24 @@ export default function User360Drawer({
     setError('');
     setSuccess('');
     try {
-      await assignUserTenant(uid, {
+      const res = await assignUserTenant(uid, {
         tenantId: selectedTenantId,
         role: selectedTenantRole,
         isPrimary: userData?.tenancy?.memberships?.length === 0
       });
-      setSuccess('User successfully assigned to organization.');
+      // Surface the exact backend outcome: which workspace was bound and
+      // whether the membership already existed (GAP-22 UX contract).
+      const tenantLabel = availableTenants.find(t => t.id === selectedTenantId)?.displayName || 'the organization';
+      const workspaceLabel = res?.workspace?.name ? ` Workspace: ${res.workspace.name}${res.workspace.isDefault ? ' (default)' : ''}.` : '';
+      setSuccess(res?.alreadyMember
+        ? `User is already a member of ${tenantLabel}; the existing membership was updated.${workspaceLabel}`
+        : (res?.message || `User successfully assigned to ${tenantLabel}.${workspaceLabel}`));
       setShowAddTenantModal(false);
+      setSelectedTenantId('');
       await loadData();
       if (onUserMutated) onUserMutated();
     } catch (err) {
-      setError(err.message || 'Failed to assign tenant.');
+      setError(describeTenantAssignmentError(err));
     } finally {
       setBusyAction('');
     }
@@ -760,6 +830,11 @@ export default function User360Drawer({
                             <p className="text-[11px] text-slate-500 mt-1">
                               Role: <strong className="text-slate-700">{Array.isArray(tenant.roles) ? tenant.roles.join(', ') : (tenant.role || 'MEMBER')}</strong> • Status: <strong className="text-emerald-700">{tenant.status || 'ACTIVE'}</strong>
                             </p>
+                            {tenant.workspaceId && (
+                              <p className="text-[10px] text-slate-400 mt-0.5 font-mono" title="Workspace this membership is bound to">
+                                Workspace: {tenant.workspaceId}
+                              </p>
+                            )}
                           </div>
                           <button
                             type="button"
@@ -805,6 +880,30 @@ export default function User360Drawer({
                               ℹ No organizations exist yet. Provision a tenant in <a href="/adm/tenants" className="underline font-bold">Tenants Registry</a> first.
                             </p>
                           )}
+                          {selectedTenantId && workspacePreview.status === 'loading' && (
+                            <p className="text-[10px] text-slate-500 mt-1 font-semibold" role="status">Checking the organization's workspace…</p>
+                          )}
+                          {selectedTenantId && workspacePreview.status === 'ready' && workspacePreview.lifecycleState && String(workspacePreview.lifecycleState).toUpperCase() !== 'ACTIVE' && (
+                            <p className="text-[10px] text-red-700 mt-1 font-semibold" role="alert">
+                              ⚠ This organization is {workspacePreview.lifecycleState}. Reactivate it before assigning members.
+                            </p>
+                          )}
+                          {selectedTenantId && workspacePreview.status === 'ready' && (!workspacePreview.lifecycleState || String(workspacePreview.lifecycleState).toUpperCase() === 'ACTIVE') && workspacePreview.workspace && (
+                            <p className="text-[10px] text-emerald-700 mt-1 font-semibold" data-testid="tenant-workspace-preview">
+                              ✓ The user will join workspace: <span className="font-mono">{workspacePreview.workspace.name}</span>
+                              {workspacePreview.workspace.isDefault ? ' (default workspace)' : ''}.
+                            </p>
+                          )}
+                          {selectedTenantId && workspacePreview.status === 'ready' && (!workspacePreview.lifecycleState || String(workspacePreview.lifecycleState).toUpperCase() === 'ACTIVE') && !workspacePreview.workspace && (
+                            <p className="text-[10px] text-red-700 mt-1 font-semibold" role="alert" data-testid="tenant-workspace-missing">
+                              ⚠ This organization has no active workspace. Create one in the <a href="/adm/tenants" className="underline font-bold">Tenants Registry</a> before assigning members.
+                            </p>
+                          )}
+                          {selectedTenantId && workspacePreview.status === 'unavailable' && (
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              Workspace will be resolved automatically to the organization's default workspace.
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-[11px] font-bold text-slate-700 mb-1">Assigned Tenant Role</label>
@@ -821,15 +920,15 @@ export default function User360Drawer({
                         <div className="flex justify-end gap-2 pt-1">
                           <button
                             type="button"
-                            onClick={() => setShowAddTenantModal(false)}
+                            onClick={() => { setShowAddTenantModal(false); setSelectedTenantId(''); }}
                             className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 font-bold"
                           >
                             Cancel
                           </button>
                           <button
                             type="submit"
-                            disabled={busyAction === 'add-tenant'}
-                            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700"
+                            disabled={busyAction === 'add-tenant' || (selectedTenantId && workspacePreview.status === 'ready' && !workspacePreview.workspace) || (selectedTenantId && workspacePreview.status === 'ready' && workspacePreview.lifecycleState && String(workspacePreview.lifecycleState).toUpperCase() !== 'ACTIVE')}
+                            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
                           >
                             {busyAction === 'add-tenant' ? 'Assigning…' : 'Confirm Assignment'}
                           </button>
