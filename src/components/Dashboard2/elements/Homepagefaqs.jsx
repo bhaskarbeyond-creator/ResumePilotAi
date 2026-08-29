@@ -357,7 +357,7 @@ const Homepagefaqs = () => {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                   <a
                     className="inline-flex items-center justify-center px-8 py-4 bg-white text-indigo-900 font-semibold rounded-2xl shadow-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 group"
-                    href="/sign-up"
+                    href="/login"
                   >
                     {t('HomepageHero.createResume')}
                     <FaRocket className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />

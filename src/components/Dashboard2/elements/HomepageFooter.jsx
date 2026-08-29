@@ -209,21 +209,21 @@ useEffect(() => {
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
               <a
                 className="text-gray-400 hover:text-purple-300 transition-all duration-300 relative group text-sm"
-                href="/privacy-policy"
+                href="/p/privacy-policy"
               >
                 <span className="relative z-10">{t('HomepageFooter.legal.privacyPolicy')}</span>
                 <span className="absolute inset-x-0 -bottom-0.5 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
               </a>
               <a
                 className="text-gray-400 hover:text-purple-300 transition-all duration-300 relative group text-sm"
-                href="/terms-of-service"
+                href="/p/terms-of-service"
               >
                 <span className="relative z-10">{t('HomepageFooter.legal.termsOfService')}</span>
                 <span className="absolute inset-x-0 -bottom-0.5 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
               </a>
               <a
                 className="text-gray-400 hover:text-purple-300 transition-all duration-300 relative group text-sm"
-                href="/cookie-policy"
+                href="/p/cookie-policy"
               >
                 <span className="relative z-10">{t('HomepageFooter.legal.cookiePolicy')}</span>
                 <span className="absolute inset-x-0 -bottom-0.5 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>

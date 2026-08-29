@@ -148,7 +148,7 @@ const HomepageBenefitsPolished = () => {
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up" style={{ animationDelay: '2.4s' }}>
                         <a
-                            href="/sign-up"
+                            href="/login"
                             className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 group">
                             {t('HomepageSteps.cta.button')}
                             <FiArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-300" />
