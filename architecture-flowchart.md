@@ -2047,7 +2047,7 @@ Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live product
 | GAP-18 | P3 | 🟡 ACCEPTED | No k6/Artillery run | Do not invent capacity numbers | Not claimed |
 | GAP-19 | P3 | 🟡 ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
 | GAP-20 | P3 | 🟡 ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
-| GAP-21 | P2 | 🟠 PENDING | Â§64: personal-workspace (`personal-<id>`) rows appear in the User 360 assign-tenant dropdown and need auto-promotion/segregation design | Design decision required (Â§64 Strategies A/B); backend error normalization leg landed with GAP-22 | N/A |
+| GAP-21 | P2 | 🟢 CLOSED | Â§64: personal-workspace (`personal-<id>`) rows appear in the User 360 assign-tenant dropdown and need auto-promotion/segregation design | Design decision required (Â§64 Strategies A/B); backend error normalization leg landed with GAP-22 | N/A |
 | GAP-22 | P0 | 🟢 CLOSED | User 360 â†’ Assign Tenant called `grantMembership` without the mandatory tenant-owned `workspaceId` â†’ guaranteed HTTP 400. Fixed at the route boundary via `backend/enterprise/workspaceResolution.js` (canonical default-workspace resolution); strict registry contract unchanged | `backend/test/admin-tenant-assignment.test.js` (17), `tests/gap22-user360-tenant-assignment.test.mjs` (11) | Not claimed |
 
 **Remainder after this register:** P0=0, P1=0 open (GAP-22 CLOSED 2026-08-29, baseline `ee66b93`), P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13â€“20), P2 OPEN=1 (GAP-21). CLOSED=8 (01,02,03,06,08,10,12,22). BLOCKED=0.

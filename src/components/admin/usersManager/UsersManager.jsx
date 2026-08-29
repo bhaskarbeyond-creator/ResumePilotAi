@@ -68,11 +68,13 @@ export default function UsersManager() {
   const fetchTenants = useCallback(async () => {
     try {
       const res = await getPlatformTenants();
-      const list = (res?.tenants || []).map(d => ({
-        id: d.id,
-        displayName: d.displayName || d.name || d.id,
-        slug: d.slug || d.id
-      }));
+      const list = (res?.tenants || [])
+        .filter(d => !String(d.id || '').startsWith('personal-'))
+        .map(d => ({
+          id: d.id,
+          displayName: d.displayName || d.name || d.id,
+          slug: d.slug || d.id
+        }));
       setAvailableTenants(list);
     } catch (_) {
       setAvailableTenants([]);
