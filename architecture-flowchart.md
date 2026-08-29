@@ -2048,8 +2048,115 @@ Status vocabulary is only **CLOSED**, **ACCEPTED**, or **BLOCKED**. Live product
 | GAP-19 | P3 | ACCEPTED | Single-instance PM2 restart remains the deploy model | No blue-green infra | Not claimed |
 | GAP-20 | P3 | ACCEPTED | No Percy/Chromatic | Do not invent screenshot proof | Not claimed |
 
-**Remainder after this register:** P0=0, P1=0 open, P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20). CLOSED=7 (01,02,03,06,08,10,12). BLOCKED=0.
+**Remainder after this register:** P0=0, P1=0 open, P2 ACCEPTED=5 (04,05,07,09,11), P3 ACCEPTED=8 (13–20), P2 OPEN=1 (GAP-21). CLOSED=7 (01,02,03,06,08,10,12). BLOCKED=0.
 
 **MariaDB authority:** 15 checksummed migrations; `ownership.js` registers `support_ticket` / `support_ticket_message`; account deletion deletes ticket rows after notifications. Zero Firestore data-plane.
 
 **Workers (production PM2):** notification outbox **true**; CMS scheduler, enterprise outbox, tenant GC **false**.
+
+---
+
+## 64. GAP-21: SuperAdmin User 360 Tenant Assignment & Personal Workspace Auto-Promotion
+
+### Executive Summary
+When an administrator with `SUPER_ADMIN` or `ADMIN` privileges opens the **User Profile (User 360 Workspace)** at `/adm/users` -> `Tenants & Orgs` tab and attempts to assign a user to an organization, the dropdown currently displays both **Personal Workspaces** (prefixed `personal-<id>`) and **Enterprise Organizations** (UUID). Selecting a Personal Workspace and submitting triggers an unhandled `HTTP 400` error banner in the UI.
+
+### Root Cause Analysis (RCA)
+1. **Data Plane Architecture Conflict:**
+   * MariaDB table `enterprise_tenants` houses both `PERSONAL` (individual consumer sandboxes) and `ORGANIZATION` (multi-tenant shared workspaces).
+   * Personal workspaces are 1:1 single-owner constructs. Method `mysqlTenantRegistry.grantMembership()` enforces `assertUuid(tenantId)`, rejecting non-UUID string IDs like `personal-c3de03e1594d` with `400 INVALID_TENANT_ID`.
+2. **Frontend Dropdown Ingestion:**
+   * `UsersManager.jsx` calls `getPlatformTenants()`, mapping all raw tenant records without filtering by `type === 'ORGANIZATION'`.
+3. **Frontend Error Normalization Fallback:**
+   * `src/services/platformApi.js` (`platformFetch`) inspects `data.error?.message || data.message`. Because the backend returned `{ success: false, error: "Invalid Tenant identifier" }` (where `error` is a string), `platformFetch` fell back to `new Error('HTTP 400')`, rendering the literal string `⚠️ HTTP 400` in `User360Drawer.jsx`.
+
+### Architectural Implementation Strategies for Cloud Developer
+
+#### Strategy A: Intelligent Auto-Promotion Engine (SuperAdmin "Super Power" Pattern)
+* When a `SUPER_ADMIN` attempts to add a member to a `personal-<id>` workspace:
+  1. Backend detects `tenantId.startsWith('personal-')`.
+  2. Automatically provisions a full `ORGANIZATION` tenant in `enterprise_tenants`, binds the owner as `ENTERPRISE_ADMIN`, creates the default workspace in `enterprise_workspaces`, and grants the target user `ENTERPRISE_MEMBER`.
+  3. Updates the target user's active tenant binding seamlessly.
+  4. Returns `HTTP 200` with promotion audit log (`TENANT_AUTO_PROMOTED_FROM_PERSONAL`).
+
+#### Strategy B: Smart Dropdown Segregation + Client Normalization
+* Update `UsersManager.jsx` and `User360Drawer.jsx` to filter `availableTenants = tenants.filter(t => t.type === 'ORGANIZATION' || !t.id.startsWith('personal-'))`.
+* If a Personal Workspace is inspected, provide an explicit `[⚡ Upgrade to Enterprise Organization]` action.
+* Normalize `platformFetch` error handling: `const errorMsg = typeof data.error === 'string' ? data.error : data.error?.message || data.message || \`HTTP \${response.status}\`;`.
+
+---
+
+## 65. Comprehensive Platform SWOT Analysis & Enterprise Gap Elimination Blueprint
+
+This blueprint catalogs all **13 ACCEPTED Gaps** (GAP-04, 05, 07, 09, 11, 13..20) and **GAP-21** for seamless execution by the Cloud/SRE developer.
+
+```mermaid
+quadrantChart
+    title Platform Architecture SWOT Matrix
+    x-axis Low Technical Complexity --> High Technical Complexity
+    y-axis Low System Impact --> High System Impact
+    quadrant-1 Strategic Pillars (High Impact, High Complexity)
+    quadrant-2 Quick Wins (High Impact, Low Complexity)
+    quadrant-3 Low Priority Maintenance (Low Impact, Low Complexity)
+    quadrant-4 Architectural Investments (Low Impact, High Complexity)
+    "GAP-21 User 360 Auto-Promote": [0.35, 0.85]
+    "GAP-07 Support Impersonation": [0.45, 0.70]
+    "GAP-09 APM Tracing": [0.65, 0.75]
+    "GAP-11 Storage Adapter (S3/R2)": [0.55, 0.65]
+    "GAP-04 Router Modularization": [0.75, 0.45]
+    "GAP-05 Backup Cron Installer": [0.25, 0.60]
+    "GAP-16 PM2 Cluster Mode": [0.60, 0.40]
+    "GAP-17 WCAG 2.1 AA Audit": [0.50, 0.50]
+    "GAP-13..15 Dead Code Cleanup": [0.15, 0.20]
+    "GAP-18 Load Benchmark": [0.40, 0.35]
+    "GAP-19 Blue-Green Deployment": [0.85, 0.55]
+    "GAP-20 Visual Regression": [0.30, 0.30]
+```
+
+### Detailed SWOT Breakdown
+
+#### Strengths (S)
+1. **Unified MariaDB Authority:** 15 checksummed schema migrations across 40+ relational tables with zero runtime Firestore dependency.
+2. **Hardened RBAC & Method-Aware Policies:** 8 distinct roles with least-privilege `GET` read unblocking and guarded mutation endpoints (`policy.js`).
+3. **Cryptographic Payment Assurance:** Server-side HMAC and `X-VERIFY` signatures for Stripe, Paytm, and PhonePe with atomic claim-activate-release state machines.
+4. **Resilient AI Generation Engine:** Dual-provider failover with control-character sanitized JSON parsing and zero client API key leakage.
+5. **High-Fidelity Document Pipelines:** 51 distinct, un-aliased CV templates and 4 cover letter templates supporting both dynamic browser print and 1:1 token-matched DOCX generation.
+
+#### Weaknesses (W)
+1. **Composition Root Monolith (`backend/index.js` - GAP-04):** 5,945 lines composition root handling auth, payments, proxies, and routing in a single file.
+2. **Missing Out-of-Band Backup Scheduling (GAP-05):** Disaster recovery backup scripts are validated and certified, but require host-level crontab attachment.
+3. **Single-Instance PM2 Fork Process (GAP-16):** Single Node.js event loop limits horizontal scaling across multi-core VPS environments.
+4. **Missing Cloud Storage Abstraction (GAP-11):** PDF/DOCX and avatar assets rely on database blobs / local FS rather than S3/R2 object storage.
+
+#### Opportunities (O)
+1. **SuperAdmin Auto-Promotion Capability (GAP-21):** Elevating personal workspaces to enterprise organizations on the fly gives administrators friction-free control.
+2. **Audit-Safe Impersonation (GAP-07):** Ephemeral read-only session shadowing for Support with explicit cryptographic audit logging.
+3. **OpenTelemetry APM & Tracing (GAP-09):** Standardized distributed tracing headers across AI inferencing, MariaDB connection pools, and client requests.
+4. **Consumer Support Portal:** Exposing a `/dashboard/support` route so users can view replies to their support tickets created via migration 015.
+
+#### Threats (T)
+1. **Raw Error Leakage to UI:** Technical network codes (`HTTP 400`, `HTTP 500`) appearing in front of administrators or consumers during validation rejections.
+2. **Payment Polling Desync:** Gateways without server webhooks (PayPal, Razorpay) risk order abandonment if client browser disconnects mid-checkout.
+3. **Resource Saturation Under Spikes:** Lack of Redis caching layer for high-throughput rate-limiting or AI quota persistence under sudden traffic surges.
+
+---
+
+### Gap Elimination Reference Table (13 ACCEPTED + GAP-21)
+
+| Gap ID | Priority | Description | Proposed Cloud Remediation Action |
+|---|---|---|---|
+| **GAP-04** | P2 | Monolithic `backend/index.js` (5,945 lines) | Extract payment webhook routers and platform management routes into `backend/routes/` cleanly. |
+| **GAP-05** | P2 | Automated crontab backup installer | Run `ops/dr/install-backup-schedule.sh` on production Hostinger VPS to enable hourly automated snapshots. |
+| **GAP-07** | P2 | Support user impersonation | Implement ephemeral, scoped, audit-logged read-only support session view tokens without credential mutation. |
+| **GAP-09** | P2 | Application Performance Monitoring (APM) | Add OpenTelemetry middleware for transaction tracing across database queries and LLM generation calls. |
+| **GAP-11** | P2 | Cloud Storage Provider (S3/Cloudflare R2) | Implement `storage/s3Adapter.js` to support offloading exported resumes, CV PDFs, and avatar uploads. |
+| **GAP-13** | P3 | Dead `src/initailisation/` folder | Remove unused directory from repository. |
+| **GAP-14** | P3 | Dead `src/components/addAds/`, `About/` | Remove unreferenced legacy components from repository. |
+| **GAP-15** | P3 | Unused `src/utils/Analytics.jsx` | Clean up uncalled analytics helper file. |
+| **GAP-16** | P3 | PM2 Fork mode vs Cluster mode | Refactor in-memory rate limiters to MariaDB atomic counters to permit multi-core PM2 cluster mode. |
+| **GAP-17** | P3 | Formal WCAG 2.1 AA Accessibility | Perform Axe automated accessibility audit and remediate color contrast across all 51 template presets. |
+| **GAP-18** | P3 | Load and Stress Benchmark | Execute k6 / Artillery benchmark against `/api/generate-summary` and `/api/healthz` to establish RPS baseline. |
+| **GAP-19** | P3 | Blue-Green / Zero-Downtime Deployments | Configure dual-port Nginx upstream proxy with zero-downtime hot reload. |
+| **GAP-20** | P3 | Automated Visual Regression Testing | Integrate Playwright snapshot comparisons for all 51 template print views. |
+| **GAP-21** | P2 | SuperAdmin User 360 Tenant Assignment | Implement personal workspace auto-promotion to enterprise org and normalize frontend error string extraction. |
+
