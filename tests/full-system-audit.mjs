@@ -144,7 +144,7 @@ async function main() {
         { method: 'GET', endpoint: '/api/admin/blog/posts', expected: 401, isPublic: false, desc: 'Protected Admin Blog API' },
         { method: 'GET', endpoint: '/api/platform/health', expected: 401, isPublic: false, desc: 'Protected Platform Health API' },
         { method: 'GET', endpoint: '/api/platform/settings', expected: 401, isPublic: false, desc: 'Protected Platform Settings API' },
-        { method: 'GET', endpoint: '/api/enterprise/status', expected: 401, isPublic: false, desc: 'Protected Enterprise Status API' },
+        { method: 'GET', endpoint: '/api/enterprise/tenants', expected: 401, isPublic: false, desc: 'Protected Enterprise Tenants API' },
     ];
     
     for (const { method, endpoint, expected, isPublic, desc } of apiEndpoints) {

@@ -73,8 +73,8 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
                 setStatsLoading(true);
                 const stats = await getFrontendStats();
                 setFrontendStats(stats || {});
-            } catch (error) {
-                console.error('Error fetching frontend stats:', error);
+            } catch (_) {
+                // Unpublished marketing stats fall back to clean empty defaults without noisy console error
                 setFrontendStats({});
             } finally {
                 setStatsLoading(false);
