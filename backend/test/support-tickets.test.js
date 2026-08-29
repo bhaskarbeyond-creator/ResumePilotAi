@@ -14,9 +14,9 @@ function read(rel) {
 describe('support ticket RBAC and ownership source contracts', () => {
   it('grants tickets.manage to SUPPORT and ADMIN, not AUDITOR', () => {
     const auth = read('security/auth.js');
-    const support = auth.match(/\n  SUPPORT:\s*\[([\s\S]*?)\]/)?.[1] || '';
-    const auditor = auth.match(/\n  AUDITOR:\s*\[([\s\S]*?)\]/)?.[1] || '';
-    const admin = auth.match(/\n  ADMIN:\s*\[([\s\S]*?)\]/)?.[1] || '';
+    const support = auth.match(/\n {2}SUPPORT:\s*\[([\s\S]*?)\]/)?.[1] || '';
+    const auditor = auth.match(/\n {2}AUDITOR:\s*\[([\s\S]*?)\]/)?.[1] || '';
+    const admin = auth.match(/\n {2}ADMIN:\s*\[([\s\S]*?)\]/)?.[1] || '';
     assert.match(support, /tickets\.manage/);
     assert.match(admin, /tickets\.manage/);
     assert.doesNotMatch(auditor, /tickets\.manage/);

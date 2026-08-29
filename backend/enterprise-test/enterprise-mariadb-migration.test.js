@@ -106,9 +106,9 @@ test('billing snapshot and aggregate refund migration preserves complete financi
   assert.match(down, /DROP COLUMN IF EXISTS billing_snapshot/i);
 });
 
-test('isolated migration verifier targets latest version 014 and requires rollback, failure, and reapply', () => {
+test('isolated migration verifier targets latest version 015 and requires rollback, failure, and reapply', () => {
   const verifier = fs.readFileSync(path.resolve(__dirname, '../../scripts/verify-mariadb-migrations.mjs'), 'utf8');
-  assert.match(verifier, /latestMigrationVersion !== '014'/);
+  assert.match(verifier, /latestMigrationVersion !== '015'/);
   assert.match(verifier, /012_billing_snapshot_refund_references\.down\.sql/);
   assert.match(verifier, /011_refund_reconciliation_credit_notes\.down\.sql/);
   assert.match(verifier, /010_payment_refund_state_machine\.down\.sql/);
