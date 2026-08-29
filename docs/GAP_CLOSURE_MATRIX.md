@@ -41,8 +41,8 @@ Do **not** grant SUPPORT all admin GETs. Least privilege is path-mapped.
 | GAP-21 | P2 | 🟢 CLOSED | `architecture-flowchart.md` Â§64: personal-workspace (`personal-<id>`) rows surface in the User 360 assign-tenant dropdown | Design decision (auto-promotion vs dropdown segregation) is required before code; the backend string-error normalization leg landed as part of GAP-22 |
 | GAP-22 | P0 | 🟢 CLOSED | `POST /api/admin/users/:uid/tenants` and `POST /api/admin/platform/tenants/:tenantId/members` called strict `grantMembership` without the mandatory tenant-owned `workspaceId` â†’ every Super Admin User 360 tenant assignment failed with HTTP 400 `INVALID_TENANT_CONTEXT` | Fixed at the route boundary via `backend/enterprise/workspaceResolution.js`: tenant validated (404/403 lifecycle), canonical `isDefault` workspace resolved (deterministic `409 TENANT_NO_USABLE_WORKSPACE` otherwise), explicit `workspaceId` validated tenant-owned (400/404), strict registry contract unchanged. Evidence: `backend/test/admin-tenant-assignment.test.js` 17/17, `tests/gap22-user360-tenant-assignment.test.mjs` 11/11, full suite green. Live proof: **not claimed** (no redeploy this session) |
 | GAP-23 | P1 | 🟢 CLOSED | Slow database-backed requests. Root cause was round-trip count and shared-pool contention, not MariaDB execution speed (`/api/readyz` `latencyMs: 0`). GAP-02 flipped the outbox worker on and GAP-08 coupled payment reconciliation into its 15s tick; combined with two N+1 read paths this put sustained and burst load on the single `connectionLimit` 15 / `queueLimit` 200 pool | `backend/services/indianGatewayActivation.js` credentials resolved once per provider per pass (25-order tick: 51 -> 1-3 pool round trips); `/api/messages/conversations` 1+2N -> constant 3; `/api/admin/users` 2N -> 2 batched reads via `getUsersByIds` + `listMembershipsForPrincipals`, each row revalidated against its own principal. Provider status fetch now enforces `AbortSignal.timeout(10_000)` because global fetch ignores the `timeout` option. Evidence: `backend/test/mariadb-query-budget.test.js` (14 cases; guards fail on pre-fix code), full platform suites green. No index added, no cache widened, no auth/RBAC/tenant change, no Firestore reintroduction. Live before/after latency **not claimed** (no APM, no live DB access) |
-| GAP-24 | P1 | 🟠 OPEN | Health aggregation is unbounded and the append-only outbox has no retention. `computeSnapshot()` runs `SELECT state, COUNT(*) AS total, MIN(created_at) AS oldest FROM notification_outbox GROUP BY state` with no WHERE and no LIMIT, and nothing anywhere deletes terminal `DELIVERED`/`DEAD_LETTER` rows (only migration-test cleanup in `scripts/verify-mariadb-migrations.mjs`). `/api/service-availability` is PUBLIC and mounted on the pricing page (`Billing/Plans.jsx`) and dashboard (`ProfileDisplay.jsx`), so every page view past the 15s TTL can trigger the scan; the Admin console polls every 60s and therefore misses the 15s cache every time — measured 60 recomputes/hour from one idle open tab. Because the table only grows, cost degrades monotonically: the same "slow yesterday, fine last month" signature as GAP-23 | Measured: cold snapshot = 7 pool round trips incl. exactly 1 outbox aggregate; warm = 0. Scan cost in rows/time is **measurement-unavailable** (no live DB, no `EXPLAIN`). Deliberately NOT fixed in code: (a) an index on `(state, created_at)` would make it index-only but `EXPLAIN` cannot be run here and `ALTER` on a busy outbox needs an off-peak window; (b) dropping `MIN(created_at)` would silently remove a displayed admin metric; (c) shortening the admin poll worsens misses. Operator actions, in order: set `PLATFORM_HEALTH_CACHE_MS>=60000` (config-only, converts every idle Admin poll into a 0-query cache hit and caps public-triggered recomputes at 1/min); then add outbox retention/purge for terminal rows; then `EXPLAIN` and consider `ADD INDEX (state, created_at)` |
-| GAP-25 | P1 | 🟠 OPEN | Live config drift + unindexed locking scan. Production `/api/readyz` reports `cmsScheduler: CONFIGURED` and `tenantGc: LOCAL_WORKER_CONFIGURED`, which `index.js:4052/4054` derive only from `CMS_SCHEDULER_ENABLED === 'true'` / `TENANT_GC_WORKER_ENABLED === 'true'` — i.e. **the live process has both workers enabled while `ecosystem.config.js` declares both `false`**. dotenv sets no `override`, so PM2-supplied values win; the running env therefore did not come from the tracked ecosystem file (stale `pm2 save`n env or a different server-side config). Compounding: `publishDueBlogPostsAtomic` runs `SELECT ... WHERE status='scheduled' AND scheduled_at <= NOW() ORDER BY scheduled_at LIMIT 200 FOR UPDATE` and `blog` has **no index on `status` or `scheduled_at`** (both columns were added later by `002_*` with no supporting index; only `idx_blog_slug`, `idx_blog_published` exist) → unindexed full scan + filesort that takes next-key locks across every scanned blog row, on a 60–300s cadence, holding a pooled connection inside a transaction | Evidence: live `/api/readyz` vs `ecosystem.config.js` vs `index.js:4052-4054`; `blog` DDL. Rows-locked/scan cost **measurement-unavailable** (no live DB, no `EXPLAIN`). Two valid operator resolutions — pick one, do not do neither: (1) restore the certified declared state with `pm2 delete && pm2 start ecosystem.config.js --update-env` (or explicit `CMS_SCHEDULER_ENABLED=false`), since the matrix already documents these workers as intentionally fail-closed and admin `publish-due` remains the explicit publish path; or (2) keep the scheduler and add the supporting index `ALTER TABLE blog ADD INDEX idx_blog_schedule (status, scheduled_at)`, after `EXPLAIN`, which makes the claim an index range scan that locks only matching rows. Recommendation (1) is not "disabling a worker to make latency look better": it is removing an undeclared, uncertified deviation from the baseline. Requires operator SSH; cannot be done or verified from this environment |
+| GAP-24 | P1 | 🟠 OPEN (operator config; index question now answered — see third pass) | Health aggregation is unbounded and the append-only outbox has no retention. `computeSnapshot()` runs `SELECT state, COUNT(*) AS total, MIN(created_at) AS oldest FROM notification_outbox GROUP BY state` with no WHERE and no LIMIT, and nothing anywhere deletes terminal `DELIVERED`/`DEAD_LETTER` rows (only migration-test cleanup in `scripts/verify-mariadb-migrations.mjs`). `/api/service-availability` is PUBLIC and mounted on the pricing page (`Billing/Plans.jsx`) and dashboard (`ProfileDisplay.jsx`), so every page view past the 15s TTL can trigger the scan; the Admin console polls every 60s and therefore misses the 15s cache every time — measured 60 recomputes/hour from one idle open tab. Because the table only grows, cost degrades monotonically: the same "slow yesterday, fine last month" signature as GAP-23 | Measured: cold snapshot = 7 pool round trips incl. exactly 1 outbox aggregate; warm = 0. Scan cost in rows/time is **measurement-unavailable** (no live DB, no `EXPLAIN`). Deliberately NOT fixed in code: (a) an index on `(state, created_at)` would make it index-only but `EXPLAIN` cannot be run here and `ALTER` on a busy outbox needs an off-peak window; (b) dropping `MIN(created_at)` would silently remove a displayed admin metric; (c) shortening the admin poll worsens misses. Operator actions, in order: set `PLATFORM_HEALTH_CACHE_MS>=60000` (config-only, converts every idle Admin poll into a 0-query cache hit and caps public-triggered recomputes at 1/min); then add outbox retention/purge for terminal rows; then `EXPLAIN` and consider `ADD INDEX (state, created_at)`. **Third pass updates the last step: the index was profiled on a real local engine over a 200k-row outbox and gained only ~15% (planner still visits every row to aggregate), so it is DOWNGRADED to `do not add` — retention + the cache-TTL setting are the levers that pay. See the third-pass section.** |
+| GAP-25 | P1 | 🟠 OPEN | Live config drift + unindexed locking scan. Production `/api/readyz` reports `cmsScheduler: CONFIGURED` and `tenantGc: LOCAL_WORKER_CONFIGURED`, which `index.js:4052/4054` derive only from `CMS_SCHEDULER_ENABLED === 'true'` / `TENANT_GC_WORKER_ENABLED === 'true'` — i.e. **the live process has both workers enabled while `ecosystem.config.js` declares both `false`**. dotenv sets no `override`, so PM2-supplied values win; the running env therefore did not come from the tracked ecosystem file (stale `pm2 save`n env or a different server-side config). Compounding: `publishDueBlogPostsAtomic` runs `SELECT ... WHERE status='scheduled' AND scheduled_at <= NOW() ORDER BY scheduled_at LIMIT 200 FOR UPDATE` and `blog` has **no index on `status` or `scheduled_at`** (both columns were added later by `002_*` with no supporting index; only `idx_blog_slug`, `idx_blog_published` exist) → unindexed full scan + filesort that takes next-key locks across every scanned blog row, on a 60–300s cadence, holding a pooled connection inside a transaction | Evidence: live `/api/readyz` vs `ecosystem.config.js` vs `index.js:4052-4054`; `blog` DDL. Rows-locked/scan cost **measurement-unavailable** (no live DB, no `EXPLAIN`). Two valid operator resolutions — pick one, do not do neither: (1) restore the certified declared state with `pm2 delete && pm2 start ecosystem.config.js --update-env` (or explicit `CMS_SCHEDULER_ENABLED=false`), since the matrix already documents these workers as intentionally fail-closed and admin `publish-due` remains the explicit publish path; or (2) keep the scheduler and add the supporting index `ALTER TABLE blog ADD INDEX idx_blog_schedule (status, scheduled_at)`, after `EXPLAIN`, which makes the claim an index range scan that locks only matching rows (**third pass: profiled locally at ~88% faster, whole-table read -> index path; kept, production `EXPLAIN` still required**). Recommendation (1) is not "disabling a worker to make latency look better": it is removing an undeclared, uncertified deviation from the baseline. Requires operator SSH; cannot be done or verified from this environment |
 
 ## Intentional worker state (production PM2)
 
@@ -95,3 +95,75 @@ Added `operational-status` cache/round-trip guard: `backend/test/mariadb-query-b
 ### GAP-25 addendum (same pass)
 
 Independent cross-check of the live process, not the repo: `authoritativeDatabase: MARIADB`, `firestoreDataPlane: REMOVED`, `mysql READY latencyMs: 0` (so the drift is not a database-health problem either), while `notificationOutbox` and `tenantGc` both report locally-configured workers. The single most actionable discovery of this pass is therefore **operational**: two background workers are competing for the same `connectionLimit: 15` pool that the certified baseline says must stay idle. No application code was changed for this, because the defect is that production does not match the code.
+
+## 2026-08-29 third forensic pass — controlled local profiling (per instruction, not a live DB)
+
+Production timings remain unobtainable: the sandbox egress allowlist returns no TLS handshake to the app host,
+and no MariaDB 11.x engine is installable here (`apt` lists are empty with `archive.ubuntu.com` and
+`mirror.mariadb.org` both unreachable; the only fetchable portable MariaDB is `pts/portable-mariadb`, which is
+i386 5.2/5.5 and predates window functions, so profiling it would have produced **misleading** evidence for a
+production 11.8 system and was rejected). Per the standing instruction to profile against a controlled local
+engine instead, the audited read patterns were reproduced against a real server (PostgreSQL, local socket,
+real parse/plan/execute/round-trip cost) on production-shaped tables: `conversations` /
+`conversation_participants` / `conversation_messages` (100 threads x 25 messages), `users` +
+`enterprise_memberships` + `enterprise_tenants` (200 identities), `notification_outbox` (200,000 rows, no
+retention, to model GAP-24 growth), `blog` (20,000 rows). Harnesses: `local_db_profile.py`,
+`local_pool_profile.py` (kept outside the repo; they install a disposable database and are not part of the
+certified tree).
+
+**1. Round-trip fixes validated for latency AND for correctness (this was previously unverifiable).**
+
+| Pattern | Measured round trips | Client P50 | P95 | P99 | Result set |
+|---|---|---|---|---|---|
+| `/api/messages/conversations` before | 201 | 29.52 ms | 35.59 ms | 36.58 ms | — |
+| `/api/messages/conversations` after | 3 | 3.92 ms | 5.88 ms | 6.02 ms | **IDENTICAL** |
+| `/api/admin/users` per-identity before | 200 | 26.50 ms | 30.14 ms | — | — |
+| `/api/admin/users` batched after | 2 | 1.05 ms | 1.46 ms | — | **IDENTICAL** |
+
+Improvement 86.7% / 96.0% on P50 (83.4% / 95.2% on P95). The equivalence check is the part that matters most:
+every previously shipped rewrite was only asserted by a **stubbed pool** (the entire backend suite fakes
+`pool.query`), so the new `ROW_NUMBER() OVER (PARTITION BY ... ORDER BY timestamp DESC, id DESC)` query had
+never executed on a real engine. It now has: identical conversation set, identical participant sets, identical
+`lastMessage` selection including tie-breaking, identical ordering. The 24 blocked integration cases and 20
+blocked certification cases still require a real **MariaDB** and remain `BLOCKED — environment unavailable`;
+semantic equivalence here is not migration proof.
+
+**2. The contention thesis is now measured, not inferred.** With the pool pinned to the production shape
+(`connectionLimit: 15`, 50 concurrent requests, 15/50 oversubscribed):
+
+| Pattern | Client P50 | Client P95 | Pool acquire wait P50 | acquire P95 |
+|---|---|---|---|---|
+| before (201 queries held per request) | 762 ms | 886 ms | **538 ms** | **588 ms** |
+| after (3 queries) | 18 ms | 49 ms | **0.05 ms** | 24 ms |
+
+71% of the pre-fix request time was spent **waiting for a connection**, not in MariaDB — the first hard
+number for the audit's central claim, and the measured version of "slow, not erroring": the wait is unbounded
+because mysql2 has no acquire timeout (second-pass finding). At concurrency 8 (under the pool limit) the wait
+is ~0 in both patterns, which is exactly why the incident is load-dependent rather than constant.
+
+**3. Self-correction on the outbox worker's contribution.** The worker burst was modelled (51 back-to-back
+queries per tick, the pre-fix `reconcilePendingIndianGatewayOrders` shape). At oversubscription it did not
+further degrade requests (the pool was already the bottleneck: x0.91, i.e. within noise), and at concurrency 8
+the tail penalty was only x1.15 before vs x1.08 after. So the tick's harm is **not** mainly request-latency:
+it is steady DB work (~3.4 queries/s continuously, ~290k queries/day) plus the guarantee coupling — one
+abandoned `PENDING_PAYMENT` row re-fetched every tick keeps blocking notification delivery. GAP-23's fix is
+still correct, but the earlier framing that the tick *starves request traffic* is downgraded to
+*contributes marginally at low concurrency; the request-side N+1 dominates*. Recording this because it
+contradicts my own emphasis and the evidence says so.
+
+**4. The two deferred indexes are no longer unmeasured — and one failed the bar.**
+
+| Deferred index | Local-engine result | Verdict |
+|---|---|---|
+| `notification_outbox (state, created_at)` | full 200k-row aggregate 29.6 ms -> 25.3 ms (~15%; the planner chose a parallel index-only scan but still visits every row to aggregate) | **DOWNGRADED — do not add.** A ~15% gain does not justify a write-amplifying index on the highest-churn table in the system, nor an off-peak `ALTER` window. The levers that actually pay are retention/purge for terminal rows and `PLATFORM_HEALTH_CACHE_MS >= 60000` (config-only: turns an idle Admin poll from a full scan into a 0-query cache hit). |
+| `blog (status, scheduled_at)` | scheduler claim 1.84 ms -> 0.23 ms (~88%), plan changes from a whole-table read (startup cost 1017) to an index path under `LockRows` | **STILL RECOMMENDED, now with directional evidence.** This is the index for GAP-25 option (2) if the scheduler is kept. |
+
+Both remain gated on production `EXPLAIN` before any `ALTER` (engine, row counts and indexes differ); what
+changed is that they are no longer blind: one measured benefit is real, the other is not worth it.
+`Rows Examined` for the production tables is still `measurement-unavailable` locally and can only come from
+`performance_schema`/`slow_query_log` on the server.
+
+**Scope discipline.** No application source changed this pass: the fixes were already committed (`540e82a`),
+and the new measurements only confirm them and re-rank two deferred recommendations — one of which I had
+previously suggested and now advise **against**. No deployment, no index, no retention job (deleting rows is
+irreversible and needs an operator-approved window). `mariadb-query-budget.test.js` remains 15/15.
