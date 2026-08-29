@@ -140,8 +140,11 @@ run().catch(err => { console.error("Migration error:", err); process.exit(1); })
   // 9. Sync staging to live backend and webroot
   console.log('\nActivating release on server (syncing backend & public_html)...');
   runSsh(`
+    mkdir -p /home/u727965524/backend/dist &&
     cp -r /home/u727965524/staging_backend/. /home/u727965524/backend/ &&
     cp -r /home/u727965524/staging_webroot/. /home/u727965524/domains/airesume.projectdemo.guru/public_html/ &&
+    cp -r /home/u727965524/staging_webroot/. /home/u727965524/public_html/ &&
+    cp -r /home/u727965524/staging_webroot/. /home/u727965524/backend/dist/ &&
     rm -rf /home/u727965524/staging_backend /home/u727965524/staging_webroot
   `);
   console.log('Files synchronized.');

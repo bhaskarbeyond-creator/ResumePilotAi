@@ -38,14 +38,22 @@ function getFrontendBuildSha() {
   if (frontendShaResolved) return cachedFrontendSha;
   frontendShaResolved = true;
   const candidates = [
+    process.env.FRONTEND_INDEX_PATH,
+    path.join(__dirname, '..', '..', 'domains', 'airesume.projectdemo.guru', 'public_html', 'index.html'),
+    path.join(__dirname, '..', '..', 'public_html', 'index.html'),
     path.join(__dirname, '..', '..', 'dist', 'index.html'),
+    path.join(__dirname, '..', 'public_html', 'index.html'),
     path.join(__dirname, '..', 'dist', 'index.html'),
-  ];
+    path.join(process.cwd(), 'dist', 'index.html'),
+    path.join(process.cwd(), 'public_html', 'index.html'),
+  ].filter(Boolean);
   for (const file of candidates) {
     try {
       if (!fs.existsSync(file)) continue;
       const html = fs.readFileSync(file, 'utf8');
-      const match = html.match(/data-build-sha=["']([0-9a-f]{40})["']/i);
+      const match = html.match(/data-build-sha=["']([0-9a-f]{40})["']/i) ||
+                    html.match(/name=["']build-sha["']\s+data-build-sha=["']([0-9a-f]{40})["']/i) ||
+                    html.match(/name=["']build-sha["']\s+content=["']([0-9a-f]{40})["']/i);
       if (match) {
         cachedFrontendSha = match[1].toLowerCase();
         return cachedFrontendSha;
