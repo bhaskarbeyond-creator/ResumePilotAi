@@ -10,6 +10,7 @@ import { withTranslation } from 'react-i18next';
 import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
 import { describeOAuthRedirectError, stripOAuthRedirectError } from '../../../utils/oauthRedirectError';
 import { getTotpSignInResolver, completeTotpSignIn } from '../../../services/mfaService';
+import { getSafeAuthErrorMessage } from '../../../utils/authErrorMessages';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
 const LinkedInIcon = () => (
@@ -183,15 +184,8 @@ class Login extends Component {
                     this.setState({ mfaResolver, mfaCode: '', isSubmitting: false });
                     return;
                 }
-                let msg = error.message;
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    msg = `Invalid credentials for ${email}. Please check your password or click "Forgot password?" to reset it.`;
-                } else if (error.code === 'auth/invalid-email') {
-                    msg = 'Please enter a valid email address.';
-                } else if (error.code === 'auth/too-many-requests') {
-                    msg = 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password.';
-                }
-                if (this.props.throwError) this.props.throwError(msg);
+                const msg = getSafeAuthErrorMessage(error);
+                if (msg && this.props.throwError) this.props.throwError(msg);
             });
     }
 
@@ -335,11 +329,12 @@ class Login extends Component {
             if (['auth/operation-not-allowed', 'auth/unauthorized-domain', 'auth/configuration-not-found'].includes(error.code)) {
                 import('../../../utils/googleSdkAuth').then(({ directGoogleAuthFallback }) => {
                     directGoogleAuthFallback(self.props.closeModal, self.props.throwError);
-                }).catch(e => { if (self.props.throwError) self.props.throwError(e.message); });
+                }).catch(e => { if (self.props.throwError) self.props.throwError(getSafeAuthErrorMessage(e, 'This sign-in method is unavailable right now. Please try email sign-in or contact support.')); });
                 return;
             }
             if (error.code !== 'auth/popup-closed-by-user') {
-                if (self.props.throwError) self.props.throwError(error.message);
+                const msg = getSafeAuthErrorMessage(error);
+                if (msg && self.props.throwError) self.props.throwError(msg);
             }
         });
     }
@@ -369,11 +364,12 @@ class Login extends Component {
             if (['auth/operation-not-allowed', 'auth/unauthorized-domain', 'auth/configuration-not-found'].includes(error.code)) {
                 import('../../../utils/facebookSdkAuth').then(({ directFacebookAuthFallback }) => {
                     directFacebookAuthFallback(self.props.closeModal, self.props.throwError);
-                }).catch(e => { if (self.props.throwError) self.props.throwError(e.message); });
+                }).catch(e => { if (self.props.throwError) self.props.throwError(getSafeAuthErrorMessage(e, 'This sign-in method is unavailable right now. Please try email sign-in or contact support.')); });
                 return;
             }
             if (error.code !== 'auth/popup-closed-by-user') {
-                if (self.props.throwError) self.props.throwError(error.message);
+                const msg = getSafeAuthErrorMessage(error);
+                if (msg && self.props.throwError) self.props.throwError(msg);
             }
         });
     }

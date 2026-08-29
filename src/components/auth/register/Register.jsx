@@ -10,6 +10,7 @@ import Toast from '../../Toasts/Toats';
 import { withTranslation } from 'react-i18next';
 import { resolveOAuthSettings, fetchOAuthAvailability, applyOAuthAvailability } from '../../../utils/oauthResolver';
 import { describeOAuthRedirectError, stripOAuthRedirectError } from '../../../utils/oauthRedirectError';
+import { getSafeAuthErrorMessage } from '../../../utils/authErrorMessages';
 
 // LinkedIn & GitHub SVG icons (inline — no extra dependencies)
 const LinkedInIcon = () => (
@@ -192,11 +193,12 @@ class Register extends Component {
             if (['auth/operation-not-allowed', 'auth/unauthorized-domain', 'auth/configuration-not-found'].includes(error.code)) {
                 import('../../../utils/googleSdkAuth').then(({ directGoogleAuthFallback }) => {
                     directGoogleAuthFallback(self.props.closeModal, self.props.throwError);
-                }).catch(e => { if (self.props.throwError) self.props.throwError(e.message); });
+                }).catch(e => { if (self.props.throwError) self.props.throwError(getSafeAuthErrorMessage(e, 'This sign-in method is unavailable right now. Please try email sign-in or contact support.')); });
                 return;
             }
             if (error.code !== 'auth/popup-closed-by-user') {
-                if (self.props.throwError) self.props.throwError(error.message);
+                const msg = getSafeAuthErrorMessage(error);
+                if (msg && self.props.throwError) self.props.throwError(msg);
             }
         });
     }
@@ -224,11 +226,12 @@ class Register extends Component {
             if (['auth/operation-not-allowed', 'auth/unauthorized-domain', 'auth/configuration-not-found'].includes(error.code)) {
                 import('../../../utils/facebookSdkAuth').then(({ directFacebookAuthFallback }) => {
                     directFacebookAuthFallback(self.props.closeModal, self.props.throwError);
-                }).catch(e => { if (self.props.throwError) self.props.throwError(e.message); });
+                }).catch(e => { if (self.props.throwError) self.props.throwError(getSafeAuthErrorMessage(e, 'This sign-in method is unavailable right now. Please try email sign-in or contact support.')); });
                 return;
             }
             if (error.code !== 'auth/popup-closed-by-user') {
-                if (self.props.throwError) self.props.throwError(error.message);
+                const msg = getSafeAuthErrorMessage(error);
+                if (msg && self.props.throwError) self.props.throwError(msg);
             }
         });
     }
@@ -340,13 +343,10 @@ class Register extends Component {
             }, 2000);
         } catch (error) {
             this.setState({ isSubmitting: false }); // GAP-01: unlock on error
-            let msg = error.message;
+            const msg = getSafeAuthErrorMessage(error, 'Registration failed. Please try again or contact support.');
             if (error.code === 'auth/email-already-in-use') {
                 // Never delete an existing Auth identity based only on an unauthenticated
                 // registration attempt. The account owner must sign in or use password reset.
-                msg = 'An account already exists for this email. Sign in or use Forgot password?';
-            } else if (error.code === 'auth/invalid-email') {
-                msg = 'Please enter a valid email address.';
             }
             if (this.props.throwError) this.props.throwError(msg);
             else alert(msg);

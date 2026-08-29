@@ -6,7 +6,7 @@
 - **Bearer Token Authorization**: Every user-facing AI generation request (`/api/generate-summary`, `/api/generate-work-description`, `/api/generate-content`, etc.) must attach the `Authorization: Bearer <token>` header from `fire.auth().currentUser.getIdToken()`. Unauthenticated requests return `HTTP 401 AUTH_REQUIRED`.
 
 ## 2. Secret Credentials & UI State Handling
-- **Server-Only Secret Vault**: Secret API keys (NVIDIA, Gemini, OpenAI, Groq, OpenRouter, DeepSeek) are stored in server-side Firestore secrets (`settings/ai_providers`) and must never be echoed back in plain text to client browser payloads.
+- **Server-Only Secret Vault**: Secret API keys (NVIDIA, Gemini, OpenAI, Groq, OpenRouter, DeepSeek) are stored server-side in MariaDB configuration and/or deployment-managed environment secrets. They must never be echoed back in plain text to client browser payloads. Firestore is not an application-data or secret store.
 - **Post-Save UI Masking**: After saving settings, clear frontend text box states (`geminiApiKey: ''`, `nvidiaApiKey: ''`) to protect keys from browser DOM memory exposure, while rendering explicit status indicators (`✓ API key configured & active on server`).
 - **Custom Model Flexibility**: All AI provider configuration UI cards must support both a 1-click curated model dropdown and a custom model string input field, allowing administrators to type any arbitrary model ID.
 
@@ -45,7 +45,7 @@
   - **Enterprise IAM, Tenant Isolation & Multi-Tenancy**: `backend/enterprise/tenantService.js`, `backend/enterprise/tenantContext.js`, `backend/enterprise/tenantPolicy.js`, and `backend/routes/enterprise.js` — 10/10 adversarial isolation probes passed, fully certified.
   - **Enterprise Durable Outbox & Queue**: `backend/enterprise/enterpriseOutbox.js` — HMAC-SHA256 signed envelopes, DLQ, lease recovery, tamper rejection certified.
   - **Enterprise AES-256-GCM Encryption**: `backend/enterprise/tenantEncryption.js` — zero plaintext leakage, auth tag verification, fail-closed without key certified.
-  - **Enterprise AI Governance & Quotas**: `backend/enterprise/tenantAi.js`, `backend/enterprise/tenantQuota.js` — client authority injection blocked, atomic Firestore quota bucketing certified.
+  - **Enterprise AI Governance & Quotas**: `backend/enterprise/tenantAi.js`, `backend/enterprise/tenantQuota.js` — client authority injection blocked; MariaDB-owned quota persistence is the active architecture.
   - **Enterprise Logical Backup/Restore**: `backend/enterprise/tenantBackup.js` — SHA-256 checksums, dry-run, path injection rejection, byte-for-byte restore certified.
   - **TOTP MFA Lifecycle Test**: `backend/test/totp-mfa-lifecycle.test.js` — 4 P0 invariants (`AUTHENTICATED!=MFA_AUTHENTICATED`, `RECENT_AUTH!=MFA_VERIFIED`, `STALE!=RECENT`, valid TOTP success+audit) proven via supertest + mock token verifier.
   - **All other frozen modules**: No regression. All test suites pass 100% (Interview 28/28, Security 246/246, Templates 72/72, Enterprise 23/23, Portfolio 3/3).
@@ -55,7 +55,7 @@
 - **Automatic Repo & Production Sync**: For every code update, bugfix, or feature implemented and verified:
   1. Verify zero regressions via test suite (`npm test`).
   2. Build production assets via `npm run build`.
-  3. Commit and push the clean change set directly to GitHub remote `origin/main` with clear semantic commit messaging.
+  3. In Arena sessions, commit and push the clean change set to the active Arena branch only; do not push directly to `origin/main` from the sandbox.
 
 
 

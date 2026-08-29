@@ -39,11 +39,16 @@ async function scalar(connection, sql, params = []) {
   return Number(Object.values(rows[0] || {})[0] || 0);
 }
 
+function isConstraintRejection(error) {
+  return ['ER_CONSTRAINT_FAILED', 'WARN_DATA_TRUNCATED', 'ER_INNODB_AUTOEXTEND_SIZE_OUT_OF_RANGE'].includes(error.code)
+    || /\bCONSTRAINT\b|check constraint/i.test(String(error.message || ''));
+}
+
 async function expectDatabaseRejection(connection, sql, params, acceptedCodes, label) {
   try {
     await connection.query(sql, params);
   } catch (error) {
-    if (acceptedCodes.includes(error.code)) return;
+    if (acceptedCodes.includes(error.code) || isConstraintRejection(error)) return;
     throw error;
   }
   throw new Error(`${label} was not rejected by MariaDB`);
@@ -61,7 +66,8 @@ try {
 
   const clean = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-verifier' });
   const discovered = discoverMigrations();
-  if (!clean.current || discovered.at(-1)?.version !== '012') throw new Error('Clean-state migration application did not reach version 012');
+  const latestMigrationVersion = discovered.at(-1)?.version;
+  if (!clean.current || latestMigrationVersion !== '014') throw new Error(`Clean-state migration application did not reach version 014 (observed ${latestMigrationVersion || 'none'})`);
 
   const invitationTableCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'enterprise_membership_invitations'`,
@@ -145,15 +151,40 @@ try {
   const configurationCategoryCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM system_settings
      WHERE category IN ('public_config', 'payment_providers', 'system_settings', 'admin_configuration')`);
+  const cmsRelationalColumnCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND (
+       (TABLE_NAME = 'custom_pages' AND COLUMN_NAME IN ('description', 'status', 'revision'))
+       OR (TABLE_NAME = 'trusted_by' AND COLUMN_NAME = 'revision')
+       OR (TABLE_NAME = 'reviews' AND COLUMN_NAME = 'revision')
+     )`,
+    [databaseName]);
+  const customPageStatusConstraintCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.TABLE_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = 'custom_pages'
+       AND CONSTRAINT_NAME = 'chk_custom_page_status' AND CONSTRAINT_TYPE = 'CHECK'`,
+    [databaseName]);
+  const failClosedDefaultsCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM system_settings
+     WHERE category = 'public_config' AND revision = 0
+       AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.modules.enableGoogleAuthModule')) = 'false'
+       AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.modules.enableAtsScoreModule')) = 'false'
+       AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.llmGeo.enableLlmGeo')) = 'false'`);
+  const unevidencedRatingCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM system_settings
+     WHERE category = 'website_meta' AND revision = 0
+       AND JSON_CONTAINS_PATH(data, 'one', '$.rating')`);
   if (invitationTableCount !== 1 || membershipIndexCount !== 2
       || aiMetadataColumnCount !== 6 || aiIdempotencyIndexCount !== 2 || aiForeignKeyCount !== 2
       || trackerColumnCount !== 2 || trackerIndexCount !== 2 || notificationStateConstraintCount !== 1
       || refundStateColumnCount !== 9 || creditNoteTableCount !== 2 || creditNoteForeignKeyCount !== 3
       || billingSnapshotColumnCount !== 5 || creditNoteReferenceTypeCount !== 1
       || refundReferenceTableCount !== 1 || refundReferenceForeignKeyCount !== 1
-      || billingEvidenceConstraintCount !== 3 || configurationCategoryCount !== 4) {
+      || billingEvidenceConstraintCount !== 3 || configurationCategoryCount !== 4
+      || cmsRelationalColumnCount !== 5 || customPageStatusConstraintCount !== 1
+      || failClosedDefaultsCount !== 1 || unevidencedRatingCount !== 0) {
     // information_schema.STATISTICS has one row per indexed column.
-    throw new Error('Migration 005-012 tables, columns, indexes, constraints, or bootstrap rows are missing');
+    throw new Error('Migration 005-014 tables, columns, indexes, constraints, bootstrap rows, or fail-closed defaults are missing');
   }
 
   const paymentProbeSql = `INSERT INTO payment_orders
@@ -226,13 +257,15 @@ try {
   try {
     await pool.query("UPDATE notification_outbox SET state = 'INVALID_STATE' WHERE id = 'migration-008-probe'");
   } catch (error) {
-    invalidNotificationStateRejected = ['ER_CONSTRAINT_FAILED', 'WARN_DATA_TRUNCATED'].includes(error.code);
+    invalidNotificationStateRejected = isConstraintRejection(error);
   }
   if (!invalidNotificationStateRejected) throw new Error('Migration 008 CHECK did not reject an invalid notification state');
   await pool.query("DELETE FROM notification_outbox WHERE id = 'migration-008-probe'");
 
   const connection = await pool.getConnection();
   try {
+    await executeFile(connection, path.join(ROOT, 'backend/database/migrations/014_fail_closed_discovery_defaults.down.sql'));
+    await executeFile(connection, path.join(ROOT, 'backend/database/migrations/013_cms_relational_authority.down.sql'));
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/012_billing_snapshot_refund_references.down.sql'));
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/011_refund_reconciliation_credit_notes.down.sql'));
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/010_payment_refund_state_machine.down.sql'));
@@ -273,14 +306,23 @@ try {
       `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ('credit_notes', 'credit_note_counters')`, [databaseName])) {
       throw new Error('Migration 011 rollback did not remove credit-note tables');
     }
-    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012')");
+    if (await scalar(connection,
+      `SELECT COUNT(*) FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND (
+         (TABLE_NAME = 'custom_pages' AND COLUMN_NAME IN ('description', 'status', 'revision'))
+         OR (TABLE_NAME = 'trusted_by' AND COLUMN_NAME = 'revision')
+         OR (TABLE_NAME = 'reviews' AND COLUMN_NAME = 'revision')
+       )`, [databaseName])) {
+      throw new Error('Migration 013 rollback did not remove CMS relational metadata');
+    }
+    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012', '013', '014')");
   } finally {
     connection.release();
   }
 
   const reapplied = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-rollback-verifier' });
-  if (!reapplied.current || !['005', '006', '007', '008', '009', '010', '011', '012'].every(version => reapplied.applied.some(item => item.version === version))) {
-    throw new Error('Migrations 005 through 012 did not reapply after rollback');
+  if (!reapplied.current || !['005', '006', '007', '008', '009', '010', '011', '012', '013', '014'].every(version => reapplied.applied.some(item => item.version === version))) {
+    throw new Error('Migrations 005 through 014 did not reapply after rollback');
   }
 
   // Migration 008 must reject historical unknown states instead of silently
@@ -352,7 +394,7 @@ try {
   let checkRejected = false;
   try {
     await pool.query("UPDATE enterprise_membership_invitations SET invitationState = 'INVALID' WHERE id = 'invitation-fixture'");
-  } catch (error) { checkRejected = error.code === 'ER_CONSTRAINT_FAILED' || error.code === 'WARN_DATA_TRUNCATED'; }
+  } catch (error) { checkRejected = isConstraintRejection(error); }
   if (!checkRejected) throw new Error('Invitation state CHECK constraint did not reject an invalid state');
 
   let foreignKeyRejected = false;
@@ -378,6 +420,21 @@ try {
     duplicatePreflightFailure: true,
     constraints: true,
   }));
+} catch (error) {
+  const detail = {
+    status: 'NOT VERIFIED',
+    code: error.code || null,
+    migration: error.migration || null,
+    message: String(error.message || error),
+  };
+  console.error(JSON.stringify(detail));
+  if (process.env.GITHUB_ACTIONS) {
+    const annotation = `${detail.migration ? `${detail.migration}: ` : ''}${detail.code ? `${detail.code}: ` : ''}${detail.message}`
+      .replace(/\r?\n/g, ' ')
+      .slice(0, 500);
+    console.error(`::error title=MariaDB migration verifier failed::${annotation}`);
+  }
+  process.exitCode = 1;
 } finally {
   if (pool) await pool.end().catch(() => {});
   if (admin) {

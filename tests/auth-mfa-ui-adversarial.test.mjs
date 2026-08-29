@@ -8,7 +8,8 @@ test('AUTH-001: Password registration and login model enforcement', async () => 
 
   // Verify email & password inputs and submission validations
   assert.match(loginSrc, /signInWithEmailAndPassword/, 'Login must support standard email/password authentication');
-  assert.match(loginSrc, /auth\/invalid-credential/, 'Login must handle invalid credential rejections');
+  const authErrorsSrc = fs.readFileSync('src/utils/authErrorMessages.js', 'utf8');
+  assert.match(authErrorsSrc, /auth\/invalid-credential/, 'Login must handle invalid credential rejections through the safe auth error mapper');
   assert.match(registerSrc, /createUserWithEmailAndPassword/, 'Register must support standard email/password creation');
 });
 
