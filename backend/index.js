@@ -2217,8 +2217,8 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
 
 // Readiness routes extracted to backend/routes/health.js — mounted below
 
-// Start a listener only for the executable entry point; integration tests import the Express app.
-if (require.main === module) {
+// Start a listener for the executable entry point or when spawned as a cluster worker; integration tests import the Express app.
+if (require.main === module || require('cluster').isWorker) {
     // Startup schema bootstrap (idempotent, non-fatal). Fresh deployments become
     // operational on first boot; a MySQL outage degrades instead of crash-looping.
     runSchemaBootstrap().catch(() => {});
