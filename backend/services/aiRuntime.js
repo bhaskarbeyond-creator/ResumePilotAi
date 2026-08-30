@@ -8,6 +8,14 @@ const PROVIDER_DEFAULTS = Object.freeze({
     openrouter: { model: 'meta-llama/llama-3.3-70b-instruct:free', url: 'https://openrouter.ai/api/v1/chat/completions' },
     deepseek: { model: 'deepseek-chat', url: 'https://api.deepseek.com/chat/completions' },
 });
+// Models confirmed end-of-life or permanently degraded on their provider.
+// When a persisted DB config references one, auto-remediate to the hardcoded
+// default at configuration load time to prevent persistent failover loops.
+const RETIRED_NVIDIA_MODELS = new Set([
+    'meta/llama-3.1-8b-instruct',
+    'nvidia/nemotron-mini-4b-instruct',
+    'poolside/laguna-xs-2.1',
+]);
 const ENV_KEYS = Object.freeze({
     nvidia: 'NVIDIA_API_KEY', gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY',
     groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY',
@@ -652,9 +660,16 @@ async function loadProviderConfiguration(environment = process.env) {
         const key = String(environment[ENV_KEYS[provider]] || providerSecrets[provider]?.apiKey || legacyAi[legacySecretFields[provider]] || '').trim();
         const configuredModel = environment[ENV_MODELS[provider]] || providerSecrets[provider]?.model || effectiveAi[MODEL_FIELDS[provider]];
         const baseUrl = String(environment[ENV_BASE_URLS[provider]] || providerSecrets[provider]?.baseUrl || '').trim();
+        let resolvedModel = safeModel(configuredModel, PROVIDER_DEFAULTS[provider].model);
+        // Auto-remediate retired NVIDIA models persisted in DB — prevents
+        // infinite failover loops against dead endpoints.
+        if (provider === 'nvidia' && RETIRED_NVIDIA_MODELS.has(resolvedModel)) {
+            console.warn(`[AI Config] Auto-remediating retired NVIDIA model "${resolvedModel}" → "${PROVIDER_DEFAULTS.nvidia.model}"`);
+            resolvedModel = PROVIDER_DEFAULTS.nvidia.model;
+        }
         providers[provider] = {
             key,
-            model: safeModel(configuredModel, PROVIDER_DEFAULTS[provider].model),
+            model: resolvedModel,
             baseUrl: /^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(baseUrl) ? baseUrl : '',
             enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
         };
@@ -841,14 +856,51 @@ function getContentOperationFallback(operation, rawPayload = {}) {
     }
 
     if (operation === 'generate-summary') {
+        // Preferred: return existing hand-written text unchanged
         const preferredSource = compact(payload.existingText || payload.sourceFacts, 1200);
         if (preferredSource) return { summary: sanitizeSourceText(preferredSource), _source: 'source-preserving-fallback' };
-        const summary = factualSourceSegments(operation, payload)
+
+        // Structured fallback: build a minimally coherent sentence from
+        // structured fields instead of dumping raw concatenated values.
+        const role = compact(payload.jobTitle || payload.occupation, 200);
+        const exp = compact(payload.experience, 50);
+        const skills = compact(payload.skills, 400);
+        const edu = compact(payload.education, 400);
+        const certs = compact(payload.certifications, 300);
+        const work = compact(payload.workHistory, 600);
+        const projects = compact(payload.projects, 400);
+        const achievements = compact(payload.achievement, 400);
+
+        const parts = [];
+        if (role) {
+            parts.push(exp ? `${role} with ${exp} of experience` : role);
+        }
+        if (skills) parts.push(`skilled in ${skills}`);
+        if (edu) parts.push(`with background in ${edu}`);
+        if (certs) parts.push(`holding ${certs}`);
+
+        // Append freeform source segments that don't fit structured slots
+        const extras = [work, projects, achievements].filter(Boolean);
+
+        if (parts.length > 0 || extras.length > 0) {
+            let sentence = '';
+            if (parts.length > 0) {
+                // Join with commas and replace last comma with ' and' for natural phrasing
+                sentence = parts.join(', ').replace(/,([^,]*)$/, ' and$1') + '.';
+            }
+            if (extras.length > 0) {
+                sentence = [sentence, ...extras].filter(Boolean).join(' ');
+            }
+            return { summary: sanitizeSourceText(sentence.trim(), 1200), _source: 'source-preserving-fallback' };
+        }
+
+        // Last resort: concatenate unique non-name source segments
+        const segments = factualSourceSegments(operation, payload)
             .filter(([field]) => field !== 'name')
             .map(([, value]) => sanitizeSourceText(value, 1200))
-            .filter(Boolean)
-            .join('. ')
-            .slice(0, 1200);
+            .filter(Boolean);
+        const unique = [...new Set(segments)];
+        const summary = unique.join('. ').slice(0, 1200);
         return summary ? { summary, _source: 'source-preserving-fallback' } : null;
     }
 

@@ -112,7 +112,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             setCharCount(cleanText(cleanSummary).length);
             updateResumeData({ summary: cleanSummary });
             if (data?._source === 'source-preserving-fallback') {
-                setError('The AI provider was unavailable, so only your supplied facts were preserved. Review the wording before saving.');
+                setError('The AI provider was temporarily unavailable. A draft summary was assembled from your facts — please review and refine the wording before saving.');
             }
         } catch (error) {
             if (error?.name === 'AbortError') return;
