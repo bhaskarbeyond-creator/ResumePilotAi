@@ -306,15 +306,7 @@ const BuildResume = () => {
             ),
         },
     ];
-    const sectionKeyForPath = path => ({ 'work-history': 'employment' }[path] || path);
-    const sectionOrderList = Array.isArray(resumeData?.sectionOrder) && resumeData.sectionOrder.length
-        ? resumeData.sectionOrder
-        : DEFAULT_SECTION_ORDER;
-    const orderedSteps = [...steps].sort((left, right) => {
-        const leftIndex = sectionOrderList.indexOf(sectionKeyForPath(left.path));
-        const rightIndex = sectionOrderList.indexOf(sectionKeyForPath(right.path));
-        return (leftIndex < 0 ? 999 : leftIndex) - (rightIndex < 0 ? 999 : rightIndex);
-    });
+    const orderedSteps = steps;
 
     const getCurrentStepIndex = () => {
         const currentPath = location.pathname.toLowerCase().replace(/\/$/, '');

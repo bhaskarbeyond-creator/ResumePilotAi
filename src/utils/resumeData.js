@@ -74,13 +74,18 @@ export function normalizeResumeData(input = {}, { template = 'Cv1' } = {}) {
         return { ...item, id: item.id || `language-${index}`, name, language: name, level: text(item.level || item.proficiency), date: Number(item.date) || index + 1 };
     });
     const rawOrder = Array.isArray(raw.sectionOrder) && raw.sectionOrder.length ? raw.sectionOrder : DEFAULT_SECTION_ORDER;
-    const sectionOrder = [...new Set(rawOrder.map(text).filter(Boolean))];
+    let sectionOrder = [...new Set(rawOrder.map(text).filter(Boolean))];
     const sumIdx = sectionOrder.indexOf('summary');
+    const langIdx = sectionOrder.indexOf('languages');
     const empIdx = sectionOrder.indexOf('employment') !== -1 ? sectionOrder.indexOf('employment') : sectionOrder.indexOf('work-history');
-    if (sumIdx !== -1 && empIdx !== -1 && sumIdx > empIdx) {
-        sectionOrder.splice(sumIdx, 1);
-        const newEmpIdx = sectionOrder.indexOf('employment') !== -1 ? sectionOrder.indexOf('employment') : sectionOrder.indexOf('work-history');
-        sectionOrder.splice(newEmpIdx, 0, 'summary');
+    if (sumIdx !== -1 && (empIdx !== -1 && sumIdx < empIdx || langIdx !== -1 && sumIdx < langIdx)) {
+        sectionOrder = sectionOrder.filter(key => key !== 'summary');
+        const targetLangIdx = sectionOrder.indexOf('languages');
+        if (targetLangIdx !== -1) {
+            sectionOrder.splice(targetLangIdx + 1, 0, 'summary');
+        } else {
+            sectionOrder.push('summary');
+        }
     }
     const hiddenSections = [...new Set((Array.isArray(raw.hiddenSections) ? raw.hiddenSections : []).map(text).filter(Boolean))];
 
