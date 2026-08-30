@@ -1437,12 +1437,28 @@ graph TD
 |---|---|---|
 | PM2 instances | 1 (fork mode) | ðŸŸ¡ Single point of failure |
 | Memory limit | 600MB | ðŸŸ¢ |
-| DB connection pool | Default 15 | ðŸŸ¢ |
+| DB connection pool | `connectionLimit` 15 / `queueLimit` 200, one module-level pool | PARTIAL - shared with all background workers; a burst beyond `queueLimit` queues and then hard-fails `Queue limit reached.` |
+| Worker/user pool isolation | None - outbox, payment reconcile, CMS and GC use the same pool as user traffic | ACCEPTED (single PM2 instance); mitigated by pinned per-request query budgets, see GAP-23. Measured on a controlled local engine at the production pool shape (15 connections, 50 concurrent requests): the pre-fix 201-query/request pattern spent 538ms of 762ms P50 waiting for a connection; after batching, 0.05ms of 18ms |
+| Per-request SQL budget | Measured on the real code path: conversations list = 3 round trips (was 1+2N), admin directory page = 2 batched reads (was 2N), reconcile tick = 1-3 (was 1+2N) | OK - regression-pinned by `backend/test/mariadb-query-budget.test.js` |
+| Connection acquire timeout | **None exists in mysql2** - `waitForConnections: true` queues with no deadline; only `queueLimit` 200 bounds it (then `Queue limit reached.`) | PARTIAL - a saturated pool makes requests WAIT rather than fail fast; `connectTimeout` bounds handshakes only, not queue waits |
+| Query timeout | Not configured; `.query()` used at 570 sites, `.execute()` at 0 | PARTIAL - no per-statement deadline, and no prepared-statement reuse |
+| `idleTimeout: 60_000` | **Inert.** mysql2 only starts its idle reaper when `maxIdle < connectionLimit`; `maxIdle` defaults to `connectionLimit` (15), so the reaper never runs | OK for latency (warm connections are retained and reused - no reconnect churn); note `wait_timeout` is instead covered by `enableKeepAlive` |
+| Health snapshot cache | `PLATFORM_HEALTH_CACHE_MS` 15s TTL, single-flight, `MIN_FORCED_INTERVAL_MS` 3s floor; Admin polls at 60s | PARTIAL - a 60s poll always misses a 15s TTL, so an idle Admin tab recomputes the snapshot (incl. one unbounded outbox aggregate) 60x/hour |
+| Background workers on the user pool | Declared: notification outbox only. **Live `readyz` also reports CMS scheduler and tenant GC as enabled** (GAP-25 drift) | PARTIAL - each enabled worker adds periodic scans to the same 15-connection pool; `publishDueBlogPostsAtomic` currently runs an unindexed `FOR UPDATE` scan of `blog` because no `(status, scheduled_at)` index exists (controlled local profiling: adding that index made the claim ~88% faster, whole-table read to index path; production `EXPLAIN` still required before any `ALTER`) |
+| SQL client mode | `.query()` at 570 sites, `.execute()` at 0; `multipleStatements: false` retained | OK - injection posture unchanged; no prepared-statement reuse, which is acceptable at this scale and not worth a 570-site refactor |
 | AI config cache | 15-second TTL | ðŸŸ¢ |
 | Feature flag cache | 30-second TTL | ðŸŸ¢ |
 | Frontend code splitting | All routes lazy-loaded | ðŸŸ¢ |
 | Load testing baseline | **NOT PERFORMED** | ðŸŸ  UNVERIFIED |
 | APM profiling | **NOT CONFIGURED** | ðŸ”´ MISSING |
+
+> **Round-trip accounting, not latency accounting.** Every figure in this section is a
+> measured count of MariaDB round trips executed by the real route or service under test
+> doubles. Wall-clock production latency is deliberately NOT claimed: there is no APM, no
+> live-database access from the audit environment, and no load-test run. `/api/readyz` on the
+> live instance reported `mysql.latencyMs: 0` for `SELECT 1`, which is the evidence that this
+> was never a database execution-speed problem - it was a round-trip-count and pool-contention
+> problem on a shared pool.
 
 ---
 

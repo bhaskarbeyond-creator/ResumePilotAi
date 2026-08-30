@@ -1752,6 +1752,12 @@ app.get('/api/messages/conversations', async (req, res) => {
     // List conversations for the current user. Messaging is fully MySQL-backed
     // (migrated from Firebase Realtime Database); no Firebase database is
     // consulted on this path.
+    //
+    // Read pattern: exactly three bounded round trips regardless of conversation
+    // count. The previous shape issued one participants query and one
+    // latest-message query per conversation (1 + 2N sequential pool acquisitions),
+    // which at the 100-conversation cap meant 201 round trips queued behind the
+    // shared MariaDB pool on a single page load.
     try {
         const pool = require('./database/mysql').getPool();
         const uid = req.user.uid;
@@ -1764,26 +1770,54 @@ app.get('/api/messages/conversations', async (req, res) => {
              LIMIT 100`,
             [uid]
         );
-        const conversations = [];
-        for (const row of convRows) {
-            const [partRows] = await pool.query(
-                'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-                [row.id]
-            );
-            const participants = {};
-            partRows.forEach(p => { participants[p.user_id] = true; });
-            const [lastRows] = await pool.query(
-                `SELECT id, sender_id AS senderId, text, timestamp
-                 FROM conversation_messages WHERE conversation_id = ?
-                 ORDER BY timestamp DESC LIMIT 1`,
-                [row.id]
-            );
-            conversations.push({
-                id: row.id,
-                applicationId: row.applicationId || null,
-                participants,
-                lastMessage: lastRows.length ? lastRows[0] : null,
-            });
+        const conversations = (convRows || []).map(row => ({
+            id: row.id,
+            applicationId: row.applicationId || null,
+            participants: {},
+            lastMessage: null,
+        }));
+        if (conversations.length) {
+            const conversationIds = conversations.map(row => row.id);
+            const placeholders = conversationIds.map(() => '?').join(',');
+            const [partRows, lastRows] = await Promise.all([
+                pool.query(
+                    `SELECT conversation_id, user_id FROM conversation_participants
+                     WHERE conversation_id IN (${placeholders})`,
+                    conversationIds
+                ),
+                pool.query(
+                    `SELECT conversationId, id, senderId, text, timestamp FROM (
+                       SELECT m.conversation_id AS conversationId, m.id, m.sender_id AS senderId,
+                              m.text, m.timestamp,
+                              ROW_NUMBER() OVER (
+                                  PARTITION BY m.conversation_id
+                                  ORDER BY m.timestamp DESC, m.id DESC
+                              ) AS rn
+                       FROM conversation_messages m
+                       WHERE m.conversation_id IN (${placeholders})
+                     ) ranked WHERE ranked.rn = 1`,
+                    conversationIds
+                ),
+            ]);
+            const byId = new Map(conversations.map(row => [row.id, row]));
+            for (const partRow of partRows[0] || []) {
+                const conversation = byId.get(partRow.conversation_id);
+                // Ownership is re-checked here rather than trusted from the join:
+                // a participant row for a conversation this caller is not part of
+                // must not be projected into the response.
+                if (conversation) conversation.participants[partRow.user_id] = true;
+            }
+            for (const messageRow of lastRows[0] || []) {
+                const conversation = byId.get(messageRow.conversationId);
+                if (conversation && !conversation.lastMessage) {
+                    conversation.lastMessage = {
+                        id: messageRow.id,
+                        senderId: messageRow.senderId,
+                        text: messageRow.text,
+                        timestamp: messageRow.timestamp,
+                    };
+                }
+            }
         }
         conversations.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
         return res.json({ success: true, conversations });

@@ -810,6 +810,21 @@ class InMemoryTenantRegistry {
     return true;
   }
 
+  async listMembershipsForPrincipals(principalIds = []) {
+    const requested = [...new Set((Array.isArray(principalIds) ? principalIds : [])
+      .map(value => String(value || ''))
+      .filter(Boolean))];
+    const grouped = new Map(requested.map(principalId => [principalId, []]));
+    for (const principalId of requested) {
+      for (const membership of this.memberships.values()) {
+        if (membership.principalId !== principalId || membership.status !== 'ACTIVE') continue;
+        const tenant = await this.getTenant(membership.tenantId);
+        if (tenant.lifecycleState === 'ACTIVE') grouped.get(principalId).push({ membership: validateMembership(membership, principalId), tenant });
+      }
+    }
+    return grouped;
+  }
+
   async listMemberships(principalId) {
     principalId = assertPrincipalId(principalId);
     const result = [];

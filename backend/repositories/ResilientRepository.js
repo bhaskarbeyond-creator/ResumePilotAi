@@ -19,7 +19,7 @@ const { toCanonicalUser, toCanonicalResume } = require('../database/domain');
 const authority = require('../database/authority');
 
 const READ_METHODS = new Set([
-    'getUser', 'getUserByEmail', 'getUsers',
+    'getUser', 'getUserByEmail', 'getUsers', 'getUsersByIds',
     'getResume', 'getResumes', 'getPublicResume', 'getResumePublication',
     'getPortfolio', 'getPortfolios', 'getPublishedPortfolioBySlug', 'getPublishedPortfolios',
     'getCover', 'getCovers',
@@ -75,7 +75,7 @@ function normalizeResult(method, result) {
     if (method === 'getUser' || method === 'getUserByEmail' || method === 'saveUser') {
         return toCanonicalUser(result);
     }
-    if (method === 'getUsers') {
+    if (method === 'getUsers' || method === 'getUsersByIds') {
         return Array.isArray(result) ? result.map(toCanonicalUser) : result;
     }
     if (method === 'getResume' || method === 'saveResume') {
