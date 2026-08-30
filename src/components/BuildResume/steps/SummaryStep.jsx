@@ -116,14 +116,17 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             }
         } catch (error) {
             if (error?.name === 'AbortError') return;
-            console.error('Error rewriting summary:', error);
-            const friendlyMessage = error.code === 'EMAIL_VERIFICATION_REQUIRED'
+            const friendlyMessage = error.code === 'EMAIL_VERIFICATION_REQUIRED' || error.status === 403
                 ? 'Verify your email address to use AI rewriting.'
-                : error.code === 'AUTH_REQUIRED'
+                : error.code === 'AUTH_REQUIRED' || error.status === 401
                     ? 'Sign in to use AI rewriting.'
-                    : error.code === 'INVALID_AI_INPUT'
-                        ? error.message
-                        : 'Your current summary was not changed because a source-supported rewrite is unavailable.';
+                    : error.code === 'RATE_LIMITED' || error.code === 'AI_DAILY_QUOTA_EXCEEDED' || error.status === 429
+                        ? 'Daily AI quota limit reached. Please upgrade your plan or try again later.'
+                        : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.status === 503
+                            ? 'AI provider is temporarily unavailable. Please try again in a moment.'
+                            : error.code === 'INVALID_AI_INPUT' || error.code === 'INVALID_AI_REQUEST'
+                                ? error.message
+                                : (error.message && error.message !== 'AI request failed' ? error.message : 'Your current summary was not changed because a source-supported rewrite is unavailable.');
             setError(friendlyMessage);
         } finally {
             if (aiRequestControllerRef.current === requestController) {
