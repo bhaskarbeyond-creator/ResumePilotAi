@@ -296,7 +296,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                                 {group.items.map(item => {
                                     const isCurrent = location.pathname === item.path || (item.path !== '/adm/dashboard' && location.pathname.startsWith(item.path));
                                     return (
-                                        <Link to={item.path} key={item.path} onClick={onCloseMobile}>
+                                        <Link to={item.path} key={item.path} onClick={onCloseMobile} className="no-underline block">
                                             <div
                                                 className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl cursor-pointer ${
                                                     isCurrent
@@ -433,7 +433,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                         )}
                         <div className="space-y-0.5">
                             {/* Live Public Website Link */}
-                            <Link to="/" onClick={onCloseMobile}>
+                            <Link to="/" onClick={onCloseMobile} className="no-underline block">
                                 <div className={`group flex items-center text-[0.84rem] font-bold transition-all duration-200 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-slate-950 ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}>
                                     <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
                                         sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'

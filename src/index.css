@@ -58,22 +58,23 @@ body {
     outline: none;
 }
 
-/* Standard modern link reset — inherits color from Tailwind utility classes */
+/* Standard modern link reset — zero unwanted underlines across the app */
 a {
     color: inherit;
-    text-decoration: inherit;
+    text-decoration: none !important;
 }
 
-/* Naked text links without utility classes */
-a:not([class]):not([role="button"]),
-a.inline-link {
-    font-weight: 500;
+/* Explicit inline article / body text links */
+a.inline-link,
+.prose a,
+.rich-text a {
     color: #4f46e5;
-    text-decoration: underline;
+    text-decoration: underline !important;
     text-underline-offset: 2px;
 }
-a:not([class]):hover,
-a.inline-link:hover {
+a.inline-link:hover,
+.prose a:hover,
+.rich-text a:hover {
     color: #4338ca;
 }
 
