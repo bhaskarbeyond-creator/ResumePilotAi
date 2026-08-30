@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node scripts/run-tests-with-annotations.js",
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node cluster.js",
+    "start:single": "node index.js",
+    "dev": "nodemon cluster.js",
     "test:enterprise": "node --test --test-concurrency=1 --test-force-exit enterprise-test/*.test.js"
   },
   "author": "",
