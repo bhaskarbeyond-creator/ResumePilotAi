@@ -598,6 +598,7 @@ router.get('/command-center', async (req, res) => {
     const [
       [countRows], [earningsRows], [paymentRows], [securityCountRows], [securityRows],
       [tenantRows], [attentionTenantRows], [auditRows], [announcementRows], [settingRows],
+      [statsRows],
       platformCurrency,
     ] = await Promise.all([
       pool.query(`SELECT
@@ -617,6 +618,7 @@ router.get('/command-center', async (req, res) => {
       pool.query('SELECT id, action, actor_uid, actor_email, category, severity, outcome, created_at FROM admin_audit_logs ORDER BY created_at DESC LIMIT 8'),
       pool.query('SELECT id, title, message, severity, enabled, updated_at FROM platform_announcements WHERE enabled = 1 ORDER BY updated_at DESC LIMIT 5'),
       pool.query("SELECT category, data, revision, updated_at FROM system_settings WHERE category IN ('maintenance','stats')"),
+      pool.query("SELECT data FROM stats WHERE id = 'global_stats'").catch(() => [[]]),
       getPlatformCurrencyConfig(null),
     ]);
 
@@ -636,7 +638,17 @@ router.get('/command-center', async (req, res) => {
     const maintenance = settings.maintenance
       ? { enabled: settings.maintenance.enabled === true, message: settings.maintenance.message || '', source: 'MARIADB' }
       : { enabled: false, message: 'Platform is operating normally.', source: 'APPLICATION_DEFAULT' };
-    const stats = settings.stats || {};
+    let statsTableData = {};
+    if (statsRows && statsRows[0] && statsRows[0].data) {
+      try {
+        statsTableData = typeof statsRows[0].data === 'string' ? JSON.parse(statsRows[0].data) : statsRows[0].data;
+      } catch {
+        statsTableData = {};
+      }
+    }
+    const stats = { ...(settings.stats || {}), ...statsTableData };
+    const rawDownloads = stats.numberOfResumesDownloaded ?? stats.documents_downloaded ?? stats.downloads ?? stats.total_downloads;
+    const totalDownloads = Number.isFinite(Number(rawDownloads)) ? Number(rawDownloads) : 0;
     const totalUsers = Number(countRows[0]?.users || 0);
     const resumesCreated = Number(countRows[0]?.resumes || 0) + Number(countRows[0]?.portfolios || 0) + Number(countRows[0]?.covers || 0);
     const highSecurity = Number(securityCountRows[0]?.total || 0);
@@ -711,7 +723,7 @@ router.get('/command-center', async (req, res) => {
       kpis: {
         totalUsers,
         resumesCreated,
-        totalDownloads: Number.isFinite(Number(stats.numberOfResumesDownloaded)) ? Number(stats.numberOfResumesDownloaded) : null,
+        totalDownloads,
         totalEarnings: Number(earningsRows[0]?.total || 0) / 100,
         currency: platformCurrency.code || 'INR', currencySymbol: platformCurrency.symbol || '₹',
         tenants: { total: Number(tenantRows[0]?.total || 0), active: Number(tenantRows[0]?.active || 0), suspended: suspendedCount, mode: 'AGGREGATED' },

@@ -71,7 +71,7 @@ const Dashboard = () => {
       value: center?.kpis?.resumesCreated ?? 'Unavailable',
       icon: <FaFileAlt className="h-5 w-5 text-violet-600" />,
       badgeBg: 'bg-violet-50 border-violet-100',
-      sub: '51 template engines compiled',
+      sub: 'Resumes, portfolios & cover letters created',
     },
     {
       label: 'Exports & Downloads Generated',
