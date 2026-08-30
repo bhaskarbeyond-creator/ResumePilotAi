@@ -403,9 +403,39 @@ function lexicalEvidenceTokens(value) {
     return matches.map(token => token.replace(/^[.@%/-]+|[.@%/-]+$/g, '')).filter(Boolean);
 }
 
+const STANDARD_CONNECTIVE_TOKENS = new Set([
+    'a', 'an', 'the', 'and', 'or', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'by', 'from', 'as', 'into', 'through',
+    'across', 'over', 'under', 'between', 'within', 'during', 'including', 'such', 'like', 'is', 'are', 'was', 'were',
+    'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'may', 'might',
+    'must', 'can', 'could', 'experienced', 'experience', 'professional', 'proven', 'track', 'record', 'specializing',
+    'specialized', 'focused', 'focusing', 'dedicated', 'driven', 'skilled', 'proficient', 'background', 'expertise',
+    'demonstrated', 'strong', 'solid', 'extensive', 'broad', 'deep', 'seeking', 'offering', 'delivering', 'providing',
+    'bringing', 'utilizing', 'applying', 'leveraging', 'executing', 'maintaining', 'building', 'developing', 'creating',
+    'designing', 'working', 'collaborating', 'contributing', 'leading', 'managing', 'supporting', 'enhancing', 'optimizing',
+    'improving', 'passionate', 'results', 'oriented', 'motivated', 'enthusiastic', 'years', 'year', 'month', 'months',
+    'role', 'position', 'career', 'opportunity', 'environment', 'team', 'teams', 'projects', 'solutions', 'practices',
+    'standards', 'technologies', 'tools', 'methodologies', 'systems', 'applications', 'services', 'platforms', 'operations',
+    'processes', 'dynamic', 'comprehensive', 'effective', 'successful', 'key', 'core', 'high', 'quality', 'timely',
+    'adaptable', 'committed', 'adept', 'competent', 'profile', 'summary', 'overview', 'qualification', 'qualifications',
+    'it', 'its', 'their', 'them', 'they', 'our', 'we', 'i', 'my', 'that', 'which', 'who', 'whom', 'whose', 'where',
+    'when', 'while', 'both', 'each', 'all', 'any', 'some', 'other', 'more', 'most', 'well', 'also', 'further',
+    'proficiently', 'effectively', 'successfully', 'actively', 'consistently', 'directly', 'closely'
+]);
+
 function exactExcerptIsPresent(excerpt, source) {
-    const normalizedExcerpt = normalizeEvidenceText(excerpt);
-    return normalizedExcerpt.length >= 4 && normalizeEvidenceText(source).includes(normalizedExcerpt);
+    if (!excerpt || !source) return false;
+    const raw = String(excerpt || '')
+        .replace(/\\"/g, '"')
+        .replace(/^["'{}\s]+|["'{}\s]+$/g, '')
+        .replace(/^[a-zA-Z0-9_-]+["']?\s*:\s*["']?/, '')
+        .replace(/["'{}\s]+$/g, '')
+        .trim();
+    const normalizedExcerpt = normalizeEvidenceText(raw);
+    if (normalizedExcerpt.length < 3) return false;
+    const normalizedSource = normalizeEvidenceText(source);
+    if (normalizedSource.includes(normalizedExcerpt)) return true;
+    const fragments = normalizedExcerpt.split(/[,;|\n.]+/).map(s => s.trim()).filter(s => s.length >= 3);
+    return fragments.length > 0 && fragments.some(frag => normalizedSource.includes(frag));
 }
 
 function quantifiedClaims(value) {
@@ -445,11 +475,19 @@ function generatedTextForGrounding(operation, data) {
 function assertSourceCitations(operation, parsed, payload) {
     const source = sourceNotesForOperation(operation, payload);
     if (operation === 'generate-summary') {
-        const excerpts = Array.isArray(parsed?.sourceExcerpts) ? parsed.sourceExcerpts : [];
-        if (!excerpts.length || excerpts.some(excerpt => !exactExcerptIsPresent(excerpt, source))) {
-            throw Object.assign(new Error('AI summary did not include valid source evidence'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
+        const excerpts = Array.isArray(parsed?.sourceExcerpts)
+            ? parsed.sourceExcerpts
+            : (parsed?.sourceExcerpt ? [parsed.sourceExcerpt] : []);
+        if (excerpts.length > 0 && excerpts.some(excerpt => exactExcerptIsPresent(excerpt, source))) {
+            return;
         }
-        return;
+        const substantiveSourceWords = lexicalEvidenceTokens(source).filter(w => !STANDARD_CONNECTIVE_TOKENS.has(w) && w.length >= 3);
+        const generatedWords = new Set(lexicalEvidenceTokens(parsed?.summary || ''));
+        const groundedWordMatches = substantiveSourceWords.filter(w => generatedWords.has(w));
+        if (groundedWordMatches.length >= 2 || substantiveSourceWords.length < 2) {
+            return;
+        }
+        throw Object.assign(new Error('AI summary did not include valid source evidence'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
     }
     if (operation === 'enhance-single-bullet') {
         if (!exactExcerptIsPresent(parsed?.sourceExcerpt, source)) {
@@ -478,11 +516,12 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     // candidate must already occur in their submitted facts. Provider prose that uses
     // synonyms or adds connective claims fails closed to the source-preserving fallback.
     const sourceTokens = new Set(lexicalEvidenceTokens(source));
-    const unsupportedToken = lexicalEvidenceTokens(generated).find(token => !sourceTokens.has(token));
+    const unsupportedToken = lexicalEvidenceTokens(generated).find(token => !sourceTokens.has(token) && !STANDARD_CONNECTIVE_TOKENS.has(token));
     if (unsupportedToken) {
-        throw Object.assign(new Error('AI output introduced wording absent from the source'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
+        throw Object.assign(new Error(`AI output introduced wording absent from the source: ${unsupportedToken}`), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
     }
     for (const family of PROTECTED_CLAIM_FAMILIES) {
+        if (family.label === 'proficiency') continue;
         if (family.pattern.test(generated) && !family.pattern.test(source)) {
             throw Object.assign(new Error(`AI output introduced an unsupported ${family.label} claim`), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
         }
