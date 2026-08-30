@@ -58,28 +58,48 @@ body {
     outline: none;
 }
 
-/* Keep some useful link styles */
+/* Standard modern link reset — inherits color from Tailwind utility classes */
 a {
-    font-weight: 500;
-    color: #4a6cf7;
+    color: inherit;
     text-decoration: inherit;
 }
-a:hover {
-    color: #6c7ee1;
+
+/* Naked text links without utility classes */
+a:not([class]):not([role="button"]),
+a.inline-link {
+    font-weight: 500;
+    color: #4f46e5;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+a:not([class]):hover,
+a.inline-link:hover {
+    color: #4338ca;
+}
+
+/* Strict high-contrast color enforcement for buttons & badge links */
+a.text-white, a.text-white *, 
+button.text-white, button.text-white *,
+.btn-primary, .btn-primary *,
+[class*="bg-indigo-600"].text-white, [class*="bg-indigo-600"].text-white *,
+[class*="bg-indigo-700"].text-white, [class*="bg-indigo-700"].text-white *,
+[class*="bg-slate-900"].text-white, [class*="bg-slate-900"].text-white *,
+[class*="bg-purple-600"].text-white, [class*="bg-purple-600"].text-white *,
+[class*="bg-emerald-600"].text-white, [class*="bg-emerald-600"].text-white *,
+[class*="bg-rose-600"].text-white, [class*="bg-rose-600"].text-white *,
+[class*="bg-blue-600"].text-white, [class*="bg-blue-600"].text-white * {
+    color: #ffffff !important;
+}
+
+/* SVGs inside buttons inherit parent text color cleanly */
+button svg, a svg, [role="button"] svg {
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* Modern button interactive base & accessibility standards */
-button {
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    cursor: pointer;
-    text-decoration: none;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-}
-
+button,
 [role="button"],
 input[type="button"],
 input[type="submit"],
@@ -92,6 +112,14 @@ input[type="reset"] {
     text-decoration: none;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tactile micro-interaction feedback on click */
+button:active:not(:disabled),
+a[role="button"]:active,
+a.inline-flex:active {
+    transform: scale(0.98);
 }
 
 a[href]:focus-visible,
