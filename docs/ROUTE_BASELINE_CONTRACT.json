@@ -1,0 +1,1325 @@
+{
+  "baseline_sha": "043697715d52441bd8dc7cd6e96cf8b8f5369527",
+  "extracted_at": "2026-08-30T09:20:23.836Z",
+  "total_routes": 123,
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/api/pay",
+      "line": 592,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        201
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-orders",
+      "line": 613,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/payment-orders/:orderId",
+      "line": 630,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        404
+      ],
+      "errorCodes": [
+        "ORDER_NOT_FOUND",
+        "ACTIVATION_INVOICE_INTEGRITY_FAILED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/stripe-webhook",
+      "line": 664,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paypal/create-order",
+      "line": 857,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paypal/verify",
+      "line": 898,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/razorpay/create-order",
+      "line": 959,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "CLIENT_PAYMENT_IDENTITY_REJECTED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/razorpay/verify-payment",
+      "line": 1007,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/initiate-transaction",
+      "line": 1100,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/verify-transaction",
+      "line": 1158,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/initiate",
+      "line": 1207,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/status",
+      "line": 1266,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/paytm/callback",
+      "line": 1310,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        200
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/phonepe/callback",
+      "line": 1326,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        200,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/subscription/preferences",
+      "line": 1356,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        200,
+        410
+      ],
+      "errorCodes": [
+        "NON_RECURRING_PLAN"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/check",
+      "line": 1369,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/:jobId/applications",
+      "line": 1406,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        403
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/job-applications/:applicationId/status",
+      "line": 1456,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/jobs/:jobId/applications",
+      "line": 1492,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404,
+        503
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer-applications",
+      "line": 1554,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        201
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/featured-companies",
+      "line": 1572,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/companies",
+      "line": 1605,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer/companies",
+      "line": 1625,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        403,
+        201,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employer/companies/:companyId",
+      "line": 1637,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        201,
+        400,
+        403
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employer/companies/:companyId",
+      "line": 1654,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        403,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/employer/jobs",
+      "line": 1672,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        403,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/employer/jobs",
+      "line": 1682,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        403,
+        400,
+        404,
+        201
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/employer/jobs/:jobId",
+      "line": 1701,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        403
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/employer/jobs/:jobId",
+      "line": 1734,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        403,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations",
+      "line": 1751,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/messages",
+      "line": 1830,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/conversations",
+      "line": 1860,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/conversations/:conversationId/participant-profile",
+      "line": 1910,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/send",
+      "line": 1950,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400,
+        404
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact",
+      "line": 1998,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        202,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/export-render-data",
+      "line": 2027,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        404,
+        503
+      ],
+      "errorCodes": [
+        "RENDER_TOKEN_NOT_FOUND"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payment-settings",
+      "line": 2249,
+      "auth": "PERM:system.config.read",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai-settings",
+      "line": 2260,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/blog/categories",
+      "line": 2278,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        201,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/blog/categories/:categoryId",
+      "line": 2289,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        201,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/blog/categories/:categoryId",
+      "line": 2306,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/blog/posts/:postId",
+      "line": 2327,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/blog/posts/:postId",
+      "line": 2347,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/blog/publish-due",
+      "line": 2363,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "CMS_SCHEDULER_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/health-summary",
+      "line": 2385,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/system-health-settings",
+      "line": 2426,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        503,
+        400
+      ],
+      "errorCodes": [
+        "HEALTH_UNAVAILABLE",
+        "INVALID_MAINTENANCE_MESSAGE",
+        "ADMIN_SETTINGS_REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/settings",
+      "line": 2718,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/settings/:category",
+      "line": 2755,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400,
+        403,
+        501
+      ],
+      "errorCodes": [
+        "SETTINGS_UNAVAILABLE",
+        "INFRASTRUCTURE_SETTING_READ_ONLY",
+        "STORAGE_PROVIDER_UNSUPPORTED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai-settings",
+      "line": 2895,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/test-provider",
+      "line": 2908,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/fetch-models",
+      "line": 2921,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ai/quota-stats",
+      "line": 2935,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/quota-limits",
+      "line": 2949,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ai/reset-quota",
+      "line": 2971,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "INVALID_AI_QUOTA_TARGET"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payment-settings",
+      "line": 2993,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/coupons",
+      "line": 3281,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/coupons/:code",
+      "line": 3303,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400,
+        409
+      ],
+      "errorCodes": [
+        "CAS_CONFLICT"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/coupons/:code",
+      "line": 3331,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        404,
+        409
+      ],
+      "errorCodes": [
+        "CAS_CONFLICT"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payment/test-provider",
+      "line": 3348,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        400,
+        503
+      ],
+      "errorCodes": [
+        "PAYMENT_PROVIDER_VALIDATION_ERROR",
+        "PAYMENT_PROVIDER_NOT_CONFIGURED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/twilio-settings",
+      "line": 3501,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/twilio-settings",
+      "line": 3520,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        503,
+        400,
+        409
+      ],
+      "errorCodes": [
+        "TWILIO_REVISION_REQUIRED",
+        "INFRASTRUCTURE_SECRET_CANNOT_CLEAR",
+        "TWILIO_CREDENTIAL_PAIR_REQUIRED",
+        "INVALID_TWILIO_ACCOUNT",
+        "INVALID_TWILIO_TOKEN",
+        "INVALID_TWILIO_SENDER"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/send-sms",
+      "line": 3617,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/llms.txt",
+      "line": 3686,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        404,
+        503
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/payment/razorpay-order",
+      "line": 3705,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        410,
+        409
+      ],
+      "errorCodes": [
+        "LEGACY_PAYMENT_ENDPOINT_RETIRED",
+        "CLIENT_BILLING_DETAILS_RETIRED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoice/generate",
+      "line": 3714,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        409
+      ],
+      "errorCodes": [
+        "CLIENT_BILLING_DETAILS_RETIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices",
+      "line": 3744,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices/:paymentOrderId",
+      "line": 3759,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoice",
+      "line": 3775,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        410,
+        400
+      ],
+      "errorCodes": [
+        "LEGACY_INVOICE_ENDPOINT_RETIRED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/export-docx",
+      "line": 3780,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        410,
+        400,
+        404
+      ],
+      "errorCodes": [
+        "LEGACY_INVOICE_ENDPOINT_RETIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/rtl-font-config",
+      "line": 3839,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate-ai-cover-letter",
+      "line": 3848,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/jobs/naukri",
+      "line": 3925,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        501
+      ],
+      "errorCodes": [
+        "SCRAPER_NOT_CONFIGURED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/service-availability",
+      "line": 3937,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "AVAILABILITY_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/healthz",
+      "line": 3998,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/healthz",
+      "line": 4002,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "HEALTH_PROBE_FAILED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "line": 4006,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "HEALTH_PROBE_FAILED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/databases",
+      "line": 4010,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "HEALTH_PROBE_FAILED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/readyz",
+      "line": 4060,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/readyz",
+      "line": 4069,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/linkedin-scraper",
+      "line": 4318,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/notify/user-signup",
+      "line": 4344,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        410
+      ],
+      "errorCodes": [
+        "CLIENT_NOTIFICATION_DISPATCH_RETIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/firebase-service-account",
+      "line": 4355,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/firebase-service-account",
+      "line": 4372,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        501,
+        400
+      ],
+      "errorCodes": [
+        "RUNTIME_SECRET_ROTATION_DISABLED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/custom-password-reset",
+      "line": 4484,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/send-verification-email",
+      "line": 4521,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        403
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/verify-email-token",
+      "line": 4548,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/payments/refund",
+      "line": 4580,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "INVALID_PAYMENT_ORDER",
+        "REFUND_REASON_REQUIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/employer-applications",
+      "line": 4727,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "EMPLOYER_APPLICATIONS_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/companies",
+      "line": 4734,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "EMPLOYER_APPLICATIONS_UNAVAILABLE",
+        "COMPANIES_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/jobs",
+      "line": 4748,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "COMPANIES_UNAVAILABLE",
+        "JOBS_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/reviews",
+      "line": 4763,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "JOBS_UNAVAILABLE",
+        "REVIEWS_UNAVAILABLE",
+        "ADS_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/ads",
+      "line": 4772,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "REVIEWS_UNAVAILABLE",
+        "ADS_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/payment-orders",
+      "line": 4777,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "ADS_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/blog/categories",
+      "line": 4867,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "BLOG_CATEGORIES_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/blog/posts",
+      "line": 4872,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": [
+        "BLOG_CATEGORIES_UNAVAILABLE",
+        "BLOG_POSTS_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/employer-applications/:uid",
+      "line": 4888,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404,
+        409
+      ],
+      "errorCodes": [
+        "BLOG_POSTS_UNAVAILABLE",
+        "ADMIN_TARGET_CHANGED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/ads",
+      "line": 4934,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/ads/:adId",
+      "line": 4951,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/custom-pages/:slug",
+      "line": 5000,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        404,
+        503
+      ],
+      "errorCodes": [
+        "INVALID_PAGE_SLUG",
+        "CUSTOM_PAGE_NOT_FOUND",
+        "CUSTOM_PAGES_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pages",
+      "line": 5020,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400
+      ],
+      "errorCodes": [
+        "CUSTOM_PAGES_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/pages/:slug",
+      "line": 5029,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503,
+        400
+      ],
+      "errorCodes": [
+        "CUSTOM_PAGES_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/pages/:slug",
+      "line": 5057,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/website-meta",
+      "line": 5073,
+      "auth": "ADMIN_AUTH",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "WEBSITE_META_REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/trusted-by",
+      "line": 5162,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "TRUSTED_BY_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/trusted-by",
+      "line": 5171,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        503
+      ],
+      "errorCodes": [
+        "TRUSTED_BY_UNAVAILABLE"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/trusted-by/:logoId",
+      "line": 5185,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/trusted-by/:logoId",
+      "line": 5203,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/reviews",
+      "line": 5219,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/reviews/:reviewId",
+      "line": 5243,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": [
+        "REVISION_REQUIRED"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/companies/:companyId",
+      "line": 5259,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/jobs/:jobId",
+      "line": 5285,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/jobs/:jobId",
+      "line": 5309,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/export",
+      "line": 5332,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        401
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/delete",
+      "line": 5437,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        500
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/set-user-password",
+      "line": 5556,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400,
+        503
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin",
+      "line": 5770,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github",
+      "line": 5771,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin/callback",
+      "line": 5773,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/callback",
+      "line": 5804,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/oauth/exchange",
+      "line": 5840,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        400
+      ],
+      "errorCodes": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/preview-login",
+      "line": 5873,
+      "auth": "PUBLIC",
+      "statusCodes": [
+        404,
+        400
+      ],
+      "errorCodes": [
+        "auth/invalid-email",
+        "auth/weak-password"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/linkedin/test-credentials",
+      "line": 5923,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/github/test-credentials",
+      "line": 5937,
+      "auth": "PUBLIC",
+      "statusCodes": [],
+      "errorCodes": []
+    }
+  ]
+}

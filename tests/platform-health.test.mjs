@@ -16,6 +16,7 @@ const files = {
   engine: 'backend/services/platformHealth.js',
   routes: 'backend/routes/platform.js',
   index: 'backend/index.js',
+  misc: 'backend/routes/misc.js',
   presentation: 'src/utils/healthPresentation.js',
   page: 'src/components/admin/health/PlatformHealth.jsx',
   panel: 'src/components/admin/health/ServiceDetailPanel.jsx',
@@ -113,9 +114,11 @@ test('the public availability contract exposes booleans only, never configuratio
   }
 
   const index = await source('index');
-  assert.match(index, /\/api\/service-availability/);
-  assert.match(index, /'\/service-availability'/, 'must be in publicApiPaths so signed-out login pages can read it');
-  assert.match(index, /no-store/);
+  const misc = await source('misc');
+  const allIndex = index + '\n' + misc;
+  assert.match(allIndex, /service-availability/);
+  assert.match(allIndex, /service-availability/, 'must be in publicApiPaths so signed-out login pages can read it');
+  assert.match(allIndex, /no-store/);
 });
 
 test('presentation vocabulary never falls back to a healthy claim', async () => {

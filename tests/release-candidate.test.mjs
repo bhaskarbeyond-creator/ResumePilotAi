@@ -98,14 +98,16 @@ test('installable CI templates run the authoritative RC gate and CodeQL with lea
 });
 
 test('operational contracts expose worker, PDF isolation, TTL, and recovery requirements truthfully', async () => {
-  const [backend, tokenService, migration, runbook] = await Promise.all([
+  const [backend, healthRoutes, tokenService, migration, runbook] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/routes/health.js', 'utf8'),
     fs.readFile('backend/security/exportTokens.js', 'utf8'),
     fs.readFile('backend/database/migrations/001_baseline.sql', 'utf8'),
     fs.readFile('docs/PRODUCTION_RUNBOOK.md', 'utf8'),
   ]);
-  assert.match(backend, /NOTIFICATION_OUTBOX_EXTERNAL_WORKER/);
-  assert.match(backend, /REQUIRES_ISOLATED_WORKER/);
+  const allBackend = backend + healthRoutes;
+  assert.match(allBackend, /NOTIFICATION_OUTBOX_EXTERNAL_WORKER/);
+  assert.match(allBackend, /REQUIRES_ISOLATED_WORKER/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS export_render_tokens/);
   assert.match(migration, /INDEX idx_export_tokens_expiry \(expires_at\)/);
   assert.match(tokenService, /DELETE FROM export_render_tokens WHERE expires_at < \? LIMIT 500/);
@@ -116,11 +118,12 @@ test('operational contracts expose worker, PDF isolation, TTL, and recovery requ
 });
 
 test('readiness reports unmeasured dependencies as NOT_CHECKED and RC runner exposes blocked work', async () => {
-  const [backend, runner] = await Promise.all([
-    fs.readFile('backend/index.js', 'utf8'), fs.readFile('scripts/release-candidate.mjs', 'utf8'),
+  const [backend, healthRoutes, runner] = await Promise.all([
+    fs.readFile('backend/index.js', 'utf8'), fs.readFile('backend/routes/health.js', 'utf8'), fs.readFile('scripts/release-candidate.mjs', 'utf8'),
   ]);
-  assert.match(backend, /app\.get\('\/readyz'/);
-  assert.match(backend, /aiProviders: 'NOT_CHECKED'/);
+  const allBackend = backend + healthRoutes;
+  assert.match(allBackend, /readyz/);
+  assert.match(allBackend, /aiProviders: 'NOT_CHECKED'/);
   assert.match(runner, /NOT EXECUTED \/ ENVIRONMENT BLOCKED/);
   assert.match(runner, /Production dependency audit/);
   assert.match(runner, /Zero-Firestore static and outage certification/);

@@ -190,6 +190,7 @@ const Homepagefaqs = () => {
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
+                    aria-label="Clear search"
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                   >
                     <FaTimes className="w-4 h-4" />
@@ -201,6 +202,8 @@ const Homepagefaqs = () => {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setShowCategories(!showCategories)}
+                  aria-expanded={showCategories}
+                  aria-controls="faq-categories"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl font-medium hover:bg-indigo-200 transition-all duration-300"
                 >
                   <FaFilter className="w-4 h-4" />
@@ -214,6 +217,7 @@ const Homepagefaqs = () => {
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
+                      aria-pressed={selectedCategory === category.id}
                       className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
                         selectedCategory === category.id
                           ? 'bg-indigo-600 text-white shadow-lg'

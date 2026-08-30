@@ -54,12 +54,13 @@ describe('P1 gap source contracts', () => {
   });
 
   it('GAP-08 registers Paytm and PhonePe callbacks plus outbox reconcile', () => {
+    const payments = read('backend/routes/payments.js');
+    assert.match(payments, /\/paytm\/callback/);
+    assert.match(payments, /\/phonepe\/callback/);
     const index = read('backend/index.js');
-    assert.match(index, /\/api\/paytm\/callback/);
-    assert.match(index, /\/api\/phonepe\/callback/);
     assert.match(index, /reconcilePendingIndianGatewayOrders/);
-    assert.match(index, /handlePaytmCallback/);
-    assert.match(index, /handlePhonePeCallback/);
+    assert.match(payments, /handlePaytmCallback/);
+    assert.match(payments, /handlePhonePeCallback/);
   });
 
   it('GAP-10 fires a readiness alert without awaiting it before 503', () => {

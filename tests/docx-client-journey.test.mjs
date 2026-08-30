@@ -38,10 +38,12 @@ test('Preview, Finalize, and Dashboard still share the executeDocxDownload journ
 
 test('backend DOCX route does not blindly trust client colors or resumeName', async () => {
   const source = await fs.readFile('backend/index.js', 'utf8');
-  assert.match(source, /resolveExportTemplate/);
-  assert.match(source, /Template mismatch/);
+  const exportSource = await fs.readFile('backend/routes/exports.js', 'utf8');
+  const allSource = source + exportSource;
+  assert.match(allSource, /resolveExportTemplate/);
+  assert.match(allSource, /Template mismatch/);
   assert.doesNotMatch(
-    source,
+    allSource,
     /colors:\s*req\.body\.colors\s*\|\|/,
     'client colors must not be forwarded as authoritative styling',
   );

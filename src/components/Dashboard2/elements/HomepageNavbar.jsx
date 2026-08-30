@@ -372,6 +372,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                             <>
                                 <button 
                                     onClick={() => logout && logout()} 
+                                    aria-label={t('navbar.signOut')}
                                     className="flex items-center text-gray-700 hover:text-red-600 font-medium transition-colors duration-200 group"
                                 >
                                     <FaSignOutAlt className="mr-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
@@ -394,6 +395,7 @@ const HomepageNavbar = ({ authBtnHandler, user, logout }) => {
                         ) : (
                             <button
                                 onClick={() => authBtnHandler && authBtnHandler()}
+                                aria-label={t('navbar.signIn')}
                                 className="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
                             >
                                 {t('navbar.signIn')}

@@ -34,17 +34,19 @@ test('new-user journey keeps trusted auth, profile, Resume, AI, Portfolio and lo
 });
 
 test('billing journey remains server-authoritative from plan through entitlement, invoice and refund', async () => {
-  const [checkout, backend, repository, operations] = await Promise.all([
+  const [checkout, backend, payments, repository, operations] = await Promise.all([
     read('src/components/Billing/Plans/Checkout.jsx'), read('backend/index.js'),
+    read('backend/routes/payments.js'),
     read('backend/repositories/MySQLRepository.js'), read('src/services/api/platform.js'),
   ]);
+  const allBackend = backend + '\n' + payments;
   assert.match(checkout, /paymentOrderId|orderId/);
-  assert.match(backend, /createProviderOrderRecord/);
-  assert.match(backend, /activateVerifiedOrder/);
+  assert.match(allBackend, /createProviderOrderRecord/);
+  assert.match(allBackend, /activateVerifiedOrder/);
   assert.match(repository, /Only an active payment can be refunded/);
   assert.match(repository, /claimPaymentRefundAtomic/);
   assert.match(operations, /\/api\/admin\/payment-orders/);
-  assert.match(backend, /source: 'payment_orders'/);
+  assert.match(allBackend, /source: 'payment_orders'/);
   assert.doesNotMatch(operations.match(/getAllAdminTransactions[\s\S]*?refundOrderTransaction/)?.[0] || '', /membership === 'Premium'/);
 });
 

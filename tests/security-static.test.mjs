@@ -181,12 +181,15 @@ test('browser code has no email, hostname, UID-pattern, or Firestore-field admin
 test('OAuth never creates unsigned local browser sessions', () => {
   const main = read('src/main.jsx');
   const backend = read('backend/index.js');
+  let oauthRoutes = '';
+  try { oauthRoutes = read('backend/routes/oauth.js'); } catch (_) {}
+  const allBackend = backend + oauthRoutes;
   assert.doesNotMatch(main, /oauth_session|makeMockFirebaseUser|oauth_user_session/);
-  assert.doesNotMatch(backend, /oauth_session|Buffer\.from\(JSON\.stringify\(\{ uid/);
-  assert.match(backend, /createCustomToken/);
-  assert.match(backend, /rp_oauth_state/);
-  assert.match(backend, /\/dashboard#oauth_code=/);
-  assert.doesNotMatch(backend, /\/dashboard\?oauth_code=/);
+  assert.doesNotMatch(allBackend, /oauth_session|Buffer\.from\(JSON\.stringify\(\{ uid/);
+  assert.match(allBackend, /createCustomToken/);
+  assert.match(allBackend, /rp_oauth_state/);
+  assert.match(allBackend, /\/dashboard#oauth_code=/);
+  assert.doesNotMatch(allBackend, /\/dashboard\?oauth_code=/);
   assert.match(backend, /\/login#mode=resetPassword/);
   assert.match(backend, /\/login#mode=verifyEmail/);
 });

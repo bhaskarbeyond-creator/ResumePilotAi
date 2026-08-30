@@ -13,7 +13,7 @@ test('repository factory exposes one MariaDB implementation and no runtime selec
   assert.equal(typeof repositoryFactory.MySQLRepository, 'function');
   assert.equal(typeof repositoryFactory.ResilientRepository, 'function');
   assert.deepEqual(Object.keys(repositoryFactory).sort(), [
-    'MySQLRepository', 'ResilientRepository', 'getDirectRepository', 'getRepository', 'resetRepositoryCacheForTests',
+    'MySQLRepository', 'ResilientRepository', 'getDirectRepository', 'getRepository', 'resetRepositoryCacheForTests', 'setRepositoryForTests',
   ]);
 });
 

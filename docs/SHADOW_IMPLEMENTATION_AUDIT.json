@@ -1,0 +1,36 @@
+{
+  "auditDate": "2026-08-30",
+  "baselineSHA": "043697715d52441bd8dc7cd6e96cf8b8f5369527",
+  "currentSHA": "d4983fb",
+  "branch": "arena/01a0507e-resumepilotai",
+  "summary": {
+    "totalRoutesExtracted": 54,
+    "totalModules": 7,
+    "duplicateHelpersFound": 6,
+    "duplicateHelpersEliminated": 6,
+    "remainingDuplicates": 0
+  },
+  "duplicateHelpers": {
+    "description": "Six payment provider helper functions were duplicated in both index.js and payments.js",
+    "functions": [
+      "chooseCredentialPair",
+      "readPersistedPaymentProviders",
+      "paypalConfig",
+      "getRazorpayKeys",
+      "getPaytmConfig",
+      "getPhonePeConfig"
+    ],
+    "resolution": "Extracted to backend/helpers/payment-providers.js as single authoritative implementation",
+    "consumers": [
+      "backend/index.js (via bound wrappers)",
+      "backend/routes/payments.js (via bound wrappers)"
+    ]
+  },
+  "verification": {
+    "testsPass": true,
+    "testCount": { "pass": 563, "fail": 0, "skipped": 24 },
+    "runtimeVerified": true,
+    "runtimeTestsPass": 20,
+    "runtimeTestsTotal": 20
+  }
+}

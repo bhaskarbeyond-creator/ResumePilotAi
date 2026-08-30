@@ -108,7 +108,7 @@ function DashboardSettings(_props) {
     const [loginHistory, setLoginHistory] = useState([]);
     const userAuthProviders = (fire.auth().currentUser?.providerData || []).map(provider => provider?.providerId).filter(Boolean);
     const usesPasswordProvider = userAuthProviders.includes('password');
-    userAuthProviders.length > 0 && !usesPasswordProvider;
+    const isOAuthOnly = userAuthProviders.length > 0 && !usesPasswordProvider;
     const primaryOAuthProvider = userAuthProviders.find(p => p !== 'password') === 'google.com' ? 'Google' : (userAuthProviders.find(p => p !== 'password') || 'OAuth');
 
     // Master Profile State matching ALL Resume & Cover Letter fields

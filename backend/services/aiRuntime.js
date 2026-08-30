@@ -1,4 +1,5 @@
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
+const { providerHealth } = require('./providerHealth');
 const PROVIDER_DEFAULTS = Object.freeze({
     nvidia: { model: 'meta/llama-3.2-11b-vision-instruct', url: 'https://integrate.api.nvidia.com/v1/chat/completions' },
     gemini: { model: 'gemini-2.0-flash' },
@@ -365,7 +366,7 @@ function cleanSkillName(raw) {
     if (val.startsWith('{') || val.startsWith('[') || val.endsWith('}') || val.endsWith(']')) {
         const match = val.match(/(?:["']?(?:name|skill|title)["']?\s*:\s*["']([^"'\r\n{}]+)["'])|(?:["']([^"'\r\n{}]+)["'])/);
         if (match) val = match[1] || match[2] || '';
-        else val = val.replace(/[{}\[\]"']/g, '').trim();
+        else val = val.replace(/[{}[\]"']/g, '').trim();
     }
     val = val.replace(/^(?:\{?\s*["']?(?:name|skill|title|category|skills)["']?\s*:\s*["']?)+/i, '');
     val = val.replace(/["'}\],]+$/g, '');
@@ -796,17 +797,28 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
 }
 
 async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
-    const order = providerOrder(configuration);
-    if (!order.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
+    const enabledProviders = PROVIDERS.filter(provider => configuration.providers[provider]?.enabled);
+    if (!enabledProviders.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
+    
+    // Health-aware provider ordering: primary first, then by health score
+    const primary = enabledProviders.includes(configuration.primary) ? configuration.primary : enabledProviders[0];
+    const others = enabledProviders.filter(p => p !== primary);
+    const healthRankedOthers = providerHealth.rankProviders(others);
+    const order = configuration.enableFallback ? [primary, ...healthRankedOthers] : [primary];
+    
     const failures = [];
     for (const provider of order) {
+        const startTime = Date.now();
         try {
             const raw = await requestProvider(provider, configuration.providers[provider], prompt, configuration, { fetchImpl, signal, timeoutMs });
-            return { raw, provider, model: configuration.providers[provider].model };
+            const latencyMs = Date.now() - startTime;
+            providerHealth.recordSuccess(provider, latencyMs, configuration.providers[provider].model);
+            return { raw, provider, model: configuration.providers[provider].model, latencyMs };
         } catch (error) {
-            console.error(`[AI Provider Failure] operation=${operation || 'unknown'} provider=${provider} error=${error.message}`);
+            const latencyMs = Date.now() - startTime;
+            providerHealth.recordFailure(provider, error, configuration.providers[provider].model);
             if (signal?.aborted) throw error;
-            failures.push({ provider, status: Number(error.status) || 0, code: error.code || 'PROVIDER_ERROR', message: error.message });
+            failures.push({ provider, status: Number(error.status) || 0, code: error.code || 'PROVIDER_ERROR', message: error.message, latencyMs });
         }
     }
     const error = Object.assign(new Error('All configured AI providers failed'), { code: 'AI_PROVIDER_ERROR', status: 502 });
@@ -1060,6 +1072,7 @@ module.exports = {
     groundResumeExtraction,
     loadProviderConfiguration,
     parseAiResponse,
+    providerHealth,
     providerOrder,
     requestProvider,
     validateOperation,

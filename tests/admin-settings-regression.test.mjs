@@ -73,17 +73,19 @@ test('generic backend settings preserve redacted secrets instead of replacing th
 });
 
 test('OAuth Admin tests use recent-auth retry and runtime reads canonical secret settings', async () => {
-  const [view, backend, policy] = await Promise.all([
+  const [view, backend, oauthRoutes, policy] = await Promise.all([
     fs.readFile('src/components/admin/settings/SocialAuthSettings.jsx', 'utf8'),
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/routes/oauth.js', 'utf8'),
     fs.readFile('backend/security/policy.js', 'utf8'),
   ]);
+  const allBackend = backend + oauthRoutes;
   assert.match(view, /fetchAdminWithReauth\(`\/api\/auth\/\$\{provider\}\/test-credentials`\)/);
   assert.doesNotMatch(view, /credentials detected in environment/);
   // OAuth provider credentials are read from the MySQL system_settings store.
-  assert.match(backend, /getSocialAuthCredentials/);
-  assert.match(backend, /system_settings/);
-  assert.match(backend, /legacyPrefix.*ClientId/);
+  assert.match(allBackend, /getSocialAuthCredentials/);
+  assert.match(allBackend, /system_settings/);
+  assert.match(allBackend, /legacyPrefix.*ClientId/);
   assert.match(policy, /'\/auth\/linkedin\/test-credentials'/);
   assert.match(policy, /'\/auth\/github\/test-credentials'/);
 });

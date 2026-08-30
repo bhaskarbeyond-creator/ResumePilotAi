@@ -3,9 +3,20 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
+import fs from 'node:fs';
 import express from 'express';
-import { chromium } from 'playwright';
 import { toValidatedPdfBlob, pdfFileName } from '../src/utils/pdfDownload.js';
+
+let chromium;
+let browserAvailable = false;
+try {
+  const pw = await import('playwright');
+  chromium = pw.chromium;
+  const execPath = chromium.executablePath();
+  if (execPath && fs.existsSync(execPath)) browserAvailable = true;
+} catch {
+  browserAvailable = false;
+}
 
 // --- PDF Inspection Helpers ---
 
@@ -90,6 +101,7 @@ async function renderRealPdf(template, resumeId, language, resumeData) {
 // --- Lifecycle Hooks ---
 
 before(async () => {
+  if (!browserAvailable) return;
   const app = express();
   app.use(express.json());
   app.use(express.static(path.resolve('dist')));
@@ -135,7 +147,7 @@ after(async () => {
 // --- Test Suite ---
 
 // Test A — Normal CV
-test('Matrix Test A — Normal CV: Generates authentic A4 PDF with valid headers and content', async () => {
+test('Matrix Test A — Normal CV: Generates authentic A4 PDF with valid headers and content', { skip: !browserAvailable }, async () => {
   const normalCv = {
     firstname: 'Aarav',
     lastname: 'Patel',
@@ -182,7 +194,7 @@ test('Matrix Test A — Normal CV: Generates authentic A4 PDF with valid headers
 });
 
 // Test B — Multi-page CV
-test('Matrix Test B — Multi-page CV: Correctly spans multiple pages without clipping', async () => {
+test('Matrix Test B — Multi-page CV: Correctly spans multiple pages without clipping', { skip: !browserAvailable }, async () => {
   const employments = Array.from({ length: 8 }, (_, i) => ({
     jobTitle: `Enterprise Systems Architect ${i + 1}`,
     employer: `Global Enterprise Corp ${i + 1}`,
@@ -219,7 +231,7 @@ test('Matrix Test B — Multi-page CV: Correctly spans multiple pages without cl
 });
 
 // Test C — Unicode Multilingual CV (Telugu, Devanagari, Accented Latin, Symbols)
-test('Matrix Test C — Unicode CV: Accurately renders Telugu, Devanagari, Accented Latin and Symbols', async () => {
+test('Matrix Test C — Unicode CV: Accurately renders Telugu, Devanagari, Accented Latin and Symbols', { skip: !browserAvailable }, async () => {
   const unicodeCv = {
     firstname: 'భాస్కర్',
     lastname: 'రావు (Bhaskar Rao)',
@@ -265,7 +277,7 @@ test('Matrix Test C — Unicode CV: Accurately renders Telugu, Devanagari, Accen
 });
 
 // Test D — Long Content & Edge Layouts
-test('Matrix Test D — Long Content: Long descriptions and nested URLs render without crashing', async () => {
+test('Matrix Test D — Long Content: Long descriptions and nested URLs render without crashing', { skip: !browserAvailable }, async () => {
   const longCv = {
     firstname: 'Alexandrina-Elizabeth',
     lastname: 'Montgomery-Featherstonehaugh',
@@ -308,7 +320,7 @@ test('Matrix Test D — Long Content: Long descriptions and nested URLs render w
 });
 
 // Test E — Minimal / Empty Sections CV
-test('Matrix Test E — Minimal CV: Gracefully handles empty/omitted optional sections', async () => {
+test('Matrix Test E — Minimal CV: Gracefully handles empty/omitted optional sections', { skip: !browserAvailable }, async () => {
   const minimalCv = {
     firstname: 'Sara',
     lastname: 'Connor',
@@ -330,7 +342,7 @@ test('Matrix Test E — Minimal CV: Gracefully handles empty/omitted optional se
 });
 
 // Test F — Special Characters & Escaping
-test('Matrix Test F — Special Characters: Quotes, brackets, ampersands, slashes render safely', async () => {
+test('Matrix Test F — Special Characters: Quotes, brackets, ampersands, slashes render safely', { skip: !browserAvailable }, async () => {
   const specialCharsCv = {
     firstname: 'O\'Connor & "Smith"',
     lastname: '<Dev/Test> [2026] {C++}',
@@ -366,7 +378,7 @@ test('Matrix Test F — Special Characters: Quotes, brackets, ampersands, slashe
 });
 
 // Test G — Cover Letter PDF
-test('Matrix Test G — Cover Letter: Generates clean Cover1 letter PDF', async () => {
+test('Matrix Test G — Cover Letter: Generates clean Cover1 letter PDF', { skip: !browserAvailable }, async () => {
   const coverLetterData = {
     firstname: 'Priya',
     lastname: 'Nambiar',
@@ -391,7 +403,7 @@ test('Matrix Test G — Cover Letter: Generates clean Cover1 letter PDF', async 
 });
 
 // Test H — Token Replay & Single-Use Enforcement
-test('Matrix Test H — Token Single-Use & Replay Protection: Second request with same token fails closed', async () => {
+test('Matrix Test H — Token Single-Use & Replay Protection: Second request with same token fails closed', { skip: !browserAvailable }, async () => {
   const sampleData = {
     firstname: 'Test',
     lastname: 'User',
@@ -411,7 +423,7 @@ test('Matrix Test H — Token Single-Use & Replay Protection: Second request wit
 });
 
 // Test I — Browser Print Emulation & Application Chrome Removal
-test('Matrix Test I — Print Media Emulation: Non-document UI is hidden and document has true A4 geometry', async () => {
+test('Matrix Test I — Print Media Emulation: Non-document UI is hidden and document has true A4 geometry', { skip: !browserAvailable }, async () => {
   const page = await sharedBrowser.newPage({ viewport: { width: 794, height: 1123 } });
   const token = mintTestToken({ firstname: 'Print', lastname: 'Test', template: 'Cv1', language: 'en' });
   await page.goto(`http://127.0.0.1:${testServerPort}/export/Cv1/print-01/en#renderToken=${token}`, { waitUntil: 'domcontentloaded' });

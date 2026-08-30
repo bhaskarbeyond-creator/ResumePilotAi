@@ -181,6 +181,7 @@ const HomepagePricing = ({ nextStep, t }) => {
                                 <div className="mb-6">
                                     <button
                                         onClick={() => handlePlanSelection('monthly')}
+                                        aria-label={t('HomepagePricing.upgradeButton')}
                                         className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95">
                                         {t('HomepagePricing.upgradeButton')}
                                     </button>
@@ -272,6 +273,7 @@ const HomepagePricing = ({ nextStep, t }) => {
                                 <div className="mb-6">
                                     <button
                                         onClick={() => handlePlanSelection('halfYear')}
+                                        aria-label={t('HomepagePricing.upgradeButtonStar')}
                                         className="w-full py-4 px-6 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 ring-2 ring-purple-500/20 hover:ring-purple-500/40">
                                         {t('HomepagePricing.upgradeButtonStar')}
                                     </button>
@@ -359,6 +361,7 @@ const HomepagePricing = ({ nextStep, t }) => {
                                 <div className="mb-6">
                                     <button
                                         onClick={() => handlePlanSelection('yearly')}
+                                        aria-label={t('HomepagePricing.upgradeButton')}
                                         className="w-full py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95">
                                         {t('HomepagePricing.upgradeButton')}
                                     </button>

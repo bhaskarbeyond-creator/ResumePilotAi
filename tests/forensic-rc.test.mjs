@@ -19,15 +19,17 @@ test('resume validation is deterministic and never fabricates AI analysis or sco
 });
 
 test('jobs surfaces never fall back to fabricated listings, employers, or match percentages', async () => {
-  const [backend, featured, companies, details, settings] = await Promise.all([
+  const [backend, misc, featured, companies, details, settings] = await Promise.all([
     fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/routes/misc.js', 'utf8'),
     fs.readFile('src/components/JobsLanding/LandingJobsFeatured.jsx', 'utf8'),
     fs.readFile('src/components/JobsLanding/LandingJobTopCompanies.jsx', 'utf8'),
     fs.readFile('src/components/JobsListings/JobDetailsModal.jsx', 'utf8'),
     fs.readFile('src/components/admin/settings/JobScraperSettings.jsx', 'utf8'),
   ]);
-  assert.match(backend, /SCRAPER_NOT_CONFIGURED/);
-  assert.doesNotMatch(backend, /mockNaukriJobs/);
+  const allBackend = backend + '\n' + misc;
+  assert.match(allBackend, /SCRAPER_NOT_CONFIGURED/);
+  assert.doesNotMatch(allBackend, /mockNaukriJobs/);
   assert.doesNotMatch(featured, /Using demo data/);
   assert.doesNotMatch(companies, /const topCompanies|using mock data/);
   assert.doesNotMatch(details, /Math\.random\(\).*40/);
@@ -36,13 +38,15 @@ test('jobs surfaces never fall back to fabricated listings, employers, or match 
 });
 
 test('employer and application queries are backend-owned with no Firestore sampling', async () => {
-  const [operations, backend] = await Promise.all([
+  const [operations, backend, employer] = await Promise.all([
     fs.readFile('src/services/api/platform.js', 'utf8'), fs.readFile('backend/index.js', 'utf8'),
+    fs.readFile('backend/routes/employer.js', 'utf8'),
   ]);
+  const allBackend = backend + '\n' + employer;
   // Job/application queries go through the MySQL repository with server-side
   // owner scoping — no client-controlled where/orderBy, no sampling logs.
   assert.match(operations, /\/api\/jobs-data/);
-  assert.match(backend, /getApplications\(\{ jobId \}\)/);
+  assert.match(allBackend, /getApplications\(\{ jobId \}\)/);
   const jobsRoutes = await fs.readFile('backend/routes/jobsData.js', 'utf8');
   assert.match(jobsRoutes, /getApplications\(\{ applicantId: req\.user\.uid \}\)/);
   assert.doesNotMatch(operations, /Sample jobs in collection|Returning sorted jobs/);

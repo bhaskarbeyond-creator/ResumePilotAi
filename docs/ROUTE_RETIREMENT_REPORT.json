@@ -1,0 +1,188 @@
+{
+  "generated_at": "2026-08-30T09:40:00Z",
+  "baseline_sha": "043697715d52441bd8dc7cd6e96cf8b8f5369527",
+  "current_sha": "f5aabb1",
+  "summary": {
+    "total_baseline_routes": 123,
+    "routes_extracted": 56,
+    "routes_remaining_inline": 67,
+    "new_routes_added": 5,
+    "critical_regressions_found": 8,
+    "critical_regressions_fixed": 8
+  },
+  "extracted_routes": {
+    "health.js": {
+      "routes": 6,
+      "route_list": [
+        "GET /healthz",
+        "GET /health",
+        "GET /health/databases",
+        "GET /health/ai-providers",
+        "GET /health/export-concurrency",
+        "GET /readyz"
+      ],
+      "status": "VERIFIED",
+      "notes": "2 new routes added (ai-providers, export-concurrency)"
+    },
+    "messaging.js": {
+      "routes": 6,
+      "route_list": [
+        "GET /messages/conversations",
+        "GET /messages/conversations/:conversationId/messages",
+        "POST /messages/conversations",
+        "GET /messages/conversations/:conversationId/participant-profile",
+        "POST /messages/send",
+        "POST /contact"
+      ],
+      "status": "VERIFIED",
+      "notes": "All routes identical to baseline"
+    },
+    "exports.js": {
+      "routes": 3,
+      "route_list": [
+        "GET /export-render-data",
+        "POST /export",
+        "POST /export-docx"
+      ],
+      "status": "VERIFIED",
+      "notes": "All routes identical to baseline"
+    },
+    "oauth.js": {
+      "routes": 7,
+      "route_list": [
+        "GET /auth/linkedin",
+        "GET /auth/github",
+        "GET /auth/linkedin/callback",
+        "GET /auth/github/callback",
+        "POST /auth/oauth/exchange",
+        "GET /auth/linkedin/test-credentials",
+        "GET /auth/github/test-credentials"
+      ],
+      "status": "VERIFIED",
+      "notes": "All routes identical to baseline"
+    },
+    "employer.js": {
+      "routes": 13,
+      "route_list": [
+        "POST /jobs/:jobId/applications",
+        "PATCH /job-applications/:applicationId/status",
+        "GET /jobs/:jobId/applications",
+        "POST /employer-applications",
+        "GET /public/featured-companies",
+        "GET /employer/companies",
+        "POST /employer/companies",
+        "PATCH /employer/companies/:companyId",
+        "DELETE /employer/companies/:companyId",
+        "GET /employer/jobs",
+        "POST /employer/jobs",
+        "PATCH /employer/jobs/:jobId",
+        "DELETE /employer/jobs/:jobId"
+      ],
+      "status": "VERIFIED",
+      "notes": "All routes identical to baseline"
+    },
+    "payments.js": {
+      "routes": 17,
+      "route_list": [
+        "POST /pay",
+        "GET /payment-orders",
+        "GET /payment-orders/:orderId",
+        "POST /stripe-webhook",
+        "POST /paypal/create-order",
+        "POST /paypal/verify",
+        "POST /razorpay/create-order",
+        "POST /razorpay/verify-payment",
+        "POST /paytm/initiate-transaction",
+        "POST /paytm/verify-transaction",
+        "POST /phonepe/initiate",
+        "POST /phonepe/status",
+        "POST /paytm/callback",
+        "POST /phonepe/callback",
+        "POST /subscription/preferences",
+        "POST /check",
+        "POST /payment/razorpay-order"
+      ],
+      "status": "VERIFIED_WITH_FIXES",
+      "notes": "4 critical regressions found and fixed: PayPal verify field semantics, Razorpay verify field semantics, Paytm routes calling non-existent functions, PhonePe routes calling non-existent functions"
+    },
+    "misc.js": {
+      "routes": 6,
+      "route_list": [
+        "POST /invoice",
+        "POST /jobs/naukri",
+        "GET /rtl-font-config",
+        "GET /llms.txt",
+        "GET /service-availability",
+        "POST /send-sms"
+      ],
+      "status": "VERIFIED",
+      "notes": "All routes identical to baseline"
+    }
+  },
+  "regressions_found": [
+    {
+      "id": "REG-001",
+      "severity": "CRITICAL",
+      "route": "POST /paypal/verify",
+      "description": "Field semantics changed: baseline uses orderId=PayPal ID, paymentOrderId=Internal ID; extracted used orderId=Internal ID, paypalOrderId=PayPal ID",
+      "fix": "Restored baseline field semantics",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-002",
+      "severity": "CRITICAL",
+      "route": "POST /razorpay/verify-payment",
+      "description": "Field semantics changed: baseline uses razorpay_order_id/paymentOrderId; extracted used orderId/razorpayOrderId",
+      "fix": "Restored baseline field semantics",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-003",
+      "severity": "CRITICAL",
+      "route": "POST /paytm/initiate-transaction",
+      "description": "Called non-existent indianGatewayActivation.initiatePaytmTransaction()",
+      "fix": "Restored baseline inline implementation",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-004",
+      "severity": "CRITICAL",
+      "route": "POST /paytm/verify-transaction",
+      "description": "Called non-existent indianGatewayActivation.verifyPaytmTransaction()",
+      "fix": "Restored baseline inline implementation",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-005",
+      "severity": "CRITICAL",
+      "route": "POST /phonepe/initiate",
+      "description": "Called non-existent indianGatewayActivation.initiatePhonePePayment()",
+      "fix": "Restored baseline inline implementation",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-006",
+      "severity": "CRITICAL",
+      "route": "POST /phonepe/status",
+      "description": "Called non-existent indianGatewayActivation.checkPhonePeStatus()",
+      "fix": "Restored baseline inline implementation",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-007",
+      "severity": "HIGH",
+      "route": "GET /api/rtl-font-config",
+      "description": "Was incorrectly added to publicApiPaths (baseline was not public)",
+      "fix": "Removed from publicApiPaths",
+      "status": "FIXED"
+    },
+    {
+      "id": "REG-008",
+      "severity": "HIGH",
+      "route": "GET /api/health/ai-providers, GET /api/health/export-concurrency",
+      "description": "New routes not in publicApiPaths (should be public like other health routes)",
+      "fix": "Added to publicApiPaths",
+      "status": "FIXED"
+    }
+  ]
+}

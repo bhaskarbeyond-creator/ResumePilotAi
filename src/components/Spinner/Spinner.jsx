@@ -18,7 +18,7 @@ const SpinnerView = () => {
 const Spinner = () => {
 
     return (
-        <div className="loading">
+        <div className="loading" role="status" aria-label="Loading">
             {/* <Lottie options={loaderOptions}
           height={190}
           width={400} /> */}

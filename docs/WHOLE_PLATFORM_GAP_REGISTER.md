@@ -1,6 +1,6 @@
 # WHOLE PLATFORM GAP REGISTER
 
-> **Audit Date**: 2026-08-30 | **HEAD SHA**: `b6ec79b`
+> **Audit Date**: 2026-08-30 | **HEAD SHA**: `043697715d52441bd8dc7cd6e96cf8b8f5369527`
 
 ---
 
@@ -14,14 +14,14 @@
 
 | ID | Priority | Area | Component | Status | Root Cause | User Impact | Technical Impact | Evidence | Required Fix | Owner | Dependency |
 |----|----------|------|-----------|--------|------------|-------------|-----------------|----------|-------------|-------|------------|
-| GAP-001 | P0 | Security | dev_key, dev_key.pub | 🔴 OPEN | Developer SSH keys committed to repository | Key material exposure if repo is public or leaked | Private key in version control | `dev_key` (411B), `dev_key.pub` (98B) in repo root | Remove from tracked files, add to .gitignore, rotate keys, force-push to purge history | SECURITY ENGINEER + LOCAL DEVELOPER | None |
-| GAP-002 | P0 | Frontend | Error Boundary | ⚫ MISSING | No React error boundary wrapping the app | Unhandled React errors show white screen | No graceful degradation on component crash | No ErrorBoundary component found in src/ | Implement React ErrorBoundary wrapping AuthWrapper | UI/UX DEVELOPER | None |
+| GAP-001 | P0 | Security | dev_key, dev_key.pub | 🟢 RESOLVED | Developer SSH keys were committed to repository | Key material exposure if repo is public or leaked | Private key in version control | `dev_key` files no longer tracked; `.gitignore` contains `**/dev_key*` | Already fixed: keys removed from tracking, .gitignore updated | SECURITY ENGINEER | None |
+| GAP-002 | P0 | Frontend | Error Boundary | 🟢 RESOLVED | No React error boundary wrapping the app | Unhandled React errors show white screen | No graceful degradation on component crash | `src/components/ErrorBoundary.jsx` created and wrapped around `AuthWrapper` in `main.jsx` | Implemented React ErrorBoundary with user-friendly fallback UI, error correlation ID, and reload action | UI/UX DEVELOPER | None |
 | GAP-003 | P1 | Backend | index.js Monolith | 🟡 DEFERRED | 5979-line backend entry point with ~180 inline routes | None directly, but dev velocity suffers | Difficult to maintain, test, review | `backend/index.js` = 349KB, 5979 lines | Extract remaining inline routes into route files | BACKEND DEVELOPER | None |
 | GAP-004 | P1 | Frontend | BuildResume Monolith | 🟡 DEFERRED | 137KB single-file component | Mobile performance impact | Difficult to maintain/extend | `BuildResume.jsx` = 137KB | Split into smaller sub-components | UI/UX DEVELOPER | None |
-| GAP-005 | P1 | Observability | No Metrics/APM | ⚫ MISSING | No metrics collection or APM integration | Cannot detect performance degradation | No alerting on latency/error spikes | No OpenTelemetry, Datadog, or similar | Implement structured logging + metrics | DEVOPS / BACKEND DEVELOPER | None |
-| GAP-006 | P1 | CI/CD | No Pipeline | ⚫ MISSING | No automated CI/CD pipeline | Manual deployment risk | No automated quality gate | No GitHub Actions, Jenkins, etc. | Implement CI pipeline with test + build + deploy | DEVOPS | None |
+| GAP-005 | P1 | Observability | No Metrics/APM | 🟡 PARTIAL | No metrics collection or APM integration | Cannot detect performance degradation | No alerting on latency/error spikes | Request ID correlation exists; structured logging missing | Implement structured logging + metrics | DEVOPS / BACKEND DEVELOPER | None |
+| GAP-006 | P1 | CI/CD | Pipeline Exists | 🟢 ADDRESSED | CI/CD pipeline exists with quality gates | Manual deployment risk eliminated | Automated quality gate | `.github/workflows/quality-gate.yml` and `production-release.yml` exist | Monitor and enhance | DEVOPS | None |
 | GAP-007 | P1 | Scalability | Single Instance | 🟡 DEFERRED | PM2 fork mode, 1 instance, 600MB | Cannot handle concurrent load | No horizontal scaling | `ecosystem.config.js`: instances: 1, exec_mode: fork | Enable cluster mode or container orchestration | DEVOPS | PM2 config |
-| GAP-008 | P1 | Accessibility | No A11y Testing | ⚫ MISSING | No accessibility test suite | Users with disabilities cannot verify usability | Potential compliance risk | No axe-core, pa11y, or similar | Implement a11y test suite | UI/UX DEVELOPER | None |
+| GAP-008 | P1 | Accessibility | No A11y Testing | 🟡 PARTIAL | No accessibility test suite | Users with disabilities cannot verify usability | Potential compliance risk | RouteFocus.jsx exists; ARIA labels present in some components | Implement a11y test suite | UI/UX DEVELOPER | None |
 | GAP-009 | P2 | Frontend | CoverLetter Monolith | 🟡 DEFERRED | 113KB single-file component | Performance impact | Maintenance difficulty | `CoverLetter.jsx` = 113KB | Split into sub-components | UI/UX DEVELOPER | None |
 | GAP-010 | P2 | Payments | Unproven in Production | 🟠 UNPROVEN | 5 payment providers implemented but no production evidence | Payment failures could go undetected | Revenue loss risk | All payment routes exist but no production transaction evidence | Production payment testing with each provider | BACKEND DEVELOPER + MANUAL QA | Payment provider credentials |
 | GAP-011 | P2 | Enterprise | Feature-Flagged Off | 🟠 UNPROVEN | Enterprise tenancy never activated in production | Enterprise features unavailable | 30 backend files + frontend unused in production | `ENTERPRISE_TENANCY_ENABLED=false` in ecosystem.config.js | Activate and test in staging | BACKEND DEVELOPER + DEVOPS | Feature flag + schema migration |
@@ -44,6 +44,7 @@
 | GAP-028 | P3 | Backend | Graceful Shutdown | 🟢 ADDRESSED | graceful-shutdown.test.js exists | None | None | graceful-shutdown.test.js | Monitor in production | DEVOPS | None |
 | GAP-029 | P3 | Cleanup | Orphan Files | 🟡 DEFERRED | Several orphan files identified | None directly | Repository clutter | See ORPHAN_CODE_CLEANUP_AUDIT.md | Remove after review | LOCAL DEVELOPER | Orphan audit |
 | GAP-030 | P3 | Frontend | Mobile Optimization | 🟡 PARTIAL | Responsive but not mobile-optimized | Mobile users get desktop-scaled views | Performance on mobile devices | Large monolith components | Mobile-specific optimizations | UI/UX DEVELOPER | GAP-004 |
+| GAP-031 | P2 | Lint | Unnecessary Escapes | 🟢 RESOLVED | Two lint warnings for unnecessary regex escapes | None | Code quality | `backend/services/aiRuntime.js:368`, `src/services/aiService.js:12` | Fixed: removed unnecessary `\\[` escapes inside character classes | BACKEND DEVELOPER | None |
 
 ---
 
@@ -51,8 +52,8 @@
 
 | Priority | Count |
 |----------|-------|
-| P0 | 2 |
-| P1 | 5 |
-| P2 | 11 |
-| P3 | 12 |
-| **TOTAL** | **30** |
+| P0 | 0 (2 resolved) |
+| P1 | 2 (3 addressed/partial) |
+| P2 | 9 (1 resolved) |
+| P3 | 10 |
+| **TOTAL** | **31** (3 resolved this audit) |

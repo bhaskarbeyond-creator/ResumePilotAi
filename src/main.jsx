@@ -15,6 +15,8 @@ import PublicResume from './components/PublicResume/PublicResume';
 import fire from './conf/fire'; // Import fire
 import GA4Provider from './components/GA4Provider';
 import PrivacyConsentBanner from './components/PrivacyConsentBanner';
+import ErrorBoundary from './components/ErrorBoundary';
+import SkipToContent from './components/SkipToContent';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 import GoogleMapsProvider from './components/JobsListings/GoogleMapsProvider';
 import axios from 'axios';
@@ -364,6 +366,7 @@ const AuthWrapper = () => {
 
     return (
         <AuthContext.Provider value={user}>
+            <SkipToContent />
             {verificationBanner && (
                 <div style={{
                     position: 'fixed',
@@ -413,6 +416,7 @@ const AuthWrapper = () => {
                 <GA4Provider>
                     <RouteSeo />
                     <RouteFocus />
+                    <main id="main-content">
                     <Suspense fallback={<Spinner />}>
                         <Routes>
                             <Route path="/" element={<Welcome key={user?.uid || 'guest'} user={user} />} />
@@ -473,6 +477,7 @@ const AuthWrapper = () => {
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </Suspense>
+                    </main>
                     <PrivacyConsentBanner />
                 </GA4Provider>
             </BrowserRouter>
@@ -484,7 +489,7 @@ const AuthWrapper = () => {
 const container = document.getElementById('root');
 if (container && !container.dataset.lab && !window.__isTemplateLab) {
     const root = createRoot(container);
-    root.render(<AuthWrapper />);
+    root.render(<ErrorBoundary><AuthWrapper /></ErrorBoundary>);
 }
 
 // If you want your app to work offline and load faster, you can change

@@ -1,7 +1,9 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { getRepository } from '../backend/repositories/index.js';
-import { getPool } from '../backend/database/mysql.js';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { getRepository } = require('../backend/repositories/index.js');
+const { getPool } = require('../backend/database/mysql.js');
 
 describe('Real End-to-End Business Workflows & Data Integrity', () => {
   let repo;
@@ -11,7 +13,7 @@ describe('Real End-to-End Business Workflows & Data Integrity', () => {
     getPool();
   });
 
-  it('1. Consumer & Resume Lifecycle: Create, Edit, Duplicate, Delete Isolation', async () => {
+  it('1. Consumer & Resume Lifecycle: Create, Edit, Duplicate, Delete Isolation', { skip: !process.env.DB_HOST }, async () => {
     const userUid = `consumer-e2e-${Date.now()}`;
     const resumeAId = `res-a-${Date.now()}`;
     const resumeBId = `res-b-dup-${Date.now()}`;
@@ -61,7 +63,7 @@ describe('Real End-to-End Business Workflows & Data Integrity', () => {
     await repo.deleteUser(userUid);
   });
 
-  it('2. Membership Lifecycle: Pro, Premium, Enterprise, Expired, Refunded', async () => {
+  it('2. Membership Lifecycle: Pro, Premium, Enterprise, Expired, Refunded', { skip: !process.env.DB_HOST }, async () => {
     const userUid = `mem-e2e-${Date.now()}`;
     await repo.saveUser(userUid, { email: `${userUid}@test.local`, membership: 'Basic' });
 
@@ -83,7 +85,7 @@ describe('Real End-to-End Business Workflows & Data Integrity', () => {
     await repo.deleteUser(userUid);
   });
 
-  it('3. Employer & Job Applications Workflow', async () => {
+  it('3. Employer & Job Applications Workflow', { skip: !process.env.DB_HOST }, async () => {
     const employerUid = `emp-e2e-${Date.now()}`;
     const candidateUid = `cand-e2e-${Date.now()}`;
     const companyId = `comp-e2e-${Date.now()}`;
@@ -123,7 +125,7 @@ describe('Real End-to-End Business Workflows & Data Integrity', () => {
     await repo.deleteUser(employerUid);
   });
 
-  it('4. CMS Workflow: Create, Edit, Publish, Unpublish', async () => {
+  it('4. CMS Workflow: Create, Edit, Publish, Unpublish', { skip: !process.env.DB_HOST }, async () => {
     const blogId = `blog-e2e-${Date.now()}`;
     const slug = `systems-engineering-guide-${Date.now()}`;
 
@@ -147,7 +149,7 @@ describe('Real End-to-End Business Workflows & Data Integrity', () => {
     await repo.deleteBlogPost(blogId);
   });
 
-  it('5. Enterprise Multi-Tenancy & Access Isolation', async () => {
+  it('5. Enterprise Multi-Tenancy & Access Isolation', { skip: !process.env.DB_HOST }, async () => {
     const tenantAId = `tenant-a-${Date.now()}`;
     const tenantBId = `tenant-b-${Date.now()}`;
     const userA = `usr-a-${Date.now()}`;

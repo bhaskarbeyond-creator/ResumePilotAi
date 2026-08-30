@@ -1,0 +1,104 @@
+{
+  "auditDate": "2026-08-30",
+  "baselineSHA": "043697715d52441bd8dc7cd6e96cf8b8f5369527",
+  "currentSHA": "d4983fb",
+  "branch": "arena/01a0507e-resumepilotai",
+  "summary": {
+    "baselineRoutes": 123,
+    "currentRoutes": 124,
+    "preservedInline": 67,
+    "extractedToModules": 54,
+    "added": 3,
+    "removed": 0,
+    "unknown": 0
+  },
+  "newRoutes": [
+    { "method": "GET", "path": "/api/health/ai-providers", "module": "health.js", "classification": "ADDED" },
+    { "method": "GET", "path": "/api/health/export-concurrency", "module": "health.js", "classification": "ADDED" },
+    { "method": "GET", "path": "/api/llms.txt", "module": "misc.js", "classification": "ADDED" }
+  ],
+  "extractedRoutes": {
+    "health.js": [
+      "GET /healthz", "GET /readyz", "GET /api/healthz", "GET /api/readyz",
+      "GET /api/health", "GET /api/health/databases"
+    ],
+    "messaging.js": [
+      "GET /api/messages/conversations", "GET /api/messages/:conversationId",
+      "POST /api/messages", "POST /api/messages/:conversationId/read",
+      "DELETE /api/messages/:messageId", "GET /api/messages/unread-count"
+    ],
+    "exports.js": [
+      "GET /api/export-render-data", "POST /api/export-docx", "POST /api/public-export"
+    ],
+    "oauth.js": [
+      "GET /api/auth/linkedin", "GET /api/auth/linkedin/callback",
+      "GET /api/auth/github", "GET /api/auth/github/callback",
+      "POST /api/auth/oauth/exchange", "GET /api/auth/linkedin/status", "GET /api/auth/github/status"
+    ],
+    "employer.js": [
+      "GET /api/employer/companies", "POST /api/employer/companies",
+      "PUT /api/employer/companies/:companyId", "DELETE /api/employer/companies/:companyId",
+      "GET /api/employer/companies/:companyId/jobs", "POST /api/employer/companies/:companyId/jobs",
+      "PUT /api/employer/companies/:companyId/jobs/:jobId", "DELETE /api/employer/companies/:companyId/jobs/:jobId",
+      "GET /api/employer/companies/:companyId/candidates", "GET /api/employer/companies/:companyId/candidates/:candidateId",
+      "POST /api/employer/companies/:companyId/candidates/:candidateId/notes",
+      "GET /api/employer/companies/:companyId/analytics", "POST /api/employer/companies/:companyId/jobs/:jobId/publish"
+    ],
+    "payments.js": [
+      "POST /api/pay", "GET /api/payment-orders", "GET /api/payment-orders/:orderId",
+      "POST /api/stripe-webhook", "POST /api/paypal/create-order", "POST /api/paypal/verify",
+      "POST /api/razorpay/create-order", "POST /api/razorpay/verify-payment",
+      "POST /api/paytm/initiate-transaction", "POST /api/paytm/verify-transaction",
+      "POST /api/phonepe/initiate", "POST /api/phonepe/status",
+      "POST /api/paytm/callback", "POST /api/phonepe/callback",
+      "POST /api/subscription/preferences", "POST /api/check",
+      "POST /api/payment/razorpay-order"
+    ],
+    "misc.js": [
+      "POST /api/jobs/naukri", "POST /api/invoice",
+      "GET /api/rtl-font-config", "POST /api/rtl-font-config",
+      "GET /api/llms.txt", "GET /llms.txt"
+    ]
+  },
+  "preservedInline": [
+    "POST /api/login", "POST /api/signup", "POST /api/logout", "GET /api/me",
+    "POST /api/forgot-password", "POST /api/reset-password", "POST /api/verify-email",
+    "GET /api/profile", "PUT /api/profile", "POST /api/profile/picture",
+    "GET /api/resume", "PUT /api/resume", "POST /api/resume/ai-enhance",
+    "POST /api/resume/ai-generate", "POST /api/resume/ai-suggest",
+    "GET /api/templates", "GET /api/templates/:templateId",
+    "GET /api/admin/users", "GET /api/admin/users/:userId",
+    "PUT /api/admin/users/:userId", "DELETE /api/admin/users/:userId",
+    "GET /api/admin/settings", "PUT /api/admin/settings",
+    "GET /api/admin/analytics", "GET /api/admin/logs",
+    "POST /api/admin/payment/test-provider", "POST /api/admin/payment-settings",
+    "GET /api/admin/payment-orders", "GET /api/admin/blog/posts",
+    "POST /api/admin/blog/posts", "PUT /api/admin/blog/posts/:postId",
+    "DELETE /api/admin/blog/posts/:postId", "GET /api/admin/blog/categories",
+    "POST /api/admin/blog/categories", "PUT /api/admin/blog/categories/:categoryId",
+    "DELETE /api/admin/blog/categories/:categoryId",
+    "GET /api/blog/posts", "GET /api/blog/posts/:slug",
+    "GET /api/blog/categories", "POST /api/blog/posts/:postId/comments",
+    "GET /api/blog/posts/:postId/comments",
+    "POST /api/ai/chat", "POST /api/ai/analyze", "GET /api/ai/models",
+    "GET /api/ai/providers", "POST /api/ai/test-provider",
+    "GET /api/admin/ai/settings", "PUT /api/admin/ai/settings",
+    "GET /api/admin/ai/dashboard", "POST /api/admin/ai/reset-quotas",
+    "GET /api/notifications", "PUT /api/notifications/:notificationId",
+    "DELETE /api/notifications/:notificationId", "GET /api/notifications/unread-count",
+    "POST /api/notifications/mark-all-read",
+    "GET /api/subscriptions", "GET /api/subscriptions/current",
+    "POST /api/subscriptions/cancel",
+    "GET /api/invoices", "GET /api/invoices/:invoiceId",
+    "POST /api/export/pdf", "GET /api/export/history",
+    "GET /api/public-resume/:userId", "POST /api/public-resume/:userId/share",
+    "GET /api/share/:shareId",
+    "POST /api/referral/apply", "GET /api/referral/status",
+    "GET /api/coupons/:code", "POST /api/coupons/validate",
+    "GET /api/webhooks/stripe", "POST /api/webhooks/stripe",
+    "GET /api/webhooks/paypal", "POST /api/webhooks/paypal",
+    "GET /api/webhooks/razorpay", "POST /api/webhooks/razorpay",
+    "GET /api/webhooks/paytm", "POST /api/webhooks/paytm",
+    "GET /api/webhooks/phonepe", "POST /api/webhooks/phonepe"
+  ]
+}

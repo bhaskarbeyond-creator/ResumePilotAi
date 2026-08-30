@@ -11,6 +11,8 @@ const crypto = require('crypto');
 
 const { chromium } = require('playwright');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+const { createLogger } = require('./services/logger');
+const logger = createLogger({ module: 'backend' });
 const EmailNotifier = require('./services/emailNotifier');
 const { processOutboxOnce } = require('./services/notificationOutbox');
 const { createResumeDocx, resolveExportTemplate } = require('./services/docxExport');
@@ -20,6 +22,13 @@ const { getGlobalAiDashboardData, setGlobalAiQuotaLimits, resetUserAiQuota, rese
 const { mergeAdminSettingCategory } = require('./services/adminSettingsMerge');
 const { PAYMENT_PROVIDERS, resolveWriteOnlySecret, getPaymentSettingsProjection } = require('./services/paymentAdmin');
 const { resolveEffectiveEntitlement, isPaidMembershipTier } = require('./security/entitlements');
+const { chooseCredentialPair, readPersistedPaymentProviders, paypalConfig: paypalConfigShared, getRazorpayKeys: getRazorpayKeysShared, getPaytmConfig: getPaytmConfigShared, getPhonePeConfig: getPhonePeConfigShared } = require('./helpers/payment-providers');
+// Bound wrappers: the shared helpers take getRepository as a parameter,
+// but existing call sites expect zero-argument functions.
+const paypalConfig = () => paypalConfigShared(getRepository);
+const getRazorpayKeys = () => getRazorpayKeysShared(getRepository);
+const getPaytmConfig = () => getPaytmConfigShared(getRepository);
+const getPhonePeConfig = () => getPhonePeConfigShared(getRepository);
 const { toCanonicalDate } = require('./database/canonical');
 const { isMembershipActive, toCanonicalUser } = require('./database/domain');
 const databaseAuthority = require('./database/authority');
@@ -62,7 +71,28 @@ const { notificationsDataRouter } = require('./routes/notificationsData');
 const { usersDataRouter } = require('./routes/usersData');
 const { miscDataRouter } = require('./routes/miscData');
 const { databaseAdminRouter } = require('./routes/databaseAdmin');
+const { messagingRouter } = require('./routes/messaging');
+const { createHealthRouter } = require('./routes/health');
+const { createExportRouter } = require('./routes/exports');
+const { createOAuthRouter } = require('./routes/oauth');
+const { createEmployerRouter } = require('./routes/employer');
+const { createPaymentRouter } = require('./routes/payments');
+const { createMiscRouter } = require('./routes/misc');
 const { getRepository } = require('./repositories');
+
+// Resolve deployment commit SHA (moved earlier for health router dependency)
+let globalCommitSha = process.env.COMMIT_SHA;
+try {
+  const shaPath = path.join(__dirname, 'COMMIT_SHA');
+  if (fs.existsSync(shaPath)) {
+    const bytes = fs.readFileSync(shaPath);
+    const decoded = bytes[0] === 0xff && bytes[1] === 0xfe
+      ? bytes.toString('utf16le')
+      : bytes.toString('utf8');
+    const candidate = decoded.replace(/^\uFEFF/, '').trim();
+    if (/^[0-9a-f]{40}$/i.test(candidate)) globalCommitSha = candidate;
+  }
+} catch (_) {}
 const app = express();
 const cors = require('cors');
 const cryptoRandom = require('crypto');
@@ -137,15 +167,15 @@ try {
                 clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                 privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             });
-            console.log('[Firebase Admin] Initialized via environment variables (identity only)');
+            logger.info('[Firebase Admin] Initialized via environment variables (identity only)');
         } else if (process.env.NODE_ENV === 'production' || process.env.FIREBASE_USE_ADC === 'true' || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
             // Workload Identity / Application Default Credentials avoid long-lived key files.
             credential = admin.credential.applicationDefault();
-            console.log('[Firebase Admin] Initialized via Application Default Credentials (identity only)');
+            logger.info('[Firebase Admin] Initialized via Application Default Credentials (identity only)');
         } else {
             // Local builds without credentials can serve non-Firebase diagnostics only.
             admin.initializeApp({ projectId });
-            console.log('[Firebase Admin] Initialized without credentials (limited local mode)');
+            logger.info('[Firebase Admin] Initialized without credentials (limited local mode)');
         }
 
         if (credential) {
@@ -153,7 +183,7 @@ try {
         }
     }
 } catch (e) {
-    console.warn('[Firebase Admin] Initialization notice:', e.message);
+    logger.warn('[Firebase Admin] Initialization notice:', { error: e.message });
 }
 // The Firebase Admin runtime is exposed only for identity verification and
 // identity lifecycle operations; it is not an application-data adapter.
@@ -164,7 +194,7 @@ app.set('tenantService', createTenantService({ pool: getPool(), admin }));
 // Truthful one-time architecture statement. Never logs secrets or URLs.
 if (enterpriseFeatureEnabled()) {
     const runtime = app.get('tenantService')?.describeRuntime?.() || {};
-    console.log('[Enterprise Architecture]', JSON.stringify({
+    logger.info('[Enterprise Architecture]', {
         enterpriseTenancy: 'ENABLED',
         dataProvider: `Enterprise Data Provider: ${String(runtime.dataProvider || 'mysql')}`,
         dataPlaneConfigured: runtime.dataPlaneConfigured === true,
@@ -173,7 +203,7 @@ if (enterpriseFeatureEnabled()) {
         encryption: `Encryption Provider: ${String(runtime.encryption?.provider === 'server-key' ? 'ServerKey' : runtime.encryption?.provider || 'none')}`,
         encryptionSecurityLevel: runtime.encryption?.securityLevel || null,
         quotaStore: runtime.quotaStore || 'mysql-atomic',
-    }));
+    });
 }
 
 // Auto-initialize system fonts for Playwright PDF rendering on Linux servers
@@ -199,14 +229,14 @@ const initSystemFonts = () => {
                 }
             }
             if (updated) {
-                console.log('[Fonts] Auto-synced template font files to Linux system font cache.');
+                logger.info('[Fonts] Auto-synced template font files to Linux system font cache.');
                 try {
                     require('child_process').execSync(`fc-cache -f "${targetDir}"`, { stdio: 'ignore' });
                 } catch (_e) {}
             }
         }
     } catch (err) {
-        console.warn('[Fonts] Auto-sync notice:', err.message);
+        logger.warn('[Fonts] Auto-sync notice:', { error: err.message });
     }
 };
 initSystemFonts();
@@ -226,11 +256,11 @@ async function runSchemaBootstrap() {
     const conn = await testMysql();
     if (!conn.connected) {
         schemaState = { success: false, error: conn.error || 'MySQL unreachable at startup' };
-        console.warn('[Startup] MySQL unreachable — starting in degraded mode:', schemaState.error);
+        logger.warn('[Startup] MySQL unreachable — starting in degraded mode:', { error: schemaState.error });
         return schemaState;
     }
     schemaState = await initializeSchema();
-    if (!schemaState.success) console.warn('[Startup] Schema bootstrap incomplete:', schemaState.error);
+    if (!schemaState.success) logger.warn('[Startup] Schema bootstrap incomplete:', { error: schemaState.error });
     return schemaState;
 }
 app.set('schemaState', () => schemaState);
@@ -239,18 +269,8 @@ app.set('schemaState', () => schemaState);
 // then exit. No acknowledged transaction is dropped by the shutdown itself:
 // pool shutdown waits for in-flight queries.
 let httpServer = null;
-let shuttingDown = false;
-async function gracefulShutdown(signal) {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.log(`[Shutdown] ${signal} received — draining connections...`);
-    try { if (httpServer) await new Promise(resolve => httpServer.close(resolve)); } catch (_e) { /* not listening */ }
-    try { await closePool(); } catch (_e) { /* pool already closed */ }
-    console.log('[Shutdown] Clean exit complete.');
-    process.exit(0);
-}
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+// Graceful shutdown is registered inside the require.main === module block below.
+// The module-level function was removed to avoid duplicate SIGTERM/SIGINT handlers.
 
 app.use((req, res, next) => {
     const suppliedRequestId = req.get('x-request-id') || '';
@@ -337,7 +357,7 @@ const retiredClientNotificationPaths = new Set([
     '/api/notify/job-status-update', '/api/notify/job-posted', '/api/notify/subscription-cancelled',
 ]);
 const publicApiPaths = new Set([
-    '/healthz', '/readyz', '/health', '/health/databases', '/service-availability', '/platform/version', '/platform/public-config',
+    '/healthz', '/readyz', '/health', '/health/databases', '/health/ai-providers', '/health/export-concurrency', '/service-availability', '/platform/version', '/platform/public-config',
     '/enterprise/status',
     '/stripe-webhook', '/public-export', '/export-render-data', '/contact', '/auth/custom-password-reset',
     '/auth/verify-email-token', '/auth/set-user-password', '/auth/linkedin', '/auth/linkedin/callback',
@@ -348,6 +368,11 @@ const publicApiPaths = new Set([
     '/trusted-by', '/trusted-by.json',
     '/blog-data', '/jobs-data',
     '/paytm/callback', '/phonepe/callback',
+    // Retired endpoints (410/501) — no auth needed
+    '/invoice', '/jobs/naukri',
+    '/subscription/preferences', '/payment/razorpay-order',
+    // Simple public endpoints
+    '/llms.txt',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
     '/stats', '/reviews', '/phrases', '/portfolios/public'
 ]);
@@ -399,6 +424,131 @@ app.use('/api/notifications-data', notificationsDataRouter);
 app.use('/api/users-data', usersDataRouter);
 app.use('/api', miscDataRouter);
 app.use('/api/admin/database-settings', databaseAdminRouter);
+app.use('/api', messagingRouter);
+
+// Mount health/readiness/observability routes (extracted from inline handlers)
+const healthRouter = createHealthRouter({
+    databaseAuthority,
+    getPool,
+    testMysql,
+    getSchemaState: () => app.get('schemaState')(),
+    getTenantService: () => app.get('tenantService'),
+    maybeQueueReadyzAlert,
+    getExportStatus: require('./services/exportSemaphore').getExportStatus,
+    admin,
+    globalCommitSha,
+});
+app.use('/api', healthRouter);
+app.use('/', healthRouter); // /healthz and /readyz at root level
+
+// Mount export routes (extracted from inline handlers)
+const exportRouter = createExportRouter({
+    getRepository,
+    consumeExportRenderToken,
+    discardExportRenderToken,
+    createExportRenderToken,
+    acquireSlot: require('./services/exportSemaphore').acquireSlot,
+    releaseSlot: require('./services/exportSemaphore').releaseSlot,
+    chromium,
+    resolveExportTemplate,
+    createResumeDocx,
+    resolveEffectiveEntitlement,
+    isMembershipActive,
+    isPaidMembershipTier,
+    toCanonicalUser,
+    protocol,
+    websiteName,
+    logger,
+});
+app.use('/api', exportRouter);
+
+// Mount OAuth routes (extracted from inline handlers)
+const oauthRouter = createOAuthRouter({
+    admin,
+    protocol,
+    websiteName,
+    getRepository,
+    chooseCredentialPair,
+    oauthSecurity: { hashOpaque, createPkceChallenge, parseCookies, assertStateBinding, assertStateRecord, assertVerifiedIdentity, assertAccountLinkSafe, assertExchangeRecord },
+    resetSecurity: { isOpaqueToken },
+});
+app.use('/api', oauthRouter);
+
+// Mount employer/job routes (extracted from inline handlers)
+const employerRouter = createEmployerRouter({
+    resilientMutations,
+    getRepository,
+    safePublicUrl,
+    adminIso,
+    logger,
+});
+app.use('/api', employerRouter);
+
+// Webhook signature verification does not call the Stripe API. Provider API
+// operations resolve the complete authoritative credential at call time so an
+// Admin-managed MariaDB secret and a deployment-managed secret behave alike.
+const Stripe = require('stripe');
+const stripeWebhookVerifier = Stripe(process.env.STRIPE_SECRET || 'webhook-verification-only');
+
+// Mount payment routes (extracted from inline handlers)
+const paymentRouter = createPaymentRouter({
+    paymentActivation,
+    indianGatewayActivation,
+    stripeWebhookVerifier,
+    getStripeClient,
+    reconcileStripeChargeRefund,
+    validateStripePaymentIntent,
+    validatePayPalOrder,
+    validateRazorpaySignature,
+    validateRazorpayPayment,
+    validatePaytmPayment,
+    validatePhonePePayment,
+    assertInternalOrder,
+    billingSnapshotHash,
+    generateInvoice,
+    getInvoiceForUser,
+    listInvoicesForUser,
+    normalizeCustomerDetails,
+    supplierFromPublicConfig,
+    toCanonicalDate,
+    toCanonicalUser,
+    isMembershipActive,
+    isPaidMembershipTier,
+    getRepository,
+    logger,
+    fetch,
+    Stripe,
+    PAYMENT_PROVIDERS,
+    protocol,
+    websiteName,
+});
+app.use('/api', paymentRouter);
+
+// Mount misc routes (extracted from inline handlers)
+const miscRouter = createMiscRouter({
+    getRepository,
+    normalizeLlmDiscoverySettings,
+    loadTwilioRuntimeConfig,
+    requireRecentAdminAuthentication,
+    logger,
+    fetch,
+});
+app.use('/api', miscRouter);
+// Root mount for llms.txt only (specification requires root path)
+app.get('/llms.txt', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+        const publicConfig = await getRepository().getSetting('public_config');
+        const llmGeo = normalizeLlmDiscoverySettings(publicConfig?.llmGeo || {});
+        if (!llmGeo.enableLlmGeo || !llmGeo.llmsTxtContent) {
+            return res.status(404).type('text/plain').send('LLM discovery metadata is not published.\n');
+        }
+        return res.type('text/plain').send(`${llmGeo.llmsTxtContent}\n`);
+    } catch (error) {
+        console.error('[llms.txt]', { code: error.code, requestId: res.locals.requestId });
+        return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
+    }
+});
 
 // During enterprise rollout, reject tenant/workspace headers on legacy routes rather
 // than silently ignoring them. A client must use a tenant-aware /api/enterprise path
@@ -427,7 +577,6 @@ app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
 app.use('/api/admin/ai/test-provider', requireRecentAdminAuthentication, aiAccountLimiter);
 app.use(['/api/export', '/api/public-export', '/api/export-docx'], exportAccountLimiter);
 app.use('/api/linkedin-scraper', scraperAccountLimiter);
-app.use('/api/contact', contactAccountLimiter);
 app.use('/api/messages', messagingAccountLimiter);
 // Defense in depth for administrative namespaces. The route policy also protects aliases
 // such as /api/auth/purge-orphaned-auth and modular email routes mounted under /api.
@@ -439,1786 +588,71 @@ app.use(['/api/admin', '/api/email/admin'], (req, res, next) => {
     return requirePermission('system.config.write')(req, res, next);
 });
 
-const Stripe = require('stripe');
-// Webhook signature verification does not call the Stripe API. Provider API
-// operations resolve the complete authoritative credential at call time so an
-// Admin-managed MariaDB secret and a deployment-managed secret behave alike.
-const stripeWebhookVerifier = Stripe(process.env.STRIPE_SECRET || 'webhook-verification-only');
+// stripeWebhookVerifier moved before payment router mount
 
+// Payment provider helpers — still needed by admin refund routes
 async function getStripeClient() {
     const environmentSecret = String(process.env.STRIPE_SECRET || '').trim();
     if (environmentSecret) return Stripe(environmentSecret);
-    const persisted = await readPersistedPaymentProviders();
-    const storedSecret = String(persisted.providers.stripe?.secretKey || '').trim();
+    const repo = getRepository();
+    const [providers, publicRoot] = await Promise.all([repo.getSetting('payment_providers'), repo.getSetting('public_config')]);
+    if (!publicRoot || typeof publicRoot !== 'object' || !publicRoot.subscriptions || typeof publicRoot.subscriptions !== 'object') throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { status: 503 });
+    const storedSecret = String(providers?.stripe?.secretKey || '').trim();
     if (!storedSecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { code: 'PAYMENT_PROVIDER_UNAVAILABLE', status: 503 });
     return Stripe(storedSecret);
 }
 
-async function getDynamicPlan(planId, provider) {
-    const planMonths = { monthly: 1, halfYear: 6, yearly: 12 };
-    if (!Object.hasOwn(planMonths, planId)) {
-        const error = new Error('INVALID_PLAN');
-        error.status = 400;
-        throw error;
-    }
-
-    const { getRepository } = require('./repositories');
-    const repo = getRepository();
-    let publicConfig;
-    let systemSettings;
-    try {
-        [publicConfig, systemSettings] = await Promise.all([
-            repo.getSetting('public_config'),
-            repo.getSetting('system_settings'),
-        ]);
-    } catch (cause) {
-        throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { status: 503, cause });
-    }
-
-    const billing = publicConfig?.subscriptions;
-    if (!billing || typeof billing !== 'object' || billing.state !== true) {
-        throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { code: 'PAYMENT_CONFIGURATION_UNAVAILABLE', status: 503 });
-    }
-    if (!PAYMENT_PROVIDERS.includes(provider) || billing[`${provider}Enabled`] !== true) {
-        throw Object.assign(new Error('PAYMENT_PROVIDER_DISABLED'), { code: 'PAYMENT_PROVIDER_DISABLED', status: 409 });
-    }
-    const currency = String(systemSettings?.currency || '').toUpperCase();
-    if (currency !== 'INR' || String(billing.currency || '').toUpperCase() !== currency
-        || billing.enableTax !== true || billing.taxInclusive !== true) {
-        throw Object.assign(new Error('PAYMENT_CONFIGURATION_INVALID'), { code: 'PAYMENT_CONFIGURATION_INVALID', status: 503 });
-    }
-    // A payment must never be accepted if its immutable invoice cannot be
-    // issued from the same authoritative configuration. The normalized supplier
-    // snapshot is bound to the order before provider contact.
-    const supplierSnapshot = supplierFromPublicConfig(publicConfig);
-
-    let baseAmount;
-    const matrix = billing.pricingMatrix?.[currency];
-    if (matrix && Object.hasOwn(matrix, planId)) {
-        baseAmount = Number(matrix[planId]);
-    } else {
-        const priceField = planId === 'monthly' ? 'monthlyPrice' : planId === 'yearly' ? 'yearlyPrice' : 'quartarlyPrice';
-        baseAmount = Number(billing[priceField]);
-    }
-    if (!Number.isFinite(baseAmount) || baseAmount <= 0) {
-        throw Object.assign(new Error('PAYMENT_CONFIGURATION_INVALID'), { status: 503 });
-    }
-
-    const multiplier = currency === 'JPY' ? 1 : 100;
-    return {
-        amount: Math.round(baseAmount * multiplier),
-        currency,
-        months: planMonths[planId],
-        supplierSnapshot,
-    };
-}
-
-async function createImmutableBillingContext(uid, details, supplierSnapshot) {
-    const repo = getRepository();
-    const customer = await repo.getUser(uid);
-    if (!customer) {
-        throw Object.assign(new Error('PAYMENT_USER_NOT_FOUND'), { code: 'PAYMENT_USER_NOT_FOUND', status: 404 });
-    }
-    const billingSnapshot = normalizeCustomerDetails(details, customer);
-    return {
-        billingSnapshot,
-        supplierSnapshot,
-        billingSnapshotHash: billingSnapshotHash(billingSnapshot, supplierSnapshot),
-        billingSnapshotVersion: 1,
-    };
-}
-
-async function _applyServerCoupon({ uid, orderId, plan, couponCode }) {
-    return paymentActivation.applyServerCoupon({ uid, orderId, plan, couponCode });
-}
-
-async function _releaseCouponReservation(order) {
-    return paymentActivation.releaseCouponReservation(order);
-}
-
-async function releaseCouponForRef(ref) {
-    if (!ref) return;
-    const orderId = ref.id;
-    const order = await paymentActivation.getOrder(orderId);
-    if (order) await paymentActivation.releaseCouponReservation({ ...order, id: orderId });
-}
-
-async function _consumeCouponRedemption(orderId, order) {
-    return paymentActivation.consumeCouponRedemption(orderId, order);
-}
-
-async function activateVerifiedOrder(orderRef, gatewayLabel, providerPaymentId) {
-    const orderId = typeof orderRef === 'string' ? orderRef : orderRef.id;
-    return paymentActivation.activateVerifiedOrder({
-        orderId, gatewayLabel, providerPaymentId,     });
-}
-async function createProviderOrderRecord({ uid, planId, provider, couponCode, billingDetails }) {
-    const basePlan = await getDynamicPlan(planId, provider);
-    const billingContext = await createImmutableBillingContext(uid, billingDetails, basePlan.supplierSnapshot);
-    const created = await paymentActivation.createOrder({
-        uid, planId, provider, couponCode, plan: basePlan, extra: billingContext,
-    });
-    return { ref: paymentActivation.asOrderRef(created.id), plan: created.plan || basePlan };
-}
-async function createPaymentOrder({ uid, planId, idempotencyKey, couponCode, billingDetails }) {
-    const basePlan = await getDynamicPlan(planId, 'stripe');
-    if (!basePlan) { const err = new Error('INVALID_PLAN'); err.status = 400; throw err; }
-    const billingContext = await createImmutableBillingContext(uid, billingDetails, basePlan.supplierSnapshot);
-    const stripeClient = await getStripeClient();
-    const created = await paymentActivation.createOrder({
-        uid, planId, provider: 'stripe', couponCode, idempotencyKey, plan: basePlan, extra: billingContext,
-    });
-    if (created.replayed && created.clientSecret) {
-        return { orderId: created.id, clientSecret: created.clientSecret, amount: created.amount, currency: created.currency, replayed: true };
-    }
-    try {
-        const intent = await stripeClient.paymentIntents.create({
-            amount: created.amount || created.plan?.amount || basePlan.amount,
-            currency: created.currency || created.plan?.currency || basePlan.currency,
-            metadata: { orderId: created.id, uid, planId }
-        }, { idempotencyKey: `order:${created.id}` });
-        await paymentActivation.updateOrder(created.id, {
-            providerPaymentIntentId: intent.id,
-            providerClientSecret: intent.client_secret,
-            status: 'PAYMENT_CREATED',
-        });
-        return { orderId: created.id, clientSecret: intent.client_secret, amount: created.amount || created.plan?.amount || basePlan.amount, currency: created.currency || created.plan?.currency || basePlan.currency };
-    } catch (err) {
-        await paymentActivation.updateOrder(created.id, { status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' });
-        await paymentActivation.releaseCouponReservation({ ...created, id: created.id });
-        throw err;
-    }
-}
-app.post('/api/pay', async (req, res) => {
-    try {
-        const suppliedKey = String(req.get('idempotency-key') || '');
-        const idempotencyKey = /^ck_[A-Za-z0-9_-]{10,100}$/.test(suppliedKey) ? suppliedKey : crypto.randomUUID();
-        const result = await createPaymentOrder({
-            uid: req.user.uid,
-            planId: req.body.planId || req.body.plan,
-            idempotencyKey,
-            couponCode: req.body.couponCode,
-            billingDetails: req.body.billingDetails,
-        });
-        return res.status(201).json({ orderId: result.orderId, client_secret: result.clientSecret, amount: result.amount, currency: result.currency, status: 'PAYMENT_PENDING' });
-    } catch (err) {
-        console.error('[Stripe payment create]', err.message);
-        return res.status(err.status || 500).json({ error: { code: err.message === 'INVALID_PLAN' ? 'INVALID_PLAN' : 'PAYMENT_UNAVAILABLE', message: 'Unable to create payment', requestId: res.locals.requestId } });
-    }
-});
-
-
-// Payment history is read directly from the owner-bound MariaDB ledger. Profile
-// JSON is not a second payment-history store.
-app.get('/api/payment-orders', async (req, res) => {
-    try {
-        const { getRepository } = require('./repositories');
-        const orders = await getRepository().getUserPaymentOrders(req.user.uid);
-        res.setHeader('Cache-Control', 'no-store, private');
-        return res.json({ success: true, orders, source: 'MARIADB_PAYMENT_ORDERS', count: orders.length });
-    } catch (error) {
-        return res.status(error.status || 503).json({
-            success: false,
-            code: error.code || 'PAYMENT_HISTORY_UNAVAILABLE',
-            error: 'Payment history is unavailable.',
-            requestId: res.locals.requestId,
-        });
-    }
-});
-
-// Payment status is read from a server-owned order and is bound to the verified caller.
-app.get('/api/payment-orders/:orderId', async (req, res) => {
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(req.params.orderId)) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
-    try {
-        const order = await paymentActivation.getOrder(req.params.orderId);
-        if (!order || order.uid !== req.user.uid) return res.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order not found', requestId: res.locals.requestId } });
-        let invoiceNumber = null;
-        let invoiceStatus = order.status === 'ACTIVE' ? 'NOT_ISSUED' : 'NOT_APPLICABLE';
-        if (order.status === 'ACTIVE' && Number(order.billingSnapshotVersion) === 1) {
-            try {
-                const invoice = await getInvoiceForUser({ uid: req.user.uid, paymentOrderId: req.params.orderId });
-                invoiceNumber = invoice.invoiceNumber;
-                invoiceStatus = 'ISSUED';
-            } catch (cause) {
-                throw Object.assign(new Error('Active payment invoice invariant failed'), {
-                    code: 'ACTIVATION_INVOICE_INTEGRITY_FAILED', status: 503, cause,
-                });
-            }
-        } else if (order.status === 'ACTIVE') {
-            invoiceStatus = 'LEGACY_NOT_CAPTURED';
-        }
-        return res.json({
-            orderId: order.id || req.params.orderId,
-            status: order.status,
-            planId: order.planId,
-            membershipEnds: toCanonicalDate(order.membershipEnds) || null,
-            invoiceStatus,
-            invoiceNumber,
-        });
-    } catch (error) {
-        return res.status(error.status || 503).json({ error: { code: error.code || 'ORDER_UNAVAILABLE', message: 'Order could not be loaded', requestId: res.locals.requestId } });
-    }
-});
-
-// Stripe webhook — verified, idempotent MariaDB subscription activation
-app.post('/api/stripe-webhook', async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    let event;
-    try {
-        if (!process.env.STRIPE_WEBHOOK_SECRET) throw new Error('Stripe webhook is not configured');
-        event = stripeWebhookVerifier.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
-        console.error('[Stripe Webhook] Signature error:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    if (event.type === 'payment_intent.succeeded') {
-        const paymentData = event.data.object;
-        const orderId = paymentData.metadata?.orderId;
-        if (!orderId) return res.status(400).json({ error: 'Unknown payment order' });
-        const order = await paymentActivation.getOrder(orderId);
-        if (!order) return res.status(400).json({ error: 'Unknown payment order' });
-        try {
-            validateStripePaymentIntent(order, paymentData, orderId);
-        } catch (_) {
-            return res.status(400).json({ error: 'Payment order mismatch' });
-        }
-        const claimed = await paymentActivation.claimWebhookEvent({
-            eventId: event.id, provider: 'stripe', eventType: event.type, orderId,
-        });
-        if (claimed.duplicate) return res.json({ received: true, duplicate: true });
-        console.log(`[Stripe Webhook] verified order ${orderId}`);
-        try {
-            const activated = await paymentActivation.activateVerifiedOrder({
-                orderId, gatewayLabel: 'Stripe', providerPaymentId: paymentData.id,             });
-            return res.json({
-                received: true,
-                status: 'activated',
-                userId: order.uid,
-                membership: activated.membership || 'Premium',
-                membershipEnds: toCanonicalDate(activated.membershipEnds) || activated.membershipEnds,
-                invoiceStatus: activated.invoiceStatus,
-                invoiceNumber: activated.invoice?.invoiceNumber || null,
-            });
-        } catch (err) {
-            await paymentActivation.releaseWebhookEvent(event.id).catch(releaseError => {
-                console.error('[Stripe Webhook] event release failed:', releaseError.message);
-            });
-            throw err;
-        }
-    }
-
-    if (event.type === 'payment_intent.payment_failed') {
-        const payment = event.data.object;
-        const orderId = payment.metadata?.orderId;
-        if (orderId) {
-            const order = await paymentActivation.getOrder(orderId);
-            if (order && order.providerPaymentIntentId === payment.id) {
-                const claimed = await paymentActivation.claimWebhookEvent({
-                    eventId: event.id, provider: 'stripe', eventType: event.type, orderId,
-                });
-                if (!claimed.duplicate) {
-                    await paymentActivation.updateOrder(orderId, {
-                        status: 'FAILED',
-                        failureCode: payment.last_payment_error?.code || 'PAYMENT_FAILED',
-                    });
-                }
-            }
-        }
-        return res.json({ received: true });
-    }
-
-    if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
-        const providerObject = event.data.object;
-        const paymentIntentId = providerObject.payment_intent;
-        if (!paymentIntentId) return res.status(400).json({ error: 'Unknown payment order' });
-        const matched = await paymentActivation.findByProviderIntent(paymentIntentId);
-        if (!matched) return res.status(400).json({ error: 'Unknown payment order' });
-        if (Number(providerObject.amount) !== Number(matched.amount)
-            || String(providerObject.currency || '').toUpperCase() !== String(matched.currency || '').toUpperCase()) {
-            return res.status(400).json({ error: 'Payment reversal amount or currency mismatch' });
-        }
-        const status = event.type === 'charge.refunded' ? 'REFUNDED' : 'CHARGEBACK';
-        if (status === 'REFUNDED' && Number(providerObject.amount_refunded) !== Number(providerObject.amount)) {
-            return res.status(409).json({ error: 'Entitlement reversal requires a completed full refund.' });
-        }
-        const claimed = await paymentActivation.claimWebhookEvent({
-            eventId: event.id, provider: 'stripe', eventType: event.type, orderId: matched.id,
-        });
-        if (claimed.duplicate) return res.json({ received: true, duplicate: true });
-        try {
-            let reconciliation = null;
-            if (status === 'REFUNDED') {
-                reconciliation = await reconcileStripeChargeRefund({
-                    stripeClient: await getStripeClient(),
-                    charge: providerObject,
-                    order: matched,
-                });
-            }
-            const reversed = await paymentActivation.reverseEntitlement({
-                orderId: matched.id,
-                status,
-                providerRefundId: reconciliation?.refundReference || null,
-                providerRefundReferenceType: reconciliation?.referenceType || null,
-                providerRefunds: reconciliation?.refunds || [],
-            });
-            return res.json({
-                received: true,
-                status: status.toLowerCase(),
-                creditNoteNumber: reversed.creditNote?.creditNoteNumber || null,
-            });
-        } catch (error) {
-            await paymentActivation.releaseWebhookEvent(event.id).catch(releaseError => {
-                console.error('[Stripe Webhook] reversal event release failed:', releaseError.message);
-            });
-            throw error;
-        }
-    }
-
-    return res.json({ received: true });
-});
-
-// PayPal orders are created server-side so amount, currency, plan and owner are bound
-// before the browser is allowed to approve or capture the provider order.
 async function paypalAccessToken(baseUrl, clientId, clientSecret) {
-    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: 'grant_type=client_credentials',
-        timeout: 10_000
-    });
+    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, { method: 'POST', headers: { 'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=client_credentials', timeout: 10_000 });
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) throw Object.assign(new Error('PAYPAL_AUTH_FAILED'), { status: 502 });
     return tokenData.access_token;
 }
 
+// Payment history is read directly from the owner-bound MariaDB ledger. Profile
+// JSON is not a second payment-history store.
+
+// Payment status is read from a server-owned order and is bound to the verified caller.
+
+// Stripe webhook — verified, idempotent MariaDB subscription activation
+
+// PayPal orders are created server-side so amount, currency, plan and owner are bound
+// before the browser is allowed to approve or capture the provider order.
+
 // Provider credentials are selected as complete pairs. An incomplete
 // deployment pair must never be combined with a MariaDB value from another
 // account, which would make a save/reload or provider test appear successful
 // while checkout still uses invalid credentials.
-function chooseCredentialPair({ environmentId, environmentSecret, storedId, storedSecret, environmentName = 'environment', storedName = 'mysql' }) {
-    const envId = String(environmentId || '').trim();
-    const envSecret = String(environmentSecret || '').trim();
-    const persistedId = String(storedId || '').trim();
-    const persistedSecret = String(storedSecret || '').trim();
-    if (envId && envSecret) return { id: envId, secret: envSecret, source: environmentName };
-    if (persistedId && persistedSecret) return { id: persistedId, secret: persistedSecret, source: storedName };
-    if (envId || envSecret) return { id: envId, secret: envSecret, source: `${environmentName}-partial` };
-    if (persistedId || persistedSecret) return { id: persistedId, secret: persistedSecret, source: `${storedName}-partial` };
-    return { id: '', secret: '', source: 'none' };
-}
-
-async function readPersistedPaymentProviders() {
-    const { getRepository } = require('./repositories');
-    const repo = getRepository();
-    const [providers, publicRoot] = await Promise.all([
-        repo.getSetting('payment_providers'),
-        repo.getSetting('public_config'),
-    ]);
-    if (!publicRoot || typeof publicRoot !== 'object'
-        || !publicRoot.subscriptions || typeof publicRoot.subscriptions !== 'object') {
-        throw Object.assign(new Error('PAYMENT_CONFIGURATION_UNAVAILABLE'), { status: 503 });
-    }
-    return {
-        providers: providers && typeof providers === 'object' ? providers : {},
-        publicConfig: publicRoot.subscriptions,
-    };
-}
-
-async function paypalConfig() {
-    const envClientId = String(process.env.PAYPAL_CLIENT_ID || '').trim();
-    const envClientSecret = String(process.env.PAYPAL_CLIENT_SECRET || '').trim();
-    let environment = String(process.env.PAYPAL_ENV || 'sandbox').toLowerCase();
-    let storedClientId = '';
-    let storedClientSecret = '';
-    let storedEnvironment = '';
-    const persistedPaypal = await readPersistedPaymentProviders();
-    {
-        const stored = persistedPaypal.providers.paypal || {};
-        const publicConfig = persistedPaypal.publicConfig || {};
-        storedClientId = String(stored.clientId || publicConfig.paypalClientId || '').trim();
-        storedClientSecret = String(stored.clientSecret || '').trim();
-        storedEnvironment = String(stored.environment || '').trim();
-    }
-    const selected = chooseCredentialPair({
-        environmentId: envClientId,
-        environmentSecret: envClientSecret,
-        storedId: storedClientId,
-        storedSecret: storedClientSecret,
-    });
-    if (storedEnvironment && selected.source === 'mysql') environment = storedEnvironment.toLowerCase();
-    if (!selected.id || !selected.secret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-    const baseUrl = environment === 'live' || environment === 'production' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
-    return { clientId: selected.id, clientSecret: selected.secret, baseUrl, source: selected.source };
-}
-app.post('/api/paypal/create-order', async (req, res) => {
-    let orderRef;
-    try {
-        const { clientId, clientSecret, baseUrl } = await paypalConfig();
-        const { ref, plan } = await createProviderOrderRecord({
-            uid: req.user.uid,
-            planId: req.body.planId,
-            provider: 'paypal',
-            couponCode: req.body.couponCode,
-            billingDetails: req.body.billingDetails,
-        });
-        orderRef = ref;
-        const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
-        const providerRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'PayPal-Request-Id': ref.id },
-            body: JSON.stringify({
-                intent: 'CAPTURE',
-                purchase_units: [{
-                    reference_id: ref.id,
-                    custom_id: req.user.uid,
-                    description: `${req.body.planId} ResumePilot subscription`,
-                    amount: { currency_code: plan.currency, value: (plan.amount / 100).toFixed(2) }
-                }]
-            }),
-            timeout: 10_000
-        });
-        const providerOrder = await providerRes.json();
-        if (!providerRes.ok || !providerOrder.id) throw new Error('PAYPAL_CREATE_FAILED');
-        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED' });
-        return res.status(201).json({ orderId: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency });
-    } catch (err) {
-        if (orderRef) {
-            await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
-            await releaseCouponForRef(orderRef);
-        }
-        console.error('[PayPal create]', err.message);
-        return res.status(err.status || 502).json({ error: { code: err.message, message: 'Unable to create PayPal order', requestId: res.locals.requestId } });
-    }
-});
-
-app.post('/api/paypal/verify', async (req, res) => {
-    try {
-        const providerOrderId = String(req.body.orderId || '');
-        const paymentOrderId = String(req.body.paymentOrderId || '');
-        if (!/^[A-Za-z0-9_-]{1,128}$/.test(providerOrderId) || !/^[A-Za-z0-9_-]{1,128}$/.test(paymentOrderId)) {
-            return res.status(400).json({ verified: false, error: 'Invalid order identifier' });
-        }
-        const internal = await paymentActivation.getOrder(paymentOrderId);
-        const orderRef = paymentActivation.asOrderRef(paymentOrderId);
-        try {
-            if (!internal) throw new Error('ORDER_NOT_FOUND');
-            assertInternalOrder(internal, { uid: req.user.uid, provider: 'paypal', providerOrderId });
-        } catch (_) {
-            return res.status(404).json({ verified: false, error: 'Order not found' });
-        }
-        const { clientId, clientSecret, baseUrl } = await paypalConfig();
-        const accessToken = await paypalAccessToken(baseUrl, clientId, clientSecret);
-        const providerRes = await fetch(`${baseUrl}/v2/checkout/orders/${encodeURIComponent(providerOrderId)}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, timeout: 10_000
-        });
-        const providerOrder = await providerRes.json();
-        let captureId;
-        try {
-            if (!providerRes.ok) throw new Error('PAYPAL_PROVIDER_ERROR');
-            captureId = validatePayPalOrder(internal, providerOrder, {
-                uid: req.user.uid, paymentOrderId, providerOrderId
-            });
-        } catch (_) {
-            return res.status(400).json({ verified: false, error: 'PayPal order verification failed' });
-        }
-        const active = await activateVerifiedOrder(orderRef, 'PayPal', captureId);
-        return res.json({
-            verified: true,
-            orderId: providerOrderId,
-            paymentOrderId,
-            status: active.status,
-            membershipEnds: active.membershipEnds,
-            invoiceStatus: active.invoiceStatus,
-            invoiceNumber: active.invoice?.invoiceNumber || null,
-        });
-    } catch (err) {
-        console.error('[PayPal verify]', err.message);
-        return res.status(err.status || 502).json({ verified: false, error: 'PayPal verification unavailable' });
-    }
-});
 
 // Razorpay credentials are server-owned and never accepted from payment requests.
-async function getRazorpayKeys() {
-    const envKeyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
-    const envKeySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
-    // A complete environment pair is deployment-managed and wins as a pair. Do
-    // not combine an old environment key ID with a newly saved MariaDB secret.
-    if (envKeyId && envKeySecret) return { keyId: envKeyId, keySecret: envKeySecret, source: 'environment' };
-    const persisted = await readPersistedPaymentProviders();
-    const stored = persisted.providers.razorpay || {};
-    const storedKeyId = String(stored.keyId || persisted.publicConfig?.razorpayKeyId || '').trim();
-    const storedSecret = String(stored.keySecret || '').trim();
-    const selected = chooseCredentialPair({ environmentId: envKeyId, environmentSecret: envKeySecret, storedId: storedKeyId, storedSecret });
-    return { keyId: selected.id, keySecret: selected.secret, source: selected.source };
-}
-
-app.post('/api/razorpay/create-order', async (req, res) => {
-    // Ownership and amount are server-controlled; reject any client attempt to supply them.
-    const clientIdentityFields = ['userId', 'uid', 'ownerUid', 'amount', 'keyId', 'keySecret'];
-    if (clientIdentityFields.some(f => Object.hasOwn(req.body || {}, f))) {
-        return res.status(400).json({ error: { code: 'CLIENT_PAYMENT_IDENTITY_REJECTED', message: 'Payment ownership and amounts are server-controlled', requestId: res.locals.requestId } });
-    }
-    let internalRef;
-    try {
-        const { keyId, keySecret } = await getRazorpayKeys();
-        if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({
-            uid: req.user.uid,
-            planId: req.body.planId || req.body.plan,
-            provider: 'razorpay',
-            couponCode: req.body.couponCode,
-            billingDetails: req.body.billingDetails,
-        });
-        internalRef = ref;
-        const providerRes = await fetch('https://api.razorpay.com/v1/orders', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64'),
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                amount: plan.amount,
-                currency: plan.currency,
-                receipt: ref.id,
-                notes: { paymentOrderId: ref.id, uid: req.user.uid, planId: req.body.planId || req.body.plan }
-            }),
-            timeout: 10_000
-        });
-        const providerOrder = await providerRes.json();
-        if (!providerRes.ok || !providerOrder.id) throw new Error('RAZORPAY_CREATE_FAILED');
-        await ref.update({ providerOrderId: providerOrder.id, status: 'PAYMENT_CREATED' });
-        return res.status(201).json({ id: providerOrder.id, paymentOrderId: ref.id, amount: plan.amount, currency: plan.currency, key: keyId });
-    } catch (err) {
-        if (internalRef) {
-            await internalRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
-            await releaseCouponForRef(internalRef);
-        }
-        console.error('[Razorpay create]', err.code || err.message);
-        const status = Number(err.status) || 502;
-        const code = status === 503 && !internalRef ? 'PAYMENT_PROVIDER_UNAVAILABLE' : 'RAZORPAY_CREATE_FAILED';
-        return res.status(status).json({ error: { code, message: 'Unable to create Razorpay order', requestId: res.locals.requestId } });
-    }
-});
-
-app.post('/api/razorpay/verify-payment', async (req, res) => {
-    try {
-        const { razorpay_order_id: providerOrderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body;
-        const paymentOrderId = String(req.body.paymentOrderId || '');
-        if (![providerOrderId, paymentId, signature, paymentOrderId].every(value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value))) {
-            return res.status(400).json({ verified: false, error: 'Invalid payment confirmation' });
-        }
-        const order = await paymentActivation.getOrder(paymentOrderId);
-        const orderRef = paymentActivation.asOrderRef(paymentOrderId);
-        try {
-            if (!order) throw new Error('ORDER_NOT_FOUND');
-            assertInternalOrder(order, { uid: req.user.uid, provider: 'razorpay', providerOrderId });
-        } catch (_) {
-            return res.status(404).json({ verified: false, error: 'Order not found' });
-        }
-        const { keyId, keySecret } = await getRazorpayKeys();
-        if (!keyId || !keySecret) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        try {
-            validateRazorpaySignature(keySecret, providerOrderId, paymentId, signature);
-        } catch (_) {
-            return res.status(400).json({ verified: false, error: 'Payment signature verification failed' });
-        }
-        // A valid callback signature alone is not proof of capture. Confirm provider state and amount.
-        const paymentRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`, {
-            headers: { 'Authorization': 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64') }, timeout: 10_000
-        });
-        const payment = await paymentRes.json();
-        try {
-            if (!paymentRes.ok) throw new Error('RAZORPAY_PROVIDER_ERROR');
-            validateRazorpayPayment(order, payment, providerOrderId);
-        } catch (_) {
-            return res.status(400).json({ verified: false, error: 'Provider payment is not captured or does not match the order' });
-        }
-        const active = await activateVerifiedOrder(orderRef, 'Razorpay', paymentId);
-        return res.json({
-            verified: true,
-            status: active.status,
-            paymentOrderId,
-            membershipEnds: active.membershipEnds,
-            invoiceStatus: active.invoiceStatus,
-            invoiceNumber: active.invoice?.invoiceNumber || null,
-        });
-    } catch (err) {
-        console.error('[Razorpay verify]', err.message);
-        return res.status(err.status || 502).json({ verified: false, error: 'Razorpay verification unavailable' });
-    }
-});
 
 // ── Helpers: resolve complete provider credential pairs from env or MariaDB ──
-async function getPaytmConfig() {
-    const envMid = String(process.env.PAYTM_MID || '').trim();
-    const envKey = String(process.env.PAYTM_MERCHANT_KEY || '').trim();
-    let website = String(process.env.PAYTM_WEBSITE || '').trim();
-    const channelId = process.env.PAYTM_CHANNEL_ID || 'WEB';
-    const env = (process.env.PAYTM_ENV || 'staging').toLowerCase();
-    const isLive = env === 'production' || env === 'live';
-    const baseUrl = isLive ? 'https://securegw.paytm.in' : 'https://securegw-stage.paytm.in';
-    if (envMid && envKey) return { mid: envMid, key: envKey, website, channelId, baseUrl, isLive, source: 'environment' };
-
-    const persisted = await readPersistedPaymentProviders();
-    const stored = persisted.providers.paytm || {};
-    const publicConfig = persisted.publicConfig || {};
-    const storedMid = String(stored.mid || publicConfig.paytmMid || '').trim();
-    const storedKey = String(stored.merchantKey || '').trim();
-    if (stored.website || publicConfig.paytmWebsite) website = stored.website || publicConfig.paytmWebsite;
-    const selected = chooseCredentialPair({ environmentId: envMid, environmentSecret: envKey, storedId: storedMid, storedSecret: storedKey });
-    return { mid: selected.id, key: selected.secret, website, channelId, baseUrl, isLive, source: selected.source };
-}
-
-async function getPhonePeConfig() {
-    const envMerchantId = String(process.env.PHONEPE_MERCHANT_ID || '').trim();
-    const envSaltKey = String(process.env.PHONEPE_SALT_KEY || '').trim();
-    let saltIndex = Number.parseInt(process.env.PHONEPE_SALT_INDEX || '', 10);
-    const env = (process.env.PHONEPE_ENV || 'sandbox').toLowerCase();
-    const isLive = env === 'production' || env === 'live';
-    const baseUrl = isLive
-        ? 'https://api.phonepe.com/apis/hermes'
-        : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
-    if (envMerchantId && envSaltKey) {
-        return { merchantId: envMerchantId, saltKey: envSaltKey, saltIndex, baseUrl, isLive, source: 'environment' };
-    }
-
-    const persisted = await readPersistedPaymentProviders();
-    const stored = persisted.providers.phonepe || {};
-    const publicConfig = persisted.publicConfig || {};
-    const storedMerchantId = String(stored.merchantId || publicConfig.phonepeId || '').trim();
-    const storedSaltKey = String(stored.saltKey || '').trim();
-    if (stored.saltIndex || publicConfig.phonepeSaltIndex) saltIndex = Number.parseInt(stored.saltIndex || publicConfig.phonepeSaltIndex, 10);
-    const selected = chooseCredentialPair({ environmentId: envMerchantId, environmentSecret: envSaltKey, storedId: storedMerchantId, storedSecret: storedSaltKey });
-    return { merchantId: selected.id, saltKey: selected.secret, saltIndex, baseUrl, isLive, source: selected.source };
-}
 
 // ── Paytm: server-owned transaction lifecycle ───────────────────────────────
-app.post('/api/paytm/initiate-transaction', async (req, res) => {
-    let orderRef;
-    try {
-        const { mid, key, website, channelId, baseUrl, isLive } = await getPaytmConfig();
-        if (!mid || !key || !website) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({
-            uid: req.user.uid,
-            planId: req.body.planId || req.body.plan,
-            provider: 'paytm',
-            couponCode: req.body.couponCode,
-            billingDetails: req.body.billingDetails,
-        });
-        orderRef = ref;
-        const providerOrderId = ref.id;
-        const txnAmount = (plan.amount / 100).toFixed(2);
-        const callbackUrl = `${protocol}://${websiteName}/api/paytm/callback`;
-        const paytmReqBody = JSON.stringify({ body: {
-            requestType: 'Payment', mid, websiteName: website, orderId: providerOrderId,
-            callbackUrl, txnAmount: { value: txnAmount, currency: plan.currency },
-            userInfo: { custId: req.user.uid },
-            enablePaymentMode: [{ mode: 'UPI' }, { mode: 'CARD' }, { mode: 'NET_BANKING' }, { mode: 'PAYTM_WALLET' }]
-        }});
-        const bodyBase64 = Buffer.from(paytmReqBody).toString('base64');
-        const headerPayload = JSON.stringify({ alg: 'HS256', version: 'v1', kid: mid, requesttimestamp: Math.floor(Date.now() / 1000).toString(), channelId });
-        const headerBase64 = Buffer.from(headerPayload).toString('base64');
-        const signature = crypto.createHmac('sha256', key).update(`${headerBase64}.${bodyBase64}`).digest('base64');
-        const providerRes = await fetch(`${baseUrl}/theia/api/v1/initiateTransaction?mid=${encodeURIComponent(mid)}&orderId=${encodeURIComponent(providerOrderId)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${headerBase64}.${bodyBase64}.${signature}` },
-            body: paytmReqBody, timeout: 10_000
-        });
-        const providerData = await providerRes.json();
-        if (!providerRes.ok || providerData?.body?.resultInfo?.resultStatus !== 'S' || !providerData.body.txnToken) {
-            throw new Error('PAYTM_CREATE_FAILED');
-        }
-        await ref.update({ providerOrderId, status: 'PAYMENT_CREATED' });
-        return res.status(201).json({ success: true, txnToken: providerData.body.txnToken, orderId: providerOrderId, paymentOrderId: ref.id, mid, amount: txnAmount, isLive });
-    } catch (err) {
-        if (orderRef) {
-            await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
-            await releaseCouponForRef(orderRef);
-        }
-        console.error('[Paytm create]', err.message);
-        // Carry the machine-readable code through so the checkout UI can tell an
-        // unconfigured gateway apart from one that is configured but refusing.
-        const unavailable = err.message === 'PAYMENT_PROVIDER_UNAVAILABLE';
-        return res.status(err.status || (unavailable ? 503 : 502)).json({
-            success: false,
-            code: unavailable ? 'PAYMENT_PROVIDER_UNAVAILABLE' : 'PAYMENT_CREATE_FAILED',
-            configurationState: unavailable ? 'NOT_CONFIGURED' : 'CONFIGURED',
-            error: unavailable
-                ? 'Paytm payments are not configured on this deployment.'
-                : 'Unable to create Paytm transaction',
-            requestId: res.locals.requestId,
-        });
-    }
-});
-
-app.post('/api/paytm/verify-transaction', async (req, res) => {
-    try {
-        const orderId = String(req.body.orderId || '');
-        if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
-        const order = await paymentActivation.getOrder(orderId);
-        const orderRef = paymentActivation.asOrderRef(orderId);
-        try {
-            if (!order) throw new Error('ORDER_NOT_FOUND');
-            assertInternalOrder(order, { uid: req.user.uid, provider: 'paytm', providerOrderId: orderId });
-        } catch (_) {
-            return res.status(404).json({ verified: false, error: 'Order not found' });
-        }
-        const { mid, key, baseUrl } = await getPaytmConfig();
-        if (!mid || !key) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const verifyBody = JSON.stringify({ body: { mid, orderId } });
-        const bodyBase64 = Buffer.from(verifyBody).toString('base64');
-        const headerPayload = JSON.stringify({ alg: 'HS256', version: 'v1', kid: mid, requesttimestamp: Math.floor(Date.now() / 1000).toString(), channelId: 'WEB' });
-        const headerBase64 = Buffer.from(headerPayload).toString('base64');
-        const signature = crypto.createHmac('sha256', key).update(`${headerBase64}.${bodyBase64}`).digest('base64');
-        const providerRes = await fetch(`${baseUrl}/v3/order/status`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${headerBase64}.${bodyBase64}.${signature}` },
-            body: verifyBody, timeout: 10_000
-        });
-        const providerData = await providerRes.json();
-        const body = providerData?.body || {};
-        let providerPaymentId;
-        try {
-            if (!providerRes.ok) throw new Error('PAYTM_PROVIDER_ERROR');
-            providerPaymentId = validatePaytmPayment(order, body);
-        } catch (_) {
-            return res.status(400).json({ verified: false, error: 'Provider transaction is not successful or does not match the order' });
-        }
-        const active = await activateVerifiedOrder(orderRef, 'Paytm', providerPaymentId);
-        return res.json({
-            verified: true,
-            status: active.status,
-            txnId: body.txnId,
-            orderId,
-            membershipEnds: active.membershipEnds,
-            invoiceStatus: active.invoiceStatus,
-            invoiceNumber: active.invoice?.invoiceNumber || null,
-        });
-    } catch (err) {
-        console.error('[Paytm verify]', err.message);
-        return res.status(err.status || 502).json({ verified: false, error: 'Paytm verification unavailable' });
-    }
-});
 
 // ── PhonePe: server-owned transaction lifecycle ─────────────────────────────
-app.post('/api/phonepe/initiate', async (req, res) => {
-    let orderRef;
-    try {
-        const { merchantId, saltKey, saltIndex, baseUrl, isLive } = await getPhonePeConfig();
-        if (!merchantId || !saltKey || !Number.isSafeInteger(saltIndex) || saltIndex < 1) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const { ref, plan } = await createProviderOrderRecord({
-            uid: req.user.uid,
-            planId: req.body.planId || req.body.plan,
-            provider: 'phonepe',
-            couponCode: req.body.couponCode,
-            billingDetails: req.body.billingDetails,
-        });
-        orderRef = ref;
-        const payload = {
-            merchantId, merchantTransactionId: ref.id, merchantUserId: req.user.uid,
-            amount: plan.amount,
-            redirectUrl: `${protocol}://${websiteName}/billing/plans?phonepe_callback=1&order=${encodeURIComponent(ref.id)}`,
-            redirectMode: 'REDIRECT',
-            callbackUrl: `${protocol}://${websiteName}/api/phonepe/callback`,
-            paymentInstrument: { type: 'PAY_PAGE' }
-        };
-        const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64');
-        const checksum = `${crypto.createHash('sha256').update(`${base64Payload}/pg/v1/pay${saltKey}`).digest('hex')}###${saltIndex}`;
-        const providerRes = await fetch(`${baseUrl}/pg/v1/pay`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum, 'Accept': 'application/json' },
-            body: JSON.stringify({ request: base64Payload }), timeout: 10_000
-        });
-        const providerData = await providerRes.json();
-        const redirectUrl = providerData?.data?.instrumentResponse?.redirectInfo?.url;
-        if (!providerRes.ok || !providerData?.success || !redirectUrl) throw new Error('PHONEPE_CREATE_FAILED');
-        // Never relay an unexpected provider-controlled scheme to the browser.
-        const parsedRedirect = new URL(redirectUrl);
-        if (parsedRedirect.protocol !== 'https:' || !(parsedRedirect.hostname === 'phonepe.com' || parsedRedirect.hostname.endsWith('.phonepe.com'))) {
-            throw new Error('PHONEPE_INVALID_REDIRECT');
-        }
-        await ref.update({ providerOrderId: ref.id, status: 'PAYMENT_CREATED' });
-        return res.status(201).json({ success: true, orderId: ref.id, paymentOrderId: ref.id, redirectUrl: parsedRedirect.href, isLive });
-    } catch (err) {
-        if (orderRef) {
-            await orderRef.update({ status: 'FAILED', failureCode: 'PROVIDER_CREATE_FAILED' }).catch(() => {});
-            await releaseCouponForRef(orderRef);
-        }
-        console.error('[PhonePe create]', err.message);
-        // Carry the machine-readable code through so the checkout UI can tell an
-        // unconfigured gateway apart from one that is configured but refusing.
-        const unavailable = err.message === 'PAYMENT_PROVIDER_UNAVAILABLE';
-        return res.status(err.status || (unavailable ? 503 : 502)).json({
-            success: false,
-            code: unavailable ? 'PAYMENT_PROVIDER_UNAVAILABLE' : 'PAYMENT_CREATE_FAILED',
-            configurationState: unavailable ? 'NOT_CONFIGURED' : 'CONFIGURED',
-            error: unavailable
-                ? 'PhonePe payments are not configured on this deployment.'
-                : 'Unable to create PhonePe transaction',
-            requestId: res.locals.requestId,
-        });
-    }
-});
 
-app.post('/api/phonepe/status', async (req, res) => {
-    try {
-        const orderId = String(req.body.orderId || '');
-        if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) return res.status(400).json({ verified: false, error: 'Invalid order' });
-        const order = await paymentActivation.getOrder(orderId);
-        const orderRef = paymentActivation.asOrderRef(orderId);
-        try {
-            if (!order) throw new Error('ORDER_NOT_FOUND');
-            assertInternalOrder(order, { uid: req.user.uid, provider: 'phonepe', providerOrderId: orderId });
-        } catch (_) {
-            return res.status(404).json({ verified: false, error: 'Order not found' });
-        }
-        const { merchantId, saltKey, saltIndex, baseUrl } = await getPhonePeConfig();
-        if (!merchantId || !saltKey || !Number.isSafeInteger(saltIndex) || saltIndex < 1) throw Object.assign(new Error('PAYMENT_PROVIDER_UNAVAILABLE'), { status: 503 });
-        const checksum = `${crypto.createHash('sha256').update(`/pg/v1/status/${merchantId}/${orderId}${saltKey}`).digest('hex')}###${saltIndex}`;
-        const providerRes = await fetch(`${baseUrl}/pg/v1/status/${encodeURIComponent(merchantId)}/${encodeURIComponent(orderId)}`, {
-            headers: { 'Content-Type': 'application/json', 'X-VERIFY': checksum, 'X-MERCHANT-ID': merchantId, 'Accept': 'application/json' },
-            timeout: 10_000
-        });
-        const providerData = await providerRes.json();
-        let paymentId;
-        try {
-            if (!providerRes.ok) throw new Error('PHONEPE_PROVIDER_ERROR');
-            paymentId = validatePhonePePayment(order, providerData);
-        } catch (_) {
-            return res.status(400).json({ verified: false, state: providerData?.data?.state || 'UNKNOWN', error: 'Provider transaction is not complete or does not match the order' });
-        }
-        const active = await activateVerifiedOrder(orderRef, 'PhonePe', paymentId);
-        return res.json({
-            verified: true,
-            status: active.status,
-            state: providerData.data.state,
-            paymentId,
-            orderId,
-            membershipEnds: active.membershipEnds,
-            invoiceStatus: active.invoiceStatus,
-            invoiceNumber: active.invoice?.invoiceNumber || null,
-        });
-    } catch (err) {
-        console.error('[PhonePe status]', err.message);
-        return res.status(err.status || 502).json({ verified: false, error: 'PhonePe verification unavailable' });
-    }
-});
+// Employer/job routes and helpers extracted to backend/routes/employer.js
 
-app.post('/api/paytm/callback', async (req, res) => {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    try {
-        const orderId = String(req.body?.ORDERID || req.body?.orderId || '').trim();
-        await indianGatewayActivation.handlePaytmCallback({
-            orderId,
-            getPaytmConfig,
-            fetchImpl: fetch,
-            activation: paymentActivation,
-        });
-    } catch (error) {
-        console.warn('[Paytm callback]', error.code || error.message);
-    }
-    return res.status(200).send(indianGatewayActivation.paytmCallbackHtml());
-});
-
-app.post('/api/phonepe/callback', async (req, res) => {
-    try {
-        const base64Response = String(req.body?.response || req.body?.RESPONSE || '').trim();
-        const verifyHeader = String(req.get('X-VERIFY') || req.get('x-verify') || '');
-        await indianGatewayActivation.handlePhonePeCallback({
-            base64Response,
-            verifyHeader,
-            getPhonePeConfig,
-            fetchImpl: fetch,
-            activation: paymentActivation,
-        });
-        return res.status(200).json({ success: true, received: true });
-    } catch (error) {
-        if (error.code === 'PHONEPE_SIGNATURE_INVALID' || Number(error.status) === 400) {
-            return res.status(400).json({
-                success: false,
-                error: { code: error.code || 'PHONEPE_SIGNATURE_INVALID', message: 'Invalid PhonePe callback signature', requestId: res.locals.requestId },
-            });
-        }
-        console.warn('[PhonePe callback]', error.code || error.message);
-        if (Number(error.status) === 503) {
-            return res.status(503).json({
-                success: false,
-                error: { code: error.code || 'PAYMENT_PROVIDER_UNAVAILABLE', message: 'PhonePe is not configured', requestId: res.locals.requestId },
-            });
-        }
-        return res.status(200).json({ success: true, received: true });
-    }
-});
-
-app.post('/api/subscription/preferences', (_req, res) => {
-    // Checkout creates fixed-term, one-time provider orders; it does not create
-    // or store a recurring mandate. Retaining an `autoRenew` preference would
-    // falsely imply that a future charge is scheduled. Older clients receive an
-    // explicit terminal response rather than a successful no-op.
-    return res.status(410).json({
-        success: false,
-        code: 'NON_RECURRING_PLAN',
-        error: 'ResumePilot plans are fixed-term one-time purchases and do not renew automatically.',
-        requestId: res.locals.requestId,
-    });
-});
-
-app.post('/api/check', async (req, res) => {
-    // Reject legacy client-supplied entitlement fields — membership is server-authoritative only.
-    const legacyClientFields = ['accountType', 'expDate', 'membership', 'paymentStatus', 'membershipEnds'];
-    if (legacyClientFields.some(f => Object.hasOwn(req.body || {}, f))) {
-        return res.status(503).json({ status: 'false', error: 'Client-supplied entitlement context is not accepted' });
-    }
-    try {
-        const { getRepository } = require('./repositories');
-        const repo = getRepository();
-        const user = await repo.getUser(req.user.uid);
-        if (!user) {
-            return res.json({ status: 'false', membershipEnds: null });
-        }
-        const canonical = toCanonicalUser(user);
-        const entitled = isMembershipActive(canonical) || (
-            isPaidMembershipTier(canonical.membership)
-            && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(canonical.paymentStatus || '').toUpperCase())
-            && (!canonical.membershipEnds || new Date(canonical.membershipEnds) > new Date())
-        );
-        return res.json({ status: entitled ? 'true' : 'false', membershipEnds: entitled ? (canonical.membershipEnds || null) : null });
-    } catch (error) {
-        console.error('[Entitlement check]', error.message);
-        return res.status(500).json({ status: 'false', error: 'Entitlement check failed' });
-    }
-});
-
-function notificationEventId(...parts) { return crypto.createHash('sha256').update(parts.join('\0')).digest('hex'); }
-// Deterministic notification event IDs: notificationEventId('job_application_submitted', applicationId), notificationEventId('job_application_status', applicationId, String(nextRevision)), notificationEventId('payment_active', orderRef.id), notificationEventId('payment_refunded', paymentOrderId)
-
-function jobApplicationNotification(status, jobTitle, companyName, notes = '') {
-    const suffix = notes ? ` ${notes}` : '';
-    if (status === 'interview') return { type: 'application_interview', title: 'Interview invitation', message: `You have been invited to interview for ${jobTitle} at ${companyName}.${suffix}` };
-    if (status === 'accepted') return { type: 'application_accepted', title: 'Application accepted', message: `Your application for ${jobTitle} at ${companyName} was accepted.${suffix}` };
-    if (status === 'rejected') return { type: 'application_rejected', title: 'Application update', message: `Your application for ${jobTitle} at ${companyName} was not selected.${suffix}` };
-    return { type: 'application_status_update', title: 'Application status updated', message: `Your application for ${jobTitle} at ${companyName} is now ${status}.${suffix}` };
-}
-
-app.post('/api/jobs/:jobId/applications', async (req, res) => {
-    const jobId = String(req.params.jobId || '');
-    const fullName = String(req.body?.fullName || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
-    const phone = String(req.body?.phone || '').replace(/\p{Cc}/gu, '').trim().slice(0, 30);
-    const linkedInUrl = safePublicUrl(req.body?.linkedinUrl);
-    const githubUrl = safePublicUrl(req.body?.githubUrl);
-    const coverLetter = String(req.body?.coverLetter || '').slice(0, 20_000);
-    const coverText = coverLetter.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const resumeId = String(req.body?.resumeId || '').trim();
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'A valid job is required.' });
-    if (!String(req.user.email || '').trim()) return res.status(403).json({ success: false, error: 'A verified account email is required.' });
-    if (!fullName || !/^\+?[0-9 ()-]{7,30}$/.test(phone) || coverText.length < 50 || coverText.length > 1000) {
-        return res.status(400).json({ success: false, error: 'Valid name, phone, and a 50–1000 character cover letter are required.' });
-    }
-    if ((req.body?.linkedinUrl && (!linkedInUrl || !linkedInUrl.startsWith('https:'))) || (req.body?.githubUrl && (!githubUrl || !githubUrl.startsWith('https:')))) {
-        return res.status(400).json({ success: false, error: 'Profile links must use HTTPS.' });
-    }
-    if (resumeId && !/^[A-Za-z0-9_-]{1,128}$/.test(resumeId)) return res.status(400).json({ success: false, error: 'Invalid resume selection.' });
-    const applicationId = `${req.user.uid}_${jobId}`;
-    try {
-        // Contract: req.user.uid, req.user.email, users collection resumes, JOB_APPLICATION_SUBMITTED, applicationsCount increment, job_application_received
-        const repo = resilientMutations.repoFor();
-        const job = await repo.getJob(jobId);
-        if (!job || String(job.status || '').toLowerCase() !== 'active') {
-            const unavailable = new Error('This job is no longer accepting applications.'); unavailable.code = 'JOB_UNAVAILABLE'; throw unavailable;
-        }
-        let resume = null;
-        if (resumeId && typeof repo.getResume === 'function') {
-            resume = await repo.getResume(req.user.uid, resumeId);
-            if (!resume) { const invalidResume = new Error('The selected resume was not found.'); invalidResume.code = 'RESUME_NOT_FOUND'; throw invalidResume; }
-        }
-        const result = await resilientMutations.createApplication({
-            applicationId, job, user: req.user,
-            payload: {
-                applicantName: fullName, fullName, applicantEmail: String(req.user.email || '').trim().toLowerCase(),
-                email: String(req.user.email || '').trim().toLowerCase(), phone,
-                linkedinUrl: linkedInUrl || '', githubUrl: githubUrl || '', coverLetter,
-                selectedResume: resume ? { id: resumeId, name: String(resume.title || resume.name || 'Resume').slice(0, 120) } : null,
-                resumeId: resumeId || '',
-                jobSnapshot: { title: job.title, company: job.company, location: job.location },
-            },
-            actorUid: req.user.uid, requestId: res.locals.requestId,
-        });
-        return res.status(201).json({ success: true, ...result });
-    } catch (error) {
-        const status = error.code === 'ALREADY_APPLIED' ? 409 : ['JOB_UNAVAILABLE', 'RESUME_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'RESUME_TOO_LARGE' ? 413 : 500;
-        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to submit application.' : error.message });
-    }
-});
-
-app.patch('/api/job-applications/:applicationId/status', async (req, res) => {
-    const applicationId = String(req.params.applicationId || '');
-    const status = String(req.body?.status || '').toLowerCase();
-    const notes = String(req.body?.notes || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 1000);
-    const expectedStatus = String(req.body?.expectedStatus || '');
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId) || !['interview', 'accepted', 'rejected'].includes(status)
-        || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid application status request.' });
-    const allowedTransitions = { pending: new Set(['interview', 'rejected']), interview: new Set(['accepted', 'rejected']) };
-    try {
-        // Invariants: employerId !== req.user.uid authorization check, APPLICATION_CHANGED conflict check, allowedTransitions check, JOB_APPLICATION_STATUS_UPDATED audit
-        const repo = resilientMutations.repoFor();
-        const application = typeof repo.getApplication === 'function' ? await repo.getApplication(applicationId) : null;
-        const currentStatus = String(application?.status || 'pending');
-        if (application && !allowedTransitions[currentStatus]?.has(status)) {
-            const transition = new Error(`An application cannot move from ${currentStatus} to ${status}.`);
-            transition.code = 'INVALID_STATUS_TRANSITION';
-            throw transition;
-        }
-        const job = application ? await repo.getJob(application.jobId) : null;
-        const jobTitle = String(job?.title || application?.jobSnapshot?.title || 'Job').replace(/\p{Cc}/gu, ' ').slice(0, 160);
-        const companyName = String(job?.company || application?.jobSnapshot?.company || 'Company').replace(/\p{Cc}/gu, ' ').slice(0, 160);
-        const notification = jobApplicationNotification(status, jobTitle, companyName, notes);
-        const result = await resilientMutations.updateApplicationStatus({
-            applicationId, employerId: req.user.uid, status, notes,
-            expectedStatus, expectedRevision, actorUid: req.user.uid, requestId: res.locals.requestId, notification,
-        });
-        return res.json({ success: true, ...result });
-    } catch (error) {
-        const responseStatus = error.code === 'APPLICATION_CHANGED' || error.code === 'CAS_CONFLICT' ? 409 : error.code === 'INVALID_STATUS_TRANSITION' ? 400 : error.code === 'NOT_FOUND' ? 404 : 500;
-        return res.status(responseStatus).json({ success: false, code: error.code, error: responseStatus === 500 ? 'Unable to update application.' : error.message });
-    }
-});
+// Export routes (render-data, PDF, DOCX) extracted to backend/routes/exports.js
 
 // Applications for a job — MySQL authoritative (any authenticated reader of
 // an active job may view; employers see their own jobs' applications).
-app.get('/api/jobs/:jobId/applications', async (req, res) => {
-    const jobId = String(req.params.jobId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'Invalid job.' });
-    try {
-        const repo = resilientMutations.repoFor();
-        const job = await repo.getJob(jobId);
-        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
-        const isOwner = String(job.employerId || job.employer_id || '') === req.user.uid;
-        const applications = await repo.getApplications({ jobId });
-        // Applicants see their own applications only; the owner sees all.
-        const visible = isOwner ? applications : (applications || []).filter(app => String(app.applicant_id || app.applicantId || '') === req.user.uid);
-        return res.json({ success: true, applications: visible });
-    } catch (_error) {
-        return res.status(503).json({ success: false, error: 'Applications are unavailable.' });
-    }
-});
 
 // Employer mutations: EMPLOYER_COMPANY_CREATED, EMPLOYER_COMPANY_EDITED, EMPLOYER_COMPANY_DELETED, COMPANY_HAS_JOBS, EMPLOYER_JOB_CREATED, EMPLOYER_JOB_STATUS_CHANGED, EMPLOYER_JOB_EDITED, EMPLOYER_JOB_DELETED, EMPLOYER_JOB_CHANGED
 
-function normalizeEmployerJobInput(input = {}, company = {}) {
-    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
-    const title = text(input.title, 160);
-    const description = text(input.description, 20_000);
-    const location = text(input.location, 200);
-    const country = text(input.country, 100);
-    if (!title || !description || !location) throw new Error('Job title, description, and location are required.');
-    const list = value => Array.isArray(value) ? value.slice(0, 100).map(item => text(item, 500)).filter(Boolean) : [];
-    const salary = value => value === null || value === '' || value === undefined ? null : Number(value);
-    const minSalary = salary(input.minSalary);
-    const maxSalary = salary(input.maxSalary);
-    if ((minSalary !== null && (!Number.isFinite(minSalary) || minSalary < 0)) || (maxSalary !== null && (!Number.isFinite(maxSalary) || maxSalary < 0)) || (minSalary !== null && maxSalary !== null && minSalary > maxSalary)) throw new Error('Invalid salary range.');
-    const deadline = input.deadline ? new Date(input.deadline) : null;
-    if (deadline && !Number.isFinite(deadline.getTime())) throw new Error('Invalid application deadline.');
-    return {
-        title, description, location, country,
-        companyId: company.id, company: text(company.name, 160), companySize: text(company.size, 80), companyIndustry: text(company.industry, 120),
-        companyWebsite: safePublicUrl(company.website), companyImage: safePublicUrl(company.companyImage), companyDescription: text(company.description, 2000),
-        jobType: text(input.jobType, 80), workMode: text(input.workMode, 80), experienceLevel: text(input.experienceLevel, 100),
-        minSalary, maxSalary, requirements: list(input.requirements), benefits: list(input.benefits), deadline,
-    };
-}
-
-function isEmployerAccount(req) { return req.user?.claims?.employer === true; }
-
-function normalizeEmployerCompanyInput(input = {}) {
-    const text = (value, maximum) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, maximum);
-    const name = text(input.name, 160);
-    const industry = text(input.industry, 120);
-    const size = text(input.size, 80);
-    const location = text(input.location, 200);
-    const website = safePublicUrl(input.website);
-    const companyImage = safePublicUrl(input.companyImage);
-    const email = text(input.email, 254).toLowerCase();
-    const phone = text(input.phone, 30);
-    if (!name || !industry || !size || !location) throw new Error('Company name, industry, size, and location are required.');
-    if (input.website && (!website || !website.startsWith('https:'))) throw new Error('Company website must use HTTPS.');
-    if (input.companyImage && (!companyImage || !companyImage.startsWith('https:'))) throw new Error('Company image must use HTTPS.');
-    if (email && !/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(email)) throw new Error('Invalid company email.');
-    if (phone && !/^\+?[0-9 ()-]{7,30}$/.test(phone)) throw new Error('Invalid company phone.');
-    return { name, industry, size, location, website: website || '', companyImage: companyImage || '', description: text(input.description, 5000), address: text(input.address, 500), phone, email };
-}
-
-app.post('/api/employer-applications', async (req, res) => {
-    try {
-        const saved = await resilientMutations.createDocument({
-                        entityType: 'employer_applications',
-            id: req.user.uid,
-            data: { ...(req.body || {}), userId: req.user.uid, status: 'pending', submittedAt: new Date().toISOString() },
-            actorUid: req.user.uid,
-            requestId: res.locals.requestId,
-            action: 'EMPLOYER_APPLICATION_SUBMITTED',
-        });
-        return res.status(201).json({ success: true, id: saved.id, revision: saved.revision, status: 'pending' });
-    } catch (error) {
-        return res.status(error.status || 500).json({ success: false, error: error.message || 'Unable to submit employer application.' });
-    }
-});
-
 // Public featured-company projection. It exposes only approved, explicitly
 // featured presentation fields and never reuses the owner-scoped employer API.
-app.get('/api/public/featured-companies', async (req, res) => {
-    const limit = Math.min(Math.max(Number(req.query?.limit) || 8, 1), 50);
-    try {
-        const rows = await resilientMutations.repoFor().getCompanies({ limit: 500 });
-        const companies = (rows || []).filter(row => {
-            let extra = {};
-            try { extra = typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : (row.extra_json || {}); } catch { /* invalid extras do not authorize publication */ }
-            return String(row.status || extra.status || '').toLowerCase() === 'approved'
-                && (row.featured === true || Number(row.featured) === 1 || extra.featured === true);
-        }).slice(0, limit).map(row => {
-            let extra = {};
-            try { extra = typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : (row.extra_json || {}); } catch { /* return relational fields only */ }
-            return {
-                id: row.id,
-                name: row.name || extra.name || '',
-                companyImage: safePublicUrl(row.logo || extra.companyImage || extra.logo || ''),
-                industry: row.industry || extra.industry || '',
-                location: row.location || extra.location || '',
-            };
-        });
-        res.setHeader('Cache-Control', 'no-store');
-        return res.json({ success: true, companies, source: 'MARIADB_COMPANIES' });
-    } catch (_error) {
-        return res.status(503).json({
-            success: false,
-            code: 'FEATURED_COMPANIES_UNAVAILABLE',
-            error: 'Featured companies are temporarily unavailable.',
-            requestId: res.locals.requestId,
-        });
-    }
-});
 
 // Employer company list — MySQL authoritative (owner-scoped).
-app.get('/api/employer/companies', async (req, res) => {
-    try {
-        const repo = resilientMutations.repoFor();
-        const companies = await repo.getCompanies({ employerId: req.user.uid });
-        const items = (companies || []).map(company => ({
-            id: company.id,
-            name: company.name || company.companyName || company.company_name || '',
-            website: company.website || company.company_website || '',
-            logo: company.logo || company.logoUrl || company.extra_json?.logo || '',
-            status: company.status || company.approvalStatus || 'pending',
-            featured: company.featured === true || company.featured === 1,
-            revision: Number(company.revision || 0),
-            createdAt: adminIso(company.created_at || company.createdAt),
-        }));
-        return res.json({ success: true, companies: items });
-    } catch (_error) {
-        return res.status(503).json({ success: false, error: 'Companies are unavailable.' });
-    }
-});
-
-app.post('/api/employer/companies', async (req, res) => {
-    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
-    try {
-        const data = normalizeEmployerCompanyInput(req.body?.data);
-        const result = await resilientMutations.createCompany({
-            employerId: req.user.uid, data,
-            actorUid: req.user.uid, requestId: res.locals.requestId,
-        });
-        return res.status(201).json({ success: true, ...result });
-    } catch (error) { return res.status(400).json({ success: false, error: error.message || 'Unable to create company.' }); }
-});
-
-app.patch('/api/employer/companies/:companyId', async (req, res) => {
-    const companyId = String(req.params.companyId || '');
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company update.' });
-    try {
-        const result = await resilientMutations.updateCompany({
-            companyId, employerId: req.user.uid, expectedRevision,
-            data: normalizeEmployerCompanyInput(req.body?.data), actorUid: req.user.uid, requestId: res.locals.requestId,
-        });
-        return res.json({ success: true, ...result });
-    } catch (error) {
-        const status = error.code === 'CAS_CONFLICT' || error.code === 'EMPLOYER_COMPANY_CHANGED' ? 409 : error.code === 'NOT_FOUND' ? 404 : 400;
-        return res.status(status).json({ success: false, code: error.code, error: error.message || 'Unable to update company.' });
-    }
-});
-
-app.delete('/api/employer/companies/:companyId', async (req, res) => {
-    const companyId = String(req.params.companyId || '');
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid company deletion.' });
-    try {
-        await resilientMutations.deleteCompany({
-            companyId, employerId: req.user.uid, expectedRevision,
-            actorUid: req.user.uid, requestId: res.locals.requestId, requireNoJobs: true,
-        });
-        return res.json({ success: true });
-    } catch (error) {
-        const status = ['EMPLOYER_COMPANY_CHANGED', 'COMPANY_HAS_JOBS', 'CAS_CONFLICT'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
-        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete company.' : error.message });
-    }
-});
 
 // Employer job list — MySQL authoritative (owner-scoped).
-app.get('/api/employer/jobs', async (req, res) => {
-    try {
-        const repo = resilientMutations.repoFor();
-        const jobs = await repo.getJobs({ employerId: req.user.uid });
-        return res.json({ success: true, jobs: jobs || [] });
-    } catch (_error) {
-        return res.status(503).json({ success: false, error: 'Jobs are unavailable.' });
-    }
-});
 
-app.post('/api/employer/jobs', async (req, res) => {
-    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
-    const companyId = String(req.body?.data?.companyId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(companyId)) return res.status(400).json({ success: false, error: 'Select an approved company.' });
-    try {
-        const repo = resilientMutations.repoFor();
-        const company = await repo.getCompany(companyId);
-        if (!company || company.employerId !== req.user.uid || company.status !== 'approved') return res.status(404).json({ success: false, error: 'Approved company not found.' });
-        const data = normalizeEmployerJobInput(req.body.data, { id: companyId, ...company });
-        const result = await resilientMutations.createJob({
-            employerId: req.user.uid, company: { id: companyId, ...company }, data,
-            actorUid: req.user.uid, requestId: res.locals.requestId,
-        });
-        return res.status(201).json({ success: true, ...result });
-    } catch (error) {
-        return res.status(400).json({ success: false, error: error.message || 'Unable to create job.' });
-    }
-});
+// Export routes (render-data, PDF, DOCX) extracted to backend/routes/exports.js
 
-app.patch('/api/employer/jobs/:jobId', async (req, res) => {
-    const jobId = String(req.params.jobId || '');
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job update.' });
-    try {
-        const repo = resilientMutations.repoFor();
-        const current = await repo.getJob(jobId);
-        if (!current || current.employerId !== req.user.uid) { const missing = new Error('Job not found.'); missing.code = 'NOT_FOUND'; throw missing; }
-        let patch; let action;
-        if (Object.hasOwn(req.body || {}, 'status')) {
-            const nextStatus = String(req.body.status || '').toLowerCase();
-            const allowed = (current.status === 'active' && nextStatus === 'paused') || (current.status === 'paused' && nextStatus === 'active');
-            if (!allowed) { const invalid = new Error(`A ${current.status || 'pending'} job cannot be changed to ${nextStatus}.`); invalid.code = 'INVALID_JOB_TRANSITION'; throw invalid; }
-            patch = { status: nextStatus }; action = 'EMPLOYER_JOB_STATUS_CHANGED';
-        } else {
-            const companyId = String(req.body?.data?.companyId || '');
-            const company = await repo.getCompany(companyId);
-            if (!company || company.employerId !== req.user.uid || company.status !== 'approved') { const missing = new Error('Approved company not found.'); missing.code = 'COMPANY_NOT_FOUND'; throw missing; }
-            patch = { ...normalizeEmployerJobInput(req.body.data, { id: companyId, ...company }), status: 'pending' };
-            action = 'EMPLOYER_JOB_EDITED';
-        }
-        const result = await resilientMutations.updateJob({
-            jobId, employerId: req.user.uid, expectedRevision, patch,
-            actorUid: req.user.uid, requestId: res.locals.requestId, action,
-        });
-        return res.json({ success: true, ...result });
-    } catch (error) {
-        const status = error.code === 'CAS_CONFLICT' || error.code === 'EMPLOYER_JOB_CHANGED' ? 409 : ['NOT_FOUND', 'COMPANY_NOT_FOUND'].includes(error.code) ? 404 : error.code === 'INVALID_JOB_TRANSITION' ? 400 : 500;
-        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to update job.' : error.message });
-    }
-});
+// Export semaphore and template regex moved to backend/routes/exports.js
 
-app.delete('/api/employer/jobs/:jobId', async (req, res) => {
-    const jobId = String(req.params.jobId || '');
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
-    if (!isEmployerAccount(req)) return res.status(403).json({ success: false, error: 'Approved employer access is required.' });
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId) || !Number.isInteger(expectedRevision) || expectedRevision < 0) return res.status(400).json({ success: false, error: 'Invalid job deletion.' });
-    try {
-        await resilientMutations.deleteJob({
-            jobId, employerId: req.user.uid, expectedRevision,
-            actorUid: req.user.uid, requestId: res.locals.requestId, requireNoApplications: true,
-        });
-        return res.json({ success: true });
-    } catch (error) {
-        const status = ['EMPLOYER_JOB_CHANGED', 'JOB_HAS_APPLICATIONS', 'CAS_CONFLICT'].includes(error.code) ? 409 : error.code === 'NOT_FOUND' ? 404 : 500;
-        return res.status(status).json({ success: false, code: error.code, error: status === 500 ? 'Unable to delete job.' : error.message });
-    }
-});
-
-app.get('/api/messages/conversations', async (req, res) => {
-    // List conversations for the current user. Messaging is fully MySQL-backed
-    // (migrated from Firebase Realtime Database); no Firebase database is
-    // consulted on this path.
-    //
-    // Read pattern: exactly three bounded round trips regardless of conversation
-    // count. The previous shape issued one participants query and one
-    // latest-message query per conversation (1 + 2N sequential pool acquisitions),
-    // which at the 100-conversation cap meant 201 round trips queued behind the
-    // shared MariaDB pool on a single page load.
-    try {
-        const pool = require('./database/mysql').getPool();
-        const uid = req.user.uid;
-        const [convRows] = await pool.query(
-            `SELECT c.id, c.application_id AS applicationId
-             FROM conversations c
-             JOIN conversation_participants cp ON cp.conversation_id = c.id
-             WHERE cp.user_id = ? AND c.deleted_at IS NULL
-             ORDER BY c.created_at DESC
-             LIMIT 100`,
-            [uid]
-        );
-        const conversations = (convRows || []).map(row => ({
-            id: row.id,
-            applicationId: row.applicationId || null,
-            participants: {},
-            lastMessage: null,
-        }));
-        if (conversations.length) {
-            const conversationIds = conversations.map(row => row.id);
-            const placeholders = conversationIds.map(() => '?').join(',');
-            const [partRows, lastRows] = await Promise.all([
-                pool.query(
-                    `SELECT conversation_id, user_id FROM conversation_participants
-                     WHERE conversation_id IN (${placeholders})`,
-                    conversationIds
-                ),
-                pool.query(
-                    `SELECT conversationId, id, senderId, text, timestamp FROM (
-                       SELECT m.conversation_id AS conversationId, m.id, m.sender_id AS senderId,
-                              m.text, m.timestamp,
-                              ROW_NUMBER() OVER (
-                                  PARTITION BY m.conversation_id
-                                  ORDER BY m.timestamp DESC, m.id DESC
-                              ) AS rn
-                       FROM conversation_messages m
-                       WHERE m.conversation_id IN (${placeholders})
-                     ) ranked WHERE ranked.rn = 1`,
-                    conversationIds
-                ),
-            ]);
-            const byId = new Map(conversations.map(row => [row.id, row]));
-            for (const partRow of partRows[0] || []) {
-                const conversation = byId.get(partRow.conversation_id);
-                // Ownership is re-checked here rather than trusted from the join:
-                // a participant row for a conversation this caller is not part of
-                // must not be projected into the response.
-                if (conversation) conversation.participants[partRow.user_id] = true;
-            }
-            for (const messageRow of lastRows[0] || []) {
-                const conversation = byId.get(messageRow.conversationId);
-                if (conversation && !conversation.lastMessage) {
-                    conversation.lastMessage = {
-                        id: messageRow.id,
-                        senderId: messageRow.senderId,
-                        text: messageRow.text,
-                        timestamp: messageRow.timestamp,
-                    };
-                }
-            }
-        }
-        conversations.sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
-        return res.json({ success: true, conversations });
-    } catch (error) {
-        console.error('[List conversations]', error.message);
-        return res.status(503).json({ success: false, error: 'Messaging is temporarily unavailable.' });
-    }
-});
-
-app.get('/api/messages/conversations/:conversationId/messages', async (req, res) => {
-    const conversationId = String(req.params.conversationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) {
-        return res.status(404).json({ success: false, error: 'Conversation not found.' });
-    }
-    try {
-        const pool = require('./database/mysql').getPool();
-        const [membership] = await pool.query(
-            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-            [conversationId, req.user.uid]
-        );
-        if (!membership.length) {
-            return res.status(404).json({ success: false, error: 'Conversation not found.' });
-        }
-        const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
-        const [rows] = await pool.query(
-            `SELECT id, sender_id AS senderId, text, timestamp
-             FROM conversation_messages WHERE conversation_id = ?
-             ORDER BY timestamp DESC, id DESC LIMIT ?`,
-            [conversationId, limit]
-        );
-        const messages = rows.reverse();
-        res.setHeader('Cache-Control', 'no-store, private');
-        return res.json({ success: true, messages });
-    } catch (error) {
-        console.error('[List messages]', error.message);
-        return res.status(503).json({ success: false, error: 'Messages are temporarily unavailable.' });
-    }
-});
-
-app.post('/api/messages/conversations', async (req, res) => {
-    const applicationId = String(req.body.applicationId || '');
-    if (!/^[A-Za-z0-9:_-]{1,300}$/.test(applicationId)) {
-        return res.status(400).json({ success: false, error: 'Valid job application is required.' });
-    }
-    try {
-        // MySQL is the single store for applications, jobs, and conversations.
-        const { getRepository } = require('./repositories');
-        const repo = getRepository();
-        const application = await repo.getApplication(applicationId);
-        if (!application) return res.status(404).json({ success: false, error: 'Job application not found.' });
-        const applicationData = application;
-        const job = await repo.getJob(applicationData.jobId || applicationData.job_id);
-        const applicantUid = applicationData.userId || applicationData.applicant_id;
-        const employerUid = job?.employerId || job?.employer_id;
-        if (!applicantUid || !employerUid || ![applicantUid, employerUid].includes(req.user.uid)) {
-            return res.status(403).json({ success: false, error: 'Conversation is not available to this account.' });
-        }
-        const participants = [String(applicantUid), String(employerUid)].sort();
-        // A deterministic conversation ID makes concurrent create requests
-        // idempotent (INSERT IGNORE on the primary key).
-        const conversationId = crypto.createHash('sha256').update(participants.join('\0')).digest('hex');
-        const pool = require('./database/mysql').getPool();
-        const conn = await pool.getConnection();
-        let created = false;
-        try {
-            await conn.beginTransaction();
-            const [inserted] = await conn.query(
-                'INSERT IGNORE INTO conversations (id, application_id) VALUES (?, ?)',
-                [conversationId, applicationId]
-            );
-            created = inserted.affectedRows > 0;
-            await conn.query(
-                'INSERT IGNORE INTO conversation_participants (conversation_id, user_id) VALUES (?, ?), (?, ?)',
-                [conversationId, participants[0], conversationId, participants[1]]
-            );
-            await conn.commit();
-        } catch (txErr) {
-            await conn.rollback().catch(() => {});
-            throw txErr;
-        } finally {
-            conn.release();
-        }
-        return res.status(created ? 201 : 200).json({ success: true, conversationId, existing: !created });
-    } catch (error) {
-        console.error('[Create conversation]', error.message);
-        return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
-    }
-});
-
-app.get('/api/messages/conversations/:conversationId/participant-profile', async (req, res) => {
-    const conversationId = String(req.params.conversationId || '');
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId)) {
-        return res.status(404).json({ success: false, error: 'Conversation not found.' });
-    }
-    try {
-        const pool = require('./database/mysql').getPool();
-        const [membership] = await pool.query(
-            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-            [conversationId, req.user.uid]
-        );
-        if (!membership.length) {
-            return res.status(404).json({ success: false, error: 'Conversation not found.' });
-        }
-        const [partRows] = await pool.query(
-            'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-            [conversationId]
-        );
-        const participantIds = partRows.map(r => r.user_id);
-        const otherUserId = participantIds.find(uid => uid !== req.user.uid);
-        if (!otherUserId) return res.status(404).json({ success: false, error: 'Participant not found.' });
-        if (otherUserId.startsWith('deleted_')) {
-            res.setHeader('Cache-Control', 'no-store, private');
-            return res.json({ success: true, profile: { name: 'Deleted account', avatar: '' } });
-        }
-        // Authoritative profile read from MySQL; Firestore is never consulted.
-        const { getRepository } = require('./repositories');
-        const repo = getRepository();
-        const user = (await repo.getUser(otherUserId)) || {};
-        const profile = user.profile || {};
-        const name = String(profile.name || user.displayName || `${user.firstname || ''} ${user.lastname || ''}`.trim() || 'User').replace(/\p{Cc}/gu, ' ').trim().slice(0, 100);
-        const avatar = safePublicUrl(profile.image || user.photoURL || '');
-        res.setHeader('Cache-Control', 'no-store, private');
-        return res.json({ success: true, profile: { name, avatar } });
-    } catch (error) {
-        console.error('[Message participant profile]', error.message);
-        return res.status(503).json({ success: false, error: 'Participant profile is unavailable.' });
-    }
-});
-
-app.post('/api/messages/send', async (req, res) => {
-    const conversationId = String(req.body.conversationId || '');
-    const text = String(req.body.text || '').trim();
-    if (!/^[A-Za-z0-9_-]{1,128}$/.test(conversationId) || !text || text.length > 10_000) {
-        return res.status(400).json({ success: false, error: 'Valid conversation and message are required.' });
-    }
-    try {
-        const pool = require('./database/mysql').getPool();
-        const [membership] = await pool.query(
-            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-            [conversationId, req.user.uid]
-        );
-        if (!membership.length) {
-            return res.status(404).json({ success: false, error: 'Conversation not found.' });
-        }
-        const messageId = `msg_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-        const timestamp = Date.now();
-        await pool.query(
-            'INSERT INTO conversation_messages (id, conversation_id, sender_id, text, timestamp) VALUES (?, ?, ?, ?, ?)',
-            [messageId, conversationId, req.user.uid, text, timestamp]
-        );
-        let notificationState = 'NOTIFICATION_CREATED';
-        const [partRows] = await pool.query(
-            'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-            [conversationId]
-        );
-        const recipientUid = partRows.map(r => r.user_id).find(uid => uid !== req.user.uid && !uid.startsWith('deleted_'));
-        if (recipientUid) {
-            try {
-                const eventId = notificationEventId('message', conversationId, messageId);
-                // Authoritative notification record goes to MySQL; the Firestore
-                // data plane is never required.
-                const { getRepository } = require('./repositories');
-                const repo = getRepository();
-                await repo.saveNotification(recipientUid, eventId, {
-                    eventId, state: 'NOTIFICATION_CREATED', deliveryState: 'NOT_REQUESTED', type: 'message', title: 'New message', message: 'You have a new message.',
-                    data: { conversationId }, read: false,
-                    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-                });
-            } catch { notificationState = 'NOTIFICATION_CREATION_FAILED'; }
-        } else notificationState = 'NOTIFICATION_CREATION_FAILED';
-        return res.status(201).json({ success: true, messageId, notificationState });
-    } catch (error) {
-        console.error('[Send message]', error.message);
-        return res.status(503).json({ success: false, error: 'Messaging service unavailable.' });
-    }
-});
-
-app.post('/api/contact', async (req, res) => {
-    // Hidden honeypot field: bots that populate every field receive a generic success.
-    if (req.body.website) return res.status(202).json({ success: true, message: 'Message accepted.' });
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const name = String(req.body.name || '').trim();
-    const message = String(req.body.message || '').trim();
-    if (!/^[^\s@,;<>]{1,64}@[^\s@,;<>]{1,190}$/.test(email) || email.length > 254
-        || name.length < 2 || name.length > 100 || message.length < 10 || message.length > 5000) {
-        return res.status(400).json({ success: false, error: 'Valid name, email, and message are required.' });
-    }
-    try {
-        const { getRepository } = require('./repositories');
-        const repo = getRepository();
-        const msgId = `contact_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-        await repo.saveContactMessage(msgId, {
-            email, name, message, status: 'new',
-            ip: String(req.ip || req.connection?.remoteAddress || '').slice(0, 45),
-            userAgent: String(req.get('user-agent') || '').slice(0, 300),
-        });
-        return res.status(202).json({ success: true, message: 'Message accepted.' });
-    } catch (err) {
-        console.error('[Contact message error]', err.message);
-        return res.status(500).json({ success: false, error: 'Failed to submit contact message.' });
-    }
-});
-
-// Redeems a single-use render token for the resume payload. The token itself is the
-// authorization proof (issued only after server-side ownership + entitlement checks) and
-// is consumed transactionally, so a replayed or leaked token is already spent.
-app.get('/api/export-render-data', async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store, private');
-    // Never let a token reach a shared cache, a referrer, or a search index.
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    try {
-        const data = await consumeExportRenderToken(req.query.token);
-        if (!data) return res.status(404).json({ error: 'Export data not found', code: 'RENDER_TOKEN_NOT_FOUND' });
-        return res.json({ data });
-    } catch (error) {
-        console.error('[Export render data]', { message: error.message, requestId: res.locals.requestId });
-        return res.status(503).json({ error: 'Export data is temporarily unavailable' });
-    }
-});
-
-let activeExports = 0;
-const MAX_CONCURRENT_EXPORTS = 5;
-// Every template the router can render must be exportable. The Cv range tracks the 51
-// CV templates and the Cover range tracks the 4 cover-letter templates; both are
-// rendered by /export/:template/:resumeId/:language.
-const EXPORTABLE_TEMPLATE = /^(?:Cv(?:[1-9]|[1-4][0-9]|5[0-1])|Cover[1-4])$/;
-
-app.post(['/api/export', '/api/public-export'], async (req, res) => {
-    // The slot is claimed before any await so concurrent requests cannot all observe a
-    // free counter and overshoot the Chromium concurrency ceiling.
-    if (activeExports >= MAX_CONCURRENT_EXPORTS) {
-        return res.status(429).json({ error: 'Server is busy processing PDF exports. Please try again in a few seconds.' });
-    }
-    activeExports++;
-    const releaseSlot = () => { activeExports = Math.max(0, activeExports - 1); };
-    let browser;
-    let renderToken;
-    let slotAcquired = true;
-    try {
-        const resumeId = String(req.body.resumeId || '');
-        const resumeName = String(req.body.resumeName || '');
-        const language = String(req.body.language || 'en');
-        if (!/^[A-Za-z0-9_-]{4,128}$/.test(resumeId)
-            || !EXPORTABLE_TEMPLATE.test(resumeName)
-            || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) {
-            return res.status(400).json({ error: 'Invalid export request' });
-        }
-        const { getRepository } = require('./repositories');
-        const repo = getRepository();
-
-        let stored;
-        let ownerUid;
-        // Public exports require an explicit MariaDB publication row. Private
-        // exports use only the authenticated owner's canonical draft table.
-        if (req.path.endsWith('/public-export')) {
-            const published = await repo.getPublicResume(resumeId);
-            if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
-                return res.status(404).json({ error: 'Resume not found' });
-            }
-            ownerUid = published.ownerUid;
-            stored = published.data;
-            if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
-                return res.status(422).json({ error: 'Resume data is invalid' });
-            }
-        } else {
-            ownerUid = req.user?.uid;
-            const isCover = resumeName.startsWith('Cover');
-            const draft = isCover
-                ? await repo.getCover(ownerUid, resumeId)
-                : await repo.getResume(ownerUid, resumeId);
-            if (!draft) return res.status(404).json({ error: 'Resume not found' });
-            stored = { ...draft };
-            for (const field of ['revision', 'created_at', 'createdAt', 'updatedAt', 'ownerUid', 'userId']) delete stored[field];
-        }
-
-        const owner = await repo.getUser(ownerUid);
-        if (!owner) return res.status(404).json({ error: 'Resume owner not found' });
-        const ownerCanonical = toCanonicalUser(owner);
-        const publicConfig = (await repo.getSetting('public_config')) || {};
-        const systemSettings = (await repo.getSetting('system_settings')) || {};
-        const isGlobalFreeMode = publicConfig.subscriptions === false 
-            || publicConfig.subscriptions?.state === false 
-            || publicConfig.subscriptions?.enabled === false
-            || systemSettings.subscriptions?.state === false;
-        const isPrivileged = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(String(ownerCanonical.role || req.user?.role || '').toUpperCase());
-
-        const entitled = isGlobalFreeMode || isPrivileged || isMembershipActive(ownerCanonical) || (
-            isPaidMembershipTier(ownerCanonical.membership)
-            && ['ACTIVE', 'ADMIN_GRANTED'].includes(String(ownerCanonical.paymentStatus || '').toUpperCase())
-            && (!ownerCanonical.membershipEnds || new Date(ownerCanonical.membershipEnds) > new Date())
-        );
-        if (!entitled) {
-            return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription is required for PDF export', requestId: res.locals.requestId } });
-        }
-        if (stored?.template && stored.template !== resumeName) return res.status(400).json({ error: 'Template mismatch' });
-
-        // Export preferences are optional, server-side, and bounded. The public
-        // host and executable binding are intentionally not read from browser
-        // settings; this process always renders against its deployment origin.
-        let exportPreferences = { renderTimeout: 60_000, paperFormat: 'A4' };
-        try {
-            const preferences = (await repo.getSetting('public_config').catch(() => null)) || {};
-            const configured = preferences.exportPdf || {};
-            const timeout = Number(configured.renderTimeout);
-            if (Number.isFinite(timeout)) exportPreferences.renderTimeout = Math.max(5_000, Math.min(Math.floor(timeout), 120_000));
-            if (['A4', 'Letter', 'Legal'].includes(configured.paperFormat)) exportPreferences.paperFormat = configured.paperFormat;
-        } catch (preferenceError) {
-            console.warn('[Export preferences] unavailable; using bounded defaults:', preferenceError.message);
-        }
-        renderToken = await createExportRenderToken(stored);
-        const launchOptions = {
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote']
-        };
-        browser = await chromium.launch(launchOptions);
-        const context = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
-        const allowedRenderOrigin = new URL(`${protocol}://${websiteName}`).origin;
-        const allowedHosts = new Set([
-            new URL(`${protocol}://${websiteName}`).hostname,
-            'lh3.googleusercontent.com',
-            'fonts.googleapis.com',
-            'fonts.gstatic.com',
-            'cdnjs.cloudflare.com',
-            'unpkg.com'
-        ]);
-
-        // Allow remote photo/image and font URLs while preventing SSRF to private IP ranges
-        await context.route('**/*', async route => {
-            const requestUrl = route.request().url();
-            if (requestUrl.startsWith('data:') || requestUrl.startsWith('blob:')) return route.continue();
-            try {
-                const parsed = new URL(requestUrl);
-                if (allowedHosts.has(parsed.hostname) || parsed.origin === allowedRenderOrigin) return route.continue();
-                const resourceType = route.request().resourceType();
-                if (['image', 'font', 'stylesheet'].includes(resourceType) && parsed.protocol === 'https:') {
-                    return route.continue();
-                }
-            } catch (_) {}
-            return route.abort('blockedbyclient');
-        });
-        const page = await context.newPage();
-        const targetUrl = `${protocol}://${websiteName}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}#renderToken=${encodeURIComponent(renderToken)}`;
-        console.log('Playwright exporting PDF, navigating to: ', targetUrl);
-        await page.goto(targetUrl, {
-            waitUntil: 'domcontentloaded',
-            timeout: exportPreferences.renderTimeout,
-        });
-        // Wait for the normalized lazy template to commit. Export errors fail closed instead
-        // of silently producing an empty/corrupt PDF. Use waitForSelector to avoid CSP eval restrictions.
-        await page.waitForSelector('html[data-export-ready="true"], html[data-export-error]', { timeout: Math.min(exportPreferences.renderTimeout, 30_000) });
-        const exportError = await page.evaluate(() => globalThis.document.documentElement.getAttribute('data-export-error'));
-        if (exportError) throw new Error(`EXPORT_RENDER_FAILED:${exportError}`);
-        await page.evaluate(async () => {
-            await globalThis.document.fonts?.ready;
-            await Promise.all([...globalThis.document.images].map(image => image.complete || !image.decode ? Promise.resolve() : image.decode().catch(() => {})));
-        }).catch(() => {});
-        await page.waitForTimeout(250);
-
-        // Buffer the PDF instead of writing to disk. A temporary file on local disk is
-        // not shared across instances, survives crashes as an orphan, and races when two
-        // exports land in the same millisecond. Streaming the buffer removes all three.
-        const pdfBuffer = await page.pdf({
-            format: exportPreferences.paperFormat,
-            printBackground: true,
-            preferCSSPageSize: true,
-            margin: {
-                top: '0mm',
-                right: '0mm',
-                bottom: '0mm',
-                left: '0mm'
-            }
-        });
-        await browser.close();
-        browser = undefined;
-
-        if (!pdfBuffer || pdfBuffer.length < 5 || pdfBuffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
-            throw new Error('EXPORT_PDF_INVALID');
-        }
-        res.setHeader('Cache-Control', 'no-store, private');
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename="resume.pdf"');
-        res.setHeader('Content-Length', String(pdfBuffer.length));
-        return res.send(pdfBuffer);
-    } catch (error) {
-        // Internal render/browser diagnostics stay in the server log; the client receives a
-        // stable code and the correlation id only.
-        console.error('[Export PDF]', { code: error.code || 'EXPORT_FAILED', message: error.message, requestId: res.locals.requestId });
-        if (browser) await browser.close().catch(() => {});
-        if (res.headersSent) return res.end();
-        return res.status(500).json({ error: { code: 'EXPORT_FAILED', message: 'Unable to generate the PDF export. Please try again.', requestId: res.locals.requestId } });
-    } finally {
-        if (renderToken) {
-            try { await discardExportRenderToken(renderToken); }
-            catch (discardError) {
-                console.error('[Export token revocation]', { code: discardError.code || 'REVOCATION_FAILED', requestId: res.locals.requestId });
-            }
-        }
-        if (slotAcquired) { slotAcquired = false; releaseSlot(); }
-    }
-});
+// PDF export route extracted to backend/routes/exports.js
 
 // Import AI & Email routes
 const aiRoutes = require('./routes/ai');
@@ -2266,6 +700,10 @@ app.get('/api/admin/ai-settings', async (req, res) => {
     }
 });
 
+// Provider credentials are selected as complete pairs. An incomplete
+// deployment pair must never be combined with a MariaDB value from another
+// account, which would make a save/reload or provider test appear successful
+// while checkout still uses invalid credentials.
 function normalizeBlogCategoryInput(input = {}) {
     const name = String(input.name || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 120);
     const description = String(input.description || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, 500);
@@ -3614,99 +2052,11 @@ app.post('/api/admin/twilio-settings', requireRecentAdminAuthentication, async (
 });
 
 // Twilio SMS Dispatcher Endpoint
-app.post('/api/send-sms', requireRecentAdminAuthentication, async (req, res) => {
-    const { toPhone, messageBody } = req.body;
-    if (!toPhone || !messageBody) {
-        return res.status(400).json({ success: false, error: 'Target phone number and message body are required.' });
-    }
-
-    try {
-        const { accountSid, authToken, fromPhoneNumber } = await loadTwilioRuntimeConfig();
-
-        if (!accountSid || !authToken || !fromPhoneNumber) {
-            return res.status(400).json({
-                success: false,
-                error: 'Twilio Gateway not configured. Please enter Account SID, Auth Token, and From Phone Number in Admin -> Twilio Settings.'
-            });
-        }
-        if (!/^AC[a-f0-9]{32}$/i.test(accountSid) || !/^\+[1-9]\d{7,14}$/.test(String(toPhone))
-            || !/^\+[1-9]\d{7,14}$/.test(String(fromPhoneNumber)) || String(messageBody).length > 1600) {
-            return res.status(400).json({ success: false, error: 'Invalid SMS gateway or message parameters.' });
-        }
-
-        const targetHash = crypto.createHash('sha256').update(String(toPhone)).digest('hex');
-        await getPool().query(
-            `INSERT INTO security_audit_logs
-             (id, action, actor_uid, category, severity, target_type, target_id, metadata, request_id, created_at)
-             VALUES (?, 'TWILIO_SMS_TEST_REQUESTED', ?, 'communications.sms', 'HIGH',
-                     'PHONE_HASH', ?, ?, ?, NOW())`,
-            [crypto.randomUUID(), req.user.uid, targetHash,
-                JSON.stringify({ messageLength: String(messageBody).length }), res.locals.requestId || null]
-        );
-
-        const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-
-        const params = new URLSearchParams();
-        params.append('To', toPhone);
-        params.append('From', fromPhoneNumber);
-        params.append('Body', messageBody);
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${authString}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: params.toString(),
-            timeout: 10_000,
-        });
-
-        const data = await response.json().catch(() => ({}));
-        const accepted = response.ok && Boolean(data.sid);
-        await getPool().query(
-            `INSERT INTO security_audit_logs
-             (id, action, actor_uid, category, severity, target_type, target_id, metadata, request_id, created_at)
-             VALUES (?, ?, ?, 'communications.sms', 'HIGH', 'TWILIO_MESSAGE', ?, ?, ?, NOW())`,
-            [crypto.randomUUID(), accepted ? 'TWILIO_SMS_TEST_ACCEPTED' : 'TWILIO_SMS_TEST_REJECTED',
-                req.user.uid, accepted ? String(data.sid).slice(0, 128) : targetHash,
-                JSON.stringify({ httpStatus: response.status, providerStatus: accepted ? String(data.status || 'accepted').slice(0, 64) : null }),
-                res.locals.requestId || null]
-        );
-        if (accepted) return res.json({ success: true, messageSid: data.sid, status: data.status });
-        return res.status(502).json({ success: false, code: 'TWILIO_MESSAGE_REJECTED', error: 'Twilio rejected the SMS test request.' });
-    } catch (err) {
-        console.error('[Twilio SMS]', { code: err.code, requestId: res.locals.requestId });
-        return res.status(err.status || 503).json({ success: false, code: err.code || 'TWILIO_SMS_UNAVAILABLE', error: 'The SMS test is unavailable.', requestId: res.locals.requestId });
-    }
-});
 
 // MariaDB-authoritative, explicitly enabled discovery metadata. An outage or
 // incomplete configuration never falls back to promotional copy.
-app.get('/llms.txt', async (_req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    try {
-        const publicConfig = await getRepository().getSetting('public_config');
-        const llmGeo = normalizeLlmDiscoverySettings(publicConfig?.llmGeo || {});
-        if (!llmGeo.enableLlmGeo || !llmGeo.llmsTxtContent) {
-            return res.status(404).type('text/plain').send('LLM discovery metadata is not published.\n');
-        }
-        return res.type('text/plain').send(`${llmGeo.llmsTxtContent}\n`);
-    } catch (error) {
-        if (error.status === 400) {
-            return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
-        }
-        console.error('[llms.txt]', { code: error.code, requestId: res.locals.requestId });
-        return res.status(503).type('text/plain').send('LLM discovery metadata is unavailable.\n');
-    }
-});
 
 // Legacy clients must use the server-authoritative order endpoint above.
-app.post('/api/payment/razorpay-order', (req, res) => {
-    return res.status(410).json({
-        error: { code: 'LEGACY_PAYMENT_ENDPOINT_RETIRED', message: 'Use /api/razorpay/create-order with a planId', requestId: res.locals.requestId }
-    });
-});
 
 // Invoice issuance is normally committed by payment activation. This endpoint
 // is an idempotent recovery/read trigger and accepts only an order identifier;
@@ -3772,77 +2122,11 @@ app.get('/api/invoices/:paymentOrderId', async (req, res) => {
 });
 
 // Legacy client-authored paid invoices are not accounting records.
-app.post('/api/invoice', (req, res) => {
-    return res.status(410).json({ error: { code: 'LEGACY_INVOICE_ENDPOINT_RETIRED', message: 'Generate invoices from a verified payment order', requestId: res.locals.requestId } });
-});
 
-// Item 41 & 42: PDF Job Queue & DOCX (Word) Document Export Engine Endpoint
-app.post('/api/export-docx', async (req, res) => {
-    const { resumeName, resumeId } = req.body;
-    if (!/^[A-Za-z0-9_-]{4,128}$/.test(String(resumeId || ''))) return res.status(400).json({ error: 'Invalid resume' });
-    const requestedTemplate = String(resumeName || req.body.template || '').trim();
-    if (requestedTemplate && !EXPORTABLE_TEMPLATE.test(requestedTemplate)) {
-        return res.status(400).json({ error: 'Invalid export request' });
-    }
-    const { getRepository } = require('./repositories');
-    const repo = getRepository();
-    const docId = String(resumeId);
-    const stored = requestedTemplate.startsWith('Cover')
-        ? await repo.getCover(req.user.uid, docId)
-        : await repo.getResume(req.user.uid, docId);
-    if (!stored) return res.status(404).json({ error: 'Resume not found' });
-    const owner = await repo.getUser(req.user.uid);
-    if (!owner) return res.status(404).json({ error: 'Resume owner not found' });
-    const publicConfig = (await repo.getSetting('public_config')) || {};
-    const systemSettings = (await repo.getSetting('system_settings')) || {};
-    const isGlobalFreeMode = publicConfig.subscriptions === false 
-        || publicConfig.subscriptions?.state === false 
-        || publicConfig.subscriptions?.enabled === false
-        || systemSettings.subscriptions?.state === false;
-    const isPrivileged = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(String(owner.role || req.user?.role || '').toUpperCase());
-
-    const entitlement = resolveEffectiveEntitlement(owner, { userClaims: req.user || {} });
-    if (!isGlobalFreeMode && !isPrivileged && !entitlement.allowsDocxExport) {
-        return res.status(402).json({ error: { code: 'ACTIVE_SUBSCRIPTION_REQUIRED', message: 'An active subscription or enterprise plan is required for DOCX export', requestId: res.locals.requestId } });
-    }
-    try {
-        let resolvedTemplate;
-        try {
-            resolvedTemplate = resolveExportTemplate(stored, requestedTemplate);
-        } catch (templateError) {
-            return res.status(400).json({ error: templateError.code === 'TEMPLATE_MISMATCH' ? 'Template mismatch' : 'Invalid export request' });
-        }
-        const personName = [stored.firstname, stored.lastname].filter(Boolean).join(' ');
-        const safeName = String(personName || stored.title || 'Resume').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume';
-        // Theme presets are authoritative (same source as PDF). Client-supplied
-        // colors and resumeName cannot override template identity or inject styling.
-        const resumeData = {
-            ...stored,
-            template: resolvedTemplate,
-            resumeName: resolvedTemplate,
-            colors: null,
-        };
-        const buffer = await createResumeDocx(resumeData);
-        res.setHeader('Cache-Control', 'no-store, private');
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        res.setHeader('Content-Disposition', `attachment; filename="${safeName.replace(/\s+/g, '_')}.docx"`);
-        res.setHeader('Content-Length', String(buffer.length));
-        return res.send(buffer);
-    } catch (error) {
-        console.error('[DOCX export]', error.message);
-        return res.status(500).json({ error: { code: 'DOCX_EXPORT_FAILED', message: 'Unable to generate DOCX export', requestId: res.locals.requestId } });
-    }
-});
+// DOCX export route extracted to backend/routes/exports.js
 
 // Item 44: RTL Native Font Support (Arabic/Hebrew) Helper
 // Standard Health Check & RTL Font Config Helper
-app.get('/api/rtl-font-config', (req, res) => {
-    res.json({
-        supportedLanguages: ['ar', 'he', 'fa', 'ur'],
-        isRtlSupported: true,
-        rtlFonts: ['Amiri', 'Noto Naskh Arabic', 'David Libre', 'Segoe UI']
-    });
-});
 
 // Real AI Cover Letter Generator Endpoint (Admin Dashboard Dynamic AI Key & Model Integration)
 app.post('/api/generate-ai-cover-letter', async (req, res) => {
@@ -3922,160 +2206,16 @@ app.post('/api/generate-ai-cover-letter', async (req, res) => {
 });
 
 // Naukri.com Scraper Endpoint
-app.post('/api/jobs/naukri', async (_req, res) => {
-    return res.status(501).json({
-        success: false,
-        code: 'SCRAPER_NOT_CONFIGURED',
-        error: 'Naukri ingestion is not configured. No demo or fabricated listings are returned.',
-    });
-});
 
 // Public, secret-free capability projection. The browser uses this to hide
 // controls whose provider is disabled or unconfigured, so a user can never
 // click a button that is guaranteed to return 404/503. It exposes booleans
 // only: no hostname, key, credential, or provider error detail.
-app.get('/api/service-availability', async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    try {
-        const { getServiceAvailability } = require('./services/platformHealth');
-        return res.json({ success: true, ...(await getServiceAvailability(req.app)) });
-    } catch (error) {
-        console.error('[Service availability]', error?.message || error);
-        // Availability is unknown, not "everything works". The client keeps its
-        // last known state rather than optimistically enabling controls.
-        return res.status(503).json({ success: false, error: { code: 'AVAILABILITY_UNAVAILABLE', message: 'Service availability could not be determined' } });
-    }
-});
 
-let globalCommitSha = process.env.COMMIT_SHA;
-try {
-  const fs = require('fs');
-  const shaPath = require('path').join(__dirname, 'COMMIT_SHA');
-  if (fs.existsSync(shaPath)) {
-    const bytes = fs.readFileSync(shaPath);
-    const decoded = bytes[0] === 0xff && bytes[1] === 0xfe
-      ? bytes.toString('utf16le')
-      : bytes.toString('utf8');
-    const candidate = decoded.replace(/^\uFEFF/, '').trim();
-    if (/^[0-9a-f]{40}$/i.test(candidate)) globalCommitSha = candidate;
-  }
-} catch (_) {}
+// Health route helpers (databaseHealthPayload, livenessPayload, computeReadyzPayload)
+// extracted to backend/routes/health.js
 
-function databaseHealthPayload() {
-    const status = databaseAuthority.getStatus();
-    const mariadbHealth = status.health.mysql;
-    const databaseState = mariadbHealth.healthy === true ? 'UP' : (mariadbHealth.healthy === false ? 'DOWN' : 'UNKNOWN');
-    return {
-        mariadb: {
-            status: databaseState,
-            healthy: mariadbHealth.healthy,
-            lastError: mariadbHealth.lastError,
-            latencyMs: mariadbHealth.latencyMs,
-        },
-        authority: {
-            mode: status.mode,
-            owner: 'MARIADB',
-            mutable: false,
-            canAcceptWrites: status.canAcceptWrites,
-            lastRecoveryAt: status.lastRecoveryAt,
-        },
-    };
-}
-
-// Liveness: the process is up. Readiness (below) is what proves the data plane.
-function livenessPayload() {
-    return {
-        status: 'ok',
-        identityProviderConfigured: Boolean(admin && admin.apps && admin.apps.length > 0),
-        firebaseAdminConfigured: Boolean(admin && admin.apps && admin.apps.length > 0),
-        firestoreDataPlane: 'REMOVED',
-        authoritativeDatabase: 'MARIADB',
-        date: new Date().toISOString(),
-        commitSha: globalCommitSha,
-        databases: databaseHealthPayload(),
-    };
-}
-app.get('/healthz', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json(livenessPayload());
-});
-app.get('/api/healthz', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json(livenessPayload());
-});
-app.get('/api/health', (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    return res.json(livenessPayload());
-});
-app.get('/api/health/databases', async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    try {
-        const snapshot = await databaseAuthority.refresh();
-        return res.json({ success: true, ...snapshot });
-    } catch (_error) {
-        return res.status(503).json({ success: false, error: { code: 'HEALTH_PROBE_FAILED', message: 'Database health could not be determined', requestId: res.locals.requestId } });
-    }
-});
-
-/**
- * Readiness is defined by the AUTHORITATIVE data plane: MySQL/MariaDB.
- * Firestore has no part in readiness — the data plane was removed from the
- * runtime. Identity (Firebase Admin) is reported but is not the readiness
- * gate, because local/CI environments legitimately run without identity
- * credentials while the data plane is fully operational.
- */
-async function computeReadyzPayload() {
-    const mysql = await testMysql();
-    const schema = app.get('schemaState')();
-    const tenantService = app.get('tenantService');
-    const enterpriseRuntime = tenantService?.describeRuntime ? tenantService.describeRuntime() : null;
-
-    const ready = mysql.connected === true;
-    return {
-        status: ready ? 'ready' : 'not_ready',
-        authoritativeDatabase: 'MARIADB',
-        checks: {
-            mysql: ready
-                ? { status: 'READY', latencyMs: mysql.latencyMs, version: mysql.version, host: mysql.host, database: mysql.database }
-                : { status: 'UNAVAILABLE', error: mysql.error, code: mysql.code },
-            schema: schema.success ? 'INITIALIZED' : `INCOMPLETE (${schema.error || 'unknown'})`,
-            identityProvider: (admin && admin.apps && admin.apps.length > 0) ? 'CONFIGURED' : 'NOT_CONFIGURED',
-            firestoreDataPlane: 'REMOVED',
-            enterprise: enterpriseRuntime ? {
-                dataProvider: enterpriseRuntime.dataProvider,
-                dataPlaneConfigured: enterpriseRuntime.dataPlaneConfigured === true,
-                encryption: enterpriseRuntime.encryption?.provider || 'none',
-                quotaStore: enterpriseRuntime.quotaStore,
-                queue: 'mysql-transactional-outbox',
-            } : 'UNAVAILABLE',
-            aiProviders: 'NOT_CHECKED', paymentProviders: 'NOT_CHECKED', smtp: 'NOT_CHECKED',
-            cmsScheduler: process.env.CMS_SCHEDULER_ENABLED === 'true' ? 'CONFIGURED' : 'DISABLED',
-            notificationOutbox: process.env.NOTIFICATION_OUTBOX_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : process.env.NOTIFICATION_OUTBOX_EXTERNAL_WORKER === 'true' ? 'EXTERNAL_WORKER_DECLARED' : 'DISABLED',
-            tenantGc: process.env.TENANT_GC_WORKER_ENABLED === 'true' ? 'LOCAL_WORKER_CONFIGURED' : 'DISABLED',
-            pdfIsolation: process.env.PDF_RENDERER_ISOLATED === 'true' ? 'DECLARED_ISOLATED' : 'REQUIRES_ISOLATED_WORKER',
-        },
-    };
-}
-
-app.get('/readyz', async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    const payload = await computeReadyzPayload();
-    const healthy = payload.status === 'ready';
-    try { maybeQueueReadyzAlert({ healthy, pool: getPool() }); } catch (error) {
-        console.error('[readyz] alert dispatch failed:', error.message);
-    }
-    return res.status(healthy ? 200 : 503).json(payload);
-});
-app.get('/api/readyz', async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    const payload = await computeReadyzPayload();
-    const healthy = payload.status === 'ready';
-    try { maybeQueueReadyzAlert({ healthy, pool: getPool() }); } catch (error) {
-        console.error('[readyz] alert dispatch failed:', error.message);
-    }
-    return res.status(healthy ? 200 : 503).json(payload);
-});
-
+// Readiness routes extracted to backend/routes/health.js — mounted below
 
 // Start a listener only for the executable entry point; integration tests import the Express app.
 if (require.main === module) {
@@ -5605,254 +3745,9 @@ app.post([...retiredClientNotificationPaths], (_req, res) => res.status(410).jso
     message: 'Notifications are generated from authoritative server-side lifecycle transitions.'
 }));
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LinkedIn / GitHub OAuth: state-cookie-bound authorization code flow followed
-// by a one-time Firebase custom-token exchange. No unsigned browser session exists.
-// ─────────────────────────────────────────────────────────────────────────────
-const OAUTH_STATE_TTL_MS = 5 * 60 * 1000;
-const OAUTH_EXCHANGE_TTL_MS = 60 * 1000;
-const oauthCookie = (state, clear = false) => {
-    const secure = protocol === 'https' || process.env.NODE_ENV === 'production' ? '; Secure' : '';
-    return `rp_oauth_state=${clear ? '' : encodeURIComponent(state)}; Path=/api/auth; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : 300}${secure}`;
-};
-const safeRedirect = (res, value) => res.redirect(`${protocol}://${websiteName}${value}`);
+// OAuth routes and helpers extracted to backend/routes/oauth.js
 
-async function getSocialAuthCredentials(provider) {
-    let storedClientId = '';
-    let storedClientSecret = '';
-    const legacyPrefix = provider === 'linkedin' ? 'linkedin' : 'github';
-    // MySQL is the authoritative store for OAuth provider credentials (stored via
-    // the admin settings surface in system_settings.admin_configuration /
-    // system_settings.system_settings). Firestore is never consulted.
-    try {
-        const { getPool } = require('./database/mysql');
-        const pool = getPool();
-        const [rows] = await pool.query(
-            "SELECT category, data FROM system_settings WHERE category IN ('admin_configuration','system_settings') LIMIT 2"
-        ).catch(() => [[]]);
-        let canonical = {};
-        for (const row of rows || []) {
-            const data = row && row.data ? (typeof row.data === 'string' ? safeJsonParse(row.data) : row.data) : {};
-            const social = (data && data.socialAuth) || {};
-            canonical = { ...canonical, ...social };
-        }
-        storedClientId = String(canonical[`${legacyPrefix}ClientId`] || canonical[`${legacyPrefix}ClientID`] || '').trim();
-        storedClientSecret = String(canonical[`${legacyPrefix}ClientSecret`] || '').trim();
-    } catch (error) {
-        console.warn(`[OAuth config ${provider}]`, error.message);
-    }
-    const envPrefix = provider === 'linkedin' ? 'LINKEDIN' : 'GITHUB';
-    const selected = chooseCredentialPair({
-        environmentId: process.env[`${envPrefix}_CLIENT_ID`],
-        environmentSecret: process.env[`${envPrefix}_CLIENT_SECRET`],
-        storedId: storedClientId,
-        storedSecret: storedClientSecret,
-    });
-    return { clientId: selected.id, clientSecret: selected.secret, source: selected.source };
-}
-
-function safeJsonParse(value) {
-    try { return JSON.parse(value); } catch { return {}; }
-}
-
-/**
- * Sign-in entry points are reached by a browser navigation, not by fetch, so an
- * error here must land the user somewhere that can explain itself. Returning a
- * bare 503 body left the user on a blank page with no way back — the classic
- * unexplained failure. Instead we redirect to the login screen carrying a
- * machine-readable reason that distinguishes "this provider was never
- * configured" from "the provider is configured but temporarily unavailable".
- */
-function failOAuthBegin(res, provider, reason) {
-    return safeRedirect(res, `/login?error=${encodeURIComponent(reason)}&provider=${encodeURIComponent(provider)}`);
-}
-
-async function beginOAuth(provider, req, res) {
-    try {
-        const { createOAuthState } = require('./database/oauthStore');
-        const { clientId, clientSecret } = await getSocialAuthCredentials(provider);
-        // Both halves are required for the complete code exchange. Starting a
-        // redirect with only a client id would create a guaranteed callback
-        // failure and make the UI look healthier than the runtime.
-        if (!clientId || !clientSecret) {
-            console.warn(`[OAuth begin ${provider}] no client id configured`);
-            return failOAuthBegin(res, provider, 'oauth_not_configured');
-        }
-        const state = crypto.randomBytes(32).toString('base64url');
-        const codeVerifier = crypto.randomBytes(32).toString('base64url');
-        const challenge = createPkceChallenge(codeVerifier);
-        await createOAuthState({ stateHash: hashOpaque(state), provider, codeVerifier, expiresAt: Date.now() + OAUTH_STATE_TTL_MS });
-        res.setHeader('Set-Cookie', oauthCookie(state));
-        const callback = `${protocol}://${websiteName}/api/auth/${provider}/callback`;
-        const url = provider === 'linkedin'
-            ? new URL('https://www.linkedin.com/oauth/v2/authorization')
-            : new URL('https://github.com/login/oauth/authorize');
-        const params = provider === 'linkedin'
-            ? { response_type: 'code', client_id: clientId, redirect_uri: callback, state, scope: 'openid profile email', code_challenge: challenge, code_challenge_method: 'S256' }
-            : { client_id: clientId, redirect_uri: callback, state, scope: 'read:user user:email', code_challenge: challenge, code_challenge_method: 'S256' };
-        for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-        return res.redirect(url.href);
-    } catch (error) {
-        console.error(`[OAuth begin ${provider}]`, error.message);
-        return failOAuthBegin(res, provider, 'oauth_unavailable');
-    }
-}
-
-async function consumeOAuthState(provider, req) {
-    const state = typeof req.query.state === 'string' ? req.query.state : '';
-    const cookieState = parseCookies(req.headers.cookie).rp_oauth_state || '';
-    assertStateBinding(state, cookieState);
-    const { consumeOAuthState: consumeStateRow } = require('./database/oauthStore');
-    // The store row is deleted atomically with the read; expiry is enforced inside
-    // the store, and assertStateRecord re-checks shape + provider + TTL.
-    const record = await consumeStateRow({ stateHash: hashOpaque(state), provider });
-    if (!record) throw new Error('OAUTH_STATE_INVALID');
-    assertStateRecord({ ...record, expiresAt: Number(record.expiresAt) || 0 }, provider);
-    return { codeVerifier: record.codeVerifier };
-}
-
-async function upsertFederatedIdentity({ provider, providerId, email, emailVerified, displayName, photoURL }) {
-    if (!admin?.auth) throw new Error('OAUTH_IDENTITY_INVALID');
-    const normalizedEmail = assertVerifiedIdentity({ provider, providerId, email, emailVerified });
-    const providerUid = `${provider}:${String(providerId)}`.slice(0, 128);
-    let providerUser = null;
-    let emailOwner = null;
-    try { providerUser = await admin.auth().getUser(providerUid); }
-    catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
-    if (!providerUser) {
-        try { emailOwner = await admin.auth().getUserByEmail(normalizedEmail); }
-        catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
-    }
-    assertAccountLinkSafe({ providerUid, providerUser, emailOwner, normalizedEmail });
-    const user = providerUser || await admin.auth().createUser({
-        uid: providerUid,
-        email: normalizedEmail,
-        emailVerified: true,
-        displayName: String(displayName || 'User').slice(0, 100),
-        photoURL: photoURL || undefined
-    });
-    if (!user.emailVerified) await admin.auth().updateUser(user.uid, { emailVerified: true });
-    const parts = String(displayName || 'User').trim().split(/\s+/);
-    const profile = {
-        userId: user.uid,
-        email: normalizedEmail,
-        firstname: parts[0] || 'User',
-        lastname: parts.slice(1).join(' '),
-        displayName: String(displayName || 'User').slice(0, 100),
-        ...(photoURL ? { photoURL } : {}),
-    };
-    try {
-        const { getRepository } = require('./repositories');
-        const existingProfile = await getRepository().getUser(user.uid);
-        await getRepository().saveUser(user.uid, {
-            ...profile,
-            membership: existingProfile && existingProfile.membership ? existingProfile.membership : 'Basic',
-            paymentStatus: existingProfile && existingProfile.paymentStatus ? existingProfile.paymentStatus : 'INACTIVE',
-        });
-    } catch (repoErr) {
-        // MySQL is the authoritative store. A profile-write failure here must be
-        // surfaced as a controlled error — never silently redirected to Firestore.
-        console.error('[OAuth] Authoritative MySQL profile write failed:', repoErr.message);
-        const err = new Error('OAUTH_PROFILE_WRITE_FAILED');
-        err.status = 503;
-        throw err;
-    }
-    return user.uid;
-}
-
-async function issueOAuthExchange(uid, provider) {
-    const code = crypto.randomBytes(32).toString('base64url');
-    const { createOAuthExchangeCode } = require('./database/oauthStore');
-    await createOAuthExchangeCode({ codeHash: hashOpaque(code), uid, provider, expiresAt: Date.now() + OAUTH_EXCHANGE_TTL_MS });
-    return code;
-}
-
-app.get('/api/auth/linkedin', (req, res) => beginOAuth('linkedin', req, res));
-app.get('/api/auth/github', (req, res) => beginOAuth('github', req, res));
-
-app.get('/api/auth/linkedin/callback', async (req, res) => {
-    res.setHeader('Set-Cookie', oauthCookie('', true));
-    if (req.query.error) return safeRedirect(res, '/login?error=linkedin_denied');
-    try {
-        const state = await consumeOAuthState('linkedin', req);
-        const code = typeof req.query.code === 'string' ? req.query.code : '';
-        if (!code) throw new Error('OAUTH_CODE_MISSING');
-        const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
-        const redirectUri = `${protocol}://${websiteName}/api/auth/linkedin/callback`;
-        const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-            method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10_000,
-            body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri, client_id: clientId, client_secret: clientSecret, code_verifier: state.codeVerifier }).toString()
-        });
-        const tokenData = await tokenRes.json();
-        if (!tokenRes.ok || !tokenData.access_token) throw new Error('OAUTH_TOKEN_EXCHANGE_FAILED');
-        const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', { headers: { Authorization: `Bearer ${tokenData.access_token}` }, timeout: 10_000 });
-        const profile = await profileRes.json();
-        if (!profileRes.ok || profile.email_verified !== true) throw new Error('OAUTH_EMAIL_NOT_VERIFIED');
-        const uid = await upsertFederatedIdentity({
-            provider: 'linkedin', providerId: profile.sub, email: profile.email, emailVerified: true,
-            displayName: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim() || 'LinkedIn User',
-            photoURL: /^https:\/\//.test(profile.picture || '') ? profile.picture : null
-        });
-        const exchange = await issueOAuthExchange(uid, 'linkedin');
-        return safeRedirect(res, `/dashboard#oauth_code=${encodeURIComponent(exchange)}&provider=linkedin`);
-    } catch (error) {
-        console.error('[LinkedIn OAuth callback]', error.message);
-        return safeRedirect(res, '/login?error=linkedin_callback_failed');
-    }
-});
-
-app.get('/api/auth/github/callback', async (req, res) => {
-    res.setHeader('Set-Cookie', oauthCookie('', true));
-    if (req.query.error) return safeRedirect(res, '/login?error=github_denied');
-    try {
-        const state = await consumeOAuthState('github', req);
-        const code = typeof req.query.code === 'string' ? req.query.code : '';
-        if (!code) throw new Error('OAUTH_CODE_MISSING');
-        const { clientId, clientSecret } = await getSocialAuthCredentials('github');
-        const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-            method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, timeout: 10_000,
-            body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, code_verifier: state.codeVerifier })
-        });
-        const tokenData = await tokenRes.json();
-        if (!tokenRes.ok || !tokenData.access_token) throw new Error('OAUTH_TOKEN_EXCHANGE_FAILED');
-        const headers = { Authorization: `Bearer ${tokenData.access_token}`, 'User-Agent': `${websiteName}-OAuth`, Accept: 'application/vnd.github+json' };
-        const [profileRes, emailsRes] = await Promise.all([
-            fetch('https://api.github.com/user', { headers, timeout: 10_000 }),
-            fetch('https://api.github.com/user/emails', { headers, timeout: 10_000 })
-        ]);
-        const profile = await profileRes.json();
-        const emails = await emailsRes.json();
-        const verified = Array.isArray(emails) ? (emails.find(item => item.primary && item.verified) || emails.find(item => item.verified)) : null;
-        if (!profileRes.ok || !emailsRes.ok || !verified?.email) throw new Error('OAUTH_EMAIL_NOT_VERIFIED');
-        const uid = await upsertFederatedIdentity({
-            provider: 'github', providerId: profile.id, email: verified.email, emailVerified: true,
-            displayName: profile.name || profile.login || 'GitHub User',
-            photoURL: /^https:\/\//.test(profile.avatar_url || '') ? profile.avatar_url : null
-        });
-        const exchange = await issueOAuthExchange(uid, 'github');
-        return safeRedirect(res, `/dashboard#oauth_code=${encodeURIComponent(exchange)}&provider=github`);
-    } catch (error) {
-        console.error('[GitHub OAuth callback]', error.message);
-        return safeRedirect(res, '/login?error=github_callback_failed');
-    }
-});
-
-app.post('/api/auth/oauth/exchange', async (req, res) => {
-    const code = String(req.body.code || '');
-    if (!isOpaqueToken(code) || !admin?.auth) return res.status(400).json({ error: 'Invalid OAuth exchange code' });
-    try {
-        const { redeemOAuthExchangeCode } = require('./database/oauthStore');
-        // Atomically read + delete in MySQL: a code can never be redeemed twice.
-        const record = await redeemOAuthExchangeCode({ codeHash: hashOpaque(code) });
-        if (!record) throw new Error('INVALID_EXCHANGE_CODE');
-        assertExchangeRecord({ ...record, expiresAt: Number(record.expiresAt) || 0 });
-        const customToken = await admin.auth().createCustomToken(record.uid, { signInProvider: record.provider });
-        res.setHeader('Cache-Control', 'no-store');
-        return res.json({ customToken });
-    } catch (_) {
-        return res.status(400).json({ error: 'Invalid or expired OAuth exchange code' });
-    }
-});
+// OAuth helper functions and routes extracted to backend/routes/oauth.js
 
 /**
  * POST /api/auth/preview-login — non-production local identity.
@@ -5915,35 +3810,7 @@ app.post('/api/auth/preview-login', async (req, res) => {
     return res.json({ token, uid, email, displayName: name || email.split('@')[0], role });
 });
 
-
-/**
- * GET /api/auth/linkedin/test-credentials — Verify LinkedIn credentials are configured
- * Called by Admin OAuth panel to show live status badge.
- */
-app.get('/api/auth/linkedin/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('linkedin');
-    const configured = !!(clientId && clientSecret);
-    return res.json({
-        provider: 'linkedin',
-        configured,
-        callbackUrl: `${protocol}://${websiteName}/api/auth/linkedin/callback`,
-        note: configured ? 'LinkedIn credentials active in Admin Settings / Environment.' : 'LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET are not set in Admin Settings or .env.'
-    });
-});
-
-/**
- * GET /api/auth/github/test-credentials — Verify GitHub credentials are configured
- */
-app.get('/api/auth/github/test-credentials', async (req, res) => {
-    const { clientId, clientSecret } = await getSocialAuthCredentials('github');
-    const configured = !!(clientId && clientSecret);
-    return res.json({
-        provider: 'github',
-        configured,
-        callbackUrl: `${protocol}://${websiteName}/api/auth/github/callback`,
-        note: configured ? 'GitHub credentials active in Admin Settings / Environment.' : 'GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are not set in Admin Settings or .env.'
-    });
-});
+// OAuth test-credential routes extracted to backend/routes/oauth.js
 
 /**
  * Enterprise & Super Admin Control Plane Router Integration
@@ -5974,5 +3841,4 @@ app.use((error, req, res, _next) => {
 
 module.exports = app;
 module.exports.publishDueBlogPosts = publishDueBlogPosts;
-
 
