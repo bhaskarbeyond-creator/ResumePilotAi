@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MdDelete, MdKeyboardArrowDown, MdAdd, MdCheck, MdLightbulb } from 'react-icons/md';
 import InputField from './components/InputField';
 import AutocompleteInputField from './components/AutocompleteInputField';
-import { generateUserAiContent } from '../../../services/aiService';
+import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 
 const SkillsStep = ({ resumeData, updateResumeData }) => {
@@ -98,9 +98,11 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                 existingSkills: existingSkillsList,
                 language: currentLanguage,
             }, { signal: requestController.signal });
-            const skillNames = Array.isArray(data?.skills)
-                ? data.skills.map(skill => String(typeof skill === 'string' ? skill : skill?.name || skill?.skill || skill?.title || '').trim()).filter(Boolean)
-                : [];
+            const rawSkills = Array.isArray(data?.skills) ? data.skills : (typeof data === 'string' ? [data] : []);
+            const skillNames = rawSkills.map(skill => {
+                const rawName = typeof skill === 'string' ? skill : (skill?.name || skill?.skill || skill?.title || '');
+                return cleanSkillName(rawName);
+            }).filter(name => name && name.length >= 2 && !/[{}[\]":]/.test(name));
             setPopularSkills(skillNames);
             if (!skillNames.length) setSkillsError('No skill ideas are available. Nothing was added to your resume.');
         } catch (error) {
@@ -124,14 +126,14 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
 
         if (validSkills.length >= 3) {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(5)) {
-                completedSteps.push(5);
+            if (!completedSteps.includes(4)) {
+                completedSteps.push(4);
                 updateResumeData({ skills, completedSteps });
             }
         } else {
             // Remove step from completed if it no longer meets requirements
             const completedSteps = [...(resumeData.completedSteps || [])];
-            const updatedSteps = completedSteps.filter((step) => step !== 5);
+            const updatedSteps = completedSteps.filter((step) => step !== 4 && step !== 5);
             if (updatedSteps.length !== completedSteps.length) {
                 updateResumeData({ skills, completedSteps: updatedSteps });
             }

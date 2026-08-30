@@ -81,6 +81,20 @@ test('response normalization preserves UI contracts across markdown, aliases, an
       { name: 'Docker', category: 'recommended' },
     ],
   });
+  // Broken trailing comma JSON with raw bracketry is parsed and sanitized without leaking JSON fragments
+  assert.deepEqual(parseAiResponse('generate-skills', '{"skills":[{"name":"Cloud Computing","category":"recommended"},{"name":"DevOps","category":"recommended"},]}'), {
+    skills: [
+      { name: 'Cloud Computing', category: 'recommended' },
+      { name: 'DevOps', category: 'recommended' },
+    ],
+  });
+  // Unparsed raw string with JSON patterns extracts clean skill names and drops broken syntax
+  assert.deepEqual(parseAiResponse('generate-skills', '{"skills":[{"name":"Data Analysis"},{"name":"Cyber Security"}]}'), {
+    skills: [
+      { name: 'Data Analysis', category: 'recommended' },
+      { name: 'Cyber Security', category: 'recommended' },
+    ],
+  });
   assert.throws(
     () => parseAiResponse('generate-certifications', '{"certs":[{"name":"AWS Certified Developer"}]}'),
     error => error.code === 'INVALID_AI_RESPONSE'

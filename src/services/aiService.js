@@ -1,14 +1,26 @@
 import { extractHeuristicResumeData, normalizeRawDataToTempJson } from './resumeFieldMapper.js';
 
-/** Remove examples and placeholder parentheticals from AI skill output. */
+/** Remove examples, placeholder parentheticals, and raw JSON artifacts from AI skill output. */
 export function cleanSkillName(raw) {
     if (!raw) return '';
-    let text = typeof raw === 'string' ? raw : (raw.name || raw.title || String(raw));
+    let text = typeof raw === 'object' && raw !== null ? (raw.name || raw.title || raw.skill || raw.text || '') : String(raw);
+    if (typeof text !== 'string') text = String(text || '');
+    text = text.trim();
+    if (text.startsWith('{') || text.startsWith('[') || text.endsWith('}') || text.endsWith(']')) {
+        const match = text.match(/(?:["']?(?:name|skill|title)["']?\s*:\s*["']([^"'\r\n{}]+)["'])|(?:["']([^"'\r\n{}]+)["'])/);
+        if (match) text = match[1] || match[2] || '';
+        else text = text.replace(/[{}\[\]"']/g, '').trim();
+    }
+    text = text.replace(/^(?:\{?\s*["']?(?:name|skill|title|category|skills)["']?\s*:\s*["']?)+/i, '');
+    text = text.replace(/["'}\],]+$/g, '');
+    if (/[{}[\]":]/.test(text) || /^category\s*:/i.test(text) || /^skills\s*:/i.test(text)) {
+        return '';
+    }
     return text
         .replace(/\s*\((?:e\.?g\.?|eg|example|such as|like)[^)]*\)/gi, '')
         .replace(/\s*\([^)]*,[^)]*\)/g, '')
         .replace(/\(\s*\)/g, '')
-        .replace(/^["']|["']$/g, '')
+        .replace(/^["'+*\-•\s]+|["'\s]+$/g, '')
         .trim();
 }
 

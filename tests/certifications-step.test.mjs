@@ -62,13 +62,13 @@ test('the Create-Resume wizard exposes Certifications between Projects and Langu
     const source = fs.readFileSync('src/components/BuildResume/BuildResume.jsx', 'utf8');
     assert.match(source, /import CertificationsStep/);
     assert.match(source, /path="certifications"/);
+    assert.match(source, /id: 6/);
     assert.match(source, /id: 7/);
-    assert.match(source, /id: 8/);
     const certStep = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
     assert.match(certStep, /updateResumeData\(\{\s*certifications/m);
-    // languages now completes step 8, not 7
+    // languages completes step 7 (placed before summary at step 8)
     const langs = fs.readFileSync('src/components/BuildResume/steps/LanguagesStep.jsx', 'utf8');
-    assert.match(langs, /completedSteps\.includes\(8\)/);
+    assert.match(langs, /completedSteps\.includes\(7\)/);
 });
 
 test('CertificationsStep is factual manual entry without generated credentials or dates', () => {

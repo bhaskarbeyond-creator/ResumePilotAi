@@ -270,12 +270,39 @@ function sanitizeControlCharsInJson(jsonStr) {
     return result;
 }
 
+function repairJsonString(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/gi, '')
+        .replace(/,\s*([}\]])/g, '$1')
+        .replace(/(['"])?([a-zA-Z0-9_]+)\1\s*:\s*'([^']*)'/g, '"$2":"$3"')
+        .trim();
+}
+
 function extractJson(raw) {
     const cleaned = String(raw || '').replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
     if (!cleaned) return null;
     try { return JSON.parse(cleaned); } catch {}
     try { return JSON.parse(sanitizeControlCharsInJson(cleaned)); } catch {}
-    const start = cleaned.indexOf('{');
+    try { return JSON.parse(repairJsonString(sanitizeControlCharsInJson(cleaned))); } catch {}
+
+    const startObj = cleaned.indexOf('{');
+    const startArr = cleaned.indexOf('[');
+    let start = -1;
+    let openChar = '{';
+    let closeChar = '}';
+
+    if (startObj >= 0 && (startArr < 0 || startObj < startArr)) {
+        start = startObj;
+        openChar = '{';
+        closeChar = '}';
+    } else if (startArr >= 0) {
+        start = startArr;
+        openChar = '[';
+        closeChar = ']';
+    }
+
     if (start < 0) return null;
     let depth = 0;
     let inString = false;
@@ -286,11 +313,12 @@ function extractJson(raw) {
         if (character === '\\') { escaped = true; continue; }
         if (character === '"') { inString = !inString; continue; }
         if (inString) continue;
-        if (character === '{') depth += 1;
-        else if (character === '}' && --depth === 0) {
+        if (character === openChar) depth += 1;
+        else if (character === closeChar && --depth === 0) {
             const candidate = cleaned.slice(start, index + 1);
             try { return JSON.parse(candidate); } catch {}
-            try { return JSON.parse(sanitizeControlCharsInJson(candidate)); } catch { return null; }
+            try { return JSON.parse(sanitizeControlCharsInJson(candidate)); } catch {}
+            try { return JSON.parse(repairJsonString(sanitizeControlCharsInJson(candidate))); } catch {}
         }
     }
     return null;
@@ -330,9 +358,26 @@ function normalizeStrings(value) {
 }
 
 function cleanSkillName(raw) {
-    return sanitizeGeneratedText(typeof raw === 'object' ? raw.name || raw.skill || raw.title || '' : raw)
+    if (!raw) return '';
+    let val = typeof raw === 'object' && raw !== null ? raw.name || raw.skill || raw.title || raw.text || '' : String(raw);
+    if (typeof val !== 'string') val = String(val || '');
+    val = val.trim();
+    if (val.startsWith('{') || val.startsWith('[') || val.endsWith('}') || val.endsWith(']')) {
+        const match = val.match(/(?:["']?(?:name|skill|title)["']?\s*:\s*["']([^"'\r\n{}]+)["'])|(?:["']([^"'\r\n{}]+)["'])/);
+        if (match) val = match[1] || match[2] || '';
+        else val = val.replace(/[{}\[\]"']/g, '').trim();
+    }
+    val = val.replace(/^(?:\{?\s*["']?(?:name|skill|title|category|skills)["']?\s*:\s*["']?)+/i, '');
+    val = val.replace(/["'}\],]+$/g, '');
+    if (/[{}[\]":]/.test(val) || /^category\s*:/i.test(val) || /^skills\s*:/i.test(val)) {
+        return '';
+    }
+    return sanitizeGeneratedText(val)
         .replace(/\s*\((?:e\.?g\.?|eg|example|such as|like)[^)]*\)/gi, '')
-        .replace(/\s*\([^)]*,[^)]*\)/g, '').trim();
+        .replace(/\s*\([^)]*,[^)]*\)/g, '')
+        .replace(/\(\s*\)/g, '')
+        .replace(/^["'+*\-•\s]+|["'\s]+$/g, '')
+        .trim();
 }
 
 const PROTECTED_CLAIM_FAMILIES = Object.freeze([
@@ -469,11 +514,35 @@ function parseAiResponse(operation, rawContent, context = {}) {
         if (summary) return finalize({ summary });
     }
     if (operation === 'generate-skills') {
-        const values = parsed?.skills || parsed?.competencies || parsed?.keywords || parsed?.items || (!parsed ? raw.split(/[,;\n]/) : []);
+        let values = [];
+        if (parsed) {
+            if (Array.isArray(parsed)) values = parsed;
+            else if (Array.isArray(parsed.skills)) values = parsed.skills;
+            else if (Array.isArray(parsed.competencies)) values = parsed.competencies;
+            else if (Array.isArray(parsed.keywords)) values = parsed.keywords;
+            else if (Array.isArray(parsed.items)) values = parsed.items;
+        }
+
+        // If values is empty, attempt structured regex extraction on raw response
+        if (!values.length && typeof raw === 'string') {
+            const regexMatches = [];
+            const skillPattern = /(?:["']?(?:name|skill|title)["']?\s*:\s*["']([^"'\r\n{}]+)["'])/gi;
+            let match;
+            while ((match = skillPattern.exec(raw)) !== null) {
+                if (match[1] && match[1].trim()) regexMatches.push(match[1].trim());
+            }
+            if (regexMatches.length) {
+                values = regexMatches;
+            } else if (!/[{}[\]":]/.test(raw)) {
+                // Only split by newline/comma if there are NO JSON structural characters
+                values = raw.split(/[\n,;]/).map(line => line.replace(/^[•\-*\d.\s]+/, '').trim()).filter(Boolean);
+            }
+        }
+
         const skills = (Array.isArray(values) ? values : []).slice(0, 15).map(item => ({
             name: cleanSkillName(item),
             category: 'recommended',
-        })).filter(item => item.name && !/\b(?:certif(?:ied|ication)|licen[cs](?:e|ed)?)\b/i.test(item.name));
+        })).filter(item => item.name && item.name.length >= 2 && !/[{}[\]":]/.test(item.name) && !/\b(?:certif(?:ied|ication)|licen[cs](?:e|ed)?)\b/i.test(item.name));
         if (skills.length) return { skills };
     }
     if (operation === 'enhance-single-bullet') {

@@ -140,12 +140,12 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         const plainText = summary.replace(/<[^>]*>/g, '').trim();
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (plainText.length >= 20) {
-            if (!completedSteps.includes(2)) {
-                completedSteps.push(2);
+            if (!completedSteps.includes(8)) {
+                completedSteps.push(8);
                 updateResumeData({ summary, completedSteps });
             }
-        } else if (completedSteps.includes(2)) {
-            const updatedSteps = completedSteps.filter((step) => step !== 2);
+        } else if (completedSteps.includes(8) || completedSteps.includes(2)) {
+            const updatedSteps = completedSteps.filter((step) => step !== 8 && step !== 2);
             updateResumeData({ summary, completedSteps: updatedSteps });
         }
     };

@@ -79,10 +79,10 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
 
             const completedSteps = [...(resumeData.completedSteps || [])];
             let updatedCompletedSteps = null;
-            if (validCertifications.length > 0 && !completedSteps.includes(7)) {
-                updatedCompletedSteps = [...completedSteps, 7];
-            } else if (validCertifications.length === 0 && completedSteps.includes(7)) {
-                updatedCompletedSteps = completedSteps.filter((step) => step !== 7);
+            if (validCertifications.length > 0 && !completedSteps.includes(6)) {
+                updatedCompletedSteps = [...completedSteps, 6];
+            } else if (validCertifications.length === 0 && (completedSteps.includes(6) || completedSteps.includes(7))) {
+                updatedCompletedSteps = completedSteps.filter((step) => step !== 6 && step !== 7);
             }
 
             updateResumeData({

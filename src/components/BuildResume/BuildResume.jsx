@@ -177,21 +177,6 @@ const BuildResume = () => {
         },
         {
             id: 2,
-            name: t('BuildResume.steps.summary'),
-            path: 'summary',
-            component: SummaryStep,
-            icon: (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                    />
-                </svg>
-            ),
-        },
-        {
-            id: 3,
             name: t('BuildResume.steps.workHistory'),
             path: 'work-history',
             component: WorkHistoryStep,
@@ -202,7 +187,7 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 4,
+            id: 3,
             name: t('BuildResume.steps.education'),
             path: 'education',
             component: EducationStep,
@@ -213,7 +198,7 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 5,
+            id: 4,
             name: t('BuildResume.steps.skills'),
             path: 'skills',
             component: SkillsStep,
@@ -228,7 +213,7 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 6,
+            id: 5,
             name: t('BuildResume.steps.projects', 'Projects'),
             path: 'projects',
             component: ProjectsStep,
@@ -239,7 +224,7 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 7,
+            id: 6,
             name: t('BuildResume.steps.certifications', 'Certifications'),
             path: 'certifications',
             component: CertificationsStep,
@@ -251,13 +236,28 @@ const BuildResume = () => {
             ),
         },
         {
-            id: 8,
+            id: 7,
             name: t('BuildResume.steps.languages', 'Languages'),
             path: 'languages',
             component: LanguagesStep,
             icon: (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+            ),
+        },
+        {
+            id: 8,
+            name: t('BuildResume.steps.summary'),
+            path: 'summary',
+            component: SummaryStep,
+            icon: (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        fillRule="evenodd"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clipRule="evenodd"
+                    />
                 </svg>
             ),
         },
@@ -416,7 +416,26 @@ const BuildResume = () => {
         navigate(`/build-resume/${stepPath}`);
     };
 
-    const isStepCompleted = (stepId) => resumeData.completedSteps.includes(stepId);
+    const isStepCompleted = (stepId, stepPath) => {
+        const completed = resumeData.completedSteps || [];
+        if (completed.includes(stepId)) return true;
+        if (stepPath && completed.includes(stepPath)) return true;
+        const legacyMap = {
+            1: [1, 'heading'],
+            2: [3, 2, 'work-history', 'employment'],
+            3: [4, 3, 'education'],
+            4: [5, 4, 'skills'],
+            5: [6, 5, 'projects'],
+            6: [7, 6, 'certifications'],
+            7: [8, 7, 'languages'],
+            8: [2, 8, 'summary'],
+            9: [9, 'achievements'],
+            10: [10, 'references'],
+            11: [11, 'custom'],
+        };
+        const aliases = legacyMap[stepId] || [];
+        return aliases.some((alias) => completed.includes(alias));
+    };
 
     const updateResumeData = useCallback((newData) => {
         const merged = normalizeResumeData({ ...resumeDataRef.current, ...newData, template: currentTemplateRef.current });
@@ -1176,7 +1195,7 @@ const BuildResume = () => {
     }, [location.pathname, navigate]);
 
     const contentSteps = orderedSteps.filter((step) => step.path !== 'review');
-    const completedStepCount = contentSteps.filter((step) => isStepCompleted(step.id)).length;
+    const completedStepCount = contentSteps.filter((step) => isStepCompleted(step.id, step.path)).length;
     const progressPercentage = contentSteps.length ? Math.round((completedStepCount / contentSteps.length) * 100) : 0;
 
     if (isLoading) {
@@ -1306,7 +1325,7 @@ const BuildResume = () => {
                                 <nav className="space-y-1.5">
                                     {orderedSteps.map((step, index) => {
                                         const isActive = currentStep.id === step.id;
-                                        const isCompleted = isStepCompleted(step.id);
+                                        const isCompleted = isStepCompleted(step.id, step.path);
                                         const isPrevious = index < currentStepIndex;
 
                                         return (
@@ -1679,7 +1698,7 @@ const BuildResume = () => {
                     <nav className="space-y-1.5">
                         {orderedSteps.map((step, index) => {
                             const isActive = currentStep.id === step.id;
-                            const isCompleted = isStepCompleted(step.id);
+                            const isCompleted = isStepCompleted(step.id, step.path);
                             const isPrevious = index < currentStepIndex;
 
                             return (
