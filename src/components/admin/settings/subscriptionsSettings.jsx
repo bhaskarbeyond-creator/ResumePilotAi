@@ -176,8 +176,16 @@ class SubscriptionSetting extends Component {
                 monthlyPrice: settings.monthlyPrice ?? '',
                 quartarlyPrice: settings.quartarlyPrice ?? '',
                 yearlyPrice: settings.yearlyPrice ?? '',
-                currency: settings.currency || '',
-                pricingMatrix: settings.pricingMatrix && typeof settings.pricingMatrix === 'object' ? settings.pricingMatrix : {},
+                currency: settings.currency || 'INR',
+                pricingMatrix: (() => {
+                    const rawMatrix = settings.pricingMatrix && typeof settings.pricingMatrix === 'object' ? settings.pricingMatrix : {};
+                    return {
+                        INR: { monthly: 199, quartarly: 399, yearly: 499, ...(rawMatrix.INR || {}) },
+                        USD: { monthly: 9, quartarly: 19, yearly: 29, ...(rawMatrix.USD || {}) },
+                        EUR: { monthly: 8, quartarly: 17, yearly: 26, ...(rawMatrix.EUR || {}) },
+                        GBP: { monthly: 7, quartarly: 15, yearly: 23, ...(rawMatrix.GBP || {}) },
+                    };
+                })(),
                 checkedOnlyPP: settings.onlyPP === true,
                 checkedRazorpayUPI: settings.razorpayUPI === true,
                 checkedStripe: settings.stripeEnabled === true,
@@ -2142,61 +2150,124 @@ class SubscriptionSetting extends Component {
                     <div className="space-y-6">
                         {/* Pricing Tiers Card */}
                         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs">
-                            <div className="flex items-center space-x-3 mb-6">
-                                <div className="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center">
-                                    <FaRupeeSign className="w-4 h-4 text-emerald-600" />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                                        <FaRupeeSign className="w-5 h-5 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-slate-900">Subscription Tiers &amp; Pricing Rates</h3>
+                                        <p className="text-xs text-slate-500">Configure prices in INR (₹), USD ($), EUR (€), or GBP (£)</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-base font-bold text-slate-900">Subscription Tiers &amp; Pricing Rates</h3>
-                                    <p className="text-xs text-slate-500">Configure prices in INR (₹), USD ($), EUR (€), or GBP (£)</p>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                        <span className="block text-xs font-bold text-slate-700">Subscription System</span>
+                                        <span className={`text-[11px] font-semibold ${this.state.checkedSubscriptions ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                            {this.state.checkedSubscriptions ? '● Active' : '○ Inactive'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={this.handleSubscriptionToggleChange}
+                                        className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer shadow-xs ${
+                                            this.state.checkedSubscriptions
+                                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                                : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                                        }`}
+                                        title="Click to toggle subscription system active/disabled"
+                                    >
+                                        {this.state.checkedSubscriptions ? (
+                                            <>
+                                                <FaToggleOn className="w-4 h-4 text-emerald-600" />
+                                                <span>Active</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FaToggleOff className="w-4 h-4 text-amber-600" />
+                                                <span>Activate</span>
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
 
+                            {!this.state.checkedSubscriptions && (
+                                <div className="mb-5 p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold">Notice:</span>
+                                        <span>The Subscription System is currently disabled. You can edit and save pricing rates below; they will take effect once you click &quot;Activate&quot;.</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="overflow-x-auto border border-slate-200 rounded-xl mb-6">
+                                <table className="w-full text-left text-sm text-slate-600">
+                                    <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-extrabold text-slate-700">
+                                        <tr>
+                                            <th className="px-4 py-3">Currency</th>
+                                            <th className="px-4 py-3">Monthly</th>
+                                            <th className="px-4 py-3">Quarterly</th>
+                                            <th className="px-4 py-3">Yearly</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {['INR', 'USD', 'EUR', 'GBP'].map(curr => (
+                                            <tr key={curr} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                                <td className="px-4 py-3 font-bold text-slate-900">{curr}</td>
+                                                <td className="px-4 py-2">
+                                                    <input
+                                                        type="number"
+                                                        step="1"
+                                                        min="0"
+                                                        value={this.state.pricingMatrix?.[curr]?.monthly ?? ''}
+                                                        onChange={(e) => this.handleMatrixChange(curr, 'monthly', e.target.value)}
+                                                        placeholder="199"
+                                                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 font-semibold text-slate-900 bg-white"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <input
+                                                        type="number"
+                                                        step="1"
+                                                        min="0"
+                                                        value={this.state.pricingMatrix?.[curr]?.quartarly ?? ''}
+                                                        onChange={(e) => this.handleMatrixChange(curr, 'quartarly', e.target.value)}
+                                                        placeholder="399"
+                                                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 font-semibold text-slate-900 bg-white"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <input
+                                                        type="number"
+                                                        step="1"
+                                                        min="0"
+                                                        value={this.state.pricingMatrix?.[curr]?.yearly ?? ''}
+                                                        onChange={(e) => this.handleMatrixChange(curr, 'yearly', e.target.value)}
+                                                        placeholder="499"
+                                                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 font-semibold text-slate-900 bg-white"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                             
-                            <div className="overflow-x-auto border border-slate-200 rounded-xl mb-4">
-                                  <table className="w-full text-left text-sm text-slate-600">
-                                      <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase font-extrabold text-slate-700">
-                                          <tr>
-                                              <th className="px-4 py-3">Currency</th>
-                                              <th className="px-4 py-3">Monthly</th>
-                                              <th className="px-4 py-3">Quarterly</th>
-                                              <th className="px-4 py-3">Yearly</th>
-                                          </tr>
-                                      </thead>
-                                      <tbody>
-                                          {['INR', 'USD', 'EUR', 'GBP'].map(curr => (
-                                              <tr key={curr} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                                  <td className="px-4 py-3 font-bold text-slate-900">{curr}</td>
-                                                  <td className="px-4 py-2">
-                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.monthly || ''} onChange={(e) => this.handleMatrixChange(curr, 'monthly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="199" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
-                                                  </td>
-                                                  <td className="px-4 py-2">
-                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.quartarly || ''} onChange={(e) => this.handleMatrixChange(curr, 'quartarly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="399" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
-                                                  </td>
-                                                  <td className="px-4 py-2">
-                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.yearly || ''} onChange={(e) => this.handleMatrixChange(curr, 'yearly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="499" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
-                                                  </td>
-                                              </tr>
-                                          ))}
-                                      </tbody>
-                                  </table>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="relative">
                                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Primary Platform Currency</label>
                                     <select
-                                        value={this.state.currency}
+                                        value={this.state.currency || 'INR'}
                                         onChange={(event) => this.handleChange(event, 'currency')}
-                                        disabled={!this.state.checkedSubscriptions}
-                                        className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900 appearance-none"
+                                        className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 font-bold bg-white text-slate-900 appearance-none cursor-pointer"
                                     >
                                         <option value="INR">🇮🇳 INR (₹ - Indian Rupee)</option>
                                         <option value="USD">💵 USD ($ - US Dollar)</option>
                                         <option value="EUR">💶 EUR (€ - Euro)</option>
                                         <option value="GBP">💷 GBP (£ - British Pound)</option>
                                     </select>
-                                    <p className="text-[11px] text-slate-500 mt-1">Default currency</p>
+                                    <p className="text-[11px] text-slate-500 mt-1">Default currency used across checkout and pricing tiers</p>
                                 </div>
                             </div>
                         </div>
