@@ -1,21 +1,15 @@
-# Super Admin Control Plane — SWOT Analysis
+# SUPER ADMIN SWOT
 
-## Strengths
-- **Hardened API Boundary**: Enterprise operations and platform-level configurations are guarded by strict role-based `requireSuperAdmin` middleware.
-- **Unified Health Signals**: The Command Center aggregates deep system diagnostics (DB latency, worker queues, security audit thresholds) into a single actionable dashboard.
-- **Secret Masking**: AI API keys and Payment Gateway secrets are properly masked from browser memory, retrieved via zero-leakage API proxies.
-- **Feature Flag System**: Dynamic feature flags (e.g. `ENTERPRISE_TENANCY_ENABLED`) are persisted in Firestore, allowing live reconfiguration without server restarts.
+Generated: 2026-08-28T15:56:33Z
 
-## Weaknesses
-- **No Built-in Admin Log Streaming**: While the Audit Log exists, it does not support real-time WebSocket streaming of critical mutations; administrators must refresh the view.
-- **Legacy Class Components**: Parts of the admin UI (like `UsersManager.jsx` and `SubscriptionsSettings.jsx`) remain large React class components, slowing down modernization.
-- **Limited Multi-Region Control**: Tenant configuration does not currently permit assigning specific regions dynamically via the Super Admin UI, deferring to default data residency.
+This document is synchronized with `docs/WHOLE_SYSTEM_PRODUCTION_CERTIFICATION.md` for this engineering pass.
 
-## Opportunities
-- **Granular RBAC**: The introduction of the `SUPPORT` role paves the way for a more detailed permissions matrix beyond binary ADMIN/USER.
-- **Automated Anomaly Detection**: Given the robust metrics gathered in the Command Center, anomaly detection heuristics could proactively alert Super Admins of degradation.
-- **Self-Service Tenancy**: Exposing enterprise tenant lifecycles in the admin UI simplifies onboarding organizations and transitioning to B2B SaaS tiers.
+Status: NOT VERIFIED for live production unless explicitly listed as FIXED/VERIFIED in the authoritative report.
 
-## Threats
-- **Environment Drift**: Differences between `.env` configurations across multiple instances can cause disjointed behaviors if the Firestore configuration synchronization fails.
-- **Worker Starvation**: Heavy tenant operations (backup, bulk provision) might starve the main Node.js event loop if not offloaded correctly to isolated queue workers.
+Key evidence:
+- Local SHA: f434b90f32e560c4e8ca0eeb183f29ff2316f341
+- origin/main SHA: f434b90f32e560c4e8ca0eeb183f29ff2316f341
+- Local tests: security, product, db:verify, MySQL outage, and build executed.
+- Live production deployment, authenticated browser workflows, production database queries, backup restore and full outbox drills were not completed in this turn.
+
+See `docs/WHOLE_SYSTEM_PRODUCTION_CERTIFICATION.md` for findings, evidence and final decision.
