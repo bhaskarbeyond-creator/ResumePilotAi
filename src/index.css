@@ -100,6 +100,10 @@ button svg, a svg, [role="button"] svg {
 }
 
 /* Modern button interactive base & accessibility standards */
+button {
+    cursor: pointer;
+}
+
 button,
 [role="button"],
 input[type="button"],

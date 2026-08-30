@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiAlertTriangle, FiRefreshCw, FiShield, FiUser } from 'react-icons/fi';
+import fire from '../../../conf/fire';
 import { getSecurityEvents } from '../../../services/platformApi';
 
 export default function PlatformSecurity() {
@@ -31,7 +32,13 @@ export default function PlatformSecurity() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const unsubscribe = fire.auth().onAuthStateChanged((user) => {
+      if (user) load();
+    });
+    return () => unsubscribe();
+  }, [load]);
 
   const highCount = error ? null : events.filter(event => ['HIGH', 'CRITICAL'].includes(String(event.severity || '').toUpperCase())).length;
   const visible = events.filter(event => {

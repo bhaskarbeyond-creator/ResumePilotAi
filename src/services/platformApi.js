@@ -2,7 +2,26 @@ import fire from '../conf/fire';
 import { fetchAdminWithReauth } from './adminReauth';
 
 async function authHeaders(extra = {}) {
-  const user = fire.auth().currentUser;
+  let user = fire.auth().currentUser;
+  if (!user) {
+    user = await new Promise((resolve) => {
+      let resolved = false;
+      const unsubscribe = fire.auth().onAuthStateChanged((u) => {
+        if (!resolved) {
+          resolved = true;
+          unsubscribe();
+          resolve(u);
+        }
+      });
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          try { unsubscribe(); } catch {}
+          resolve(fire.auth().currentUser || null);
+        }
+      }, 2500);
+    });
+  }
   if (!user) throw new Error('Authentication required');
   const token = await user.getIdToken();
   return { Authorization: `Bearer ${token}`, ...extra };
