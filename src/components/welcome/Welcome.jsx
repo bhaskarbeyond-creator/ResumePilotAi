@@ -572,13 +572,13 @@ class Welcome extends Component {
                         .then((val) => {
                             this.setState({ subscriptionsStatus: val });
                         })
-                        .catch((error) => console.log(error));
+                        .catch((_error) => { /* subscription preload is optional */ });
 
                     // Set language
                     this.handleLanguageClick(data.language !== undefined ? data.language : 'en');
                 }
             })
-            .catch((error) => console.log(error));
+            .catch((_error) => { /* welcome bootstrap prefetch is optional */ });
     }
 
     // Remove value from array

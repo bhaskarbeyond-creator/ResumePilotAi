@@ -27,14 +27,14 @@ export default function ModernSplitLayout({ values = {}, theme = {} }) {
         <SmartCertifications certifications={values.certifications} theme={theme} />
       </aside>
 
-      <main className="smart-main-content">
+      <section className="smart-main-content" role="region" aria-label="Resume preview content">
         <SmartSummary summary={values.summary} />
         <SmartExperience employments={values.employments} theme={theme} />
         <SmartEducation educations={values.educations} theme={theme} />
         <SmartProjects projects={values.projects} theme={theme} />
         <SmartAchievements achievements={values.achievements} theme={theme} />
         <SmartReferences references={values.references} theme={theme} />
-      </main>
+      </section>
     </div>
   );
 }

@@ -119,9 +119,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
                           )}
                         </aside>
                       )}
-                      <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
+                      <section className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`} role="region" aria-label="Resume preview content">
                         <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
-                      </main>
+                      </section>
                     </div>
                   </div>
                 )}
@@ -152,16 +152,16 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
                           )}
                         </aside>
                       )}
-                      <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
+                      <section className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
                         <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
-                      </main>
+                      </section>
                     </div>
                   </div>
                 )}
 
                 {/* 5. Modern Split Layout (Default or Reverse) */}
                 {!isSingleCol && !isBanner && !isTechGrid && (
-                  <div className={`smart-layout smart-layout--modern-split ${isReverseSplit ? 'smart-layout--reverse' : ''}`}>
+                  <div className={`smart-layout smart-layout--modern-split ${isReverseSplit ? 'smart-layout--reverse' : ''}`} role="region" aria-label="Resume preview content">
                     {isFirstPage && pageData.sidebar && (
                       <aside className="smart-sidebar">
                         <SmartHeader values={values} theme={theme} variant="sidebar" />
@@ -179,9 +179,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
                         )}
                       </aside>
                     )}
-                    <main className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`}>
+                    <section className={`smart-main-content ${!isFirstPage ? 'smart-main-content--full' : ''}`} role="region" aria-label="Resume preview content">
                       <SmartFlowRenderer flowItems={pageData.flowItems} theme={theme} isContinuation={!isFirstPage} />
-                    </main>
+                    </section>
                   </div>
                 )}
               </div>
