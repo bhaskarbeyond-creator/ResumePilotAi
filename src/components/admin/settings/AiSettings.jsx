@@ -11,10 +11,9 @@ const SUPPORTED_AI_PROVIDERS = ['gemini', 'nvidia', 'openai', 'groq', 'openroute
 const PROVIDER_KEY_FIELDS = { gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey', groq: 'groqApiKey', openrouter: 'openrouterApiKey', deepseek: 'deepseekApiKey' };
 const RECOMMENDED_NVIDIA_MODELS = [
     { id: 'meta/llama-3.2-11b-vision-instruct', name: '⚡ Meta Llama 3.2 11B Vision Instruct (~220-460ms - Default & Recommended)', badge: 'FAST' },
-    { id: 'nvidia/nemotron-mini-4b-instruct', name: '⚡ NVIDIA Nemotron Mini 4B Instruct (Ultra-Reliable ~206ms)', badge: 'FAST' },
+    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: '🧠 NVIDIA Nemotron 70B Instruct (High Accuracy)', badge: '70B' },
     { id: 'openai/gpt-oss-20b', name: '⚡ OpenAI GPT OSS 20B (Fast ~620ms)', badge: 'FAST' },
     { id: 'openai/gpt-oss-120b', name: '🧠 OpenAI GPT OSS 120B (Heavy 120B Reasoning - Slow 8-15s)', badge: '120B' },
-    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: '🧠 NVIDIA Nemotron 70B Instruct (70B Model)', badge: '70B' },
     { id: 'mistralai/mistral-large-2-instruct', name: '🧠 Mistral Large 2 Instruct (123B Model)', badge: '123B' },
 ];
 

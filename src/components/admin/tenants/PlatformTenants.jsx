@@ -54,7 +54,6 @@ const DAILY_LIMIT_PRESETS = [
 // Authoritative Models from backend/services/aiRuntime.js & AiSettings.jsx
 const LLM_MODEL_OPTIONS = [
   { id: 'meta/llama-3.2-11b-vision-instruct', label: 'NVIDIA NIM: meta/llama-3.2-11b-vision-instruct (Fast Default)', provider: 'NVIDIA' },
-  { id: 'nvidia/nemotron-mini-4b-instruct', label: 'NVIDIA NIM: nvidia/nemotron-mini-4b-instruct (Ultra Reliable ~206ms)', provider: 'NVIDIA' },
   { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'NVIDIA NIM: nvidia/llama-3.1-nemotron-70b-instruct (70B Model)', provider: 'NVIDIA' },
   { id: 'gemini-2.0-flash', label: 'Google Gemini: gemini-2.0-flash (High Speed Default)', provider: 'Gemini' },
   { id: 'gemini-1.5-flash', label: 'Google Gemini: gemini-1.5-flash (Standard)', provider: 'Gemini' },
@@ -75,7 +74,6 @@ const LLM_MODEL_OPTIONS = [
 const PROVIDER_PRESET_MODELS = {
   nvidia: [
     { id: 'meta/llama-3.2-11b-vision-instruct', label: 'meta/llama-3.2-11b-vision-instruct (Primary Default)' },
-    { id: 'nvidia/nemotron-mini-4b-instruct', label: 'nvidia/nemotron-mini-4b-instruct (Ultra-Reliable)' },
     { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'nvidia/llama-3.1-nemotron-70b-instruct (70B)' }
   ],
   gemini: [

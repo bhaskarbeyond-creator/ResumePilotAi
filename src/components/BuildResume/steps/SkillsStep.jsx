@@ -109,7 +109,10 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
             if (error?.name === 'AbortError') return;
             console.error('Error generating AI skill ideas:', error);
             setPopularSkills([]);
-            setSkillsError('Skill ideas are unavailable. Nothing was added to your resume.');
+            const msg = (error?.code === 'AI_DAILY_QUOTA_EXCEEDED' || error?.status === 429)
+                ? (error?.message || 'Daily AI quota reached (10/10 requests used). Upgrade your plan or try again tomorrow.')
+                : (error?.message || 'Skill ideas are unavailable. Nothing was added to your resume.');
+            setSkillsError(msg);
         } finally {
             if (aiRequestControllerRef.current === requestController) {
                 aiRequestControllerRef.current = null;

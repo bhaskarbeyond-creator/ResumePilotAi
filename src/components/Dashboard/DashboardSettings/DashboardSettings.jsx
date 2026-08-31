@@ -790,7 +790,10 @@ function DashboardSettings(_props) {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI skill recommendation error:', err);
-            triggerNotification('Skill ideas are unavailable. Your profile was not changed.', 'error');
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? (err?.message || 'Daily AI quota reached (10/10 requests used). Upgrade your plan or try again tomorrow.')
+                : (err?.message || 'Skill ideas are unavailable. Your profile was not changed.');
+            triggerNotification(msg, 'error');
         } finally {
             setIsAiGenerating(false);
         }
