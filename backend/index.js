@@ -226,11 +226,24 @@ async function runSchemaBootstrap() {
     const conn = await testMysql();
     if (!conn.connected) {
         schemaState = { success: false, error: conn.error || 'MySQL unreachable at startup', degraded: 'inmemory' };
-        if (process.env.NODE_ENV !== 'production') {
+        // Only auto-activate the in-memory repository in development when the
+        // operator has NOT configured a real database via env (DB_HOST /
+        // MYSQL_HOST / DATABASE_URL) and has not already forced in-memory. When
+        // a DB is explicitly configured (CI, tests pointing at port 1, prod,
+        // real deployments), fail closed instead of silently swapping to the
+        // volatile shim. This prevents "tests passing on empty in-memory data"
+        // when the test was written to exercise the DB-outage fail-closed path.
+        const explicitDbConfig = Object.prototype.hasOwnProperty.call(process.env, 'DB_HOST')
+            || Object.prototype.hasOwnProperty.call(process.env, 'MYSQL_HOST')
+            || Object.prototype.hasOwnProperty.call(process.env, 'DATABASE_URL');
+        const explicitInMemory = process.env.IN_MEMORY_REPOSITORY === '1' || process.env.DEGRADED_MODE_REPOSITORY === 'inmemory';
+        if (process.env.NODE_ENV !== 'production' && !explicitDbConfig && !explicitInMemory) {
             process.env.DEGRADED_MODE_REPOSITORY = 'inmemory';
-            console.warn('[Startup] MySQL unreachable — activating in-memory repository for local/E2E testing.');
+            console.warn('[Startup] MySQL unreachable and no DB_HOST configured — activating in-memory repository for local/E2E testing.');
+        } else if (explicitInMemory && process.env.NODE_ENV !== 'production') {
+            console.warn('[Startup] DEGRADED_MODE_REPOSITORY=inmemory explicitly set — using in-memory repository.');
         } else {
-            console.warn('[Startup] MySQL unreachable — starting in degraded mode:', schemaState.error);
+            console.warn('[Startup] MySQL unreachable — starting in degraded mode (fail-closed):', schemaState.error);
         }
         return schemaState;
     }
