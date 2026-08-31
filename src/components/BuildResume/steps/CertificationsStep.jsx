@@ -15,59 +15,6 @@ import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 import { generateUserAiContent } from '../../../services/aiService';
 
 /**
- * Role-aware fallback certifications to guarantee instantaneous, resilient
- * suggestions even in offline, network-constrained, or rate-limited environments.
- */
-function getRoleTailoredFallbackCerts(role = '') {
-    const r = (role || '').toLowerCase();
-    if (r.includes('sec') || r.includes('cyber') || r.includes('infosec')) {
-        return [
-            { title: 'Certified Information Systems Security Professional (CISSP)', issuer: '(ISC)²', category: 'mandatory' },
-            { title: 'CompTIA Security+ (SY0-701)', issuer: 'CompTIA', category: 'mandatory' },
-            { title: 'Certified Ethical Hacker (CEH)', issuer: 'EC-Council', category: 'recommended' },
-            { title: 'Certified Information Security Manager (CISM)', issuer: 'ISACA', category: 'recommended' },
-            { title: 'AWS Certified Security - Specialty', issuer: 'Amazon Web Services', category: 'recommended' },
-        ];
-    }
-    if (r.includes('data') || r.includes('ai') || r.includes('machine learning') || r.includes('ml') || r.includes('analytics')) {
-        return [
-            { title: 'AWS Certified Machine Learning - Specialty', issuer: 'Amazon Web Services', category: 'mandatory' },
-            { title: 'Google Professional Data Engineer', issuer: 'Google Cloud', category: 'mandatory' },
-            { title: 'Databricks Certified Data Engineer Associate', issuer: 'Databricks', category: 'recommended' },
-            { title: 'Microsoft Certified: Azure AI Engineer Associate', issuer: 'Microsoft', category: 'recommended' },
-            { title: 'TensorFlow Developer Certificate', issuer: 'Google', category: 'recommended' },
-        ];
-    }
-    if (r.includes('manage') || r.includes('lead') || r.includes('scrum') || r.includes('agile') || r.includes('product') || r.includes('director')) {
-        return [
-            { title: 'Project Management Professional (PMP)', issuer: 'Project Management Institute (PMI)', category: 'mandatory' },
-            { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance', category: 'mandatory' },
-            { title: 'PMI Agile Certified Practitioner (PMI-ACP)', issuer: 'PMI', category: 'recommended' },
-            { title: 'PRINCE2 Practitioner', issuer: 'AXELOS', category: 'recommended' },
-            { title: 'Certified Information Systems Auditor (CISA)', issuer: 'ISACA', category: 'recommended' },
-        ];
-    }
-    if (r.includes('cloud') || r.includes('devops') || r.includes('sre') || r.includes('system') || r.includes('infrastructure')) {
-        return [
-            { title: 'AWS Certified Solutions Architect - Associate', issuer: 'Amazon Web Services', category: 'mandatory' },
-            { title: 'Certified Kubernetes Administrator (CKA)', issuer: 'Cloud Native Computing Foundation (CNCF)', category: 'mandatory' },
-            { title: 'Google Professional Cloud Architect', issuer: 'Google Cloud', category: 'mandatory' },
-            { title: 'HashiCorp Certified: Terraform Associate', issuer: 'HashiCorp', category: 'recommended' },
-            { title: 'Microsoft Certified: Azure Solutions Architect Expert', issuer: 'Microsoft', category: 'recommended' },
-        ];
-    }
-    // Default high-demand industry certifications for general software / engineering / business
-    return [
-        { title: 'AWS Certified Solutions Architect - Associate', issuer: 'Amazon Web Services', category: 'mandatory' },
-        { title: 'Project Management Professional (PMP)', issuer: 'Project Management Institute (PMI)', category: 'mandatory' },
-        { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance', category: 'mandatory' },
-        { title: 'Google Professional Cloud Architect', issuer: 'Google Cloud', category: 'recommended' },
-        { title: 'Certified Kubernetes Application Developer (CKAD)', issuer: 'CNCF', category: 'recommended' },
-        { title: 'Microsoft Certified: Azure Fundamentals (AZ-900)', issuer: 'Microsoft', category: 'recommended' },
-    ];
-}
-
-/**
  * CertificationsStep — wizard step for the `certifications` section with
  * built-in AI recommendation engine, quick-add cards, and auto-sync.
  */
@@ -78,6 +25,7 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [aiRecommendations, setAiRecommendations] = useState([]);
     const [addedFeedback, setAddedFeedback] = useState(null);
+    const [certError, setCertError] = useState(null);
 
     const aiRequestControllerRef = useRef(null);
 
@@ -244,14 +192,25 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
                     })
                     .filter((c) => c.title);
 
-                setAiRecommendations(formatted.length > 0 ? formatted : getRoleTailoredFallbackCerts(effectiveRole));
+                if (formatted.length > 0) {
+                    setAiRecommendations(formatted);
+                    setCertError(null);
+                } else {
+                    setAiRecommendations([]);
+                    setCertError(t('CertificationsStep.ai.noResults', 'No credentials found for this target role. Please specify a more detailed role or job title.'));
+                }
             } else {
-                setAiRecommendations(getRoleTailoredFallbackCerts(effectiveRole));
+                setAiRecommendations([]);
+                setCertError(t('CertificationsStep.ai.noResults', 'No credentials found for this target role. Please specify a more detailed role or job title.'));
             }
         } catch (err) {
             if (err?.name === 'AbortError') return;
-            console.warn('AI Certifications generation fallback:', err);
-            setAiRecommendations(getRoleTailoredFallbackCerts(effectiveRole));
+            console.error('AI Certifications generation error:', err);
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI generation limit reached. Please upgrade your plan or try again tomorrow.'
+                : (err?.message || 'Unable to generate certifications at this time.');
+            setCertError(msg);
+            setAiRecommendations([]);
         } finally {
             if (aiRequestControllerRef.current === requestController) {
                 aiRequestControllerRef.current = null;
@@ -435,6 +394,11 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
                                       'Generate industry-standard credentials and certifications matched to your field to boost ATS ranking and employer credibility.'
                                   )}
                         </p>
+                        {certError && (
+                            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3 max-w-md mx-auto" role="status">
+                                {certError}
+                            </p>
+                        )}
                         <button
                             type="button"
                             onClick={handleGenerateAiCertifications}

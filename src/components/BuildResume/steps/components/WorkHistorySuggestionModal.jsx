@@ -11,17 +11,6 @@ const FOCUS_TONES = [
     { id: 'technical', label: '🛠️ Tech & Delivery', prompt: 'Showcase system architecture, technical depth, problem-solving, and best practices.' },
 ];
 
-const generateFallbackSuggestions = (jobTitle, employer, city) => {
-    const role = jobTitle || 'Professional';
-    const comp = employer || 'the company';
-    return [
-        `Spearheaded core initiatives as ${role} at ${comp}${city ? ` (${city})` : ''}, optimizing key workflows and boosting team productivity by 25%.`,
-        `Collaborated across cross-functional teams to deliver high-priority projects ahead of schedule, consistently exceeding quality benchmarks.`,
-        `Introduced modern best practices and automated processes that reduced operational turnaround time by 30%.`,
-        `Mentored junior team members, established technical standards, and improved overall project delivery consistency.`
-    ];
-};
-
 const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApplySuggestion }) => {
     const { t } = useTranslation('common');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -70,15 +59,19 @@ const WorkHistorySuggestionModal = ({ isOpen, onClose, selectedEmployment, onApp
                 ).filter(Boolean);
             }
             if (!cleanSuggestions.length) {
-                cleanSuggestions = generateFallbackSuggestions(jobTitle, employer, selectedEmployment?.city);
+                setError(t('WorkHistorySuggestionModal.errors.noSuggestions', 'No suggestions could be generated for this role. Please try another tone or add role details.'));
+                setSuggestions([]);
+            } else {
+                setSuggestions(cleanSuggestions);
             }
-            setSuggestions(cleanSuggestions);
         } catch (err) {
             if (err?.name === 'AbortError') return;
-            console.warn('[WorkHistorySuggestionModal] AI service failover to tailored templates:', err.message);
-            const fallbacks = generateFallbackSuggestions(jobTitle, employer, selectedEmployment?.city);
-            setSuggestions(fallbacks);
-            setError(null);
+            console.error('[WorkHistorySuggestionModal] AI error:', err);
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI generation limit reached. Please upgrade your plan or try again tomorrow.'
+                : (err?.message || 'Unable to generate AI bullet points at this time.');
+            setError(msg);
+            setSuggestions([]);
         } finally {
             if (requestControllerRef.current === requestController) {
                 requestControllerRef.current = null;

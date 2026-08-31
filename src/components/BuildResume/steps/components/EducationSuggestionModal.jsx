@@ -4,17 +4,6 @@ import { MdClose, MdBolt, MdContentCopy, MdCheck, MdAutoAwesome } from 'react-ic
 import { FiLoader } from 'react-icons/fi';
 import { generateUserAiContent } from '../../../../services/aiService';
 
-const generateFallbackEducationSuggestions = (school, degree) => {
-    const deg = degree || 'Degree';
-    const sch = school || 'University';
-    return [
-        `Completed comprehensive coursework in ${deg} with honors, developing strong analytical, research, and problem-solving skills.`,
-        `Collaborated on advanced capstone projects and presentations, demonstrating practical mastery of core subject methodologies.`,
-        `Maintained a strong academic record while actively participating in relevant student associations and academic workshops at ${sch}.`,
-        `Demonstrated leadership through team project coordination, peer tutoring, and interdisciplinary seminar presentations.`
-    ];
-};
-
 const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplySuggestion }) => {
     const { t } = useTranslation('common');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -60,15 +49,19 @@ const EducationSuggestionModal = ({ isOpen, onClose, selectedEducation, onApplyS
                 ).filter(Boolean);
             }
             if (!cleanSuggestions.length) {
-                cleanSuggestions = generateFallbackEducationSuggestions(school, degree);
+                setError(t('EducationSuggestionModal.errors.noSuggestions', 'No suggestions could be generated for this education entry. Please add coursework or details.'));
+                setSuggestions([]);
+            } else {
+                setSuggestions(cleanSuggestions);
             }
-            setSuggestions(cleanSuggestions);
         } catch (err) {
             if (err?.name === 'AbortError') return;
-            console.warn('[EducationSuggestionModal] AI service failover to tailored templates:', err.message);
-            const fallbacks = generateFallbackEducationSuggestions(school, degree);
-            setSuggestions(fallbacks);
-            setError(null);
+            console.error('[EducationSuggestionModal] AI error:', err);
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI generation limit reached. Please upgrade your plan or try again tomorrow.'
+                : (err?.message || 'Unable to generate academic highlights at this time.');
+            setError(msg);
+            setSuggestions([]);
         } finally {
             if (requestControllerRef.current === requestController) {
                 requestControllerRef.current = null;

@@ -75,7 +75,7 @@ test('CertificationsStep includes AI recommendation engine with fallback and qui
     const certStep = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
     assert.match(certStep, /generateUserAiContent/);
     assert.match(certStep, /generate-certifications/);
-    assert.match(certStep, /getRoleTailoredFallbackCerts/);
+    assert.match(certStep, /setCertError/);
     assert.match(certStep, /handleAddRecommendedCert/);
     assert.match(certStep, /handleAddAllRecommended/);
     assert.match(certStep, /isCertAlreadyAdded/);

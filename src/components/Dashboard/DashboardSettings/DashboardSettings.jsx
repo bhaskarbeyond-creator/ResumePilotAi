@@ -722,17 +722,17 @@ function DashboardSettings(_props) {
             });
             const summaryText = data?.summary || data?.description || (typeof data === 'string' ? data : null);
             if (typeof summaryText !== 'string' || !summaryText.trim()) {
-                throw new Error('No summary was returned');
+                throw new Error('No summary was returned by AI provider');
             }
             setProfile(prev => ({ ...prev, summary: summaryText.trim() }));
             triggerNotification('AI Executive Bio generated successfully!');
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI summary error:', err);
-            // Fallback synthesis
-            const fallbackBio = `${primaryRole} with proven background in driving organizational impact and delivering high-quality results. Proficient in ${skillsDetails || 'core domain competencies'}, with a strong track record of cross-functional execution and technical excellence.`;
-            setProfile(prev => ({ ...prev, summary: fallbackBio }));
-            triggerNotification('Personalized Executive Bio generated based on your profile details!');
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
+                : (err?.message || 'Unable to generate Executive Bio at this time.');
+            triggerNotification(msg, 'error');
         } finally {
             setIsAiGenerating(false);
         }
@@ -764,11 +764,8 @@ function DashboardSettings(_props) {
                 ).filter(Boolean);
             }
             if (!cleanSuggestions.length) {
-                cleanSuggestions = [
-                    `Spearheaded core initiatives as ${job.jobTitle} at ${job.company || 'the company'}, optimizing workflows and boosting team productivity by 25%.`,
-                    `Collaborated across cross-functional teams to deliver high-priority projects ahead of schedule with exceptional quality.`,
-                    `Automated routine operational tasks, reducing turnaround time by 30% and eliminating manual bottlenecks.`
-                ];
+                triggerNotification('No bullet points generated. Please provide more role details.', 'error');
+                return;
             }
             const bulletText = cleanSuggestions.map(s => `• ${s.replace(/^[•\-*]\s*/, '')}`).join('\n');
             const currentDesc = String(job.description || '').trim();
@@ -778,14 +775,10 @@ function DashboardSettings(_props) {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI Work Description Error:', err);
-            const fallbackBullets = [
-                `• Spearheaded ${job.jobTitle} initiatives at ${job.company || 'the organization'}, improving operational efficiency and product quality.`,
-                `• Collaborated with cross-functional teams to deliver scalable, high-performance solutions.`,
-                `• Streamlined core workflows, automated routine tasks, and upheld best practices.`
-            ].join('\n');
-            const currentDesc = String(job.description || '').trim();
-            updateWorkExperience(index, 'description', currentDesc ? `${currentDesc}\n${fallbackBullets}` : fallbackBullets);
-            triggerNotification('Draft work experience bullet points added.', 'info');
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
+                : (err?.message || 'Unable to generate bullet points at this time.');
+            triggerNotification(msg, 'error');
         } finally {
             setIsAiGenerating(false);
         }
@@ -818,23 +811,12 @@ function DashboardSettings(_props) {
                 return name && !existing.some(e => e.toLowerCase() === name.toLowerCase());
             });
 
-            let itemsToReview = (unadded.length > 0 ? unadded : rawSkills).map((s, idx) => {
+            const itemsToReview = (unadded.length > 0 ? unadded : rawSkills).map((s, idx) => {
                 const raw = typeof s === 'string' ? s : s?.name || s?.skill || s?.title;
                 const cleaned = cleanSkillName(raw);
                 const category = (typeof s === 'object' && s?.category) ? s.category : (idx < 5 ? 'mandatory' : 'recommended');
                 return { name: cleaned, category };
             }).filter(s => s.name);
-
-            if (!itemsToReview.length) {
-                itemsToReview = [
-                    { name: 'Strategic Problem Solving', category: 'mandatory' },
-                    { name: 'Cross-Functional Collaboration', category: 'mandatory' },
-                    { name: 'Project & Milestone Management', category: 'mandatory' },
-                    { name: 'Agile Workflow Execution', category: 'recommended' },
-                    { name: 'Data Analysis & Reporting', category: 'recommended' },
-                    { name: 'Process Optimization', category: 'recommended' },
-                ].filter(s => !existing.some(e => e.toLowerCase() === s.name.toLowerCase()));
-            }
 
             if (!itemsToReview.length) {
                 triggerNotification('Your skills list already covers all top recommended skills for this role!', 'info');
@@ -861,28 +843,10 @@ function DashboardSettings(_props) {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI skill recommendation error:', err);
-            const fallbackSkills = [
-                { name: 'Problem Solving', category: 'mandatory' },
-                { name: 'Team Collaboration', category: 'mandatory' },
-                { name: 'Project Management', category: 'mandatory' },
-                { name: 'Agile Methodologies', category: 'recommended' },
-                { name: 'Analytical Thinking', category: 'recommended' },
-                { name: 'Strategic Planning', category: 'recommended' },
-            ];
-            setAiModalState({
-                isOpen: true,
-                title: `Review Recommended Skills for ${effectiveRole}`,
-                type: 'skills',
-                items: fallbackSkills,
-                onApply: (approvedItems) => {
-                    const newSkills = approvedItems.map(item => ({ name: cleanSkillName(item.name || item.title), level: 'Expert' }));
-                    setProfile(prev => {
-                        const existingNames = new Set((prev.skills || []).map(s => String(typeof s === 'string' ? s : s.name || '').toLowerCase()));
-                        return { ...prev, skills: [...(prev.skills || []), ...newSkills.filter(s => !existingNames.has(s.name.toLowerCase()))] };
-                    });
-                    triggerNotification(`Added ${approvedItems.length} recommended skills to your profile!`);
-                }
-            });
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
+                : (err?.message || 'Unable to generate skills recommendations.');
+            triggerNotification(msg, 'error');
         } finally {
             setIsAiGenerating(false);
         }
@@ -913,20 +877,12 @@ function DashboardSettings(_props) {
                 return title && !existingCerts.some(e => e.toLowerCase() === title.toLowerCase());
             });
 
-            let itemsToReview = (unadded.length > 0 ? unadded : certsList).map((c, idx) => {
+            const itemsToReview = (unadded.length > 0 ? unadded : certsList).map((c, idx) => {
                 const title = typeof c === 'string' ? c : (c?.title || c?.name || '');
                 const issuer = typeof c === 'object' ? (c?.issuer || 'Accredited Organization') : 'Accredited Organization';
                 const category = (typeof c === 'object' && c?.category) ? c.category : (idx < 3 ? 'mandatory' : 'recommended');
                 return { title, issuer, category, name: title };
             }).filter(c => c.title);
-
-            if (!itemsToReview.length) {
-                itemsToReview = [
-                    { title: `${effectiveRole} Professional Certification`, issuer: 'Industry Association', category: 'mandatory', name: `${effectiveRole} Professional Certification` },
-                    { title: 'Project Management Professional (PMP)', issuer: 'PMI', category: 'recommended', name: 'Project Management Professional (PMP)' },
-                    { title: 'Certified Agile Practitioner (PMI-ACP)', issuer: 'PMI', category: 'recommended', name: 'Certified Agile Practitioner (PMI-ACP)' },
-                ].filter(c => !existingCerts.some(e => e.toLowerCase() === c.title.toLowerCase()));
-            }
 
             if (!itemsToReview.length) {
                 triggerNotification('Your profile already covers all top recommended credentials!', 'info');
@@ -955,33 +911,25 @@ function DashboardSettings(_props) {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI Certifications Recommendation Error:', err);
-            const fallbackCerts = [
-                { title: 'Project Management Professional (PMP)', issuer: 'PMI', category: 'mandatory', name: 'Project Management Professional (PMP)' },
-                { title: 'Certified ScrumMaster (CSM)', issuer: 'Scrum Alliance', category: 'recommended', name: 'Certified ScrumMaster (CSM)' },
-                { title: 'Six Sigma Green Belt', issuer: 'ASQ', category: 'recommended', name: 'Six Sigma Green Belt' },
-            ];
-            setAiModalState({
-                isOpen: true,
-                title: `Review Industry Certifications for ${effectiveRole}`,
-                type: 'certifications',
-                items: fallbackCerts,
-                onApply: (approvedItems) => {
-                    const newCerts = approvedItems.map((c, i) => ({
-                        id: `cert_ai_${Date.now()}_${i}`,
-                        title: c.title || c.name,
-                        issuer: c.issuer || 'Accredited Organization',
-                        date: ''
-                    }));
-                    setProfile(prev => ({
-                        ...prev,
-                        certifications: [...(prev.certifications || []), ...newCerts]
-                    }));
-                    triggerNotification(`Added ${approvedItems.length} credentials to your Master Profile!`);
-                }
-            });
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
+                : (err?.message || 'Unable to generate certification recommendations.');
+            triggerNotification(msg, 'error');
         } finally {
             setIsAiGenerating(false);
         }
+    };
+
+    // Reorder items helper
+    const moveItem = (arrayField, index, direction) => {
+        setProfile((prev) => {
+            const list = [...(prev[arrayField] || [])];
+            const targetIdx = index + direction;
+            if (targetIdx < 0 || targetIdx >= list.length) return prev;
+            const [moved] = list.splice(index, 1);
+            list.splice(targetIdx, 0, moved);
+            return { ...prev, [arrayField]: list };
+        });
     };
 
     // Work Experience Array Handlers
@@ -1323,6 +1271,42 @@ function DashboardSettings(_props) {
                 {selectedSettings === 'Profile' ? (
                     <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
 
+                        {/* Master Profile Completeness Progress Meter */}
+                        {(() => {
+                            let score = 0;
+                            if (profile.firstname || profile.lastname) score += 15;
+                            if (profile.email) score += 10;
+                            if (profile.phone) score += 10;
+                            if (profile.occupation) score += 15;
+                            if (profile.city || profile.country) score += 10;
+                            if (profile.summary && profile.summary.trim().length > 20) score += 15;
+                            if (profile.workExperiences && profile.workExperiences.length > 0) score += 10;
+                            if (profile.education && profile.education.length > 0) score += 5;
+                            if (profile.skills && profile.skills.length >= 3) score += 10;
+                            const compScore = Math.min(100, score);
+                            return (
+                                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-extrabold text-xs shrink-0">
+                                            {compScore}%
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                <span className="text-xs font-bold text-white uppercase tracking-wider">Master Profile Strength</span>
+                                                <span className="text-[11px] font-bold text-indigo-300">{compScore === 100 ? '🎉 100% Complete' : `${compScore}% Ready for AI Resumes`}</span>
+                                            </div>
+                                            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 rounded-full" style={{ width: `${compScore}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-[11px] text-slate-400">All data automatically syncs to your AI Resumes</p>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {/* Profile Sub-Section Tabs — horizontally scrollable on mobile */}
                         <div
                             className="flex items-center gap-2 border-b border-slate-200 pb-3 text-xs font-semibold"
@@ -1526,15 +1510,38 @@ function DashboardSettings(_props) {
                                     </div>
                                 ) : (
                                     profile.workExperiences.map((job, idx) => (
-                                        <div key={job.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4 relative">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeWorkExperience(idx); }}
-                                                className="absolute top-4 right-4 z-20 text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50 cursor-pointer"
-                                                title="Delete position">
-                                                <FaTrash className="w-3.5 h-3.5" />
-                                            </button>
-                                            {/* Row 1: Primary Details — smart column padding: pr-8 sm:pr-0 on top input, sm:pr-8 on right input */}
+                                        <div key={job.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                                    Position #{idx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('workExperiences', idx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        title="Move position up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.workExperiences.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('workExperiences', idx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        title="Move position down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeWorkExperience(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer ml-1"
+                                                        title="Delete position">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {/* Row 1: Primary Details */}
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 <div className="pr-8 sm:pr-0">
                                                     <AutocompleteInputField
@@ -1649,14 +1656,37 @@ function DashboardSettings(_props) {
                                     </div>
                                 ) : (
                                     profile.education.map((edu, idx) => (
-                                        <div key={edu.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4 relative">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeEducation(idx); }}
-                                                className="absolute top-4 right-4 z-20 text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50 cursor-pointer"
-                                                title="Delete education degree">
-                                                <FaTrash className="w-3.5 h-3.5" />
-                                            </button>
+                                        <div key={edu.id || idx} className="p-5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                                    Degree #{idx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('education', idx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        title="Move degree up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.education.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('education', idx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
+                                                        title="Move degree down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeEducation(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer ml-1"
+                                                        title="Delete education degree">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 <div className="pr-8 sm:pr-0">
                                                     <AutocompleteInputField
@@ -1783,13 +1813,31 @@ function DashboardSettings(_props) {
                                                         inputClassName="w-full text-xs p-2 pr-7 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
                                                     />
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
-                                                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors cursor-pointer flex-shrink-0"
-                                                    title="Delete skill">
-                                                    <FaTrash className="w-3 h-3" />
-                                                </button>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, -1); }}
+                                                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
+                                                        title="Move skill up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.skills.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, 1); }}
+                                                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
+                                                        title="Move skill down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors cursor-pointer flex-shrink-0"
+                                                        title="Delete skill">
+                                                        <FaTrash className="w-3 h-3" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -1878,13 +1926,31 @@ function DashboardSettings(_props) {
                                                  <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, 'date', e.target.value)} placeholder="Date Issued (e.g. 2024)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" spellCheck="false" />
                                                  <input type="url" value={cert.url || cert.link || ''} onChange={(e) => updateCertification(idx, 'url', e.target.value)} placeholder="Credential Link (URL)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" />
                                              </div>
-                                             <button
-                                                 type="button"
-                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
-                                                 className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0 self-end sm:self-auto"
-                                                 title="Delete certification">
-                                                 <FaTrash className="w-3.5 h-3.5" />
-                                             </button>
+                                             <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                                                 <button
+                                                     type="button"
+                                                     disabled={idx === 0}
+                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, -1); }}
+                                                     className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                     title="Move certification up">
+                                                     ▲
+                                                 </button>
+                                                 <button
+                                                     type="button"
+                                                     disabled={idx === profile.certifications.length - 1}
+                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, 1); }}
+                                                     className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                     title="Move certification down">
+                                                     ▼
+                                                 </button>
+                                                 <button
+                                                     type="button"
+                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
+                                                     className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                                                     title="Delete certification">
+                                                     <FaTrash className="w-3.5 h-3.5" />
+                                                 </button>
+                                             </div>
                                          </div>
                                     ))
                                 )}
@@ -1967,13 +2033,31 @@ function DashboardSettings(_props) {
                                                         ))}
                                                     </select>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeLanguage(idx); }}
-                                                    className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
-                                                    title="Delete language">
-                                                    <FaTrash className="w-3.5 h-3.5" />
-                                                </button>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('languages', idx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                        title="Move language up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.languages.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('languages', idx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                        title="Move language down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeLanguage(idx); }}
+                                                        className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                                                        title="Delete language">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -2107,19 +2191,42 @@ function DashboardSettings(_props) {
                                     </div>
                                 ) : (
                                     profile.projects.map((proj, idx) => (
-                                        <div key={proj.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeProject(idx); }}
-                                                className="absolute top-3.5 right-3.5 z-20 w-8 h-8 bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl shadow-2xs flex items-center justify-center transition-all cursor-pointer"
-                                                title="Delete project">
-                                                <FaTrash className="w-3.5 h-3.5" />
-                                            </button>
+                                        <div key={proj.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                                    Project #{idx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                        title="Move project up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.projects.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                        title="Move project down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeProject(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                        title="Delete project">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div className="pr-8 sm:pr-0">
+                                                <div>
                                                     <input type="text" value={proj.title} onChange={(e) => updateProject(idx, 'title', e.target.value)} placeholder="Project Title" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold" />
                                                 </div>
-                                                <div className="sm:pr-8">
+                                                <div>
                                                     <input type="url" value={proj.link} onChange={(e) => updateProject(idx, 'link', e.target.value)} placeholder="Live Demo / Repository URL" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
                                                 </div>
                                             </div>
