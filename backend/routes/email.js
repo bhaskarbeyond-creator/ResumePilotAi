@@ -1417,7 +1417,7 @@ function recentAuthForMailSecretMutation(req, res, next) {
 }
 
 // 0. Circuit Breaker Control & Status Endpoints
-router.get('/admin/circuit-breaker-status', (req, res) => {
+router.get('/admin/circuit-breaker-status', requirePermission('email.logs.read'), (req, res) => {
     const now = Date.now();
     const isCircuitOpen = primaryCircuitBreakerUntil > now;
     const remainingSeconds = isCircuitOpen ? Math.ceil((primaryCircuitBreakerUntil - now) / 1000) : 0;
@@ -1513,7 +1513,7 @@ async function getCustomTemplates(_req, res) {
 }
 
 router.post('/admin/save-template-customization', requireRecentAdminAuthentication, saveTemplateCustomization);
-router.get('/admin/custom-templates', getCustomTemplates);
+router.get('/admin/custom-templates', requirePermission('email.template.manage'), getCustomTemplates);
 
 // 1. Test Outbound SMTP Socket Connection (Supports type='smtp' and type='fallback_smtp')
 function recentAuthForEmailTest(req, res, next) {
@@ -1659,7 +1659,7 @@ router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) =
 });
 
 // Admin-safe runtime projection: allowlisted metadata and configured booleans, never credentials.
-router.get('/admin/settings', async (_req, res) => {
+router.get('/admin/settings', requirePermission('system.config.read'), async (_req, res) => {
     try {
         const config = await getEmailConfig();
         res.setHeader('Cache-Control', 'no-store');

@@ -52,8 +52,16 @@ function resolveAdminReadPermission(pathname) {
   if (pathname === '/admin/firebase-service-account') return 'secrets.manage';
   if (pathname.startsWith('/platform/operational-status') || pathname === '/platform/health-indicator') return 'security.read';
   if (pathname === '/admin/users' || pathname.startsWith('/admin/users/')) return 'users.read';
+  if (pathname === '/admin/employer-applications' || pathname.startsWith('/admin/employer-applications/')) return 'users.read';
+  if (pathname === '/admin/tenants' || pathname.startsWith('/admin/tenants/')) return 'tenants.read';
   if (pathname === '/email/logs') return 'email.logs.read';
+  if (pathname === '/email/admin/deliverability' || pathname === '/email/admin/circuit-breaker-status') return 'email.logs.read';
   if (pathname === '/admin/payment-settings' || pathname === '/platform/payment-settings') return 'payments.read';
+  if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-orders') return 'payments.read';
+  if (pathname.startsWith('/admin/subscriptions')) return 'payments.read';
+  if (pathname === '/admin/ai/entitlements') return 'ai.usage.read';
+  if (pathname.startsWith('/admin/ai/quota-limits')) return 'ai.entitlements.manage';
+  if (pathname.startsWith('/admin/ai/quota-stats')) return 'ai.usage.read';
   if (pathname.startsWith('/admin/health') || pathname === '/admin/health-summary') return 'security.read';
   if (pathname === '/admin/dashboard') return 'system.config.read';
   if (isSupportDeskPath(pathname)) return 'tickets.manage';
