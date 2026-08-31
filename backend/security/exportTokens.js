@@ -19,9 +19,14 @@ function encryptionProvider() {
 
 // Opportunistic TTL sweep of the MariaDB token table. Cleanup is not part of
 // validation: every redemption independently checks expiry under row lock.
+let _sweepUnavailableWarned = false;
 setInterval(() => {
+  if (process.env.DEGRADED_MODE_REPOSITORY === 'inmemory') return;
   getPool().query('DELETE FROM export_render_tokens WHERE expires_at < ? LIMIT 500', [Date.now()]).catch(error => {
-    console.error('[Export token sweep]', error.code || error.message);
+    if (!_sweepUnavailableWarned) {
+      _sweepUnavailableWarned = true;
+      console.warn('[Export token sweep] Database unavailable; sweep skipped until DB reconnects:', error.code || error.message);
+    }
   });
 }, 60_000).unref();
 

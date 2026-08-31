@@ -5,6 +5,11 @@ let injectedCounterStore = null;
 
 function counterStore() {
   if (injectedCounterStore) return injectedCounterStore;
+  if (process.env.DEGRADED_MODE_REPOSITORY === 'inmemory' && process.env.NODE_ENV !== 'production') {
+    const { InMemoryCounterStore } = require('./inMemoryCounterStore');
+    injectedCounterStore = new InMemoryCounterStore();
+    return injectedCounterStore;
+  }
   const { MySqlAtomicCounterStore } = require('../enterprise/mysqlAtomicCounterStore');
   injectedCounterStore = new MySqlAtomicCounterStore({ pool: require('../database/mysql').getPool() });
   return injectedCounterStore;
