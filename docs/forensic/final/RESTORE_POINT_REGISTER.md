@@ -33,3 +33,9 @@ git checkout rollback-post-lintfixes-20260831-0300
 1. `backend/services/aiRuntime.js` – Removed unnecessary `\` escape in regex.
 2. `src/services/aiService.js` – Same regex fix.
 3. `src/components/Actions/action-step-filling/ActionFilling.jsx` – Removed 26 debug console.log statements; renamed `option` → `_option` in unused callback parameter.
+
+| Timestamp | Phase | Reason | Pre-SHA | Restore Tag | Post-SHA | Verification | Rollback Command |
+|-----------|-------|--------|---------|-------------|----------|--------------|------------------|
+| 2026-08-31 03:26 UTC | Pre-wave-1 (escalated remediation) | Before new execution-based remediation; prior docs classified discovery-only | 0436977 + uncommitted 3-file delta | `rollback-pre-remediation-wave1-20260831-0326` | 0436977 | Tag points at original baseline; preserves uncommitted work via stash | `git reset --hard rollback-pre-remediation-wave1-20260831-0326` |
+| 2026-08-31 03:55 UTC | Pre-wave-2 (in progress) | After Wave 1 push; before further remediation | 1d8105d | `rollback-pre-remediation-wave2-20260831-0355` | 1d8105d | Remote pushed | `git reset --hard rollback-pre-remediation-wave2-20260831-0355` |
+| 2026-08-31 03:56 UTC | **WAVE 0 FREEZE — Master 10-wave remediation** | Authoritative restore point before the full 10-wave remediation mission per the final master prompt | 2abf494 | `rollback-wave0-freeze-fullremediation-20260831-0356` | 2abf494 | Working tree clean; remote SHA matches; 38/38 Playwright passing; backend 513/537 tests passing; 44/44 static security tests passing | `git reset --hard rollback-wave0-freeze-fullremediation-20260831-0356` |

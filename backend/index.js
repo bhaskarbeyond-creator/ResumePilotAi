@@ -225,8 +225,13 @@ let schemaState = { success: false, error: 'NOT_RUN' };
 async function runSchemaBootstrap() {
     const conn = await testMysql();
     if (!conn.connected) {
-        schemaState = { success: false, error: conn.error || 'MySQL unreachable at startup' };
-        console.warn('[Startup] MySQL unreachable — starting in degraded mode:', schemaState.error);
+        schemaState = { success: false, error: conn.error || 'MySQL unreachable at startup', degraded: 'inmemory' };
+        if (process.env.NODE_ENV !== 'production') {
+            process.env.DEGRADED_MODE_REPOSITORY = 'inmemory';
+            console.warn('[Startup] MySQL unreachable — activating in-memory repository for local/E2E testing.');
+        } else {
+            console.warn('[Startup] MySQL unreachable — starting in degraded mode:', schemaState.error);
+        }
         return schemaState;
     }
     schemaState = await initializeSchema();
