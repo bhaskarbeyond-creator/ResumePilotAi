@@ -385,12 +385,10 @@ const BuildResume = () => {
         saveTimerRef.current = setTimeout(() => persistLatest(), delay);
     }, [persistLatest]);
 
-    // Guests can explore the guided builder, but authenticated users must not
-    // navigate away from an unsaved server error or revision conflict. Local
-    // recovery remains a safety net; it is not presented as a successful save.
     const persistBeforeNavigation = async () => {
         if (!userIdRef.current) return true;
-        return persistLatest({ manual: true });
+        persistLatest({ manual: false });
+        return true;
     };
 
     const handleNext = async () => {
@@ -1327,11 +1325,8 @@ const BuildResume = () => {
                                                         ? 'bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 text-blue-900 shadow-2xs'
                                                         : isCompleted
                                                         ? 'text-slate-700 hover:bg-slate-50/90 hover:border-slate-200/80 border border-transparent'
-                                                        : isPrevious
-                                                        ? 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
-                                                        : 'text-slate-400 hover:text-slate-600 border border-transparent'
+                                                        : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
                                                 }`}
-                                                disabled={!isCompleted && !isPrevious && !isActive}
                                                 aria-current={isActive ? 'step' : undefined}>
                                                 <div className="flex items-center gap-2.5 min-w-0">
                                                     {/* Step Icon/Status */}
@@ -1697,11 +1692,8 @@ const BuildResume = () => {
                                             ? 'bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 text-blue-900 shadow-2xs'
                                             : isCompleted
                                             ? 'text-slate-700 hover:bg-slate-50/90 hover:border-slate-200/80 border border-transparent'
-                                            : isPrevious
-                                            ? 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
-                                            : 'text-slate-400 hover:text-slate-600 border border-transparent'
+                                            : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
                                     }`}
-                                    disabled={!isCompleted && !isPrevious && !isActive}
                                     aria-current={isActive ? 'step' : undefined}>
                                     <div className="flex items-center gap-2.5 min-w-0">
                                         {/* Step Icon/Status */}

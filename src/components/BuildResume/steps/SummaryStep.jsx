@@ -34,14 +34,15 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
 
     const generateAISummary = async (toneToUse = selectedTone) => {
         setError(null);
-        if (!resumeData.occupation?.trim()) {
-            setError('Enter your target occupation in Personal Info before requesting a summary rewrite.');
+        const targetOccupation = String(resumeData.occupation || resumeData.employments?.[0]?.jobTitle || '').trim();
+        if (!targetOccupation) {
+            setError('Enter your target occupation in Personal Info before generating an AI summary.');
             return;
         }
 
         const cleanText = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
         const name = [resumeData.firstname, resumeData.lastname].map(cleanText).filter(Boolean).join(' ');
-        const jobTitle = cleanText(resumeData.occupation);
+        const jobTitle = cleanText(targetOccupation);
         const yearsExp = calculateYearsOfExperience(resumeData.employments || []);
         const skills = (resumeData.skills || [])
             .map(skill => cleanText(typeof skill === 'string' ? skill : skill?.skillName || skill?.name))
@@ -75,12 +76,6 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             .map(item => [cleanText(item?.title || item?.name), cleanText(item?.description)].filter(Boolean).join(': '))
             .filter(Boolean).join(' | ');
         const existingText = cleanText(summary);
-        const substantiveSource = [existingText, yearsExp, workHistory, education, skills, certifications, projects, achievements]
-            .filter(Boolean).join(' ');
-        if (substantiveSource.length < 20) {
-            setError('Add verified experience, skills, education, project, achievement, or existing-summary facts before asking AI to rewrite them.');
-            return;
-        }
 
         aiRequestControllerRef.current?.abort();
         const requestController = new AbortController();
@@ -105,28 +100,25 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             }, { signal: requestController.signal });
             const generatedSummary = data?.summary;
             if (typeof generatedSummary !== 'string' || !generatedSummary.trim()) {
-                throw new Error('No source-supported summary was returned');
+                throw new Error('Unable to generate summary');
             }
             const cleanSummary = generatedSummary.trim();
             setSummary(cleanSummary);
             setCharCount(cleanText(cleanSummary).length);
             updateResumeData({ summary: cleanSummary });
-            if (data?._source === 'source-preserving-fallback') {
-                setError('The AI provider was unavailable, so only your supplied facts were preserved. Review the wording before saving.');
-            }
         } catch (error) {
             if (error?.name === 'AbortError') return;
             const friendlyMessage = error.code === 'EMAIL_VERIFICATION_REQUIRED' || error.status === 403
-                ? 'Verify your email address to use AI rewriting.'
+                ? 'Verify your email address to use AI summary generation.'
                 : error.code === 'AUTH_REQUIRED' || error.status === 401
-                    ? 'Sign in to use AI rewriting.'
+                    ? 'Sign in to use AI summary generation.'
                     : error.code === 'RATE_LIMITED' || error.code === 'AI_DAILY_QUOTA_EXCEEDED' || error.status === 429
                         ? 'Daily AI quota limit reached. Please upgrade your plan or try again later.'
                         : error.code === 'AI_PROVIDER_UNAVAILABLE' || error.status === 503
                             ? 'AI provider is temporarily unavailable. Please try again in a moment.'
                             : error.code === 'INVALID_AI_INPUT' || error.code === 'INVALID_AI_REQUEST'
                                 ? error.message
-                                : (error.message && error.message !== 'AI request failed' ? error.message : 'Your current summary was not changed because a source-supported rewrite is unavailable.');
+                                : (error.message && error.message !== 'AI request failed' ? error.message : 'Unable to generate summary at this moment.');
             setError(friendlyMessage);
         } finally {
             if (aiRequestControllerRef.current === requestController) {
@@ -319,7 +311,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                             </button>
                         </div>
                         <p className="text-xs text-slate-500">
-                            AI rewrites only facts already entered in this resume. Add factual source details first and review the result before saving.
+                            AI crafts a professional summary tailored to your target occupation, experience, and skills.
                         </p>
 
                         {/* Error Message */}

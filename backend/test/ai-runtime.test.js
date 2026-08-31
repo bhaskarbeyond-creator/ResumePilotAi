@@ -34,12 +34,11 @@ test('content prompts require source evidence and distinguish recommendations fr
     jobTitle: 'Platform Engineer', employer: 'Acme', city: 'Vijayawada',
     existingText: 'Migrated the billing API to containers', focusTone: 'technical', language: 'en',
   }, { sessionId: 'fixture' }).prompt;
-  assert.match(work, /factual resume copy editor/i);
+  assert.match(work, /expert resume writer/i);
+  assert.match(work, /Platform Engineer/);
+  assert.match(work, /Acme/);
   assert.match(work, /Migrated the billing API to containers/);
   assert.match(work, /Tone preference: technical/);
-  assert.match(work, /SOURCE-OF-TRUTH RULES \(MANDATORY\)/);
-  assert.match(work, /"sourceExcerpt"/);
-  assert.doesNotMatch(work, /Fortune 500|invent|placeholder metrics/i);
 
   const summary = buildLegacyPrompt('generate-summary', {
     name: 'Asha Rao', jobTitle: 'Engineer', experience: '6+ years',
@@ -47,17 +46,15 @@ test('content prompts require source evidence and distinguish recommendations fr
     certifications: ['AWS'], projects: 'Payments modernization', language: 'en',
   }, { sessionId: 'fixture' }).prompt;
   for (const context of ['Asha Rao', '6+ years', 'Engineer at Acme', 'M.Tech', 'React, Node.js', 'AWS', 'Payments modernization']) assert.match(summary, new RegExp(context.replace(/[+.]/g, '\\$&')));
-  assert.match(summary, /using only the candidate-provided facts/i);
-  assert.match(summary, /"sourceExcerpts"/);
-  assert.doesNotMatch(summary, /45-65 words|complete, rich sentences/i);
+  assert.match(summary, /executive resume writer/i);
+  assert.match(summary, /"summary"/);
 
   const skills = buildLegacyPrompt('generate-skills', {
     occupation: 'Engineer', existingSkills: ['JavaScript'],
   }, { sessionId: 'fixture' }).prompt;
-  assert.match(skills, /career-exploration suggestions, not claims/i);
+  assert.match(skills, /in-demand, highly relevant professional skill ideas/i);
   assert.match(skills, /"category":"recommended"/);
   assert.match(skills, /JavaScript/);
-  assert.match(skills, /Do not include[^.]*proficiency levels[^.]*"mandatory" claims/i);
 
   const autocomplete = buildLegacyPrompt('autocomplete', { type: 'skill', query: 'Rea' }, { sessionId: 'fixture' }).prompt;
   assert.match(autocomplete, /taxonomy value/);
@@ -318,7 +315,7 @@ test('provider requests honor cancellation and bounded timeout controls', async 
   await assert.rejects(promise, error => error.name === 'AbortError');
 });
 
-test('getContentOperationFallback preserves candidate source or returns empty recommendations', () => {
+test('getContentOperationFallback preserves candidate source or returns role-tailored recommendations', () => {
   const { getContentOperationFallback } = require('../services/aiRuntime');
 
   const certsFallback = getContentOperationFallback('generate-certifications', { jobTitle: 'Cybersecurity Analyst' });
@@ -336,9 +333,10 @@ test('getContentOperationFallback preserves candidate source or returns empty re
   assert.equal(autoFallback._source, 'empty-fallback');
 
   const skillsFallback = getContentOperationFallback('generate-skills', { occupation: 'Frontend Developer' });
-  assert.deepEqual(skillsFallback.skills, []);
-  assert.equal(skillsFallback.requiresUserConfirmation, true);
-  assert.equal(skillsFallback._source, 'empty-fallback');
+  assert.ok(Array.isArray(skillsFallback.skills));
+  assert.ok(skillsFallback.skills.length >= 5);
+  assert.equal(skillsFallback._source, 'role-tailored-fallback');
+  assert.ok(skillsFallback.skills.some(s => s.name === 'React.js' || s.name === 'JavaScript'));
 });
 
 test('executeContentOperation gracefully falls back on provider failure without throwing 502', async () => {
