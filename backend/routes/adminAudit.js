@@ -7,9 +7,11 @@ const { getRepository } = require('../repositories');
 
 const router = express.Router();
 
-router.use(requirePermission('system.config.read'));
-
-router.get('/audit-logs', async (req, res) => {
+// Audit log reads require audit.read (AUDITOR/ADMIN/SUPER_ADMIN) — NOT
+// system.config.read, which would incorrectly block AUDITOR/SUPPORT.
+// Per-route middleware avoids imposing a blanket requirement on later
+// routers that share the /api/admin mount point.
+router.get('/audit-logs', requirePermission('audit.read'), async (req, res) => {
   try {
     const {
       limit = 50,
@@ -44,7 +46,7 @@ router.get('/audit-logs', async (req, res) => {
   }
 });
 
-router.get('/audit-logs/stats', async (_req, res) => {
+router.get('/audit-logs/stats', requirePermission('audit.read'), async (_req, res) => {
   try {
     const logs = await getRepository().getAdminAuditLogs({ limit: 200 });
     let highSeverityCount = 0;
@@ -85,7 +87,7 @@ router.get('/audit-logs/stats', async (_req, res) => {
   }
 });
 
-router.get('/audit-logs/:id', async (req, res) => {
+router.get('/audit-logs/:id', requirePermission('audit.read'), async (req, res) => {
   const logId = String(req.params.id || '').trim();
   if (!/^[A-Za-z0-9:_-]{1,128}$/.test(logId)) {
     return res.status(400).json({ error: { code: 'INVALID_AUDIT_ID', message: 'Invalid audit record ID.', requestId: res.locals?.requestId } });

@@ -110,3 +110,9 @@ test-results/
 /backups/**/recovery-points.json
 /backups/**/restore-point-*.json
 tests/.auth-states/
+node_modules/
+.env.local
+backend/.env
+tests/.auth-states/
+test-results/
+playwright-report/

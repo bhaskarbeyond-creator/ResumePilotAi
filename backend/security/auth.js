@@ -221,10 +221,30 @@ function requireRecentAdminAuthentication(req, res, next) {
   if (!req.user) {
     return requireAuth(req, res, () => requireRecentAdminAuthentication(req, res, next));
   }
-  const superAdminResult = requireSuperAdmin(req, res, () => {});
-  if (superAdminResult) return superAdminResult;
-  const shouldEnforce = process.env.NODE_ENV === 'production' || process.env.REQUIRE_RECENT_AUTH_IN_TEST === 'true';
-  if (!shouldEnforce) return next();
+  // This middleware guards SUPER-ADMIN-ONLY credential/destructive mutations.
+  // It enforces three checks:
+  //   1. Caller MUST be a super admin (role = SUPER_ADMIN or * permission).
+  //   2. When super-admin MFA is enabled (prod default, or flag set), caller
+  //      MUST have completed a second factor.
+  //   3. When running in production (or REQUIRE_RECENT_AUTH_IN_TEST=true),
+  //      authentication must have happened within SENSITIVE_AUTH_MAX_AGE_MS
+  //      (default 10 minutes).
+  if (!isSuperAdmin(req.user)) {
+    return res.status(403).json({
+      error: { code: 'FORBIDDEN', message: 'Super admin permission required', requestId: res.locals?.requestId },
+    });
+  }
+  if (superAdminMfaEnforced() && !hasSecondFactor(req.user)) {
+    return res.status(403).json({
+      error: {
+        code: 'SUPER_ADMIN_MFA_REQUIRED',
+        message: 'Super Admin destructive operations require a second authentication factor. Enroll TOTP MFA and sign in again.',
+        requestId: res.locals?.requestId,
+      },
+    });
+  }
+  const shouldEnforceRecentAuth = process.env.NODE_ENV === 'production' || process.env.REQUIRE_RECENT_AUTH_IN_TEST === 'true';
+  if (!shouldEnforceRecentAuth) return next();
   const authTimeSeconds = Number(req.user?.claims?.auth_time || 0);
   const maxAgeMs = Number(process.env.SENSITIVE_AUTH_MAX_AGE_MS || 10 * 60 * 1000);
   const ageMs = authTimeSeconds > 0 ? Date.now() - authTimeSeconds * 1000 : Infinity;

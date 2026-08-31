@@ -54,12 +54,21 @@ function resolveAdminReadPermission(pathname) {
   if (pathname === '/admin/users' || pathname.startsWith('/admin/users/')) return 'users.read';
   if (pathname === '/email/logs') return 'email.logs.read';
   if (pathname === '/admin/payment-settings' || pathname === '/platform/payment-settings') return 'payments.read';
+  if (pathname.startsWith('/admin/health') || pathname === '/admin/health-summary') return 'security.read';
+  if (pathname === '/admin/dashboard') return 'system.config.read';
   if (isSupportDeskPath(pathname)) return 'tickets.manage';
   return 'system.config.read';
 }
 
 function resolveAdminMutationPermission(pathname) {
   if (isSupportDeskPath(pathname)) return 'tickets.manage';
+  // payments mutations → payments.manage (covers payment-settings POST,
+  // payment/test-provider, /admin/payments/*); the elevated-permission
+  // check earlier in enforceApiPolicy already gates these.
+  if (pathname.startsWith('/admin/payments/') || pathname === '/admin/payment-settings' || pathname === '/admin/payment/test-provider') return 'payments.manage';
+  // Users endpoint mutations (role change, entitlement change, revoke,
+  // etc.) require users.update — enforced per-router.
+  if (pathname.startsWith('/admin/users/')) return 'users.update';
   return 'system.config.write';
 }
 
