@@ -761,7 +761,12 @@ router.get('/security-events', async (req, res) => {
     );
     const events = rows.map(row => {
       let metadata = {};
-      try { metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata || {}); } catch { metadata = {}; }
+      try {
+        const parsed = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata;
+        metadata = (parsed && typeof parsed === 'object') ? parsed : {};
+      } catch {
+        metadata = {};
+      }
       return {
         id: row.id, action: row.action || 'UNKNOWN', actorUid: row.actor_uid || null,
         actorEmail: metadata.actorEmail || null, targetUid: row.target_uid || null,
