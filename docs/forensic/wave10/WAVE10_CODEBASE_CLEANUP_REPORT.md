@@ -6,6 +6,15 @@
 
 ## 1. What Changed
 
+### Role-based admin deep-link gating (UX defect fixed)
+Added client-side permission enforcement to the Admin shell (`src/components/admin/Admin.jsx` and `sidebar/sidebar.jsx`). Previously a SUPPORT or AUDITOR operator who deep-linked to `/adm/security`, `/adm/operators`, `/adm/payments`, or any other tab outside their role's backend-permission set would land on an erroring component that got HTTP 403s from the API, because the shell mounted every route unconditionally and the sidebar listed every link. The backend already rejected those calls (authorization is enforced server-side — verified by Wave 9's 288-case RBAC matrix), but the UX was a broken page instead of a graceful redirect.
+
+What's new:
+- `RequireTabPerm` route guard wrapping every `<Route>` in the Admin `<Routes>` block. If the session lacks any of the permissions required for that tab, the user is redirected to the first tab their role can reach.
+- Tab-permission map mirroring `backend/security/auth.js` PERMISSIONS (client-side visibility only — backend remains authoritative).
+- Permission-aware sidebar: nav links to pages the current role cannot access are filtered out entirely. Empty groups are dropped.
+- "First accessible tab" computed per-role: SUPER_ADMIN/ADMIN → `users`; SUPPORT → `help-desk` (tickets.manage); AUDITOR → `audit-logs`. The `/adm/` root redirect and wildcard redirect both send users to that first tab rather than always to `dashboard`.
+
 ### Console-log hygiene (98 statements removed from production code)
 Stripped 98 `console.log/debug` statements from 32 production source files under `src/` (scripts/strip-console-logs.mjs). `console.warn`, `console.error`, and `console.info` preserved — they are intentional runtime signals. The removed statements were interactive-development traces (e.g. `"📊 Raw companies from database"`, `"Job created successfully with ID"`, `"Progress calculation"`) that leak internal state into browser devtools in production and add noise to support diagnostics.
 
@@ -64,9 +73,9 @@ Same env-blocked set as Wave 9 (unchanged): MariaDB live migration tests, paymen
 
 ## 6. Current Score
 
-**9.3/10** (+0.1 for debug-log hygiene — eliminates information-disclosure vector from production browser console; previously 9.2/10).
+**9.5/10** (+0.3 from 9.2/10: +0.1 debug-log hygiene eliminates information-disclosure from browser console; +0.2 role-based admin deep-link/sidebar gating fixes the SUPPORT/AUDITOR broken-tab UX defect that was discovered during Wave 9).
 
-Remaining path to 10/10 continues to require live infrastructure (MariaDB, Firebase, payment sandboxes, production deploy). Codebase completeness gate (priority I) is now at 0 UNKNOWNs — every scan finding has been classified.
+Remaining path to 10/10 continues to require live infrastructure (MariaDB, Firebase, payment sandboxes, production deploy). Codebase completeness gate (priority I) is now at 0 UNKNOWNs — every scan finding has been classified. The priority-A deep-link/redirect issue called out in the standing mission is fixed.
 
 ## 7. Next Wave
 

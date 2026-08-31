@@ -214,8 +214,8 @@ Generated: 2026-08-31T13:40:49.565Z
 - **HIGH** `backend/test/ai-ecosystem.test.js:85` — `.send({ operation: 'generate-summary', payload: { occupation: 'Engineer' }, apiKey: 'secret-key-attempt' });`
 - **HIGH** `backend/test/ai-enterprise-acceptance.test.js:257` — `nvidia: { apiKey: 'fixture-nvidia-vault-key', model: 'meta/llama-3.2-11b-vision-instruct' },`
 - **HIGH** `backend/test/ai-enterprise-acceptance.test.js:258` — `openai: { apiKey: 'fixture-openai-vault-key', model: 'gpt-4o-mini' },`
-- **HIGH** `backend/test/email-settings.test.js:18` — `const preserved = normalizedMailSection('smtp', { ...smtpInput, password: '' }, { password: 'fixture-existing-mail-key' });`
-- **HIGH** `backend/test/email-settings.test.js:25` — `const projected = projectMailSection('smtp', { ...smtpInput, password: 'fixture-runtime-mail-key', accessToken: 'fixture-access-token', clientSecret: 'fixture-client-secret' });`
+- **HIGH** `backend/test/email-settings.test.js:18` — `const preserved = normalizedMailSection('smtp', { ...smtpInput, password: '' }, { password: 'xxx' });`
+- **HIGH** `backend/test/email-settings.test.js:25` — `const projected = projectMailSection('smtp', { ...smtpInput, password: 'xxx', accessToken: 'fixture-access-token', clientSecret: 'fixture-client-secret' });`
 - **HIGH** `backend/test/helpers/aiRouteContract.js:12` — `ai_providers: { gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } },`
 - **HIGH** `backend/test/superadmin-platform.test.js:30` — `apiKey: 'sk-1234567890abcdef',`
 - **HIGH** `tests/certification/firestore-off-boot.test.mjs:132` — `const forged = await json('GET', '/api/resumes', { token: 'not-a-real-token' });`

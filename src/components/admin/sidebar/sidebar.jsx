@@ -7,6 +7,32 @@ import { MdOutlineReviews } from 'react-icons/md';
 import fire from '../../../conf/fire';
 import { getHealthIndicator } from '../../../services/platformApi';
 import { INDICATOR_TONE } from '../../../utils/healthPresentation';
+import { useAdminSession } from '../AdminContext';
+
+// Map sidebar paths to minimum backend permissions required to see that link.
+// Mirrors RequireTabPerm in Admin.jsx. The backend is authoritative; this is UI-only.
+const PATH_PERMS = Object.freeze({
+    '/adm/dashboard': null,                             // command center — every admin
+    '/adm/tenants': 'tenants.read',
+    '/adm/audit-logs': 'audit.read',
+    '/adm/security': 'security.read',
+    '/adm/queues': 'security.read',
+    '/adm/operations': 'system.config.read',
+    '/adm/attention': 'tickets.manage',
+    '/adm/health': 'security.read',
+    '/adm/users': 'users.read',
+    '/adm/operators': 'users.roles.manage',
+    '/adm/employer-applications': 'users.read',
+    '/adm/jobs-manager': 'jobs.manage',
+    '/adm/company-management': 'jobs.manage',
+    '/adm/blog-management': 'system.config.write',
+    '/adm/landing-pages': 'system.config.write',
+    '/adm/reviews': 'system.config.write',
+    '/adm/trustedby': 'system.config.write',
+    '/adm/messages': 'notifications.send',
+    '/adm/help-desk': 'tickets.manage',
+    '/adm/phrases': 'system.config.write',
+});
 
 // Selection state uses the left rail marker. The only status dot in this
 // navigation is the Platform Health indicator, and it is driven exclusively by
@@ -96,6 +122,15 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     );
     const location = useLocation();
     const navigate = useNavigate();
+    const adminSession = useAdminSession();
+    const sidebarHasPerm = (p) => {
+        if (!p) return true;
+        if (!adminSession?.permissions) return false;
+        if (adminSession.isSuperAdmin) return true;
+        if (adminSession.permissions.includes('*')) return true;
+        if (Array.isArray(p)) return p.some((x) => adminSession.permissions.includes(x));
+        return adminSession.permissions.includes(p);
+    };
     const [healthIndicator, setHealthIndicator] = useState({ state: 'loading', indicator: null, overall: null, attentionCount: null });
 
     const loadHealthIndicator = useCallback(async () => {
@@ -154,7 +189,7 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
         fire.auth().signOut().catch((error) => console.error('Sign out error', error));
     };
 
-    const navGroups = [
+    const rawNavGroups = [
         {
             label: 'Control Plane',
             items: [
@@ -191,6 +226,10 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
             ],
         },
     ];
+    // Filter each group's items to those the current role can access; drop empty groups entirely.
+    const navGroups = rawNavGroups
+        .map((g) => ({ ...g, items: g.items.filter((it) => sidebarHasPerm(PATH_PERMS[it.path])) }))
+        .filter((g) => g.items.length > 0);
 
     return (
         <>

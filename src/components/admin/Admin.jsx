@@ -126,7 +126,7 @@ const AdminHeader = ({ userEmail, isSuperAdminUser, onLogout, onOpenCommandPalet
 };
 
 const Admin = () => {
-    const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null });
+    const [authState, setAuthState] = useState({ checking: true, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null, permissions: [], role: '' });
     const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -146,17 +146,42 @@ const Admin = () => {
 
     useEffect(() => fire.auth().onAuthStateChanged(async user => {
         if (!user) {
-            setAuthState({ checking: false, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null });
+            setAuthState({ checking: false, allowed: false, isSuperAdmin: false, mfaVerified: false, mfaEnrolled: false, hasMfa: false, user: null, permissions: [], role: '' });
             return;
         }
         let isSuperAdminUser = false;
         let mfaVerified = false;
         let mfaEnrolled = false;
         let token = null;
+        let role = '';
+        let permissions = [];
         try {
             token = await user.getIdTokenResult();
             const tokenRole = String(token?.claims?.role || '').toUpperCase();
-            isSuperAdminUser = tokenRole === 'SUPER_ADMIN' || token?.claims?.permissions?.includes('*');
+            role = tokenRole;
+            // Mirror backend/security/auth.js PERMISSIONS map client-side for UI gating only.
+            // The server is the authoritative gate; this only controls visibility/redirect.
+            permissions = Array.isArray(token?.claims?.permissions) ? token.claims.permissions : [];
+            if (tokenRole === 'SUPER_ADMIN' || permissions.includes('*')) {
+                isSuperAdminUser = true;
+                permissions = ['*'];
+            } else if (tokenRole === 'ADMIN') {
+                permissions = [...new Set([...permissions,
+                    'users.read','users.create','users.update','users.delete','users.roles.manage',
+                    'tenants.read','tenants.write','tenants.manage',
+                    'email.template.manage','email.logs.read',
+                    'system.config.read','system.config.write',
+                    'payments.manage','payments.read',
+                    'notifications.send','ai.entitlements.manage','ai.usage.read',
+                    'audit.read','security.read','tickets.manage'])];
+            } else if (tokenRole === 'AUDITOR') {
+                permissions = [...new Set([...permissions,
+                    'users.read','tenants.read','email.logs.read','system.config.read',
+                    'payments.read','ai.usage.read','audit.read','security.read'])];
+            } else if (tokenRole === 'SUPPORT') {
+                permissions = [...new Set([...permissions,
+                    'users.read','email.logs.read','tenants.read','tickets.manage'])];
+            }
             mfaVerified = Boolean(token?.claims?.firebase?.sign_in_second_factor || token?.claims?.sign_in_second_factor);
             mfaEnrolled = Array.isArray(user.multiFactor?.enrolledFactors) && user.multiFactor.enrolledFactors.length > 0;
         } catch {
@@ -167,7 +192,7 @@ const Admin = () => {
         const hasAdminClaim = ['ADMIN', 'SUPER_ADMIN', 'AUDITOR', 'SUPPORT'].includes(claimsRole) || token?.claims?.admin === true || token?.claims?.superAdmin === true || token?.claims?.permissions?.includes('*');
         const allowed = hasAdminClaim || (await checkIfAdmin(user.uid));
 
-        setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, mfaVerified, mfaEnrolled, hasMfa: mfaVerified, user });
+        setAuthState({ checking: false, allowed, isSuperAdmin: isSuperAdminUser, mfaVerified, mfaEnrolled, hasMfa: mfaVerified, user, permissions, role });
     }), []);
 
     const handleLogout = async () => {
@@ -177,8 +202,26 @@ const Admin = () => {
     if (authState.checking) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600 font-medium" role="status">Verifying administrator access…</div>;
     if (!authState.allowed) return <Navigate to={authState.user ? "/dashboard" : "/"} replace />;
 
+    // Client-side permission gating (UI only; backend is authoritative).
+    const hasPerm = (p) => authState.isSuperAdmin || authState.permissions.includes('*') || authState.permissions.includes(p);
+    const hasAnyPerm = (...ps) => ps.some(hasPerm);
+    // Compute the first accessible tab for this role (used as redirect target when deep-link is forbidden).
+    const FIRST_ACCESSIBLE_TAB = (() => {
+        // Ordered by breadth: dashboard > users > help-desk > audit-logs for least-privilege.
+        if (hasPerm('users.read')) return 'users';
+        if (hasPerm('tickets.manage')) return 'help-desk';
+        if (hasPerm('audit.read')) return 'audit-logs';
+        return 'dashboard';
+    })();
+    const RequireTabPerm = ({ required, children }) => {
+        if (!required) return children;
+        const need = Array.isArray(required) ? required : [required];
+        if (need.some((p) => p === '*' ? authState.isSuperAdmin : hasPerm(p))) return children;
+        return <Navigate to={`/adm/${FIRST_ACCESSIBLE_TAB}`} replace />;
+    };
+
     return (
-        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '', hasMfa: authState.mfaVerified === true, mfaVerified: authState.mfaVerified === true, mfaEnrolled: authState.mfaEnrolled === true }}>
+        <AdminProvider value={{ isSuperAdmin: authState.isSuperAdmin, userEmail: authState.user?.email || '', uid: authState.user?.uid || '', hasMfa: authState.mfaVerified === true, mfaVerified: authState.mfaVerified === true, mfaEnrolled: authState.mfaEnrolled === true, permissions: authState.permissions, role: authState.role, hasPerm, hasAnyPerm }}>
         <div className="admin min-h-screen bg-slate-50 font-sans text-slate-900">
             <div className="admin__left">
                 <Sidebar
@@ -211,30 +254,118 @@ const Admin = () => {
                 )}
                 <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6" tabIndex={-1}>
                     <Routes>
-                        <Route path="/" element={<Navigate to="dashboard" replace />} />
-                        <Route path="dashboard" element={<Dashboard />} />
-                        <Route path="audit-logs" element={<AdminAuditLogs />} />
-                        <Route path="queues" element={<PlatformQueues />} />
-                        <Route path="tenants" element={<PlatformTenants />} />
-                        <Route path="security" element={<PlatformSecurity />} />
-                        <Route path="operations" element={<PlatformOperations />} />
-                        <Route path="attention" element={<PlatformAttention />} />
-                        <Route path="health" element={<PlatformHealth />} />
-                        <Route path="operators" element={<PlatformOperators />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="user/ss" element={<UserEdit />} />
-                        <Route path="users" element={<UsersManager />} />
-                        <Route path="messages" element={<Messages />} />
-                        <Route path="help-desk" element={<HelpDesk />} />
-                        <Route path="reviews" element={<Reviews />} />
-                        <Route path="trustedby" element={<TrustedBy />} />
-                        <Route path="employer-applications" element={<EmployerApplications />} />
-                        <Route path="jobs-manager" element={<JobsManager />} />
-                        <Route path="company-management" element={<CompanyManagement />} />
-                        <Route path="blog-management" element={<BlogManagement />} />
-                        <Route path="landing-pages" element={<LandingPages />} />
-                        <Route path="phrases" element={<Phrases />} />
-                        <Route path="*" element={<Navigate to="dashboard" replace />} />
+                        <Route path="/" element={<Navigate to={FIRST_ACCESSIBLE_TAB} replace />} />
+                        <Route path="dashboard" element={
+                            <RequireTabPerm>
+                                <Dashboard />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="audit-logs" element={
+                            <RequireTabPerm required="audit.read">
+                                <AdminAuditLogs />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="queues" element={
+                            <RequireTabPerm required={['system.config.read','security.read']}>
+                                <PlatformQueues />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="tenants" element={
+                            <RequireTabPerm required="tenants.read">
+                                <PlatformTenants />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="security" element={
+                            <RequireTabPerm required={['security.read','system.config.read']}>
+                                <PlatformSecurity />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="operations" element={
+                            <RequireTabPerm required={['system.config.read','security.read']}>
+                                <PlatformOperations />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="attention" element={
+                            <RequireTabPerm required={['system.config.read','tickets.manage']}>
+                                <PlatformAttention />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="health" element={
+                            <RequireTabPerm required="security.read">
+                                <PlatformHealth />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="operators" element={
+                            <RequireTabPerm required="users.roles.manage">
+                                <PlatformOperators />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="settings" element={
+                            <RequireTabPerm required={['system.config.read','system.config.write','payments.manage']}>
+                                <Settings />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="user/ss" element={
+                            <RequireTabPerm required={['users.read','users.update']}>
+                                <UserEdit />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="users" element={
+                            <RequireTabPerm required="users.read">
+                                <UsersManager />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="messages" element={
+                            <RequireTabPerm required="notifications.send">
+                                <Messages />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="help-desk" element={
+                            <RequireTabPerm required={['tickets.manage','email.logs.read']}>
+                                <HelpDesk />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="reviews" element={
+                            <RequireTabPerm required="system.config.write">
+                                <Reviews />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="trustedby" element={
+                            <RequireTabPerm required="system.config.write">
+                                <TrustedBy />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="employer-applications" element={
+                            <RequireTabPerm required={['applications.review','users.read']}>
+                                <EmployerApplications />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="jobs-manager" element={
+                            <RequireTabPerm required={['jobs.manage','system.config.write']}>
+                                <JobsManager />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="company-management" element={
+                            <RequireTabPerm required={['jobs.manage','system.config.write']}>
+                                <CompanyManagement />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="blog-management" element={
+                            <RequireTabPerm required="system.config.write">
+                                <BlogManagement />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="landing-pages" element={
+                            <RequireTabPerm required="system.config.write">
+                                <LandingPages />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="phrases" element={
+                            <RequireTabPerm required="system.config.write">
+                                <Phrases />
+                            </RequireTabPerm>
+                        } />
+                        <Route path="*" element={<Navigate to={FIRST_ACCESSIBLE_TAB} replace />} />
                     </Routes>
                 </main>
             </div>
