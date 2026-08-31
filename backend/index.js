@@ -5889,9 +5889,22 @@ app.post('/api/auth/preview-login', async (req, res) => {
         return res.status(400).json({ error: { code: 'auth/weak-password', message: 'Password must be at least 6 characters.' } });
     }
     const uid = 'local_' + crypto.createHash('sha256').update(email).digest('hex').slice(0, 22);
-    const adminEmails = String(process.env.PREVIEW_ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-    const superEmails = String(process.env.PREVIEW_SUPER_ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-    const role = superEmails.includes(email) ? 'SUPER_ADMIN' : adminEmails.includes(email) ? 'ADMIN' : 'USER';
+    const splitList = (v) => String(v || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const superEmails = splitList(process.env.PREVIEW_SUPER_ADMIN_EMAILS);
+    const adminEmails = splitList(process.env.PREVIEW_ADMIN_EMAILS);
+    const supportEmails = splitList(process.env.PREVIEW_SUPPORT_EMAILS);
+    const auditorEmails = splitList(process.env.PREVIEW_AUDITOR_EMAILS);
+    const enterpriseAdminEmails = splitList(process.env.PREVIEW_ENTERPRISE_ADMIN_EMAILS);
+    const enterpriseMemberEmails = splitList(process.env.PREVIEW_ENTERPRISE_MEMBER_EMAILS);
+    const employerEmails = splitList(process.env.PREVIEW_EMPLOYER_EMAILS);
+    let role = 'USER';
+    if (superEmails.includes(email)) role = 'SUPER_ADMIN';
+    else if (adminEmails.includes(email)) role = 'ADMIN';
+    else if (supportEmails.includes(email)) role = 'SUPPORT';
+    else if (auditorEmails.includes(email)) role = 'AUDITOR';
+    else if (enterpriseAdminEmails.includes(email)) role = 'ENTERPRISE_ADMIN';
+    else if (enterpriseMemberEmails.includes(email)) role = 'ENTERPRISE_MEMBER';
+    else if (employerEmails.includes(email)) role = 'EMPLOYER';
     const now = Math.floor(Date.now() / 1000);
     const token = issueLocalTestToken({
         uid, email, role,
