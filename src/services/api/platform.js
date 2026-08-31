@@ -57,7 +57,6 @@ export const safeDbOperation = async (operation, requireAuth = true) => {
             String(error?.message || '').includes('quota') ||
             String(error?.message || '').includes('429')
         ) {
-            console.debug('Safe database operation handled non-fatal error:', error?.message || error?.code);
             return null;
         }
         throw error;

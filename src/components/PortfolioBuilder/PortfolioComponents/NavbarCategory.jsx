@@ -270,7 +270,6 @@ const NavbarCategory = {
     resolveFields: (data) => {
         const { template = 'horizontal' } = data.props || {};
 
-        console.log('🔧 DEBUG: Navbar resolveFields called with template:', template);
 
         // Always include the template selector field
         const baseFields = {
@@ -284,7 +283,6 @@ const NavbarCategory = {
         // Get template-specific fields
         const templateFields = templateFieldMappings[template] || templateFieldMappings.horizontal;
 
-        console.log('🔧 DEBUG: Resolved fields for Navbar template:', template, Object.keys(templateFields));
 
         return {
             ...baseFields,
@@ -311,7 +309,6 @@ const NavbarCategory = {
     },
     render: ({ template, ...props }) => {
         const SelectedTemplate = navbarTemplates[template] || Navbar1;
-        console.log('🔧 DEBUG: Navbar template selected:', template);
 
         // Merge with default props to ensure all required props are available
         const mergedProps = { ...NavbarCategory.defaultProps, ...props };
@@ -319,7 +316,6 @@ const NavbarCategory = {
         // Remove template from props since it's used for template selection
         const { template: _, ...templateProps } = mergedProps;
 
-        console.log('🔧 DEBUG: Navbar merged props:', templateProps);
 
         return SelectedTemplate.render(templateProps);
     },

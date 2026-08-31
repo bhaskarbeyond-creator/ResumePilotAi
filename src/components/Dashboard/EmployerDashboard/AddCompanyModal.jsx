@@ -149,7 +149,6 @@ const AddCompanyModal = ({ isOpen, onClose, showToast, t }) => {
             const result = await createCompany(user.uid, formData);
 
             if (result.success) {
-                console.log('✅ Company created successfully:', result.companyId);
                 showToast && showToast('success', t('JobsUpdate.AddCompanyModal.messages.success', 'Success'), t('JobsUpdate.AddCompanyModal.messages.companyAdded', 'Company added successfully! It will be reviewed by our team.'));
                 handleClose();
             } else {

@@ -204,7 +204,6 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
             const result = await updateJobPosting(job.id, jobData, job.revision);
 
             if (result.success) {
-                console.log('✅ Job updated successfully');
                 setShowSuccess(true);
 
                 // Call callback if provided
@@ -243,7 +242,6 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
         setLoadingCompanies(true);
         try {
             const approvedCompanies = await getApprovedEmployerCompanies(user.uid);
-            console.log('Found approved companies:', approvedCompanies.length);
             setCompanies(approvedCompanies);
         } catch (error) {
             console.error('Error loading companies:', error);

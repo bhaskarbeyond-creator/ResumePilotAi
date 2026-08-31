@@ -40,7 +40,6 @@ class Skill extends Component {
         }
     }
     handleDelete() {
-        console.log('in');
         this.props.handleDelete('Skills', 2); // This one responsable for removing the skill from the parent state
         this.props.handleComponentDelete('Skills', 2); // This one responsable to remove the skill component from parent
     }

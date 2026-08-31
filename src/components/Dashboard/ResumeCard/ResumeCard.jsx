@@ -43,9 +43,7 @@ class ResumeCard extends Component {
 
         checkIfInFavourites(fire.auth().currentUser?.uid, this.props.document.id)
             .then((_res) => {})
-            .catch((err) => {
-                console.log(err);
-            });
+            .catch((_err) => { /* favourites preload not critical */ });
     };
     // a function that checks if the id of the documents is in this.props.favourites if it is then it will return true
     checkIfFavourite(id) {

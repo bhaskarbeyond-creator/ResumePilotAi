@@ -11,19 +11,11 @@ const LocationAutocomplete = ({ value, onChange, placeholder = 'Location', class
 
     // Debug logging
     useEffect(() => {
-        console.log('LocationAutocomplete Debug:', {
-            isLoaded,
-            loadError,
-            hasGoogle: !!window.google,
-            hasMaps: !!(window.google && window.google.maps),
-            hasPlaces: !!(window.google && window.google.maps && window.google.maps.places),
-        });
     }, [isLoaded, loadError]);
 
     useEffect(() => {
         // Wait for Google Maps API to be loaded
         if (!isLoaded) {
-            console.log('Google Maps API not loaded yet');
             return;
         }
 
@@ -110,7 +102,6 @@ const LocationAutocomplete = ({ value, onChange, placeholder = 'Location', class
 
     // If Google Maps failed to load or is not available, use simple fallback
     if (loadError || !isLoaded) {
-        console.log('Using SimpleLocationInput fallback - loadError:', loadError, 'isLoaded:', isLoaded);
         return <SimpleLocationInput value={value} onChange={onChange} placeholder={placeholder} className={className} />;
     }
 

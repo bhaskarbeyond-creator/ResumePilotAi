@@ -89,7 +89,6 @@ class ProgressBar extends Component {
         const percent = Math.max(0, Math.min(100, Math.round(score)));
         
         // Debug logging (remove in production)
-        console.log('Progress calculation:', debug.join(', '), `Total: ${score.toFixed(1)}/100 = ${percent}%`);
         
         this.setState({ progress: percent });
     }

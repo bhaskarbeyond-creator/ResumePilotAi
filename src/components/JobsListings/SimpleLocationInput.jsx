@@ -43,7 +43,6 @@ const SimpleLocationInput = ({ value, onChange, placeholder = 'Location', classN
 
     // Debug logging
     useEffect(() => {
-        console.log('SimpleLocationInput is being used as fallback');
     }, []);
 
     useEffect(() => {
@@ -59,13 +58,11 @@ const SimpleLocationInput = ({ value, onChange, placeholder = 'Location', classN
 
     const handleInputChange = (e) => {
         const inputValue = e.target.value;
-        console.log('SimpleLocationInput - Input changed:', inputValue);
         onChange(inputValue);
 
         if (inputValue.length > 1) {
             const filtered = POPULAR_LOCATIONS.filter((location) => location.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 8); // Limit to 8 suggestions
 
-            console.log('SimpleLocationInput - Filtered suggestions:', filtered);
             setFilteredSuggestions(filtered);
             setShowSuggestions(filtered.length > 0);
         } else {

@@ -766,24 +766,20 @@ const BuildResume = () => {
             isStatusLoaded: authChecked
         });
 
-        console.log('Evaluated download access decision:', access);
 
         if (access.allowed) {
-            console.log(`Download allowed. Reason: ${access.reason}`);
             showToast('Download');
             await performDownload();
             return;
         }
 
         if (access.reason === 'LOGIN_REQUIRED') {
-            console.log('User not logged in, showing login prompt');
             alert(t('BuildResume.errors.loginRequired', 'Please log in to download your resume. You will be redirected to the login page.'));
             navigate('/');
             return;
         }
 
         if (access.reason === 'PREMIUM_REQUIRED') {
-            console.log('Non-premium user with subscriptions enabled, redirecting to billing');
 
             const saved = await persistLatest({ manual: true });
             if (!saved) {
@@ -1001,7 +997,6 @@ const BuildResume = () => {
         // Fetch global subscription status first
         getSubscriptionStatus()
             .then((subscriptionData) => {
-                console.log('Global subscription status:', subscriptionData);
                 setUserData((prevData) => ({
                     ...prevData,
                     subscriptionsStatus: subscriptionData,

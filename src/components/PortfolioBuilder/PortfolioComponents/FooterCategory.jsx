@@ -169,7 +169,6 @@ const FooterCategory = {
     resolveFields: (data) => {
         const { template = 'detailed' } = data.props || {};
 
-        console.log('🔧 DEBUG: Footer resolveFields called with template:', template);
 
         // Always include the template selector field
         const baseFields = {
@@ -183,7 +182,6 @@ const FooterCategory = {
         // Get template-specific fields
         const templateFields = templateFieldMappings[template] || templateFieldMappings.detailed;
 
-        console.log('🔧 DEBUG: Resolved fields for Footer template:', template, Object.keys(templateFields));
 
         return {
             ...baseFields,
@@ -208,7 +206,6 @@ const FooterCategory = {
     },
     render: ({ template, ...props }) => {
         const SelectedTemplate = footerTemplates[template] || Footer1;
-        console.log('🔧 DEBUG: Footer template selected:', template);
 
         // Merge with default props to ensure all required props are available
         const mergedProps = { ...FooterCategory.defaultProps, ...props };
@@ -216,7 +213,6 @@ const FooterCategory = {
         // Remove template from props since it's used for template selection
         const { template: _, ...templateProps } = mergedProps;
 
-        console.log('🔧 DEBUG: Footer merged props:', templateProps);
 
         return SelectedTemplate.render(templateProps);
     },

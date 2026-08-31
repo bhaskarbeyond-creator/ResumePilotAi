@@ -1,0 +1,1022 @@
+# Wave 10 Codebase Completeness Scan
+
+Generated: 2026-08-31T13:40:49.565Z
+
+- Scanned directories: src, backend, tests
+- Total findings: **986**
+
+## Severity Summary
+
+| Severity | Count |
+|---|---:|
+| high | 13 |
+| medium | 896 |
+| low | 64 |
+| info | 13 |
+
+## TODO/FIXME (13)
+
+- **INFO** `src/enterprise/components/EnterpriseSettingsTab.jsx:307` — `<strong style={{ color: 'var(--enterprise-ink)' }}>Temporary Organization Suspension</strong>`
+- **INFO** `src/enterprise/components/EnterpriseSupportTab.jsx:85` — `notify('Temporary support access granted with full audit recording.');`
+- **INFO** `src/enterprise/components/EnterpriseSupportTab.jsx:253` — `<h3>Authorize Temporary Support Grant</h3>`
+- **INFO** `backend/index.js:2198` — `// Buffer the PDF instead of writing to disk. A temporary file on local disk is`
+- **INFO** `backend/test/export-pipeline.test.js:280` — `test('the PDF pipeline writes no temporary artifacts into the backend directory', async () => {`
+- **INFO** `tests/certification/reconcile-counts.mjs:53` — `return { tests: get('tests'), pass: get('pass'), fail: get('fail'), cancelled: get('cancelled'), skipped: get('skipped'), todo: get('todo') };`
+- **INFO** `tests/certification/reconcile-counts.mjs:77` — `let secTotal = { tests: 0, pass: 0, fail: 0, cancelled: 0, skipped: 0, todo: 0 };`
+- **INFO** `tests/certification/reconcile-counts.mjs:99` — `let rcTotal = { tests: 0, pass: 0, fail: 0, cancelled: 0, skipped: 0, todo: 0 };`
+- **INFO** `tests/certification/reconcile-counts.mjs:118` — `let browserCounts = { tests: 0, pass: 0, fail: 0, cancelled: 0, skipped: 0, todo: 0 };`
+- **INFO** `tests/certification/reconcile-counts.mjs:121` — `browserCounts = { tests: s.total, pass: s.passed, fail: s.failed, cancelled: 0, skipped: 0, todo: 0 };`
+- **INFO** `tests/certification/reconcile-counts.mjs:137` — `results['frontend-product'] = { counts: { tests, pass, fail, cancelled: 0, skipped: 0, todo: 0 }, exitCode: r.status, tail: out.slice(-300) };`
+- **INFO** `tests/certification/reconcile-counts.mjs:142` — `const total = { tests: 0, pass: 0, fail: 0, cancelled: 0, skipped: 0, todo: 0 };`
+- **INFO** `tests/superadmin-live.spec.js:33` — `// Create the temporary test user`
+
+## console.log (production leak) (123)
+
+- **MEDIUM** `src/capture_templates.js:18` — `console.log(\`\nCapturing ${tpl} preview with candidate's EXACT screenshot data...\`);`
+- **MEDIUM** `src/capture_templates.js:50` — `console.log(\`  Saved: template_${tpl.toLowerCase()}.png\`);`
+- **MEDIUM** `src/capture_templates.js:52` — `console.log(\`  Failed ${tpl}: ${err.message}\`);`
+- **MEDIUM** `src/components/BuildResume/BuildResume.jsx:769` — `console.log('Evaluated download access decision:', access);`
+- **MEDIUM** `src/components/BuildResume/BuildResume.jsx:772` — `console.log(\`Download allowed. Reason: ${access.reason}\`);`
+- **MEDIUM** `src/components/BuildResume/BuildResume.jsx:779` — `console.log('User not logged in, showing login prompt');`
+- **MEDIUM** `src/components/BuildResume/BuildResume.jsx:786` — `console.log('Non-premium user with subscriptions enabled, redirecting to billing');`
+- **MEDIUM** `src/components/BuildResume/BuildResume.jsx:1004` — `console.log('Global subscription status:', subscriptionData);`
+- **MEDIUM** `src/components/Dashboard/CoversList/CoversList.jsx:41` — `console.log('array is this');`
+- **MEDIUM** `src/components/Dashboard/CoversList/CoversList.jsx:42` — `console.log(array);`
+- **MEDIUM** `src/components/Dashboard/CoversList/CoversList.jsx:97` — `console.log('Starting new cover letter creation');`
+- **MEDIUM** `src/components/Dashboard/DashboardFavourites/DashboardFavourites.jsx:22` — `console.log('fetch Favourites');`
+- **MEDIUM** `src/components/Dashboard/DashboardFavourites/DashboardFavourites.jsx:104` — `console.log(favourite);`
+- **MEDIUM** `src/components/Dashboard/DashboardPagination/DashboardPagination.jsx:25` — `console.log(pageNumbers);`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:152` — `console.log('✅ Company created successfully:', result.companyId);`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx:34` — `console.log('❌ No user found, cannot load companies');`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx:43` — `console.log('📊 Raw companies from database:', employerCompanies);`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx:44` — `console.log('📊 Number of companies found:', employerCompanies ? employerCompanies.length : 0);`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx:75` — `console.log('✅ Transformed companies:', transformedCompanies);`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:207` — `console.log('✅ Job updated successfully');`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:246` — `console.log('Found approved companies:', approvedCompanies.length);`
+- **MEDIUM** `src/components/Dashboard/ResumeCard/ResumeCard.jsx:47` — `console.log(err);`
+- **MEDIUM** `src/components/Form/progress-bar/ProgressBar.jsx:92` — `console.log('Progress calculation:', debug.join(', '), \`Total: ${score.toFixed(1)}/100 = ${percent}%\`);`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:143` — `console.log("Initializing editor with HTML content:", htmlContent);`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:157` — `console.log("Successfully initialized editor content");`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:193` — `console.log("Updating editor with external content:", htmlContent);`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:203` — `console.log("Cleared editor content");`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:211` — `console.log("Successfully updated editor content");`
+- **MEDIUM** `src/components/Form/skill-component/Skill.jsx:43` — `console.log('in');`
+- **MEDIUM** `src/components/JobsLanding/JobsLanding.jsx:28` — `console.log('User signed out successfully');`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:77` — `console.log('Found approved companies:', approvedCompanies.length);`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:175` — `console.log('User is employer:', isEmployer);`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:216` — `console.log('Job creation result:', result);`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:220` — `console.log('Job created successfully with ID:', result.jobId);`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:219` — `console.log('✅ Job created successfully with ID:', result.jobId);`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:250` — `console.log('Found approved companies:', approvedCompanies.length);`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:29` — `console.log('Google Places services initialized');`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:99` — `console.log('Reinitializing Google Places service after quota error');`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:122` — `console.log('Google Places API response status:', status);`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:149` — `console.log('No results found for:', input);`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:266` — `console.log('Using SimpleLocationInput fallback for custom autocomplete');`
+- **MEDIUM** `src/components/JobsListings/GoogleMapsProvider.jsx:56` — `console.log('Google Maps script loaded successfully');`
+- **MEDIUM** `src/components/JobsListings/GoogleMapsProvider.jsx:61` — `console.log('Google Maps Places API is available');`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:14` — `console.log('LocationAutocomplete Debug:', {`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:26` — `console.log('Google Maps API not loaded yet');`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:113` — `console.log('Using SimpleLocationInput fallback - loadError:', loadError, 'isLoaded:', isLoaded);`
+- **MEDIUM** `src/components/JobsListings/SimpleLocationInput.jsx:46` — `console.log('SimpleLocationInput is being used as fallback');`
+- **MEDIUM** `src/components/JobsListings/SimpleLocationInput.jsx:62` — `console.log('SimpleLocationInput - Input changed:', inputValue);`
+- **MEDIUM** `src/components/JobsListings/SimpleLocationInput.jsx:68` — `console.log('SimpleLocationInput - Filtered suggestions:', filtered);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/AboutCategory.jsx:399` — `console.log('🔧 DEBUG: About resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/AboutCategory.jsx:413` — `console.log('🔧 DEBUG: Resolved fields for About template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/AboutCategory.jsx:429` — `{ skill: 'JavaScript', level: 95, category: 'frontend', command: 'node -e "console.log(\'JS\')"' },`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/AboutCategory.jsx:447` — `console.log('🔧 DEBUG: About template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/AboutCategory.jsx:455` — `console.log('🔧 DEBUG: About merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ContactCategory.jsx:242` — `console.log('🔧 DEBUG: Contact resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ContactCategory.jsx:256` — `console.log('🔧 DEBUG: Resolved fields for Contact template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ContactCategory.jsx:340` — `console.log('🔧 DEBUG: Contact template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ContactCategory.jsx:348` — `console.log('🔧 DEBUG: Contact merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ExperienceCategory.jsx:449` — `console.log('🔧 DEBUG: Experience resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ExperienceCategory.jsx:463` — `console.log('🔧 DEBUG: Resolved fields for Experience template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ExperienceCategory.jsx:511` — `console.log('🔧 DEBUG: Experience template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ExperienceCategory.jsx:519` — `console.log('🔧 DEBUG: Experience merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/FooterCategory.jsx:172` — `console.log('🔧 DEBUG: Footer resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/FooterCategory.jsx:186` — `console.log('🔧 DEBUG: Resolved fields for Footer template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/FooterCategory.jsx:211` — `console.log('🔧 DEBUG: Footer template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/FooterCategory.jsx:219` — `console.log('🔧 DEBUG: Footer merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Hero4.jsx:174` — `<p className="text-gray-400 text-lg mb-4 font-mono">console.log("Hello World");</p>`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/HeroCategory.jsx:287` — `console.log('🔧 DEBUG: Hero resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/HeroCategory.jsx:301` — `console.log('🔧 DEBUG: Resolved fields for template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/HeroCategory.jsx:338` — `console.log('🔧 DEBUG: Hero template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/HeroCategory.jsx:358` — `console.log('🔧 DEBUG: Hero merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:273` — `console.log('🔧 DEBUG: Navbar resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:287` — `console.log('🔧 DEBUG: Resolved fields for Navbar template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:314` — `console.log('🔧 DEBUG: Navbar template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:322` — `console.log('🔧 DEBUG: Navbar merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ProjectsCategory.jsx:216` — `console.log('🔧 DEBUG: Projects resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ProjectsCategory.jsx:230` — `console.log('🔧 DEBUG: Resolved fields for Projects template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ProjectsCategory.jsx:271` — `console.log('🔧 DEBUG: Projects template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ProjectsCategory.jsx:279` — `console.log('🔧 DEBUG: Projects merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ServicesCategory.jsx:103` — `console.log('🔧 DEBUG: Services resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ServicesCategory.jsx:123` — `console.log('🔧 DEBUG: Resolved fields for Services template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ServicesCategory.jsx:173` — `console.log('🔧 DEBUG: Services template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/ServicesCategory.jsx:181` — `console.log('🔧 DEBUG: Services merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/SkillsCategory.jsx:379` — `console.log('🔧 DEBUG: Skills resolveFields called with template:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/SkillsCategory.jsx:393` — `console.log('🔧 DEBUG: Resolved fields for Skills template:', template, Object.keys(templateFields));`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/SkillsCategory.jsx:419` — `console.log('🔧 DEBUG: Skills template selected:', template);`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/SkillsCategory.jsx:427` — `console.log('🔧 DEBUG: Skills merged props:', templateProps);`
+- **MEDIUM** `src/components/PortfolioBuilder/templateUtils.js:241` — `console.log(\`🔧 Loading template component: ${component.type}\`);`
+- **MEDIUM** `src/components/PortfolioBuilder/templateUtils.js:405` — `console.log('🔒 SECURITY: All templates passed security validation ✅');`
+- **MEDIUM** `src/components/welcome/Welcome.jsx:439` — `console.log('no pages found');`
+- **MEDIUM** `src/components/welcome/Welcome.jsx:576` — `.catch((error) => console.log(error));`
+- **MEDIUM** `src/components/welcome/Welcome.jsx:582` — `.catch((error) => console.log(error));`
+- **MEDIUM** `src/hooks/useOAuthSignIn.js:120` — `console.log('[Google Fallback] Firebase Auth not configured — using GIS SDK fallback.');`
+- **MEDIUM** `src/hooks/useOAuthSignIn.js:164` — `console.log('[FB Fallback] Firebase Auth not configured — using Direct FB SDK fallback.');`
+- **MEDIUM** `backend/index.js:140` — `console.log('[Firebase Admin] Initialized via environment variables (identity only)');`
+- **MEDIUM** `backend/index.js:144` — `console.log('[Firebase Admin] Initialized via Application Default Credentials (identity only)');`
+- **MEDIUM** `backend/index.js:148` — `console.log('[Firebase Admin] Initialized without credentials (limited local mode)');`
+- **MEDIUM** `backend/index.js:167` — `console.log('[Enterprise Architecture]', JSON.stringify({`
+- **MEDIUM** `backend/index.js:202` — `console.log('[Fonts] Auto-synced template font files to Linux system font cache.');`
+- **MEDIUM** `backend/index.js:264` — `console.log(\`[Shutdown] ${signal} received — draining connections...\`);`
+- **MEDIUM** `backend/index.js:267` — `console.log('[Shutdown] Clean exit complete.');`
+- **MEDIUM** `backend/index.js:708` — `console.log(\`[Stripe Webhook] verified order ${orderId}\`);`
+- **MEDIUM** `backend/index.js:2182` — `console.log('Playwright exporting PDF, navigating to: ', targetUrl);`
+- **MEDIUM** `backend/index.js:4168` — `console.log('[Notification outbox] MySQL-backed delivery worker enabled.');`
+- **MEDIUM** `backend/index.js:4295` — `console.log('HTTPS Server running on port ' + port);`
+- **MEDIUM** `backend/index.js:4307` — `console.log('HTTP Server running on port ' + port);`
+- **MEDIUM** `backend/index.js:4315` — `console.log(\`[Shutdown] ${signal} received — draining connections...\`);`
+- **MEDIUM** `backend/index.js:4321` — `console.log('[Shutdown] Clean exit complete.');`
+- **MEDIUM** `backend/index.js:4328` — `console.log('[Shutdown] Clean exit complete.');`
+- **MEDIUM** `backend/index.js:4423` — `console.log('[SA Config] ✅ Test credentials validated successfully');`
+- **MEDIUM** `backend/index.js:4464` — `console.log('[SA Config] Service account credentials written with owner-only permissions');`
+- **MEDIUM** `backend/index.js:4486` — `console.log('[SA Config] Firebase Admin identity credentials hot-reloaded');`
+- **MEDIUM** `backend/reset-pwd.js:27` — `console.log('Verified SUPER_ADMIN role for the configured account.');`
+- **MEDIUM** `backend/reset-pwd.js:35` — `console.log('Created the configured ADMIN account.');`
+- **MEDIUM** `backend/reset-pwd.js:38` — `console.log('Verified ADMIN role for the configured account.');`
+- **MEDIUM** `backend/routes/email.js:1312` — `console.log('✅ Primary SMTP recovered! Resetting circuit breaker counter.');`
+- **MEDIUM** `backend/routes/email.js:1361` — `console.log(\`✅ Secondary Fallback Relay dispatched email successfully! (ID: ${info.messageId})\`);`
+- **MEDIUM** `backend/routes/email.js:2101` — `console.log(\`[Email Skipped] Template '${templateType}' is disabled in Admin settings.\`);`
+- **MEDIUM** `backend/test-routes.js:42` — `console.log("Token acquired.");`
+- **MEDIUM** `backend/test-routes.js:61` — `console.log(\`Testing ${ep.method} ${ep.path}...\`);`
+- **MEDIUM** `backend/test-routes.js:84` — `console.log(\`✅ ${status} OK\`);`
+- **MEDIUM** `backend/test-routes.js:88` — `if (pass) console.log("All routes verified successfully.");`
+- **MEDIUM** `backend/test-routes.js:89` — `else console.log("Some routes failed zero-tolerance audit.");`
+
+## empty catch (42)
+
+- **LOW** `src/components/CoverLetter/CoverLetter.jsx:268` — `} catch (_e) {}`
+- **LOW** `src/components/CoverLetter/CoverLetter.jsx:551` — `} catch (_) {}`
+- **LOW** `src/components/CoverLetter/CoverLetter.jsx:705` — `try { printFrame.remove(); } catch (_) {}`
+- **LOW** `src/components/CoverLetter/CoverLetter.jsx:777` — `try { printFrame.remove(); } catch (_) {}`
+- **LOW** `src/components/admin/usersManager/UsersManager.jsx:61` — `} catch (_) {}`
+- **LOW** `src/components/auth/login/Login.jsx:35` — `} catch (_e) {}`
+- **LOW** `src/components/auth/login/Login.jsx:45` — `} catch (_e) {}`
+- **LOW** `src/components/auth/login/Login.jsx:92` — `} catch (_e) {}`
+- **LOW** `src/components/auth/login/Login.jsx:109` — `} catch (_e) {}`
+- **LOW** `src/components/auth/login/Login.jsx:155` — `try { localStorage.setItem('remember_email', email); } catch(_e) {}`
+- **LOW** `src/components/auth/login/Login.jsx:157` — `try { localStorage.removeItem('remember_email'); } catch(_e) {}`
+- **LOW** `src/components/auth/login/Login.jsx:277` — `} catch (_) {}`
+- **LOW** `src/components/auth/register/Register.jsx:35` — `} catch (_e) {}`
+- **LOW** `src/components/auth/register/Register.jsx:80` — `} catch (_e) {}`
+- **LOW** `src/components/auth/register/Register.jsx:91` — `} catch (_e) {}`
+- **LOW** `src/components/auth/register/Register.jsx:144` — `} catch (_) {}`
+- **LOW** `src/services/adminAiSettings.js:48` — `} catch (_) {}`
+- **LOW** `src/services/aiService.js:89` — `} catch (_) {}`
+- **LOW** `src/services/aiService.js:161` — `} catch (_) {}`
+- **LOW** `src/services/aiService.js:219` — `} catch (_) {}`
+- **LOW** `src/services/api/platform.js:109` — `} catch (_) {}`
+- **LOW** `src/services/api/platform.js:1104` — `} catch (_) {}`
+- **LOW** `src/services/mfaService.js:80` — `} catch (_) {}`
+- **LOW** `src/services/resumeParser.js:201` — `} catch (_) { }`
+- **LOW** `src/utils/safeInternalPath.js:37` — `} catch (_) {}`
+- **LOW** `src/utils/safeInternalPath.js:40` — `} catch (_) {}`
+- **LOW** `src/utils/safeInternalPath.js:48` — `} catch (_) {}`
+- **LOW** `src/utils/safeInternalPath.js:57` — `} catch (_) {}`
+- **LOW** `backend/index.js:205` — `} catch (_e) {}`
+- **LOW** `backend/index.js:2177` — `} catch (_) {}`
+- **LOW** `backend/index.js:3980` — `} catch (_) {}`
+- **LOW** `backend/index.js:4320` — `} catch (_) {}`
+- **LOW** `backend/index.js:4425` — `if (testAdmin) { try { await testAdmin.delete(); } catch (_) {} }`
+- **LOW** `backend/index.js:4432` — `if (testAdmin) { try { await testAdmin.delete(); } catch (_) {} }`
+- **LOW** `backend/repositories/MySQLRepository.js:445` — `try { extra = typeof r.extra_data === 'string' ? JSON.parse(r.extra_data) : r.extra_data; } catch (_e) {}`
+- **LOW** `backend/repositories/MySQLRepository.js:1647` — `} catch (_e) {}`
+- **LOW** `backend/test/database-admin.test.js:99` — `} catch (_e) {}`
+- **LOW** `backend/test/feature-flags.test.js:96` — `test.after(async () => { await resetFlagStore(); try { await getPool().end(); } catch (_e) {} });`
+- **LOW** `backend/test/platform-health-rbac.test.js:243` — `} catch (_) {}`
+- **LOW** `backend/test/superadmin-platform.test.js:349` — `} catch (_) {}`
+- **LOW** `tests/admin-superadmin-live-certification.spec.js:55` — `try { body = JSON.parse(text); } catch (_) {}`
+- **LOW** `tests/helpers/fencing-worker-helper.mjs:29` — `try { await pool.end(); } catch (_) {}`
+
+## eval() (1)
+
+- **HIGH** `tests/test-interview-coach-browser.mjs:97` — `'Using eval()',`
+
+## possible hardcoded secret (12)
+
+- **HIGH** `backend/enterprise-test/enterprise-mariadb-dataplane.test.js:84` — `const created = await repository.createResource(context, { resourceType: 'RESUME', classification: 'CONFIDENTIAL', payload: { secret: 'compensation-band-9' } });`
+- **HIGH** `backend/enterprise-test/enterprise-mariadb-isolation.test.js:94` — `.send({ resourceType: 'RESUME', payload: { secret: 'alice-compensation' } });`
+- **HIGH** `backend/test/ai-admin.test.js:46` — `const existing = { openai: { apiKey: 'existing-server-key' } };`
+- **HIGH** `backend/test/ai-adversarial-and-stress.test.js:138` — `.send({ operation: 'generate-summary', payload: { jobTitle: 'Engineer' }, apiKey: 'sk-injected-attacker-key' });`
+- **HIGH** `backend/test/ai-ecosystem.test.js:85` — `.send({ operation: 'generate-summary', payload: { occupation: 'Engineer' }, apiKey: 'secret-key-attempt' });`
+- **HIGH** `backend/test/ai-enterprise-acceptance.test.js:257` — `nvidia: { apiKey: 'fixture-nvidia-vault-key', model: 'meta/llama-3.2-11b-vision-instruct' },`
+- **HIGH** `backend/test/ai-enterprise-acceptance.test.js:258` — `openai: { apiKey: 'fixture-openai-vault-key', model: 'gpt-4o-mini' },`
+- **HIGH** `backend/test/email-settings.test.js:18` — `const preserved = normalizedMailSection('smtp', { ...smtpInput, password: '' }, { password: 'fixture-existing-mail-key' });`
+- **HIGH** `backend/test/email-settings.test.js:25` — `const projected = projectMailSection('smtp', { ...smtpInput, password: 'fixture-runtime-mail-key', accessToken: 'fixture-access-token', clientSecret: 'fixture-client-secret' });`
+- **HIGH** `backend/test/helpers/aiRouteContract.js:12` — `ai_providers: { gemini: { apiKey: 'server-only-gemini-key', model: 'gemini-2.0-flash' } },`
+- **HIGH** `backend/test/superadmin-platform.test.js:30` — `apiKey: 'sk-1234567890abcdef',`
+- **HIGH** `tests/certification/firestore-off-boot.test.mjs:132` — `const forged = await json('GET', '/api/resumes', { token: 'not-a-real-token' });`
+
+## stub/not-implemented (773)
+
+- **MEDIUM** `src/components/Actions/action-step-cover-filling/ActionCoverFilling.jsx:31` — `// Scroll adjustment retained as a no-op stub for backwards compatibility`
+- **MEDIUM** `src/components/Actions/action-step-cover-filling/ActionCoverFilling.jsx:144` — `placeholder="Enter list name"`
+- **MEDIUM** `src/components/Actions/action-step-cover-filling/ActionCoverFilling.jsx:161` — `placeholder="Enter list item"`
+- **MEDIUM** `src/components/Actions/action-step-filling/ActionFilling.jsx:592` — `placeholder="Ex: 01/04/1964"`
+- **MEDIUM** `src/components/Actions/action-step-filling/ActionFilling.jsx:599` — `placeholder="Ex: Italian"`
+- **MEDIUM** `src/components/Actions/action-step-filling/ActionFilling.jsx:607` — `placeholder="Select gender"`
+- **MEDIUM** `src/components/Actions/action-step-filling/ActionFilling.jsx:697` — `placeholder="Ex: English, Spanish"`
+- **MEDIUM** `src/components/Actions/action-step-selection/ActionSelection.jsx:435` — `placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg`
+- **MEDIUM** `src/components/Actions/action-step-selection/ActionSelection.jsx:485` — `placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg`
+- **MEDIUM** `src/components/Actions/action-step-selection/ActionSelection.jsx:579` — `placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg`
+- **MEDIUM** `src/components/Actions/action-step-selection/ActionSelection.jsx:688` — `placeholder={\`${this.props.t(`
+- **MEDIUM** `src/components/AppliedJobs/AppliedJobs.jsx:276` — `placeholder={t('JobsUpdate.AppliedJobs.search.placeholder', 'Search jobs, companies, or locations...')}`
+- **MEDIUM** `src/components/AppliedJobs/AppliedJobs.jsx:279` — `className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"`
+- **MEDIUM** `src/components/AppliedJobs/JobTracker.jsx:189` — `<input type="url" value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} aria-invalid={Boolean(errors.url)} className="mt-1 w-full rounded-md border border-slate-300 px-3`
+- **MEDIUM** `src/components/AppliedJobs/JobTracker.jsx:204` — `<input id="tracker-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search title, company, location, or notes" className="mb-4 w-full max-w-xl roun`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:288` — `const field = (name, label, placeholder, options = {}) => (`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:296` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:938` — `.checkout-input::placeholder { color: #94a3b8; font-weight: 400; }`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1052` — `placeholder="Select your country"`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1069` — `placeholder="Enter postal / zip code"`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1117` — `placeholder={\`Enter 15-character ${this.state.taxConfig.taxName} number (e.g. 27AAAAA0000A1Z5)\`}`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1444` — `placeholder="Full name as displayed on card"`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1463` — `'::placeholder': { color: '#94a3b8' },`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1848` — `.checkout-input-emb::placeholder { color: #94a3b8; font-weight: 400; }`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1907` — `<DropdownInput handleInputs={this.handleInput} placeholder="Select your country" checkout={true} name="Country" options={this.countries} />`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1914` — `<input type="text" placeholder="Enter postal / zip code" onChange={(e) => this.handleInput('Postal Code', e)} className={\`checkout-input-emb ${this.state.validationErrors['Postal Code'] ? 'border-rose`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:1928` — `<input type="text" value={this.state.customerTaxId} onChange={(e) => this.handleInput('customerTaxId', { target: { value: e.target.value.toUpperCase().trim() } })} placeholder={\`Enter ${this.state.tax`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:2155` — `<input type="text" onChange={(e) => this.handleInput('CardHolder', e)} placeholder="Full name as on card" className="checkout-input-emb" />`
+- **MEDIUM** `src/components/Billing/Plans/Checkout.jsx:2162` — `<CardElement options={{ style: { base: { fontSize: '14px', color: '#0f172a', fontFamily: '"Inter", sans-serif', '::placeholder': { color: '#94a3b8' }, iconColor: '#4f46e5' }, invalid: { color: '#e11d4`
+- **MEDIUM** `src/components/Billing/Plans/Plans.jsx:735` — `placeholder="Enter coupon code"`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:644` — `placeholder="Enter your post title here..."`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:645` — `className={\`w-full px-0 py-3 text-3xl font-bold placeholder-gray-300 border-0 focus:outline-none focus:ring-0 bg-transparent ${`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:942` — `{/* Placeholder */}`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:978` — `placeholder="Write a compelling excerpt that summarizes your post and entices readers..."`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:980` — `className="w-full border-0 focus:outline-none resize-none text-gray-800 leading-6 placeholder-gray-400 bg-transparent"`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:997` — `<input id="seoTitle" value={post.seoTitle || ''} onChange={event => { setPost(current => ({ ...current, seoTitle: event.target.value })); setHasUnsavedChanges(true); }} maxLength={120} placeholder={po`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:999` — `<textarea id="seoDescription" value={post.seoDescription || ''} onChange={event => { setPost(current => ({ ...current, seoDescription: event.target.value })); setHasUnsavedChanges(true); }} maxLength=`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:1158` — `placeholder="Add tag..."`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:1214` — `placeholder="https://example.com/image.jpg"`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:1308` — `placeholder="https://example.com/image.jpg"`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:1319` — `<input id="insert-image-alt" type="text" value={imageAlt} onChange={event => setImageAlt(event.target.value)} maxLength={200} placeholder="Describe the image for screen readers" className="w-full px-4`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:1387` — `placeholder="https://example.com"`
+- **MEDIUM** `src/components/Blog/BlogEditor/BlogEditor.jsx:1401` — `placeholder="Click here"`
+- **MEDIUM** `src/components/Blog/BlogList/BlogList.jsx:187` — `placeholder={t('blog.searchPlaceholder', 'Search articles, guides, and insights...')}`
+- **MEDIUM** `src/components/Blog/BlogList/BlogList.jsx:190` — `className="w-full pl-12 pr-32 py-4 bg-transparent text-white placeholder-slate-400 border-0 focus:outline-none focus:ring-0 text-lg"`
+- **MEDIUM** `src/components/Blog/components/BlogCard.jsx:43` — `{/* Professional illustration placeholder */}`
+- **MEDIUM** `src/components/Boards/board-step-filling/BoardFilling.jsx:516` — `placeholder="#000000"`
+- **MEDIUM** `src/components/Boards/board-step-filling/BoardFilling.jsx:538` — `placeholder="#3d3e42"`
+- **MEDIUM** `src/components/Boards/board-step-selection/BoardSelection.jsx:304` — `placeholder="Search templates..."`
+- **MEDIUM** `src/components/Boards/board-step-selection/BoardSelection.jsx:407` — `placeholder="Search cover letter templates..."`
+- **MEDIUM** `src/components/BuildResume/AtsScoreMeter.jsx:237` — `placeholder={t('AtsScoreMeter.jdPlaceholder', 'Paste the job description to check role fit…')}`
+- **MEDIUM** `src/components/BuildResume/TemplateSelectionModal.jsx:754` — `placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg`
+- **MEDIUM** `src/components/BuildResume/TemplateSelectionModal.jsx:834` — `placeholderSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg`
+- **MEDIUM** `src/components/BuildResume/TemplateSelectionModal.jsx:940` — `placeholder={t('TemplateSelectionModal.search.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/AchievementsStep.jsx:262` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/AchievementsStep.jsx:263` — `'AchievementsStep.fields.title.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/AchievementsStep.jsx:280` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/AchievementsStep.jsx:281` — `'AchievementsStep.fields.description.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/CertificationsStep.jsx:290` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/CertificationsStep.jsx:291` — `'CertificationsStep.fields.title.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/CertificationsStep.jsx:301` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/CertificationsStep.jsx:302` — `'CertificationsStep.fields.issuer.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/CertificationsStep.jsx:315` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/CertificationsStep.jsx:316` — `'CertificationsStep.fields.date.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/CustomSectionsStep.jsx:308` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/CustomSectionsStep.jsx:309` — `'CustomSectionsStep.fields.sectionTitle.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/CustomSectionsStep.jsx:349` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/CustomSectionsStep.jsx:350` — `'CustomSectionsStep.fields.itemTitle.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/CustomSectionsStep.jsx:363` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/CustomSectionsStep.jsx:364` — `'CustomSectionsStep.fields.itemDescription.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/EducationStep.jsx:232` — `placeholder={t('EducationStep.fields.school.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/EducationStep.jsx:241` — `placeholder={t('EducationStep.fields.degree.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/EducationStep.jsx:254` — `placeholder={t('EducationStep.fields.startDate.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/EducationStep.jsx:262` — `placeholder={t('EducationStep.fields.endDate.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/EducationStep.jsx:322` — `placeholder={t('EducationStep.fields.description.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/FinalizeStep.jsx:17` — `preview: '/api/placeholder/200/280',`
+- **MEDIUM** `src/components/BuildResume/steps/FinalizeStep.jsx:23` — `preview: '/api/placeholder/200/280',`
+- **MEDIUM** `src/components/BuildResume/steps/FinalizeStep.jsx:29` — `preview: '/api/placeholder/200/280',`
+- **MEDIUM** `src/components/BuildResume/steps/FinalizeStep.jsx:35` — `preview: '/api/placeholder/200/280',`
+- **MEDIUM** `src/components/BuildResume/steps/FinalizeStep.jsx:165` — `placeholder="e.g., John Doe - Software Engineer"`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:239` — `placeholder={t('HeadingStep.fields.firstName.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:249` — `placeholder={t('HeadingStep.fields.lastName.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:262` — `placeholder={t('HeadingStep.fields.jobTitle.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:313` — `placeholder={t('HeadingStep.fields.email.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:325` — `placeholder={t('HeadingStep.fields.phone.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:368` — `placeholder={t('HeadingStep.fields.address.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:378` — `placeholder={t('HeadingStep.fields.city.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:386` — `placeholder={t('HeadingStep.fields.postalCode.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:393` — `placeholder={t('HeadingStep.fields.country.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:435` — `placeholder="https://yourportfolio.com"`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:443` — `placeholder="linkedin.com/in/username"`
+- **MEDIUM** `src/components/BuildResume/steps/HeadingStep.jsx:451` — `placeholder="github.com/username"`
+- **MEDIUM** `src/components/BuildResume/steps/LanguagesStep.jsx:224` — `placeholder="e.g. English, Spanish, French"`
+- **MEDIUM** `src/components/BuildResume/steps/LanguagesStep.jsx:333` — `placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Drone Piloting)"`
+- **MEDIUM** `src/components/BuildResume/steps/ProjectsStep.jsx:258` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/ProjectsStep.jsx:259` — `'ProjectsStep.fields.title.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/ProjectsStep.jsx:269` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/ProjectsStep.jsx:270` — `'ProjectsStep.fields.url.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/ProjectsStep.jsx:289` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/ProjectsStep.jsx:290` — `'ProjectsStep.fields.description.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/ReferencesStep.jsx:256` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/ReferencesStep.jsx:257` — `'ReferencesStep.fields.name.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/ReferencesStep.jsx:278` — `placeholder={t(`
+- **MEDIUM** `src/components/BuildResume/steps/ReferencesStep.jsx:279` — `'ReferencesStep.fields.reference.placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/ReferencesStep.jsx:282` — `className="w-full px-3 py-3 border border-slate-300 rounded-sm text-sm text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"`
+- **MEDIUM** `src/components/BuildResume/steps/SkillsStep.jsx:288` — `placeholder={t('SkillsStep.fields.skillName.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/SummaryStep.jsx:338` — `placeholder={t('SummaryStep.content.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/WorkHistoryStep.jsx:238` — `placeholder={t('WorkHistoryStep.fields.jobTitle.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/WorkHistoryStep.jsx:247` — `placeholder={t('WorkHistoryStep.fields.company.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/WorkHistoryStep.jsx:256` — `placeholder="e.g. San Francisco, CA"`
+- **MEDIUM** `src/components/BuildResume/steps/WorkHistoryStep.jsx:322` — `placeholder={t('WorkHistoryStep.fields.description.placeholder')}`
+- **MEDIUM** `src/components/BuildResume/steps/components/AutocompleteInputField.jsx:18` — `placeholder,`
+- **MEDIUM** `src/components/BuildResume/steps/components/AutocompleteInputField.jsx:195` — `className={inputClassName || \`w-full px-3 py-3 pr-10 border rounded-sm transition-all duration-200 text-sm text-slate-900 placeholder-slate-400 bg-white`
+- **MEDIUM** `src/components/BuildResume/steps/components/AutocompleteInputField.jsx:204` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/BuildResume/steps/components/InputField.jsx:4` — `const InputField = ({ label, name, type = 'text', placeholder, required = false, value, onChange, disabled = false }) => {`
+- **MEDIUM** `src/components/BuildResume/steps/components/InputField.jsx:21` — `className={\`w-full px-3 py-3 border rounded-sm transition-all duration-200 text-sm text-slate-900 placeholder-slate-400 bg-white`
+- **MEDIUM** `src/components/BuildResume/steps/components/InputField.jsx:30` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/BuildResume/steps/components/RichTextEditor.jsx:31` — `placeholder: 'editor-placeholder',`
+- **MEDIUM** `src/components/BuildResume/steps/components/RichTextEditor.jsx:577` — `const RichTextEditor = ({ value = '', onChange, placeholder = 'Enter your text...', _rows = 4, className = '' }) => {`
+- **MEDIUM** `src/components/BuildResume/steps/components/RichTextEditor.jsx:611` — `aria-placeholder={placeholder}`
+- **MEDIUM** `src/components/BuildResume/steps/components/RichTextEditor.jsx:612` — `placeholder={<div className={\`absolute top-2.5 left-3 text-sm text-slate-400 pointer-events-none\`}>{placeholder}</div>}`
+- **MEDIUM** `src/components/Contact/Contact.jsx:204` — `placeholder={t('contact.form.fullNamePlaceholder')}`
+- **MEDIUM** `src/components/Contact/Contact.jsx:224` — `placeholder={t('contact.form.emailPlaceholder')}`
+- **MEDIUM** `src/components/Contact/Contact.jsx:244` — `placeholder={t('contact.form.messagePlaceholder')}`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1026` — `<input type="text" value={this.state.candidateFirstname} onChange={(e) => this.setState({ candidateFirstname: e.target.value })} placeholder="Enter first name" className="w-full text-xs p-2.5 bg-white`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1030` — `<input type="text" value={this.state.candidateLastname} onChange={(e) => this.setState({ candidateLastname: e.target.value })} placeholder="Enter last name" className="w-full text-xs p-2.5 bg-white bo`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1034` — `<input type="email" value={this.state.candidateEmail} onChange={(e) => this.setState({ candidateEmail: e.target.value })} placeholder="Enter email address" className="w-full text-xs p-2.5 bg-white bor`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1038` — `<input type="text" value={this.state.candidatePhone} onChange={(e) => this.setState({ candidatePhone: e.target.value })} placeholder="Enter phone number" className="w-full text-xs p-2.5 bg-white borde`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1044` — `<input type="text" value={this.state.candidateAddress} onChange={(e) => this.setState({ candidateAddress: e.target.value })} placeholder="e.g. 123 Innovation Way" className="w-full text-xs p-2.5 bg-wh`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1048` — `<input type="text" value={this.state.candidateCity} onChange={(e) => this.setState({ candidateCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="w-full text-xs p-2.5 bg-white bor`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1052` — `<input type="text" value={this.state.candidatePostalCode} onChange={(e) => this.setState({ candidatePostalCode: e.target.value })} placeholder="e.g. 94105" className="w-full text-xs p-2.5 bg-white bor`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1063` — `<input type="text" value={this.state.jobTitle} onChange={(e) => this.setState({ jobTitle: e.target.value })} placeholder="e.g. Senior Software Engineer" className="w-full text-xs p-3 bg-white border b`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1067` — `<input type="text" value={this.state.companyName} onChange={(e) => this.setState({ companyName: e.target.value })} placeholder="e.g. TechCorp Inc." className="w-full text-xs p-3 bg-white border border`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1071` — `<input type="text" value={this.state.recipientName} onChange={(e) => this.setState({ recipientName: e.target.value })} placeholder="e.g. Sarah Jenkins" className="w-full text-xs p-3 bg-white border bo`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1077` — `<input type="text" value={this.state.companyAddress} onChange={(e) => this.setState({ companyAddress: e.target.value })} placeholder="e.g. 500 Market St" className="w-full text-xs p-3 bg-white border `
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1081` — `<input type="text" value={this.state.companyCity} onChange={(e) => this.setState({ companyCity: e.target.value })} placeholder="e.g. San Francisco, CA" className="w-full text-xs p-3 bg-white border bo`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1085` — `<input type="text" value={this.state.companyPostalCode} onChange={(e) => this.setState({ companyPostalCode: e.target.value })} placeholder="e.g. 94105" className="w-full text-xs p-3 bg-white border bo`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1154` — `placeholder="Paste the target job description or core requirements here (e.g. 'Looking for a Senior Software Engineer experienced in React, TypeScript, Cloud Architecture, GraphQL, micro-services, and`
+- **MEDIUM** `src/components/CoverLetter/CoverLetter.jsx:1205` — `placeholder="Paste the target job description or core requirements here..."`
+- **MEDIUM** `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:1511` — `className="w-full bg-white border border-slate-300 rounded-2xl pl-11 pr-4 py-3.5 text-sm sm:text-base font-semibold text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-indigo-600 fo`
+- **MEDIUM** `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:1514` — `placeholder="Software Engineer"`
+- **MEDIUM** `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:1673` — `className="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-in`
+- **MEDIUM** `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:1676` — `placeholder="Paste a JD. Only this text is used — nothing is invented."`
+- **MEDIUM** `src/components/Dashboard/DashboardMessages/DashboardMessages.jsx:6` — `import userPlaceholder from '../../../assets/user.png';`
+- **MEDIUM** `src/components/Dashboard/DashboardMessages/DashboardMessages.jsx:68` — `avatar: participantProfile.avatar || userPlaceholder,`
+- **MEDIUM** `src/components/Dashboard/DashboardMessages/DashboardMessages.jsx:292` — `placeholder={t('JobsUpdate.DashboardMessages.search.placeholder', 'Search')}`
+- **MEDIUM** `src/components/Dashboard/DashboardMessages/DashboardMessages.jsx:310` — `{/* Placeholder for No Conversations */}`
+- **MEDIUM** `src/components/Dashboard/DashboardMessages/DashboardMessages.jsx:485` — `placeholder={t('JobsUpdate.DashboardMessages.input.placeholder', 'Type a message...')}`
+- **MEDIUM** `src/components/Dashboard/DashboardPortfolios/DashboardPortfolios.jsx:334` — `placeholder={t('DashboardPortfolios.searchPlaceholder')}`
+- **MEDIUM** `src/components/Dashboard/DashboardPortfolios/DashboardPortfolios.jsx:337` — `className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"`
+- **MEDIUM** `src/components/Dashboard/DashboardSearch/DashboardSearch.jsx:115` — `placeholder={t('dashNew.searchDocuments')}`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1210` — `<input type="text" name="firstname" value={profile.firstname} onChange={handleInputChange} placeholder="First Name" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl font-semib`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1214` — `<input type="text" name="lastname" value={profile.lastname} onChange={handleInputChange} placeholder="Last Name" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl font-semibold`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1218` — `<input type="email" name="email" value={profile.email} onChange={handleInputChange} placeholder="Email" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1222` — `<input type="text" name="phone" value={profile.phone} onChange={handleInputChange} placeholder="Phone" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1230` — `placeholder="e.g. Senior Full Stack Engineer"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1238` — `<input type="text" name="address" value={profile.address} onChange={handleInputChange} placeholder="Street Address" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1246` — `placeholder="City, State"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1254` — `<input type="text" name="postalCode" value={profile.postalCode} onChange={handleInputChange} placeholder="Postal Code" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-sl`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1260` — `<input type="url" name="linkedinUrl" value={profile.linkedinUrl} onChange={handleInputChange} placeholder="https://linkedin.com/in/username" className="w-full text-xs p-3 bg-white border border-slate-`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1266` — `<input type="url" name="githubUrl" value={profile.githubUrl} onChange={handleInputChange} placeholder="https://github.com/username" className="w-full text-xs p-3 bg-white border border-slate-300 round`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1270` — `<input type="text" name="country" value={profile.country} onChange={handleInputChange} placeholder="Country (e.g. India)" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1276` — `<input type="url" name="websiteUrl" value={profile.websiteUrl} onChange={handleInputChange} placeholder="https://yourwebsite.com" className="w-full text-xs p-3 bg-white border border-slate-300 rounded`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1317` — `<textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Enter factual profile details, then optionally ask AI to rewrite them without adding claims`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1357` — `placeholder="e.g. Senior Developer"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1369` — `placeholder="e.g. TechCorp"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1381` — `placeholder="e.g. Visakhapatnam, India"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1419` — `placeholder="e.g. Implemented new technologies, resulting in a 30% decrease in system downtime..."`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1471` — `placeholder="e.g. B.S. Computer Science"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1483` — `placeholder="e.g. Stanford University"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1504` — `placeholder="e.g. Cambridge, MA"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1516` — `placeholder="e.g. 3.9/4.0 GPA, Summa Cum Laude"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1585` — `placeholder="Skill name"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1655` — `placeholder="Certification Title (e.g. AWS Solutions Architect)"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1664` — `placeholder="Issuing Organization (e.g. Amazon Web Services)"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1668` — `<input type="text" value={cert.date} onChange={(e) => updateCertification(idx, 'date', e.target.value)} placeholder="Date Issued (e.g. 2024)" className="text-xs p-2.5 bg-white border border-slate-300 `
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1669` — `<input type="url" value={cert.url || cert.link || ''} onChange={(e) => updateCertification(idx, 'url', e.target.value)} placeholder="Credential Link (URL)" className="text-xs p-2.5 bg-white border bor`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1738` — `placeholder="Language (e.g. English)"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1820` — `placeholder="Type a custom hobby (e.g. Marathon Running, Open Source, Astronomy)..."`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1903` — `<input type="text" value={proj.title} onChange={(e) => updateProject(idx, 'title', e.target.value)} placeholder="Project Title" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1906` — `<input type="url" value={proj.link} onChange={(e) => updateProject(idx, 'link', e.target.value)} placeholder="Live Demo / Repository URL" className="w-full text-xs p-2.5 bg-white border border-slate-3`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:1909` — `<textarea value={proj.description} onChange={(e) => updateProject(idx, 'description', e.target.value)} placeholder="Short project summary or key tech stack used..." className="w-full h-16 text-xs p-2.`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2022` — `placeholder="name@example.com"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2042` — `placeholder="Enter current password to re-authenticate"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2074` — `placeholder="Min. 8 characters"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2094` — `placeholder="Re-enter password"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2166` — `placeholder="+1 415 555 2671 / +91 9876543210"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2488` — `<input type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-slate-50 border border-slate-300`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2501` — `placeholder="DELETE"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2614` — `placeholder="123456"`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/DashboardSettings.jsx:2669` — `<input type="password" value={totpDisablePassword} onChange={(e) => setTotpDisablePassword(e.target.value)} placeholder="Enter current password" className="w-full text-xs p-3 bg-slate-50 border border`
+- **MEDIUM** `src/components/Dashboard/DashboardSettings/SubscriptionModal.jsx:398` — `placeholder="Enter coupon code"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:274` — `placeholder={t('JobsUpdate.AddCompanyModal.form.companyNamePlaceholder', 'Enter company name')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:301` — `placeholder="https://example.com"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:329` — `placeholder="https://example.com/logo.png"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:381` — `<option value="">{t('JobsUpdate.AddCompanyModal.placeholders.selectIndustry', 'Select industry')}</option>`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:412` — `<option value="">{t('JobsUpdate.AddCompanyModal.placeholders.selectCompanySize', 'Select company size')}</option>`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:436` — `placeholder="City, State/Country"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:464` — `placeholder="Full address (optional)"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:482` — `placeholder="Phone number"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:502` — `placeholder="contact@company.com"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/AddCompanyModal.jsx:526` — `placeholder="Brief description of the company, its mission, and what it does..."`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx:331` — `placeholder={t('JobsUpdate.CompaniesManagement.search.placeholder', 'Search companies by name, industry, location...')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/CompaniesManagement.jsx:334` — `className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:388` — `placeholder={t('JobsUpdate.EditJobModal.placeholders.jobTitle', 'Senior Software Engineer')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:442` — `placeholder={t('JobsUpdate.EditJobModal.placeholders.location', 'Start typing city, state, country...')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:518` — `placeholder={t('JobsUpdate.EditJobModal.placeholders.minSalary', '80000')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:528` — `placeholder={t('JobsUpdate.EditJobModal.placeholders.maxSalary', '120000')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:559` — `placeholder={t('JobsUpdate.EditJobModal.placeholders.jobDescription', 'Describe the role, responsibilities, and what makes this position exciting...')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:588` — `placeholder={\`Requirement ${index + 1}\`}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EditJobModal.jsx:623` — `placeholder={\`Benefit ${index + 1}\`}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx:453` — `placeholder={t('JobsUpdate.EmployerDashboard.search.placeholder', 'Search jobs by title, location...')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/EmployerDashboard.jsx:456` — `className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx:184` — `placeholder={t('JobsUpdate.JobApplicationsModal.search.placeholder', 'Search by name, email, or skills...')}`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/JobApplicationsModal.jsx:187` — `className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder-slate-400"`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/RejectionReasonModal.jsx:60` — `placeholder="Please provide constructive feedback to help the candidate understand why they weren't selected. This helps them improve for future applications."`
+- **MEDIUM** `src/components/Dashboard/EmployerDashboard/SendMessageDialog.jsx:91` — `placeholder="Type your message..."`
+- **MEDIUM** `src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:8` — `import userPlaceholder from '../../../assets/user.png';`
+- **MEDIUM** `src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:94` — `userPlaceholder;`
+- **MEDIUM** `src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:432` — `e.target.src = userPlaceholder;`
+- **MEDIUM** `src/components/Dashboard/ProfileDisplay/ProfileDisplay.jsx:470` — `e.target.src = userPlaceholder;`
+- **MEDIUM** `src/components/Dashboard/Settings/Settings.jsx:218` — `placeholder={this.props.firstname || t("dashboard.firstnamePlaceholder") || "First name"}`
+- **MEDIUM** `src/components/Dashboard/Settings/Settings.jsx:224` — `placeholder={this.props.lastname || t("dashboard.lastnamePlaceholder") || "Last name"}`
+- **MEDIUM** `src/components/Dashboard/Settings/Settings.jsx:264` — `placeholder={t("dashboard.newPasswordPlaceholder") || "Enter new password (min 6 characters)"}`
+- **MEDIUM** `src/components/Dashboard2/elements/Homepagefaqs.jsx:185` — `placeholder={t('Homepagefaqs.search.placeholder')}`
+- **MEDIUM** `src/components/Dashboard2/elements/Homepagefaqs.jsx:188` — `className="w-full pl-12 pr-4 py-4 bg-gray-50/50 rounded-2xl border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 text-gr`
+- **MEDIUM** `src/components/Form/BulletPointsEditor.jsx:86` — `placeholder = 'e.g. Architected high-throughput microservices in Go, cutting API latency by 40%...',`
+- **MEDIUM** `src/components/Form/BulletPointsEditor.jsx:522` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/Form/dropdown-input/DropdownInput.jsx:57` — `const { options = [], title, placeholder, checkout } = this.props;`
+- **MEDIUM** `src/components/Form/dropdown-input/DropdownInput.jsx:82` — `{value || placeholder || "Select option..."}`
+- **MEDIUM** `src/components/Form/dropdown-input/DropdownInput.jsx:99` — `placeholder="Search options..."`
+- **MEDIUM** `src/components/Form/education-component/Education.jsx:83` — `<SimpleInput placeholder="ex : aug 2020" value={this.state.started} handleInputs={this.handleInputs} title={t('form.begin')} name="Started" />`
+- **MEDIUM** `src/components/Form/education-component/Education.jsx:84` — `<SimpleInput placeholder="ex : aug 2021" value={this.state.finished} handleInputs={this.handleInputs} title={t('form.end')} name="Finished" />`
+- **MEDIUM** `src/components/Form/employment-component/Employment.jsx:102` — `<SimpleInput placeholder="ex : aug 2020" value={this.state.begin} handleInputs={this.handleInputs} title={t('form.begin')} name="Begin" />`
+- **MEDIUM** `src/components/Form/employment-component/Employment.jsx:103` — `<SimpleInput placeholder="ex : Jan 2021" value={this.state.end} handleInputs={this.handleInputs} title={t('form.end')} name="End" />`
+- **MEDIUM** `src/components/Form/languages-component/Languages.jsx:64` — `placeholder={this.props.title ? this.props.title : 'Ex: Spanish'}`
+- **MEDIUM** `src/components/Form/simple-input/SimpleInput.jsx:58` — `className: "w-full font-sans bg-[#f8fafc] text-[#0f172a] outline-none border border-[#cbd5e1] rounded-xl px-3.5 h-[44px] text-[14px] font-medium transition-all duration-200 ease-in-out focus:outline-n`
+- **MEDIUM** `src/components/Form/simple-input/SimpleInput.jsx:61` — `placeholder: this.props.placeholder || '',`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:33` — `placeholder: "editor-placeholder",`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:689` — `placeholder: "Enter your full name",`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:696` — `placeholder: "e.g., Senior Software Engineer, Marketing Manager",`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:703` — `placeholder: "Use your actual dates, e.g. 5 years, or enter Entry level",`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:710` — `placeholder: "e.g., JavaScript, Project Management, Data Analysis",`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:717` — `placeholder: "State only facts you can verify; include metrics only when they are documented",`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:1556` — `placeholder={this.aiQuestions[currentStep].placeholder}`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:1571` — `placeholder={this.aiQuestions[currentStep].placeholder}`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:1842` — `aria-placeholder="Enter your text..."`
+- **MEDIUM** `src/components/Form/simple-textarea/SimpleTextarea.jsx:1843` — `placeholder={`
+- **MEDIUM** `src/components/JobsLanding/JobsLandingHero.jsx:165` — `placeholder={t('JobsUpdate.JobsLandingHero.searchPlaceholder', 'Job title, keywords, or company')}`
+- **MEDIUM** `src/components/JobsLanding/JobsLandingHero.jsx:169` — `className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 placeholder-gray-400"`
+- **MEDIUM** `src/components/JobsLanding/JobsLandingHero.jsx:178` — `placeholder={t('JobsUpdate.JobsLandingHero.locationPlaceholder', 'City, state, or remote')}`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:381` — `placeholder="e.g. Senior React Developer"`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:427` — `placeholder="e.g. New York, NY"`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:512` — `placeholder="50000"`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:524` — `placeholder="80000"`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:597` — `placeholder="e.g. https://www.company.com"`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:607` — `placeholder="Brief description of your company, culture, and mission..."`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:630` — `placeholder="Describe the role, responsibilities, and what makes this position exciting..."`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:663` — `placeholder={\`Requirement ${index + 1}\`}`
+- **MEDIUM** `src/components/JobsListings/CreateJob.jsx:697` — `placeholder={\`Benefit ${index + 1}\`}`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:431` — `placeholder={t('JobsUpdate.CreateJobModal.placeholders.jobTitle', 'e.g., Senior Product Manager')}`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:494` — `placeholder={t('JobsUpdate.CreateJobModal.placeholders.location', 'Start typing city, state, country...')}`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:568` — `placeholder="80000"`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:578` — `placeholder="120000"`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:609` — `placeholder={t('JobsUpdate.CreateJobModal.placeholders.jobDescription', 'Describe the role, responsibilities, and what makes this position exciting...')}`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:638` — `placeholder={t('JobsUpdate.CreateJobModal.placeholders.requirement', 'e.g., 2+ years of experience in software development')}`
+- **MEDIUM** `src/components/JobsListings/CreateJobModal.jsx:671` — `placeholder={t('JobsUpdate.CreateJobModal.placeholders.benefit', 'e.g., Health insurance, 401(k) matching')}`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:6` — `const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location', className = '' }) => {`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:267` — `return <SimpleLocationInput value={value} onChange={onChange} placeholder={placeholder} className={className} />;`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:289` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/JobsListings/CustomLocationAutocomplete.jsx:293` — `className={\`w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg bg-white text-sm placeholder-slate-400`
+- **MEDIUM** `src/components/JobsListings/EmployerApplicationForm.jsx:115` — `placeholder="e.g. John Smith"`
+- **MEDIUM** `src/components/JobsListings/EmployerApplicationForm.jsx:129` — `placeholder="e.g. HR Manager"`
+- **MEDIUM** `src/components/JobsListings/EmployerApplicationForm.jsx:143` — `placeholder="john@company.com"`
+- **MEDIUM** `src/components/JobsListings/EmployerApplicationForm.jsx:157` — `placeholder="+1 (555) 123-4567"`
+- **MEDIUM** `src/components/JobsListings/EmployerApplicationForm.jsx:168` — `placeholder="https://linkedin.com/in/yourprofile"`
+- **MEDIUM** `src/components/JobsListings/EmployerApplicationForm.jsx:188` — `placeholder="Tell us why you want to post jobs on our platform and what you hope to achieve..."`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:30` — `placeholder: 'text-slate-400 text-sm',`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:503` — `// Show loading placeholder while template loads`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:645` — `placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.fullName', 'Full Name') + ' *'}`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:659` — `placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.email', 'Email Address') + ' *'}`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:672` — `placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.phone', 'Phone Number') + ' *'}`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:685` — `placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.linkedin', 'LinkedIn Profile URL') + ' (' + t('common:optional', 'optional') + ')'}`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:693` — `placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.github', 'GitHub/Portfolio URL') + ' (' + t('common:optional', 'optional') + ')'}`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:756` — `placeholder={`
+- **MEDIUM** `src/components/JobsListings/JobApplicationModal.jsx:758` — `{t('JobsUpdate.JobApplicationModal.coverLetter.placeholder', "Write a brief cover letter explaining why you're a good fit for this role...")}`
+- **MEDIUM** `src/components/JobsListings/JobSearchBar.jsx:57` — `placeholder={t('JobsUpdate.JobSearchBar.searchPlaceholder', 'Search jobs, companies, keywords...')}`
+- **MEDIUM** `src/components/JobsListings/JobSearchBar.jsx:60` — `className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg bg-white text-sm placeholder-slate-400`
+- **MEDIUM** `src/components/JobsListings/JobSearchBar.jsx:65` — `<CustomLocationAutocomplete value={locationFilter} onChange={setLocationFilter} placeholder={t('JobsUpdate.JobSearchBar.locationPlaceholder', 'Location (city, state, country)')} />`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:6` — `const LocationAutocomplete = ({ value, onChange, placeholder = 'Location', className = '' }) => {`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:114` — `return <SimpleLocationInput value={value} onChange={onChange} placeholder={placeholder} className={className} />;`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:124` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/JobsListings/LocationAutocomplete.jsx:128` — `className={\`w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg bg-white text-sm placeholder-slate-400`
+- **MEDIUM** `src/components/JobsListings/SimpleLocationInput.jsx:38` — `const SimpleLocationInput = ({ value, onChange, placeholder = 'Location', className = '' }) => {`
+- **MEDIUM** `src/components/JobsListings/SimpleLocationInput.jsx:109` — `placeholder={placeholder}`
+- **MEDIUM** `src/components/JobsListings/SimpleLocationInput.jsx:120` — `className={\`w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg bg-white text-sm placeholder-slate-400`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:115` — `className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border border-white/40 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-gray-900 placehol`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:116` — `placeholder="Your full name"`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:123` — `className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border border-white/40 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-gray-900 placehol`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:124` — `placeholder="your@email.com"`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:132` — `className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border border-white/40 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-gray-900 placehol`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:133` — `placeholder="What's this about?"`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:140` — `className="w-full px-6 py-4 bg-white/70 backdrop-blur-sm border border-white/40 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-gray-900 placehol`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Contact2.jsx:141` — `placeholder="Tell me about your project, goals, and how we can work together..."></textarea>`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/FlexItem.jsx:44` — `placeholder: 'auto, 100px, 50%, etc.',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/GridLayout.jsx:39` — `placeholder: '250px',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/Hero3.jsx:12` — `placeholder: 'React, Node.js, TypeScript, AWS, Leadership',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/HeroCategory.jsx:121` — `placeholder: 'React, Node.js, TypeScript, AWS, Leadership',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:57` — `placeholder: 'Your Brand Name',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:62` — `placeholder: 'https://example.com/logo.png',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:67` — `placeholder: 'Home\nAbout\nServices\nPortfolio\nContact',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:109` — `placeholder: 'Your Brand Name',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:114` — `placeholder: 'https://example.com/logo.png',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:119` — `placeholder: 'Home\nAbout\nServices\nPortfolio\nContact',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:160` — `placeholder: 'CYBER.DEV',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:165` — `placeholder: 'https://example.com/logo.png',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:170` — `placeholder: 'Home\nAbout\nSkills\nProjects\nContact',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:198` — `placeholder: '$ terminal.dev',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:203` — `placeholder: 'https://example.com/logo.png',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:208` — `placeholder: 'whoami\nls skills/\ncat projects/\ncontact --help',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:233` — `placeholder: 'SECURE.TECH',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:238` — `placeholder: 'https://example.com/logo.png',`
+- **MEDIUM** `src/components/PortfolioBuilder/PortfolioComponents/NavbarCategory.jsx:243` — `placeholder: 'Home\nAbout\nExpertise\nProjects\nCertifications\nContact',`
+- **MEDIUM** `src/components/PortfolioGallery/PortfolioGallery.jsx:83` — `placeholder="Search portfolios..."`
+- **MEDIUM** `src/components/admin/audit/AdminAuditLogs.jsx:204` — `placeholder="Search by action, email, path, IP…"`
+- **MEDIUM** `src/components/admin/blogManagement/BlogManagement.jsx:460` — `placeholder="Filter visible titles..."`
+- **MEDIUM** `src/components/admin/blogManagement/BlogManagement.jsx:473` — `placeholder="Filter visible authors..."`
+- **MEDIUM** `src/components/admin/command/AdminCommandPalette.jsx:144` — `className="flex-1 bg-transparent border-0 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden"`
+- **MEDIUM** `src/components/admin/command/AdminCommandPalette.jsx:145` — `placeholder="Type a command, module, or setting name…"`
+- **MEDIUM** `src/components/admin/companyManagement/CompanyManagement.jsx:356` — `placeholder="Search by company name, industry, location, or website..."`
+- **MEDIUM** `src/components/admin/employerApplications/EmployerApplications.jsx:332` — `placeholder="Search by company, contact name, email, or industry..."`
+- **MEDIUM** `src/components/admin/health/ApiHealthMatrix.jsx:142` — `placeholder="Search endpoint path or dependency…"`
+- **MEDIUM** `src/components/admin/health/ApiHealthMatrix.jsx:143` — `className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200"`
+- **MEDIUM** `src/components/admin/health/PlatformHealth.jsx:324` — `placeholder="Search services…"`
+- **MEDIUM** `src/components/admin/health/PlatformHealth.jsx:325` — `className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200"`
+- **MEDIUM** `src/components/admin/jobsManager/JobsManager.jsx:354` — `placeholder="Search jobs by title, company, or description..."`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:147` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:160` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:180` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:192` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:204` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:223` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:235` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:248` — `placeholder="Enter evidence-backed display value"`
+- **MEDIUM** `src/components/admin/landingPages/LandingPages.jsx:265` — `placeholder="https://…"`
+- **MEDIUM** `src/components/admin/messages/Messages.jsx:54` — `<div className="flex flex-col gap-2 sm:flex-row"><label className="relative"><span className="sr-only">Search messages</span><FaSearch className="absolute left-3 top-3 text-slate-400" aria-hidden="tru`
+- **MEDIUM** `src/components/admin/operations/PlatformOperations.jsx:239` — `<input required placeholder="Title" className="rounded-xl border border-slate-200 px-3 py-2" value={draft.title} onChange={e => setDraft(current => ({ ...current, title: e.target.value }))} />`
+- **MEDIUM** `src/components/admin/operations/PlatformOperations.jsx:245` — `<textarea required className="sm:col-span-2 rounded-xl border border-slate-200 px-3 py-2" rows={2} placeholder="Message" value={draft.message} onChange={e => setDraft(current => ({ ...current, message`
+- **MEDIUM** `src/components/admin/operators/PlatformOperators.jsx:338` — `placeholder="Enter Firebase UID or exact email (e.g. user@domain.com)"`
+- **MEDIUM** `src/components/admin/operators/PlatformOperators.jsx:443` — `placeholder="Search by name, email, UID or role…"`
+- **MEDIUM** `src/components/admin/phrases/Phrases.jsx:158` — `placeholder={this.state.categoryInput}`
+- **MEDIUM** `src/components/admin/phrases/Phrases.jsx:196` — `placeholder={this.state.phraseInput || 'Enter phrase'}`
+- **MEDIUM** `src/components/admin/reviews/Reviews.jsx:232` — `placeholder="Enter rating from 1 to 5"`
+- **MEDIUM** `src/components/admin/reviews/Reviews.jsx:273` — `placeholder="https://example.com/image.jpg"`
+- **MEDIUM** `src/components/admin/reviews/Reviews.jsx:289` — `placeholder="John Doe"`
+- **MEDIUM** `src/components/admin/reviews/Reviews.jsx:304` — `placeholder="Software Engineer"`
+- **MEDIUM** `src/components/admin/reviews/Reviews.jsx:319` — `placeholder="Write the customer review..."`
+- **MEDIUM** `src/components/admin/reviews/Reviews.jsx:335` — `placeholder="5"`
+- **MEDIUM** `src/components/admin/security/PlatformSecurity.jsx:76` — `<input className="flex-1 min-w-[200px] rounded-xl border border-slate-200 px-3 py-2 text-xs" placeholder="Filter inspected events by action, actor, or tenant…" value={query} onChange={e => setQuery(e.`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:541` — `placeholder="e.g. meta/llama-3.3-70b-instruct, gemini-2.0-flash"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:652` — `placeholder={configuredProviders.nvidia ? 'Configured securely — enter only to replace' : 'nvapi-...'}`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:707` — `placeholder="e.g. meta/llama-3.2-11b-vision-instruct or custom model ID"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:779` — `placeholder={configuredProviders.gemini ? 'Configured securely — enter only to replace' : 'AIzaSy...'}`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:820` — `placeholder="e.g. gemini-2.0-flash or custom model ID"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:892` — `placeholder={configuredProviders.openai ? 'Configured securely — enter only to replace' : 'sk-proj-...'}`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:917` — `placeholder="gpt-4o-mini, gpt-4o, etc."`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:928` — `placeholder="https://api.openai.com/v1"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:998` — `placeholder={configuredProviders.groq ? 'Configured securely — enter only to replace' : 'gsk_...'}`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:1023` — `placeholder="llama-3.3-70b-versatile"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:1091` — `placeholder={configuredProviders.openrouter ? 'Configured securely — enter only to replace' : 'sk-or-v1-...'}`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:1116` — `placeholder="meta-llama/llama-3.3-70b-instruct:free"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:1186` — `placeholder={configuredProviders.deepseek ? 'Configured securely — enter only to replace' : 'sk-...'}`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:1211` — `placeholder="deepseek-chat"`
+- **MEDIUM** `src/components/admin/settings/AiSettings.jsx:1347` — `placeholder="Firebase UID — leave empty to reset all users"`
+- **MEDIUM** `src/components/admin/settings/BrandingSettings.jsx:115` — `placeholder="ResumePilot AI"`
+- **MEDIUM** `src/components/admin/settings/BrandingSettings.jsx:136` — `placeholder="/src/assets/logo/logo.png"`
+- **MEDIUM** `src/components/admin/settings/BrandingSettings.jsx:169` — `placeholder="/src/assets/logo/logo.png"`
+- **MEDIUM** `src/components/admin/settings/BrandingSettings.jsx:202` — `placeholder="/favicon.ico"`
+- **MEDIUM** `src/components/admin/settings/BrandingSettings.jsx:236` — `placeholder="/src/assets/user.png"`
+- **MEDIUM** `src/components/admin/settings/BrandingSettings.jsx:252` — `<span className="text-xs font-semibold text-slate-600">User Placeholder Avatar</span>`
+- **MEDIUM** `src/components/admin/settings/CodeInjectionSettings.jsx:83` — `placeholder="<!-- Custom Head Tags, Meta verification, or GTM scripts -->"`
+- **MEDIUM** `src/components/admin/settings/CodeInjectionSettings.jsx:97` — `placeholder="<!-- Crisp / Tawk.to Live Chat Script or Custom Analytics -->"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:825` — `placeholder="smtp.hostinger.com / smtp.gmail.com"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:839` — `placeholder="465 / 587"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:870` — `placeholder="admin@projectdemo.guru"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:886` — `placeholder={isSuperAdmin ? (credentialStatus.smtp ? 'Configured securely — enter only to replace' : 'Account Password / API Key') : 'Super Admin only — status is shown'}`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:910` — `placeholder="ResumePilot AI Team"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:924` — `placeholder="support@airesume.projectdemo.guru"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:938` — `placeholder="admin@domain.com"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:971` — `placeholder="smtp.gmail.com / smtp.sendgrid.net"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:981` — `placeholder="587 / 465"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1005` — `placeholder="apikey / user@gmail.com"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1016` — `placeholder={isSuperAdmin ? (credentialStatus.fallbackSmtp ? 'Configured securely — enter only to replace' : 'API Key / App Password') : 'Super Admin only — status is shown'}`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1026` — `placeholder="support@airesume.projectdemo.guru"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1039` — `placeholder="3"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1049` — `placeholder="5"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1135` — `placeholder="imap.hostinger.com / imap.gmail.com"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1149` — `placeholder="993 / 143"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1179` — `placeholder="admin@projectdemo.guru"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1194` — `placeholder={isSuperAdmin ? (credentialStatus.imap ? 'Configured securely — enter only to replace' : 'Account Password') : 'Super Admin only — status is shown'}`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1292` — `placeholder="Search templates..."`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1484` — `placeholder="Test recipient email address"`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1513` — `placeholder="Search by recipient or subject..."`
+- **MEDIUM** `src/components/admin/settings/EmailSmtpSettings.jsx:1802` — `placeholder="Enter email to test send this template..."`
+- **MEDIUM** `src/components/admin/settings/ExportPdfSettings.jsx:114` — `placeholder="60000"`
+- **MEDIUM** `src/components/admin/settings/FacebookAuthSettings.jsx:105` — `placeholder="123456789012345"`
+- **MEDIUM** `src/components/admin/settings/FacebookAuthSettings.jsx:119` — `placeholder="abcdef1234567890..."`
+- **MEDIUM** `src/components/admin/settings/FacebookAuthSettings.jsx:144` — `placeholder="token_string..."`
+- **MEDIUM** `src/components/admin/settings/FacebookAuthSettings.jsx:158` — `placeholder="123456789012345"`
+- **MEDIUM** `src/components/admin/settings/GdprLegalSettings.jsx:110` — `placeholder="We use cookies to improve your experience..."`
+- **MEDIUM** `src/components/admin/settings/GdprLegalSettings.jsx:124` — `placeholder="Accept All"`
+- **MEDIUM** `src/components/admin/settings/GdprLegalSettings.jsx:140` — `placeholder="/p/privacy-policy"`
+- **MEDIUM** `src/components/admin/settings/GdprLegalSettings.jsx:154` — `placeholder="/p/terms-of-service"`
+- **MEDIUM** `src/components/admin/settings/GeoSeoSettings.jsx:111` — `placeholder="IN"`
+- **MEDIUM** `src/components/admin/settings/GeoSeoSettings.jsx:157` — `placeholder="India"`
+- **MEDIUM** `src/components/admin/settings/GeoSeoSettings.jsx:172` — `placeholder="AI Resume Builder India, Free CV Maker..."`
+- **MEDIUM** `src/components/admin/settings/IntegrationsSettings.jsx:93` — `placeholder="AIzaSy..."`
+- **MEDIUM** `src/components/admin/settings/IntegrationsSettings.jsx:127` — `placeholder="6LeIx..."`
+- **MEDIUM** `src/components/admin/settings/IntegrationsSettings.jsx:141` — `placeholder="6LeIx..."`
+- **MEDIUM** `src/components/admin/settings/IntegrationsSettings.jsx:169` — `placeholder="G-XXXXXXXXXX"`
+- **MEDIUM** `src/components/admin/settings/IntegrationsSettings.jsx:182` — `placeholder="123456789012345"`
+- **MEDIUM** `src/components/admin/settings/JobScraperSettings.jsx:155` — `placeholder="software engineer, web developer"`
+- **MEDIUM** `src/components/admin/settings/JobScraperSettings.jsx:169` — `placeholder="25"`
+- **MEDIUM** `src/components/admin/settings/LlmGeoSettings.jsx:179` — `placeholder="# ResumePilot AI..."`
+- **MEDIUM** `src/components/admin/settings/SecurityLimitsSettings.jsx:85` — `placeholder="5"`
+- **MEDIUM** `src/components/admin/settings/SecurityLimitsSettings.jsx:98` — `placeholder=".png,.jpg,.jpeg,.pdf,.doc,.docx"`
+- **MEDIUM** `src/components/admin/settings/SecurityLimitsSettings.jsx:114` — `placeholder="60"`
+- **MEDIUM** `src/components/admin/settings/SecurityLimitsSettings.jsx:127` — `placeholder="100"`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:182` — `placeholder="e.g. 1234567890-abc123def456.apps.googleusercontent.com"`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:197` — `placeholder="GOCSPX-..."`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:231` — `placeholder="e.g. 1029384756102938"`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:246` — `placeholder="App Secret..."`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:269` — `placeholder="e.g. 987654321012345"`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:294` — `placeholder="77..."`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:309` — `placeholder="Secret..."`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:384` — `placeholder="Ov23..."`
+- **MEDIUM** `src/components/admin/settings/SocialAuthSettings.jsx:399` — `placeholder="Secret..."`
+- **MEDIUM** `src/components/admin/settings/TemplateManagerSettings.jsx:299` — `placeholder="Search template (e.g., Cv15, Cover2)..."`
+- **MEDIUM** `src/components/admin/settings/TwilioSmsSettings.jsx:127` — `placeholder={isSuperAdmin ? (credentialStatus.configured ? 'Configured — enter both credentials to rotate' : 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx') : 'Super Admin only — status is shown'}`
+- **MEDIUM** `src/components/admin/settings/TwilioSmsSettings.jsx:142` — `placeholder={isSuperAdmin ? (credentialStatus.configured ? 'Configured — leave blank to preserve' : 'Enter Twilio Auth Token') : 'Super Admin only — status is shown'}`
+- **MEDIUM** `src/components/admin/settings/TwilioSmsSettings.jsx:167` — `placeholder="+1234567890"`
+- **MEDIUM** `src/components/admin/settings/WatermarkSettings.jsx:106` — `placeholder="Created with ResumePilot (Free Student Plan)"`
+- **MEDIUM** `src/components/admin/settings/adsSettings.jsx:232` — `placeholder="e.g., Summer Sale Banner, Product Promotion"`
+- **MEDIUM** `src/components/admin/settings/adsSettings.jsx:235` — `className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-900 placeholder-slate-400"`
+- **MEDIUM** `src/components/admin/settings/adsSettings.jsx:248` — `placeholder="https://example.com/banner-image.jpg"`
+- **MEDIUM** `src/components/admin/settings/adsSettings.jsx:251` — `className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-900 placeholder-slate-400"`
+- **MEDIUM** `src/components/admin/settings/adsSettings.jsx:265` — `placeholder="https://example.com/landing-page"`
+- **MEDIUM** `src/components/admin/settings/adsSettings.jsx:268` — `className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-900 placeholder-slate-400"`
+- **MEDIUM** `src/components/admin/settings/anlyticsSettings.jsx:145` — `placeholder="Enter your Google Analytics tracking code (e.g., G-XXXXXXXXXX or UA-XXXXXXXX-X)"`
+- **MEDIUM** `src/components/admin/settings/anlyticsSettings.jsx:149` — `className={\`w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent resize-vertical font-mono text-sm bg-slate-50 text-slate-900 placeholder-slate-`
+- **MEDIUM** `src/components/admin/settings/blogSettings.jsx:283` — `placeholder="https://example.com/blog-header.jpg"`
+- **MEDIUM** `src/components/admin/settings/pagesSettings.jsx:192` — `placeholder="e.g., about-us, privacy-policy, contact"`
+- **MEDIUM** `src/components/admin/settings/pagesSettings.jsx:195` — `className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-900 placeholder-slate-400"`
+- **MEDIUM** `src/components/admin/settings/pagesSettings.jsx:208` — `placeholder="Write your page content here. You can use HTML tags for formatting."`
+- **MEDIUM** `src/components/admin/settings/pagesSettings.jsx:212` — `className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical bg-slate-50 text-slate-900 placeholder-slate`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:131` — `placeholder: 'https://facebook.com/yourpage'`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:141` — `placeholder: 'https://twitter.com/yourhandle'`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:151` — `placeholder: 'https://instagram.com/yourprofile'`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:161` — `placeholder: 'https://pinterest.com/yourprofile'`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:171` — `placeholder: 'https://youtube.com/yourchannel'`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:217` — `placeholder={platform.placeholder}`
+- **MEDIUM** `src/components/admin/settings/socialSettings.jsx:220` — `className={\`w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ${platform.focusColor} focus:border-transparent bg-white text-slate-900 placeholder-slate-400\`}`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:29` — `// the gateway fields below are placeholders, not stored values.`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:642` — `// The projection never loaded, so \`paymentRevision\` is a placeholder and`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:963` — `placeholder="Search TXN_..., candidate, GSTIN..."`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1222` — `placeholder="GST / VAT / Sales Tax"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1236` — `placeholder="18"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1249` — `placeholder="27AAAAA0000A1Z5"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1262` — `placeholder="ResumePilot Technologies Pvt Ltd"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1275` — `placeholder="ResumePilot AI"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1288` — `placeholder="Unit 402, Apex Business Park"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1301` — `placeholder="Mumbai"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1314` — `placeholder="Maharashtra"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1327` — `placeholder="27"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1340` — `placeholder="400051"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1353` — `placeholder="AABCU9603R"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1366` — `placeholder="6-digit SAC"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1381` — `placeholder="Up to 3 characters"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1396` — `placeholder="YY-YY"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1634` — `placeholder="e.g. rzp_test_... or rzp_live_..."`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1645` — `placeholder={this.state.configuredProviders?.razorpay ? '✓ Configured securely — enter to replace' : 'Paste your Razorpay key secret'}`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1647` — `this.state.configuredProviders?.razorpay && !this.state.razorpayKeySecret ? 'border-emerald-300 placeholder:text-emerald-700 focus:border-emerald-500' : 'border-slate-300 focus:border-emerald-500'`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1674` — `placeholder="e.g. pk_test_..."`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1685` — `placeholder={this.state.configuredProviders?.stripe ? '✓ Configured securely — enter to replace' : 'e.g. sk_test_...'}`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1687` — `this.state.configuredProviders?.stripe && !this.state.stripeSecretKey ? 'border-indigo-300 placeholder:text-indigo-700 focus:border-indigo-500' : 'border-slate-300 focus:border-indigo-500'`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1714` — `placeholder="e.g. AX... or sandbox client ID"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1725` — `placeholder={this.state.configuredProviders?.paypal ? '✓ Configured securely — enter to replace' : 'e.g. E...'}`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1727` — `this.state.configuredProviders?.paypal && !this.state.paypalClientSecret ? 'border-blue-300 placeholder:text-blue-700 focus:border-blue-500' : 'border-slate-300 focus:border-blue-500'`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1756` — `placeholder="e.g. XYZco12345678901"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1767` — `placeholder={this.state.configuredProviders?.paytm ? '✓ Configured securely — enter to replace' : 'Merchant Key from Paytm Dashboard'}`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1769` — `this.state.configuredProviders?.paytm && !this.state.paytmMerchantKey ? 'border-sky-300 placeholder:text-sky-700 focus:border-sky-500' : 'border-slate-300 focus:border-sky-500'`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1812` — `placeholder="e.g. PGTESTPAYUAT or Merchant ID"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1823` — `placeholder={this.state.configuredProviders?.phonepe ? '✓ Configured securely — enter to replace' : 'Salt Key from PhonePe Dashboard'}`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1825` — `this.state.configuredProviders?.phonepe && !this.state.phonepeSaltKey ? 'border-violet-300 placeholder:text-violet-700 focus:border-violet-500' : 'border-slate-300 focus:border-violet-500'`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:1846` — `placeholder="1"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:2000` — `placeholder="e.g. SUMMER50"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:2034` — `placeholder="e.g. 50% Special Career Accelerator Discount"`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:2171` — `<input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.monthly || ''} onChange={(e) => this.handleMatrixChange(curr, 'monthly', e.target.value)} disabled={!this.state.checkedSu`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:2174` — `<input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.quartarly || ''} onChange={(e) => this.handleMatrixChange(curr, 'quartarly', e.target.value)} disabled={!this.state.check`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:2177` — `<input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.yearly || ''} onChange={(e) => this.handleMatrixChange(curr, 'yearly', e.target.value)} disabled={!this.state.checkedSubs`
+- **MEDIUM** `src/components/admin/settings/subscriptionsSettings.jsx:2280` — `placeholder="Add additional audit notes for finance compliance..."`
+- **MEDIUM** `src/components/admin/settings/websiteSettings.jsx:195` — `placeholder="ResumePilot AI — Resume Builder & CV Maker"`
+- **MEDIUM** `src/components/admin/settings/websiteSettings.jsx:214` — `placeholder="Create ATS-friendly resumes for students with ResumePilot AI..."`
+- **MEDIUM** `src/components/admin/settings/websiteSettings.jsx:235` — `placeholder="ResumePilot AI, ATS Resume Builder..."`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:784` — `placeholder="Search tenants by organization name, slug, ID…"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:926` — `placeholder="e.g. Acme Corporation"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:939` — `placeholder="e.g. acme-corp"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1282` — `placeholder="User email address"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1393` — `placeholder="Type custom plan name..."`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1425` — `placeholder="Enter custom seat capacity"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1471` — `placeholder="Enter custom daily limit"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1502` — `placeholder="e.g. meta/llama-3.2-11b-vision-instruct"`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1597` — `placeholder={selectedTenant.aiPolicy?.customProviderKeys?.nvidia ? '•••••••• (Dedicated Active)' : 'nvapi-...'}`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1648` — `placeholder={selectedTenant.aiPolicy?.customProviderKeys?.gemini ? '•••••••• (Dedicated Active)' : 'AIza...'}`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1699` — `placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openai ? '•••••••• (Dedicated Active)' : 'sk-...'}`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1750` — `placeholder={selectedTenant.aiPolicy?.customProviderKeys?.groq ? '•••••••• (Dedicated Active)' : 'gsk_...'}`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1801` — `placeholder={selectedTenant.aiPolicy?.customProviderKeys?.openrouter ? '•••••••• (Dedicated Active)' : 'sk-or-v1-...'}`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1852` — `placeholder={selectedTenant.aiPolicy?.customProviderKeys?.deepseek ? '•••••••• (Dedicated Active)' : 'sk-...'}`
+- **MEDIUM** `src/components/admin/tenants/PlatformTenants.jsx:1998` — `placeholder="Required decommission justification reason (minimum 8 characters)"`
+- **MEDIUM** `src/components/admin/userEdit/UserEdit.jsx:296` — `placeholder="Authenticated email"`
+- **MEDIUM** `src/components/admin/usersManager/CreateUserModal.jsx:98` — `placeholder="user@example.com"`
+- **MEDIUM** `src/components/admin/usersManager/CreateUserModal.jsx:111` — `placeholder="e.g. Jane Doe"`
+- **MEDIUM** `src/components/admin/usersManager/User360Drawer.jsx:1165` — `placeholder="e.g. VIP client pilot grant"`
+- **MEDIUM** `src/components/admin/usersManager/UsersManager.jsx:499` — `placeholder="Search name, email, UID, organization…"`
+- **MEDIUM** `src/components/auth/login/Login.jsx:455` — `placeholder="123456"`
+- **MEDIUM** `src/components/auth/resetPassword/ResetPasswordModal.jsx:190` — `placeholder="Enter new password"`
+- **MEDIUM** `src/components/auth/resetPassword/ResetPasswordModal.jsx:210` — `placeholder="Re-type new password..."`
+- **MEDIUM** `src/conf/fire.js:14` — `*    null-auth stub whose API mirrors Firebase Auth and whose operations`
+- **MEDIUM** `src/conf/fire.js:49` — `// Null-auth stub: keeps the same surface as firebase.auth() so every`
+- **MEDIUM** `src/conf/fire.js:72` — `// code path; without the flag the null-auth stub below still fails closed.`
+- **MEDIUM** `src/conf/fire.js:221` — `* unconfigured identity provider (the null-auth stub rejects first).`
+- **MEDIUM** `src/cv-templates/cv16/Cv16.jsx:112` — `{this.props.values.photo !== null ? <img alt="profile" src={this.props.values.photo} /> : <div className="cv16-placeholder">Photo</div>}`
+- **MEDIUM** `src/cv-templates/cv17/Cv17.jsx:126` — `{this.props.values.photo !== null ? <img className="cv17-photo" src={this.props.values.photo} alt="Profile" /> : <div className="cv17-photo-placeholder">Photo</div>}`
+- **MEDIUM** `src/cv-templates/cv18/Cv18.jsx:136` — `<div className="cv18-photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv19/Cv19.jsx:137` — `{this.props.values.photo !== null ? <img className="cv19-photo" src={this.props.values.photo} alt="Profile" /> : <div className="cv19-photo-placeholder"></div>}`
+- **MEDIUM** `src/cv-templates/cv2/Cv2.jsx:220` — `// Placeholder names must never leak into a real document.`
+- **MEDIUM** `src/cv-templates/cv20/Cv20.jsx:128` — `{this.props.values.photo !== null ? <img alt="profile" src={this.props.values.photo} className="cv20-photo" /> : <div className="cv20-photo-placeholder">Photo</div>}`
+- **MEDIUM** `src/cv-templates/cv24/Cv24.jsx:145` — `{this.props.values.photo !== null ? <img alt="profile" className="photo" src={this.props.values.photo} /> : <div className="photo-placeholder">photo</div>}`
+- **MEDIUM** `src/cv-templates/cv25/Cv25.jsx:172` — `<div className="cv25-photo">{this.props.values.photo !== null ? <img alt="profile" src={this.props.values.photo} /> : <div className="photo-placeholder">Photo</div>}</div>`
+- **MEDIUM** `src/cv-templates/cv26/Cv26.jsx:132` — `{this.props.values.photo !== null ? <img alt="profile" src={this.props.values.photo} className="profile-image" /> : <div className="photo-placeholder">Photo</div>}`
+- **MEDIUM** `src/cv-templates/cv27/Cv27.jsx:159` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv27/Cv27.jsx:160` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv28/Cv28.jsx:124` — `{this.props.values.photo !== null ? <img alt="profile" className="profile-photo" src={this.props.values.photo} /> : <div className="photo-placeholder">Photo</div>}`
+- **MEDIUM** `src/cv-templates/cv29/Cv29.jsx:155` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv29/Cv29.jsx:156` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv30/Cv30.jsx:148` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv30/Cv30.jsx:149` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv31/Cv31.jsx:156` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv31/Cv31.jsx:157` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv32/Cv32.jsx:167` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv32/Cv32.jsx:168` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv33/Cv33.jsx:139` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv33/Cv33.jsx:140` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv34/Cv34.jsx:160` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv34/Cv34.jsx:161` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv35/Cv35.jsx:164` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv35/Cv35.jsx:165` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv36/Cv36.jsx:156` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv36/Cv36.jsx:157` — `<FaUserTie className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv37/Cv37.jsx:160` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv37/Cv37.jsx:161` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv38/Cv38.jsx:160` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv38/Cv38.jsx:161` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv39/Cv39.jsx:168` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv39/Cv39.jsx:169` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv39/Cv39Export.jsx:162` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv39/Cv39Export.jsx:163` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv40/Cv40.jsx:156` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv40/Cv40.jsx:157` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv40/Cv40Export.jsx:150` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv40/Cv40Export.jsx:151` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv41/Cv41.jsx:168` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv41/Cv41.jsx:169` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv42/Cv42.jsx:156` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv42/Cv42.jsx:157` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv43/Cv43.jsx:158` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv43/Cv43.jsx:159` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv44/Cv44.jsx:197` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv44/Cv44.jsx:198` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv45/Cv45.jsx:139` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv45/Cv45.jsx:140` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv46/Cv46.jsx:143` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv46/Cv46.jsx:144` — `<FaUserAlt className="placeholder-icon" />`
+- **MEDIUM** `src/cv-templates/cv47/Cv47.jsx:151` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv48/Cv48.jsx:162` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv49/Cv49.jsx:223` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv50/Cv50.jsx:230` — `<div className="photo-placeholder">`
+- **MEDIUM** `src/cv-templates/cv51/Cv51.jsx:259` — `// placeholder sample values must never leak into a real resume.`
+- **MEDIUM** `src/enterprise/EnterpriseConsole.jsx:120` — `placeholder="Search organizations…"`
+- **MEDIUM** `src/enterprise/EnterpriseConsole.jsx:432` — `<input ref={inputRef} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search modules and actions… (e.g. “invite”, “dead-letter”, “audit”)" />`
+- **MEDIUM** `src/enterprise/components/EnterpriseAuditTab.jsx:272` — `placeholder="Search actions, resources, categories…"`
+- **MEDIUM** `src/enterprise/components/EnterpriseAuditTab.jsx:306` — `placeholder="Action contains… (e.g. TEAM)"`
+- **MEDIUM** `src/enterprise/components/EnterpriseAuditTab.jsx:316` — `placeholder="Actor contains… (principal)"`
+- **MEDIUM** `src/enterprise/components/EnterpriseAuditTab.jsx:326` — `placeholder="Category… (e.g. tenant.security)"`
+- **MEDIUM** `src/enterprise/components/EnterpriseEmailTab.jsx:456` — `placeholder="Enter email to receive test preview…"`
+- **MEDIUM** `src/enterprise/components/EnterprisePlatformTab.jsx:163` — `placeholder="Search tenants by name, slug, or id…"`
+- **MEDIUM** `src/enterprise/components/EnterprisePlatformTab.jsx:261` — `placeholder="e.g. Northwind Group"`
+- **MEDIUM** `src/enterprise/components/EnterprisePlatformTab.jsx:276` — `placeholder="e.g. northwind-group"`
+- **MEDIUM** `src/enterprise/components/EnterpriseResumesTab.jsx:564` — `placeholder="Search candidate by name, job title, skills, or owner email…"`
+- **MEDIUM** `src/enterprise/components/EnterpriseRolesTab.jsx:194` — `placeholder="RECRUITER"`
+- **MEDIUM** `src/enterprise/components/EnterpriseRolesTab.jsx:213` — `placeholder="e.g. Technical Recruiter"`
+- **MEDIUM** `src/enterprise/components/EnterpriseRolesTab.jsx:562` — `placeholder="Search capability or permission code…"`
+- **MEDIUM** `src/enterprise/components/EnterpriseSecurityTab.jsx:552` — `placeholder="e.g. Workday HR Integration M2M"`
+- **MEDIUM** `src/enterprise/components/EnterpriseSupportTab.jsx:268` — `placeholder="Paste the identity code the support engineer shared with you"`
+- **MEDIUM** `src/enterprise/components/EnterpriseSupportTab.jsx:299` — `placeholder="Describe the specific support ticket or issue requiring investigation…"`
+- **MEDIUM** `src/enterprise/components/EnterpriseTeamsTab.jsx:361` — `placeholder="Search teams by name or lead…"`
+- **MEDIUM** `src/enterprise/components/EnterpriseTeamsTab.jsx:478` — `placeholder="e.g. Executive Search Team"`
+- **MEDIUM** `src/enterprise/components/EnterpriseUsersTab.jsx:423` — `placeholder="Search members by principal, email, role, or status…"`
+- **MEDIUM** `src/enterprise/components/EnterpriseUsersTab.jsx:715` — `placeholder="teammate@company.com"`
+- **MEDIUM** `src/enterprise/components/EnterpriseUsersTab.jsx:732` — `placeholder="Enter the verified user principal id"`
+- **MEDIUM** `src/enterprise/components/EnterpriseWorkspacesTab.jsx:480` — `placeholder="e.g. Europe Operations"`
+- **MEDIUM** `src/services/aiService.js:3` — `/** Remove examples, placeholder parentheticals, and raw JSON artifacts from AI skill output. */`
+- **MEDIUM** `src/utils/atsScore.js:79` — `'item', 'sample', 'demo', 'placeholder', 'title', 'name',`
+- **MEDIUM** `src/utils/atsScore.js:420` — `else findings.push({ ok: false, text: 'Add 2–4 unique bullets that describe real work, not one-line placeholders.' });`
+- **MEDIUM** `src/utils/portfolioData.js:54` — `const PLACEHOLDER_PERSONAS = [`
+- **MEDIUM** `src/utils/portfolioData.js:434` — `export function isLikelyPlaceholderPersona(canonicalInput) {`
+- **MEDIUM** `src/utils/portfolioData.js:444` — `return PLACEHOLDER_PERSONAS.some((persona) => haystack.includes(persona));`
+- **MEDIUM** `backend/enterprise/encryptionProvider.js:9` — `*   1. ManagedKmsProvider  - an external key-management service. NOT implemented`
+- **MEDIUM** `backend/enterprise/encryptionProvider.js:160` — `new Error('Managed KMS encryption provider is not implemented in this deployment; use the server-key provider (ENTERPRISE_ENCRYPTION_PROVIDER=server-key)'),`
+- **MEDIUM** `backend/enterprise/encryptionProvider.js:170` — `new Error('Managed KMS encryption provider is not implemented in this deployment; use the server-key provider (ENTERPRISE_ENCRYPTION_PROVIDER=server-key)'),`
+- **MEDIUM** `backend/enterprise/enterpriseBackup.js:206` — `const placeholders = columns.map(() => '?').join(', ');`
+- **MEDIUM** `backend/enterprise/enterpriseBackup.js:210` — `? \`INSERT INTO \\`${table.name}\\` (${columnSql}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${appendNoOp}\``
+- **MEDIUM** `backend/enterprise/enterpriseBackup.js:211` — `: \`INSERT INTO \\`${table.name}\\` (${columnSql}) VALUES (${placeholders})${updates ? \` ON DUPLICATE KEY UPDATE ${updates}\` : ''}\`;`
+- **MEDIUM** `backend/enterprise/mysqlTenantRegistry.js:732` — `const placeholders = requested.map(() => '?').join(',');`
+- **MEDIUM** `backend/enterprise/mysqlTenantRegistry.js:743` — `WHERE m.principalId IN (${placeholders})`
+- **MEDIUM** `backend/enterprise-test/enterprise-secrets-hardening.test.js:60` — `assert.throws(() => createEncryptionProvider({ ENTERPRISE_ENCRYPTION_PROVIDER: 'kms', ENTERPRISE_ENCRYPTION_KEY: crypto.randomBytes(32).toString('base64') }), /not implemented/i);`
+- **MEDIUM** `backend/index.js:1799` — `const placeholders = conversationIds.map(() => '?').join(',');`
+- **MEDIUM** `backend/index.js:1803` — `WHERE conversation_id IN (${placeholders})\`,`
+- **MEDIUM** `backend/index.js:1815` — `WHERE m.conversation_id IN (${placeholders})`
+- **MEDIUM** `backend/index.js:2782` — `return res.status(501).json({`
+- **MEDIUM** `backend/index.js:3438` — `return res.status(501).json({`
+- **MEDIUM** `backend/index.js:3944` — `return res.status(501).json({`
+- **MEDIUM** `backend/index.js:4392` — `return res.status(501).json({ success: false, code: 'RUNTIME_SECRET_ROTATION_DISABLED', error: 'Runtime Firebase credential rotation is disabled. Use Workload Identity or the deployment Secret Manager`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:282` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:286` — `const sql = \`INSERT INTO resumes (${columnList}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`;`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:478` — `const placeholders = ids.map(() => '?').join(',');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:480` — `\`SELECT * FROM users WHERE id IN (${placeholders})\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:560` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:564` — `\`INSERT INTO users (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1083` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1086` — `\`INSERT INTO jobs (${keys.join(', ')}, revision) VALUES (${placeholders}, 1)\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1145` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1149` — `\`INSERT INTO applications (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1227` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1231` — `\`INSERT INTO blog (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1598` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1602` — `\`INSERT INTO notifications (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1621` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:1625` — `\`INSERT INTO contact_messages (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2150` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2153` — `\`INSERT INTO payment_orders (${keys.join(', ')}) VALUES (${placeholders})`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2704` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2707` — `\`INSERT INTO companies (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2752` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2756` — `\`INSERT INTO coupons (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2789` — `const placeholders = keys.map(() => '?').join(', ');`
+- **MEDIUM** `backend/repositories/MySQLRepository.js:2793` — `\`INSERT INTO coupon_redemptions (${keys.join(', ')}) VALUES (${placeholders}) ON DUPLICATE KEY UPDATE ${updateClause}, updated_at = CURRENT_TIMESTAMP\`,`
+- **MEDIUM** `backend/repositories/ResilientRepository.js:101` — `const err = new Error(\`Repository method ${method} is not implemented on the MariaDB repository\`);`
+- **MEDIUM** `backend/routes/databaseAdmin.js:15` — `const placeholders = activeStates.map(() => '?').join(',');`
+- **MEDIUM** `backend/routes/databaseAdmin.js:18` — `SUM(CASE WHEN \\`${stateColumn}\\` IN (${placeholders}) THEN 1 ELSE 0 END) AS active_count,`
+- **MEDIUM** `backend/routes/email.js:2148` — `// https or that points at a placeholder/loopback host is replaced by the`
+- **MEDIUM** `backend/services/aiRuntime.js:189` — `5. Omit unsupported details rather than using generic industry assumptions or placeholders.`
+- **MEDIUM** `backend/services/notificationOutbox.js:187` — `const placeholders = ACTIVE_STATES.map(() => '?').join(',');`
+- **MEDIUM** `backend/services/notificationOutbox.js:192` — `WHERE state IN (${placeholders})`
+- **MEDIUM** `backend/services/notificationOutbox.js:206` — `AND state IN (${placeholders})`
+- **MEDIUM** `backend/services/platformConfiguration.js:113` — `['CLOUDINARY_API_SECRET', 'Cloudinary API secret (adapter not implemented)', 'storage'],`
+- **MEDIUM** `backend/services/platformConfiguration.js:114` — `['S3_SECRET_ACCESS_KEY', 'S3 secret access key (adapter not implemented)', 'storage'],`
+- **MEDIUM** `backend/services/platformConfiguration.js:115` — `['AWS_SECRET_ACCESS_KEY', 'AWS secret access key (adapter not implemented)', 'storage'],`
+- **MEDIUM** `backend/services/platformConfiguration.js:116` — `['S3_ACCESS_KEY_ID', 'S3 access key identifier (adapter not implemented)', 'storage'],`
+- **MEDIUM** `backend/services/platformConfiguration.js:117` — `['AWS_ACCESS_KEY_ID', 'AWS access key identifier (adapter not implemented)', 'storage'],`
+- **MEDIUM** `backend/services/platformConfiguration.js:118` — `['CLOUDINARY_API_KEY', 'Cloudinary API key (adapter not implemented)', 'storage'],`
+- **MEDIUM** `backend/services/platformConfiguration.js:306` — `const placeholders = categories.map(() => '?').join(', ');`
+- **MEDIUM** `backend/services/platformConfiguration.js:308` — `\`SELECT category, data FROM system_settings WHERE category IN (${placeholders})\`,`
+- **MEDIUM** `backend/services/platformHealth.js:400` — `dependency: 'Notification worker heartbeat (not implemented)', errorCategory: notificationWorkerEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));`
+- **MEDIUM** `backend/services/platformHealth.js:415` — `dependency: 'Enterprise worker heartbeat (not implemented)', errorCategory: enterpriseWorkerEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));`
+- **MEDIUM** `backend/services/platformHealth.js:464` — `dependency: 'CMS scheduler heartbeat (not implemented)', errorCategory: cmsEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));`
+- **MEDIUM** `backend/services/publicAppUrl.js:13` — `* Placeholder / example / loopback hosts are rejected in production so we`
+- **MEDIUM** `backend/services/publicAppUrl.js:17` — `const PLACEHOLDER_HOST_EXACT = new Set([`
+- **MEDIUM** `backend/services/publicAppUrl.js:40` — `function isPlaceholderHost(host) {`
+- **MEDIUM** `backend/services/publicAppUrl.js:43` — `if (PLACEHOLDER_HOST_EXACT.has(h)) return true;`
+- **MEDIUM** `backend/services/publicAppUrl.js:69` — `if (production && isPlaceholderHost(parsed.hostname)) {`
+- **MEDIUM** `backend/services/publicAppUrl.js:70` — `throw Object.assign(new Error(\`${source} must be a real public hostname in production (not a placeholder, example, or loopback host)\`), { code: 'PUBLIC_APP_URL_INVALID', status: 500 });`
+- **MEDIUM** `backend/services/publicAppUrl.js:138` — `if (isProduction(env) && isPlaceholderHost(parsed.hostname)) {`
+- **MEDIUM** `backend/services/publicAppUrl.js:139` — `throw Object.assign(new Error('Email action URL must not use a placeholder or loopback host'), { code: 'EMAIL_ACTION_URL_INVALID', status: 500 });`
+- **MEDIUM** `backend/services/publicAppUrl.js:150` — `isPlaceholderHost,`
+- **MEDIUM** `backend/test/admin-tenant-assignment.test.js:346` — `// canonical resolution boundary. Identity lookup is stubbed to keep the`
+- **MEDIUM** `backend/test/ai-runtime.test.js:42` — `assert.doesNotMatch(work, /Fortune 500|invent|placeholder metrics/i);`
+- **MEDIUM** `backend/test/email-deliverability-resilience.test.js:136` — `// Stub createTransporter to capture mail options`
+- **MEDIUM** `backend/test/mariadb-query-budget.test.js:103` — `// Provider transport is stubbed at the fetch boundary: statuses never activate,`
+- **MEDIUM** `backend/test/public-app-url.test.js:7` — `isPlaceholderHost,`
+- **MEDIUM** `backend/test/public-app-url.test.js:41` — `test('production rejects placeholder and loopback hosts', () => {`
+- **MEDIUM** `backend/test/public-app-url.test.js:80` — `assert.equal(isPlaceholderHost('resumepilot.example'), true);`
+- **MEDIUM** `tests/admin-ux-consistency.test.mjs:99` — `if (/^(?:enter|paste|your|e\.g\.|example|placeholder|https?:)/i.test(value)) continue;`
+- **MEDIUM** `tests/audit-09-live-browser-ux.mjs:60` — `await page.$('.command-palette, [role="dialog"], input[placeholder*="Search"]');`
+- **MEDIUM** `tests/blog-list-fallback.test.mjs:12` — `* This test loads the REAL module with its Firebase dependency stubbed via`
+- **MEDIUM** `tests/blog-list-fallback.test.mjs:32` — `/** Firestore stub whose query chain always rejects, forcing the catch path. */`
+- **MEDIUM** `tests/blog-list-fallback.test.mjs:48` — `const fireStub = {`
+- **MEDIUM** `tests/blog-list-fallback.test.mjs:62` — `return { url: abs('tests/helpers/empty-stub.mjs'), shortCircuit: true, format: 'module' };`
+- **MEDIUM** `tests/blog-list-fallback.test.mjs:80` — `return { format: 'module', shortCircuit: true, source: \`export default globalThis.__FIRE_STUB__;\n\` };`
+- **MEDIUM** `tests/blog-list-fallback.test.mjs:89` — `globalThis.__FIRE_STUB__ = fireStub;`
+- **MEDIUM** `tests/enterprise-e2e.spec.js:320` — `await page.locator('input[placeholder*="Action contains"]').fill('SUPPORT_GRANT');`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:1` — `// Shared inert stub for module-hook based tests. Provides both a default and`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:4` — `const stub = new Proxy(function noop() {}, {`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:5` — `get: (target, prop) => (prop === 'default' ? stub : stub),`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:6` — `apply: () => stub,`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:7` — `construct: () => stub,`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:9` — `export default stub;`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:10` — `export const initializeApp = stub;`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:11` — `export const firestore = stub;`
+- **MEDIUM** `tests/helpers/empty-stub.mjs:12` — `export const auth = stub;`
+- **MEDIUM** `tests/i18n.test.mjs:21` — `function placeholders(value) {`
+- **MEDIUM** `tests/i18n.test.mjs:48` — `if (placeholders(value).join('|') !== placeholders(english[key]).join('|')) mismatches.push(\`${code}:${key}\`);`
+- **MEDIUM** `tests/interview-coach-lifecycle.test.mjs:30` — `// Stub the app-shell dependencies so the Interview Coach renders in isolation`
+- **MEDIUM** `tests/interview-coach-lifecycle.test.mjs:32` — `const stubPlugin = {`
+- **MEDIUM** `tests/interview-coach-lifecycle.test.mjs:33` — `name: 'interview-coach-test-stubs',`
+- **MEDIUM** `tests/interview-coach-lifecycle.test.mjs:95` — `const roleInput = root.querySelector('input[placeholder="Software Engineer"]');`
+- **MEDIUM** `tests/interview-coach-lifecycle.test.mjs:123` — `plugins: [react(), stubPlugin],`
+- **MEDIUM** `tests/interview-coach-lifecycle.test.mjs:240` — `assert.ok(root().querySelector('input[placeholder="Software Engineer"]'), 'setup screen restored, no corrupt exam state');`
+- **MEDIUM** `tests/live-production-audit.spec.cjs:88` — `await page.fill('input[placeholder="e.g., CI/CD Pipeline"]', 'Audit Key');`
+- **MEDIUM** `tests/platform-health.spec.js:116` — `await page.getByPlaceholder('Search services…').fill('paypal');`
+- **MEDIUM** `tests/platform-health.spec.js:120` — `await page.getByPlaceholder('Search services…').fill('nothing-matches-this');`
+- **MEDIUM** `tests/platform-health.spec.js:202` — `await page.getByPlaceholder('Search endpoint path or dependency…').fill('paypal');`
+- **MEDIUM** `tests/platform-health.spec.js:204` — `await page.getByPlaceholder('Search endpoint path or dependency…').fill('');`
+- **MEDIUM** `tests/platform-health.spec.js:228` — `await page.getByPlaceholder('Search endpoint path or dependency…').fill('zzz-no-such-route');`
+- **MEDIUM** `tests/portfolio-data.test.mjs:3` — `import { PORTFOLIO_TEMPLATE_IDS, assertNoSilentDataLoss, buildPortfolioDocument, collectPortfolioFieldMatrix, convertResumeToPortfolio, createLargePortfolioFixture, extractCanonicalFromPuck, isLikelyP`
+- **MEDIUM** `tests/portfolio-data.test.mjs:74` — `test('empty and partial resumes never invent placeholder personas', () => {`
+- **MEDIUM** `tests/portfolio-data.test.mjs:77` — `assert.equal(isLikelyPlaceholderPersona(empty), false);`
+- **MEDIUM** `tests/portfolio-data.test.mjs:82` — `assert.equal(isLikelyPlaceholderPersona(headingOnly), false);`
+- **MEDIUM** `tests/portfolio-data.test.mjs:147` — `{ type: 'About', props: { content: 'Neon placeholder' } },`
+- **MEDIUM** `tests/portfolio-data.test.mjs:150` — `assert.equal(isLikelyPlaceholderPersona(extracted), true);`
+- **MEDIUM** `tests/portfolio-webcv-browser.mjs:62` — `if (/Alex Cyber|Sofia Martinez|dev@terminal/i.test(audit.text)) problems.push('placeholder-persona');`
+- **MEDIUM** `tests/product-ux-audit-regressions.test.mjs:69` — `assert.doesNotMatch(review, /placeholder|services\/firebase|window\.prompt/);`
+- **MEDIUM** `tests/real-browser-batch1-homepage.mjs:245` — `const searchInput = await page.locator('input[type="search"], input[placeholder*="search" i], input[placeholder*="Search" i], input[placeholder*="job" i]').first();`
+- **MEDIUM** `tests/real-browser-batch1-homepage.mjs:315` — `const nameInput = await page.locator('input[name="name"], input[placeholder*="name" i]').first();`
+- **MEDIUM** `tests/real-browser-batch1-homepage.mjs:321` — `const emailInput = await page.locator('input[name="email"], input[type="email"], input[placeholder*="email" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:143` — `const firstNameInput = await page.locator('input[name="firstName"], input[placeholder*="first" i], input[id*="first" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:153` — `const lastNameInput = await page.locator('input[name="lastName"], input[placeholder*="last" i], input[id*="last" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:161` — `const emailInput = await page.locator('input[name="email"], input[type="email"], input[placeholder*="email" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:169` — `const phoneInput = await page.locator('input[name="phone"], input[type="tel"], input[placeholder*="phone" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:177` — `const titleInput = await page.locator('input[name="title"], input[name="jobTitle"], input[placeholder*="title" i], input[placeholder*="position" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:185` — `const addressInput = await page.locator('input[name="address"], input[name="location"], input[placeholder*="address" i], input[placeholder*="city" i], input[placeholder*="location" i]').first();`
+- **MEDIUM** `tests/real-browser-batch2-resume-builder.mjs:243` — `const name = await inputs[i].evaluate(el => el.name || el.placeholder || \`input-${i}\`);`
+- **MEDIUM** `tests/real-browser-batch3-admin.mjs:132` — `const name = await inputs[i].evaluate(el => el.name || el.placeholder || el.id || \`input-${i}\`);`
+- **MEDIUM** `tests/real-browser-master-execution.mjs:105` — `const name = await el.evaluate(e => e.name || e.placeholder || e.id || \`input-${i}\`, { timeout: 300 }).catch(() => \`input-${i}\`);`
+- **MEDIUM** `tests/real-browser-master-execution.mjs:128` — `const name = await el.evaluate(e => e.name || e.placeholder || e.id || \`ta-${i}\`, { timeout: 300 }).catch(() => \`ta-${i}\`);`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:19` — `* placeholders that intentionally look similar.`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:111` — `/** Documented placeholders that must never trip the scanner. */`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:112` — `const DOCUMENTED_PLACEHOLDERS = [`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:129` — `test('the credential scanner stays quiet on documented placeholders', () => {`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:132` — `const start = scannerSource.indexOf('const placeholders = [');`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:133` — `assert.notEqual(start, -1, 'the scanner must declare its placeholder allowlist');`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:138` — `for (const placeholder of DOCUMENTED_PLACEHOLDERS) {`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:139` — `let scrubbed = placeholder;`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:143` — `if (patterns.some(pattern => pattern.test(scrubbed))) falsePositives.push(placeholder);`
+- **MEDIUM** `tests/secret-scanner-efficacy.test.mjs:145` — `assert.deepEqual(falsePositives, [], 'documented placeholders must not be reported as secrets');`
+- **MEDIUM** `tests/security-static.test.mjs:37` — `// A real Google service-account identity. The generic placeholder forms`
+- **MEDIUM** `tests/security-static.test.mjs:44` — `// Documented placeholders that intentionally look like the real thing.`
+- **MEDIUM** `tests/security-static.test.mjs:45` — `const placeholders = [`
+- **MEDIUM** `tests/security-static.test.mjs:54` — `const scrubbed = placeholders.reduce((text, placeholder) => text.replace(new RegExp(placeholder, 'g'), ''), content);`
+- **MEDIUM** `tests/superadmin-adm.spec.js:81` — `await expect(page.getByPlaceholder('Type a command, module, or setting name…')).toBeVisible();`
+- **MEDIUM** `tests/superadmin-adm.spec.js:82` — `await page.getByPlaceholder('Type a command, module, or setting name…').fill('security');`
+- **MEDIUM** `tests/superadmin-live-forensic.spec.js:50` — `await page.fill('input[placeholder="Search users..."]', 'bhaskar.beyond@gmail.com');`
+- **MEDIUM** `tests/superadmin-live-forensic.spec.js:67` — `await page.fill('input[placeholder="Acme Corp"]', 'Forensic Audit Test Tenant');`
+- **MEDIUM** `tests/superadmin-live-forensic.spec.js:68` — `await page.fill('input[placeholder="acme-corp"]', testTenantSlug);`
+- **MEDIUM** `tests/superadmin-live-forensic.spec.js:75` — `await page.fill('input[placeholder="Search tenants..."]', testTenantSlug);`
+- **MEDIUM** `tests/superadmin-live-forensic.spec.js:94` — `await page.fill('input[placeholder="Reason for decommissioning"]', 'Forensic audit cleanup');`
+- **MEDIUM** `tests/template-quality-gate.test.mjs:5` — `*   G2. No fabricated placeholder personal data in template fallbacks.`
+- **MEDIUM** `tests/template-quality-gate.test.mjs:49` — `test('G2: no fabricated placeholder personal data in template fallbacks', () => {`
+- **MEDIUM** `tests/test-interview-coach-adversarial-browser.mjs:89` — `const roleInput = page.locator('input[placeholder="Software Engineer"]');`
+- **MEDIUM** `tests/test-interview-coach-adversarial-browser.mjs:207` — `await pageTab1.locator('input[placeholder="Software Engineer"]').fill('Security Engineer');`
+- **MEDIUM** `tests/test-interview-coach-browser.mjs:126` — `const roleInput = page.locator('input[placeholder="Software Engineer"]');`
+- **MEDIUM** `tests/test-live-authenticated-enterprise.spec.js:200` — `await page.locator('input[placeholder*="Engineering"]').fill(\`QA Team ${Date.now()}\`);`
+- **MEDIUM** `tests/test-live-authenticated-enterprise.spec.js:227` — `await page.locator('input[placeholder*="Workspace name"]').fill(wsName);`
+
+## test.skip (22)
+
+- **LOW** `tests/admin-superadmin-live-certification.spec.js:71` — `test.skip(!LIVE_ENABLED, !BASE ? 'Set LIVE_CERT_BASE_URL to enable live certification.' : 'Set LIVE_CERT_SUPERADMIN_EMAIL and LIVE_CERT_SUPERADMIN_PASSWORD.');`
+- **LOW** `tests/admin-superadmin-live-certification.spec.js:126` — `test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, 'Set LIVE_CERT_ADMIN_EMAIL and LIVE_CERT_ADMIN_PASSWORD for ADMIN negative checks.');`
+- **LOW** `tests/admin-superadmin-live-certification.spec.js:182` — `test.skip(!DESTRUCTIVE, 'Set LIVE_CERT_ALLOW_DESTRUCTIVE=1 only in an isolated certification window; verify-crud-live.mjs owns disposable mutations.');`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:108` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:127` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:143` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:161` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:187` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:219` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:232` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:248` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:281` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/certification/firestore-off-boot.test.mjs:309` — `if (!dbConn) { t.skip('disposable certification database not configured'); return; }`
+- **LOW** `tests/enterprise-live.spec.js:42` — `test.skip(!HAVE_CREDS, 'LIVE suite skipped: set VITE_FIREBASE_KEY, PROD_TEST_EMAIL, PROD_TEST_PASSWORD.');`
+- **LOW** `tests/playwright-accessibility.spec.js:69` — `test.skip(html.match(/unhandled|runtime error|minified react error/i), 'page crashed, skipping a11y');`
+- **LOW** `tests/production-delivery-integration.test.mjs:73` — `t.skip('python3 is required for gateway installer test');`
+- **LOW** `tests/production-delivery-integration.test.mjs:149` — `t.skip('python3 is required for release receiver integration test');`
+- **LOW** `tests/production-delivery-security.test.mjs:169` — `if (!hasPython3) { t.skip('python3 is required for release builder execution'); return; }`
+- **LOW** `tests/production-delivery-security.test.mjs:240` — `if (!hasPython3) { t.skip('python3 is required for release builder execution'); return; }`
+- **LOW** `tests/production-delivery-security.test.mjs:276` — `if (!hasPython3) { t.skip('python3 is required for release builder execution'); return; }`
+- **LOW** `tests/production-live.spec.cjs:66` — `test.skip(!liveConfig || readinessError, 'Target-bound production approval and ADC are required; a skip is NOT VERIFIED.');`
+- **LOW** `tests/test-live-authenticated-enterprise.spec.js:22` — `test.skip(!liveBaseUrl || !liveApproved,`

@@ -436,7 +436,6 @@ class Welcome extends Component {
             if (pages && Array.isArray(pages)) {
                 this.setState({ pages });
             } else {
-                console.log('no pages found');
                 this.setState({ pages: [] });
             }
 

@@ -284,7 +284,6 @@ const HeroCategory = {
     resolveFields: (data) => {
         const { template = 'classic' } = data.props || {};
 
-        console.log('🔧 DEBUG: Hero resolveFields called with template:', template);
 
         // Always include the template selector field
         const baseFields = {
@@ -298,7 +297,6 @@ const HeroCategory = {
         // Get template-specific fields
         const templateFields = templateFieldMappings[template] || templateFieldMappings.classic;
 
-        console.log('🔧 DEBUG: Resolved fields for template:', template, Object.keys(templateFields));
 
         return {
             ...baseFields,
@@ -335,7 +333,6 @@ const HeroCategory = {
     },
     render: ({ template, ...props }) => {
         const SelectedTemplate = heroTemplates[template] || Hero1;
-        console.log('🔧 DEBUG: Hero template selected:', template);
 
         // Merge with default props to ensure all required props are available
         const mergedProps = { ...HeroCategory.defaultProps, ...props };
@@ -355,7 +352,6 @@ const HeroCategory = {
             }
         }
 
-        console.log('🔧 DEBUG: Hero merged props:', templateProps);
 
         return SelectedTemplate.render(templateProps);
     },

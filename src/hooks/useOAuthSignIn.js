@@ -117,7 +117,6 @@ export function useOAuthSignIn({ onSuccess, onError } = {}) {
                 error.code === 'auth/unauthorized-domain' ||
                 error.code === 'auth/configuration-not-found'
             ) {
-                console.log('[Google Fallback] Firebase Auth not configured — using GIS SDK fallback.');
                 try {
                     const { directGoogleAuthFallback } = await import('../utils/googleSdkAuth');
                     directGoogleAuthFallback(
@@ -161,7 +160,6 @@ export function useOAuthSignIn({ onSuccess, onError } = {}) {
                 error.code === 'auth/unauthorized-domain' ||
                 error.code === 'auth/configuration-not-found'
             ) {
-                console.log('[FB Fallback] Firebase Auth not configured — using Direct FB SDK fallback.');
                 try {
                     const { directFacebookAuthFallback } = await import('../utils/facebookSdkAuth');
                     directFacebookAuthFallback(

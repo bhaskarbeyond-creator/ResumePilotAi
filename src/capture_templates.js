@@ -15,7 +15,6 @@ async function run() {
         const page = await context.newPage();
         
         const url = `http://localhost:5173/export/${tpl}/${resumeId}/${language}`;
-        console.log(`\nCapturing ${tpl} preview with candidate's EXACT screenshot data...`);
         
         try {
             await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -47,9 +46,7 @@ async function run() {
             } else {
                 await page.screenshot({ path: ssPath, fullPage: true });
             }
-            console.log(`  Saved: template_${tpl.toLowerCase()}.png`);
-        } catch (err) {
-            console.log(`  Failed ${tpl}: ${err.message}`);
+        } catch (_err) {
         }
         
         await page.close();

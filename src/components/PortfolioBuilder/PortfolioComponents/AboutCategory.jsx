@@ -396,7 +396,6 @@ const AboutCategory = {
     resolveFields: (data) => {
         const { template = 'traditional' } = data.props || {};
 
-        console.log('🔧 DEBUG: About resolveFields called with template:', template);
 
         // Always include the template selector field
         const baseFields = {
@@ -410,7 +409,6 @@ const AboutCategory = {
         // Get template-specific fields
         const templateFields = templateFieldMappings[template] || templateFieldMappings.traditional;
 
-        console.log('🔧 DEBUG: Resolved fields for About template:', template, Object.keys(templateFields));
 
         return {
             ...baseFields,
@@ -444,7 +442,6 @@ const AboutCategory = {
     },
     render: ({ template, ...props }) => {
         const SelectedTemplate = aboutTemplates[template] || About1;
-        console.log('🔧 DEBUG: About template selected:', template);
 
         // Merge with default props to ensure all required props are available
         const mergedProps = { ...AboutCategory.defaultProps, ...props };
@@ -452,7 +449,6 @@ const AboutCategory = {
         // Remove template from props since it's used for template selection
         const { template: _, ...templateProps } = mergedProps;
 
-        console.log('🔧 DEBUG: About merged props:', templateProps);
 
         return SelectedTemplate.render(templateProps);
     },

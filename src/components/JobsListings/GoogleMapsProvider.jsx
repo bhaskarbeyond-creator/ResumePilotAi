@@ -35,7 +35,6 @@ const GoogleMapsProvider = ({ children, apiKey }) => {
         }
 
         if (!apiKey) {
-            console.debug('Google Maps API key is not configured - using graceful fallback');
             setLoadError(null);
             setIsLoaded(false);
             return;
@@ -53,12 +52,10 @@ const GoogleMapsProvider = ({ children, apiKey }) => {
         script.defer = true;
 
         script.onload = () => {
-            console.log('Google Maps script loaded successfully');
             
             // Give the API more time to initialize, then check if it's available
             const checkApiAvailable = () => {
                 if (window.google && window.google.maps && window.google.maps.places) {
-                    console.log('Google Maps Places API is available');
                     setIsLoaded(true);
                     return true;
                 }

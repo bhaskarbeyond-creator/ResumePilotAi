@@ -26,7 +26,6 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
             // Create a dummy div for PlacesService (required by Google)
             const dummyDiv = document.createElement('div');
             placesService.current = new window.google.maps.places.PlacesService(dummyDiv);
-            console.log('Google Places services initialized');
         }
     }, [isLoaded]);
 
@@ -96,7 +95,6 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
                 autocompleteService.current = new window.google.maps.places.AutocompleteService();
                 setQuotaExceeded(false);
                 setErrorMessage('');
-                console.log('Reinitializing Google Places service after quota error');
             } catch (error) {
                 console.error('Failed to reinitialize service:', error);
                 setErrorMessage('Service temporarily unavailable. Please try again later.');
@@ -119,7 +117,6 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
             autocompleteService.current.getPlacePredictions(request, (predictions, status) => {
                 setIsLoading(false);
 
-                console.log('Google Places API response status:', status);
 
                 switch (status) {
                     case window.google.maps.places.PlacesServiceStatus.OK:
@@ -146,7 +143,6 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
                         setSuggestions([]);
                         setShowSuggestions(false);
                         setErrorMessage('');
-                        console.log('No results found for:', input);
                         break;
 
                     case window.google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT:
@@ -263,7 +259,6 @@ const CustomLocationAutocomplete = ({ value, onChange, placeholder = 'Location',
 
     // Fallback to SimpleLocationInput if Google Maps is not available
     if (loadError || !isLoaded) {
-        console.log('Using SimpleLocationInput fallback for custom autocomplete');
         return <SimpleLocationInput value={value} onChange={onChange} placeholder={placeholder} className={className} />;
     }
 

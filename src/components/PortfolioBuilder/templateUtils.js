@@ -238,7 +238,6 @@ export const loadTemplate = async (templateKey, initialData, setPortfolioData, s
         // 🔒 SECURITY: Sanitize all template components
         if (templateData.content) {
             templateData.content = templateData.content.map((component) => {
-                console.log(`🔧 Loading template component: ${component.type}`);
                 return SecurityUtils.sanitizeComponentProps(component);
             });
         }
@@ -401,9 +400,7 @@ export const validateTemplatesSecurity = () => {
     });
 
     // Log security validation results
-    if (securityIssues.length === 0) {
-        console.log('🔒 SECURITY: All templates passed security validation ✅');
-    } else {
+    if (securityIssues.length > 0) {
         console.warn('🔒 SECURITY: Found potential security issues in templates:');
         securityIssues.forEach((template) => {
             console.warn(`\n📋 Template: ${template.templateName} (${template.templateKey})`);

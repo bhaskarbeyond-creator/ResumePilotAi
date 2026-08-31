@@ -18,9 +18,7 @@ function DashboardFavourites(props) {
 
     // log hello when this component is mounted
     useEffect(() => {
-        if (props.isFavoritesShowed) {
-            console.log('fetch Favourites');
-        }
+        if (props.isFavoritesShowed) { /* no-op */ }
 
         // clear favourites
         setFavourites([]);
@@ -101,7 +99,6 @@ function DashboardFavourites(props) {
     const handleFavourites = () => {
         if (favouritesContent.length > 0) {
             return favouritesContent.map((favourite) => {
-                console.log(favourite);
                 return (
                     <div className="dashboard-favourites-modal-body-content-item">
                         <div className="favourites-item-icon">

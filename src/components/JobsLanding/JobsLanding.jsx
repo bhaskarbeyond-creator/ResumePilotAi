@@ -25,7 +25,6 @@ const JobsLanding = () => {
 
     const handleLogout = () => {
         fire.auth().signOut().then(() => {
-            console.log('User signed out successfully');
         }).catch((error) => {
             console.error('Error signing out:', error);
         });

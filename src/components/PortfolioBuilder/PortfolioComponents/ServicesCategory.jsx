@@ -100,7 +100,6 @@ const ServicesCategory = {
     resolveFields: (data) => {
         const { template = 'cards' } = data.props || {};
         
-        console.log('🔧 DEBUG: Services resolveFields called with template:', template);
         
         // Always include the template selector field
         const baseFields = {
@@ -120,7 +119,6 @@ const ServicesCategory = {
         // Get template-specific fields
         const templateFields = templateFieldMappings[template] || templateFieldMappings.cards;
         
-        console.log('🔧 DEBUG: Resolved fields for Services template:', template, Object.keys(templateFields));
         
         return {
             ...baseFields,
@@ -170,7 +168,6 @@ const ServicesCategory = {
     },
     render: ({ template, ...props }) => {
         const SelectedTemplate = servicesTemplates[template] || Services1;
-        console.log('🔧 DEBUG: Services template selected:', template);
 
         // Merge with default props to ensure all required props are available
         const mergedProps = { ...ServicesCategory.defaultProps, ...props };
@@ -178,7 +175,6 @@ const ServicesCategory = {
         // Remove template from props since it's used for template selection
         const { template: _, ...templateProps } = mergedProps;
 
-        console.log('🔧 DEBUG: Services merged props:', templateProps);
 
         return SelectedTemplate.render(templateProps);
     },

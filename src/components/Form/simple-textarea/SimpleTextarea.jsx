@@ -140,7 +140,6 @@ function InitialContentPlugin({ htmlContent, isExternalUpdate }) {
     // 2. When we receive significantly different content (like from AI)
 
     if (!hasInitialized && htmlContent && htmlContent.trim()) {
-      console.log("Initializing editor with HTML content:", htmlContent);
 
       isExternalUpdate.current = true;
 
@@ -154,7 +153,6 @@ function InitialContentPlugin({ htmlContent, isExternalUpdate }) {
           root.clear();
           root.append(...nodes);
 
-          console.log("Successfully initialized editor content");
           setHasInitialized(true);
           lastSetContentRef.current = htmlContent;
         } catch (error) {
@@ -190,7 +188,6 @@ function InitialContentPlugin({ htmlContent, isExternalUpdate }) {
               Math.max(newText.length, currentText.length) * 0.5); // Major content change
 
         if (shouldUpdate) {
-          console.log("Updating editor with external content:", htmlContent);
 
           isExternalUpdate.current = true;
 
@@ -200,7 +197,6 @@ function InitialContentPlugin({ htmlContent, isExternalUpdate }) {
                 root.clear();
                 const paragraph = $createParagraphNode();
                 root.append(paragraph);
-                console.log("Cleared editor content");
               } else {
                 const parser = new DOMParser();
                 const dom = parser.parseFromString(htmlContent, "text/html");
@@ -208,7 +204,6 @@ function InitialContentPlugin({ htmlContent, isExternalUpdate }) {
 
                 root.clear();
                 root.append(...nodes);
-                console.log("Successfully updated editor content");
               }
 
               lastSetContentRef.current = htmlContent || "";

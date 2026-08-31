@@ -74,7 +74,6 @@ const CreateJob = () => {
         setLoadingCompanies(true);
         try {
             const approvedCompanies = await getApprovedEmployerCompanies(user.uid);
-            console.log('Found approved companies:', approvedCompanies.length);
             setCompanies(approvedCompanies);
         } catch (error) {
             console.error('Error loading companies:', error);
@@ -172,7 +171,6 @@ const CreateJob = () => {
                 throw new Error('User not authenticated');
             }
 
-            console.log('User is employer:', isEmployer);
 
             // Validate that a company is selected
             if (!formData.selectedCompanyId) {
@@ -213,11 +211,9 @@ const CreateJob = () => {
             // Create job posting
 
             const result = await createJobPosting(user.uid, jobData);
-            console.log('Job creation result:', result);
 
             if (result.success) {
                 setShowSuccess(true);
-                console.log('Job created successfully with ID:', result.jobId);
 
                 // Reset form after success
                 setTimeout(() => {

@@ -31,7 +31,6 @@ const CompaniesManagement = ({ showToast, _sidebarCollapsed, t }) => {
 
     const loadCompanies = async () => {
         if (!user?.uid) {
-            console.log('❌ No user found, cannot load companies');
             setLoading(false);
             return;
         }
@@ -40,8 +39,6 @@ const CompaniesManagement = ({ showToast, _sidebarCollapsed, t }) => {
         try {
             const employerCompanies = await getEmployerCompanies(user.uid);
 
-            console.log('📊 Raw companies from database:', employerCompanies);
-            console.log('📊 Number of companies found:', employerCompanies ? employerCompanies.length : 0);
 
             if (employerCompanies && employerCompanies.length > 0) {
                 const transformedCompanies = employerCompanies.map((company) => ({
@@ -72,7 +69,6 @@ const CompaniesManagement = ({ showToast, _sidebarCollapsed, t }) => {
                     ...company,
                 }));
 
-                console.log('✅ Transformed companies:', transformedCompanies);
                 setCompanies(transformedCompanies);
             } else {
                 setCompanies([]);

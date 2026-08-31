@@ -37,9 +37,6 @@ class CoversList extends Component {
             localStorage.removeItem('currentCoverId');
             localStorage.removeItem('currentCoverItem');
         }
-        var array = this.state.covers;
-        console.log('array is this');
-        console.log(array);
         // Notifying the state that a cover has been deleted
         this.props.showDeletedToast();
         setTimeout(() => {
@@ -94,7 +91,6 @@ class CoversList extends Component {
         localStorage.removeItem('currentCoverItem');
         localStorage.removeItem('currentResumeId');
         localStorage.removeItem('currentResumeItem');
-        console.log('Starting new cover letter creation');
     }
     componentWillMount() {
         fire.auth().onAuthStateChanged((user) => {

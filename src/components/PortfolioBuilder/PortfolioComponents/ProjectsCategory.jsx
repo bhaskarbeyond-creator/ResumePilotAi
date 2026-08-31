@@ -213,7 +213,6 @@ const ProjectsCategory = {
     resolveFields: (data) => {
         const { template = 'grid' } = data.props || {};
 
-        console.log('🔧 DEBUG: Projects resolveFields called with template:', template);
 
         // Always include the template selector field
         const baseFields = {
@@ -227,7 +226,6 @@ const ProjectsCategory = {
         // Get template-specific fields
         const templateFields = templateFieldMappings[template] || templateFieldMappings.grid;
 
-        console.log('🔧 DEBUG: Resolved fields for Projects template:', template, Object.keys(templateFields));
 
         return {
             ...baseFields,
@@ -268,7 +266,6 @@ const ProjectsCategory = {
     },
     render: ({ template, ...props }) => {
         const SelectedTemplate = projectsTemplates[template] || Projects1;
-        console.log('🔧 DEBUG: Projects template selected:', template);
 
         // Merge with default props to ensure all required props are available
         const mergedProps = { ...ProjectsCategory.defaultProps, ...props };
@@ -276,7 +273,6 @@ const ProjectsCategory = {
         // Remove template from props since it's used for template selection
         const { template: _, ...templateProps } = mergedProps;
 
-        console.log('🔧 DEBUG: Projects merged props:', templateProps);
 
         return SelectedTemplate.render(templateProps);
     },

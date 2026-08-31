@@ -22,7 +22,6 @@ function DashboardPagination(props) {
                 pageNumbers.push(i);
             }
         }
-        console.log(pageNumbers);
         // set the page numbers
         setPageNumbers(pageNumbers);
     };

@@ -216,7 +216,6 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
             const result = await createJobPosting(user.uid, jobData);
 
             if (result.success) {
-                console.log('✅ Job created successfully with ID:', result.jobId);
                 setShowSuccess(true);
 
                 // Call callback if provided
@@ -247,7 +246,6 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
         setLoadingCompanies(true);
         try {
             const approvedCompanies = await getApprovedEmployerCompanies(user.uid);
-            console.log('Found approved companies:', approvedCompanies.length);
             setCompanies(approvedCompanies);
         } catch (error) {
             console.error('Error loading companies:', error);
