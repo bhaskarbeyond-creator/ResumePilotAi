@@ -17,7 +17,8 @@ function request(method, path, token, body){
   });
 }
 async function login(email){
-  const r = await request("POST","/api/auth/preview-login",null,{email,password:"password123"});
+  const password = process.env.TEST_PASSWORD || '';
+  const r = await request("POST","/api/auth/preview-login",null,{email,password});
   if(r.status!==200||!r.data.token) throw new Error("login failed for "+email+": "+r.status);
   return r.data.token;
 }

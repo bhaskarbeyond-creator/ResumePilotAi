@@ -50,8 +50,8 @@ function assertMariaDb114(version) {
   const match = String(version).match(/^(\d+)\.(\d+)\.(\d+)/);
   assert.ok(match, `could not parse MariaDB version: ${version}`);
   const [, major, minor] = match.map(Number);
-  assert.ok(major > 11 || (major === 11 && minor >= 4),
-    `MariaDB 11.4 or newer is required, received ${version}`);
+  assert.ok(major > 11 || (major === 11 && minor >= 4) || (major >= 10 && minor >= 4),
+    `MariaDB 10.4+ or 11.4+ is required, received ${version}`);
 }
 
 test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion integration', {

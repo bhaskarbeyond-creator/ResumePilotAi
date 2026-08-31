@@ -18,6 +18,10 @@ const mariaTest = (name, fn) => test(name, {
 
 if (!RUN_MARIADB_INTEGRATION) {
   require('./helpers/routesIntegrationContract').installRoutesIntegrationContract();
+} else {
+  const { configureAbuseCounterStoreForTests } = require('../security/abuse');
+  const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
+  configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
 }
 
 setTokenVerifierForTests(async token => {

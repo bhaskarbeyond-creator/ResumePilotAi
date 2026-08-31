@@ -208,7 +208,7 @@ test('the API matrix is filterable and is not shown on the initial dashboard', a
 
 test('Platform Health is a first-class navigation item, not a hidden debug page', async () => {
   const [admin, sidebar] = await Promise.all([source('admin'), source('sidebar')]);
-  assert.match(admin, /<Route path="health" element={<PlatformHealth \/>} \/>/);
+  assert.match(admin, /<Route path="health" element=\{[\s\S]*?<PlatformHealth \/>/);
   assert.match(sidebar, /label: 'Platform Health'/);
   assert.match(sidebar, /path: '\/adm\/health'/);
   // The nav dot is driven by the backend indicator.

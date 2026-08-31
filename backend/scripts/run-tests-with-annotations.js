@@ -10,9 +10,21 @@ const files = fs.readdirSync(testDir)
   .sort()
   .map(file => path.join('test', file));
 
+const testEnv = {
+  ...process.env,
+  NODE_ENV: 'test',
+  RUN_MARIADB_INTEGRATION: process.env.RUN_MARIADB_INTEGRATION || 'true',
+  DB_HOST: process.env.DB_HOST || '127.0.0.1',
+  DB_PORT: process.env.DB_PORT || '3306',
+  DB_USER: process.env.DB_USER || 'root',
+  DB_PASSWORD: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '',
+  DB_NAME: process.env.DB_NAME || 'airesume_test',
+  MARIADB_TEST_ALLOW_RESET: process.env.MARIADB_TEST_ALLOW_RESET || 'true',
+};
+
 const child = spawn(process.execPath, ['--test', '--test-concurrency=1', '--test-force-exit', ...files], {
   cwd: path.join(__dirname, '..'),
-  env: process.env,
+  env: testEnv,
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 
