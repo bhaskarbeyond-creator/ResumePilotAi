@@ -35,6 +35,7 @@ function describeTenantAssignmentError(err) {
 
 export default function User360Drawer({
   uid,
+  initialUser,
   onClose,
   onUserMutated,
   isSuperAdmin,
@@ -52,11 +53,9 @@ export default function User360Drawer({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedUid, setCopiedUid] = useState(false);
 
-
-
   // Edit sub-states
-  const [selectedRole, setSelectedRole] = useState('USER');
-  const [selectedPlan, setSelectedPlan] = useState('Basic');
+  const [selectedRole, setSelectedRole] = useState(initialUser?.role || 'USER');
+  const [selectedPlan, setSelectedPlan] = useState(initialUser?.membership || 'Basic');
   const [planDuration, setPlanDuration] = useState(12);
   const [aiCustomLimit, setAiCustomLimit] = useState(100);
   const [aiOverrideReason, setAiOverrideReason] = useState('');
@@ -441,9 +440,19 @@ export default function User360Drawer({
     }
   };
 
-  const u = userData?.identity;
-
-
+  const u = userData?.identity || (initialUser ? {
+    id: initialUser.id || initialUser.uid || initialUser.userId || uid,
+    userId: initialUser.id || initialUser.uid || initialUser.userId || uid,
+    uid: initialUser.id || initialUser.uid || initialUser.userId || uid,
+    email: initialUser.email || null,
+    displayName: initialUser.displayName || null,
+    role: initialUser.role || 'USER',
+    suspended: initialUser.suspended === true,
+    membership: initialUser.membership || 'Basic',
+    emailVerified: initialUser.emailVerified === true,
+    preferredCurrency: initialUser.preferredCurrency || 'INR',
+    primaryTenant: initialUser.primaryTenant || null,
+  } : null);
 
   return (
     <div
@@ -466,7 +475,7 @@ export default function User360Drawer({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 id="user-360-title" className="text-lg sm:text-xl font-black tracking-tight text-white">
-                  {u?.displayName || 'User Profile'}
+                  {u?.displayName || (loading ? 'Loading Profile...' : 'User Profile')}
                 </h2>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                   u?.suspended ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
@@ -476,9 +485,9 @@ export default function User360Drawer({
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   {u?.role || 'USER'}
                 </span>
-                {u?.subscriptionPlan && (
+                {(u?.membership || u?.subscriptionPlan) && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    {u.subscriptionPlan} Tier
+                    {u.membership || u.subscriptionPlan} Tier
                   </span>
                 )}
               </div>
@@ -553,27 +562,30 @@ export default function User360Drawer({
                         </span>
                       )}
                     </div>
-                    <p className={`text-[10px] mt-0.5 truncate ${activeTab === tab.id ? 'text-indigo-600/80' : 'text-slate-400'}`}>
-                      {tab.desc}
-                    </p>
+                    <p className="text-[10px] text-slate-400 truncate">{tab.desc}</p>
                   </div>
                 </button>
               ))}
             </div>
 
-            {/* Quick Actions Panel */}
-            <div className="p-3 bg-white rounded-2xl border border-slate-200/80 space-y-2 mt-2">
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Quick Actions</p>
+            {/* Quick Actions at Bottom of Left Rail */}
+            <div className="p-2 bg-white rounded-2xl border border-slate-200/80 space-y-2 shadow-2xs">
+              <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider px-1">Quick Actions</p>
+              
               <button
                 type="button"
                 onClick={handleSuspensionToggle}
-                disabled={busyAction === 'suspend'}
-                className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs ${
-                  u?.suspended ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                disabled={busyAction === 'suspension' || (uid === currentAdminUid && !isSuperAdmin)}
+                className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-2xs disabled:opacity-50 ${
+                  u?.suspended
+                    ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                    : 'bg-red-50 text-red-800 hover:bg-red-100 border border-red-200'
                 }`}
               >
-                {u?.suspended ? <><FiUnlock /> Restore</> : <><FiLock /> Suspend</>}
+                {u?.suspended ? <FiUnlock /> : <FiLock />}
+                {u?.suspended ? 'Reactivate Account' : 'Suspend'}
               </button>
+
               <button
                 type="button"
                 onClick={handleSendPasswordReset}
@@ -594,7 +606,16 @@ export default function User360Drawer({
                   <FiAlertTriangle className="text-red-600 shrink-0" />
                   <span>{error}</span>
                 </div>
-                <button type="button" onClick={() => setError('')} className="text-red-500 hover:text-red-700 font-bold ml-2">Dismiss</button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => loadData()}
+                    className="px-2.5 py-1 rounded-lg bg-red-200/80 hover:bg-red-200 text-red-900 font-bold transition flex items-center gap-1 cursor-pointer text-[11px]"
+                  >
+                    <FiRefreshCw className="h-3 w-3" /> Retry
+                  </button>
+                  <button type="button" onClick={() => setError('')} className="text-red-500 hover:text-red-700 font-bold ml-1 cursor-pointer">Dismiss</button>
+                </div>
               </div>
             )}
             {success && (
@@ -609,13 +630,22 @@ export default function User360Drawer({
 
             {/* Scrollable Content Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {loading ? (
+              {loading && !userData ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
               <FiRefreshCw className="h-8 w-8 animate-spin text-indigo-600" />
               <p className="text-xs font-bold uppercase tracking-wider">Loading complete User 360 profile…</p>
             </div>
           ) : !userData ? (
-            <div className="text-center py-20 text-slate-400 text-sm">User details unavailable.</div>
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 text-sm gap-3">
+              <p>User details unavailable.</p>
+              <button
+                type="button"
+                onClick={() => loadData()}
+                className="px-3.5 py-2 rounded-xl bg-indigo-50 text-indigo-700 font-bold hover:bg-indigo-100 border border-indigo-200 transition flex items-center gap-1.5 text-xs shadow-2xs cursor-pointer"
+              >
+                <FiRefreshCw className="h-3.5 w-3.5" /> Retry Fetching User
+              </button>
+            </div>
           ) : (
             <>
               {/* TAB 1: IDENTITY & SECURITY */}

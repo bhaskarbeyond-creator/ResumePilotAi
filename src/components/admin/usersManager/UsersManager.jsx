@@ -913,6 +913,7 @@ export default function UsersManager() {
       {inspectUid && (
         <User360Drawer
           uid={inspectUid}
+          initialUser={users.find(u => u.id === inspectUid || u.uid === inspectUid || u.userId === inspectUid)}
           onClose={() => setInspectUid(null)}
           onUserMutated={loadUsers}
           isSuperAdmin={isSuperAdmin}

@@ -325,42 +325,55 @@ router.post('/', async (req, res) => {
 
 // 3. USER 360 COMPREHENSIVE DETAILS (Firebase Authentication identity + MariaDB application data)
 router.get('/:uid/details', async (req, res) => {
-  const uid = String(req.params.uid || '');
+  const rawId = String(req.params.uid || '').trim();
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
   const tenantService = req.app.get('tenantService');
   const repo = req.repository || getRepository();
 
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+  if (!rawId || rawId.length > 128) {
     return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
   }
 
   try {
-    // Firebase Authentication owns identity; MariaDB owns the application profile.
-    const identity = await identityOrNull(identityAdmin, uid);
+    let identity = null;
+    let targetUid = rawId;
 
-    // 2. Fetch Profile, Content Counts, Orders, AI Entitlement, and Audit History from MariaDB (Primary)
-    const [profileResult, contentCounts, orders, aiEntitlement, securityLogs, adminLogs] = await Promise.all([
-      repo.getUser(uid),
-      repo.getUserContentCounts(uid),
-      repo.getUserPaymentOrders(uid),
-      getUserAiEntitlement(null, uid),
-      repo.getSecurityAuditLogs({ targetUid: uid, limit: 50 }),
-      repo.getAdminAuditLogs({ resourceId: uid, limit: 50 }),
+    // Direct lookup by email if rawId has '@', else lookup by UID
+    if (rawId.includes('@')) {
+      try {
+        identity = await identityAdmin.auth().getUserByEmail(rawId);
+        if (identity) targetUid = identity.uid;
+      } catch (_) {}
+    } else {
+      identity = await identityOrNull(identityAdmin, rawId);
+    }
+
+    // 2. Fetch Profile, Content Counts, Orders, AI Entitlement, and Audit History from MariaDB
+    let profileResult = await repo.getUser(targetUid);
+    if (!profileResult && rawId.includes('@')) {
+      profileResult = await repo.getUserByEmail(rawId).catch(() => null);
+    }
+
+    const [contentCounts, orders, aiEntitlement, securityLogs, adminLogs] = await Promise.all([
+      repo.getUserContentCounts(targetUid).catch(() => ({})),
+      repo.getUserPaymentOrders(targetUid).catch(() => []),
+      getUserAiEntitlement(null, targetUid).catch(() => ({ uid: targetUid, plan: 'Basic', baseQuota: 10, effectiveLimit: 10, usedToday: 0, remainingToday: 10 })),
+      repo.getSecurityAuditLogs({ targetUid, limit: 50 }).catch(() => []),
+      repo.getAdminAuditLogs({ resourceId: targetUid, limit: 50 }).catch(() => []),
     ]);
+
     if (!identity && !profileResult) {
       return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.', requestId: res.locals.requestId });
     }
 
     const profile = profileResult || {};
-    const baseUser = adminUserProjection(identity, profile, uid);
+    const baseUser = adminUserProjection(identity, profile, targetUid);
 
-    // 3. Resolve tenant memberships
-    if (!tenantService?.registry) {
-      throw Object.assign(new Error('Tenant registry unavailable'), { code: 'TENANT_SERVICE_UNAVAILABLE', status: 503 });
-    }
+    // 3. Resolve tenant memberships (graceful degradation if tenant service is offline)
     let detailedTenants = [];
-    {
-        const memberships = await tenantService.registry.listMemberships(uid);
+    if (tenantService?.registry) {
+      try {
+        const memberships = await tenantService.registry.listMemberships(targetUid);
         if (memberships.length) {
           detailedTenants = memberships.map(m => {
             const tId = m.tenantId || m.tenant?.id || m.id;
@@ -382,6 +395,9 @@ router.get('/:uid/details', async (req, res) => {
             };
           });
         }
+      } catch (tenantErr) {
+        console.warn('[User 360 tenant resolution warning]', tenantErr.message);
+      }
     }
 
     // 4. Format both durable audit streams.
@@ -447,23 +463,37 @@ router.get('/:uid/details', async (req, res) => {
 
 // 4. GET SINGLE USER PROJECTION (MariaDB application profile)
 router.get('/:uid', async (req, res) => {
-  const uid = String(req.params.uid || '');
+  const rawId = String(req.params.uid || '').trim();
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
   const repo = req.repository || getRepository();
 
-  if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) {
+  if (!rawId || rawId.length > 128) {
     return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.', requestId: res.locals.requestId });
   }
 
   try {
-    const identity = await identityOrNull(identityAdmin, uid);
-    const profile = (await repo.getUser(uid)) || {};
+    let identity = null;
+    let targetUid = rawId;
+
+    if (rawId.includes('@')) {
+      try {
+        identity = await identityAdmin.auth().getUserByEmail(rawId);
+        if (identity) targetUid = identity.uid;
+      } catch (_) {}
+    } else {
+      identity = await identityOrNull(identityAdmin, rawId);
+    }
+
+    let profile = await repo.getUser(targetUid);
+    if (!profile && rawId.includes('@')) {
+      profile = await repo.getUserByEmail(rawId).catch(() => null);
+    }
 
     if (!identity && !profile?.id && !profile?.userId) {
       return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.', requestId: res.locals.requestId });
     }
 
-    return res.json({ success: true, user: adminUserProjection(identity, profile, uid) });
+    return res.json({ success: true, user: adminUserProjection(identity, profile || {}, targetUid) });
   } catch (_error) {
     return res.status(500).json({ success: false, code: 'USER_LOAD_FAILED', error: 'Unable to load user.', requestId: res.locals.requestId });
   }
