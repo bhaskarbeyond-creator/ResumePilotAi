@@ -754,7 +754,8 @@ router.get('/security-events', async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
   try {
     const [rows] = await getPool().query(
-      `SELECT id, action, actor_uid, target_uid, category, severity, target_type,
+      `SELECT id, action, actor_uid, actor_email, actor_role, target_uid, category, severity,
+              outcome, method, pathname, status_code, ip_address, user_agent, target_type,
               target_id, metadata, request_id, created_at
        FROM security_audit_logs ORDER BY created_at DESC LIMIT ?`,
       [limit]
@@ -768,11 +769,25 @@ router.get('/security-events', async (req, res) => {
         metadata = {};
       }
       return {
-        id: row.id, action: row.action || 'UNKNOWN', actorUid: row.actor_uid || null,
-        actorEmail: metadata.actorEmail || null, targetUid: row.target_uid || null,
-        targetType: row.target_type || null, targetId: row.target_id || null,
-        category: row.category || null, severity: row.severity || 'INFO',
-        pathname: metadata.pathname || null, requestId: row.request_id || null,
+        id: row.id,
+        action: row.action || 'UNKNOWN',
+        actorUid: row.actor_uid || null,
+        actorEmail: row.actor_email || metadata.actorEmail || null,
+        actorRole: row.actor_role || null,
+        targetUid: row.target_uid || null,
+        targetType: row.target_type || null,
+        targetId: row.target_id || null,
+        tenantId: metadata.tenantId || null,
+        category: row.category || null,
+        severity: row.severity || 'INFO',
+        outcome: row.outcome || 'SUCCESS',
+        method: row.method || null,
+        pathname: row.pathname || metadata.pathname || null,
+        statusCode: row.status_code || null,
+        ipAddress: row.ip_address || null,
+        userAgent: row.user_agent || null,
+        requestId: row.request_id || null,
+        metadata,
         createdAt: isoFrom(row.created_at),
       };
     });
