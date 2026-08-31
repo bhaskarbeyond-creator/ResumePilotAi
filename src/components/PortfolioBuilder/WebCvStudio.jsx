@@ -502,7 +502,7 @@ export default function WebCvStudio({ initialPortfolio = null, _onExitAdvanced }
                             ))}
                         </div>
                     </div>
-                    <div className="overflow-auto">
+                    <div className="overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-indigo-500" tabIndex={0} role="region" aria-label="Portfolio preview (scrollable)">
                         <div className="mx-auto overflow-hidden rounded-xl bg-white shadow-lg" style={{ width: Math.min(previewWidth, 1180) }}>
                             <WebCvRenderer canonical={sanitizeCanonicalPortfolio(canonical, { template: templateKey })} templateKey={templateKey} />
                         </div>

@@ -1371,13 +1371,14 @@ class DashboardHomepage extends Component {
                       this.setPageNumber(this.state.pagination.currentPage - 1)
                     }
                     disabled={!this.state.pagination.hasPreviousPage}
+                    aria-label="Previous page"
                     className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
                       this.state.pagination.hasPreviousPage
                         ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    <FaChevronRight className="transform rotate-180 w-3 h-3 sm:w-4 sm:h-4" />
+                    <FaChevronRight aria-hidden="true" focusable="false" className="transform rotate-180 w-3 h-3 sm:w-4 sm:h-4" />
                   </button>
 
                   <span className="text-gray-600 px-2 sm:px-4 text-sm sm:text-base">
@@ -1392,13 +1393,14 @@ class DashboardHomepage extends Component {
                       this.setPageNumber(this.state.pagination.currentPage + 1)
                     }
                     disabled={!this.state.pagination.hasNextPage}
+                    aria-label="Next page"
                     className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
                       this.state.pagination.hasNextPage
                         ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    <FaChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <FaChevronRight aria-hidden="true" focusable="false" className="w-3 h-3 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               </div>

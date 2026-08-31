@@ -233,7 +233,10 @@ const BlogList = () => {
                             <div className="flex items-center gap-3">
                                 {/* Category Filter */}
                                 <div className="relative">
-                                    <select 
+                                    <label htmlFor="blog-category-filter" className="sr-only">Filter by category</label>
+                                    <select
+                                        id="blog-category-filter"
+                                        aria-label="Filter by category"
                                         value={selectedCategory}
                                         onChange={(e) => handleCategoryChange(e.target.value)}
                                         className="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -250,7 +253,10 @@ const BlogList = () => {
 
                                 {/* Sort Dropdown */}
                                 <div className="relative">
-                                    <select 
+                                    <label htmlFor="blog-sort-by" className="sr-only">Sort blogs</label>
+                                    <select
+                                        id="blog-sort-by"
+                                        aria-label="Sort blogs"
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
                                         className="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -69,6 +69,7 @@ class SimpleInput extends Component {
       inputProps.value = this.props.value;
     }
 
+    const title = this.props.title || this.props.name || '';
     return (
       <div
         className={
@@ -77,12 +78,14 @@ class SimpleInput extends Component {
             : "flex flex-col w-full mb-3"
         }
       >
-        <span className="mb-1.5 text-[#334155] text-[13px] font-bold tracking-wide">
-          {this.props.title}
-        </span>
-        <input {...inputProps} />
+        {title && (
+          <label htmlFor={inputId} className="mb-1.5 text-[#334155] text-[13px] font-bold tracking-wide cursor-pointer">
+            {title}
+          </label>
+        )}
+        <input {...inputProps} aria-label={title || inputProps.name || inputId} aria-required={!!this.props.required} />
         {this.props.errorMessage && (
-          <span className="text-red-500 text-xs font-medium mt-1">
+          <span className="text-red-500 text-xs font-medium mt-1" role="alert" id={`${inputId}-error`}>
             {this.props.errorMessage}
           </span>
         )}

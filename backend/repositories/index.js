@@ -31,12 +31,14 @@ function inMemoryRepository() {
 }
 
 function inMemoryRepositoryEnabled() {
-    if (process.env.NODE_ENV === 'production' && process.env.IN_MEMORY_REPOSITORY !== '1') return false;
-    // Explicit flag always wins.
+    // HARD FAIL-CLOSED: production can NEVER use the in-memory repository,
+    // regardless of env flags. Production MUST connect to MariaDB or fail
+    // closed (the ResilientRepository layer returns 503s on DB outage).
+    if (process.env.NODE_ENV === 'production') return false;
+    // Explicit opt-in flag (test/E2E/local only).
     if (process.env.IN_MEMORY_REPOSITORY === '1') return true;
-    // Auto-enable when NODE_ENV is not production and DB_* are absent and
-    // a connectivity probe has already been performed by index.js (it sets
-    // DEGRADED_MODE_REPOSITORY=inmemory on startup).
+    // Auto-enable when a non-production startup probe detected MySQL
+    // unreachable (index.js sets DEGRADED_MODE_REPOSITORY=inmemory).
     if (process.env.DEGRADED_MODE_REPOSITORY === 'inmemory') return true;
     return false;
 }

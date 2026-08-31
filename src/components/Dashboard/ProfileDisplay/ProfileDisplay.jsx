@@ -452,8 +452,8 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                     </Link>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={toggleSidebar} className="w-9 h-9 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-2xs">
-                                        <GoSidebarExpand className="w-4 h-4" />
+                                    <button onClick={toggleSidebar} aria-label="Toggle sidebar" title="Toggle sidebar" className="w-9 h-9 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 rounded-xl flex items-center justify-center transition-colors duration-200 cursor-pointer shadow-2xs">
+                                        <GoSidebarExpand className="w-4 h-4" aria-hidden="true" focusable="false" />
                                     </button>
                                 </div>
                             </div>
