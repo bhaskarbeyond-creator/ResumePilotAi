@@ -338,7 +338,7 @@ router.get('/:uid/details', async (req, res) => {
     let identity = null;
     let targetUid = rawId;
 
-    // Direct lookup by email if rawId has '@', else lookup by UID
+    // 1. Resolve identity by UID or email from Firebase Auth
     if (rawId.includes('@')) {
       try {
         identity = await identityAdmin.auth().getUserByEmail(rawId);
@@ -348,16 +348,43 @@ router.get('/:uid/details', async (req, res) => {
       identity = await identityOrNull(identityAdmin, rawId);
     }
 
-    // 2. Fetch Profile, Content Counts, Orders, AI Entitlement, and Audit History from MariaDB
-    let profileResult = await repo.getUser(targetUid);
+    // 2. Resolve application profile from MariaDB (by targetUid or rawId or identity.email)
+    let profileResult = await repo.getUser(targetUid).catch(() => null);
+    if (!profileResult && rawId !== targetUid) {
+      profileResult = await repo.getUser(rawId).catch(() => null);
+    }
+    if (!profileResult && identity?.email) {
+      profileResult = await repo.getUserByEmail(identity.email).catch(() => null);
+    }
     if (!profileResult && rawId.includes('@')) {
       profileResult = await repo.getUserByEmail(rawId).catch(() => null);
+    }
+    if (!profileResult) {
+      try {
+        const pool = getPool();
+        const [directRows] = await pool.query(
+          'SELECT * FROM users WHERE id = ? OR email = ? OR id = ? LIMIT 1',
+          [targetUid, rawId, identity?.uid || '']
+        );
+        if (directRows && directRows.length > 0) {
+          profileResult = directRows[0];
+          if (!targetUid || targetUid === rawId) targetUid = directRows[0].id;
+        }
+      } catch (_) {}
+    }
+
+    // If identity was not found in Firebase Auth, but profile has email, try Firebase by email
+    if (!identity && profileResult?.email) {
+      try {
+        identity = await identityAdmin.auth().getUserByEmail(profileResult.email);
+        if (identity && !targetUid) targetUid = identity.uid;
+      } catch (_) {}
     }
 
     const [contentCounts, orders, aiEntitlement, securityLogs, adminLogs] = await Promise.all([
       repo.getUserContentCounts(targetUid).catch(() => ({})),
       repo.getUserPaymentOrders(targetUid).catch(() => []),
-      getUserAiEntitlement(null, targetUid).catch(() => ({ uid: targetUid, plan: 'Basic', baseQuota: 10, effectiveLimit: 10, usedToday: 0, remainingToday: 10 })),
+      getUserAiEntitlement(null, targetUid).catch(() => ({ uid: targetUid, plan: profileResult?.membership || 'Basic', baseQuota: 10, effectiveLimit: 10, usedToday: 0, remainingToday: 10 })),
       repo.getSecurityAuditLogs({ targetUid, limit: 50 }).catch(() => []),
       repo.getAdminAuditLogs({ resourceId: targetUid, limit: 50 }).catch(() => []),
     ]);
@@ -367,7 +394,7 @@ router.get('/:uid/details', async (req, res) => {
     }
 
     const profile = profileResult || {};
-    const baseUser = adminUserProjection(identity, profile, targetUid);
+    const baseUser = adminUserProjection(identity, profile, targetUid || rawId);
 
     // 3. Resolve tenant memberships (graceful degradation if tenant service is offline)
     let detailedTenants = [];

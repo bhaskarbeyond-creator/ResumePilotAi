@@ -440,19 +440,60 @@ export default function User360Drawer({
     }
   };
 
-  const u = userData?.identity || (initialUser ? {
-    id: initialUser.id || initialUser.uid || initialUser.userId || uid,
-    userId: initialUser.id || initialUser.uid || initialUser.userId || uid,
-    uid: initialUser.id || initialUser.uid || initialUser.userId || uid,
-    email: initialUser.email || null,
-    displayName: initialUser.displayName || null,
-    role: initialUser.role || 'USER',
-    suspended: initialUser.suspended === true,
-    membership: initialUser.membership || 'Basic',
-    emailVerified: initialUser.emailVerified === true,
-    preferredCurrency: initialUser.preferredCurrency || 'INR',
-    primaryTenant: initialUser.primaryTenant || null,
-  } : null);
+  const fallbackUserData = initialUser ? {
+    identity: {
+      id: initialUser.id || initialUser.uid || initialUser.userId || uid,
+      userId: initialUser.id || initialUser.uid || initialUser.userId || uid,
+      uid: initialUser.id || initialUser.uid || initialUser.userId || uid,
+      email: initialUser.email || null,
+      displayName: initialUser.displayName || null,
+      role: initialUser.role || 'USER',
+      suspended: initialUser.suspended === true,
+      membership: initialUser.membership || 'Basic',
+      emailVerified: initialUser.emailVerified === true,
+      preferredCurrency: initialUser.preferredCurrency || 'INR',
+      primaryTenant: initialUser.primaryTenant || null,
+      tenantMemberships: initialUser.tenantMemberships || [],
+      createdAt: initialUser.createdAt || null,
+      lastLoginAt: initialUser.lastLoginAt || null,
+      updatedAt: initialUser.updatedAt || null,
+    },
+    security: {
+      mfaEnabled: initialUser.mfaEnabled || false,
+      emailVerified: initialUser.emailVerified === true,
+      suspended: initialUser.suspended === true,
+      disabled: initialUser.suspended === true,
+    },
+    tenancy: {
+      primaryTenant: initialUser.primaryTenant || null,
+      memberships: initialUser.tenantMemberships || [],
+      totalTenants: initialUser.tenantCount || (initialUser.tenantMemberships?.length || 0),
+    },
+    billing: {
+      membership: initialUser.membership || 'Basic',
+      membershipEnds: initialUser.membershipEnds || null,
+      paymentStatus: initialUser.paymentStatus || 'INACTIVE',
+      preferredCurrency: initialUser.preferredCurrency || 'INR',
+      orders: [],
+      totalOrders: 0,
+    },
+    content: {
+      resumeCount: 0,
+      portfolioCount: 0,
+      coverCount: 0,
+    },
+    aiEntitlement: {
+      uid: initialUser.id || initialUser.uid || initialUser.userId || uid,
+      plan: initialUser.membership || 'Basic',
+      effectiveLimit: initialUser.membership === 'Premium' ? 100 : 10,
+      usedToday: 0,
+      remainingToday: initialUser.membership === 'Premium' ? 100 : 10,
+    },
+    auditTimeline: [],
+  } : null;
+
+  const effectiveUserData = userData || fallbackUserData;
+  const u = effectiveUserData?.identity;
 
   return (
     <div
@@ -630,12 +671,12 @@ export default function User360Drawer({
 
             {/* Scrollable Content Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {loading && !userData ? (
+              {loading && !effectiveUserData ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
               <FiRefreshCw className="h-8 w-8 animate-spin text-indigo-600" />
               <p className="text-xs font-bold uppercase tracking-wider">Loading complete User 360 profile…</p>
             </div>
-          ) : !userData ? (
+          ) : !effectiveUserData ? (
             <div className="flex flex-col items-center justify-center py-20 text-slate-400 text-sm gap-3">
               <p>User details unavailable.</p>
               <button
@@ -661,18 +702,18 @@ export default function User360Drawer({
                     <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
                       <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Email Verification</p>
                       <div className="mt-1 flex items-center justify-between gap-1">
-                        {userData.security?.emailVerified ? (
+                        {effectiveUserData.security?.emailVerified ? (
                           <span className="text-emerald-600 font-bold flex items-center gap-1"><FiCheck /> Verified</span>
                         ) : (
                           <span className="text-amber-600 font-bold flex items-center gap-1"><FiAlertTriangle /> Pending</span>
                         )}
                         <button
                           type="button"
-                          onClick={() => handleToggleEmailVerify(!userData.security?.emailVerified)}
+                          onClick={() => handleToggleEmailVerify(!effectiveUserData.security?.emailVerified)}
                           disabled={busyAction === 'verify-email'}
                           className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-[10px] font-extrabold transition shadow-2xs"
                         >
-                          {userData.security?.emailVerified ? 'Unverify' : 'Force Verify ✓'}
+                          {effectiveUserData.security?.emailVerified ? 'Unverify' : 'Force Verify ✓'}
                         </button>
                       </div>
                     </div>
@@ -680,12 +721,12 @@ export default function User360Drawer({
                     <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
                       <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Two-Factor Auth (MFA)</p>
                       <div className="mt-1 flex items-center justify-between gap-1">
-                        {userData.security?.mfaEnabled ? (
+                        {effectiveUserData.security?.mfaEnabled ? (
                           <span className="text-emerald-600 font-bold flex items-center gap-1"><FiLock /> Active</span>
                         ) : (
                           <span className="text-slate-400 font-medium">Not Enrolled</span>
                         )}
-                        {userData.security?.mfaEnabled && (
+                        {effectiveUserData.security?.mfaEnabled && (
                           <button
                             type="button"
                             onClick={handleResetMfa}
@@ -700,7 +741,7 @@ export default function User360Drawer({
 
                     <div className="p-3.5 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 rounded-2xl transition shadow-2xs">
                       <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Preferred Currency</p>
-                      <p className="mt-1 font-bold text-slate-900">{userData.billing?.preferredCurrency || 'INR'} (₹)</p>
+                      <p className="mt-1 font-bold text-slate-900">{effectiveUserData.billing?.preferredCurrency || 'INR'} (₹)</p>
                     </div>
                   </div>
 
@@ -715,7 +756,7 @@ export default function User360Drawer({
                     <dl className="grid grid-cols-2 gap-3 text-[11px] pt-1">
                       <div><dt className="text-slate-400 font-medium">Registered Date:</dt><dd className="font-semibold text-slate-800 mt-0.5">{u?.createdAt ? new Date(u.createdAt).toLocaleString() : 'Unknown'}</dd></div>
                       <div><dt className="text-slate-400 font-medium">Last Sign In:</dt><dd className="font-semibold text-slate-800 mt-0.5">{u?.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never'}</dd></div>
-                      <div><dt className="text-slate-400 font-medium">Resumes Created:</dt><dd className="font-semibold text-slate-800 mt-0.5">{userData.content?.resumeCount || 0}</dd></div>
+                      <div><dt className="text-slate-400 font-medium">Resumes Created:</dt><dd className="font-semibold text-slate-800 mt-0.5">{effectiveUserData.content?.resumeCount || 0}</dd></div>
                       <div><dt className="text-slate-400 font-medium">Token Refresh Epoch:</dt><dd className="font-semibold text-slate-800 mt-0.5">{u?.updatedAt ? new Date(u.updatedAt).toLocaleString() : 'Initial'}</dd></div>
                     </dl>
                   </div>
@@ -834,7 +875,7 @@ export default function User360Drawer({
                     </button>
                   </div>
 
-                  {userData.tenancy?.memberships?.length === 0 ? (
+                  {effectiveUserData.tenancy?.memberships?.length === 0 ? (
                     <div className="p-8 border border-dashed border-slate-200 rounded-xl text-center text-slate-400">
                       <FiBriefcase className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p className="font-semibold">User is not assigned to any enterprise organization.</p>
@@ -842,7 +883,7 @@ export default function User360Drawer({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {userData.tenancy.memberships.map((tenant) => (
+                      {(effectiveUserData.tenancy?.memberships || []).map((tenant) => (
                         <div
                           key={tenant.tenantId || tenant.id}
                           className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between"
@@ -992,7 +1033,7 @@ export default function User360Drawer({
                       <button
                         type="button"
                         onClick={handleRoleChange}
-                        disabled={busyAction === 'role' || selectedRole === userData?.identity?.role}
+                        disabled={busyAction === 'role' || selectedRole === effectiveUserData?.identity?.role}
                         className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition"
                       >
                         {busyAction === 'role' ? 'Saving…' : 'Save Role'}
@@ -1068,11 +1109,11 @@ export default function User360Drawer({
                   {/* Order History */}
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                     <h4 className="font-bold text-slate-900 text-xs">Payment &amp; Transaction History</h4>
-                    {userData.billing?.orders?.length === 0 ? (
+                    {effectiveUserData.billing?.orders?.length === 0 ? (
                       <p className="text-slate-400 text-[11px] py-2">No transaction records found for this account.</p>
                     ) : (
                       <div className="space-y-1.5 pt-1 max-h-40 overflow-y-auto">
-                        {userData.billing.orders.map((o) => (
+                        {(effectiveUserData.billing?.orders || []).map((o) => (
                           <div key={o.id} className="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg text-[11px]">
                             <div>
                               <span className="font-bold text-slate-800">{o.planId}</span>
@@ -1113,16 +1154,16 @@ export default function User360Drawer({
                     <div className="grid grid-cols-3 gap-2 text-center pt-1">
                       <div className="p-2.5 bg-white border border-slate-200 rounded-xl">
                         <p className="text-[10px] font-extrabold uppercase text-slate-400">Used Today</p>
-                        <p className="text-lg font-black text-slate-900 mt-0.5">{userData.aiEntitlement?.usedToday || 0}</p>
+                        <p className="text-lg font-black text-slate-900 mt-0.5">{effectiveUserData.aiEntitlement?.usedToday || 0}</p>
                       </div>
                       <div className="p-2.5 bg-white border border-slate-200 rounded-xl">
                         <p className="text-[10px] font-extrabold uppercase text-slate-400">Daily Limit</p>
-                        <p className="text-lg font-black text-indigo-600 mt-0.5">{userData.aiEntitlement?.effectiveLimit || 10}</p>
+                        <p className="text-lg font-black text-indigo-600 mt-0.5">{effectiveUserData.aiEntitlement?.effectiveLimit || 10}</p>
                       </div>
                       <div className="p-2.5 bg-white border border-slate-200 rounded-xl">
                         <p className="text-[10px] font-extrabold uppercase text-slate-400">Remaining</p>
-                        <p className={`text-lg font-black mt-0.5 ${(userData.aiEntitlement?.remainingToday || 0) <= 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                          {userData.aiEntitlement?.remainingToday || 0}
+                        <p className={`text-lg font-black mt-0.5 ${(effectiveUserData.aiEntitlement?.remainingToday || 0) <= 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                          {effectiveUserData.aiEntitlement?.remainingToday || 0}
                         </p>
                       </div>
                     </div>
@@ -1135,7 +1176,7 @@ export default function User360Drawer({
                         <h4 className="font-bold text-slate-900 text-xs">Custom Quota Allocation</h4>
                         <p className="text-[11px] text-slate-500">Grant power users or trial clients elevated AI limits.</p>
                       </div>
-                      {userData.aiEntitlement?.customOverride ? (
+                      {effectiveUserData.aiEntitlement?.customOverride ? (
                         <button
                           type="button"
                           onClick={handleRemoveAiOverride}
@@ -1155,11 +1196,11 @@ export default function User360Drawer({
                       )}
                     </div>
 
-                    {userData.aiEntitlement?.customOverride && (
+                    {effectiveUserData.aiEntitlement?.customOverride && (
                       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-900 space-y-1">
-                        <p><strong>Active Custom Limit:</strong> {userData.aiEntitlement.customOverride.dailyLimit} requests/day</p>
-                        <p><strong>Reason:</strong> {userData.aiEntitlement.customOverride.reason || 'None specified'}</p>
-                        <p><strong>Expires:</strong> {userData.aiEntitlement.customOverride.expiresAt ? new Date(userData.aiEntitlement.customOverride.expiresAt).toLocaleDateString() : 'Never (Permanent)'}</p>
+                        <p><strong>Active Custom Limit:</strong> {effectiveUserData.aiEntitlement.customOverride.dailyLimit} requests/day</p>
+                        <p><strong>Reason:</strong> {effectiveUserData.aiEntitlement.customOverride.reason || 'None specified'}</p>
+                        <p><strong>Expires:</strong> {effectiveUserData.aiEntitlement.customOverride.expiresAt ? new Date(effectiveUserData.aiEntitlement.customOverride.expiresAt).toLocaleDateString() : 'Never (Permanent)'}</p>
                       </div>
                     )}
 
@@ -1226,11 +1267,11 @@ export default function User360Drawer({
                   <h3 className="font-bold text-slate-900 text-xs">Administrative Audit Stream</h3>
                   <p className="text-[11px] text-slate-500">Chronological history of administrative actions on this account.</p>
 
-                  {userData.auditTimeline?.length === 0 ? (
+                  {effectiveUserData.auditTimeline?.length === 0 ? (
                     <p className="text-slate-400 text-[11px] py-4 text-center">No administrative changes recorded for this account.</p>
                   ) : (
                     <div className="space-y-2 max-h-96 overflow-y-auto pt-1">
-                      {userData.auditTimeline.map((ev) => (
+                      {effectiveUserData.auditTimeline.map((ev) => (
                         <div key={ev.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-slate-900 font-mono text-[11px]">{ev.action}</span>
