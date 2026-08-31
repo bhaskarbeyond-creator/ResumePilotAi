@@ -1,7 +1,7 @@
 import { isAuthoritativeCreditNote, isAuthoritativeInvoice, printAuthoritativeCreditNote, printAuthoritativeInvoice } from '../../../utils/authoritativeInvoice';
 import React, { Component } from 'react';
 import { setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getAdminSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider } from '../../../services/api/platform';
-import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo } from 'react-icons/fa';
+import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo, FaExclamationCircle, FaSyncAlt } from 'react-icons/fa';
 import { useAdminSession } from '../AdminContext';
 
 class SubscriptionSetting extends Component {
@@ -22,6 +22,8 @@ class SubscriptionSetting extends Component {
             yearlyPrice: '',
             currency: '',
             isSuccessOpen: false,
+            saveError: null,
+            isSaving: false,
             // Inline notice for invoice/export actions. These used to be native
             // alert() dialogs.
             invoiceNotice: null,
@@ -77,7 +79,7 @@ class SubscriptionSetting extends Component {
             enableTax: false,
             taxName: '',
             taxRate: '',
-            taxInclusive: false,
+            taxInclusive: true,
             companyTaxId: '',
             supplierLegalName: '',
             supplierTradeName: '',
@@ -189,7 +191,7 @@ class SubscriptionSetting extends Component {
                 enableTax: settings.enableTax === true,
                 taxName: settings.taxName || '',
                 taxRate: settings.taxRate ?? '',
-                taxInclusive: settings.taxInclusive === true,
+                taxInclusive: settings.taxInclusive !== false,
                 companyTaxId: settings.companyTaxId || '',
                 supplierLegalName: settings.supplierLegalName || '',
                 supplierTradeName: settings.supplierTradeName || '',
@@ -635,88 +637,114 @@ class SubscriptionSetting extends Component {
 
     async submitHandler() {
         if (!this.props.isSuperAdmin) {
-            this.setState({ couponErrorMsg: 'Payment credential and gateway changes are Super Admin-only. This view is read-only for Admin.' });
+            const msg = 'Payment credential and gateway changes are Super Admin-only. This view is read-only for Admin.';
+            this.setState({ saveError: msg, couponErrorMsg: msg });
             return;
         }
         if (!this.state.paymentSettingsLoaded) {
-            // The projection never loaded, so `paymentRevision` is a placeholder and
-            // the visible fields are not the stored values. Saving here would send a
-            // bogus expectedRevision and could present misleading state. Fail loudly
-            // instead of pretending.
+            const msg = 'Payment gateway settings are not loaded, so saving is disabled. Reload this panel to fetch the current stored configuration before editing.';
             this.setState({
-                paymentSettingsNotice: 'Payment gateway settings are not loaded, so saving is disabled. Reload this panel to fetch the current stored configuration before editing.',
+                paymentSettingsNotice: msg,
+                saveError: msg,
                 couponErrorMsg: 'Save blocked: payment settings are not loaded. Reload the panel and try again.',
             });
             return;
         }
+
+        this.setState({ isSaving: true, saveError: null, couponErrorMsg: '' });
+
+        const activeCurrency = this.state.currency || 'INR';
+        const matrixMonthly = this.state.pricingMatrix?.[activeCurrency]?.monthly;
+        const matrixQuartarly = this.state.pricingMatrix?.[activeCurrency]?.quartarly;
+        const matrixYearly = this.state.pricingMatrix?.[activeCurrency]?.yearly;
+
+        const effectiveMonthly = this.state.monthlyPrice !== '' && this.state.monthlyPrice !== null && this.state.monthlyPrice !== undefined
+            ? this.state.monthlyPrice
+            : (matrixMonthly !== undefined && matrixMonthly !== '' ? matrixMonthly : 199);
+        const effectiveQuartarly = this.state.quartarlyPrice !== '' && this.state.quartarlyPrice !== null && this.state.quartarlyPrice !== undefined
+            ? this.state.quartarlyPrice
+            : (matrixQuartarly !== undefined && matrixQuartarly !== '' ? matrixQuartarly : 399);
+        const effectiveYearly = this.state.yearlyPrice !== '' && this.state.yearlyPrice !== null && this.state.yearlyPrice !== undefined
+            ? this.state.yearlyPrice
+            : (matrixYearly !== undefined && matrixYearly !== '' ? matrixYearly : 499);
+
         try {
             const result = await setSubscriptionsData(
-            this.state.checkedSubscriptions,
-            this.state.monthlyPrice,
-            this.state.quartarlyPrice,
-            this.state.yearlyPrice,
-            this.state.checkedOnlyPP,
-            this.state.currency,
-            this.state.checkedRazorpayUPI,
-            {
-                stripeEnabled: this.state.checkedStripe,
-                paypalEnabled: this.state.checkedPayPal,
-                razorpayEnabled: this.state.checkedRazorpay,
-                paytmEnabled: this.state.checkedPaytm,
-                phonepeEnabled: this.state.checkedPhonePe,
-                sandboxMode: this.state.sandboxMode,
-                razorpayKeyId: this.state.razorpayKeyId,
-                razorpayKeySecret: this.state.razorpayKeySecret,
-                stripePublishableKey: this.state.stripePublishableKey,
-                stripeSecretKey: this.state.stripeSecretKey,
-                paypalClientId: this.state.paypalClientId,
-                paypalClientSecret: this.state.paypalClientSecret,
-                paytmMid: this.state.paytmMid,
-                paytmMerchantKey: this.state.paytmMerchantKey,
-                paytmWebsite: this.state.paytmWebsite,
-                phonepeId: this.state.phonepeId,
-                phonepeSaltKey: this.state.phonepeSaltKey,
-                phonepeSaltIndex: this.state.phonepeSaltIndex,
-                clearSecrets: this.state.clearSecrets || {},
-                expectedRevision: this.state.paymentRevision,
-                enableTax: this.state.enableTax,
-                taxName: this.state.taxName,
-                taxRate: parseFloat(this.state.taxRate) || 0,
-                taxInclusive: this.state.taxInclusive,
-                companyTaxId: this.state.companyTaxId || this.state.supplierGstin,
-                supplierLegalName: this.state.supplierLegalName,
-                supplierTradeName: this.state.supplierTradeName,
-                supplierGstin: this.state.supplierGstin || this.state.companyTaxId,
-                supplierPan: this.state.supplierPan,
-                supplierAddress: this.state.supplierAddress,
-                supplierCity: this.state.supplierCity,
-                supplierState: this.state.supplierState,
-                supplierStateCode: this.state.supplierStateCode,
-                supplierPincode: this.state.supplierPincode,
-                sacCode: this.state.sacCode,
-                invoicePrefix: this.state.invoicePrefix,
-                financialYear: this.state.financialYear,
-                requireCustomerTaxId: this.state.requireCustomerTaxId,
-            }
-        );
-        this.setState({
-            isSuccessOpen: true,
-            paymentRevision: Number(result.revision || this.state.paymentRevision),
-            configuredProviders: result.configuredProviders || this.state.configuredProviders || {},
-            maskedKeys: result.maskedKeys || this.state.maskedKeys || {},
-            credentialSources: result.credentialSources || this.state.credentialSources || {},
-            clearSecrets: {},
-            razorpayKeySecret: '',
-            stripeSecretKey: '',
-            paypalClientSecret: '',
-            paytmMerchantKey: '',
-            phonepeSaltKey: '',
-        });
+                this.state.checkedSubscriptions,
+                effectiveMonthly,
+                effectiveQuartarly,
+                effectiveYearly,
+                this.state.checkedOnlyPP,
+                activeCurrency,
+                this.state.checkedRazorpayUPI,
+                {
+                    pricingMatrix: this.state.pricingMatrix && typeof this.state.pricingMatrix === 'object' ? this.state.pricingMatrix : {},
+                    stripeEnabled: this.state.checkedStripe,
+                    paypalEnabled: this.state.checkedPayPal,
+                    razorpayEnabled: this.state.checkedRazorpay,
+                    paytmEnabled: this.state.checkedPaytm,
+                    phonepeEnabled: this.state.checkedPhonePe,
+                    sandboxMode: this.state.sandboxMode,
+                    razorpayKeyId: this.state.razorpayKeyId,
+                    razorpayKeySecret: this.state.razorpayKeySecret,
+                    stripePublishableKey: this.state.stripePublishableKey,
+                    stripeSecretKey: this.state.stripeSecretKey,
+                    paypalClientId: this.state.paypalClientId,
+                    paypalClientSecret: this.state.paypalClientSecret,
+                    paytmMid: this.state.paytmMid,
+                    paytmMerchantKey: this.state.paytmMerchantKey,
+                    paytmWebsite: this.state.paytmWebsite,
+                    phonepeId: this.state.phonepeId,
+                    phonepeSaltKey: this.state.phonepeSaltKey,
+                    phonepeSaltIndex: this.state.phonepeSaltIndex,
+                    clearSecrets: this.state.clearSecrets || {},
+                    expectedRevision: this.state.paymentRevision,
+                    enableTax: this.state.enableTax,
+                    taxName: this.state.taxName,
+                    taxRate: parseFloat(this.state.taxRate) || 0,
+                    taxInclusive: this.state.taxInclusive,
+                    companyTaxId: this.state.companyTaxId || this.state.supplierGstin,
+                    supplierLegalName: this.state.supplierLegalName,
+                    supplierTradeName: this.state.supplierTradeName,
+                    supplierGstin: this.state.supplierGstin || this.state.companyTaxId,
+                    supplierPan: this.state.supplierPan,
+                    supplierAddress: this.state.supplierAddress,
+                    supplierCity: this.state.supplierCity,
+                    supplierState: this.state.supplierState,
+                    supplierStateCode: this.state.supplierStateCode,
+                    supplierPincode: this.state.supplierPincode,
+                    sacCode: this.state.sacCode,
+                    invoicePrefix: this.state.invoicePrefix,
+                    financialYear: this.state.financialYear,
+                    requireCustomerTaxId: this.state.requireCustomerTaxId,
+                }
+            );
+            this.setState({
+                isSaving: false,
+                isSuccessOpen: true,
+                saveError: null,
+                couponErrorMsg: '',
+                paymentRevision: Number(result.revision || this.state.paymentRevision),
+                configuredProviders: result.configuredProviders || this.state.configuredProviders || {},
+                maskedKeys: result.maskedKeys || this.state.maskedKeys || {},
+                credentialSources: result.credentialSources || this.state.credentialSources || {},
+                clearSecrets: {},
+                razorpayKeySecret: '',
+                stripeSecretKey: '',
+                paypalClientSecret: '',
+                paytmMerchantKey: '',
+                phonepeSaltKey: '',
+            });
             setTimeout(() => {
                 this.setState({ isSuccessOpen: false });
-            }, 3000);
+            }, 4000);
         } catch (error) {
-            this.setState({ couponErrorMsg: error.message || 'Unable to save payment settings.' });
+            const errorMsg = error.message || 'Unable to save payment settings.';
+            this.setState({
+                isSaving: false,
+                saveError: errorMsg,
+                couponErrorMsg: errorMsg,
+            });
         }
     }
 
@@ -758,6 +786,25 @@ class SubscriptionSetting extends Component {
                             className="underline underline-offset-2"
                         >
                             Dismiss
+                        </button>
+                    </div>
+                )}
+                {this.state.saveError && (
+                    <div
+                        role="alert"
+                        data-testid="save-error-notice"
+                        className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 flex items-start justify-between gap-2 shadow-2xs animate-fade-in"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <FaExclamationCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                            <span className="font-semibold">{this.state.saveError}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => this.setState({ saveError: null })}
+                            className="text-rose-500 hover:text-rose-700 font-bold p-1 cursor-pointer"
+                        >
+                            <FaTimes className="w-4 h-4" />
                         </button>
                     </div>
                 )}
@@ -1211,6 +1258,40 @@ class SubscriptionSetting extends Component {
 
                             {this.state.enableTax && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                    <div className="md:col-span-2 p-4 bg-indigo-50/50 border border-indigo-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider">Tax-Inclusive Pricing Mode</h4>
+                                                <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">Required For Checkout</span>
+                                            </div>
+                                            <p className="text-[11px] text-indigo-900/80 mt-1 leading-relaxed">
+                                                Catalog plan prices entered in Subscription Tiers already include tax (e.g. ₹199 total includes 18% GST).
+                                                This guarantees displayed, charged, and invoiced totals are 100% identical with zero unexpected surcharges at checkout.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState((prev) => ({ taxInclusive: !prev.taxInclusive }))}
+                                            className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all shrink-0 cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                                                this.state.taxInclusive
+                                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                            }`}
+                                        >
+                                            {this.state.taxInclusive ? (
+                                                <>
+                                                    <FaToggleOn className="w-4 h-4" />
+                                                    <span>Tax-Inclusive ON</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaToggleOff className="w-4 h-4 text-slate-500" />
+                                                    <span>Exclusive OFF</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                                             Tax Type / Name Label
@@ -2148,7 +2229,7 @@ class SubscriptionSetting extends Component {
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">Subscription Tiers &amp; Pricing Rates</h3>
-                                    <p className="text-xs text-slate-500">Configure prices in INR (₹), USD ($), EUR (€), or GBP (£)</p>
+                                    <p className="text-xs text-slate-500">Configure prices in INR (₹), USD ($), EUR (€), or GBP (£) — All rates are tax-inclusive by standard.</p>
                                 </div>
                             </div>
 
@@ -2205,19 +2286,49 @@ class SubscriptionSetting extends Component {
 
                 {/* Persistent Save Action Button (Available across configuration tabs) */}
                 {this.state.adminTab !== 'invoices' && (
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-200 bg-white p-4 rounded-2xl shadow-2xs">
-                        <div className="flex items-center text-xs text-slate-500">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
-                            <span>Enterprise changes apply immediately to user dashboard &amp; popup checkout</span>
+                    <div className="space-y-3 pt-4 border-t border-slate-200 bg-white p-4 rounded-2xl shadow-2xs">
+                        {this.state.saveError && (
+                            <div
+                                role="alert"
+                                className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 flex items-center justify-between gap-2"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <FaExclamationCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                    <span className="font-semibold">{this.state.saveError}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => this.setState({ saveError: null })}
+                                    className="text-rose-500 hover:text-rose-700 font-bold p-1 cursor-pointer"
+                                >
+                                    <FaTimes className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center text-xs text-slate-500">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
+                                <span>Enterprise changes apply immediately to user dashboard &amp; popup checkout</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => this.submitHandler()}
+                                disabled={this.state.isSaving}
+                                className="px-6 py-2.5 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-slate-800 disabled:bg-slate-600 transition-colors flex items-center space-x-2 shadow-md cursor-pointer disabled:cursor-not-allowed"
+                            >
+                                {this.state.isSaving ? (
+                                    <>
+                                        <FaSyncAlt className="w-4 h-4 text-emerald-400 animate-spin" />
+                                        <span>Saving Settings…</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaCheck className="w-4 h-4 text-emerald-400" />
+                                        <span>Save Subscription &amp; Payment Settings</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => this.submitHandler()}
-                            className="px-6 py-2.5 text-sm font-bold text-white bg-slate-900 rounded-xl hover:bg-slate-800 transition-colors flex items-center space-x-2 shadow-md cursor-pointer"
-                        >
-                            <FaCheck className="w-4 h-4 text-emerald-400" />
-                            <span>Save Subscription &amp; Payment Settings</span>
-                        </button>
                     </div>
                 )}
 
