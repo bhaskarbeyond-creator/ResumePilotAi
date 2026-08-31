@@ -139,16 +139,34 @@ function createExportRouter(deps) {
                 args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote']
             };
             browser = await chromium.launch(launchOptions);
-            const context = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
-            const allowedRenderOrigin = new URL(`${protocol}://${websiteName}`).origin;
+            const context = await browser.newContext({
+                viewport: { width: 794, height: 1123 },
+                deviceScaleFactor: 1,
+                ignoreHTTPSErrors: true
+            });
+            const rawHost = req.headers['x-forwarded-host'] || req.headers.host || websiteName;
+            const hostClean = /^[a-zA-Z0-9.:_-]+$/.test(rawHost) ? rawHost : websiteName;
+            const isLocalOrHttps = req.secure || req.headers['x-forwarded-proto'] === 'https' || protocol === 'https';
+            const requestProto = isLocalOrHttps ? 'https' : (req.headers['x-forwarded-proto'] || protocol);
+            const renderOrigin = `${requestProto}://${hostClean}`;
+            let allowedRenderOrigin = `${protocol}://${websiteName}`;
+            try { allowedRenderOrigin = new URL(renderOrigin).origin; } catch {}
+
             const allowedHosts = new Set([
-                new URL(`${protocol}://${websiteName}`).hostname,
+                websiteName,
+                'ai-resume-builder.local',
+                'localhost',
+                '127.0.0.1',
                 'lh3.googleusercontent.com',
                 'fonts.googleapis.com',
                 'fonts.gstatic.com',
                 'cdnjs.cloudflare.com',
                 'unpkg.com'
             ]);
+            try {
+                const parsedRender = new URL(renderOrigin);
+                if (parsedRender.hostname) allowedHosts.add(parsedRender.hostname);
+            } catch {}
 
             await context.route('**/*', async route => {
                 const requestUrl = route.request().url();
@@ -157,14 +175,14 @@ function createExportRouter(deps) {
                     const parsed = new URL(requestUrl);
                     if (allowedHosts.has(parsed.hostname) || parsed.origin === allowedRenderOrigin) return route.continue();
                     const resourceType = route.request().resourceType();
-                    if (['image', 'font', 'stylesheet'].includes(resourceType) && parsed.protocol === 'https:') {
+                    if (['image', 'font', 'stylesheet'].includes(resourceType) && (parsed.protocol === 'https:' || parsed.protocol === 'http:')) {
                         return route.continue();
                     }
                 } catch (_) {}
                 return route.abort('blockedbyclient');
             });
             const page = await context.newPage();
-            const targetUrl = `${protocol}://${websiteName}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}#renderToken=${encodeURIComponent(renderToken)}`;
+            const targetUrl = `${renderOrigin}/export/${encodeURIComponent(resumeName)}/${encodeURIComponent(resumeId)}/${encodeURIComponent(language)}#renderToken=${encodeURIComponent(renderToken)}`;
             console.log('Playwright exporting PDF, navigating to: ', targetUrl);
             await page.goto(targetUrl, {
                 waitUntil: 'domcontentloaded',
