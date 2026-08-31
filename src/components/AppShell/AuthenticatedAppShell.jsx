@@ -48,9 +48,9 @@ const AuthenticatedAppShell = ({ children }) => {
                 sidebarCollapsed={sidebarCollapsed}
                 onSidebarToggle={setSidebarCollapsed}
             />
-            <main id="main-content" className={`dashboardContentWrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} tabIndex={-1} data-testid="application-shell-content">
+            <div className={`dashboardContentWrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} tabIndex={-1} data-testid="application-shell-content">
                 {children || <Outlet />}
-            </main>
+            </div>
         </div>
     );
 };

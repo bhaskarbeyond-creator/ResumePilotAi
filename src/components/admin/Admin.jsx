@@ -252,7 +252,7 @@ const Admin = () => {
                         </div>
                     </div>
                 )}
-                <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6" tabIndex={-1}>
+                <div className="mx-auto w-full max-w-7xl flex-1 p-3 sm:p-6" tabIndex={-1}>
                     <Routes>
                         <Route path="/" element={<Navigate to={FIRST_ACCESSIBLE_TAB} replace />} />
                         <Route path="dashboard" element={
@@ -367,7 +367,7 @@ const Admin = () => {
                         } />
                         <Route path="*" element={<Navigate to={FIRST_ACCESSIBLE_TAB} replace />} />
                     </Routes>
-                </main>
+                </div>
             </div>
         </div>
         </AdminProvider>

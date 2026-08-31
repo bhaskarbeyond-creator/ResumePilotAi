@@ -1105,7 +1105,7 @@ const DashboardInterviews = () => {
                 {/* ── Main Two-Column Exam Grid (Full Width) ── */}
                 <div className="flex-1 w-full p-4 sm:p-6 lg:p-8 grid lg:grid-cols-[1fr_360px] gap-6 items-start">
                     {/* Left: Question Workspace Card */}
-                    <main className={`bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[520px] transition-opacity duration-200 motion-reduce:transition-none ${state.isPaused ? 'pointer-events-none opacity-50' : ''}`}>
+                    <section className={`bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[520px] transition-opacity duration-200 motion-reduce:transition-none ${state.isPaused ? 'pointer-events-none opacity-50' : ''}`}>
                         <div>
                             {/* Question Meta Bar */}
                             <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
@@ -1231,7 +1231,7 @@ const DashboardInterviews = () => {
                                 )}
                             </div>
                         </div>
-                    </main>
+                    </section>
 
                     {/* Right: Question Palette Sidebar (Desktop) */}
                     <aside className="hidden lg:block bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm sticky top-24" aria-label="Question palette">

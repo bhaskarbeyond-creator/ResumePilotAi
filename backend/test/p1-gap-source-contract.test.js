@@ -31,10 +31,11 @@ describe('P1 gap source contracts', () => {
     assert.match(html, /<a class="skip-link"[\s\S]*id="root"/);
     const css = read('src/index.css');
     assert.match(css, /\.skip-link/);
-    const admin = read('src/components/admin/Admin.jsx');
-    assert.match(admin, /id="main-content"/);
-    const shell = read('src/components/AppShell/AuthenticatedAppShell.jsx');
-    assert.match(shell, /id="main-content"/);
+    // Single document-level <main id="main-content"> lives in src/main.jsx and wraps all routes.
+    // Shells (AuthenticatedAppShell, Admin) render inside it and must not declare a competing id.
+    const mainEntry = read('src/main.jsx');
+    assert.match(mainEntry, /id="main-content"/);
+    assert.match(mainEntry, /<main[^>]*id="main-content"/);
   });
 
   it('GAP-06 ships migration 015, ownership, deletion, and admin Help Desk', () => {

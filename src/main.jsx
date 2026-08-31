@@ -93,7 +93,7 @@ const BlogList = lazy(() => import('./components/Blog/BlogList/BlogList'));
 const BlogPost = lazy(() => import('./components/Blog/BlogPost/BlogPost'));
 const BlogEditor = lazy(() => import('./components/Blog/BlogEditor/BlogEditor'));
 // eslint-disable-next-line react-refresh/only-export-components
-const NotFound = () => <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><h1 className="text-3xl font-bold text-slate-900">Page not found</h1><p className="mt-3 text-slate-600">The requested page does not exist or is no longer available.</p><Link to="/" className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">Return home</Link></div></main>;
+const NotFound = () => <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><h1 className="text-3xl font-bold text-slate-900">Page not found</h1><p className="mt-3 text-slate-600">The requested page does not exist or is no longer available.</p><Link to="/" className="mt-5 inline-block rounded-lg bg-slate-900 px-4 py-2 text-white">Return home</Link></div></div>;
 // eslint-disable-next-line react-refresh/only-export-components
 function RequireAuthenticated({ user, children }) {
     const location = useLocation();
@@ -413,6 +413,7 @@ const AuthWrapper = () => {
                 <GA4Provider>
                     <RouteSeo />
                     <RouteFocus />
+                    <main id="main-content" tabIndex={-1}>
                     <Suspense fallback={<Spinner />}>
                         <Routes>
                             <Route path="/" element={<Welcome key={user?.uid || 'guest'} user={user} />} />
@@ -473,6 +474,7 @@ const AuthWrapper = () => {
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </Suspense>
+                    </main>
                     <PrivacyConsentBanner />
                 </GA4Provider>
             </BrowserRouter>
