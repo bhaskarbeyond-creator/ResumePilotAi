@@ -74,13 +74,10 @@ class ActionFilling extends Component {
         });
     }
 
-    autoCompleteHandleChange(option) {
-        console.log(`Selected option: ${option}`);
+    autoCompleteHandleChange(_option) {
     }
 
     removeEmploymentJsx(id) {
-        console.log(this.state.employments);
-        console.log('in');
         let pos = null;
         for (let index = 0; index < this.state.employments.length; index++) {
             if (this.state.employments[index].props.id == id) {
@@ -94,7 +91,6 @@ class ActionFilling extends Component {
         }
     }
     removeEducationJsx(id) {
-        console.log('in');
         let pos = null;
         for (let index = 0; index < this.state.educations.length; index++) {
             if (this.state.educations[index].props.id == id) {
@@ -108,7 +104,6 @@ class ActionFilling extends Component {
         }
     }
     removeLanguageJsx(id) {
-        console.log('in');
         let pos = null;
         for (let index = 0; index < this.state.languages.length; index++) {
             if (this.state.languages[index].props.id == id) {
@@ -122,7 +117,6 @@ class ActionFilling extends Component {
         }
     }
     removeSkillJsx(id) {
-        console.log('in');
         let pos = null;
         for (let index = 0; index < this.state.skills.length; index++) {
             if (this.state.skills[index].props.id == id) {
@@ -361,7 +355,6 @@ class ActionFilling extends Component {
     componentDidUpdate(prevProps) {
         // Check if the currentResumeName has changed
         if (prevProps.currentResumeName !== this.props.currentResumeName) {
-            console.log('Resume template changed from', prevProps.currentResumeName, 'to', this.props.currentResumeName);
             // Force re-render of all language components to pick up the new template
             this.checkComplexFieldsChange('languages');
         }
@@ -369,19 +362,15 @@ class ActionFilling extends Component {
         // Check if skills, educations, languages, or employments have changed
         // Check both length changes and content changes
         if (this.hasArrayChanged(prevProps.values.skills, this.props.values.skills)) {
-            console.log('Skills updated in ActionFilling:', this.props.values.skills);
             this.checkComplexFieldsChange('skills');
         }
         if (this.hasArrayChanged(prevProps.values.educations, this.props.values.educations)) {
-            console.log('Educations updated in ActionFilling:', this.props.values.educations);
             this.checkComplexFieldsChange('educations');
         }
         if (this.hasArrayChanged(prevProps.values.languages, this.props.values.languages)) {
-            console.log('Languages updated in ActionFilling:', this.props.values.languages);
             this.checkComplexFieldsChange('languages');
         }
         if (this.hasArrayChanged(prevProps.values.employments, this.props.values.employments)) {
-            console.log('Employments updated in ActionFilling:', this.props.values.employments);
             this.checkComplexFieldsChange('employments');
         }
     }
@@ -425,19 +414,15 @@ class ActionFilling extends Component {
 
     // Helper method to update complex fields when their data changes
     checkComplexFieldsChange(fieldType) {
-        console.log(`=== ActionFilling: checkComplexFieldsChange called for ${fieldType} ===`);
-        console.log(`Current ${fieldType} data:`, this.props.values[fieldType]);
 
         switch (fieldType) {
             case 'skills':
                 if (this.props.values.skills.length > 0) {
                     let skills = [];
                     let tempSkills = [...this.props.values.skills].sort((a, b) => a.date - b.date);
-                    console.log(`Creating ${tempSkills.length} skill components`);
 
                     tempSkills.forEach((value, index) => {
                         if (value != null) {
-                            console.log(`Creating skill component for:`, value);
                             skills.push(
                                 <Skill
                                     removeSkillJsx={this.removeSkillJsx}
@@ -454,7 +439,6 @@ class ActionFilling extends Component {
                         }
                     });
 
-                    console.log(`Setting ${skills.length} skills in ActionFilling state`);
                     this.setState({ skills });
                 }
                 break;
@@ -463,11 +447,9 @@ class ActionFilling extends Component {
                 if (this.props.values.educations.length > 0) {
                     let educations = [];
                     let tempEducations = [...this.props.values.educations].sort((a, b) => a.date - b.date);
-                    console.log(`Creating ${tempEducations.length} education components`);
 
                     tempEducations.forEach((value, index) => {
                         if (value != null) {
-                            console.log(`Creating education component for:`, value);
                             educations.push(
                                 <Education
                                     removeEducationJsx={this.removeEducationJsx}
@@ -485,7 +467,6 @@ class ActionFilling extends Component {
                         }
                     });
 
-                    console.log(`Setting ${educations.length} educations in ActionFilling state`);
                     this.setState({ educations });
                 }
                 break;
@@ -494,11 +475,9 @@ class ActionFilling extends Component {
                 if (this.props.values.languages.length > 0) {
                     let languages = [];
                     let tempLanguages = [...this.props.values.languages].sort((a, b) => a.date - b.date);
-                    console.log(`Creating ${tempLanguages.length} language components`);
 
                     tempLanguages.forEach((value, index) => {
                         if (value != null) {
-                            console.log(`Creating language component for:`, value);
                             languages.push(
                                 <Language
                                     removeLanguageJsx={this.removeLanguageJsx}
@@ -516,7 +495,6 @@ class ActionFilling extends Component {
                         }
                     });
 
-                    console.log(`Setting ${languages.length} languages in ActionFilling state`);
                     this.setState({ languages });
                 }
                 break;
@@ -525,11 +503,9 @@ class ActionFilling extends Component {
                 if (this.props.values.employments.length > 0) {
                     let jobs = [];
                     let tempEmployments = [...this.props.values.employments].sort((a, b) => a.date - b.date);
-                    console.log(`Creating ${tempEmployments.length} employment components`);
 
                     tempEmployments.forEach((value, _index) => {
                         if (value != null) {
-                            console.log(`Creating employment component for:`, value);
                             jobs.push(
                                 <Employment
                                     removeEmploymentJsx={this.removeEmploymentJsx}
@@ -547,7 +523,6 @@ class ActionFilling extends Component {
                         }
                     });
 
-                    console.log(`Setting ${jobs.length} employments in ActionFilling state`);
                     this.setState({ employments: jobs });
                 }
                 break;
@@ -556,7 +531,6 @@ class ActionFilling extends Component {
                 break;
         }
 
-        console.log(`=== ActionFilling: checkComplexFieldsChange completed for ${fieldType} ===`);
     }
 
     render() {

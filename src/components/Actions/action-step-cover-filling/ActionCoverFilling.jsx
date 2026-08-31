@@ -27,11 +27,9 @@ class ActionCoverFilling extends Component {
         });
     };
 
-    adjustTextarea(event) {
-        var windowHeight = window.innerHeight;
-        var elementHeight = event.target.getBoundingClientRect().top;
-        console.log(windowHeight);
-        console.log(elementHeight + 100);
+    adjustTextarea(_event) {
+        // Scroll adjustment retained as a no-op stub for backwards compatibility
+        // with the ref; viewport-aware textarea sizing is now CSS-driven.
     }
 
     addItemToList = (value, listName) => {

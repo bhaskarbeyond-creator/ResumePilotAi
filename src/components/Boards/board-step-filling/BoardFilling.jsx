@@ -107,7 +107,6 @@ class BoardFilling extends Component {
             return;
         }
 
-        console.log('Download initiated. Subscription status:', this.props.values.subscriptionsStatus);
 
         const access = evaluateDownloadAccess({
             user: this.props.values.user,
@@ -117,23 +116,19 @@ class BoardFilling extends Component {
             isStatusLoaded: true
         });
 
-        console.log('Evaluated download access decision in BoardFilling:', access);
 
         if (access.allowed) {
-            console.log(`Download allowed. Reason: ${access.reason}`);
             this.ShowToast('Download');
             this.download();
             return;
         }
 
         if (access.reason === 'LOGIN_REQUIRED') {
-            console.log('User not logged in, showing auth prompt');
             this.props.authBtnHandler();
             return;
         }
 
         if (access.reason === 'PREMIUM_REQUIRED') {
-            console.log('Non-premium user with subscriptions enabled, redirecting to billing');
             this.saveToDatabase();
             this.ShowToast('Upgrade');
             setTimeout(() => {
@@ -151,7 +146,6 @@ class BoardFilling extends Component {
 
         if (localStorage.getItem('currentResumeId') === null) {
             localStorage.setItem('currentResumeId', Math.floor(Math.random() * 20000).toString() + 'xknd');
-            console.log(localStorage.getItem('currentResumeId'));
             await this.saveToDatabase();
         } else {
             await this.saveToDatabase();
@@ -316,61 +310,47 @@ class BoardFilling extends Component {
             setTimeout(() => {
                 if (fire.auth().currentUser?.uid !== userId || localStorage.getItem('currentResumeId') !== resumeId) return;
                 if (this.currentResume.firstname !== this.props.values.firstname || this.currentResume.firstname == undefined) {
-                    console.log('Firstname need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'firstname', this.props.values.firstname);
                 }
                 if (this.currentResume.lastname !== this.props.values.lastname || this.currentResume.lastname == undefined) {
-                    console.log('Lastname need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'lastname', this.props.values.lastname);
                 }
                 if (this.currentResume.email !== this.props.values.email || this.currentResume.email == undefined) {
-                    console.log('Email need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'email', this.props.values.email);
                 }
                 if (this.currentResume.phone !== this.props.values.phone || this.currentResume.phone == undefined) {
-                    console.log('Phone need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'phone', this.props.values.phone);
                 }
                 if (this.currentResume.occupation !== this.props.values.occupation || this.currentResume.occupation == undefined) {
-                    console.log('Occupation need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'occupation', this.props.values.occupation);
                 }
                 if (this.currentResume.country !== this.props.values.country || this.currentResume.country == undefined) {
-                    console.log('Country need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'country', this.props.values.country);
                 }
                 if (this.currentResume.city !== this.props.values.city || this.currentResume.city == undefined) {
-                    console.log('City need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'city', this.props.values.city);
                 }
                 if (this.currentResume.address !== this.props.values.address || this.currentResume.address == undefined) {
-                    console.log('Address need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'address', this.props.values.address);
                 }
                 if (this.currentResume.postalcode !== this.props.values.postalcode || this.currentResume.postalcode == undefined) {
-                    console.log('Postal code need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'postalcode', this.props.values.postalcode);
                 }
                 if (this.currentResume.dateofbirth !== this.props.values.dateofbirth || this.currentResume.dateofbirth == undefined) {
-                    console.log('Date of birth need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'dateofbirth', this.props.values.dateofbirth);
                 }
                 if (this.currentResume.drivinglicense !== this.props.values.drivinglicense || this.currentResume.drivinglicense == undefined) {
-                    console.log('Driving license need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'drivinglicense', this.props.values.drivinglicense);
                 }
                 if (this.currentResume.nationality !== this.props.values.nationality || this.currentResume.nationality == undefined) {
-                    console.log('Nationality need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'nationality', this.props.values.nationality);
                 }
                 if (this.currentResume.summary !== this.props.values.summary || this.currentResume.summary == undefined) {
-                    console.log('Summary need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'summary', this.props.values.summary);
                 }
 
                 // Save colors to database
                 if (this.currentResume.colors !== this.props.values.colors || this.currentResume.colors == undefined) {
-                    console.log('Colors need to be changed in database');
                     setResumePropertyPerUser(userId, resumeId, 'colors', this.props.values.colors);
                 }
 

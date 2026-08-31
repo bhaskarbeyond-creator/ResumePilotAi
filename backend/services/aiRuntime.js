@@ -365,7 +365,7 @@ function cleanSkillName(raw) {
     if (val.startsWith('{') || val.startsWith('[') || val.endsWith('}') || val.endsWith(']')) {
         const match = val.match(/(?:["']?(?:name|skill|title)["']?\s*:\s*["']([^"'\r\n{}]+)["'])|(?:["']([^"'\r\n{}]+)["'])/);
         if (match) val = match[1] || match[2] || '';
-        else val = val.replace(/[{}\[\]"']/g, '').trim();
+        else val = val.replace(/[{}[\]"']/g, '').trim();
     }
     val = val.replace(/^(?:\{?\s*["']?(?:name|skill|title|category|skills)["']?\s*:\s*["']?)+/i, '');
     val = val.replace(/["'}\],]+$/g, '');

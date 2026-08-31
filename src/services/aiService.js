@@ -9,7 +9,7 @@ export function cleanSkillName(raw) {
     if (text.startsWith('{') || text.startsWith('[') || text.endsWith('}') || text.endsWith(']')) {
         const match = text.match(/(?:["']?(?:name|skill|title)["']?\s*:\s*["']([^"'\r\n{}]+)["'])|(?:["']([^"'\r\n{}]+)["'])/);
         if (match) text = match[1] || match[2] || '';
-        else text = text.replace(/[{}\[\]"']/g, '').trim();
+        else text = text.replace(/[{}[\]"']/g, '').trim();
     }
     text = text.replace(/^(?:\{?\s*["']?(?:name|skill|title|category|skills)["']?\s*:\s*["']?)+/i, '');
     text = text.replace(/["'}\],]+$/g, '');
