@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaDollarSign, FaUsers, FaFileAlt, FaDownload, FaExclamationTriangle, FaSyncAlt, FaShieldAlt, FaServer, FaCheckCircle, FaExclamationCircle, FaArrowRight, FaHeartbeat } from 'react-icons/fa';
-import { FiActivity, FiCpu, FiLock, FiAlertTriangle, FiLayers, FiRadio, FiCheck, FiArrowUpRight } from 'react-icons/fi';
+import { FiActivity, FiCpu, FiLock, FiAlertTriangle, FiLayers, FiRadio, FiCheck, FiArrowUpRight, FiClock } from 'react-icons/fi';
 import { formatAdminMoney } from '../../../utils/adminData';
 import { getCommandCenter } from '../../../services/platformApi';
 import { formatMetric, formatUptime } from '../../../utils/healthPresentation';
@@ -11,6 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [loadedAt, setLoadedAt] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -27,6 +28,15 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
+
+  // Periodic 30-second live telemetry poll when autoRefresh is enabled
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      loadDashboard();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, loadDashboard]);
 
   const healthScore = center?.healthScore ?? null;
   const riskScore = center?.riskScore ?? null;
@@ -58,6 +68,7 @@ const Dashboard = () => {
       ),
       badgeBg: 'bg-emerald-50 border-emerald-100',
       sub: 'Verified transactional gross revenue',
+      href: '/adm/settings?tab=ordersManagement',
     },
     {
       label: 'Total Registered Accounts',
@@ -65,6 +76,7 @@ const Dashboard = () => {
       icon: <FaUsers className="h-5 w-5 text-blue-600" />,
       badgeBg: 'bg-blue-50 border-blue-100',
       sub: 'Active consumer & employer profiles',
+      href: '/adm/users',
     },
     {
       label: 'Resumes & Portfolios Engineered',
@@ -72,6 +84,7 @@ const Dashboard = () => {
       icon: <FaFileAlt className="h-5 w-5 text-violet-600" />,
       badgeBg: 'bg-violet-50 border-violet-100',
       sub: '51 template engines compiled',
+      href: '/adm/audit-logs',
     },
     {
       label: 'Exports & Downloads Generated',
@@ -79,6 +92,7 @@ const Dashboard = () => {
       icon: <FaDownload className="h-5 w-5 text-amber-600" />,
       badgeBg: 'bg-amber-50 border-amber-100',
       sub: 'High-fidelity PDF and DOCX pipelines',
+      href: '/adm/health',
     },
   ];
 
@@ -104,10 +118,21 @@ const Dashboard = () => {
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
             Real-time multi-tenant telemetry, operational health telemetry, security event stream, and governance radar.
           </p>
-          <div className="flex items-center gap-4 text-xs text-slate-400 font-mono pt-1">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-mono pt-1">
             <span>Uptime: <strong className="text-white">{center ? formatUptime(center.uptimeSeconds) : '—'}</strong></span>
             <span>•</span>
             <span>Refreshed: <strong className="text-slate-300">{loadedAt ? loadedAt.toLocaleTimeString() : 'Loading…'}</strong></span>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setAutoRefresh(prev => !prev)}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition ${
+                autoRefresh ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+              Auto-Refresh: {autoRefresh ? '30s' : 'Off'}
+            </button>
           </div>
         </div>
 
@@ -116,14 +141,14 @@ const Dashboard = () => {
             type="button"
             onClick={loadDashboard}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition border border-white/10 shadow-sm backdrop-blur-xs disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition border border-white/10 shadow-sm backdrop-blur-xs disabled:opacity-50 cursor-pointer"
           >
             <FaSyncAlt className={loading ? 'animate-spin' : ''} />
             <span>Refresh Stream</span>
           </button>
           <Link
             to="/adm/health"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
           >
             <FaHeartbeat />
             <span>Health Matrix</span>
@@ -137,16 +162,20 @@ const Dashboard = () => {
             <FaExclamationTriangle className="text-amber-600 shrink-0" />
             <span>{error}</span>
           </div>
-          <button type="button" onClick={loadDashboard} className="font-bold underline text-amber-800">Retry</button>
+          <button type="button" onClick={loadDashboard} className="font-bold underline text-amber-800 cursor-pointer">Retry</button>
         </div>
       )}
 
       {/* ── 4 KPI Metric Cards ── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(({ label, value, icon, badgeBg, sub }) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:shadow-md transition-shadow">
+        {cards.map(({ label, value, icon, badgeBg, sub, href }) => (
+          <Link
+            key={label}
+            to={href}
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs hover:shadow-md hover:border-indigo-200 transition block"
+          >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-slate-500 tracking-wide uppercase">{label}</span>
+              <span className="text-xs font-bold text-slate-500 tracking-wide uppercase group-hover:text-indigo-600 transition">{label}</span>
               <div className={`flex h-9 w-9 items-center justify-center rounded-xl border ${badgeBg}`}>
                 {icon}
               </div>
@@ -156,7 +185,7 @@ const Dashboard = () => {
             </p>
             <p className="mt-2 text-[11px] font-medium text-slate-500">{sub}</p>
             <p className="mt-1 text-[10px] text-slate-400">Stored aggregate; no trend inferred</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -195,14 +224,45 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* 6 Subsystem Signals Grid */}
+          {/* 6 Subsystem Signals Grid with Interactive Links */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100 text-xs">
-            <Signal label="Database" ok={center.signals?.database?.status === 'HEALTHY'} text={center.signals?.database?.status === 'HEALTHY' ? 'MariaDB Live' : 'Unavailable'} />
-            <Signal label="Queue & DLQ" ok={!center.signals?.queue?.deadLetter} text={center.signals?.queue?.deadLetter ? `${center.signals.queue.deadLetter} DLQ Alert` : 'Outbox Healthy'} />
-            <Signal label="Payments" ok={center.signals?.payments?.status === 'HEALTHY'} text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Gateway Inactive' : `${center.signals?.payments?.failed ?? 0} Failed`} />
-            <Signal label="Threat Sensor" ok={center.signals?.security?.status === 'HEALTHY'} text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Sensor Offline' : `${center.signals?.security?.highSeverity ?? 0} High Threats`} />
-            <Signal label="Encryption" ok={center.signals?.encryption?.status === 'CONFIGURED'} text={center.signals?.encryption?.provider || 'AES-256 GCM'} />
-            <Signal label="Runtime Engine" ok icon={<FiCpu className="text-indigo-600 h-3.5 w-3.5" />} text={center.subsystems?.runtime?.nodeVersion || 'Node.js v20'} />
+            <Signal
+              label="Database"
+              ok={center.signals?.database?.status === 'HEALTHY'}
+              text={center.signals?.database?.status === 'HEALTHY' ? 'MariaDB Live' : 'Unavailable'}
+              to="/adm/health"
+            />
+            <Signal
+              label="Queue & DLQ"
+              ok={!center.signals?.queue?.deadLetter}
+              text={center.signals?.queue?.deadLetter ? `${center.signals.queue.deadLetter} DLQ Alert` : 'Outbox Healthy'}
+              to="/adm/queues"
+            />
+            <Signal
+              label="Payments"
+              ok={center.signals?.payments?.status === 'HEALTHY'}
+              text={center.signals?.payments?.status === 'UNAVAILABLE' ? 'Gateway Inactive' : `${center.signals?.payments?.failed ?? 0} Failed`}
+              to="/adm/settings?tab=ordersManagement"
+            />
+            <Signal
+              label="Threat Sensor"
+              ok={center.signals?.security?.status === 'HEALTHY'}
+              text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Sensor Offline' : `${center.signals?.security?.highSeverity ?? 0} High Threats`}
+              to="/adm/security"
+            />
+            <Signal
+              label="Encryption"
+              ok={center.signals?.encryption?.status === 'CONFIGURED'}
+              text={center.signals?.encryption?.provider || 'AES-256 GCM'}
+              to="/adm/operations"
+            />
+            <Signal
+              label="Runtime Engine"
+              ok
+              icon={<FiCpu className="text-indigo-600 h-3.5 w-3.5" />}
+              text={center.subsystems?.runtime?.nodeVersion || 'Node.js v20'}
+              to="/adm/health"
+            />
           </div>
         </div>
       )}
@@ -214,7 +274,7 @@ const Dashboard = () => {
             <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Live Service Matrix</h2>
             <p className="text-xs text-slate-500 mt-0.5">Real-time status of microservices, worker pipelines, and public API gates.</p>
           </div>
-          <Link to="/adm/health" className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition">
+          <Link to="/adm/health" className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer">
             Platform Health Diagnostics <FaArrowRight className="h-2.5 w-2.5" />
           </Link>
         </div>
@@ -246,7 +306,7 @@ const Dashboard = () => {
                   <Link
                     key={item.id}
                     to={`/adm/health?service=${encodeURIComponent(item.id)}`}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 hover:bg-slate-50 transition"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 hover:bg-slate-50 transition cursor-pointer"
                   >
                     <div className="min-w-0">
                       <span className="block text-xs font-bold text-slate-900">{item.name}</span>
@@ -294,10 +354,10 @@ const Dashboard = () => {
               <Link
                 key={item.id}
                 to={item.href || '/adm/dashboard'}
-                className="flex items-start justify-between gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition"
+                className="flex items-start justify-between gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition group cursor-pointer"
               >
                 <div className="space-y-1 min-w-0">
-                  <p className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                  <p className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-2">
                     <span>{item.title}</span>
                   </p>
                   <p className="text-[11px] text-slate-500">{item.detail}</p>
@@ -310,7 +370,7 @@ const Dashboard = () => {
                   }`}>
                     {item.severity}
                   </span>
-                  <FiArrowUpRight className="text-slate-400" />
+                  <FiArrowUpRight className="text-slate-400 group-hover:text-indigo-600 transition" />
                 </div>
               </Link>
             ))
@@ -327,7 +387,7 @@ const Dashboard = () => {
               <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Tenants Needing Attention</h2>
               <p className="text-xs text-slate-500 mt-0.5">Suspended, deleting, or degraded organization lifecycles.</p>
             </div>
-            <Link to="/adm/tenants" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+            <Link to="/adm/tenants" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer">
               Registry <FaArrowRight className="h-2.5 w-2.5" />
             </Link>
           </div>
@@ -342,7 +402,7 @@ const Dashboard = () => {
                 <Link
                   key={tenant.id}
                   to={`/adm/tenants?focus=${encodeURIComponent(tenant.id)}`}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-slate-100/80 text-xs transition"
+                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/40 hover:border-indigo-200 text-xs transition cursor-pointer"
                 >
                   <div className="truncate">
                     <span className="font-bold text-slate-900 block truncate">{tenant.displayName}</span>
@@ -364,7 +424,7 @@ const Dashboard = () => {
               <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Live Security &amp; Audit Stream</h2>
               <p className="text-xs text-slate-500 mt-0.5">Real-time immutable control-plane mutation ledger.</p>
             </div>
-            <Link to="/adm/audit-logs" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+            <Link to="/adm/audit-logs" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer">
               Full Ledger <FaArrowRight className="h-2.5 w-2.5" />
             </Link>
           </div>
@@ -376,7 +436,11 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-2 max-h-72 overflow-y-auto">
               {center.recentAudit.map(log => (
-                <div key={log.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
+                <Link
+                  key={log.id}
+                  to="/adm/audit-logs"
+                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:bg-indigo-50/30 hover:border-indigo-200 text-xs transition block cursor-pointer"
+                >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-slate-900 truncate">{log.action}</span>
@@ -389,10 +453,11 @@ const Dashboard = () => {
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 truncate mt-0.5 font-mono">
-                      By {log.actorEmail || log.actorUid} • {log.pathname || '/api/admin'}
+                      By {log.actorEmail || log.actorUid || 'System'} • {log.method ? `${log.method} ` : ''}{log.pathname || '/api/admin'}
+                      {log.createdAt && ` • ${new Date(log.createdAt).toLocaleTimeString()}`}
                     </p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -426,17 +491,17 @@ function ScoreBadge({ score, label, invert }) {
   );
 }
 
-function Signal({ label, ok, text, icon }) {
-  return (
-    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl">
+function Signal({ label, ok, text, icon, to }) {
+  const inner = (
+    <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl hover:bg-indigo-50/40 hover:border-indigo-200 transition group cursor-pointer">
       <span className="text-slate-400 uppercase text-[10px] font-black tracking-wider block">{label}</span>
-      <div className="flex items-center gap-1.5 font-bold text-slate-800 mt-1">
+      <div className="flex items-center gap-1.5 font-bold text-slate-800 mt-1 group-hover:text-indigo-600 transition">
         {icon || (ok ? <FaCheckCircle className="text-emerald-500 h-3.5 w-3.5 shrink-0" /> : <FaExclamationCircle className="text-amber-500 h-3.5 w-3.5 shrink-0" />)}
         <span className="truncate text-xs">{text}</span>
       </div>
     </div>
   );
+  return to ? <Link to={to} className="block">{inner}</Link> : inner;
 }
 
 export default Dashboard;
-

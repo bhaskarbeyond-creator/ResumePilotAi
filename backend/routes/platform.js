@@ -615,7 +615,7 @@ router.get('/command-center', async (req, res) => {
         SUM(lifecycleState = 'SUSPENDED') AS suspended
         FROM enterprise_tenants`),
       pool.query("SELECT id, displayName, slug, lifecycleState, isolationTier FROM enterprise_tenants WHERE lifecycleState <> 'ACTIVE' ORDER BY updated_at DESC LIMIT 8"),
-      pool.query('SELECT id, action, actor_uid, actor_email, category, severity, outcome, created_at FROM admin_audit_logs ORDER BY created_at DESC LIMIT 8'),
+      pool.query('SELECT id, action, actor_uid, actor_email, category, severity, outcome, method, pathname, created_at FROM admin_audit_logs ORDER BY created_at DESC LIMIT 8'),
       pool.query('SELECT id, title, message, severity, enabled, updated_at FROM platform_announcements WHERE enabled = 1 ORDER BY updated_at DESC LIMIT 5'),
       pool.query("SELECT category, data, revision, updated_at FROM system_settings WHERE category IN ('maintenance','stats')"),
       pool.query("SELECT data FROM stats WHERE id = 'global_stats' LIMIT 1").catch(() => [[]]),
@@ -737,7 +737,7 @@ router.get('/command-center', async (req, res) => {
       recommendations,
       operationalStatus,
       attentionTenants: attentionTenantRows.map(row => ({ id: row.id, displayName: row.displayName, slug: row.slug, lifecycleState: row.lifecycleState, isolationTier: row.isolationTier })),
-      recentAudit: auditRows.map(row => ({ id: row.id, action: row.action, actorUid: row.actor_uid, actorEmail: row.actor_email, category: row.category, severity: row.severity, outcome: row.outcome, createdAt: isoFrom(row.created_at) })),
+      recentAudit: auditRows.map(row => ({ id: row.id, action: row.action, actorUid: row.actor_uid, actorEmail: row.actor_email, category: row.category, severity: row.severity, outcome: row.outcome, method: row.method, pathname: row.pathname, createdAt: isoFrom(row.created_at) })),
       recentSecurity: securityRows.map(row => ({ id: row.id, action: row.action, actorUid: row.actor_uid, severity: row.severity, createdAt: isoFrom(row.created_at) })),
       maintenance,
       announcements: announcementRows.map(row => ({ id: row.id, title: row.title, message: row.message, severity: row.severity, enabled: row.enabled === 1 || row.enabled === true, updatedAt: isoFrom(row.updated_at) })),
