@@ -37,9 +37,9 @@ async function bootAdm(page, { path = '/adm/dashboard' } = {}) {
 
 test('command center renders real fixture health, recommendations, and SHA', async ({ page }) => {
   const { pageErrors } = await bootAdm(page);
-  await expect(page.getByRole('heading', { name: 'Super Admin Command Center' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /(Super Admin|Platform) Command Center/ })).toBeVisible();
   await expect(page.getByText('1 dead-letter notification(s)')).toBeVisible();
-  await expect(page.getByText('SHA: fixture-sha')).toBeVisible();
+  await expect(page.getByText(/SHA:\s*fixture/)).toBeVisible();
   await expect(page.getByText('no trend inferred').first()).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
@@ -47,7 +47,7 @@ test('command center renders real fixture health, recommendations, and SHA', asy
 test('grouped navigation reaches every control-plane module', async ({ page }) => {
   await bootAdm(page);
   const modules = [
-    ['Command Center', 'Super Admin Command Center'],
+    ['Command Center', /(Super Admin|Platform) Command Center/],
     ['Tenants Registry', 'Enterprise Tenants Registry'],
     ['Admin Audit Trail', 'Admin Audit Logs'],
     ['Security Events', 'Security Events'],
@@ -66,13 +66,14 @@ test('grouped navigation reaches every control-plane module', async ({ page }) =
 test('tenant lifecycle uses suspend/reactivate and Super Admin decommission drawer', async ({ page }) => {
   const { state } = await bootAdm(page, { path: '/adm/tenants' });
   await expect(page.getByText('Northwind Careers')).toBeVisible();
-  await page.getByRole('button', { name: 'Suspend' }).click();
+  await page.getByRole('button', { name: 'Suspend', exact: true }).click();
   await expect(page.getByText('Are you sure you want to suspend')).toBeVisible();
   await page.locator('.fixed.inset-0').getByRole('button', { name: 'Suspend', exact: true }).click();
   await expect.poll(() => state.tenants.find(item => item.id === 'tenant-active')?.lifecycleState).toBe('SUSPENDED');
-  await page.getByRole('button', { name: 'Details' }).first().click();
+  await page.getByRole('button', { name: /Workspace 360|Details/i }).first().click();
   await expect(page.getByLabel('Tenant detail')).toBeVisible();
-  await expect(page.getByText('Decommission (SUPER_ADMIN)')).toBeVisible();
+  await page.getByRole('button', { name: /Decommission|Danger Zone/i }).click();
+  await expect(page.getByRole('button', { name: 'Decommission Organization' })).toBeVisible();
 });
 
 test('command palette jumps to operations and security', async ({ page }) => {

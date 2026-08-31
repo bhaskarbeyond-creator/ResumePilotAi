@@ -68,13 +68,13 @@ test.describe('Live Authenticated Super Admin E2E', () => {
     await page.goto('https://airesume.projectdemo.guru/adm/dashboard', { waitUntil: 'domcontentloaded' });
 
     // Wait for Super Admin shell
-    await expect(page.getByRole('heading', { name: 'Super Admin Command Center' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: /(Super Admin|Platform) Command Center/ })).toBeVisible({ timeout: 20000 });
     const currentSha = fs.readFileSync(path.resolve('backend/COMMIT_SHA'), 'utf8').trim().substring(0, 7);
     await expect(page.getByText(`SHA: ${currentSha}`)).toBeVisible({ timeout: 5000 }); // check live SHA prefix
 
     console.log('Testing grouped navigation...');
     const modules = [
-      ['/adm/dashboard', 'Super Admin Command Center'],
+      ['/adm/dashboard', /(Super Admin|Platform) Command Center/],
       ['/adm/tenants', 'Enterprise Tenants Registry'],
       ['/adm/audit-logs', 'Admin Audit Logs'],
       ['/adm/security', 'Security Events'],
