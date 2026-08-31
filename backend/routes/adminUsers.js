@@ -116,8 +116,60 @@ router.get('/', async (req, res) => {
   const tenantFilter = String(req.query?.tenantId || req.query?.tenant || '').trim();
   const pageToken = req.query?.pageToken ? String(req.query.pageToken) : undefined;
   try {
-    const listed = await identityAdmin.auth().listUsers(limit, pageToken);
-    const identities = listed.users || [];
+    let identities = [];
+    let listedPageToken = null;
+
+    if (query) {
+      const foundUids = new Set();
+      const directIdentities = [];
+      if (query.includes('@')) {
+        try {
+          const idUser = await identityAdmin.auth().getUserByEmail(query);
+          if (idUser) { directIdentities.push(idUser); foundUids.add(idUser.uid); }
+        } catch (_) {}
+      }
+      try {
+        const idUser = await identityAdmin.auth().getUser(query);
+        if (idUser && !foundUids.has(idUser.uid)) { directIdentities.push(idUser); foundUids.add(idUser.uid); }
+      } catch (_) {}
+
+      try {
+        const [dbRows] = await getPool().query(
+          `SELECT id, email, displayName, firstname, lastname, role FROM users
+           WHERE email LIKE ? OR id LIKE ? OR displayName LIKE ? OR firstname LIKE ? OR lastname LIKE ?
+           LIMIT ?`,
+          [`%${query}%`, `%${query}%`, `%${query}%`, `%${query}%`, `%${query}%`, limit]
+        );
+        for (const row of (dbRows || [])) {
+          if (!foundUids.has(row.id)) {
+            foundUids.add(row.id);
+            try {
+              const idUser = await identityOrNull(identityAdmin, row.id);
+              if (idUser) directIdentities.push(idUser);
+              else directIdentities.push({ uid: row.id, email: row.email, displayName: row.displayName, customClaims: { role: row.role } });
+            } catch (_) {
+              directIdentities.push({ uid: row.id, email: row.email, displayName: row.displayName, customClaims: { role: row.role } });
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn('[Admin user directory] DB search query notice:', dbErr.message);
+      }
+
+      const listed = await identityAdmin.auth().listUsers(limit, pageToken);
+      for (const u of (listed.users || [])) {
+        if (!foundUids.has(u.uid)) {
+          directIdentities.push(u);
+          foundUids.add(u.uid);
+        }
+      }
+      identities = directIdentities;
+    } else {
+      const listed = await identityAdmin.auth().listUsers(limit, pageToken);
+      identities = listed.users || [];
+      listedPageToken = listed.pageToken || null;
+    }
+
     const uids = [...new Set(identities.map(identity => String(identity?.uid || '')).filter(Boolean))];
 
     // A directory page previously issued two MariaDB reads per identity (profile
@@ -169,7 +221,7 @@ router.get('/', async (req, res) => {
       return matchesQuery && matchesStatus && matchesRole && matchesPlan && matchesTenant;
     });
     return res.json({
-      success: true, users: filtered, nextPageToken: listed.pageToken || null,
+      success: true, users: filtered, nextPageToken: listedPageToken || null,
       pageSize: limit, filteredCount: filtered.length,
       source: 'FIREBASE_AUTH_IDENTITY_WITH_MARIADB_PROFILE', generatedAt: new Date().toISOString(),
     });
@@ -734,7 +786,7 @@ router.post('/:uid/ai-quota-reset', async (req, res) => {
 });
 
 // 8. SEND PASSWORD RESET
-router.post('/:uid/send-password-reset', async (req, res) => {
+router.post(['/:uid/send-password-reset', '/:uid/password-reset'], async (req, res) => {
   const uid = String(req.params.uid || '');
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
   if (!/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.' });
