@@ -71,23 +71,30 @@ test('the Create-Resume wizard exposes Certifications between Projects and Langu
     assert.match(langs, /completedSteps\.includes\(7\)/);
 });
 
-test('CertificationsStep is factual manual entry without generated credentials or dates', () => {
+test('CertificationsStep includes AI recommendation engine with fallback and quick-add actions', () => {
     const certStep = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
-    assert.doesNotMatch(certStep, /generateUserAiContent|generate-certifications|getRoleTailoredFallbackCerts|recommendedCert/i);
+    assert.match(certStep, /generateUserAiContent/);
+    assert.match(certStep, /generate-certifications/);
+    assert.match(certStep, /getRoleTailoredFallbackCerts/);
+    assert.match(certStep, /handleAddRecommendedCert/);
+    assert.match(certStep, /handleAddAllRecommended/);
+    assert.match(certStep, /isCertAlreadyAdded/);
     assert.match(certStep, /updateCertification/);
     assert.match(certStep, /Certification Name/);
     assert.match(certStep, /Issuing Organization/);
     assert.match(certStep, /Date Earned/);
 });
 
-test('All 16 locales keep manual certification copy and remove retired AI recommendation copy', () => {
+test('All 16 locales contain complete CertificationsStep and AI recommendation copy', () => {
     const locales = ['de', 'dk', 'en', 'es', 'fr', 'gk', 'hi', 'is', 'it', 'nl', 'no', 'pl', 'pt', 'ro', 'ru', 'se'];
     for (const loc of locales) {
         const filePath = path.join('src/locales', loc, `${loc}.json`);
         const json = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         assert.ok(json.CertificationsStep?.title, `Locale ${loc} missing CertificationsStep.title`);
         assert.ok(json.CertificationsStep?.subtitle, `Locale ${loc} missing CertificationsStep.subtitle`);
-        assert.equal(json.CertificationsStep?.ai, undefined, `Locale ${loc} retains retired CertificationsStep.ai copy`);
+        assert.ok(json.CertificationsStep?.ai?.panelTitle, `Locale ${loc} missing CertificationsStep.ai.panelTitle`);
+        assert.ok(json.CertificationsStep?.ai?.recommend, `Locale ${loc} missing CertificationsStep.ai.recommend`);
+        assert.ok(json.CertificationsStep?.ai?.addAll, `Locale ${loc} missing CertificationsStep.ai.addAll`);
     }
 });
 

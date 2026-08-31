@@ -1511,6 +1511,26 @@
         "label": "Data di Rilascio",
         "placeholder": "es. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "Raccomandazioni Certificazioni con IA",
+      "recommend": "Raccomanda Certificazioni (IA)",
+      "tooltip": "Genera raccomandazioni di certificazioni con IA su misura per il tuo profilo",
+      "generating": "Analisi e generazione in corso...",
+      "tailoredSubtitle": "Certificazioni riconosciute nel settore per {{role}}",
+      "genericSubtitle": "Migliori credenziali accreditate in base alle tue competenze e carriera",
+      "promptTitle": "Potenzia il tuo CV con Certificazioni Validate",
+      "promptDescRole": "Lascia che l'IA analizzi la tua esperienza come {{role}} e suggerisca le certificazioni più richieste.",
+      "promptDescGeneric": "Genera certificazioni standard di settore adatte al tuo campo per migliorare il punteggio ATS.",
+      "generateNow": "Genera Raccomandazioni IA Ora",
+      "refresh": "Aggiorna Raccomandazioni",
+      "getRecommendations": "Ottieni Raccomandazioni",
+      "addAll": "Aggiungi Tutte le Raccomandate",
+      "added": "Aggiunto",
+      "addedBadge": "Aggiunto",
+      "add": "Aggiungi",
+      "mandatoryBadge": "Standard di Settore",
+      "recommendedBadge": "Raccomandato"
     }
   },
   "EducationSuggestionModal": {

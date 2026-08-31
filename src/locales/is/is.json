@@ -1511,6 +1511,26 @@
         "label": "Útgáfudagur",
         "placeholder": "t.d. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI Vottunarráðleggingar",
+      "recommend": "Mæla með vottunum (AI)",
+      "tooltip": "Búa til AI vottunarráðleggingar sniðnar að þínum prófíl",
+      "generating": "Greinir og býr til...",
+      "tailoredSubtitle": "Viðurkenndar vottanir sniðnar fyrir {{role}}",
+      "genericSubtitle": "Helstu viðurkenndu vottanir byggðar á færni þinni og ferli",
+      "promptTitle": "Styrktu ferilskrána þína með staðfestum vottunum",
+      "promptDescRole": "Leyfðu AI að greina reynslu þína sem {{role}} og mæla með eftirsóttustu vottununum.",
+      "promptDescGeneric": "Búðu til viðurkenndar faggildingar sem henta þínu sviði til að hækka ATS einkunn.",
+      "generateNow": "Búa til AI tillögur núna",
+      "refresh": "Endurnýja tillögur",
+      "getRecommendations": "Fá tillögur",
+      "addAll": "Bæta við öllum tillögum",
+      "added": "Bætt við",
+      "addedBadge": "Bætt við",
+      "add": "Bæta við",
+      "mandatoryBadge": "Iðnaðarstaðall",
+      "recommendedBadge": "Mælt með"
     }
   },
   "EducationSuggestionModal": {

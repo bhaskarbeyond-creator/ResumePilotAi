@@ -1511,6 +1511,26 @@
         "label": "Utfärdandedatum",
         "placeholder": "t.ex. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI-certifieringsrekommendationer",
+      "recommend": "Rekommendera certifieringar (AI)",
+      "tooltip": "Generera AI-certifieringsrekommendationer anpassade efter din profil",
+      "generating": "Analyserar och genererar...",
+      "tailoredSubtitle": "Erkända branschcertifieringar anpassade för {{role}}",
+      "genericSubtitle": "Ledande ackrediterade certifieringar baserade på dina färdigheter och karriär",
+      "promptTitle": "Förstärk ditt CV med validerade certifieringar",
+      "promptDescRole": "Låt AI analysera din erfarenhet som {{role}} och rekommendera de mest efterfrågade certifieringarna.",
+      "promptDescGeneric": "Generera branschstandardcertifieringar anpassade till ditt område för att höja ditt ATS-betyg.",
+      "generateNow": "Generera AI-rekommendationer nu",
+      "refresh": "Uppdatera rekommendationer",
+      "getRecommendations": "Hämta rekommendationer",
+      "addAll": "Lägg till alla rekommenderade",
+      "added": "Tillagd",
+      "addedBadge": "Tillagd",
+      "add": "Lägg till",
+      "mandatoryBadge": "Branschstandard",
+      "recommendedBadge": "Rekommenderas"
     }
   },
   "EducationSuggestionModal": {

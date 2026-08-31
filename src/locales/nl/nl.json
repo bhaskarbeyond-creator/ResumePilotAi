@@ -1511,6 +1511,26 @@
         "label": "Datum van Uitgifte",
         "placeholder": "bijv. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI Certificering Aanbevelingen",
+      "recommend": "Certificeringen aanbevelen (AI)",
+      "tooltip": "Genereer AI-certificeringsaanbevelingen afgestemd op uw profiel",
+      "generating": "Analyseren en genereren...",
+      "tailoredSubtitle": "Erkende branchecertificeringen afgestemd op {{role}}",
+      "genericSubtitle": "Beste geaccrediteerde branchecertificeringen op basis van uw vaardigheden",
+      "promptTitle": "Versterk uw CV met gevalideerde certificeringen",
+      "promptDescRole": "Laat AI uw ervaring als {{role}} analyseren en de meest gewaardeerde certificeringen aanbevelen.",
+      "promptDescGeneric": "Genereer industriestandaard certificeringen die passen bij uw vakgebied voor een betere ATS-score.",
+      "generateNow": "Nu AI-aanbevelingen genereren",
+      "refresh": "Aanbevelingen vernieuwen",
+      "getRecommendations": "Aanbevelingen ophalen",
+      "addAll": "Alle aanbevolen toevoegen",
+      "added": "Toegevoegd",
+      "addedBadge": "Toegevoegd",
+      "add": "Toevoegen",
+      "mandatoryBadge": "Industriestandaard",
+      "recommendedBadge": "Aanbevolen"
     }
   },
   "EducationSuggestionModal": {

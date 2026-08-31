@@ -48,12 +48,12 @@ export function resolveDynamicModel(provider, aiConfig = {}) {
 const ALLOWED_ENDPOINTS = new Set([
     'generate-summary', 'generate-interview',
     'generate-work-description', 'generate-education-description',
-    'generate-skills', 'check-grammar', 'enhance-single-bullet',
+    'generate-skills', 'generate-certifications', 'check-grammar', 'enhance-single-bullet',
     'autocomplete', 'generate-ai-cover-letter'
 ]);
 const CONSOLIDATED_CONTENT_OPERATIONS = new Set([
     'generate-summary', 'generate-work-description', 'generate-education-description',
-    'generate-skills', 'enhance-single-bullet', 'autocomplete',
+    'generate-skills', 'generate-certifications', 'enhance-single-bullet', 'autocomplete',
 ]);
 
 export function buildAiRequest(endpointName, payload = {}) {

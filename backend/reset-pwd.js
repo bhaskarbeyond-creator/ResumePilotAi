@@ -24,7 +24,16 @@ async function run() {
   const auth = getAuth();
   const superAdminUser = await auth.getUserByEmail(superAdminEmail);
   await auth.setCustomUserClaims(superAdminUser.uid, { ...(superAdminUser.customClaims || {}), role: 'SUPER_ADMIN' });
-  console.log('Verified SUPER_ADMIN role for the configured account.');
+  console.log('Verified SUPER_ADMIN role for the configured account in Firebase Auth.');
+
+  try {
+    const { getRepository } = require('./repositories');
+    const repo = getRepository();
+    await repo.saveUser(superAdminUser.uid, { role: 'SUPER_ADMIN' }).catch(() => {});
+    console.log('Synchronized SUPER_ADMIN role in MariaDB users repository.');
+  } catch (dbErr) {
+    console.warn('MariaDB user role synchronization notice:', dbErr.message);
+  }
 
   let adminUser;
   try {
@@ -35,7 +44,16 @@ async function run() {
     console.log('Created the configured ADMIN account.');
   }
   await auth.setCustomUserClaims(adminUser.uid, { ...(adminUser.customClaims || {}), role: 'ADMIN' });
-  console.log('Verified ADMIN role for the configured account.');
+  console.log('Verified ADMIN role for the configured account in Firebase Auth.');
+
+  try {
+    const { getRepository } = require('./repositories');
+    const repo = getRepository();
+    await repo.saveUser(adminUser.uid, { role: 'ADMIN' }).catch(() => {});
+    console.log('Synchronized ADMIN role in MariaDB users repository.');
+  } catch (dbErr) {
+    console.warn('MariaDB user role synchronization notice:', dbErr.message);
+  }
 }
 
 run().catch(error => {

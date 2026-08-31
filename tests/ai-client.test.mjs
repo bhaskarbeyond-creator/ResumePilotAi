@@ -7,8 +7,11 @@ test('AI client uses the consolidated contract and rejects retired generation op
     url: '/api/generate-content',
     body: { operation: 'generate-summary', payload: { name: 'Asha', workHistory: 'Acme' } },
   });
+  assert.deepEqual(buildAiRequest('generate-certifications', { occupation: 'Engineer' }), {
+    url: '/api/generate-content',
+    body: { operation: 'generate-certifications', payload: { occupation: 'Engineer' } },
+  });
   assert.throws(() => buildAiRequest('generate-resume', { occupation: 'Engineer' }), /Unsupported AI operation/);
-  assert.throws(() => buildAiRequest('generate-certifications', { occupation: 'Engineer' }), /Unsupported AI operation/);
   assert.throws(() => buildAiRequest('arbitrary-provider-call', {}), /Unsupported AI operation/);
 });
 

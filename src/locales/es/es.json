@@ -1509,6 +1509,26 @@
         "label": "Fecha de Expedición",
         "placeholder": "p. ej. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "Recomendaciones de Certificaciones con IA",
+      "recommend": "Recomendar Certificaciones (IA)",
+      "tooltip": "Generar recomendaciones de certificaciones con IA adaptadas a tu perfil",
+      "generating": "Analizando y generando...",
+      "tailoredSubtitle": "Credenciales reconocidas del sector adaptadas para {{role}}",
+      "genericSubtitle": "Principales credenciales acreditadas basadas en tus habilidades y trayectoria",
+      "promptTitle": "Potencia tu Currículum con Certificaciones Validadas",
+      "promptDescRole": "Deja que la IA analice tu experiencia como {{role}} y te recomiende las certificaciones más valoradas.",
+      "promptDescGeneric": "Genera credenciales estándar de la industria adaptadas a tu campo para mejorar tu puntuación ATS.",
+      "generateNow": "Generar Recomendaciones IA Ahora",
+      "refresh": "Actualizar Recomendaciones",
+      "getRecommendations": "Obtener Recomendaciones",
+      "addAll": "Añadir Todas las Recomendadas",
+      "added": "Añadido",
+      "addedBadge": "Añadido",
+      "add": "Añadir",
+      "mandatoryBadge": "Estándar del Sector",
+      "recommendedBadge": "Recomendado"
     }
   },
   "EducationSuggestionModal": {

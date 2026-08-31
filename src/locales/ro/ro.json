@@ -1511,6 +1511,26 @@
         "label": "Data Emiterii",
         "placeholder": "de ex. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "Recomandări de Certificări cu AI",
+      "recommend": "Recomandă Certificări (AI)",
+      "tooltip": "Generează recomandări de certificări cu AI adaptate profilului tău",
+      "generating": "Se analizează și se generează...",
+      "tailoredSubtitle": "Certificări recunoscute în domeniu adaptate pentru {{role}}",
+      "genericSubtitle": "Cele mai bune acreditări din industrie bazate pe abilitățile tale",
+      "promptTitle": "Consolidează-ți CV-ul cu Certificări Validate",
+      "promptDescRole": "Lasă AI-ul să analizeze experiența ta ca {{role}} și să recomande cele mai apreciate certificări.",
+      "promptDescGeneric": "Generează certificări standard din industrie potrivite domeniului tău pentru a crește scorul ATS.",
+      "generateNow": "Generează Recomandări AI Acum",
+      "refresh": "Actualizează Recomandările",
+      "getRecommendations": "Obține Recomandări",
+      "addAll": "Adaugă Toate Recomandatele",
+      "added": "Adăugat",
+      "addedBadge": "Adăugat",
+      "add": "Adaugă",
+      "mandatoryBadge": "Standard din Industrie",
+      "recommendedBadge": "Recomandat"
     }
   },
   "EducationSuggestionModal": {

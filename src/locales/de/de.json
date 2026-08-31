@@ -1511,6 +1511,26 @@
         "label": "Ausstellungsdatum",
         "placeholder": "z. B. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "KI-Zertifizierungsempfehlungen",
+      "recommend": "Zertifizierungen empfehlen (KI)",
+      "tooltip": "KI-Zertifizierungsempfehlungen basierend auf Ihrem Profil generieren",
+      "generating": "Analysieren & Generieren...",
+      "tailoredSubtitle": "Anerkannte Branchenzertifikate zugeschnitten auf {{role}}",
+      "genericSubtitle": "Top-akkreditierte Branchenzertifikate basierend auf Ihren Fähigkeiten",
+      "promptTitle": "Stärken Sie Ihren Lebenslauf mit Zertifizierungen",
+      "promptDescRole": "Lassen Sie die KI Ihre Erfahrung als {{role}} analysieren und Top-Zertifizierungen vorschlagen.",
+      "promptDescGeneric": "Generieren Sie anerkannte Branchenzertifikate für Ihren Bereich zur Optimierung Ihrer Bewerbung.",
+      "generateNow": "KI-Empfehlungen jetzt generieren",
+      "refresh": "Empfehlungen aktualisieren",
+      "getRecommendations": "Empfehlungen abrufen",
+      "addAll": "Alle empfohlenen hinzufügen",
+      "added": "Hinzugefügt",
+      "addedBadge": "Hinzugefügt",
+      "add": "Hinzufügen",
+      "mandatoryBadge": "Branchenstandard",
+      "recommendedBadge": "Empfohlen"
     }
   },
   "EducationSuggestionModal": {

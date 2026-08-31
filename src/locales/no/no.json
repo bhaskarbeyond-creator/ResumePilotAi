@@ -1511,6 +1511,26 @@
         "label": "Utstedelsesdato",
         "placeholder": "f.eks. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI-sertifiseringsanbefalinger",
+      "recommend": "Anbefal sertifiseringer (AI)",
+      "tooltip": "Generer AI-sertifiseringsanbefalinger tilpasset din profil",
+      "generating": "Analyserer og genererer...",
+      "tailoredSubtitle": "Anerkjente bransjesertifiseringer tilpasset for {{role}}",
+      "genericSubtitle": "Topp akkrediterte bransjesertifiseringer basert på dine ferdigheter",
+      "promptTitle": "Styrk CV-en din med validerte sertifiseringer",
+      "promptDescRole": "La AI analysere din erfaring som {{role}} og anbefale de mest etterspurte sertifiseringene.",
+      "promptDescGeneric": "Generer bransjestandardsertifiseringer tilpasset ditt felt for bedre ATS-score.",
+      "generateNow": "Generer AI-anbefalinger nå",
+      "refresh": "Oppdater anbefalinger",
+      "getRecommendations": "Få anbefalinger",
+      "addAll": "Legg til alle anbefalte",
+      "added": "Lagt til",
+      "addedBadge": "Lagt til",
+      "add": "Legg til",
+      "mandatoryBadge": "Bransjestandard",
+      "recommendedBadge": "Anbefalt"
     }
   },
   "EducationSuggestionModal": {

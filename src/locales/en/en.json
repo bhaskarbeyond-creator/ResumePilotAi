@@ -1544,6 +1544,26 @@
         "label": "Date Earned",
         "placeholder": "e.g. 2024"
       }
+    },
+    "ai": {
+      "panelTitle": "AI Certification Recommendations",
+      "recommend": "Recommend Certifications (AI)",
+      "tooltip": "Generate AI certification recommendations tailored to your profile",
+      "generating": "Analyzing & Generating...",
+      "tailoredSubtitle": "Recognized industry credentials tailored for {{role}}",
+      "genericSubtitle": "Top accredited industry credentials based on your skills and career path",
+      "promptTitle": "Supercharge Your Resume with Validated Certifications",
+      "promptDescRole": "Let AI analyze your experience as {{role}} and recommend the highest-value certifications hiring managers look for.",
+      "promptDescGeneric": "Generate industry-standard credentials and certifications matched to your field to boost ATS ranking and employer credibility.",
+      "generateNow": "Generate AI Recommendations Now",
+      "refresh": "Refresh Recommendations",
+      "getRecommendations": "Get Recommendations",
+      "addAll": "Add All Recommended",
+      "added": "Added",
+      "addedBadge": "Added",
+      "add": "Add",
+      "mandatoryBadge": "Industry Standard",
+      "recommendedBadge": "Recommended"
     }
   },
   "EducationSuggestionModal": {

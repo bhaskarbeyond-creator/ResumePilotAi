@@ -95,10 +95,9 @@ test('response normalization preserves UI contracts across markdown, aliases, an
       { name: 'Cyber Security', category: 'recommended' },
     ],
   });
-  assert.throws(
-    () => parseAiResponse('generate-certifications', '{"certs":[{"name":"AWS Certified Developer"}]}'),
-    error => error.code === 'INVALID_AI_RESPONSE'
-  );
+  assert.deepEqual(parseAiResponse('generate-certifications', '{"certs":[{"name":"AWS Certified Developer","organization":"Amazon Web Services"}]}'), {
+    certifications: [{ title: 'AWS Certified Developer', issuer: 'Amazon Web Services', category: 'mandatory' }],
+  });
   assert.deepEqual(parseAiResponse('enhance-single-bullet', 'Leveraged automation to reduce deployment time.'), {
     enhancedBullet: 'Used automation to reduce deployment time.',
   });
@@ -322,10 +321,11 @@ test('provider requests honor cancellation and bounded timeout controls', async 
 test('getContentOperationFallback preserves candidate source or returns empty recommendations', () => {
   const { getContentOperationFallback } = require('../services/aiRuntime');
 
-  assert.throws(
-    () => getContentOperationFallback('generate-certifications', { jobTitle: 'Cybersecurity Analyst' }),
-    error => error.code === 'UNSUPPORTED_AI_OPERATION'
-  );
+  const certsFallback = getContentOperationFallback('generate-certifications', { jobTitle: 'Cybersecurity Analyst' });
+  assert.ok(Array.isArray(certsFallback.certifications));
+  assert.ok(certsFallback.certifications.length >= 4);
+  assert.equal(certsFallback._source, 'role-tailored-fallback');
+  assert.ok(certsFallback.certifications.some(c => c.title.includes('CISSP') || c.title.includes('Security+')));
 
   const bulletFallback = getContentOperationFallback('enhance-single-bullet', { bullet: 'Spearheaded unit tests' });
   assert.equal(bulletFallback.enhancedBullet, 'Spearheaded unit tests');
