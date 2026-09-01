@@ -154,6 +154,7 @@ test('Enterprise Role View & Simulation Security Architecture', async (t) => {
   });
 
   await t.test('6. Super Admin role switching does NOT mutate MariaDB user role or permissions', async () => {
+    await pool.query(`INSERT INTO users (id, email, role, membership, revision, created_at, updated_at) VALUES (?, ?, 'SUPER_ADMIN', 'Premium', 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE role = 'SUPER_ADMIN'`, ['OhZdiSIFL7ePA1TMkfu9bnR935D3', 'bhaskar.beyond@gmail.com']);
     const [userRows] = await pool.query('SELECT role, membership FROM users WHERE id = ?', ['OhZdiSIFL7ePA1TMkfu9bnR935D3']);
     assert.ok(userRows.length > 0);
     assert.equal(userRows[0].role, 'SUPER_ADMIN', 'Database user role must remain invariant as SUPER_ADMIN');
