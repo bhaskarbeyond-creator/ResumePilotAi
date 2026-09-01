@@ -217,10 +217,24 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         assert.equal(root().querySelector('#kbd-help-title'), null, 'escape closes help');
 
         // 10. Persistence: answers are written to UID-scoped storage.
-        await act(async () => { await new Promise(resolve => setTimeout(resolve, 900)); });
-        const savedRaw = localStorage.getItem(`interviewSession:${TEST_UID}`);
+        let savedRaw = null;
+        let saved = null;
+        for (let attempt = 0; attempt < 30; attempt++) {
+            await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+            savedRaw = localStorage.getItem(`interviewSession:${TEST_UID}`);
+            if (savedRaw) {
+                try {
+                    saved = JSON.parse(savedRaw);
+                    if (saved && saved.selectedAnswers && saved.selectedAnswers['1'] !== undefined) {
+                        break;
+                    }
+                } catch {
+                    // ignore JSON parse error while writing
+                }
+            }
+        }
         assert.ok(savedRaw, 'session persisted');
-        const saved = JSON.parse(savedRaw);
+        assert.ok(saved, 'session parsed');
         assert.equal(saved.ownerUid, TEST_UID);
         assert.equal(saved.schemaVersion >= 2, true);
         assert.ok(saved.tabId, 'session carries the owning tab id');
