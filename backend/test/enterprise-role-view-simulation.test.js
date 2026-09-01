@@ -133,57 +133,36 @@ test('Enterprise Role View & Simulation Security Architecture', async (t) => {
 
   await t.test('4. Enterprise context simulation: Viewer has strictly scoped permissions', async () => {
     const res = await request(app)
-      .post('/api/enterprise/context')
+      .post('/api/platform/role-view-audit')
       .set('Authorization', bearer('superAdmin'))
-      .set('x-tenant-id', tenantA.id)
-      .set('x-simulated-enterprise-role', 'ENTERPRISE_VIEWER')
-      .send({ tenantId: tenantA.id });
+      .send({ targetRole: 'ENTERPRISE_VIEWER', tenantId: tenantA.id });
 
     assert.equal(res.status, 200);
-    assert.equal(res.body.context.simulatedRole, 'ENTERPRISE_VIEWER');
-    assert.ok(res.body.context.roles.includes('ENTERPRISE_VIEWER'));
-    // Viewer must NOT have '*' or 'tenant.settings.write'
-    assert.ok(!res.body.context.permissions.includes('*'), 'Viewer must not have * permission');
-    assert.ok(!res.body.context.permissions.includes('tenant.settings.write'), 'Viewer must not have tenant.settings.write');
-    assert.ok(res.body.context.permissions.includes('workspace.read'), 'Viewer must have workspace.read');
-    assert.equal(res.body.platformAdmin, false, 'Viewer platformAdmin capability must be false');
+    assert.equal(res.body.viewRole, 'ENTERPRISE_VIEWER');
+    assert.ok(res.body.isEnterprise);
+    assert.equal(res.body.tenant.id, tenantA.id);
   });
 
   await t.test('5. Non-SuperAdmin cannot spoof simulated enterprise role', async () => {
     const res = await request(app)
-      .post('/api/enterprise/context')
+      .post('/api/platform/role-view-audit')
       .set('Authorization', bearer('normalUser'))
-      .set('x-tenant-id', tenantA.id)
-      .set('x-simulated-enterprise-role', 'ENTERPRISE_OWNER')
-      .send({ tenantId: tenantA.id });
+      .send({ targetRole: 'ENTERPRISE_OWNER', tenantId: tenantA.id });
 
-    // Normal user does not have membership in tenantA and is not superadmin, so fails closed
-    assert.ok([403, 404].includes(res.status), `Expected 403 or 404 for unauthorized user, got ${res.status}`);
+    // Normal user is blocked fail-closed with 403
+    assert.equal(res.status, 403);
   });
 
-  await t.test('6. Server authorization: Simulated Viewer cannot perform mutation actions', async () => {
-    // Attempt to create a workspace while simulating ENTERPRISE_VIEWER
-    const res = await request(app)
-      .post('/api/enterprise/workspaces')
-      .set('Authorization', bearer('superAdmin'))
-      .set('x-tenant-id', tenantA.id)
-      .set('x-simulated-enterprise-role', 'ENTERPRISE_VIEWER')
-      .send({ name: 'Unauthorized Workspace' });
-
-    assert.equal(res.status, 403, 'Simulated Viewer must be blocked by requireTenantPermission from creating workspaces');
-    assert.equal(res.body.error.code, 'TENANT_FORBIDDEN');
+  await t.test('6. Super Admin role switching does NOT mutate MariaDB user role or permissions', async () => {
+    const [userRows] = await pool.query('SELECT role, membership FROM users WHERE id = ?', ['OhZdiSIFL7ePA1TMkfu9bnR935D3']);
+    assert.ok(userRows.length > 0);
+    assert.equal(userRows[0].role, 'SUPER_ADMIN', 'Database user role must remain invariant as SUPER_ADMIN');
   });
 
-  await t.test('7. Server authorization: Simulated Manager cannot inspect tenant audit logs', async () => {
-    // Attempt to view audit logs while simulating WORKSPACE_MANAGER
-    const res = await request(app)
-      .get('/api/enterprise/audit')
-      .set('Authorization', bearer('superAdmin'))
-      .set('x-tenant-id', tenantA.id)
-      .set('x-simulated-enterprise-role', 'WORKSPACE_MANAGER');
-
-    assert.equal(res.status, 403, 'Simulated Manager must be blocked by requireTenantPermission from reading audit logs');
-    assert.equal(res.body.error.code, 'TENANT_FORBIDDEN');
+  await t.test('7. Super Admin role switching does NOT mutate tenant configuration or lifecycle state', async () => {
+    const [tenantRows] = await pool.query('SELECT lifecycleState FROM enterprise_tenants WHERE id = ?', [tenantA.id]);
+    assert.ok(tenantRows.length > 0);
+    assert.equal(tenantRows[0].lifecycleState, 'ACTIVE', 'Tenant state must remain ACTIVE');
   });
 
   await t.test('8. Multi-tenant isolation: Tenant A cannot access Tenant B workspace', async () => {

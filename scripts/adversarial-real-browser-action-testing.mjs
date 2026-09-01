@@ -23,6 +23,7 @@ const VIEWPORTS = [
     { name: 'Tablet (768px)', width: 768, height: 1024 },
     { name: 'Desktop (1280px)', width: 1280, height: 800 },
     { name: 'Full HD (1920px)', width: 1920, height: 1080 },
+    { name: '4K Ultra HD (3840px)', width: 3840, height: 2160 },
 ];
 
 async function run() {
