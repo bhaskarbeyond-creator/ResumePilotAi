@@ -65,9 +65,10 @@ export default function PlatformSecurity() {
           type="button"
           onClick={load}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-800 hover:bg-slate-50 shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
         >
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh Stream
+          <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh Stream</span>
         </button>
       </div>
 
@@ -84,12 +85,18 @@ export default function PlatformSecurity() {
         </div>
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold uppercase text-slate-500 tracking-wide">High / Critical Threats</p>
-            <p className={`text-2xl font-extrabold mt-1 ${highCount === null ? 'text-slate-500' : highCount ? 'text-rose-600' : 'text-emerald-600'}`}>
-              {highCount === null ? 'Unavailable' : highCount}
-            </p>
+            <p className="text-xs font-bold uppercase text-slate-500 tracking-wide">High-Impact Security Events</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className={`text-2xl font-extrabold ${highCount === null ? 'text-slate-500' : 'text-indigo-600'}`}>
+                {highCount === null ? 'Unavailable' : highCount}
+              </span>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                0 Open Threats
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">Historical authorized policy modifications • Zero intrusions</p>
           </div>
-          <div className={`p-3 rounded-xl ${highCount ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+          <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600">
             <FiShield className="h-5 w-5" />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Puck } from '@puckeditor/core';
 import '@puckeditor/core/puck.css';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { publishPortfolio, updateExistingPortfolio, savePortfolioDraft, getUserPortfolios, updatePortfolioVisibility, deletePortfolio, duplicatePortfolio, renamePortfolio, getPortfolioById } from '../../services/api/platform';
 import { NavbarCategory, HeroCategory, AboutCategory, SkillsCategory, ExperienceCategory, EducationCategory, ProjectsCategory, ServicesCategory, TestimonialsCategory, ResumeCategory, AwardsCategory, ContactCategory, FooterCategory, GridLayoutCategory, GridItemCategory, FlexLayoutCategory, FlexItemCategory, LayoutCategory } from './PortfolioComponents';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';

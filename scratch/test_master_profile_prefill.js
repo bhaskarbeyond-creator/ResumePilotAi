@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 import { chromium } from 'playwright';
 
 (async () => {
@@ -8,8 +9,8 @@ import { chromium } from 'playwright';
 
   try {
     // 1. Open Base Homepage via Apache local URL
-    console.log('Step 1: Navigating to http://ai-resume-builder.local/');
-    await page.goto('http://ai-resume-builder.local/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    console.log('Step 1: Navigating to ${process.env.TARGET_URL || process.env.APP_URL}/');
+    await page.goto((process.env.TARGET_URL || process.env.APP_URL), { waitUntil: 'domcontentloaded', timeout: 15000 });
     console.log('✔ Base Homepage Loaded');
 
     // 2. Set Local User ID
@@ -20,8 +21,8 @@ import { chromium } from 'playwright';
     });
 
     // 3. Open Resume Builder
-    console.log('Step 2: Navigating to http://ai-resume-builder.local/build-resume/heading');
-    await page.goto('http://ai-resume-builder.local/build-resume/heading', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    console.log('Step 2: Navigating to ${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading');
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(2000);
 
     const headingText = await page.textContent('body');

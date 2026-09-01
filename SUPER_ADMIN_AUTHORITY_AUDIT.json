@@ -1,0 +1,1130 @@
+[
+  {
+    "file": "src/components/admin/Admin.jsx",
+    "line": 133,
+    "pattern": "localStorage",
+    "text": "try { return localStorage.getItem('adminSidebarCollapsed') === 'true'; } catch { return false; }"
+  },
+  {
+    "file": "src/components/admin/audit/AdminAuditLogs.jsx",
+    "line": 171,
+    "pattern": "sample",
+    "text": "<p className=\"text-xs font-bold text-slate-500 uppercase tracking-wider\">Sample Records</p>"
+  },
+  {
+    "file": "src/components/admin/employerApplications/EmployerApplications.jsx",
+    "line": 53,
+    "pattern": "fallback",
+    "text": "handleReviewFailure = (result, fallback) => {"
+  },
+  {
+    "file": "src/components/admin/employerApplications/EmployerApplications.jsx",
+    "line": 56,
+    "pattern": "fallback",
+    "text": "errorMessage: result?.error || fallback,"
+  },
+  {
+    "file": "src/components/admin/operations/PlatformOperations.jsx",
+    "line": 206,
+    "pattern": "sample",
+    "text": "<p className=\"text-xs text-slate-500 mt-1\">Last recorded tenant export: {backup?.lastRecordedExport?.createdAt || 'None "
+  },
+  {
+    "file": "src/components/admin/operations/PlatformOperations.jsx",
+    "line": 322,
+    "pattern": "sample",
+    "text": "// \"Data unavailable\", so a missing sample can never read as a measured zero."
+  },
+  {
+    "file": "src/components/admin/settings/AiSettings.jsx",
+    "line": 265,
+    "pattern": "fallback",
+    "text": "// If turning off the active provider, fallback to the first enabled one"
+  },
+  {
+    "file": "src/components/admin/settings/AiSettings.jsx",
+    "line": 508,
+    "pattern": "fallback",
+    "text": "{!configuredProviders[aiConfig.provider] && !String(aiConfig[PROVIDER_KEY_FIELDS[aiConfig.provider]] || '').trim() && ' "
+  },
+  {
+    "file": "src/components/admin/settings/AiSettings.jsx",
+    "line": 1248,
+    "pattern": "fallback",
+    "text": "{/* Fallback Checkbox */}"
+  },
+  {
+    "file": "src/components/admin/settings/AiSettings.jsx",
+    "line": 1259,
+    "pattern": "fallback",
+    "text": "Enable automatic fallback to the next configured provider when the primary provider fails or rate-limits"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 31,
+    "pattern": "fallback",
+    "text": "// Outbound SMTP & Fallback State"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 54,
+    "pattern": "hardcoded",
+    "text": "// Live DNS deliverability, resolved by the backend. Never hardcoded."
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 366,
+    "pattern": "mock",
+    "text": "subjectDefault: '📢 New Feature Release: AI Mock Interview Simulator — ResumePilot AI',"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 369,
+    "pattern": "mock",
+    "text": "title: 'Introducing AI Mock Interview Simulator 🚀',"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 560,
+    "pattern": "fallback",
+    "text": "setStatusMessage({ type: 'success', text: 'SMTP, fallback relay, IMAP, and template settings were saved to MariaDB.' });"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 604,
+    "pattern": "fallback",
+    "text": "setStatusMessage({ type: 'error', text: `Secondary Fallback Relay Test Failed: ${data.error}` });"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 711,
+    "pattern": "fallback",
+    "text": "<p className=\"text-xs text-slate-300 mt-1\">Outbound SMTP, Inbound IMAP, Fallback Relay, Dynamic HTML Templates &amp; Aud"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 785,
+    "pattern": "fallback",
+    "text": "{/* TAB 1: OUTBOUND SMTP & FALLBACK RELAY */}"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 788,
+    "pattern": "fallback",
+    "text": "<fieldset disabled={!isSuperAdmin} className=\"rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900\""
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 945,
+    "pattern": "fallback",
+    "text": "{/* Secondary Fallback SMTP Relay */}"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 949,
+    "pattern": "fallback",
+    "text": "<FaShieldAlt className=\"text-indigo-600\" /> Secondary Fallback Relay (Failover)"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 958,
+    "pattern": "fallback",
+    "text": "<span className=\"text-xs font-bold text-slate-700\">Enable Fallback Failover</span>"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 966,
+    "pattern": "fallback",
+    "text": "<label className=\"block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1\">Fallback Host</label>"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 976,
+    "pattern": "fallback",
+    "text": "<label className=\"block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1\">Fallback Port</label>"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 986,
+    "pattern": "fallback",
+    "text": "<label className=\"block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1\">Fallback Encryption</label>"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 1000,
+    "pattern": "fallback",
+    "text": "<label className=\"block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1\">Fallback User / SASL Account"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 1010,
+    "pattern": "fallback",
+    "text": "<label className=\"block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1\">Fallback Password / API Key<"
+  },
+  {
+    "file": "src/components/admin/settings/EmailSmtpSettings.jsx",
+    "line": 1021,
+    "pattern": "fallback",
+    "text": "<label className=\"block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1\">Fallback Sender Email (Verif"
+  },
+  {
+    "file": "src/components/admin/settings/FirebaseSettings.jsx",
+    "line": 89,
+    "pattern": "Firestore",
+    "text": "<p className=\"mt-4 flex items-start gap-2 text-xs text-slate-500\"><FaLock className=\"mt-0.5 shrink-0\" />No Firestore, Re"
+  },
+  {
+    "file": "src/components/admin/settings/ModulesSettings.jsx",
+    "line": 65,
+    "pattern": "fallback",
+    "text": "console.warn('Module settings loaded with fallback configuration.');"
+  },
+  {
+    "file": "src/components/admin/settings/SocialAuthSettings.jsx",
+    "line": 169,
+    "pattern": "fallback",
+    "text": "Configure your Google Web Client ID and Client Secret for direct Google Sign-In &amp; Scenario 3 fallback."
+  },
+  {
+    "file": "src/components/admin/settings/StorageSettings.jsx",
+    "line": 38,
+    "pattern": "Firestore",
+    "text": "Firebase remains the identity provider only. Firebase Cloud Storage, Firestore, Cloudinary, and S3 are not enabled by th"
+  },
+  {
+    "file": "src/components/admin/settings/subscriptionsSettings.jsx",
+    "line": 1719,
+    "pattern": "demo",
+    "text": "{this.state.sandboxMode ? '⚡ Sandbox / Demo Mode Active' : '🟢 Live Production Mode'}"
+  },
+  {
+    "file": "src/components/admin/settings/subscriptionsSettings.jsx",
+    "line": 1722,
+    "pattern": "demo",
+    "text": "<p className=\"text-xs text-slate-500 mt-0.5\">Toggle between live real transactions and sandbox demo checkout testing</p>"
+  },
+  {
+    "file": "src/components/admin/sidebar/sidebar.jsx",
+    "line": 42,
+    "pattern": "localStorage",
+    "text": "try { return localStorage.getItem('adminSidebarCollapsed'); } catch { return null; }"
+  },
+  {
+    "file": "src/components/admin/sidebar/sidebar.jsx",
+    "line": 45,
+    "pattern": "localStorage",
+    "text": "try { localStorage.setItem('adminSidebarCollapsed', String(value)); } catch { /* preference storage is optional */ }"
+  },
+  {
+    "file": "src/services/adminAiSettings.js",
+    "line": 16,
+    "pattern": "fallback",
+    "text": "export function normalizeAdminApiError(response, result = {}, fallback = 'Request failed.') {"
+  },
+  {
+    "file": "src/services/adminAiSettings.js",
+    "line": 24,
+    "pattern": "fallback",
+    "text": "let message = (code === 'AI_PROVIDER_AUTHENTICATION_FAILED' && defaultMsg ? defaultMsg : serverMessage) || defaultMsg ||"
+  },
+  {
+    "file": "src/services/adminAiSettings.js",
+    "line": 26,
+    "pattern": "fallback",
+    "text": "if (message === fallback && statusSuffix) {"
+  },
+  {
+    "file": "src/services/adminAiSettings.js",
+    "line": 27,
+    "pattern": "fallback",
+    "text": "message = `${fallback}${statusSuffix}`;"
+  },
+  {
+    "file": "src/services/adminAiSettings.js",
+    "line": 37,
+    "pattern": "fallback",
+    "text": "async function request(url, options = {}, fallback = 'Request failed.') {"
+  },
+  {
+    "file": "src/services/adminAiSettings.js",
+    "line": 51,
+    "pattern": "fallback",
+    "text": "if (!response.ok || result.success === false) throw normalizeAdminApiError(response, result, fallback);"
+  },
+  {
+    "file": "src/services/aiService.js",
+    "line": 92,
+    "pattern": "localStorage",
+    "text": "const activeTenant = tenantId || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('activeTenantId') || s"
+  },
+  {
+    "file": "src/services/aiService.js",
+    "line": 92,
+    "pattern": "sessionStorage",
+    "text": "const activeTenant = tenantId || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('activeTenantId') || s"
+  },
+  {
+    "file": "src/services/api/databaseAdmin.js",
+    "line": 3,
+    "pattern": "fallback",
+    "text": "const errorMessage = (data, fallback) => data?.error?.message || (typeof data?.error === 'string' ? data.error : fallbac"
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 4,
+    "pattern": "Firestore",
+    "text": "* ARCHITECTURE (zero-Firestore):"
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 6,
+    "pattern": "Firestore",
+    "text": "*  MySQL/MariaDB — the single authoritative store. There is NO Firestore"
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 8,
+    "pattern": "fallback",
+    "text": "*  fallback to Firestore. Firebase Auth remains the identity plane only."
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 8,
+    "pattern": "Firestore",
+    "text": "*  fallback to Firestore. Firebase Auth remains the identity plane only."
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 13,
+    "pattern": "Firestore",
+    "text": "*  Firestore."
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 90,
+    "pattern": "fallback",
+    "text": "export function apiError(error, fallback = 'Request failed') {"
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 91,
+    "pattern": "fallback",
+    "text": "const err = new Error(error?.message || error?.error?.message || fallback);"
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 166,
+    "pattern": "Firestore",
+    "text": "// Realtime chat delivery is read through the backend API (never Firestore)."
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 811,
+    "pattern": "fallback",
+    "text": "// Fallback to public jobs data endpoint"
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 1750,
+    "pattern": "Firestore",
+    "text": "// to Firestore (which no longer exists on this path)."
+  },
+  {
+    "file": "src/services/api/platform.js",
+    "line": 2405,
+    "pattern": "Firestore",
+    "text": "// the legacy Firestore realtime listener no longer exists on this path."
+  },
+  {
+    "file": "src/services/resumeFieldMapper.js",
+    "line": 7,
+    "pattern": "fallback",
+    "text": "// Helper: Safe string extraction with multi-key fallback"
+  },
+  {
+    "file": "src/services/resumeFieldMapper.js",
+    "line": 274,
+    "pattern": "sessionStorage",
+    "text": "// Persist to sessionStorage for recovery"
+  },
+  {
+    "file": "src/services/resumeFieldMapper.js",
+    "line": 277,
+    "pattern": "sessionStorage",
+    "text": "sessionStorage.setItem('temp_imported_resume_json', JSON.stringify(tempResumeJson));"
+  },
+  {
+    "file": "src/services/resumeFieldMapper.js",
+    "line": 280,
+    "pattern": "sessionStorage",
+    "text": "console.warn('SessionStorage temp JSON save warning:', e);"
+  },
+  {
+    "file": "src/services/resumeParser.js",
+    "line": 76,
+    "pattern": "fallback",
+    "text": "// Fallback – plain text"
+  },
+  {
+    "file": "src/services/resumePersistence.js",
+    "line": 21,
+    "pattern": "fallback",
+    "text": "* never supply it and there is no browser database client or fallback."
+  },
+  {
+    "file": "src/services/resumePersistence.js",
+    "line": 97,
+    "pattern": "localStorage",
+    "text": "export function writeResumeRecovery(userId, resumeId, revision, data, storage = globalThis.localStorage) {"
+  },
+  {
+    "file": "src/services/resumePersistence.js",
+    "line": 103,
+    "pattern": "localStorage",
+    "text": "export function readResumeRecovery(userId, resumeId, storage = globalThis.localStorage) {"
+  },
+  {
+    "file": "src/services/resumePersistence.js",
+    "line": 108,
+    "pattern": "localStorage",
+    "text": "export function clearResumeRecovery(userId, resumeId, storage = globalThis.localStorage) {"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 482,
+    "pattern": "fallback",
+    "text": "markSource('fallback');"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 487,
+    "pattern": "fallback",
+    "text": "// Use fallback if AI generation fails"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 503,
+    "pattern": "fallback",
+    "text": "markSource('fallback');"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 508,
+    "pattern": "fallback",
+    "text": "// Fallback function to generate interview questions when API fails. Deterministic per input"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 543,
+    "pattern": "fallback",
+    "text": "'Phased rollouts with automated verification and fallback boundaries prevent production outages during migrations.'),"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 772,
+    "pattern": "fallback",
+    "text": "_source: 'fallback',"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 776,
+    "pattern": "fallback",
+    "text": "// Fallback function to check grammar when AI is not available"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 778,
+    "pattern": "fallback",
+    "text": "// Simple fallback grammar check - looks for common issues"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 796,
+    "pattern": "fallback",
+    "text": "// Skip this complex check in fallback"
+  },
+  {
+    "file": "backend/routes/ai.js",
+    "line": 985,
+    "pattern": "fallback",
+    "text": "// de-duplication, difficulty distribution, grounded fallback, metadata cleaners, and blueprinting)."
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 17,
+    "pattern": "fallback",
+    "text": "function parseStoredJson(value, fallback = {}) {"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 18,
+    "pattern": "fallback",
+    "text": "if (value === null || value === undefined) return fallback;"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 121,
+    "pattern": "fallback",
+    "text": "const fallbackEnvironment = environmentCredentialPair('FALLBACK_SMTP_USER', 'FALLBACK_SMTP_PASS', 'Fallback SMTP');"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 332,
+    "pattern": "fallback",
+    "text": "function safeEmailUrl(value, fallback = '#') {"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 334,
+    "pattern": "fallback",
+    "text": "return url ? escapeEmailHtml(url) : fallback;"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 337,
+    "pattern": "fallback",
+    "text": "function hrefAttr(value, fallback = '#') {"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 338,
+    "pattern": "fallback",
+    "text": "return safeEmailUrl(value, fallback);"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 350,
+    "pattern": "fallback",
+    "text": "function humanizeName(raw, fallback = 'Team Member') {"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 351,
+    "pattern": "fallback",
+    "text": "if (!raw || typeof raw !== 'string') return fallback;"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 358,
+    "pattern": "fallback",
+    "text": "if (!name || name.toLowerCase() === 'user' || name.toLowerCase() === 'candidate') return fallback;"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 362,
+    "pattern": "fallback",
+    "text": "function humanizeRole(role, fallback = 'Enterprise Team Member') {"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 363,
+    "pattern": "fallback",
+    "text": "if (!role || typeof role !== 'string') return fallback;"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 383,
+    "pattern": "fallback",
+    "text": "return humanizeName(r, fallback);"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 386,
+    "pattern": "fallback",
+    "text": "function humanizeOrgName(name, fallback = 'your enterprise workspace') {"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 387,
+    "pattern": "fallback",
+    "text": "if (!name || typeof name !== 'string' || name === 'an enterprise organization') return fallback;"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1169,
+    "pattern": "fallback",
+    "text": "// handle persistence failures; no process-memory success fallback exists."
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1237,
+    "pattern": "fallback",
+    "text": "// Helper: Dispatch Outbound Mail with Fallback Transport Support (10/10 High-Availability Circuit Breaker)"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1291,
+    "pattern": "fallback",
+    "text": "if (!allowedEncryption.has(String(config.fallbackSmtp.encryption || '').toLowerCase())) throw new Error('Encrypted fallb"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1301,
+    "pattern": "fallback",
+    "text": "console.warn(`[Circuit Breaker Active] Primary SMTP in ${cooldownMinutes}-min cooldown (${remainingSec}s left, Failures:"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1334,
+    "pattern": "fallback",
+    "text": "// 2. Try Secondary Fallback Transporter if enabled"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1338,
+    "pattern": "fallback",
+    "text": "console.warn('⚡ Primary SMTP unavailable/bypassed. Activating Secondary Fallback Relay (Failover)...');"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1341,
+    "pattern": "fallback",
+    "text": "// SASL Compliance: Use verified sender address (Fallback Sender Email -> Primary Username -> ReplyTo -> Dynamic System "
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1361,
+    "pattern": "fallback",
+    "text": "console.log(`✅ Secondary Fallback Relay dispatched email successfully! (ID: ${info.messageId})`);"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1364,
+    "pattern": "fallback",
+    "text": "console.error('❌ Secondary Fallback SMTP Dispatch Failed:', fallbackErr.message);"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1365,
+    "pattern": "fallback",
+    "text": "throw new Error(`Primary SMTP Error: ${primaryErr ? primaryErr.message : (isCircuitOpen ? 'Circuit Breaker Open' : 'Not "
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1541,
+    "pattern": "fallback",
+    "text": "return res.status(400).json({ success: false, error: 'Secondary Fallback Relay Username and Password are required.' });"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1554,
+    "pattern": "fallback",
+    "text": "subject: `🛡️ Secondary Fallback Relay Verified — ${fallbackConfig.senderName}`,"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1557,
+    "pattern": "fallback",
+    "text": "<h2 style=\"margin-top: 0; color: #15803d;\">🛡️ Secondary Fallback Relay Successful!</h2>"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1573,
+    "pattern": "fallback",
+    "text": "if (!audit) return res.status(503).json({ success: false, code: 'AUDIT_WRITE_FAILED', error: 'The fallback SMTP test ran"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1577,
+    "pattern": "fallback",
+    "text": "message: `Secondary Fallback Relay verified! Test email sent to ${fallbackConfig.adminEmail}`"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1580,
+    "pattern": "fallback",
+    "text": "console.error('[Fallback Test Error]:', err.code || err.name || 'provider_error');"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1586,
+    "pattern": "fallback",
+    "text": "return res.status(503).json({ success: false, code: 'EMAIL_PROVIDER_TEST_FAILED', error: 'Fallback SMTP verification fai"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1681,
+    "pattern": "hardcoded",
+    "text": "* The Admin console previously rendered a hardcoded \"100% EXCELLENT"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1747,
+    "pattern": "fallback",
+    "text": "detail = 'SPF authorizes primary provider but is missing fallback relay (include:spf.brevo.com).';"
+  },
+  {
+    "file": "backend/routes/email.js",
+    "line": 1840,
+    "pattern": "fallback",
+    "text": "fallbackSmtp: environmentCredentialPair('FALLBACK_SMTP_USER', 'FALLBACK_SMTP_PASS', 'Fallback SMTP'),"
+  },
+  {
+    "file": "backend/routes/miscData.js",
+    "line": 6,
+    "pattern": "Firestore",
+    "text": "* These domains previously lived only in Firestore (users/{uid}/favourites,"
+  },
+  {
+    "file": "backend/routes/miscData.js",
+    "line": 13,
+    "pattern": "Firestore",
+    "text": "* Firestore is never consulted on these paths."
+  },
+  {
+    "file": "backend/services/accountDeletion.js",
+    "line": 28,
+    "pattern": "fallback",
+    "text": "function parseJson(value, fallback = {}) {"
+  },
+  {
+    "file": "backend/services/accountDeletion.js",
+    "line": 29,
+    "pattern": "fallback",
+    "text": "if (!value) return fallback;"
+  },
+  {
+    "file": "backend/services/accountDeletion.js",
+    "line": 31,
+    "pattern": "fallback",
+    "text": "try { return JSON.parse(value); } catch { return fallback; }"
+  },
+  {
+    "file": "backend/services/adminAiEntitlement.js",
+    "line": 18,
+    "pattern": "fallback",
+    "text": "function parseJson(value, fallback = {}) {"
+  },
+  {
+    "file": "backend/services/adminAiEntitlement.js",
+    "line": 19,
+    "pattern": "fallback",
+    "text": "if (!value) return fallback;"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 52,
+    "pattern": "fallback",
+    "text": "function clampNumber(value, min, max, fallback) {"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 54,
+    "pattern": "fallback",
+    "text": "return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 57,
+    "pattern": "fallback",
+    "text": "function safeModel(value, fallback) {"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 59,
+    "pattern": "fallback",
+    "text": "return MODEL_PATTERN.test(model) ? model : fallback;"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 379,
+    "pattern": "fallback",
+    "text": "// Sanitization for candidate-authored fallback text must not substitute words or"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 556,
+    "pattern": "fallback",
+    "text": "// synonyms or adds connective claims fails closed to the source-preserving fallback."
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 857,
+    "pattern": "fallback",
+    "text": "console.warn(`[AI Model Failover] ${provider} model ${currentModel} timed out or failed (${err.message}); retrying with "
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 887,
+    "pattern": "fallback",
+    "text": "* Returns only source-preserving or empty fallback data when a provider is unavailable"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 901,
+    "pattern": "fallback",
+    "text": "if (preferredSource) return { summary: sanitizeSourceText(preferredSource), _source: 'source-preserving-fallback' };"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 907,
+    "pattern": "fallback",
+    "text": "if (segments && segments.length >= 20) return { summary: segments.slice(0, 1200), _source: 'source-preserving-fallback' "
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 912,
+    "pattern": "fallback",
+    "text": "_source: 'role-tailored-fallback'"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 918,
+    "pattern": "fallback",
+    "text": "if (notes && notes.length >= 10) return { suggestions: [notes], _source: 'source-preserving-fallback' };"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 928,
+    "pattern": "fallback",
+    "text": "_source: 'role-tailored-fallback'"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 934,
+    "pattern": "fallback",
+    "text": "if (notes && notes.length >= 10) return { suggestions: [notes], _source: 'source-preserving-fallback' };"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 944,
+    "pattern": "fallback",
+    "text": "_source: 'role-tailored-fallback'"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 950,
+    "pattern": "fallback",
+    "text": "return original ? { enhancedBullet: original, _source: 'source-preserving-fallback' } : null;"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 974,
+    "pattern": "fallback",
+    "text": "_source: 'role-tailored-fallback'"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1022,
+    "pattern": "fallback",
+    "text": "return { certifications: certs, requiresUserConfirmation: true, _source: 'role-tailored-fallback' };"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1024,
+    "pattern": "fallback",
+    "text": "if (operation === 'autocomplete') return { suggestions: [], _source: 'empty-fallback' };"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1045,
+    "pattern": "fallback",
+    "text": "const fallback = getContentOperationFallback(operation, validatedPayload);"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1046,
+    "pattern": "fallback",
+    "text": "if (fallback === null) throw providerError;"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1047,
+    "pattern": "fallback",
+    "text": "console.warn('[generate-content] Provider failed grounding or availability checks; returning safe fallback', {"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1052,
+    "pattern": "fallback",
+    "text": "data: fallback,"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1053,
+    "pattern": "fallback",
+    "text": "provider: 'fallback',"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1054,
+    "pattern": "fallback",
+    "text": "model: 'fallback',"
+  },
+  {
+    "file": "backend/services/aiRuntime.js",
+    "line": 1055,
+    "pattern": "fallback",
+    "text": "grounding: FACTUAL_CONTENT_OPERATIONS.has(operation) ? 'source-preserving-fallback' : 'empty-fallback',"
+  },
+  {
+    "file": "backend/services/cmsScheduler.js",
+    "line": 6,
+    "pattern": "fallback",
+    "text": "* this service has no non-transactional or alternate-database fallback."
+  },
+  {
+    "file": "backend/services/docxThemes.js",
+    "line": 31,
+    "pattern": "fallback",
+    "text": "function extractHex(value, fallback = '1E3A8A') {"
+  },
+  {
+    "file": "backend/services/docxThemes.js",
+    "line": 37,
+    "pattern": "fallback",
+    "text": "return String(fallback).replace('#', '').toUpperCase();"
+  },
+  {
+    "file": "backend/services/emailNotifier.js",
+    "line": 5,
+    "pattern": "hardcoded",
+    "text": "* FIX: Admin email is now resolved dynamically from DB/SMTP config — never hardcoded."
+  },
+  {
+    "file": "backend/services/emailNotifier.js",
+    "line": 13,
+    "pattern": "fallback",
+    "text": "function humanizeName(raw, fallback = 'Team Member') {"
+  },
+  {
+    "file": "backend/services/emailNotifier.js",
+    "line": 14,
+    "pattern": "fallback",
+    "text": "if (!raw || typeof raw !== 'string') return fallback;"
+  },
+  {
+    "file": "backend/services/emailNotifier.js",
+    "line": 21,
+    "pattern": "fallback",
+    "text": "if (!name || name.toLowerCase() === 'user' || name.toLowerCase() === 'candidate') return fallback;"
+  },
+  {
+    "file": "backend/services/featureFlagService.js",
+    "line": 134,
+    "pattern": "fallback",
+    "text": "// Fallback to process.env"
+  },
+  {
+    "file": "backend/services/invoiceService.js",
+    "line": 25,
+    "pattern": "fallback",
+    "text": "function parseJson(value, fallback = {}) {"
+  },
+  {
+    "file": "backend/services/invoiceService.js",
+    "line": 26,
+    "pattern": "fallback",
+    "text": "if (!value) return fallback;"
+  },
+  {
+    "file": "backend/services/invoiceService.js",
+    "line": 28,
+    "pattern": "fallback",
+    "text": "try { return JSON.parse(value); } catch { return fallback; }"
+  },
+  {
+    "file": "backend/services/notificationOutbox.js",
+    "line": 55,
+    "pattern": "fallback",
+    "text": "function parseJsonField(value, fallback) {"
+  },
+  {
+    "file": "backend/services/notificationOutbox.js",
+    "line": 56,
+    "pattern": "fallback",
+    "text": "if (value === null || value === undefined) return fallback;"
+  },
+  {
+    "file": "backend/services/notificationOutbox.js",
+    "line": 58,
+    "pattern": "fallback",
+    "text": "try { return JSON.parse(value); } catch (_e) { return fallback; }"
+  },
+  {
+    "file": "backend/services/paymentActivation.js",
+    "line": 232,
+    "pattern": "fallback",
+    "text": "// one MariaDB transaction. There is deliberately no non-atomic fallback."
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 105,
+    "pattern": "fallback",
+    "text": "['FALLBACK_SMTP_PASS', 'Fallback SMTP password or app key', 'communications'],"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 189,
+    "pattern": "fallback",
+    "text": "['FALLBACK_SMTP_HOST', 'Fallback SMTP host', 'communications', false, true],"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 190,
+    "pattern": "fallback",
+    "text": "['FALLBACK_SMTP_PORT', 'Fallback SMTP port', 'communications', false, true],"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 191,
+    "pattern": "fallback",
+    "text": "['FALLBACK_SMTP_ENCRYPTION', 'Fallback SMTP encryption', 'communications', false, true],"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 192,
+    "pattern": "fallback",
+    "text": "['FALLBACK_SMTP_USER', 'Fallback SMTP username', 'communications', false, true],"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 452,
+    "pattern": "fallback",
+    "text": "const fallback = docs.admin?.fallbackSmtp || docs.legacy?.fallbackSmtp || {};"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 455,
+    "pattern": "fallback",
+    "text": "const fallbackPair = selectPaymentPair({ envId: env.FALLBACK_SMTP_USER, envSecret: env.FALLBACK_SMTP_PASS, storedId: fal"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 470,
+    "pattern": "fallback",
+    "text": "groups.integrations['smtp.fallback'] = storedItem('smtp.fallback', 'Fallback SMTP', 'communications', {"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 473,
+    "pattern": "fallback",
+    "text": "value: fallback.enabled === true ? (fallbackConfigured ? 'CONFIGURED' : fallbackPair.source.endsWith('partial') ? 'PARTI"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 475,
+    "pattern": "fallback",
+    "text": "description: 'Optional fallback relay used when the primary provider is unavailable.',"
+  },
+  {
+    "file": "backend/services/platformConfiguration.js",
+    "line": 477,
+    "pattern": "fallback",
+    "text": "dependencies: ['Fallback SMTP relay'], auditEvent: 'SMTP_SETTINGS_UPDATED',"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 60,
+    "pattern": "fallback",
+    "text": "function booleanValue(value, fallback = false) {"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 63,
+    "pattern": "fallback",
+    "text": "return fallback;"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 65,
+    "pattern": "fallback",
+    "text": "function parseJson(value, fallback = {}) {"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 66,
+    "pattern": "fallback",
+    "text": "if (!value) return fallback;"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 68,
+    "pattern": "fallback",
+    "text": "try { const parsed = JSON.parse(value); return parsed && typeof parsed === 'object' ? parsed : fallback; } catch { retur"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 145,
+    "pattern": "fallback",
+    "text": "const toggle = (key, fallback = false) => {"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 148,
+    "pattern": "fallback",
+    "text": "return fallback;"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 215,
+    "pattern": "fallback",
+    "text": "const fallback = systemSettings.fallbackSmtp || {};"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 225,
+    "pattern": "fallback",
+    "text": "fallbackEnabled: fallback.enabled === true,"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 226,
+    "pattern": "fallback",
+    "text": "fallbackCredentialed: truthy(process.env.FALLBACK_SMTP_USER || fallback.username) && truthy(process.env.FALLBACK_SMTP_PA"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 305,
+    "pattern": "fallback",
+    "text": "const flag = (key, fallback = false) => flags[key]?.value === true || flags[key]?.value === false"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 307,
+    "pattern": "fallback",
+    "text": ": process.env[key] !== undefined ? booleanValue(process.env[key]) : fallback;"
+  },
+  {
+    "file": "backend/services/platformHealth.js",
+    "line": 486,
+    "pattern": "fallback",
+    "text": "reason: s3Configured ? 'S3 bucket and credentials configured for file assets.' : 'Cloud storage credentials not configur"
+  },
+  {
+    "file": "backend/repositories/InMemoryRepository.js",
+    "line": 65,
+    "pattern": "mock",
+    "text": "ai: { enabled: true, provider: 'mock' },"
+  },
+  {
+    "file": "backend/repositories/MySQLRepository.js",
+    "line": 1666,
+    "pattern": "Firestore",
+    "text": "// 9b. FAVOURITES (MySQL authoritative; formerly Firestore users/{uid}/favourites)"
+  },
+  {
+    "file": "backend/repositories/ResilientRepository.js",
+    "line": 8,
+    "pattern": "fallback",
+    "text": "* owner, fallback, mirroring, or promotion path."
+  },
+  {
+    "file": "backend/repositories/ResilientRepository.js",
+    "line": 155,
+    "pattern": "sample",
+    "text": "const sample = this.mysqlRepo || {};"
+  },
+  {
+    "file": "backend/repositories/ResilientRepository.js",
+    "line": 157,
+    "pattern": "sample",
+    "text": "...Object.getOwnPropertyNames(Object.getPrototypeOf(sample) || {}),"
+  },
+  {
+    "file": "backend/repositories/ResilientRepository.js",
+    "line": 167,
+    "pattern": "sample",
+    "text": "} else if (typeof sample[name] === 'function') {"
+  }
+]

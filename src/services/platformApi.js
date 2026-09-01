@@ -82,6 +82,7 @@ export const verifyUserEmail = (uid, emailVerified = true) => platformFetch(`/ap
 export const revokeUserSessions = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/revoke-sessions`, { method: 'POST', body: JSON.stringify({}) });
 export const unenrollUserMfa = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/unenroll-mfa`, { method: 'POST', body: JSON.stringify({}) });
 export const exportUserData = (uid) => platformFetch(`/api/admin/users/${encodeURIComponent(uid)}/export`);
+export const bulkAdminUsersAction = (body) => platformFetch('/api/admin/users/bulk', { method: 'POST', body: JSON.stringify(body || {}) });
 
 
 // Super Admin Platform Currency & Subscriptions

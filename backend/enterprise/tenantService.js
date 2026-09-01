@@ -148,6 +148,9 @@ class TenantService {
   // absent from the verified token the corresponding check cannot be evaluated
   // and is skipped — it never trusts client-supplied values.
   enforceTenantSecurityPolicies({ user, configuration, roles = [] }) {
+    if (isPlatformTenantProvisioner(user)) {
+      return;
+    }
     const identityPolicy = configuration?.identityPolicy || {};
     const securityPolicy = configuration?.securityPolicy || {};
     const claims = user?.claims && typeof user.claims === 'object' ? user.claims : user || {};

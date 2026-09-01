@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import { updateJobPosting, getApprovedEmployerCompanies } from '../../../services/api/platform';
 import CustomLocationAutocomplete from '../../JobsListings/CustomLocationAutocomplete';
 

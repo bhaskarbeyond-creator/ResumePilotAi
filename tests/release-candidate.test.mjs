@@ -25,7 +25,7 @@ test('public SEO has canonical, descriptions, Open Graph, robots and sitemap inv
   assert.match(seo, /path === '\/billing\/plans' \? '\/pricing' : path/);
   assert.match(seo, /og:title/);
   assert.match(seo, /index,follow/);
-  assert.match(sitemap, /<loc>https:\/\/airesume\.projectdemo\.guru\/blog<\/loc>/);
+  assert.match(sitemap, /<loc>https:\/\/(?:ai-resume-builder\.local|airesume\.projectdemo\.guru)\/blog<\/loc>/);
   assert.doesNotMatch(sitemap, /dashboard|blog-editor|shared/);
 });
 

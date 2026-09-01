@@ -4,7 +4,7 @@ import { BiFile, BiCheckCircle } from 'react-icons/bi';
 import GridBackground from './GridBackground';
 import { withTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import AuthWrapper from '../../auth/authWrapper/AuthWrapper';
 import { motion, AnimatePresence } from 'framer-motion';
 // Optimized sentences for better impact - will be loaded from translations

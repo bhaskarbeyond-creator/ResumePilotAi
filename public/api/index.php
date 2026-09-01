@@ -24,7 +24,7 @@ $targetUrl = 'http://127.0.0.1:8080' . $path;
 
 // Collect request headers and inject X-Forwarded-Host / X-Forwarded-Proto for backend domain resolution
 $headers = [];
-$incomingHost = $_SERVER['HTTP_HOST'] ?? 'airesume.projectdemo.guru';
+$incomingHost = $_SERVER['HTTP_HOST'] ?? 'ai-resume-builder.local';
 $headers[] = "X-Forwarded-Host: $incomingHost";
 $headers[] = "X-Forwarded-Proto: https";
 $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';

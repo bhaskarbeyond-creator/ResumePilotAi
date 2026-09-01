@@ -4,6 +4,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('../enterprise/tenantContext');
 const { hasTenantPermission, requireAnyTenantPermission, requireTenantPermission } = require('../enterprise/tenantPolicy');
+const { TENANT_ROLES } = require('../enterprise/constants');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
 const { buildGroundedPrompt, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
 const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
@@ -112,6 +113,64 @@ function enterpriseService(req) {
   return service;
 }
 
+const SIMULATED_ENTERPRISE_ROLES = Object.freeze({
+  ENTERPRISE_OWNER: {
+    roles: ['ENTERPRISE_OWNER'],
+    permissions: ['*'],
+    workspaceScope: 'TENANT'
+  },
+  OWNER: {
+    roles: ['ENTERPRISE_OWNER'],
+    permissions: ['*'],
+    workspaceScope: 'TENANT'
+  },
+  ENTERPRISE_ADMIN: {
+    roles: ['ENTERPRISE_ADMIN'],
+    permissions: TENANT_ROLES.ENTERPRISE_ADMIN || [],
+    workspaceScope: 'TENANT'
+  },
+  ADMIN: {
+    roles: ['ENTERPRISE_ADMIN'],
+    permissions: TENANT_ROLES.ENTERPRISE_ADMIN || [],
+    workspaceScope: 'TENANT'
+  },
+  WORKSPACE_MANAGER: {
+    roles: ['WORKSPACE_MANAGER'],
+    permissions: TENANT_ROLES.WORKSPACE_MANAGER || [],
+    workspaceScope: 'WORKSPACE'
+  },
+  ENTERPRISE_MANAGER: {
+    roles: ['WORKSPACE_MANAGER'],
+    permissions: TENANT_ROLES.WORKSPACE_MANAGER || [],
+    workspaceScope: 'WORKSPACE'
+  },
+  MANAGER: {
+    roles: ['WORKSPACE_MANAGER'],
+    permissions: TENANT_ROLES.WORKSPACE_MANAGER || [],
+    workspaceScope: 'WORKSPACE'
+  },
+  ENTERPRISE_MEMBER: {
+    roles: ['ENTERPRISE_MEMBER'],
+    permissions: TENANT_ROLES.ENTERPRISE_MEMBER || [],
+    workspaceScope: 'WORKSPACE'
+  },
+  MEMBER: {
+    roles: ['ENTERPRISE_MEMBER'],
+    permissions: TENANT_ROLES.ENTERPRISE_MEMBER || [],
+    workspaceScope: 'WORKSPACE'
+  },
+  ENTERPRISE_VIEWER: {
+    roles: ['ENTERPRISE_VIEWER'],
+    permissions: TENANT_ROLES.ENTERPRISE_VIEWER || [],
+    workspaceScope: 'WORKSPACE'
+  },
+  VIEWER: {
+    roles: ['ENTERPRISE_VIEWER'],
+    permissions: TENANT_ROLES.ENTERPRISE_VIEWER || [],
+    workspaceScope: 'WORKSPACE'
+  }
+});
+
 function requestedContext(req) {
   // These values are intentionally only context requests. The registry verifies
   // active membership before a TenantContext is attached to the request.
@@ -161,11 +220,33 @@ async function resolveTenantContext(req, res, next) {
     req.tenant = result.tenant;
     req.tenantMembership = result.membership;
     req.workspace = result.workspace;
+
+    // Super Admin Enterprise Role Simulation:
+    // Only authentic SUPER_ADMINs may simulate enterprise roles for authorized inspection.
+    // Client-supplied simulated roles are strictly ignored for any non-superadmin principal.
+    const isSuperAdminCaller = req.user?.claims?.role === 'SUPER_ADMIN' || req.user?.claims?.superAdmin === true;
+    const rawSimulated = req.get('x-simulated-enterprise-role') || req.body?.simulatedRole || req.query?.simulatedRole;
+    if (isSuperAdminCaller && rawSimulated) {
+      const normalized = String(rawSimulated).trim().toUpperCase();
+      const spec = SIMULATED_ENTERPRISE_ROLES[normalized];
+      if (spec) {
+        req.tenantContext = Object.freeze({
+          ...req.tenantContext,
+          roles: Object.freeze([...spec.roles]),
+          permissions: Object.freeze([...spec.permissions]),
+          workspaceScope: spec.workspaceScope,
+          simulatedRole: normalized,
+          realActorRole: 'SUPER_ADMIN',
+        });
+        res.setHeader('X-Simulated-Enterprise-Role', normalized);
+      }
+    }
+
     res.setHeader('X-Tenant-Context', result.context.tenantId);
     res.setHeader('X-Tenant-Routing-Version', String(result.context.dataPlane.routingVersion));
     return next();
   } catch (error) {
-    const status = [401, 403, 404].includes(error.status) ? error.status : 503;
+    const status = [400, 401, 403, 404].includes(error.status) ? error.status : 503;
     return res.status(status).json({
       error: {
         code: error.code || 'TENANT_CONTEXT_UNAVAILABLE',
@@ -251,6 +332,10 @@ router.get('/roles-matrix', resolveTenantContext, requireTenantPermission('tenan
 
 const respondWithContext = (req, res) => {
   const { isPlatformTenantProvisioner } = require('../enterprise/tenantService');
+  const simulatedRole = req.tenantContext?.simulatedRole;
+  const isSuperAdmin = isPlatformTenantProvisioner(req.user);
+  const platformAdmin = isSuperAdmin && (!simulatedRole || ['ENTERPRISE_OWNER', 'OWNER', 'SUPER_ADMIN'].includes(simulatedRole));
+
   return res.json({
     context: {
       tenantId: req.tenantContext.tenantId,
@@ -259,6 +344,7 @@ const respondWithContext = (req, res) => {
       permissions: req.tenantContext.permissions,
       policyVersion: req.tenantContext.policyVersion,
       dataPlane: req.tenantContext.dataPlane,
+      simulatedRole: req.tenantContext.simulatedRole || null,
     },
     tenant: {
       id: req.tenant.id,
@@ -268,9 +354,7 @@ const respondWithContext = (req, res) => {
       isolationTier: req.tenant.isolationTier,
     },
     workspace: req.workspace ? { id: req.workspace.id, name: req.workspace.name, isDefault: req.workspace.isDefault === true } : null,
-    // Server-derived caller capability: whether this identity may use the
-    // platform administration surface. Never a client-side decision.
-    platformAdmin: isPlatformTenantProvisioner(req.user),
+    platformAdmin,
   });
 };
 

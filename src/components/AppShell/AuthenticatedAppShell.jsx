@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import ProfileDisplay from '../Dashboard/ProfileDisplay/ProfileDisplay';
 import { getFullName } from '../../services/api/platform';
 import { resolveApplicationShell } from './applicationShell';

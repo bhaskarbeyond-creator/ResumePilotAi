@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config({ path: './backend/.env' });
 import { chromium, firefox, webkit } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,7 +11,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const LOCAL_BASE_URL = 'https://ai-resume-builder.local';
+const LOCAL_BASE_URL = (process.env.TARGET_URL || process.env.APP_URL);
 const PROD_BASE_URL = 'https://airesume.projectdemo.guru';
 
 const VIEWPORTS = [

@@ -463,6 +463,37 @@ async function buildServices(app) {
     reason: cmsEnabled ? 'The scheduler is enabled, but no durable heartbeat is recorded; liveness is not inferred.' : 'The CMS scheduler is disabled by configuration.',
     dependency: 'CMS scheduler heartbeat (not implemented)', errorCategory: cmsEnabled ? 'DATA_UNAVAILABLE' : null, checkedAt }));
 
+  const integrations = settings.admin_configuration?.integrations || settings.system_settings?.integrations || {};
+  const mapsConfigured = truthy(process.env.GOOGLE_MAPS_API_KEY || integrations.googleMapsApiKey);
+  services.push(service({ id: 'integrations-maps', name: 'Google Maps API', group: GROUP.INTEGRATIONS,
+    state: mapsConfigured ? STATE.OPERATIONAL : STATE.NOT_CONFIGURED,
+    configuration: mapsConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    reason: mapsConfigured ? 'Google Maps API key is configured for location autocomplete.' : 'Google Maps API key is not configured.',
+    dependency: 'Google Maps Geocoding/Places API', checkedAt }));
+
+  const recaptchaConfigured = truthy(process.env.RECAPTCHA_SECRET_KEY || integrations.recaptchaSecretKey);
+  services.push(service({ id: 'integrations-recaptcha', name: 'Google reCAPTCHA', group: GROUP.INTEGRATIONS,
+    state: recaptchaConfigured ? STATE.OPERATIONAL : STATE.NOT_CONFIGURED,
+    configuration: recaptchaConfigured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    reason: recaptchaConfigured ? 'reCAPTCHA secret key is configured for bot mitigation.' : 'reCAPTCHA secret key is not configured.',
+    dependency: 'Google reCAPTCHA Enterprise API', checkedAt }));
+
+  const storageConfig = settings.admin_configuration?.storage || settings.system_settings?.storage || {};
+  const s3Configured = truthy(process.env.AWS_ACCESS_KEY_ID || storageConfig.awsAccessKeyId || storageConfig.bucketName);
+  services.push(service({ id: 'storage-s3', name: 'Cloud Storage (S3)', group: GROUP.INTEGRATIONS,
+    state: s3Configured ? STATE.OPERATIONAL : STATE.NOT_CONFIGURED,
+    configuration: s3Configured ? CONFIG.CONFIGURED : CONFIG.NOT_CONFIGURED,
+    reason: s3Configured ? 'S3 bucket and credentials configured for file assets.' : 'Cloud storage credentials not configured; local fallback active.',
+    dependency: 'AWS S3 / Compatible Object Store', checkedAt }));
+
+  const jobScraperConfig = settings.admin_configuration?.jobScraper || settings.system_settings?.jobScraper || {};
+  const scraperEnabled = jobScraperConfig.enabled === true || truthy(jobScraperConfig.cronInterval);
+  services.push(service({ id: 'job-scraper', name: 'Job Scraper Engine', group: GROUP.WORKERS,
+    state: scraperEnabled ? STATE.OPERATIONAL : STATE.DISABLED, enabled: scraperEnabled,
+    configuration: scraperEnabled ? CONFIG.CONFIGURED : CONFIG.DISABLED_BY_CONFIGURATION,
+    reason: scraperEnabled ? 'Job scraper engine is active and configured.' : 'Job scraper is disabled by platform configuration.',
+    dependency: 'Naukri/LinkedIn scraper daemon', checkedAt }));
+
   return {
     services,
     checkedAt,

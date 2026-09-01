@@ -255,7 +255,7 @@ async function fetchProviderModels({ environment = process.env, provider, apiKey
     };
     const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
     if (provider === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://airesume.projectdemo.guru';
+      headers['HTTP-Referer'] = process.env.APP_URL || process.env.TARGET_URL || 'https://resumepilot.ai';
       headers['X-Title'] = 'ResumePilot AI';
     }
     const response = await fetchImpl(urls[provider], {

@@ -8,7 +8,7 @@ import logo from '../../../assets/logo/logo.png';
 import userPlaceholder from '../../../assets/user.png';
 import { Link, useLocation } from 'react-router-dom';
 import { checkIsEmployer, getSystemSettings } from '../../../services/api/platform';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import signOutUser from '../../../utils/signOut';
 import NotificationPanel from './NotificationPanel';
 import { useUnreadMessages } from '../../../hooks/useUnreadMessages';

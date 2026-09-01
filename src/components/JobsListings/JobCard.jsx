@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { withTranslation } from 'react-i18next';
 import { FaMapMarkerAlt, FaClock, FaBuilding, FaBookmark, FaRegBookmark, FaEye, FaUsers, FaCheckCircle, FaClock as FaClockStatus } from 'react-icons/fa';
 import JobApplicationModal from './JobApplicationModal';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { checkUserApplicationStatus } from '../../services/api/platform';
 import { sanitizeImageUrl } from '../../utils/sanitizeHtml';
 

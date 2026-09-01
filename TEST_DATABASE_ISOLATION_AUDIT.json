@@ -1,0 +1,1082 @@
+[
+  {
+    "file": "tests/account-lifecycle-regression.test.mjs",
+    "line": 24,
+    "keyword": "UPDATE",
+    "text": "assert.match(deletion, /UPDATE applications SET notes = '', rating = 0/);"
+  },
+  {
+    "file": "tests/account-lifecycle-regression.test.mjs",
+    "line": 25,
+    "keyword": "UPDATE",
+    "text": "assert.match(deletion, /UPDATE jobs SET status = 'DELETED'/);"
+  },
+  {
+    "file": "tests/audit-01-all-12-modules.mjs",
+    "line": 348,
+    "keyword": "UPDATE",
+    "text": "console.log('  ✓ Organization Settings revisioned update verified (Revision:', cfgUpdate.body?.configuration?.revision, ')');"
+  },
+  {
+    "file": "tests/audit-01-all-12-modules.mjs",
+    "line": 351,
+    "keyword": "UPDATE",
+    "text": "console.error('  ❌ Settings update failed:', results['12. Organization Settings']);"
+  },
+  {
+    "file": "tests/audit-02-tenant-isolation.mjs",
+    "line": 194,
+    "keyword": "DELETE",
+    "text": "console.log('[Adversarial Probe 3] Tenant B attempts to delete Tenant A resource...');"
+  },
+  {
+    "file": "tests/auth-mfa-ui-adversarial.test.mjs",
+    "line": 160,
+    "keyword": "UPDATE",
+    "text": "assert.match(usersDataRoute, /mfaEnabled\\s*=\\s*false|mfaEnabled:\\s*false/, 'Backend must update MariaDB to clear mfaEnabled');"
+  },
+  {
+    "file": "tests/browser-e2e/run.mjs",
+    "line": 274,
+    "keyword": "UPDATE",
+    "text": "await conn.query(\"UPDATE users SET membership = 'Premium', paymentStatus = 'ACTIVE', membershipEnds = '2099-12-31 23:59:59' WHERE id = ? OR email = ?\", [uidA, USER_A]);"
+  },
+  {
+    "file": "tests/certification/backup-restore.test.mjs",
+    "line": 93,
+    "keyword": "DELETE",
+    "text": "await conn.query('DELETE FROM resumes WHERE id = ?', [MARKER_RESUME]);"
+  },
+  {
+    "file": "tests/certification/backup-restore.test.mjs",
+    "line": 94,
+    "keyword": "DELETE",
+    "text": "await conn.query('DELETE FROM users WHERE id = ?', [MARKER_UID]);"
+  },
+  {
+    "file": "tests/certification/backup-restore.test.mjs",
+    "line": 96,
+    "keyword": "INSERT",
+    "text": "\"INSERT INTO users (id, email, firstname, lastname, membership, revision) VALUES (?, 'backup@certification.local', 'Backup', 'Drill', 'Premium', 7)\","
+  },
+  {
+    "file": "tests/certification/backup-restore.test.mjs",
+    "line": 100,
+    "keyword": "INSERT",
+    "text": "\"INSERT INTO resumes (id, user_id, title, revision) VALUES (?, ?, 'Backup Drill Resume', 3)\","
+  },
+  {
+    "file": "tests/certification/backup-restore.test.mjs",
+    "line": 121,
+    "keyword": "DROP",
+    "text": "await admin.query(`DROP DATABASE \\`${DB.database}\\``);"
+  },
+  {
+    "file": "tests/certification/db-failure-injection.test.mjs",
+    "line": 176,
+    "keyword": "UPDATE",
+    "text": "await conn.query(`UPDATE deadlock_probe SET v = v + 1 WHERE id = ${first}`);"
+  },
+  {
+    "file": "tests/certification/firestore-off-boot.test.mjs",
+    "line": 228,
+    "keyword": "DELETE",
+    "text": "assert.ok([404, 403].includes(crossDelete.status), 'cross-user delete must be denied');"
+  },
+  {
+    "file": "tests/certification/firestore-zero-static.test.mjs",
+    "line": 129,
+    "keyword": "INSERT",
+    "text": "assert.match(source, /INSERT INTO (?:notification_outbox|enterprise_outbox)/, `${name} queue must persist in MariaDB`);"
+  },
+  {
+    "file": "tests/certification/multi-tenant-http.test.mjs",
+    "line": 47,
+    "keyword": "DELETE",
+    "text": "await db.query('DELETE FROM resumes WHERE id = ?', ['mt_a_resume']);"
+  },
+  {
+    "file": "tests/certification/multi-tenant-http.test.mjs",
+    "line": 48,
+    "keyword": "INSERT",
+    "text": "await db.query('INSERT INTO resumes (id, user_id, title) VALUES (?, ?, ?)', ['mt_a_resume', IDS.A, 'A private resume']);"
+  },
+  {
+    "file": "tests/certification/multi-tenant-http.test.mjs",
+    "line": 55,
+    "keyword": "DELETE",
+    "text": "await db.query('DELETE FROM resumes WHERE id = ?', ['mt_a_resume']);"
+  },
+  {
+    "file": "tests/certification/multi-tenant-http.test.mjs",
+    "line": 56,
+    "keyword": "DELETE",
+    "text": "await db.query('DELETE FROM users WHERE id IN (?, ?)', [IDS.A, IDS.B]).catch(() => {});"
+  },
+  {
+    "file": "tests/certification/multi-tenant-http.test.mjs",
+    "line": 75,
+    "keyword": "DELETE",
+    "text": "test('B cannot modify or delete A resume', async () => {"
+  },
+  {
+    "file": "tests/certification/multi-tenant-http.test.mjs",
+    "line": 79,
+    "keyword": "DELETE",
+    "text": "assert.ok([404, 403].includes(del.status), `cross-user delete denied (${del.status})`);"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 50,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM notification_outbox WHERE event_id LIKE 'cert:%'\");"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 86,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"UPDATE notification_outbox SET provider_accepted = 1, state = 'DELIVERED' WHERE event_id = 'cert:atomic-ok'\");"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 102,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"UPDATE notification_outbox SET provider_accepted = 1, state = 'DELIVERED' WHERE event_id = 'cert:idempotent'\");"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 135,
+    "keyword": "UPDATE",
+    "text": "await pool.query('UPDATE notification_outbox SET lease_expires_at = ? WHERE id = ?', [Date.now() - 1000, claimed.id]);"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 162,
+    "keyword": "UPDATE",
+    "text": "await pool.query('UPDATE notification_outbox SET next_attempt_at = 0 WHERE id = ?', [event.id]);"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 174,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"UPDATE notification_outbox SET next_attempt_at = 0 WHERE event_id = 'cert:fail'\");"
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 183,
+    "keyword": "UPDATE",
+    "text": "\"UPDATE notification_outbox SET state = 'NOTIFICATION_QUEUED', attempt_count = 0, next_attempt_at = 0, last_error = NULL, lease_owner = NULL, lease_expires_at = 0 WHERE event_id = 'cert:fail'\""
+  },
+  {
+    "file": "tests/certification/outbox-lifecycle.test.mjs",
+    "line": 216,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"UPDATE notification_outbox SET next_attempt_at = 0 WHERE event_id = 'cert:terminal'\");"
+  },
+  {
+    "file": "tests/dr-hardening.test.mjs",
+    "line": 765,
+    "keyword": "INSERT",
+    "text": "'INSERT INTO `users` VALUES (1);',"
+  },
+  {
+    "file": "tests/dr-hardening.test.mjs",
+    "line": 766,
+    "keyword": "INSERT",
+    "text": "\"INSERT INTO `schema_migrations` VALUES ('001','baseline'),('002','single_owner_enterprise');\","
+  },
+  {
+    "file": "tests/dr-hardening.test.mjs",
+    "line": 784,
+    "keyword": "INSERT",
+    "text": "const sql = \"INSERT INTO `schema_migrations` VALUES (1);\\n\""
+  },
+  {
+    "file": "tests/dr-hardening.test.mjs",
+    "line": 785,
+    "keyword": "INSERT",
+    "text": "+ \"INSERT INTO `schema_migrations` VALUES ('001','baseline'),('002','b');\\n\";"
+  },
+  {
+    "file": "tests/dr-hardening.test.mjs",
+    "line": 790,
+    "keyword": "INSERT",
+    "text": "const batched = `INSERT INTO \\`schema_migrations\\` VALUES ${rows.slice(0, 250).join(',')};\\n`"
+  },
+  {
+    "file": "tests/dr-hardening.test.mjs",
+    "line": 791,
+    "keyword": "INSERT",
+    "text": "+ `INSERT INTO \\`schema_migrations\\` VALUES ${rows.slice(250).join(',')};\\n`;"
+  },
+  {
+    "file": "tests/enterprise-contract-backend.spec.js",
+    "line": 119,
+    "keyword": "DELETE",
+    "text": "test('resume lifecycle: seed via human API, duplicate and delete through the UI', async ({ page }) => {"
+  },
+  {
+    "file": "tests/enterprise-contract-backend.spec.js",
+    "line": 149,
+    "keyword": "DELETE",
+    "text": "// expand the \"(Copy)\" group, and delete the first (latest) version — the copy."
+  },
+  {
+    "file": "tests/enterprise-contract-backend.spec.js",
+    "line": 157,
+    "keyword": "DELETE",
+    "text": "await page.locator('button[title=\"Delete Resume\"]').first().click();"
+  },
+  {
+    "file": "tests/export-e2e-real-browser.test.mjs",
+    "line": 343,
+    "keyword": "DROP",
+    "text": "summary: 'Expertise in: C++ / C# / Python & Bash. Handled SQL injections like \"\\'; DROP TABLE users; --\" and XSS `<script>alert(1)</script>`.',"
+  },
+  {
+    "file": "tests/feature-completeness-audit.mjs",
+    "line": 207,
+    "keyword": "DROP",
+    "text": "stages: 'Wishlist -> Applied -> Interviewing -> Offer -> Rejected', recovery: 'Drag & drop state rollback on fail'"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 315,
+    "keyword": "DELETE",
+    "text": "test('CTRL-0070: BUTTON - Button: handleBulkAction( delete )} disabled={proc', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 317,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_0070.clicked, true, 'Control CTRL-0070 (Button: handleBulkAction( delete )} disabled={proc) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 665,
+    "keyword": "DELETE",
+    "text": "test('CTRL-0150: BUTTON - Button: this.requestJobAction(job,  delete )} disa', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 667,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_0150.clicked, true, 'Control CTRL-0150 (Button: this.requestJobAction(job,  delete )} disa) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 2953,
+    "keyword": "DELETE",
+    "text": "test('CTRL-0692: BUTTON - Button: {processing ?  Deleting…  :  Delete }', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 2955,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_0692.clicked, true, 'Control CTRL-0692 (Button: {processing ?  Deleting…  :  Delete }) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3063,
+    "keyword": "DELETE",
+    "text": "test('CTRL-0718: BUTTON - Button: {this.state.isDeleting ? : } Delete Accoun', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3065,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_0718.clicked, true, 'Control CTRL-0718 (Button: {this.state.isDeleting ? : } Delete Accoun) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3749,
+    "keyword": "INSERT",
+    "text": "test('CTRL-0882: BUTTON - Button: Insert Image', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3751,
+    "keyword": "INSERT",
+    "text": "assert.equal(btnAction_CTRL_0882.clicked, true, 'Control CTRL-0882 (Button: Insert Image) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3765,
+    "keyword": "INSERT",
+    "text": "test('CTRL-0886: BUTTON - Button: Insert Link', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3767,
+    "keyword": "INSERT",
+    "text": "assert.equal(btnAction_CTRL_0886.clicked, true, 'Control CTRL-0886 (Button: Insert Link) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3773,
+    "keyword": "DELETE",
+    "text": "test('CTRL-0888: BUTTON - Button: {saving ?  Deleting...  :  Delete }', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 3775,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_0888.clicked, true, 'Control CTRL-0888 (Button: {saving ?  Deleting...  :  Delete }) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 4005,
+    "keyword": "UPDATE",
+    "text": "test('CTRL-0940: BUTTON - Button: {t( AtsScoreMeter.applyJd ,  Update match', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 4007,
+    "keyword": "UPDATE",
+    "text": "assert.equal(btnAction_CTRL_0940.clicked, true, 'Control CTRL-0940 (Button: {t( AtsScoreMeter.applyJd ,  Update match) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 4321,
+    "keyword": "INSERT",
+    "text": "test('CTRL-1013: BUTTON - Button: Insert {selectedBullets.length} Selected H', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 4323,
+    "keyword": "INSERT",
+    "text": "assert.equal(btnAction_CTRL_1013.clicked, true, 'Control CTRL-1013 (Button: Insert {selectedBullets.length} Selected H) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 4421,
+    "keyword": "INSERT",
+    "text": "test('CTRL-1035: BUTTON - Button: Insert {selectedBullets.length} Selected B', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 4423,
+    "keyword": "INSERT",
+    "text": "assert.equal(btnAction_CTRL_1035.clicked, true, 'Control CTRL-1035 (Button: Insert {selectedBullets.length} Selected B) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 6315,
+    "keyword": "UPDATE",
+    "text": "test('CTRL-1483: BUTTON - Button: {t( dashboard.save ) ||  Update Password }', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 6317,
+    "keyword": "UPDATE",
+    "text": "assert.equal(btnAction_CTRL_1483.clicked, true, 'Control CTRL-1483 (Button: {t( dashboard.save ) ||  Update Password }) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 8072,
+    "keyword": "DELETE",
+    "text": "test('CTRL-1863: BUTTON - Button: handleBulkAction( delete )} disabled={busy', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 8074,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_1863.clicked, true, 'Control CTRL-1863 (Button: handleBulkAction( delete )} disabled={busy) click executed');"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 8191,
+    "keyword": "DELETE",
+    "text": "test('CTRL-1892: BUTTON - Button: {busy ?  Deleting…  :  Delete Role }', async () => {"
+  },
+  {
+    "file": "tests/full-control-surface-execution.test.mjs",
+    "line": 8193,
+    "keyword": "DELETE",
+    "text": "assert.equal(btnAction_CTRL_1892.clicked, true, 'Control CTRL-1892 (Button: {busy ?  Deleting…  :  Delete Role }) click executed');"
+  },
+  {
+    "file": "tests/helpers/fencing-worker-helper.mjs",
+    "line": 15,
+    "keyword": "UPDATE",
+    "text": "'UPDATE database_authority SET generation = ?, write_engine = \"firestore\", mode = \"MARIADB_FAILED_OVER\", lease_owner = ?, lease_expires_at = ?, reason = \"Failover by worker\" WHERE id = \"active_authority\" AND generation = ?',"
+  },
+  {
+    "file": "tests/interview-coach-hardening.test.mjs",
+    "line": 118,
+    "keyword": "DELETE",
+    "text": "assert.equal(purgeStaleOwnerSession('user-a'), false, 'purge must not delete another owner data');"
+  },
+  {
+    "file": "tests/interview-coach-lifecycle.test.mjs",
+    "line": 309,
+    "keyword": "DELETE",
+    "text": "const deleteButton = root().querySelector('button[aria-label^=\"Delete assessment\"]');"
+  },
+  {
+    "file": "tests/interview-coach-lifecycle.test.mjs",
+    "line": 310,
+    "keyword": "DELETE",
+    "text": "assert.ok(deleteButton, 'per-item delete affordance present');"
+  },
+  {
+    "file": "tests/interview-coach-lifecycle.test.mjs",
+    "line": 313,
+    "keyword": "DELETE",
+    "text": "assert.ok(root().querySelector('#delete-title'), 'delete confirmation shown');"
+  },
+  {
+    "file": "tests/interview-coach-lifecycle.test.mjs",
+    "line": 315,
+    "keyword": "DELETE",
+    "text": "assert.ok(confirmDelete, 'confirm-delete button inside dialog');"
+  },
+  {
+    "file": "tests/modal-escape-keyboard-ux.test.mjs",
+    "line": 41,
+    "keyword": "DELETE",
+    "text": "await t.test('DashboardHomepage dismisses document preview modal and delete modal on Escape', () => {"
+  },
+  {
+    "file": "tests/oauth-password-security-ux.test.mjs",
+    "line": 33,
+    "keyword": "UPDATE",
+    "text": "settingsCode.includes('Create Account Security Password') && settingsCode.includes('Security Password Update & Re-authentication'),"
+  },
+  {
+    "file": "tests/oauth-password-security-ux.test.mjs",
+    "line": 34,
+    "keyword": "UPDATE",
+    "text": "'UI must render \"Create Account Security Password\" for OAuth and \"Security Password Update & Re-authentication\" for password users'"
+  },
+  {
+    "file": "tests/oauth-password-security-ux.test.mjs",
+    "line": 37,
+    "keyword": "UPDATE",
+    "text": "settingsCode.includes('Create Account Security Password ✓') && settingsCode.includes('Update Account Security ✓'),"
+  },
+  {
+    "file": "tests/oauth-password-security-ux.test.mjs",
+    "line": 49,
+    "keyword": "DELETE",
+    "text": "'Delete modal button must only require deletePassword if user usesPasswordProvider'"
+  },
+  {
+    "file": "tests/performance/load.mjs",
+    "line": 150,
+    "keyword": "DELETE",
+    "text": "await db.query(\"DELETE FROM resumes WHERE id LIKE 'perf\\\\_%'\");"
+  },
+  {
+    "file": "tests/performance/load.mjs",
+    "line": 151,
+    "keyword": "DELETE",
+    "text": "await db.query(\"DELETE FROM users WHERE id LIKE 'perf-%'\");"
+  },
+  {
+    "file": "tests/playwright-zero-trust.spec.js",
+    "line": 281,
+    "keyword": "DELETE",
+    "text": "test('USER cannot delete other users (403)', async ({ request }) => {"
+  },
+  {
+    "file": "tests/production-isolation.test.cjs",
+    "line": 33,
+    "keyword": "DELETE",
+    "text": "if (k.includes('/repositories/')) delete require.cache[k];"
+  },
+  {
+    "file": "tests/production-isolation.test.cjs",
+    "line": 43,
+    "keyword": "DELETE",
+    "text": "if (k.includes('/repositories/')) delete require.cache[k];"
+  },
+  {
+    "file": "tests/production-isolation.test.cjs",
+    "line": 55,
+    "keyword": "DELETE",
+    "text": "if (k.includes('/security/auth')) delete require.cache[k];"
+  },
+  {
+    "file": "tests/production-isolation.test.cjs",
+    "line": 62,
+    "keyword": "DELETE",
+    "text": "if (k.includes('/security/auth')) delete require.cache[k];"
+  },
+  {
+    "file": "tests/production-isolation.test.cjs",
+    "line": 73,
+    "keyword": "DELETE",
+    "text": "if (k.includes('/security/abuse') || k.includes('/security/inMemoryCounterStore')) delete require.cache[k];"
+  },
+  {
+    "file": "tests/real-e2e-business-workflows.test.mjs",
+    "line": 14,
+    "keyword": "DELETE",
+    "text": "it('1. Consumer & Resume Lifecycle: Create, Edit, Duplicate, Delete Isolation', async () => {"
+  },
+  {
+    "file": "tests/real-os-process-fencing.mjs",
+    "line": 16,
+    "keyword": "INSERT",
+    "text": "`INSERT INTO database_authority (id, generation, write_engine, mode, lease_owner, lease_expires_at)"
+  },
+  {
+    "file": "tests/real-os-process-fencing.mjs",
+    "line": 18,
+    "keyword": "UPDATE",
+    "text": "ON DUPLICATE KEY UPDATE generation = 100, lease_owner = 'none', lease_expires_at = 0`"
+  },
+  {
+    "file": "tests/real-os-process-fencing.mjs",
+    "line": 68,
+    "keyword": "UPDATE",
+    "text": "await pool.query('UPDATE database_authority SET lease_expires_at = 0 WHERE id = \"primary_authority\"');"
+  },
+  {
+    "file": "tests/run-e2e-browser.mjs",
+    "line": 329,
+    "keyword": "DROP",
+    "text": "summary: 'Expertise in: C++ / C# / Python & Bash. Handled SQL injections like \"\\'; DROP TABLE users; --\" and XSS `<script>alert(1)</script>`.',"
+  },
+  {
+    "file": "tests/worker-process.mjs",
+    "line": 14,
+    "keyword": "INSERT",
+    "text": "`INSERT INTO database_authority (id, generation, write_engine, mode, lease_owner, lease_expires_at)"
+  },
+  {
+    "file": "tests/worker-process.mjs",
+    "line": 70,
+    "keyword": "INSERT",
+    "text": "'INSERT INTO canonical_documents (entity_type, entity_id, revision, payload) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE payload = VALUES(payload), revision = VALUES(revision)',"
+  },
+  {
+    "file": "tests/worker-process.mjs",
+    "line": 70,
+    "keyword": "UPDATE",
+    "text": "'INSERT INTO canonical_documents (entity_type, entity_id, revision, payload) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE payload = VALUES(payload), revision = VALUES(revision)',"
+  },
+  {
+    "file": "backend/test/ai-adversarial-and-stress.test.js",
+    "line": 108,
+    "keyword": "DROP",
+    "text": "'\\' OR \\'1\\'=\\'1\\'; DROP TABLE users; --',"
+  },
+  {
+    "file": "backend/test/ai-enterprise-acceptance.test.js",
+    "line": 121,
+    "keyword": "UPDATE",
+    "text": "test('Acceptance Gate 2: Concurrent Admin settings update + User AI generation race test', async () => {"
+  },
+  {
+    "file": "backend/test/ai-enterprise-acceptance.test.js",
+    "line": 179,
+    "keyword": "UPDATE",
+    "text": "assert.equal(adminRes.status, 200, 'Admin settings update must succeed');"
+  },
+  {
+    "file": "backend/test/auth-token-outbox.test.js",
+    "line": 53,
+    "keyword": "INSERT",
+    "text": "if (failOutbox && /INSERT INTO notification_outbox/.test(sql)) throw new Error('simulated outbox failure');"
+  },
+  {
+    "file": "backend/test/auth-token-outbox.test.js",
+    "line": 72,
+    "keyword": "INSERT",
+    "text": "const tokenInsert = calls.findIndex(call => call.type === 'query' && /INSERT INTO password_reset_tokens/.test(call.sql));"
+  },
+  {
+    "file": "backend/test/auth-token-outbox.test.js",
+    "line": 73,
+    "keyword": "INSERT",
+    "text": "const outboxInsert = calls.findIndex(call => call.type === 'query' && /INSERT INTO notification_outbox/.test(call.sql));"
+  },
+  {
+    "file": "backend/test/auth-token-outbox.test.js",
+    "line": 96,
+    "keyword": "INSERT",
+    "text": "assert.ok(calls.some(call => call.type === 'query' && /INSERT INTO email_verification_tokens/.test(call.sql)));"
+  },
+  {
+    "file": "backend/test/database-authority.test.js",
+    "line": 34,
+    "keyword": "ALTER",
+    "text": "test('a report about an unsupported engine cannot alter MariaDB authority', () => {"
+  },
+  {
+    "file": "backend/test/email-deliverability-honesty.test.js",
+    "line": 50,
+    "keyword": "DELETE",
+    "text": "delete require.cache[require.resolve('../routes/email.js')];"
+  },
+  {
+    "file": "backend/test/email-deliverability-honesty.test.js",
+    "line": 60,
+    "keyword": "DELETE",
+    "text": "delete require.cache[require.resolve('../routes/email.js')];"
+  },
+  {
+    "file": "backend/test/feature-flags.test.js",
+    "line": 26,
+    "keyword": "DELETE",
+    "text": "if (/^DELETE FROM system_settings WHERE category = 'feature_flags'$/i.test(normalized)) {"
+  },
+  {
+    "file": "backend/test/feature-flags.test.js",
+    "line": 192,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM security_audit_logs WHERE request_id = 'req-test-123'\");"
+  },
+  {
+    "file": "backend/test/forensic-data-lineage.test.js",
+    "line": 96,
+    "keyword": "INSERT",
+    "text": "'INSERT INTO blog (id, title, slug, content, published, created_at, updated_at) VALUES (?, ?, ?, ?, 1, NOW(), NOW())',"
+  },
+  {
+    "file": "backend/test/forensic-data-lineage.test.js",
+    "line": 105,
+    "keyword": "DELETE",
+    "text": "await db.query('DELETE FROM blog WHERE id = ?', [testId]);"
+  },
+  {
+    "file": "backend/test/forensic-data-lineage.test.js",
+    "line": 134,
+    "keyword": "INSERT",
+    "text": "'INSERT INTO contact_messages (id, name, email, message, status, is_read, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NOW(), NOW())',"
+  },
+  {
+    "file": "backend/test/forensic-data-lineage.test.js",
+    "line": 143,
+    "keyword": "DELETE",
+    "text": "await db.query('DELETE FROM contact_messages WHERE id = ?', [testId]);"
+  },
+  {
+    "file": "backend/test/helpers/inMemoryTenantBackupPool.js",
+    "line": 68,
+    "keyword": "INSERT",
+    "text": "const insert = normalized.match(/^INSERT INTO `([^`]+)` \\(([^)]+)\\) VALUES \\(([^)]+)\\)/i);"
+  },
+  {
+    "file": "backend/test/jobs-data-authorization.test.js",
+    "line": 166,
+    "keyword": "UPDATE",
+    "text": "test('MariaDB tracker update uses owner-scoped locking and preserves omitted fields', async () => {"
+  },
+  {
+    "file": "backend/test/mariadb-migration-gate.test.js",
+    "line": 41,
+    "keyword": "DROP",
+    "text": "await connection.query(`DROP TABLE \\`${tableName}\\``);"
+  },
+  {
+    "file": "backend/test/mariadb-migration-gate.test.js",
+    "line": 319,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM notification_outbox WHERE event_id LIKE ?', [`user-welcome:${runId}%`]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-migration-gate.test.js",
+    "line": 432,
+    "keyword": "INSERT",
+    "text": "`INSERT INTO payment_orders (id, uid, plan_id, provider, amount, original_amount, currency, status, revision)"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 60,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM favourites WHERE user_id = ?', [uid]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 61,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM resumes WHERE user_id = ?', [uid]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 62,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM portfolios WHERE user_id = ?', [uid]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 63,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM covers WHERE user_id = ?', [uid]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 64,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM notifications WHERE user_id = ?', [uid]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 65,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM users WHERE id = ?', [uid]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 67,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM stats WHERE id = 'global_stats'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 68,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM reviews WHERE id LIKE 'reviews_%'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 69,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM canonical_documents WHERE entity_type = 'phrases' AND entity_id = 'maria-only-category'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 70,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM password_reset_tokens').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 71,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM password_reset_state').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 72,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM email_verification_tokens').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 73,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM email_verification_state').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 74,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM oauth_states').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 75,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM oauth_exchange_codes').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 76,
+    "keyword": "DELETE",
+    "text": "await pool.query('DELETE FROM export_render_tokens').catch(() => {});"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 142,
+    "keyword": "UPDATE",
+    "text": "mariaTest('CERTIFICATION: user profile create/read/update with optimistic revision guard (MySQL transactions)', async () => {"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 172,
+    "keyword": "DELETE",
+    "text": "mariaTest('CERTIFICATION: resume create -> list -> load -> edit -> publish -> delete (MySQL persistence)', async () => {"
+  },
+  {
+    "file": "backend/test/mariadb-only-integration.test.js",
+    "line": 229,
+    "keyword": "DELETE",
+    "text": "// User B must not delete user A's resume"
+  },
+  {
+    "file": "backend/test/notification-outbox.test.js",
+    "line": 99,
+    "keyword": "INSERT",
+    "text": "assert.ok(insertParams, 'outbox insert must execute');"
+  },
+  {
+    "file": "backend/test/payment-order-immutability.test.js",
+    "line": 155,
+    "keyword": "UPDATE",
+    "text": "test('stale payment update fails compare-and-swap instead of overwriting provider state', async () => {"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 38,
+    "keyword": "INSERT",
+    "text": "const userInsert = harness.calls.findIndex(call => call.type === 'query' && /INSERT INTO users/.test(call.sql));"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 39,
+    "keyword": "INSERT",
+    "text": "const outboxInsert = harness.calls.findIndex(call => call.type === 'query' && /INSERT INTO notification_outbox/.test(call.sql));"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 49,
+    "keyword": "INSERT",
+    "text": "if (/INSERT INTO notification_outbox/.test(sql)) throw new Error('queue unavailable');"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 86,
+    "keyword": "INSERT",
+    "text": "const portfolioInsert = harness.calls.findIndex(call => call.type === 'query' && /INSERT INTO portfolios/.test(call.sql));"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 87,
+    "keyword": "INSERT",
+    "text": "const outboxInsert = harness.calls.findIndex(call => call.type === 'query' && /INSERT INTO notification_outbox/.test(call.sql));"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 97,
+    "keyword": "INSERT",
+    "text": "if (/INSERT INTO notification_outbox/.test(sql)) throw new Error('queue unavailable');"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 122,
+    "keyword": "INSERT",
+    "text": "assert.equal(harness.calls.some(call => call.type === 'query' && /INSERT INTO portfolios/.test(call.sql)), false);"
+  },
+  {
+    "file": "backend/test/profile-portfolio-outbox.test.js",
+    "line": 138,
+    "keyword": "INSERT",
+    "text": "assert.equal(harness.calls.some(call => call.type === 'query' && /INSERT INTO portfolios/.test(call.sql)), false);"
+  },
+  {
+    "file": "backend/test/resilient-repository.test.js",
+    "line": 156,
+    "keyword": "DELETE",
+    "text": "test('duplicate-safe delete while secondary is conceptually offline still succeeds on primary', async () => {"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 144,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 163,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 165,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)\", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 165,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)\", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 170,
+    "keyword": "DELETE",
+    "text": "mariaTest('Ads create and revision-safe delete persist through audited backend routes', async () => {"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 173,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM canonical_documents WHERE entity_type = 'ads'\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 192,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM canonical_documents WHERE entity_type = 'ads'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 199,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM applications WHERE id LIKE 'user-1_%'\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 200,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM jobs WHERE id = 'active-job'\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 201,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM users WHERE id IN ('user-1','employer-1')\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 202,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO users (id, email, membership, paymentStatus) VALUES ('user-1','user@example.com','Premium','ACTIVE'), ('employer-1','employer@example.com','Basic','INACTIVE')\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 203,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO jobs (id, employer_id, status, title, company_name, revision) VALUES ('active-job','employer-1','active','Engineer','Example Co',1)\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 204,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO resumes (id, user_id, title, summary, revision) VALUES ('resume-1','user-1','Primary resume','Owned candidate resume',1)\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 231,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM applications WHERE id LIKE 'user-1_%'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 232,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM jobs WHERE id = 'active-job'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 233,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM users WHERE id IN ('user-1','employer-1')\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 237,
+    "keyword": "DELETE",
+    "text": "mariaTest('employer job create, pause, edit, and delete routes are owned, audited, and revision safe', async () => {"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 240,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM jobs WHERE employer_id = 'employer-1'\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 241,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM companies WHERE owner_id = 'employer-1'\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 242,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM users WHERE id = 'employer-1'\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 243,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO users (id, email, membership, paymentStatus, role) VALUES ('employer-1','employer@example.com','Basic','INACTIVE','EMPLOYER')\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 244,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO companies (id, owner_id, name, status, revision) VALUES ('company-1','employer-1','Example Co','approved',1)\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 255,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"UPDATE jobs SET status = 'active', revision = 2 WHERE id = ?\", [jobId]);"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 274,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM jobs WHERE employer_id = 'employer-1'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 275,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM companies WHERE owner_id = 'employer-1'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 276,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM users WHERE id = 'employer-1'\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 284,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 285,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES ('admin_configuration', ?, 2)\", [JSON.stringify({"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 308,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 310,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)\", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 310,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)\", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 349,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')\");"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 362,
+    "keyword": "DELETE",
+    "text": "await pool.query(\"DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')\").catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 364,
+    "keyword": "INSERT",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)\", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/routes.integration.test.js",
+    "line": 364,
+    "keyword": "UPDATE",
+    "text": "await pool.query(\"INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)\", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});"
+  },
+  {
+    "file": "backend/test/superadmin-platform.test.js",
+    "line": 239,
+    "keyword": "DELETE",
+    "text": "test('Platform API: announcement delete and operator assignment require Super Admin', async () => {"
+  }
+]

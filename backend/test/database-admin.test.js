@@ -41,10 +41,10 @@ test('2. Plain USER request to /api/admin/database-settings is rejected with 403
     assert.equal(res.status, 403);
 });
 
-test('3. ADMIN can read truthful MariaDB and Firebase Authentication ownership telemetry', async () => {
+test('3. SUPER ADMIN can read truthful MariaDB and Firebase Authentication ownership telemetry', async () => {
     const res = await request(app)
         .get('/api/admin/database-settings')
-        .set('Authorization', 'Bearer admin');
+        .set('Authorization', 'Bearer superadmin');
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
     assert.equal(res.body.activeEngine, 'mysql');
@@ -58,7 +58,7 @@ test('3. ADMIN can read truthful MariaDB and Firebase Authentication ownership t
 test('4. Test connection endpoint rejects every non-MariaDB engine', async () => {
     const res = await request(app)
         .post('/api/admin/database-settings/test-connection')
-        .set('Authorization', 'Bearer admin')
+        .set('Authorization', 'Bearer superadmin')
         .send({ engine: 'unsupported_db' });
     assert.equal(res.status, 400);
     assert.equal(res.body.error?.code, 'DATABASE_ENGINE_UNSUPPORTED');

@@ -4,7 +4,7 @@ import { withTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight } from 'react-icons/fa';
 import { FiBold, FiItalic, FiUnderline, FiList, FiHash } from 'react-icons/fi';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { getResumes, submitJobApplication } from '../../services/api/platform';
 
 // Lexical imports

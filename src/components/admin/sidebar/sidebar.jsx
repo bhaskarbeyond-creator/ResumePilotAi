@@ -12,19 +12,19 @@ import { useAdminSession } from '../AdminContext';
 // Map sidebar paths to minimum backend permissions required to see that link.
 // Mirrors RequireTabPerm in Admin.jsx. The backend is authoritative; this is UI-only.
 const PATH_PERMS = Object.freeze({
-    '/adm/dashboard': null,                             // command center — every admin
+    '/adm/dashboard': ['system.config.read', 'users.read', 'audit.read'],
     '/adm/tenants': 'tenants.read',
     '/adm/audit-logs': 'audit.read',
     '/adm/security': 'security.read',
-    '/adm/queues': 'security.read',
-    '/adm/operations': 'system.config.read',
-    '/adm/attention': 'tickets.manage',
+    '/adm/queues': ['system.config.read', 'security.read'],
+    '/adm/operations': ['system.config.read', 'security.read'],
+    '/adm/attention': ['system.config.read', 'tickets.manage'],
     '/adm/health': 'security.read',
     '/adm/users': 'users.read',
-    '/adm/operators': 'users.roles.manage',
-    '/adm/employer-applications': 'users.read',
-    '/adm/jobs-manager': 'jobs.manage',
-    '/adm/company-management': 'jobs.manage',
+    '/adm/operators': '*',
+    '/adm/employer-applications': ['applications.review', 'users.read'],
+    '/adm/jobs-manager': ['jobs.manage', 'system.config.write'],
+    '/adm/company-management': ['jobs.manage', 'system.config.write'],
     '/adm/blog-management': 'system.config.write',
     '/adm/landing-pages': 'system.config.write',
     '/adm/reviews': 'system.config.write',
@@ -68,46 +68,47 @@ const toggleContentAreaClasses = (isCollapsed) => {
 // Settings sub-navigation groups
 const SETTINGS_GROUPS = [
     { label: 'Modules & Addons', icon: FaCubes, badgeColor: 'bg-indigo-50 text-indigo-600 border-indigo-100', items: [
-        { key: 'modulesSettings', label: 'Addon Modules', icon: FaCubes },
+        { key: 'modulesSettings', label: 'Addon Modules', icon: FaCubes, permission: 'system.config.write' },
     ]},
     { label: 'General & Branding', icon: FaCog, badgeColor: 'bg-blue-50 text-blue-600 border-blue-100', items: [
-        { key: 'websiteSettings', label: 'Brand Identity & Meta', icon: FaCog },
-        { key: 'brandingSettings', label: 'Branding & Assets', icon: FaPaintBrush },
-        { key: 'geoSeoSettings', label: 'Indian Geo-SEO', icon: FaGlobeAsia },
-        { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', icon: FaBrain },
-        { key: 'firebaseSettings', label: 'Firebase Identity', icon: FaFire },
-        { key: 'databaseSettings', label: 'Database & Persistence Engine', icon: FaDatabase },
-        { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', icon: FaFacebook },
-        { key: 'emailSettings', label: 'Email & SMTP', icon: FaEnvelope },
+        { key: 'websiteSettings', label: 'Brand Identity & Meta', icon: FaCog, permission: 'system.config.write' },
+        { key: 'brandingSettings', label: 'Branding & Assets', icon: FaPaintBrush, permission: 'system.config.write' },
+        { key: 'geoSeoSettings', label: 'Indian Geo-SEO', icon: FaGlobeAsia, permission: 'system.config.write' },
+        { key: 'llmGeoSettings', label: 'LLM GEO (AI Search)', icon: FaBrain, permission: 'system.config.write' },
+        { key: 'firebaseSettings', label: 'Firebase Identity', icon: FaFire, superAdminOnly: true },
+        { key: 'databaseSettings', label: 'Database & Persistence Engine', icon: FaDatabase, superAdminOnly: true },
+        { key: 'socialAuthSettings', label: 'Social Sign-On & OAuth', icon: FaFacebook, superAdminOnly: true },
+        { key: 'emailSettings', label: 'Email & SMTP', icon: FaEnvelope, permission: 'email.template.manage' },
     ]},
     { label: 'AI Engine & Services', icon: FaRobot, badgeColor: 'bg-violet-50 text-violet-600 border-violet-100', items: [
-        { key: 'storageSettings', label: 'Cloud Storage', icon: FaCloud },
-        { key: 'aiSettings', label: 'AI & Gemini Providers', icon: FaRobot },
-        { key: 'exportPdfSettings', label: 'PDF Exporter', icon: FaFilePdf },
-        { key: 'jobScraperSettings', label: 'Job & Naukri Scraper', icon: FaSearchIcon },
-        { key: 'twilioSmsSettings', label: 'Twilio SMS Gateway', icon: FaCommentAlt },
+        { key: 'storageSettings', label: 'Cloud Storage', icon: FaCloud, superAdminOnly: true },
+        { key: 'aiSettings', label: 'AI & Gemini Providers', icon: FaRobot, superAdminOnly: true },
+        { key: 'exportPdfSettings', label: 'PDF Exporter', icon: FaFilePdf, permission: 'system.config.write' },
+        { key: 'jobScraperSettings', label: 'Job & Naukri Scraper', icon: FaSearchIcon, superAdminOnly: true },
+        { key: 'twilioSmsSettings', label: 'Twilio SMS Gateway', icon: FaCommentAlt, superAdminOnly: true },
     ]},
     { label: 'Payments & Gateways', icon: FaCreditCard, badgeColor: 'bg-emerald-50 text-emerald-600 border-emerald-100', items: [
-        { key: 'ordersManagement', label: 'Orders & Transactions', icon: FaReceipt },
-        { key: 'subscriptionsSettings', label: 'Subscriptions & Gateways', icon: FaCreditCard },
-        { key: 'watermarkSettings', label: 'PDF Watermark', icon: FaStamp },
+        { key: 'currencySettings', label: 'Platform Currency', icon: FaCog, permission: 'system.config.read' },
+        { key: 'ordersManagement', label: 'Orders & Transactions', icon: FaReceipt, permission: 'payments.read' },
+        { key: 'subscriptionsSettings', label: 'Subscriptions & Gateways', icon: FaCreditCard, permission: 'payments.read' },
+        { key: 'watermarkSettings', label: 'PDF Watermark', icon: FaStamp, permission: 'system.config.write' },
     ]},
     { label: 'Security & Health', icon: FaShieldAlt, badgeColor: 'bg-rose-50 text-rose-600 border-rose-100', items: [
-        { key: 'integrationsSettings', label: 'Maps & API Keys', icon: FaMapMarkerAlt },
-        { key: 'securityLimitsSettings', label: 'Security & Limits', icon: FaShieldAlt },
-        { key: 'systemHealthSettings', label: 'System Health', icon: FaHeartbeat },
-        { key: 'featureFlagsSettings', label: 'Feature Flags', icon: FaCode },
-        { key: 'platformConfigSettings', label: 'Platform Config', icon: FaServer },
-        { key: 'codeInjectionSettings', label: 'Code Injection', icon: FaCode },
-        { key: 'gdprLegalSettings', label: 'GDPR & Legal Compliance', icon: FaCookieBite },
+        { key: 'integrationsSettings', label: 'Maps & API Keys', icon: FaMapMarkerAlt, superAdminOnly: true },
+        { key: 'securityLimitsSettings', label: 'Security & Limits', icon: FaShieldAlt, superAdminOnly: true },
+        { key: 'systemHealthSettings', label: 'System Health', icon: FaHeartbeat, permission: 'security.read' },
+        { key: 'featureFlagsSettings', label: 'Feature Flags', icon: FaCode, superAdminOnly: true },
+        { key: 'platformConfigSettings', label: 'Platform Config', icon: FaServer, superAdminOnly: true },
+        { key: 'codeInjectionSettings', label: 'Code Injection', icon: FaCode, superAdminOnly: true },
+        { key: 'gdprLegalSettings', label: 'GDPR & Legal Compliance', icon: FaCookieBite, permission: 'system.config.write' },
     ]},
     { label: 'Content & Media', icon: FaFileCode, badgeColor: 'bg-amber-50 text-amber-600 border-amber-100', items: [
-        { key: 'templateManagerSettings', label: 'Templates Manager', icon: FaFileCode },
-        { key: 'pages', label: 'Pages & CMS', icon: FaFile },
-        { key: 'blog', label: 'Blog Engine', icon: FiEdit },
-        { key: 'socialSettings', label: 'Social Channels', icon: FaShareAlt },
-        { key: 'analytics', label: 'Analytics & Tracking', icon: FaChartLine },
-        { key: 'ads', label: 'Ads Manager', icon: FaBullhorn },
+        { key: 'templateManagerSettings', label: 'Templates Manager', icon: FaFileCode, permission: 'system.config.write' },
+        { key: 'pages', label: 'Pages & CMS', icon: FaFile, permission: 'system.config.write' },
+        { key: 'blog', label: 'Blog Engine', icon: FiEdit, permission: 'system.config.write' },
+        { key: 'socialSettings', label: 'Social Channels', icon: FaShareAlt, permission: 'system.config.write' },
+        { key: 'analytics', label: 'Analytics & Tracking', icon: FaChartLine, permission: 'system.config.write' },
+        { key: 'ads', label: 'Ads Manager', icon: FaBullhorn, permission: 'system.config.write' },
     ]},
 ];
 
@@ -123,14 +124,32 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
     const location = useLocation();
     const navigate = useNavigate();
     const adminSession = useAdminSession();
-    const sidebarHasPerm = (p) => {
+    const sidebarHasPerm = useCallback((p) => {
         if (!p) return true;
         if (!adminSession?.permissions) return false;
         if (adminSession.isSuperAdmin) return true;
         if (adminSession.permissions.includes('*')) return true;
         if (Array.isArray(p)) return p.some((x) => adminSession.permissions.includes(x));
         return adminSession.permissions.includes(p);
-    };
+    }, [adminSession]);
+
+    const canAccessSettingsItem = useCallback((item) => {
+        if (!adminSession) return false;
+        if (adminSession.isSuperAdmin) return true;
+        if (item.superAdminOnly) return false;
+        if (item.permission) return sidebarHasPerm(item.permission);
+        return sidebarHasPerm('system.config.read');
+    }, [adminSession, sidebarHasPerm]);
+
+    const visibleSettingsGroups = React.useMemo(() => {
+        if (!adminSession?.isSuperAdmin) {
+            return [];
+        }
+        return SETTINGS_GROUPS.map(g => ({
+            ...g,
+            items: g.items.filter(canAccessSettingsItem)
+        })).filter(g => g.items.length > 0);
+    }, [adminSession, canAccessSettingsItem]);
     const [healthIndicator, setHealthIndicator] = useState({ state: 'loading', indicator: null, overall: null, attentionCount: null });
 
     const loadHealthIndicator = useCallback(async () => {
@@ -368,100 +387,103 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                     ))}
 
                     {/* ── System Settings Section ── */}
-                    <div>
-                        {!sidebarCollapsed && (
-                            <div className="px-2 pt-1 pb-1">
-                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">SYSTEM CONFIGURATION</p>
-                            </div>
-                        )}
-                        <div className="space-y-1">
-                            {/* Settings Header Row */}
-                            <div
-                                onClick={() => {
-                                    if (sidebarCollapsed) {
-                                        navigate('/adm/settings?tab=modulesSettings');
-                                    } else {
-                                        setSettingsOpen((prev) => !prev);
-                                        if (!isSettingsPage) navigate('/adm/settings?tab=modulesSettings');
-                                    }
-                                }}
-                                className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl cursor-pointer ${
-                                    isSettingsPage
-                                        ? 'bg-indigo-50/90 text-indigo-950 font-extrabold border border-indigo-200/70 shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
-                                        : 'text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-950'
-                                } ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}
-                            >
-                                <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
-                                    sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'
-                                } ${isSettingsPage ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 border border-slate-200 group-hover:scale-105'}`}>
-                                    <FiSettings className="text-[0.95rem]" />
-                                </div>
-                                {!sidebarCollapsed && (
-                                    <>
-                                        <span className="flex-1 truncate">Platform Settings</span>
-                                        {settingsOpen
-                                            ? <FiChevronDown className="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" />
-                                            : <FiChevronRight className="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" />}
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Modernized Settings Category Sub-menu */}
-                            {settingsOpen && !sidebarCollapsed && (
-                                <div className="ml-3 mt-1.5 border-l-2 border-indigo-100 pl-2 space-y-1 animate-fade-in">
-                                    {SETTINGS_GROUPS.map((group) => {
-                                        const isGroupCollapsed = collapsedGroups[group.label];
-                                        const groupHasActive = group.items.some(i => i.key === activeTab);
-                                        const GroupIcon = group.icon;
-                                        return (
-                                            <div key={group.label} className="rounded-xl overflow-hidden bg-slate-50/60 border border-slate-200/60 mb-1">
-                                                {/* Group header button */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleGroup(group.label)}
-                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-all cursor-pointer ${
-                                                        groupHasActive ? 'bg-indigo-50/80 text-indigo-900 font-extrabold' : 'text-slate-700 font-bold hover:bg-slate-100/80'
-                                                    }`}
-                                                >
-                                                    <span className="flex items-center gap-2 text-xs">
-                                                        <GroupIcon className={`w-3 h-3 ${groupHasActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                                        <span className="font-bold text-[11px]">{group.label}</span>
-                                                    </span>
-                                                    {isGroupCollapsed
-                                                        ? <FiChevronRight className="w-3 h-3 text-slate-400" />
-                                                        : <FiChevronDown className="w-3 h-3 text-indigo-600" />}
-                                                </button>
-                                                {/* Group items */}
-                                                {!isGroupCollapsed && (
-                                                    <div className="bg-white p-1 space-y-0.5 border-t border-slate-200/50">
-                                                        {group.items.map((item) => {
-                                                            const Icon = item.icon;
-                                                            const isActive = activeTab === item.key && isSettingsPage;
-                                                            return (
-                                                                <button
-                                                                    key={item.key}
-                                                                    type="button"
-                                                                    onClick={() => handleSettingsTabClick(item.key)}
-                                                                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs transition-all cursor-pointer ${
-                                                                        isActive
-                                                                            ? 'bg-indigo-50 text-indigo-700 font-extrabold border-l-2 border-indigo-600 shadow-2xs'
-                                                                            : 'text-slate-600 font-medium hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent'
-                                                                    }`}
-                                                                >
-                                                                    <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                                                    <span className="truncate text-[11px]">{item.label}</span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                    {visibleSettingsGroups.length > 0 && (
+                        <div>
+                            {!sidebarCollapsed && (
+                                <div className="px-2 pt-1 pb-1">
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">SYSTEM CONFIGURATION</p>
                                 </div>
                             )}
+                            <div className="space-y-1">
+                                {/* Settings Header Row */}
+                                <div
+                                    onClick={() => {
+                                        const firstTab = visibleSettingsGroups[0]?.items[0]?.key || 'modulesSettings';
+                                        if (sidebarCollapsed) {
+                                            navigate(`/adm/settings?tab=${firstTab}`);
+                                        } else {
+                                            setSettingsOpen((prev) => !prev);
+                                            if (!isSettingsPage) navigate(`/adm/settings?tab=${firstTab}`);
+                                        }
+                                    }}
+                                    className={`group relative flex items-center text-[0.84rem] transition-all duration-200 rounded-xl cursor-pointer ${
+                                        isSettingsPage
+                                            ? 'bg-indigo-50/90 text-indigo-950 font-extrabold border border-indigo-200/70 shadow-2xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3.5px] before:rounded-r-[3px] before:bg-indigo-600'
+                                            : 'text-slate-700 font-bold hover:bg-slate-50 hover:text-slate-950'
+                                    } ${sidebarCollapsed ? 'p-[9px] justify-center' : 'py-2 px-3'}`}
+                                >
+                                    <div className={`flex items-center justify-center shrink-0 rounded-lg transition-all ${
+                                        sidebarCollapsed ? 'w-8 h-8' : 'w-7 h-7 mr-2.5'
+                                    } ${isSettingsPage ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 border border-slate-200 group-hover:scale-105'}`}>
+                                        <FiSettings className="text-[0.95rem]" />
+                                    </div>
+                                    {!sidebarCollapsed && (
+                                        <>
+                                            <span className="flex-1 truncate">Platform Settings</span>
+                                            {settingsOpen
+                                                ? <FiChevronDown className="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" />
+                                                : <FiChevronRight className="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" />}
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Modernized Settings Category Sub-menu */}
+                                {settingsOpen && !sidebarCollapsed && (
+                                    <div className="ml-3 mt-1.5 border-l-2 border-indigo-100 pl-2 space-y-1 animate-fade-in">
+                                        {visibleSettingsGroups.map((group) => {
+                                            const isGroupCollapsed = collapsedGroups[group.label];
+                                            const groupHasActive = group.items.some(i => i.key === activeTab);
+                                            const GroupIcon = group.icon;
+                                            return (
+                                                <div key={group.label} className="rounded-xl overflow-hidden bg-slate-50/60 border border-slate-200/60 mb-1">
+                                                    {/* Group header button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleGroup(group.label)}
+                                                        className={`w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-all cursor-pointer ${
+                                                            groupHasActive ? 'bg-indigo-50/80 text-indigo-900 font-extrabold' : 'text-slate-700 font-bold hover:bg-slate-100/80'
+                                                        }`}
+                                                    >
+                                                        <span className="flex items-center gap-2 text-xs">
+                                                            <GroupIcon className={`w-3 h-3 ${groupHasActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                                            <span className="font-bold text-[11px]">{group.label}</span>
+                                                        </span>
+                                                        {isGroupCollapsed
+                                                            ? <FiChevronRight className="w-3 h-3 text-slate-400" />
+                                                            : <FiChevronDown className="w-3 h-3 text-indigo-600" />}
+                                                    </button>
+                                                    {/* Group items */}
+                                                    {!isGroupCollapsed && (
+                                                        <div className="bg-white p-1 space-y-0.5 border-t border-slate-200/50">
+                                                            {group.items.map((item) => {
+                                                                const Icon = item.icon;
+                                                                const isActive = activeTab === item.key && isSettingsPage;
+                                                                return (
+                                                                    <button
+                                                                        key={item.key}
+                                                                        type="button"
+                                                                        onClick={() => handleSettingsTabClick(item.key)}
+                                                                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-xs transition-all cursor-pointer ${
+                                                                            isActive
+                                                                                ? 'bg-indigo-50 text-indigo-700 font-extrabold border-l-2 border-indigo-600 shadow-2xs'
+                                                                                : 'text-slate-600 font-medium hover:bg-slate-50 hover:text-slate-900 border-l-2 border-transparent'
+                                                                        }`}
+                                                                    >
+                                                                        <Icon className={`w-3 h-3 shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                                                        <span className="truncate text-[11px]">{item.label}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* ── Utilities Section: Public Portal & Sign Out ── */}
                     <div>

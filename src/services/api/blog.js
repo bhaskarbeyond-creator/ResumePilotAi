@@ -23,3 +23,10 @@ export async function deleteBlogPost(id) {
     await apiFetch(`/api/blog-data/${id}`, { method: 'DELETE' });
     return true;
 }
+
+export default {
+    getBlogPosts,
+    getBlogPostBySlug,
+    saveBlogPost,
+    deleteBlogPost
+};

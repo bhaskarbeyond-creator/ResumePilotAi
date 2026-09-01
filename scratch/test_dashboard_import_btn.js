@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 import { chromium } from 'playwright';
 
 (async () => {
@@ -9,12 +10,12 @@ import { chromium } from 'playwright';
 
   try {
     // 1. Authenticate user
-    await page.goto('http://ai-resume-builder.local/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.evaluate(() => {
       localStorage.setItem('user', 'e2e_test_user_777');
     });
 
-    await page.goto('http://ai-resume-builder.local/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/dashboard', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(2000);
 
     // 2. Check if Import Resume button is visible in header

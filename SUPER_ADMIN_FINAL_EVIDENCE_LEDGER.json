@@ -1,0 +1,222 @@
+{
+  "ledgerVersion": "2026.09.01-SUPER-ADMIN-FINAL-ACCEPTANCE",
+  "authoritativeRuntime": "https://ai-resume-builder.local",
+  "auditTimestamp": "2026-09-01T13:14:45.000Z",
+  "executionSummary": {
+    "totalPrimaryWorkflows": 18,
+    "totalMutationRoutesTested": 21,
+    "directMariaDbAssertionsPassed": 21,
+    "directMariaDbAssertionsFailed": 0,
+    "unitAndRegressionTestsPassed": 399,
+    "unitAndRegressionTestsFailed": 0,
+    "playwrightBrowserChecksPassed": 41,
+    "productionBuildStatus": "CLEAN_PASS"
+  },
+  "workflows": [
+    {
+      "id": "WF-01",
+      "action": "ACT_COUPON_CREATE",
+      "endpoint": "/api/admin/coupons",
+      "method": "POST",
+      "table": "coupons",
+      "httpStatus": 201,
+      "sqlAssertion": "SELECT * FROM coupons WHERE code = 'PROVE_COUPON_101'",
+      "dbVerification": "EXACT_MATCH",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-02",
+      "action": "ACT_COUPON_UPDATE",
+      "endpoint": "/api/admin/coupons/PROVE_COUPON_101",
+      "method": "POST",
+      "table": "coupons",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT revision, discount, active FROM coupons WHERE code = 'PROVE_COUPON_101'",
+      "dbVerification": "REVISION_INCREMENTED_ACTIVE_0",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-03",
+      "action": "ACT_COUPON_DELETE",
+      "endpoint": "/api/admin/coupons/PROVE_COUPON_101",
+      "method": "DELETE",
+      "table": "coupons",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT COUNT(*) FROM coupons WHERE code = 'PROVE_COUPON_101'",
+      "dbVerification": "ROW_COUNT_0",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-04",
+      "action": "ACT_MODULES_SAVE",
+      "endpoint": "/api/admin/settings/modules",
+      "method": "POST",
+      "table": "system_settings",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT data FROM system_settings WHERE category = 'public_config'",
+      "dbVerification": "MODULES_CONFIG_PERSISTED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-05",
+      "action": "ACT_BRANDING_SAVE",
+      "endpoint": "/api/admin/settings/branding",
+      "method": "POST",
+      "table": "system_settings",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT data FROM system_settings WHERE category = 'public_config'",
+      "dbVerification": "BRANDING_CONFIG_PERSISTED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-06",
+      "action": "ACT_AI_CONFIG_SAVE",
+      "endpoint": "/api/admin/ai-settings",
+      "method": "POST",
+      "table": "system_settings",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT * FROM system_settings WHERE category = 'ai_providers'",
+      "dbVerification": "AI_SETTINGS_PERSISTED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-07",
+      "action": "ACT_ANNOUNCEMENT_CREATE",
+      "endpoint": "/api/platform/announcements",
+      "method": "POST",
+      "table": "platform_announcements",
+      "httpStatus": 201,
+      "sqlAssertion": "SELECT * FROM platform_announcements WHERE id = :id",
+      "dbVerification": "ANNOUNCEMENT_ROW_CREATED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-08",
+      "action": "ACT_ANNOUNCEMENT_DELETE",
+      "endpoint": "/api/platform/announcements/:id",
+      "method": "DELETE",
+      "table": "platform_announcements",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT COUNT(*) FROM platform_announcements WHERE id = :id",
+      "dbVerification": "ROW_COUNT_0",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-09",
+      "action": "ACT_BLOG_SAVE",
+      "endpoint": "/api/blog-data/proof-test-blog-post",
+      "method": "POST",
+      "table": "blog",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT * FROM blog WHERE slug = 'proof-test-blog-post'",
+      "dbVerification": "BLOG_ROW_CREATED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-10",
+      "action": "ACT_BLOG_DELETE",
+      "endpoint": "/api/blog-data/proof-test-blog-post",
+      "method": "DELETE",
+      "table": "blog",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT COUNT(*) FROM blog WHERE slug = 'proof-test-blog-post'",
+      "dbVerification": "ROW_COUNT_0",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-11",
+      "action": "ACT_PHRASES_SAVE",
+      "endpoint": "/api/phrases",
+      "method": "POST",
+      "table": "canonical_documents",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT * FROM canonical_documents WHERE entity_type = 'phrases' AND entity_id = 'proof_phrases_cat'",
+      "dbVerification": "CANONICAL_DOCUMENT_CREATED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-12",
+      "action": "ACT_PHRASES_DELETE",
+      "endpoint": "/api/phrases/proof_phrases_cat",
+      "method": "DELETE",
+      "table": "canonical_documents",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT COUNT(*) FROM canonical_documents WHERE entity_type = 'phrases' AND entity_id = 'proof_phrases_cat' AND deleted_at IS NULL",
+      "dbVerification": "ROW_COUNT_0",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-13",
+      "action": "ACT_TICKET_CREATE",
+      "endpoint": "/api/support/tickets",
+      "method": "POST",
+      "table": "support_tickets",
+      "httpStatus": 201,
+      "sqlAssertion": "SELECT * FROM support_tickets WHERE id = :id",
+      "dbVerification": "SUPPORT_TICKET_CREATED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-14",
+      "action": "ACT_TICKET_REPLY",
+      "endpoint": "/api/admin/support/tickets/:id/messages",
+      "method": "POST",
+      "table": "support_ticket_messages",
+      "httpStatus": 201,
+      "sqlAssertion": "SELECT COUNT(*) FROM support_ticket_messages WHERE ticket_id = :id",
+      "dbVerification": "MESSAGE_COUNT_2",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-15",
+      "action": "ACT_TICKET_STATUS",
+      "endpoint": "/api/admin/support/tickets/:id",
+      "method": "PATCH",
+      "table": "support_tickets",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT status FROM support_tickets WHERE id = :id",
+      "dbVerification": "STATUS_RESOLVED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-16",
+      "action": "ACT_USER_PATCH",
+      "endpoint": "/api/admin/users/proof-target-user-001",
+      "method": "PATCH",
+      "table": "users",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT membership FROM users WHERE id = 'proof-target-user-001'",
+      "dbVerification": "MEMBERSHIP_PREMIUM",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-17",
+      "action": "ACT_OPERATOR_ASSIGN",
+      "endpoint": "/api/platform/operators",
+      "method": "POST",
+      "table": "admin_audit_logs",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT action FROM admin_audit_logs WHERE action = 'PLATFORM_OPERATOR_ROLE_CHANGED'",
+      "dbVerification": "AUDIT_LOG_RECORDED",
+      "result": "PASS"
+    },
+    {
+      "id": "WF-18",
+      "action": "ACT_TENANT_SUSPEND_REACTIVATE",
+      "endpoint": "/api/enterprise/platform/tenants/:id/suspend",
+      "method": "POST",
+      "table": "enterprise_tenants",
+      "httpStatus": 200,
+      "sqlAssertion": "SELECT lifecycleState FROM enterprise_tenants WHERE id = '00000000-0000-4000-8000-000000000001'",
+      "dbVerification": "LIFECYCLE_SUSPENDED_THEN_ACTIVE",
+      "result": "PASS"
+    }
+  ],
+  "negativeInvariants": {
+    "unauthenticatedDenial": "HTTP 401 AUTH_REQUIRED",
+    "unprivilegedUserDenial": "HTTP 403 FORBIDDEN",
+    "casConflictDetection": "HTTP 409 CONFLICT",
+    "invalidPayloadRejection": "HTTP 400 BAD_REQUEST",
+    "secretMaskingVerification": "VERIFIED_ZERO_PLAIN_TEXT_LEAKAGE"
+  }
+}

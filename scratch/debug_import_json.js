@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 import { chromium } from 'playwright';
 import path from 'path';
 
@@ -18,13 +19,13 @@ import path from 'path';
     });
 
     // Set auth
-    await page.goto('http://ai-resume-builder.local/dashboard', { waitUntil: 'domcontentloaded' });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/dashboard', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
         localStorage.setItem('user', 'e2e_test_user_777');
     });
 
     // Navigate with import=true
-    await page.goto('http://ai-resume-builder.local/build-resume/heading?import=true', { waitUntil: 'domcontentloaded' });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading?import=true', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3000);
 
     // Upload file

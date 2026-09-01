@@ -29,7 +29,7 @@ function createMockApp() {
   app.use(express.json({ limit: '1mb' }));
   setTokenVerifierForTests(async (token) => {
     if (token === 'admin-token') {
-      return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) };
+      return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'SUPER_ADMIN', superAdmin: true, auth_time: Math.floor(Date.now() / 1000) };
     }
     if (token === 'user-a-token') {
       return { uid: 'user-a', email: 'user.a@example.com', email_verified: true, role: 'USER' };

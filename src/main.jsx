@@ -19,6 +19,28 @@ import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 import GoogleMapsProvider from './components/JobsListings/GoogleMapsProvider';
 import axios from 'axios';
 
+// Single-flight token refresh lock so multiple parallel requests coalesce onto a single getIdToken(true) call
+let singleFlightRefreshPromise = null;
+
+export async function refreshApiTokenSingleFlight() {
+    if (singleFlightRefreshPromise) {
+        return singleFlightRefreshPromise;
+    }
+    const user = fire.auth().currentUser;
+    if (!user) return null;
+    singleFlightRefreshPromise = (async () => {
+        try {
+            const token = await user.getIdToken(true);
+            return token ? `Bearer ${token}` : null;
+        } catch {
+            return null;
+        } finally {
+            singleFlightRefreshPromise = null;
+        }
+    })();
+    return singleFlightRefreshPromise;
+}
+
 // Attach Firebase ID tokens at the browser-to-API trust boundary. The backend never
 // accepts identity, role, or entitlement from request bodies.
 async function getApiAuthorization() {
@@ -55,6 +77,23 @@ axios.interceptors.request.use(async (request) => {
     return request;
 });
 
+axios.interceptors.response.use(
+    response => response,
+    async error => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest?._retry && isSameOriginApiUrl(originalRequest?.url, originalRequest?.baseURL)) {
+            originalRequest._retry = true;
+            const refreshedAuth = await refreshApiTokenSingleFlight();
+            if (refreshedAuth) {
+                originalRequest.headers = originalRequest.headers || {};
+                originalRequest.headers.Authorization = refreshedAuth;
+                return axios(originalRequest);
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 if (typeof window !== 'undefined') {
     const nativeFetch = window.fetch.bind(window);
     window.fetch = async (input, init = {}) => {
@@ -63,13 +102,26 @@ if (typeof window !== 'undefined') {
         const authorization = await getApiAuthorization();
         const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
         if (authorization) headers.set('Authorization', authorization);
-        return nativeFetch(input, { ...init, headers });
+        const response = await nativeFetch(input, { ...init, headers });
+
+        // If the backend returns 401 (e.g. 1-hour ID token expired during active session):
+        // Automatically attempt a single-flight token refresh and retry the request once.
+        if (response.status === 401 && !init?.__isAuthRetry) {
+            const refreshedAuth = await refreshApiTokenSingleFlight();
+            if (refreshedAuth && refreshedAuth !== authorization) {
+                const retryHeaders = new Headers(headers);
+                retryHeaders.set('Authorization', refreshedAuth);
+                return nativeFetch(input, { ...init, headers: retryHeaders, __isAuthRetry: true });
+            }
+        }
+        return response;
     };
     window.fire = fire;
 }
 
-// Create a Context for authentication
-export const AuthContext = createContext(null);
+// Create/Import Context for authentication
+export { AuthContext, useAuth } from './context/AuthContext';
+import { AuthContext } from './context/AuthContext';
 
 const Welcome = lazy(() => import('./components/welcome/Welcome'));
 const Dashboard = lazy(() => import('./components/Dashboard/DashboardMain/DashboardMain'));
@@ -143,6 +195,7 @@ import RouteSeo from './components/RouteSeo';
 import RequireExportAccess from './components/Exporter/RequireExportAccess';
 import RouteFocus from './components/RouteFocus';
 import { clearAccountScopedBrowserState } from './utils/signOut';
+import RouteErrorBoundary from './components/common/RouteErrorBoundary';
 
 // eslint-disable-next-line react-refresh/only-export-components
 const AuthWrapper = () => {         
@@ -414,6 +467,7 @@ const AuthWrapper = () => {
                     <RouteSeo />
                     <RouteFocus />
                     <main id="main-content" tabIndex={-1}>
+                    <RouteErrorBoundary>
                     <Suspense fallback={<Spinner />}>
                         <Routes>
                             <Route path="/" element={<Welcome key={user?.uid || 'guest'} user={user} />} />
@@ -456,8 +510,8 @@ const AuthWrapper = () => {
                             <Route path="/jobs/category/:catName" element={<MainJobListings key={user?.uid || 'guest'} />} />
                             <Route path="/blog" element={<BlogList />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
-                            <Route path="/blog-editor" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
-                            <Route path="/blog-editor/:postId" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
+                            <Route path="/blog-editor" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} user={user} /></RequireAuthenticated>} />
+                            <Route path="/blog-editor/:postId" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} user={user} /></RequireAuthenticated>} />
                           {/* Export routes*/}
                             {/* Generate CV template routes dynamically */}
                             {Array.from({ length: 51 }, (_, i) => i + 1).map((num) => (
@@ -474,6 +528,7 @@ const AuthWrapper = () => {
                             <Route path="*" element={<NotFound />} />
                         </Routes>
                     </Suspense>
+                    </RouteErrorBoundary>
                     </main>
                     <PrivacyConsentBanner />
                 </GA4Provider>

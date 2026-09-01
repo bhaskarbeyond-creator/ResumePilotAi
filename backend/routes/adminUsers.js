@@ -100,13 +100,19 @@ function adminUserProjection(identity, profile = {}, id = identity?.uid || profi
 // 1. DIRECTORY LISTING WITH PAGINATION & FILTERS (MariaDB application profile)
 router.get('/', async (req, res) => {
   const identityAdmin = req.app.get('firebaseAdmin') || admin;
-  const tenantService = req.app.get('tenantService');
+  let tenantService = req.app.get('tenantService');
+  if (!tenantService) {
+    try {
+      const { createTenantService } = require('../enterprise/tenantService');
+      const { getPool } = require('../database/mysql');
+      const { getRepository } = require('../repositories');
+      tenantService = createTenantService({ pool: getPool(), admin: identityAdmin, repository: getRepository() });
+      req.app.set('tenantService', tenantService);
+    } catch (_) {}
+  }
   const repo = req.repository || getRepository();
   if (!identityAdmin?.auth) {
     return res.status(503).json({ success: false, code: 'IDENTITY_DIRECTORY_UNAVAILABLE', error: 'The Firebase Authentication directory is unavailable.' });
-  }
-  if (!tenantService?.registry) {
-    return res.status(503).json({ success: false, code: 'TENANT_SERVICE_UNAVAILABLE', error: 'The tenant registry is unavailable.' });
   }
   const limit = Math.min(Math.max(Number(req.query?.limit || req.query?.pageSize) || 25, 1), 200);
   const query = String(req.query?.q || req.query?.search || '').trim().toLowerCase();
@@ -165,9 +171,18 @@ router.get('/', async (req, res) => {
       }
       identities = directIdentities;
     } else {
-      const listed = await identityAdmin.auth().listUsers(limit, pageToken);
+      let listed = { users: [] };
+      try {
+        listed = await identityAdmin.auth().listUsers(limit, pageToken);
+      } catch (_) {}
       identities = listed.users || [];
       listedPageToken = listed.pageToken || null;
+      if (!identities.length) {
+        try {
+          const [dbUsers] = await getPool().query('SELECT id, email, displayName, firstname, lastname, role, created_at FROM users ORDER BY created_at DESC LIMIT ?', [limit]);
+          identities = (dbUsers || []).map(u => ({ uid: u.id, email: u.email, displayName: u.displayName || `${u.firstname || ''} ${u.lastname || ''}`.trim(), customClaims: { role: u.role } }));
+        } catch (_) {}
+      }
     }
 
     const uids = [...new Set(identities.map(identity => String(identity?.uid || '')).filter(Boolean))];
@@ -229,6 +244,69 @@ router.get('/', async (req, res) => {
     console.error('[Admin user directory error]', error.message);
     return res.status(503).json({ success: false, code: 'USER_DIRECTORY_UNAVAILABLE', error: 'Unable to read the identity directory and application profiles.', requestId: res.locals.requestId });
   }
+});
+
+router.post('/bulk', async (req, res) => {
+  const callerPermissions = permissionsFor(req.user);
+  if (!callerPermissions.has('*') && !callerPermissions.has('users.update')) {
+    return res.status(403).json({ success: false, code: 'FORBIDDEN', error: 'Insufficient permission to modify users.' });
+  }
+  const uids = Array.isArray(req.body?.uids) ? req.body.uids.map(id => String(id).trim()).filter(Boolean) : [];
+  const action = String(req.body?.action || '').trim().toLowerCase();
+  if (!uids.length || uids.length > 100) {
+    return res.status(400).json({ success: false, code: 'INVALID_UIDS', error: 'Specify between 1 and 100 user identifiers.' });
+  }
+  if (!['suspend', 'activate'].includes(action)) {
+    return res.status(400).json({ success: false, code: 'INVALID_BULK_ACTION', error: 'Action must be "suspend" or "activate".' });
+  }
+
+  const identityAdmin = req.app.get('firebaseAdmin') || admin;
+  const repo = req.repository || getRepository();
+  const willSuspend = action === 'suspend';
+  const callerUid = req.user?.uid;
+  const results = { succeeded: [], failed: [] };
+
+  for (const uid of uids) {
+    if (uid === callerUid) {
+      results.failed.push({ uid, error: 'Cannot modify your own account status in bulk operations.' });
+      continue;
+    }
+    try {
+      if (identityAdmin?.auth) {
+        await identityAdmin.auth().updateUser(uid, { disabled: willSuspend }).catch(() => {});
+      }
+      const existing = await repo.getUser(uid).catch(() => null);
+      if (existing) {
+        const expectedRevision = Number(existing.revision || 0);
+        await repo.saveUserWithRevisionGuard(uid, { ...existing, suspended: willSuspend }, expectedRevision);
+      } else {
+        await getPool().query('UPDATE users SET suspended = ?, updated_at = NOW() WHERE id = ?', [willSuspend ? 1 : 0, uid]);
+      }
+      await recordAdminAuditLog(req, {
+        actorUid: req.user?.uid,
+        actorEmail: req.user?.email,
+        action: willSuspend ? 'USER_SUSPENDED' : 'USER_REACTIVATED',
+        category: 'iam.users',
+        severity: 'HIGH',
+        method: 'POST',
+        pathname: req.originalUrl,
+        statusCode: 200,
+        resourceType: 'user',
+        resourceId: uid,
+        metadata: { bulk: true, action },
+        requestId: res.locals.requestId,
+      });
+      results.succeeded.push(uid);
+    } catch (err) {
+      results.failed.push({ uid, error: err.message || 'Update failed' });
+    }
+  }
+
+  return res.json({
+    success: results.failed.length === 0,
+    results,
+    summary: { total: uids.length, succeeded: results.succeeded.length, failed: results.failed.length },
+  });
 });
 
 router.post('/', async (req, res) => {
@@ -381,8 +459,20 @@ router.get('/:uid/details', async (req, res) => {
       } catch (_) {}
     }
 
-    const [contentCounts, orders, aiEntitlement, securityLogs, adminLogs] = await Promise.all([
+    const [contentCounts, userResumesRows, userPortfoliosRows, userCoversRows, orders, aiEntitlement, securityLogs, adminLogs] = await Promise.all([
       repo.getUserContentCounts(targetUid).catch(() => ({})),
+      getPool().query(
+        'SELECT id, title, template, created_at, updated_at FROM resumes WHERE user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 20',
+        [targetUid]
+      ).catch(() => [[]]),
+      getPool().query(
+        'SELECT id, title, slug, theme, is_published, created_at, updated_at FROM portfolios WHERE user_id = ? ORDER BY updated_at DESC LIMIT 20',
+        [targetUid]
+      ).catch(() => [[]]),
+      getPool().query(
+        'SELECT id, job_title, company_name, created_at, updated_at FROM covers WHERE user_id = ? ORDER BY updated_at DESC LIMIT 20',
+        [targetUid]
+      ).catch(() => [[]]),
       repo.getUserPaymentOrders(targetUid).catch(() => []),
       getUserAiEntitlement(null, targetUid).catch(() => ({ uid: targetUid, plan: profileResult?.membership || 'Basic', baseQuota: 10, effectiveLimit: 10, usedToday: 0, remainingToday: 10 })),
       repo.getSecurityAuditLogs({ targetUid, limit: 50 }).catch(() => []),
@@ -477,6 +567,29 @@ router.get('/:uid/details', async (req, res) => {
           resumeCount: contentCounts.resumeCount || 0,
           portfolioCount: contentCounts.portfolioCount || 0,
           coverCount: contentCounts.coverCount || 0,
+          resumes: (userResumesRows?.[0] || []).map(r => ({
+            id: r.id,
+            title: r.title || 'Untitled Resume',
+            template: r.template || 'classic',
+            createdAt: adminIso(r.created_at),
+            updatedAt: adminIso(r.updated_at),
+          })),
+          portfolios: (userPortfoliosRows?.[0] || []).map(p => ({
+            id: p.id,
+            title: p.title || 'Portfolio',
+            slug: p.slug || p.id,
+            theme: p.theme || 'modern',
+            isPublished: p.is_published === 1,
+            createdAt: adminIso(p.created_at),
+            updatedAt: adminIso(p.updated_at),
+          })),
+          covers: (userCoversRows?.[0] || []).map(c => ({
+            id: c.id,
+            jobTitle: c.job_title || 'Untitled Cover Letter',
+            companyName: c.company_name || 'General Application',
+            createdAt: adminIso(c.created_at),
+            updatedAt: adminIso(c.updated_at),
+          })),
         },
         auditTimeline: auditLogs.slice(0, 50),
       }
@@ -485,6 +598,36 @@ router.get('/:uid/details', async (req, res) => {
     console.error('[User 360 error]', error.message);
     const status = error.code === 'auth/user-not-found' ? 404 : 500;
     return res.status(status).json({ success: false, code: error.code || 'USER_DETAILS_ERROR', error: error.message, requestId: res.locals.requestId });
+  }
+});
+
+// 3b. GET INDIVIDUAL USER AUDIT TRAIL (Security & Admin logs)
+router.get('/:userId/audit', async (req, res) => {
+  const targetUid = String(req.params.userId || '').trim();
+  if (!targetUid || targetUid.length > 128) {
+    return res.status(400).json({ success: false, code: 'INVALID_USER_ID', error: 'Invalid user identifier.' });
+  }
+  try {
+    const repo = req.repository || getRepository();
+    const [securityLogs, adminLogs] = await Promise.all([
+      repo.getSecurityAuditLogs({ targetUid, limit: 50 }).catch(() => []),
+      repo.getAdminAuditLogs({ resourceId: targetUid, limit: 50 }).catch(() => []),
+    ]);
+    const events = [...(securityLogs || []), ...(adminLogs || [])].map(item => ({
+      id: item.id,
+      timestamp: item.timestamp || item.createdAt || new Date().toISOString(),
+      type: item.type || item.action || 'SECURITY_EVENT',
+      action: item.action || item.type,
+      actorUid: item.actorUid || 'SYSTEM',
+      actorEmail: item.actorEmail || null,
+      ip: item.ip || item.ipAddress || null,
+      metadata: item.metadata || {},
+    }));
+    events.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+    return res.json({ success: true, events: events.slice(0, 50) });
+  } catch (err) {
+    console.error('[User audit error]', err.message);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to load user audit history' });
   }
 });
 
@@ -604,7 +747,7 @@ router.patch('/:uid', async (req, res) => {
   try {
     const identity = await identityOrNull(identityAdmin, uid);
     const profile = (await repo.getUser(uid)) || {};
-    if (!identity && !profile.id) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
+    if (!identity && !profile.id && !profile.userId) return res.status(404).json({ success: false, code: 'USER_NOT_FOUND', error: 'User not found.' });
     const claims = identity?.customClaims || {};
     const currentRole = String(claims.role || 'USER').toUpperCase();
     const currentSuspended = identity?.disabled === true;

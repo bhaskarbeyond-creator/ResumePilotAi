@@ -1,43 +1,43 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiGrid, FiUsers, FiSettings, FiShield, FiServer, FiActivity, FiFileText, FiLayers, FiMail, FiBriefcase, FiX, FiCommand, FiRefreshCw, FiZap, FiLock, FiHelpCircle } from 'react-icons/fi';
 import { FaRobot, FaCreditCard, FaEnvelope, FaGlobeAsia, FaReceipt, FaDatabase, FaFire } from 'react-icons/fa';
 import { searchPlatform } from '../../../services/platformApi';
+import { useAdminSession } from '../AdminContext';
 
 const COMMAND_ITEMS = [
   // Primary Navigation
-  { id: 'nav-dash', label: 'Dashboard & Platform Health', category: 'Navigation', icon: FiGrid, path: '/adm/dashboard' },
-  { id: 'nav-users', label: 'Users Manager', category: 'Navigation', icon: FiUsers, path: '/adm/users' },
-  { id: 'nav-audit', label: 'Admin Audit Logs', category: 'Navigation', icon: FiShield, path: '/adm/audit-logs' },
-  { id: 'nav-queues', label: 'Queue & DLQ Monitor', category: 'Navigation', icon: FiActivity, path: '/adm/queues' },
-  { id: 'nav-tenants', label: 'Enterprise Tenants Registry', category: 'Navigation', icon: FiServer, path: '/adm/tenants' },
-  { id: 'nav-employers', label: 'Employer Applications', category: 'Navigation', icon: FiBriefcase, path: '/adm/employer-applications' },
-  { id: 'nav-jobs', label: 'Jobs Manager', category: 'Navigation', icon: FiLayers, path: '/adm/jobs-manager' },
-  { id: 'nav-blog', label: 'Blog Engine', category: 'Navigation', icon: FiFileText, path: '/adm/blog-management' },
-  { id: 'nav-messages', label: 'Contact Messages', category: 'Navigation', icon: FiMail, path: '/adm/messages' },
-  { id: 'nav-helpdesk', label: 'Help Desk', category: 'Navigation', icon: FiHelpCircle, path: '/adm/help-desk' },
-  { id: 'nav-security', label: 'Security Events', category: 'Navigation', icon: FiLock, path: '/adm/security' },
-  { id: 'nav-ops', label: 'Platform Operations', category: 'Navigation', icon: FiActivity, path: '/adm/operations' },
-  { id: 'nav-reviews', label: 'Reviews', category: 'Navigation', icon: FiFileText, path: '/adm/reviews' },
-  { id: 'nav-trusted', label: 'Trusted By', category: 'Navigation', icon: FiShield, path: '/adm/trustedby' },
-  { id: 'nav-landing', label: 'Landing Pages', category: 'Navigation', icon: FiLayers, path: '/adm/landing-pages' },
-  { id: 'nav-companies', label: 'Company Management', category: 'Navigation', icon: FiBriefcase, path: '/adm/company-management' },
-  { id: 'nav-phrases', label: 'Phrases', category: 'Navigation', icon: FiFileText, path: '/adm/phrases' },
-  { id: 'nav-attention', label: 'Attention / derived incidents', category: 'Navigation', icon: FiActivity, path: '/adm/attention' },
-  { id: 'nav-operators', label: 'Platform Operators', category: 'Navigation', icon: FiLock, path: '/adm/operators' },
+  { id: 'nav-dash', label: 'Dashboard & Platform Health', category: 'Navigation', icon: FiGrid, path: '/adm/dashboard', permission: 'system.config.read' },
+  { id: 'nav-users', label: 'Users Manager', category: 'Navigation', icon: FiUsers, path: '/adm/users', permission: 'users.read' },
+  { id: 'nav-audit', label: 'Admin Audit Logs', category: 'Navigation', icon: FiShield, path: '/adm/audit-logs', permission: 'audit.read' },
+  { id: 'nav-queues', label: 'Queue & DLQ Monitor', category: 'Navigation', icon: FiActivity, path: '/adm/queues', permission: ['system.config.read', 'security.read'] },
+  { id: 'nav-tenants', label: 'Enterprise Tenants Registry', category: 'Navigation', icon: FiServer, path: '/adm/tenants', permission: 'tenants.read' },
+  { id: 'nav-employers', label: 'Employer Applications', category: 'Navigation', icon: FiBriefcase, path: '/adm/employer-applications', permission: ['applications.review', 'users.read'] },
+  { id: 'nav-jobs', label: 'Jobs Manager', category: 'Navigation', icon: FiLayers, path: '/adm/jobs-manager', permission: ['jobs.manage', 'system.config.write'] },
+  { id: 'nav-blog', label: 'Blog Engine', category: 'Navigation', icon: FiFileText, path: '/adm/blog-management', permission: 'system.config.write' },
+  { id: 'nav-messages', label: 'Contact Messages', category: 'Navigation', icon: FiMail, path: '/adm/messages', permission: 'notifications.send' },
+  { id: 'nav-helpdesk', label: 'Help Desk', category: 'Navigation', icon: FiHelpCircle, path: '/adm/help-desk', permission: 'tickets.manage' },
+  { id: 'nav-security', label: 'Security Events', category: 'Navigation', icon: FiLock, path: '/adm/security', permission: 'security.read' },
+  { id: 'nav-ops', label: 'Platform Operations', category: 'Navigation', icon: FiActivity, path: '/adm/operations', permission: ['system.config.read', 'security.read'] },
+  { id: 'nav-reviews', label: 'Reviews', category: 'Navigation', icon: FiFileText, path: '/adm/reviews', permission: 'system.config.write' },
+  { id: 'nav-trusted', label: 'Trusted By', category: 'Navigation', icon: FiShield, path: '/adm/trustedby', permission: 'system.config.write' },
+  { id: 'nav-landing', label: 'Landing Pages', category: 'Navigation', icon: FiLayers, path: '/adm/landing-pages', permission: 'system.config.write' },
+  { id: 'nav-companies', label: 'Company Management', category: 'Navigation', icon: FiBriefcase, path: '/adm/company-management', permission: ['jobs.manage', 'system.config.write'] },
+  { id: 'nav-phrases', label: 'Phrases', category: 'Navigation', icon: FiFileText, path: '/adm/phrases', permission: 'system.config.write' },
+  { id: 'nav-operators', label: 'Platform Operators', category: 'Navigation', icon: FiLock, path: '/adm/operators', superAdminOnly: true },
 
-  // Settings Tabs
-  { id: 'set-database', label: 'Database & Persistence Engine (Authoritative MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSettings' },
-  { id: 'set-firebase', label: 'Firebase Cloud Settings', category: 'Settings', icon: FaFire, path: '/adm/settings?tab=firebaseSettings' },
-  { id: 'set-ai', label: 'AI Models & Provider Settings', category: 'Settings', icon: FaRobot, path: '/adm/settings?tab=aiSettings' },
-  { id: 'set-smtp', label: 'Email & SMTP Configuration', category: 'Settings', icon: FaEnvelope, path: '/adm/settings?tab=emailSettings' },
-  { id: 'set-pay', label: 'Payment Gateways & Subscriptions', category: 'Settings', icon: FaCreditCard, path: '/adm/settings?tab=subscriptionsSettings' },
-  { id: 'set-orders', label: 'Orders & Transactions', category: 'Settings', icon: FaReceipt, path: '/adm/settings?tab=ordersManagement' },
-  { id: 'set-security', label: 'Security & Abuse Limits', category: 'Settings', icon: FiLock, path: '/adm/settings?tab=securityLimitsSettings' },
-  { id: 'set-health', label: 'System Health Settings', category: 'Settings', icon: FiActivity, path: '/adm/settings?tab=systemHealthSettings' },
-  { id: 'set-geo', label: 'Indian Geo-SEO', category: 'Settings', icon: FaGlobeAsia, path: '/adm/settings?tab=geoSeoSettings' },
-  { id: 'set-modules', label: 'Addon Modules & Feature Flags', category: 'Settings', icon: FiSettings, path: '/adm/settings?tab=modulesSettings' },
-  { id: 'set-brand', label: 'Brand Identity & Meta', category: 'Settings', icon: FiSettings, path: '/adm/settings?tab=websiteSettings' },
+  // Settings Tabs (Platform Configuration - Super Admin Only)
+  { id: 'set-database', label: 'Database & Persistence Engine (Authoritative MariaDB)', category: 'Settings', icon: FaDatabase, path: '/adm/settings?tab=databaseSettings', superAdminOnly: true },
+  { id: 'set-firebase', label: 'Firebase Cloud Settings', category: 'Settings', icon: FaFire, path: '/adm/settings?tab=firebaseSettings', superAdminOnly: true },
+  { id: 'set-ai', label: 'AI Models & Provider Settings', category: 'Settings', icon: FaRobot, path: '/adm/settings?tab=aiSettings', superAdminOnly: true },
+  { id: 'set-smtp', label: 'Email & SMTP Configuration', category: 'Settings', icon: FaEnvelope, path: '/adm/settings?tab=emailSettings', superAdminOnly: true },
+  { id: 'set-pay', label: 'Payment Gateways & Subscriptions', category: 'Settings', icon: FaCreditCard, path: '/adm/settings?tab=subscriptionsSettings', superAdminOnly: true },
+  { id: 'set-orders', label: 'Orders & Transactions', category: 'Settings', icon: FaReceipt, path: '/adm/settings?tab=ordersManagement', superAdminOnly: true },
+  { id: 'set-security', label: 'Security & Abuse Limits', category: 'Settings', icon: FiLock, path: '/adm/settings?tab=securityLimitsSettings', superAdminOnly: true },
+  { id: 'set-health', label: 'System Health Settings', category: 'Settings', icon: FiActivity, path: '/adm/settings?tab=systemHealthSettings', superAdminOnly: true },
+  { id: 'set-geo', label: 'Indian Geo-SEO', category: 'Settings', icon: FaGlobeAsia, path: '/adm/settings?tab=geoSeoSettings', superAdminOnly: true },
+  { id: 'set-modules', label: 'Addon Modules & Feature Flags', category: 'Settings', icon: FiSettings, path: '/adm/settings?tab=modulesSettings', superAdminOnly: true },
+  { id: 'set-brand', label: 'Brand Identity & Meta', category: 'Settings', icon: FiSettings, path: '/adm/settings?tab=websiteSettings', superAdminOnly: true },
 ];
 
 export default function AdminCommandPalette({ isOpen, onClose }) {
@@ -46,6 +46,22 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
   const [entityHits, setEntityHits] = useState([]);
   const inputRef = useRef(null);
   const navigate = useNavigate();
+  const adminSession = useAdminSession();
+
+  const canAccessItem = useCallback((item) => {
+    if (!adminSession) return true;
+    if (adminSession.isSuperAdmin) return true;
+    if (item.superAdminOnly) return false;
+    if (!item.permission) return true;
+    if (Array.isArray(item.permission)) {
+      return item.permission.some(p => adminSession.hasPerm ? adminSession.hasPerm(p) : (adminSession.permissions || []).includes(p));
+    }
+    return adminSession.hasPerm ? adminSession.hasPerm(item.permission) : (adminSession.permissions || []).includes(item.permission);
+  }, [adminSession]);
+
+  const accessibleCommandItems = useMemo(() => {
+    return COMMAND_ITEMS.filter(canAccessItem);
+  }, [canAccessItem]);
 
   useEffect(() => {
     if (isOpen) {
@@ -81,6 +97,20 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
             icon: FiUsers,
             path: '/adm/users',
           })),
+          ...(result.orders || []).map(order => ({
+            id: `order-${order.id}`,
+            label: `Order: ${order.id} (${order.status || 'PAID'} • ${order.currency || 'USD'} ${order.amount ? order.amount / 100 : 0})`,
+            category: 'Orders',
+            icon: FaReceipt,
+            path: '/adm/settings?tab=ordersManagement',
+          })),
+          ...(result.tickets || []).map(ticket => ({
+            id: `ticket-${ticket.id}`,
+            label: `Ticket #${ticket.id}: ${ticket.subject}`,
+            category: 'Help Desk',
+            icon: FiHelpCircle,
+            path: '/adm/help-desk',
+          })),
         ];
         setEntityHits(hits);
       } catch {
@@ -92,12 +122,12 @@ export default function AdminCommandPalette({ isOpen, onClose }) {
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const nav = !q ? COMMAND_ITEMS : COMMAND_ITEMS.filter(item =>
+    const nav = !q ? accessibleCommandItems : accessibleCommandItems.filter(item =>
       item.label.toLowerCase().includes(q) ||
       item.category.toLowerCase().includes(q)
     );
     return [...entityHits, ...nav];
-  }, [query, entityHits]);
+  }, [query, entityHits, accessibleCommandItems]);
 
   const handleSelect = (item) => {
     onClose();

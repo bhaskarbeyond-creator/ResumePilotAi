@@ -58,13 +58,14 @@ body {
     outline: none;
 }
 
-/* Keep some useful link styles */
+/* Keep some useful link styles without overriding button components */
 a {
-    font-weight: 500;
-    color: #4a6cf7;
     text-decoration: inherit;
 }
-a:hover {
+a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]) {
+    color: #4a6cf7;
+}
+a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):hover {
     color: #6c7ee1;
 }
 

@@ -1260,7 +1260,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
     if (!mailOptions.messageId) {
         const senderDomain = config.smtp?.username?.includes('@')
             ? config.smtp.username.split('@')[1]
-            : (new URL(publicSiteOrigin()).hostname || 'airesume.projectdemo.guru');
+            : (new URL(publicSiteOrigin()).hostname || process.env.APP_DOMAIN || 'ai-resume-builder.local');
         mailOptions.messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
     }
 
@@ -2191,7 +2191,7 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
 
         const senderDomain = config.smtp?.username?.includes('@')
             ? config.smtp.username.split('@')[1]
-            : (new URL(siteUrl).hostname || 'airesume.projectdemo.guru');
+            : (new URL(siteUrl).hostname || process.env.APP_DOMAIN || 'ai-resume-builder.local');
         const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
         const mailOptions = {

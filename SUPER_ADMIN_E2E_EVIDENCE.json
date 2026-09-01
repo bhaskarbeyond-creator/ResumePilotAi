@@ -1,0 +1,28 @@
+{
+  "totalChecks": 41,
+  "passedChecks": 41,
+  "failedChecks": 0,
+  "failures": [],
+  "routesAudited": [
+    "/adm/users",
+    "/adm/operators",
+    "/adm/tenants",
+    "/adm/queues",
+    "/adm/health",
+    "/adm/audit-logs",
+    "/adm/security",
+    "/adm/operations",
+    "/adm/attention",
+    "/adm/help-desk",
+    "/adm/blog-management",
+    "/adm/settings"
+  ],
+  "viewportsAudited": [
+    "320px (Mobile Mini)",
+    "375px (Mobile Standard)",
+    "768px (Tablet)",
+    "1024px (Small Desktop)",
+    "1440px (Wide Desktop)"
+  ],
+  "rolesAudited": []
+}

@@ -15,7 +15,7 @@ import SuccessAnimation from '../../../assets/animations/50049-nfc-successful.js
 import { withTranslation } from 'react-i18next';
 import { useLottie } from 'lottie-react';
 import fire from '../../../conf/fire';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import { trackSubscription, trackEvent, trackEngagement } from '../../../utils/ga4';
 
 const View = () => {

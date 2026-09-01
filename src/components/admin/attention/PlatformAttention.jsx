@@ -53,7 +53,15 @@ export default function PlatformAttention() {
           <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><FiAlertTriangle className="text-amber-600" aria-hidden="true" /> Attention</h1>
           <p className="mt-1 text-sm text-slate-500">Derived from inspected platform signals and live operational health. This is not a fabricated incident desk.</p>
         </div>
-        <button type="button" onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold"><FiRefreshCw className={loading ? 'animate-spin' : ''} aria-hidden="true" /> Refresh</button>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50 shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+        >
+          <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {operational ? (

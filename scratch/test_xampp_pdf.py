@@ -1,5 +1,7 @@
 """
-Local PDF export test for ai-resume-builder.local (XAMPP environment).
+Local PDF export test for local environment (XAMPP environment).
+Requires:
+  1. Backend running (port 8080 or port in TARGET_URL)
 """
 import requests
 import time
@@ -27,10 +29,11 @@ except Exception as e:
     print(f"    ERROR: Backend not reachable - {e}")
     sys.exit(1)
 
-# Step 2: Check site at ai-resume-builder.local
-print("\n[2] Checking ai-resume-builder.local is reachable...")
+# Step 2: Check site at target URL
+target = os.environ.get("TARGET_URL", "https://127.0.0.1")
+print(f"\n[2] Checking {target} is reachable...")
 try:
-    r2 = requests.get("http://ai-resume-builder.local/", timeout=5)
+    r2 = requests.get(target, timeout=5)
     print(f"    Site status: {r2.status_code}")
     if 'text/html' in r2.headers.get('content-type', ''):
         print(f"    Content-Type: HTML ✅")
@@ -42,7 +45,7 @@ except Exception as e:
 
 # Step 3: Call export
 print(f"\n[3] Calling /api/export (template={RESUME_NAME})...")
-print("    Playwright will navigate to http://ai-resume-builder.local/export/...")
+print("    Playwright will navigate to os.environ.get("TARGET_URL", "https://127.0.0.1")/export/...")
 print("    Waiting up to 60s...")
 
 start = time.time()

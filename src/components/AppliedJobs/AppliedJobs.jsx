@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FaBriefcase, FaSearch, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaBuilding, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { getUserJobApplications } from '../../services/api/platform';
 
 

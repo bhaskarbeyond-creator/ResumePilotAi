@@ -11,7 +11,7 @@ import JobDetailsModal from './JobDetailsModal';
 import JobApplicationModal from './JobApplicationModal';
 import CreateJobModal from './CreateJobModal';
 import FavoritesModal from './FavoritesModal';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById } from '../../services/api/platform';

@@ -298,7 +298,7 @@ test('D1: the canonical payment-settings read is reachable by the Admin console 
   assert.ok(route, 'GET /payment-settings must exist');
   assert.match(
     route,
-    /requirePermission\(\s*'system\.config\.read'\s*\)/,
+    /requirePermission\(\s*(?:'system\.config\.read'|\[[^\]]*'system\.config\.read'[^\]]*\])\s*\)/,
     'the secret-free projection must be readable by ADMIN, which holds system.config.read'
   );
   assert.doesNotMatch(route, /requireSuperAdmin/, 'the read must not be SUPER_ADMIN-gated while the alias is not');

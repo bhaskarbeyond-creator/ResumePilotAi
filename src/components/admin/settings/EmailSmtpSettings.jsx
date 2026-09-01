@@ -36,8 +36,8 @@ const EmailSmtpSettings = () => {
         username: '',
         password: '',
         senderName: 'ResumePilot AI',
-        replyTo: 'support@airesume.projectdemo.guru',
-        adminEmail: 'bhaskar.beyond@gmail.com',
+        replyTo: `support@${typeof window !== 'undefined' ? window.location.hostname : 'resumepilot.local'}`,
+        adminEmail: '',
     });
 
     const [fallbackSmtp, setFallbackSmtp] = useState({
@@ -154,7 +154,7 @@ const EmailSmtpSettings = () => {
             vars: ['{{candidate_name}}', '{{site_url}}'],
             sampleVars: {
                 candidate_name: 'Ananya Verma',
-                site_url: 'https://airesume.projectdemo.guru'
+                site_url: typeof window !== 'undefined' ? window.location.origin : ''
             }
         },
         password_reset: {
@@ -166,7 +166,7 @@ const EmailSmtpSettings = () => {
             vars: ['{{candidate_name}}', '{{reset_link}}'],
             sampleVars: {
                 candidate_name: 'Suresh Kumar',
-                reset_link: 'https://airesume.projectdemo.guru/reset-password?token=sample123'
+                reset_link: (typeof window !== 'undefined' ? window.location.origin : '') + '/reset-password?token=sample123'
             }
         },
         email_verification: {
@@ -191,7 +191,7 @@ const EmailSmtpSettings = () => {
             sampleVars: {
                 candidate_name: 'Priya Singh',
                 amount: '₹199.00',
-                retry_url: 'https://airesume.projectdemo.guru/pricing'
+                retry_url: (typeof window !== 'undefined' ? window.location.origin : '') + '/pricing'
             }
         },
         subscription_renewal: {
@@ -218,7 +218,7 @@ const EmailSmtpSettings = () => {
             sampleVars: {
                 candidate_name: 'Neha Kapoor',
                 ats_score: '94',
-                site_url: 'https://airesume.projectdemo.guru'
+                site_url: typeof window !== 'undefined' ? window.location.origin : ''
             }
         },
         job_application_received: {
@@ -422,7 +422,7 @@ const EmailSmtpSettings = () => {
                 username: sm.username || '',
                 password: sm.password || '',
                 senderName: sm.senderName || config?.brand?.name || 'ResumePilot AI',
-                replyTo: sm.replyTo || 'support@airesume.projectdemo.guru',
+                replyTo: sm.replyTo || 'support@ai-resume-builder.local',
                 adminEmail: sm.adminEmail || config?.adminEmail || 'bhaskar.beyond@gmail.com',
             };
 
@@ -921,7 +921,7 @@ const EmailSmtpSettings = () => {
                                     name="replyTo"
                                     value={smtpConfig.replyTo}
                                     onChange={handleSmtpChange}
-                                    placeholder="support@airesume.projectdemo.guru"
+                                    placeholder="support@ai-resume-builder.local"
                                     className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono"
                                 />
                             </div>
@@ -1023,7 +1023,7 @@ const EmailSmtpSettings = () => {
                                             type="email"
                                             value={fallbackSmtp.senderEmail || ''}
                                             onChange={(e) => setFallbackSmtp(prev => ({ ...prev, senderEmail: e.target.value }))}
-                                            placeholder="support@airesume.projectdemo.guru"
+                                            placeholder="support@ai-resume-builder.local"
                                             className="w-full px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-xl font-mono"
                                         />
                                     </div>
@@ -1786,7 +1786,7 @@ const EmailSmtpSettings = () => {
 
                                         {/* Footer */}
                                         <div className="bg-slate-50 p-4 text-center border-t border-slate-100 text-[11px] text-slate-500">
-                                            © {new Date().getFullYear()} ResumePilot AI. Need help? support@airesume.projectdemo.guru
+                                            © {new Date().getFullYear()} ResumePilot AI. Need help? support@ai-resume-builder.local
                                         </div>
                                     </div>
                                 </div>

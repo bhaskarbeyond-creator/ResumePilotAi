@@ -14,7 +14,7 @@ import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { createBlogPost, updateBlogPost, listBlogCategories, getUserBlogPosts, getBlogPostByIdForAuthor, deleteBlogPost } from '../../../services/api/platform';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
@@ -24,10 +24,11 @@ import { sanitizeBlogHtml, sanitizeImageUrl, sanitizePlainText, sanitizeUrl } fr
 import './TiptapEditor.css';
 import { FiSave, FiEye, FiArrowLeft, FiTrash2, FiAlertCircle, FiCheck, FiX, FiImage, FiTag, FiFileText, FiBold, FiItalic, FiList, FiCode, FiLink, FiType, FiUnderline, FiAlignLeft, FiAlignCenter, FiAlignRight, FiAlignJustify, FiGrid, FiPlusCircle, FiMinus, FiEdit2, FiRotateCcw, FiRotateCw, FiShield } from 'react-icons/fi';
 
-const BlogEditor = () => {
+const BlogEditor = ({ user: propUser }) => {
     const { postId } = useParams();
     const navigate = useNavigate();
-    const user = useContext(AuthContext);
+    const ctxUser = useContext(AuthContext);
+    const user = propUser || ctxUser || fire.auth()?.currentUser;
     
     const [post, setPost] = useState({
         title: '',
@@ -159,19 +160,15 @@ const BlogEditor = () => {
 
     // Sync editor content when post content changes
     useEffect(() => {
-        if (editor && editor.getHTML() !== post.content) {
-            editor.commands.setContent(post.content, { emitUpdate: false });
+        if (!editor || editor.isDestroyed || !editor.schema) return;
+        try {
+            if (editor.getHTML() !== post.content) {
+                editor.commands.setContent(post.content, { emitUpdate: false });
+            }
+        } catch (_) {
+            // Non-fatal schema sync
         }
     }, [editor, post.content]);
-
-    // Cleanup editor on unmount
-    useEffect(() => {
-        return () => {
-            if (editor) {
-                editor.destroy();
-            }
-        };
-    }, [editor]);
 
     const initializeEditor = async () => {
         setLoading(true);
@@ -188,10 +185,11 @@ const BlogEditor = () => {
                     getBlogPostByIdForAuthor(postId, user.uid),
                     getUserBlogPosts(user.uid, { status: 'all', limit: 6 }),
                 ]);
-                const postData = postResult.success ? postResult.post : null;
-                if (userPostsResult.success) setUserPosts(userPostsResult.posts);
+                const postData = postResult?.success ? postResult.post : (postResult?.title ? postResult : null);
+                const userPostsList = Array.isArray(userPostsResult) ? userPostsResult : (userPostsResult?.posts || []);
+                setUserPosts(userPostsList);
                 
-                if (postData && postData.authorUid === user.uid) {
+                if (postData && (postData.authorUid === user.uid || !postData.authorUid)) {
                     if (postData.status === 'approved' || postData.status === 'scheduled') {
                         showNotification('Published or scheduled posts are managed through moderation. Create a new draft for revisions.', 'error');
                         navigate(postData.slug ? `/blog/${postData.slug}` : '/blog-editor');
@@ -223,9 +221,8 @@ const BlogEditor = () => {
                     limit: 6
                 });
                 
-                if (userPostsResult.success) {
-                    setUserPosts(userPostsResult.posts);
-                }
+                const userPostsList = Array.isArray(userPostsResult) ? userPostsResult : (userPostsResult?.posts || []);
+                setUserPosts(userPostsList);
             }
         } catch (error) {
             console.error('Error initializing editor:', error);

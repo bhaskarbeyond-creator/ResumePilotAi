@@ -99,12 +99,12 @@ mariaTest('CERTIFICATION: public configuration loads from MariaDB only', async (
 
 mariaTest('CERTIFICATION: llms.txt is default-off, claim-validated, audited, and MariaDB-backed', async () => {
     await request(app).get('/llms.txt').expect(404);
-    const settings = await request(app).get('/api/admin/settings').set(bearer('admin')).expect(200);
+    const settings = await request(app).get('/api/admin/settings').set(bearer('super-admin')).expect(200);
     const expectedRevision = Number(settings.body.revisions?.llmGeo || 0);
 
     const rejected = await request(app)
         .post('/api/admin/settings/llmGeo')
-        .set(bearer('admin'))
+        .set(bearer('super-admin'))
         .send({
             expectedRevision,
             data: { enableLlmGeo: true, llmsTxtContent: '# ResumePilot AI\nThe #1 top-rated resume service with a 4.9/5 rating.' },
@@ -115,7 +115,7 @@ mariaTest('CERTIFICATION: llms.txt is default-off, claim-validated, audited, and
     const document = '# ResumePilot AI\nBrowser-based tools for editing and exporting resumes and cover letters.';
     const published = await request(app)
         .post('/api/admin/settings/llmGeo')
-        .set(bearer('admin'))
+        .set(bearer('super-admin'))
         .send({ expectedRevision, data: { enableLlmGeo: true, llmsTxtContent: document } })
         .expect(200);
     assert.equal(published.body.settings.enableLlmGeo, true);
@@ -127,7 +127,7 @@ mariaTest('CERTIFICATION: llms.txt is default-off, claim-validated, audited, and
 
     await request(app)
         .post('/api/admin/settings/llmGeo')
-        .set(bearer('admin'))
+        .set(bearer('super-admin'))
         .send({ expectedRevision: published.body.revision, data: { enableLlmGeo: false, llmsTxtContent: document } })
         .expect(200);
     await request(app).get('/llms.txt').expect(404);
@@ -257,7 +257,7 @@ mariaTest('CERTIFICATION: public reviews use relational owner and phrases use ca
     // Admin writes a review
     const write = await request(app)
         .post('/api/admin/reviews')
-        .set(bearer('admin'))
+        .set(bearer('super-admin'))
         .send({ name: 'MariaDB Only Tester', review: 'Great product from the certification suite', rating: 5 })
         .expect(200);
     assert.equal(write.body.success, true);

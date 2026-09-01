@@ -10,4 +10,4 @@ Disallow: /portfolio/builder
 Disallow: /export
 Disallow: /shared
 Disallow: /login
-Sitemap: https://airesume.projectdemo.guru/sitemap.xml
+Sitemap: https://ai-resume-builder.local/sitemap.xml

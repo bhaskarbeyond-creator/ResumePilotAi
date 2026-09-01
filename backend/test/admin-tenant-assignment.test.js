@@ -126,7 +126,7 @@ test('GAP-22: assignment surfaces workspace context and is visible to User 360 r
   const { tenantId, workspaceId } = await provisionOrg('acme-refresh');
   const res = await request(app)
     .post(`/api/admin/users/${tokens.user.uid}/tenants`)
-    .set(bearer('admin'))
+    .set(bearer('super'))
     .send({ tenantId, role: 'ENTERPRISE_ADMIN' });
   assert.equal(res.status, 200);
   assert.equal(res.body.membership.workspaceId, workspaceId);

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { FaBriefcase, FaSearch, FaFilter, FaCalendar, FaMapMarkerAlt, FaDollarSign, FaEye, FaClock, FaCheckCircle, FaTimesCircle, FaHourglass, FaInfoCircle, FaSortAmountDown, FaBuilding, FaPlus, FaEdit, FaTrash, FaUsers, FaChartBar, FaFileAlt, FaExclamationTriangle, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { getEmployerJobs, getJobApplications, updateJobPosting, deleteJobPosting } from '../../../services/api/platform';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import { formatSafeDate } from '../../../utils/subscriptionUtils.js';
 import JobApplicationsModal from './JobApplicationsModal';
 import AddCompanyModal from './AddCompanyModal';

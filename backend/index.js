@@ -107,7 +107,7 @@ const {
     enforceDailyAiQuota
 } = require('./security/abuse');
 const port = process.env.PORT || 8080;
-const configuredWebsiteName = String(process.env.WEBSITE_NAME || 'airesume.projectdemo.guru').trim().toLowerCase();
+const configuredWebsiteName = String(process.env.WEBSITE_NAME || process.env.APP_DOMAIN || 'ai-resume-builder.local').trim().toLowerCase();
 if (!/^(?:[a-z0-9](?:[a-z0-9-]{0,62})\.)*[a-z0-9][a-z0-9-]{0,62}(?::\d{1,5})?$/.test(configuredWebsiteName)) {
     throw new Error('WEBSITE_NAME must be a valid hostname');
 }
@@ -293,19 +293,31 @@ const configuredOrigins = String(process.env.CORS_ALLOWED_ORIGINS || '')
     .split(',').map(value => value.trim()).filter(Boolean);
 const allowedOrigins = new Set([
     `https://${websiteName}`,
-    'https://airesume.projectdemo.guru',
+    `http://${websiteName}`,
+    ...(process.env.STAGING_DOMAIN ? [`https://${process.env.STAGING_DOMAIN}`] : []),
     ...configuredOrigins,
     ...(process.env.NODE_ENV === 'production' ? [] : [
         'http://localhost:5173',
         'http://localhost:3000',
-        'http://ai-resume-builder.local',
-        'https://ai-resume-builder.local'
+        'http://localhost:8080',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:8080'
     ])
 ]);
 app.use(cors({
     origin(origin, callback) {
-        // Non-browser clients do not send Origin. Browser origins must be exact allowlist matches.
+        // Non-browser clients do not send Origin. Browser origins must match allowlist or dev rules.
         if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+        if (process.env.NODE_ENV !== 'production') {
+            try {
+                const parsed = new URL(origin);
+                // Allow any local domain (.local), localhost, or loopback in non-production
+                if (parsed.hostname.endsWith('.local') || parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+                    return callback(null, true);
+                }
+            } catch (_) {}
+        }
         return callback(null, false);
     },
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -415,6 +427,9 @@ app.use('/api/jobs-data', jobsDataRouter);
 app.use('/api/blog-data', blogDataRouter);
 app.use('/api/notifications-data', notificationsDataRouter);
 app.use('/api/users-data', usersDataRouter);
+app.use('/api/enterprise/m2m', enterpriseM2mRouter);
+app.use('/api/enterprise', enterpriseRouter);
+app.use('/api/platform', platformRouter);
 app.use('/api', miscDataRouter);
 app.use('/api/admin/database-settings', databaseAdminRouter);
 
@@ -2264,7 +2279,7 @@ app.use('/api/platform', platformRouter);
 // Backwards-compatible read alias. The canonical frontend route is
 // /api/platform/payment-settings, but old Admin bundles receive the same
 // Super-Admin-only secret-free projection instead of an unexplained 404.
-app.get('/api/admin/payment-settings', requirePermission('system.config.read'), async (req, res) => {
+app.get('/api/admin/payment-settings', requirePermission(['payments.read', 'system.config.read']), async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store');
         return res.json(await getPaymentSettingsProjection(process.env));
@@ -2767,6 +2782,36 @@ app.get('/api/admin/settings', async (req, res) => {
     } catch (error) {
         console.error('[Admin settings read]', error.message);
         return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Unable to read admin settings.', requestId: res.locals.requestId });
+    }
+});
+
+app.get('/api/admin/settings/:category', async (req, res) => {
+    const category = String(req.params.category || '');
+    if (!GENERIC_ADMIN_SETTING_CATEGORIES.has(category)) {
+        return res.status(400).json({ success: false, error: 'Unsupported settings category.' });
+    }
+    try {
+        const { getRepository } = require('./repositories');
+        const repo = getRepository();
+        const [publicValue, adminValue] = await Promise.all([
+            repo.getSetting('public_config'),
+            repo.getSetting('admin_configuration'),
+        ]);
+        const publicRoot = publicValue || {};
+        const adminRoot = adminValue || {};
+        const data = Object.hasOwn(adminRoot, category) ? adminRoot[category] : (publicRoot[category] || {});
+        const projected = publicAdminSettings(category, data);
+        const revision = (adminRoot._revisions && adminRoot._revisions[category]) || (publicRoot._settingsRevisions && publicRoot._settingsRevisions[category]) || 0;
+        return res.json({
+            success: true,
+            category,
+            settings: projected,
+            revision,
+            generatedAt: new Date().toISOString(),
+        });
+    } catch (error) {
+        console.error('[Admin settings category read]', error.message);
+        return res.status(503).json({ success: false, code: 'SETTINGS_UNAVAILABLE', error: 'Unable to read admin settings category.', requestId: res.locals.requestId });
     }
 });
 
@@ -3296,7 +3341,7 @@ app.post('/api/admin/payment-settings', requireRecentAdminAuthentication, async 
 });
 
 // Admin coupon list — MySQL authoritative (coupons table).
-app.get('/api/admin/coupons', async (req, res) => {
+app.get('/api/admin/coupons', requireAuth, requirePermission(['payments.read', 'system.config.read']), async (req, res) => {
     try {
         const pool = require('./database/mysql').getPool();
         const [rows] = await pool.query('SELECT * FROM coupons ORDER BY created_at DESC LIMIT 500');
@@ -3307,7 +3352,8 @@ app.get('/api/admin/coupons', async (req, res) => {
             active: row.active === 1 || row.active === true,
             maxUses: Number(row.max_uses || 0),
             singleUsePerUser: row.single_use_per_user === 1,
-            validUntil: row.valid_until ? adminIso(row.valid_until) : null,
+            expiryDate: row.expiry_date || null,
+            validUntil: row.expiry_date || (row.valid_until ? adminIso(row.valid_until) : null),
             revision: Number(row.revision || 0),
             createdAt: adminIso(row.created_at),
             ...(row.extra_json ? (typeof row.extra_json === 'string' ? JSON.parse(row.extra_json) : row.extra_json) : {}),
@@ -3318,18 +3364,23 @@ app.get('/api/admin/coupons', async (req, res) => {
     }
 });
 
-app.put('/api/admin/coupons/:code', async (req, res) => {
-    const code = String(req.params.code || '').trim().toUpperCase();
-    if (!/^[A-Z0-9_-]{3,32}$/.test(code)) return res.status(400).json({ success: false, error: 'Invalid coupon code.' });
+const handleSaveCouponRoute = async (req, res) => {
+    const code = String(req.body?.code || req.params?.code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{3,32}$/.test(code)) {
+        return res.status(400).json({ success: false, error: 'Invalid coupon code. Must be 3-32 alphanumeric characters.' });
+    }
     try {
         const repo = resilientMutations.repoFor();
         const existing = await repo.getCoupon(code);
-        const expectedRevision = Number(req.body?.expectedRevision || 0);
-        if (existing && Number(existing.revision || 0) !== expectedRevision) return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: 'Coupon changed after loading.' });
-        const discount = Number(req.body?.discount || 10);
+        const expectedRevision = req.body?.expectedRevision !== undefined ? Number(req.body.expectedRevision) : (req.body?.revision !== undefined ? Number(req.body.revision) : null);
+        if (existing && expectedRevision !== null && expectedRevision > 0 && Number(existing.revision || 0) !== expectedRevision) {
+            return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: 'Coupon changed after loading.' });
+        }
+        const discount = Math.min(100, Math.max(1, Number(req.body?.discount || 10)));
         const record = {
             ...(existing || {}),
-            code, discount,
+            code,
+            discount,
             description: String(req.body?.description || `${discount}% Discount`).replace(/\p{Cc}/gu, ' ').slice(0, 200),
             active: req.body?.active !== false,
             expiryDate: req.body?.expiryDate || null,
@@ -3339,25 +3390,33 @@ app.put('/api/admin/coupons/:code', async (req, res) => {
             revision: Number(existing?.revision || 0) + 1,
         };
         await repo.saveCoupon(code, record);
-        await resilientMutations.audit(repo, { action: 'COUPON_SAVED', actorUid: req.user.uid, code, revision: record.revision, requestId: res.locals.requestId });
-        return res.json({ success: true, coupon: record });
+        const actorUid = req.user?.uid || 'admin';
+        await resilientMutations.audit(repo, { action: existing ? 'COUPON_UPDATED' : 'COUPON_CREATED', actorUid, code, revision: record.revision, requestId: res.locals?.requestId });
+        return res.status(existing ? 200 : 201).json({ success: true, message: 'Coupon saved successfully.', coupon: record });
     } catch (error) {
         return res.status(error.status || 500).json({ success: false, error: error.message });
     }
-});
+};
 
-app.delete('/api/admin/coupons/:code', async (req, res) => {
+app.post('/api/admin/coupons', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), handleSaveCouponRoute);
+app.post('/api/admin/coupons/:code', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), handleSaveCouponRoute);
+app.put('/api/admin/coupons/:code', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), handleSaveCouponRoute);
+
+app.delete('/api/admin/coupons/:code', requireAuth, requirePermission(['payments.manage', 'system.config.manage', 'payments.write', 'system.config.write']), async (req, res) => {
     const code = String(req.params.code || '').trim().toUpperCase();
-    const expectedRevision = Number(req.body?.expectedRevision || 0);
     try {
         const repo = resilientMutations.repoFor();
         const existing = await repo.getCoupon(code);
         if (!existing) return res.status(404).json({ success: false, error: 'Coupon not found.' });
-        if (Number(existing.revision || 0) !== expectedRevision) return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: 'Coupon changed after loading.' });
-        if (typeof repo.saveDocument === 'function') await repo.saveDocument('coupons_deleted', code, { ...existing, deleted: true, revision: expectedRevision + 1 });
-        await repo.saveCoupon(code, { ...existing, active: false, revision: expectedRevision + 1 });
-        await resilientMutations.audit(repo, { action: 'COUPON_DELETED', actorUid: req.user.uid, code, revision: expectedRevision, requestId: res.locals.requestId });
-        return res.json({ success: true });
+        const expectedRevisionRaw = req.body?.expectedRevision ?? req.query?.expectedRevision ?? req.body?.revision;
+        const expectedRevision = expectedRevisionRaw !== undefined && expectedRevisionRaw !== null && expectedRevisionRaw !== '' ? Number(expectedRevisionRaw) : null;
+        if (expectedRevision !== null && expectedRevision > 0 && Number(existing.revision || 0) !== expectedRevision) {
+            return res.status(409).json({ success: false, code: 'CAS_CONFLICT', error: `Coupon changed after loading (current revision: ${existing.revision}, expected: ${expectedRevision}).` });
+        }
+        await repo.deleteCoupon(code);
+        const actorUid = req.user?.uid || 'admin';
+        await resilientMutations.audit(repo, { action: 'COUPON_DELETED', actorUid, code, revision: existing.revision, requestId: res.locals?.requestId });
+        return res.json({ success: true, message: 'Coupon deleted successfully.' });
     } catch (error) {
         return res.status(error.status || 500).json({ success: false, error: error.message });
     }

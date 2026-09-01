@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 import { chromium } from 'playwright';
 
 (async () => {
@@ -8,8 +9,8 @@ import { chromium } from 'playwright';
 
   try {
     // 1. Load Base App
-    console.log('Step 1: Navigating to http://ai-resume-builder.local/');
-    await page.goto('http://ai-resume-builder.local/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    console.log('Step 1: Navigating to ${process.env.TARGET_URL || process.env.APP_URL}/');
+    await page.goto((process.env.TARGET_URL || process.env.APP_URL), { waitUntil: 'domcontentloaded', timeout: 15000 });
 
     // 2. Set authenticated user session
     await page.evaluate(() => {
@@ -19,31 +20,31 @@ import { chromium } from 'playwright';
 
     // 3. Step 1: Heading
     console.log('Step 2: Navigating to Heading step (/build-resume/heading)');
-    await page.goto('http://ai-resume-builder.local/build-resume/heading', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     console.log('✔ Heading step loaded');
 
     // 4. Step 2: Work History
     console.log('Step 3: Navigating to Work History step (/build-resume/work-history)');
-    await page.goto('http://ai-resume-builder.local/build-resume/work-history', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/work-history', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     console.log('✔ Work History step loaded');
 
     // 5. Step 3: Education
     console.log('Step 4: Navigating to Education step (/build-resume/education)');
-    await page.goto('http://ai-resume-builder.local/build-resume/education', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/education', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     console.log('✔ Education step loaded');
 
     // 6. Step 4: Skills
     console.log('Step 5: Navigating to Skills step (/build-resume/skills)');
-    await page.goto('http://ai-resume-builder.local/build-resume/skills', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/skills', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1000);
     console.log('✔ Skills step loaded');
 
     // 7. Step 5: Summary
     console.log('Step 6: Navigating to Summary step (/build-resume/summary)');
-    await page.goto('http://ai-resume-builder.local/build-resume/summary', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/summary', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(1500);
     console.log('✔ Summary step loaded');
 

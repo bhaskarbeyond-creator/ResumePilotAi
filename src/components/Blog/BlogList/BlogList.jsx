@@ -7,7 +7,7 @@ import CategoryFilter from '../components/CategoryFilter';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import fire from '../../../conf/fire';
 import { FiSearch, FiCalendar, FiUser, FiEye, FiBookmark, FiEdit3, FiX, FiGrid, FiList, FiFilter, FiChevronDown } from 'react-icons/fi';
 

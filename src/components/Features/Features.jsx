@@ -8,7 +8,7 @@ import LoaderAnimation from '../../assets/animations/lottie-loader.json';
 import { getPages, getWebsiteData, getSocialLinks } from '../../services/api/platform';
 import HomepageFooter from '../../components/Dashboard2/elements/HomepageFooter';  
 import HomepageNavbar from '../../components/Dashboard2/elements/HomepageNavbar';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
 

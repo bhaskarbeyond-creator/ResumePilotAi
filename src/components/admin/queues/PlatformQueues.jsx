@@ -155,14 +155,15 @@ export default function PlatformQueues() {
             Real-time async worker telemetry, transactional outbox status, and dead-letter queue (DLQ) controls.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={fetchQueues}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-800 hover:bg-slate-50 transition shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
+            <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
           {summary.deadLetterCount > 0 && (
             <>
@@ -171,18 +172,19 @@ export default function PlatformQueues() {
                 onClick={() => handleRetry(null, true)}
                 disabled={retrying || !isSuperAdmin}
                 title={isSuperAdmin ? 'Replay dead-letter jobs' : 'Super Admin only'}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition shadow-xs disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-amber-600 text-white text-xs font-extrabold hover:bg-amber-700 transition shadow-xs disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
-                <FiRotateCw className={retrying ? 'animate-spin' : ''} /> {isSuperAdmin ? `Replay All Dead Letters (${summary.deadLetterCount})` : 'Replay Super Admin only'}
+                <FiRotateCw className={`h-3.5 w-3.5 ${retrying ? 'animate-spin' : ''}`} />
+                <span>{isSuperAdmin ? `Replay All Dead Letters (${summary.deadLetterCount})` : 'Replay Super Admin only'}</span>
               </button>
               {isSuperAdmin && (
                 <button
                   type="button"
                   onClick={handlePurge}
                   disabled={retrying}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-100 text-red-800 text-xs font-bold hover:bg-red-200 transition shadow-2xs disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-extrabold transition shadow-2xs disabled:opacity-50 cursor-pointer whitespace-nowrap"
                 >
-                  Purge DLQ
+                  <span>Purge DLQ</span>
                 </button>
               )}
             </>

@@ -15,7 +15,7 @@ const { setTokenVerifierForTests } = require('../security/auth');
 const app = require('../index');
 
 const tokens = {
-  admin: { uid: 'admin-provisioner', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) },
+  admin: { uid: 'admin-provisioner', email: 'admin@example.com', email_verified: true, role: 'SUPER_ADMIN', superAdmin: true, auth_time: Math.floor(Date.now() / 1000) },
   regularUser: { uid: 'regular-user', email: 'user@example.com', email_verified: true, role: 'USER' },
   unverifiedUser: { uid: 'unverified-user', email: 'unverified@example.com', email_verified: false, role: 'USER' },
 };

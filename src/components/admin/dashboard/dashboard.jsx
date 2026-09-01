@@ -67,7 +67,7 @@ const Dashboard = () => {
         </span>
       ),
       badgeBg: 'bg-emerald-50 border-emerald-100',
-      sub: 'Verified transactional gross revenue',
+      sub: center?.kpis?.activeSubscriptions ? `${center.kpis.activeSubscriptions} active paid subscription(s)` : 'Verified transactional gross revenue',
       href: '/adm/settings?tab=ordersManagement',
     },
     {
@@ -75,7 +75,7 @@ const Dashboard = () => {
       value: center?.kpis?.totalUsers ?? 'Unavailable',
       icon: <FaUsers className="h-5 w-5 text-blue-600" />,
       badgeBg: 'bg-blue-50 border-blue-100',
-      sub: 'Active consumer & employer profiles',
+      sub: center?.kpis?.newUsers30d ? `${center.kpis.newUsers30d} joined in last 30 days` : 'Active consumer & employer profiles',
       href: '/adm/users',
     },
     {
@@ -141,17 +141,17 @@ const Dashboard = () => {
             type="button"
             onClick={loadDashboard}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition border border-white/10 shadow-sm backdrop-blur-xs disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-100 text-xs font-extrabold transition border border-slate-700/80 shadow-sm hover:border-slate-600 disabled:opacity-50 cursor-pointer whitespace-nowrap"
           >
-            <FaSyncAlt className={loading ? 'animate-spin' : ''} />
+            <FaSyncAlt className={`h-3.5 w-3.5 text-slate-300 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh Stream</span>
           </button>
           <Link
             to="/adm/health"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 !text-white text-xs font-extrabold transition shadow-md shadow-indigo-600/30 border border-indigo-500/30 cursor-pointer whitespace-nowrap"
           >
-            <FaHeartbeat />
-            <span>Health Matrix</span>
+            <FaHeartbeat className="h-3.5 w-3.5 !text-white shrink-0" />
+            <span className="!text-white font-extrabold">Health Matrix</span>
           </Link>
         </div>
       </div>
@@ -246,8 +246,8 @@ const Dashboard = () => {
             />
             <Signal
               label="Threat Sensor"
-              ok={center.signals?.security?.status === 'HEALTHY'}
-              text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Sensor Offline' : `${center.signals?.security?.highSeverity ?? 0} High Threats`}
+              ok={(center.signals?.security?.activeThreats ?? 0) === 0 && center.signals?.security?.status !== 'UNAVAILABLE'}
+              text={center.signals?.security?.status === 'UNAVAILABLE' ? 'Sensor Offline' : `${center.signals?.security?.activeThreats ?? 0} Active • ${center.signals?.security?.highSeverity ?? 0} Historical`}
               to="/adm/security"
             />
             <Signal

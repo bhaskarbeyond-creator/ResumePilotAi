@@ -33,7 +33,7 @@ function createMockApp(environment = {}) {
 
   setTokenVerifierForTests(async (token) => {
     if (token === 'admin-token') {
-      return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: Math.floor(Date.now() / 1000) };
+      return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'SUPER_ADMIN', superAdmin: true, auth_time: Math.floor(Date.now() / 1000) };
     }
     if (token === 'user-token') {
       return { uid: 'user-1', email: 'user@example.com', email_verified: true, role: 'USER' };

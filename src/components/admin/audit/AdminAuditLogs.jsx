@@ -141,22 +141,24 @@ export default function AdminAuditLogs() {
             Immutable security event trail and administrative operations records.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={fetchLogs}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-800 hover:bg-slate-50 transition shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
+            <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
           <button
             type="button"
             onClick={exportCsv}
             disabled={!filteredLogs.length}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold hover:bg-indigo-700 transition shadow-xs disabled:opacity-50 cursor-pointer whitespace-nowrap"
           >
-            <FiDownload /> Export CSV
+            <FiDownload className="h-3.5 w-3.5 text-indigo-100" />
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
@@ -184,10 +186,14 @@ export default function AdminAuditLogs() {
           </div>
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">High Risk Events</p>
-              <p className="text-2xl font-extrabold text-red-600 mt-1">{stats.highSeverityCount}</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">High-Impact Operations</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-extrabold text-amber-600">{stats.highSeverityCount}</span>
+                <span className="text-[10px] text-slate-400 font-medium">in sampled 200 logs</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-0.5">Historical privileged actions & test runs</p>
             </div>
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl">
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
               <FiAlertTriangle className="h-5 w-5" />
             </div>
           </div>

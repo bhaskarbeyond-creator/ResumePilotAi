@@ -3,7 +3,7 @@ import { FiSearch, FiMapPin, FiBriefcase, FiUsers, FiStar, FiTrendingUp } from '
 import { BiCheckCircle, BiBuilding } from 'react-icons/bi';
 import { withTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { AnimatePresence } from 'framer-motion';
 import CustomLocationAutocomplete from '../JobsListings/CustomLocationAutocomplete';
 import { getFrontendStats } from '../../services/api/platform';

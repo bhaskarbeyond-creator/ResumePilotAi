@@ -111,6 +111,7 @@ const BlogManagement = () => {
             setCategories(categoriesData);
         } catch (error) {
             console.error('Error loading categories:', error);
+            showNotification(error.message || 'Failed to load blog categories', 'error');
         }
     };
 

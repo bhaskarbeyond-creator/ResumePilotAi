@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 import { chromium } from 'playwright';
 import path from 'path';
 
@@ -7,10 +8,10 @@ async function testLocalDomain() {
     const browser = await chromium.launch({ channel: 'msedge', headless: true });
     const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
     
-    console.log("Testing http://ai-resume-builder.local/export/Cv1/resume_1786032172991/en...");
+    console.log("Testing ${process.env.TARGET_URL || process.env.APP_URL}/export/Cv1/resume_1786032172991/en...");
     
     try {
-        await page.goto('http://ai-resume-builder.local/export/Cv1/resume_1786032172991/en', { waitUntil: 'domcontentloaded', timeout: 10000 });
+        await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/export/Cv1/resume_1786032172991/en', { waitUntil: 'domcontentloaded', timeout: 10000 });
         await page.waitForTimeout(2000);
         
         const ssPath = path.join(artifactDir, `local_domain_cv1_export.png`);

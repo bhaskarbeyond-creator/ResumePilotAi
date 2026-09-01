@@ -66,7 +66,6 @@ const PERMISSIONS = Object.freeze({
     'users.read', 'users.create', 'users.update', 'users.delete', 'users.roles.manage',
     'tenants.read', 'tenants.write', 'tenants.manage',
     'email.template.manage', 'email.logs.read',
-    'system.config.read', 'system.config.write',
     'payments.manage', 'payments.read',
     'notifications.send',
     'ai.entitlements.manage', 'ai.usage.read',
@@ -74,7 +73,7 @@ const PERMISSIONS = Object.freeze({
     'tickets.manage'
   ],
   AUDITOR: [
-    'users.read', 'tenants.read', 'email.logs.read', 'system.config.read',
+    'users.read', 'tenants.read', 'email.logs.read',
     'payments.read', 'ai.usage.read', 'audit.read', 'security.read'
   ],
   SUPPORT: [
@@ -111,6 +110,7 @@ let verifyToken = async token => {
 let lookupUser = uid => admin.auth().getUser(uid);
 
 async function requireAuth(req, res, next) {
+  if (req.user) return next();
   const header = req.get('authorization') || '';
   const match = /^Bearer\s+([^\s]{1,8192})$/i.exec(header);
   if (!match) return unauthorized(res);
@@ -154,8 +154,9 @@ function permissionsFor(user) {
 function requirePermission(permission) {
   return (req, res, next) => {
     const permissions = permissionsFor(req.user);
-    if (!permissions.has('*') && !permissions.has(permission)) {
-      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals.requestId } });
+    const required = Array.isArray(permission) ? permission : [permission];
+    if (!permissions.has('*') && !required.some(p => permissions.has(p))) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Insufficient permission', requestId: res.locals?.requestId } });
     }
     return next();
   };

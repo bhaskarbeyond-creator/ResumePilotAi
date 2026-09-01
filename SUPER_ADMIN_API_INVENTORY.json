@@ -1,0 +1,418 @@
+[
+  {
+    "path": "/api/admin/payment-settings",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai-settings",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/blog/categories",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/blog/categories/:categoryId",
+    "methods": "PATCH",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/blog/categories/:categoryId",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/blog/posts/:postId",
+    "methods": "PATCH",
+    "consumerCount": 0,
+    "consumers": []
+  },
+  {
+    "path": "/api/admin/blog/posts/:postId",
+    "methods": "DELETE",
+    "consumerCount": 0,
+    "consumers": []
+  },
+  {
+    "path": "/api/admin/blog/publish-due",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/blogManagement/BlogManagement.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/health-summary",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/settings/SystemHealthSettings.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/system-health-settings",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/settings/SystemHealthSettings.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/settings",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/settings/:category",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai-settings",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai/test-provider",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai/fetch-models",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai/quota-stats",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai/quota-limits",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ai/reset-quota",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/adminAiSettings.js"
+    ]
+  },
+  {
+    "path": "/api/admin/payment-settings",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/coupons",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/coupons/:code",
+    "methods": "PUT",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/coupons/:code",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/payment/test-provider",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/twilio-settings",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/settings/TwilioSmsSettings.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/twilio-settings",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/settings/TwilioSmsSettings.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/firebase-service-account",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/settings/FirebaseSettings.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/firebase-service-account",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "components/admin/settings/FirebaseSettings.jsx"
+    ]
+  },
+  {
+    "path": "/api/admin/payments/refund",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/employer-applications",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/companies",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/jobs",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/reviews",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ads",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/payment-orders",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/blog/categories",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/blog/posts",
+    "methods": "GET",
+    "consumerCount": 0,
+    "consumers": []
+  },
+  {
+    "path": "/api/admin/employer-applications/:uid",
+    "methods": "PATCH",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ads",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/ads/:adId",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/pages",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/pages/:slug",
+    "methods": "PUT",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/pages/:slug",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/website-meta",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/trusted-by",
+    "methods": "GET",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/trusted-by",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/trusted-by/:logoId",
+    "methods": "PATCH",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/trusted-by/:logoId",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/reviews",
+    "methods": "POST",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/reviews/:reviewId",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/companies/:companyId",
+    "methods": "PATCH",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/jobs/:jobId",
+    "methods": "PATCH",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/jobs/:jobId",
+    "methods": "DELETE",
+    "consumerCount": 1,
+    "consumers": [
+      "services/api/platform.js"
+    ]
+  },
+  {
+    "path": "/api/admin/delete-user,/api/auth/purge-orphaned-auth",
+    "methods": "POST",
+    "consumerCount": 0,
+    "consumers": []
+  }
+]

@@ -4,7 +4,7 @@ import { FaFilePdf, FaCheck, FaTimes, FaSpinner } from 'react-icons/fa';
 
 const ExportPdfSettings = () => {
     const [exportConfig, setExportConfig] = useState({
-        websiteDomain: 'ai-resume-builder.local',
+        websiteDomain: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
         backendExportUrl: '',
         renderTimeout: 60000,
         paperFormat: 'A4',

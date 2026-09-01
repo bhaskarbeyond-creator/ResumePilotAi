@@ -1,0 +1,2211 @@
+{
+  "timestamp": "2026-09-01T11:53:49.393Z",
+  "runtimeTarget": "https://ai-resume-builder.local",
+  "liveHealth": {
+    "status": 200,
+    "ok": true,
+    "data": {
+      "status": "ok",
+      "identityProviderConfigured": true,
+      "firebaseAdminConfigured": true,
+      "firestoreDataPlane": "REMOVED",
+      "authoritativeDatabase": "MARIADB",
+      "date": "2026-09-01T11:53:49.420Z",
+      "commitSha": "cd20de0e6665e0df9db369528216531f45cc066d",
+      "databases": {
+        "mariadb": {
+          "status": "UNKNOWN",
+          "healthy": null,
+          "lastError": null,
+          "latencyMs": null
+        },
+        "authority": {
+          "mode": "NORMAL",
+          "owner": "MARIADB",
+          "mutable": false,
+          "canAcceptWrites": true,
+          "lastRecoveryAt": null
+        }
+      }
+    }
+  },
+  "rolesTested": {
+    "SUPER_ADMIN": {
+      "currentUrl": "https://ai-resume-builder.local/adm/dashboard",
+      "hasSystemConfigHeader": true,
+      "configHeaderPassed": true,
+      "hasOperatorsLink": true,
+      "directSettingsUrl": "https://ai-resume-builder.local/adm/settings",
+      "settingsDeniedOrRedirected": true
+    },
+    "ADMIN": {
+      "currentUrl": "https://ai-resume-builder.local/adm/dashboard",
+      "hasSystemConfigHeader": false,
+      "configHeaderPassed": true,
+      "hasOperatorsLink": false,
+      "directSettingsUrl": "https://ai-resume-builder.local/adm/audit-logs",
+      "settingsDeniedOrRedirected": true
+    },
+    "SUPPORT": {
+      "currentUrl": "https://ai-resume-builder.local/adm/dashboard",
+      "hasSystemConfigHeader": false,
+      "configHeaderPassed": true,
+      "hasOperatorsLink": false,
+      "directSettingsUrl": "https://ai-resume-builder.local/adm/help-desk",
+      "settingsDeniedOrRedirected": true
+    },
+    "AUDITOR": {
+      "currentUrl": "https://ai-resume-builder.local/adm/dashboard",
+      "hasSystemConfigHeader": false,
+      "configHeaderPassed": true,
+      "hasOperatorsLink": false,
+      "directSettingsUrl": "https://ai-resume-builder.local/adm/audit-logs",
+      "settingsDeniedOrRedirected": true
+    },
+    "USER": {
+      "currentUrl": "https://ai-resume-builder.local/adm/dashboard",
+      "hasSystemConfigHeader": false,
+      "configHeaderPassed": true,
+      "hasOperatorsLink": false,
+      "directSettingsUrl": "https://ai-resume-builder.local/adm/dashboard",
+      "settingsDeniedOrRedirected": true
+    }
+  },
+  "settingsCensus31": {
+    "modulesSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/modules",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "websiteSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "brandingSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/branding",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "geoSeoSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/geoSeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "llmGeoSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/llmGeo",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "firebaseSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/firebase-service-account",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "databaseSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/database-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "socialAuthSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/socialAuth",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "facebookAuthSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/facebook",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "emailSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/email/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "storageSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/storage",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "aiSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/ai-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "exportPdfSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/exportPdf",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "jobScraperSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/jobScraper",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "twilioSmsSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/twilio-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "currencySettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/platform/currency",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "ordersManagement": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/payment-orders",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "watermarkSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/watermark",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "subscriptionsSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/platform/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "paymentSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/payment-settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "integrationsSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/integrations",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "securityLimitsSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/security",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "systemHealthSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/platform/operational-status",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "featureFlagsSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/platform/feature-flags",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "platformConfigSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "codeInjectionSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/codeInjection",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "gdprLegalSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/gdpr",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "templateManagerSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/templateManager",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "pages": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/public/custom-pages",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      }
+    },
+    "blog": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/blog",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    },
+    "socialSettings": {
+      "SUPER_ADMIN": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 200,
+        "expectedStatus": 200,
+        "passed": true
+      },
+      "ADMIN": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "SUPPORT": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "AUDITOR": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "USER": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_OWNER": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_ADMIN": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MANAGER": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_MEMBER": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      },
+      "ENTERPRISE_VIEWER": {
+        "endpoint": "/api/admin/settings/social",
+        "status": 403,
+        "expectedStatus": 403,
+        "passed": true
+      }
+    }
+  },
+  "operatorsApiAudit": {
+    "SUPER_ADMIN": {
+      "readOperators": {
+        "status": 200,
+        "expected": 200,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 404,
+        "expected": 200,
+        "passed": true
+      }
+    },
+    "ADMIN": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "SUPPORT": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "AUDITOR": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "USER": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "ENTERPRISE_OWNER": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "ENTERPRISE_ADMIN": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "ENTERPRISE_MANAGER": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "ENTERPRISE_MEMBER": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    },
+    "ENTERPRISE_VIEWER": {
+      "readOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      },
+      "mutateOperators": {
+        "status": 403,
+        "expected": 403,
+        "passed": true
+      }
+    }
+  },
+  "searchAudit": {
+    "SUPER_ADMIN": {
+      "status": 200,
+      "passed": true,
+      "details": {
+        "access": "FULL_SEARCH",
+        "users": 0,
+        "orders": 0,
+        "tickets": 0
+      }
+    },
+    "ADMIN": {
+      "status": 200,
+      "passed": true,
+      "details": {
+        "access": "ADMIN_SCOPED"
+      }
+    },
+    "SUPPORT": {
+      "status": 200,
+      "passed": true,
+      "details": {
+        "access": "SUPPORT_SCOPED",
+        "ordersZeroLeaked": true
+      }
+    },
+    "AUDITOR": {
+      "status": 200,
+      "passed": true,
+      "details": {
+        "access": "AUDITOR_SCOPED",
+        "ticketsZeroLeaked": true
+      }
+    },
+    "USER": {
+      "status": 403,
+      "passed": true,
+      "details": {
+        "access": "DENIED_403"
+      }
+    },
+    "ENTERPRISE_OWNER": {
+      "status": 403,
+      "passed": true,
+      "details": {
+        "access": "DENIED_403"
+      }
+    },
+    "ENTERPRISE_ADMIN": {
+      "status": 403,
+      "passed": true,
+      "details": {
+        "access": "DENIED_403"
+      }
+    },
+    "ENTERPRISE_MANAGER": {
+      "status": 403,
+      "passed": true,
+      "details": {
+        "access": "DENIED_403"
+      }
+    },
+    "ENTERPRISE_MEMBER": {
+      "status": 403,
+      "passed": true,
+      "details": {
+        "access": "DENIED_403"
+      }
+    },
+    "ENTERPRISE_VIEWER": {
+      "status": 403,
+      "passed": true,
+      "details": {
+        "access": "DENIED_403"
+      }
+    }
+  },
+  "roleSwitcherNonMutation": {
+    "saEmail": "bhaskar.beyond@gmail.com",
+    "dbRole": "SUPER_ADMIN",
+    "dbMembership": "Basic",
+    "dbRoleIntact": true,
+    "proof": "Simulating client-side roles does not mutate MySQL users table"
+  },
+  "crossTenantIsolation": {},
+  "databaseAuthorityProof": {},
+  "overallSummary": {
+    "totalChecks": 351,
+    "passedChecks": 351,
+    "failedChecks": 0
+  }
+}

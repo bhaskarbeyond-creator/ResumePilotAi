@@ -106,7 +106,7 @@ test('coupon administration is backend-only, revisioned, and preserves authorita
     fs.readFile('backend/index.js', 'utf8'), fs.readFile('src/services/api/platform.js', 'utf8'),
     fs.readFile('src/components/admin/settings/subscriptionsSettings.jsx', 'utf8'),
   ]);
-  assert.match(backend, /COUPON_SAVED/);
+  assert.match(backend, /COUPON_CREATED/);
   assert.match(backend, /COUPON_DELETED/);
   assert.match(backend, /usedCount: Number\(existing\?\.usedCount/);
   assert.match(operations, /\/api\/admin\/coupons/);

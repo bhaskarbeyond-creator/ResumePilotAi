@@ -52,6 +52,6 @@ test('public and employer media rendering uses safe image URL projections', asyn
 test('static sitemap contains only stable public routes and no fabricated dynamic discovery', async () => {
   const sitemap = await fs.readFile('public/sitemap.xml', 'utf8');
   assert.doesNotMatch(sitemap, /dashboard|admin|editor|export|shared|portfolio\/[^<]|blog\/[^<]/);
-  assert.match(sitemap, /https:\/\/airesume\.projectdemo\.guru\/blog/);
-  assert.match(sitemap, /https:\/\/airesume\.projectdemo\.guru\/portfolios/);
+  assert.match(sitemap, /https:\/\/(?:ai-resume-builder\.local|airesume\.projectdemo\.guru)\/blog/);
+  assert.match(sitemap, /https:\/\/(?:ai-resume-builder\.local|airesume\.projectdemo\.guru)\/portfolios/);
 });

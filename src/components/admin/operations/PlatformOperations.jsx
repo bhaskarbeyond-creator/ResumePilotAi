@@ -160,7 +160,15 @@ export default function PlatformOperations() {
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2"><FiTool className="text-indigo-600" /> Platform Operations</h1>
           <p className="text-sm text-slate-500 mt-1">Encryption, observability, backup capability, maintenance, and announcements. Super Admin mutations only.</p>
         </div>
-        <button type="button" onClick={load} className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold"><FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh</button>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-800 hover:bg-slate-50 transition shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+        >
+          <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {error && <div role="alert" className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-800 flex justify-between"><span className="flex items-center gap-2"><FiAlertTriangle />{error}</span><button type="button" className="font-bold underline" onClick={load}>Retry</button></div>}

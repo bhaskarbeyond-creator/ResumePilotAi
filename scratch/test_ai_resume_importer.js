@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 import { chromium } from 'playwright';
 
 (async () => {
@@ -8,15 +9,15 @@ import { chromium } from 'playwright';
   await page.setViewportSize({ width: 1280, height: 800 });
 
   try {
-    console.log('Step 1: Navigating to http://ai-resume-builder.local/');
-    await page.goto('http://ai-resume-builder.local/', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    console.log('Step 1: Navigating to ${process.env.TARGET_URL || process.env.APP_URL}/');
+    await page.goto((process.env.TARGET_URL || process.env.APP_URL), { waitUntil: 'domcontentloaded', timeout: 15000 });
 
     await page.evaluate(() => {
       localStorage.setItem('user', 'e2e_test_user_777');
     });
 
-    console.log('Step 2: Navigating to http://ai-resume-builder.local/build-resume/heading');
-    await page.goto('http://ai-resume-builder.local/build-resume/heading', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    console.log('Step 2: Navigating to ${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading');
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading', { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(2500);
 
     const buttonTexts = await page.locator('button').allInnerTexts();

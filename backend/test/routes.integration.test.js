@@ -30,7 +30,7 @@ setTokenVerifierForTests(async token => {
   if (token === 'unverified') return { uid: 'user-2', email: 'pending@example.com', email_verified: false, role: 'USER', auth_time: now };
   if (token === 'admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now };
   if (token === 'employer') return { uid: 'employer-1', email: 'employer@example.com', email_verified: true, role: 'EMPLOYER', employer: true, auth_time: now };
-  if (token === 'unverified-admin') return { uid: 'admin-2', email: 'admin2@example.com', email_verified: false, role: 'ADMIN', auth_time: now };
+  if (token === 'unverified-admin') return { uid: 'admin-2', email: 'admin2@example.com', email_verified: false, role: 'SUPER_ADMIN', superAdmin: true, auth_time: now };
   if (token === 'super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now };
   if (token === 'stale-admin') return { uid: 'admin-1', email: 'admin@example.com', email_verified: true, role: 'ADMIN', auth_time: now - 3600 };
   if (token === 'stale-super-admin') return { uid: 'super-1', email: 'super@example.com', email_verified: true, role: 'SUPER_ADMIN', auth_time: now - 3600 };
@@ -122,13 +122,13 @@ test('admin lacking super-admin role cannot mutate or test AI provider settings'
 });
 
 test('email settings projections expose configured state without runtime credentials', async () => {
-  const runtime = await request(app).get('/api/email/admin/settings').set(bearer('admin'));
+  const runtime = await request(app).get('/api/email/admin/settings').set(bearer('super-admin'));
   assert.equal(runtime.status, 200);
   assert.equal(runtime.body.settings.smtp.passwordConfigured, true);
   assert.equal(Object.hasOwn(runtime.body.settings.smtp, 'password'), false);
   assert.doesNotMatch(JSON.stringify(runtime.body), /fixture-mail-password/);
 
-  const generic = await request(app).get('/api/admin/settings').set(bearer('admin'));
+  const generic = await request(app).get('/api/admin/settings').set(bearer('super-admin'));
   assert.equal(generic.status, 200);
   if (generic.body.settings.smtp) {
     assert.equal(generic.body.settings.smtp.enabled, true);
@@ -140,6 +140,7 @@ test('email settings projections expose configured state without runtime credent
 mariaTest('Twilio settings persist in the canonical MySQL secret namespace without response disclosure', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
+  const [snapshot] = await pool.query("SELECT category, data, revision FROM system_settings WHERE category IN ('admin_configuration','public_config')");
   await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')");
   try {
     const authToken = 'fixture-twilio-auth-token-1234';
@@ -152,14 +153,17 @@ mariaTest('Twilio settings persist in the canonical MySQL secret namespace witho
     const [rows] = await pool.query("SELECT data FROM system_settings WHERE category = 'admin_configuration'");
     const stored = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
     assert.equal(stored.twilio.authToken, authToken);
-    const loaded = await request(app).get('/api/admin/twilio-settings').set(bearer('admin'));
+    const loaded = await request(app).get('/api/admin/twilio-settings').set(bearer('super-admin'));
     assert.equal(loaded.status, 200);
     assert.equal(loaded.body.settings.accountSidConfigured, true);
     assert.equal(Object.hasOwn(loaded.body.settings, 'authToken'), false);
-    const bypass = await request(app).post('/api/admin/settings/twilio').set(bearer('admin')).send({ data: { authToken }, expectedRevision: 0 });
+    const bypass = await request(app).post('/api/admin/settings/twilio').set(bearer('super-admin')).send({ data: { authToken }, expectedRevision: 0 });
     assert.equal(bypass.status, 400);
   } finally {
     await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')").catch(() => {});
+    for (const row of snapshot) {
+      await pool.query("INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});
+    }
   }
 });
 
@@ -168,19 +172,19 @@ mariaTest('Ads create and revision-safe delete persist through audited backend r
   const pool = getPool();
   await pool.query("DELETE FROM canonical_documents WHERE entity_type = 'ads'");
   try {
-    const created = await request(app).post('/api/admin/ads').set(bearer('admin')).send({ name: 'Release banner', imageLink: 'https://cdn.example.com/banner.png', destinationLink: '/pricing' });
+    const created = await request(app).post('/api/admin/ads').set(bearer('super-admin')).send({ name: 'Release banner', imageLink: 'https://cdn.example.com/banner.png', destinationLink: '/pricing' });
     assert.equal(created.status, 200);
     assert.equal(created.body.item.revision, 1);
     const adId = created.body.item.id;
     const [rows] = await pool.query("SELECT payload FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ?", [adId]);
     const stored = typeof rows[0].payload === 'string' ? JSON.parse(rows[0].payload) : rows[0].payload;
     assert.equal(stored.name, 'Release banner');
-    const stale = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 999 });
+    const stale = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('super-admin')).send({ expectedRevision: 999 });
     assert.equal(stale.status, 409);
     assert.ok(['ADMIN_TARGET_CHANGED', 'CAS_CONFLICT'].includes(stale.body.code), `conflict code, got ${stale.body.code}`);
     const [stillRows] = await pool.query("SELECT entity_id FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ? AND deleted_at IS NULL", [adId]);
     assert.equal(stillRows.length, 1);
-    const removed = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('admin')).send({ expectedRevision: 1 });
+    const removed = await request(app).delete(`/api/admin/ads/${adId}`).set(bearer('super-admin')).send({ expectedRevision: 1 });
     assert.equal(removed.status, 200);
     const [goneRows] = await pool.query("SELECT entity_id FROM canonical_documents WHERE entity_type = 'ads' AND entity_id = ? AND deleted_at IS NULL", [adId]);
     assert.equal(goneRows.length, 0);
@@ -276,13 +280,14 @@ mariaTest('employer job create, pause, edit, and delete routes are owned, audite
 mariaTest('generic settings preserve omitted and blank backend secrets without browser disclosure', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
+  const [snapshot] = await pool.query("SELECT category, data, revision FROM system_settings WHERE category IN ('admin_configuration','public_config')");
   await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')");
   await pool.query("INSERT INTO system_settings (category, data, revision) VALUES ('admin_configuration', ?, 2)", [JSON.stringify({
     socialAuth: { linkedinClientId: 'existing-client', linkedinClientSecret: 'fixture-existing-client-secret', nested: { accessToken: 'fixture-existing-access-token' } },
     _revisions: { socialAuth: 2 },
   })]);
   try {
-    const response = await request(app).post('/api/admin/settings/socialAuth').set(bearer('admin')).send({
+    const response = await request(app).post('/api/admin/settings/socialAuth').set(bearer('super-admin')).send({
       data: { linkedinClientId: 'updated-client', linkedinClientSecret: '' }, expectedRevision: 2,
     });
     assert.equal(response.status, 200);
@@ -295,17 +300,20 @@ mariaTest('generic settings preserve omitted and blank backend secrets without b
     const [pubRows] = await pool.query("SELECT data FROM system_settings WHERE category = 'public_config'");
     const pubConfig = typeof pubRows[0].data === 'string' ? JSON.parse(pubRows[0].data) : pubRows[0].data;
     assert.equal(pubConfig.socialAuth.linkedinClientSecret, undefined);
-    const providerStatus = await request(app).get('/api/auth/linkedin/test-credentials').set(bearer('admin'));
+    const providerStatus = await request(app).get('/api/auth/linkedin/test-credentials').set(bearer('super-admin'));
     assert.equal(providerStatus.status, 200);
     assert.equal(providerStatus.body.configured, true);
     assert.doesNotMatch(JSON.stringify(providerStatus.body), /fixture-existing-client-secret/);
   } finally {
     await pool.query("DELETE FROM system_settings WHERE category IN ('admin_configuration','public_config')").catch(() => {});
+    for (const row of snapshot) {
+      await pool.query("INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});
+    }
   }
 });
 
 test('email runtime save rejects unencrypted or malformed transport configuration', async () => {
-  const response = await request(app).post('/api/email/admin/save-smtp').set(bearer('admin')).send({
+  const response = await request(app).post('/api/email/admin/save-smtp').set(bearer('super-admin')).send({
     expectedRevision: 0,
     smtp: { host: 'smtp.example.com', port: 25, encryption: 'none', username: 'mailer@example.com' },
   });
@@ -326,9 +334,9 @@ test('Firebase credential status loads without recent auth but runtime rotation 
 });
 
 test('loading non-secret AI settings does not require recent authentication', async () => {
-  // The settings store (MySQL) is authoritative and available; a stale admin
+  // The settings store (MySQL) is authoritative and available; a stale super-admin
   // (no recent re-auth) can still READ the non-secret projection.
-  const response = await request(app).get('/api/admin/ai-settings').set(bearer('stale-admin'));
+  const response = await request(app).get('/api/admin/ai-settings').set(bearer('stale-super-admin'));
   assert.equal(response.status, 200);
   assert.ok(response.body.settings || response.body.provider, 'non-secret AI settings must load');
   assert.doesNotMatch(JSON.stringify(response.body), /server-only-gemini-key|gemini-secret-value/);
@@ -337,6 +345,7 @@ test('loading non-secret AI settings does not require recent authentication', as
 mariaTest('fresh authorized admin reaches revisioned AI settings persistence without secret disclosure', async () => {
   const { getPool } = require('../database/mysql');
   const pool = getPool();
+  const [snapshot] = await pool.query("SELECT category, data, revision FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
   await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')");
   try {
     const saved = await request(app).post('/api/admin/ai-settings').set(bearer('super-admin')).send({ provider: 'gemini', model: 'gemini-2.0-flash', geminiApiKey: 'gemini-secret-value', expectedRevision: 0, enableFallback: true });
@@ -345,17 +354,20 @@ mariaTest('fresh authorized admin reaches revisioned AI settings persistence wit
     assert.equal(saved.body.revision, 1);
     assert.equal(saved.body.configuredProviders.gemini, true);
     assert.doesNotMatch(JSON.stringify(saved.body), /gemini-secret-value/);
-    const loaded = await request(app).get('/api/admin/ai-settings').set(bearer('admin'));
+    const loaded = await request(app).get('/api/admin/ai-settings').set(bearer('super-admin'));
     assert.equal(loaded.status, 200);
     assert.equal(loaded.body.revision, 1);
     assert.doesNotMatch(JSON.stringify(loaded.body), /gemini-secret-value/);
   } finally {
     await pool.query("DELETE FROM system_settings WHERE category IN ('public_config','ai_providers','system_settings')").catch(() => {});
+    for (const row of snapshot) {
+      await pool.query("INSERT INTO system_settings (category, data, revision) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), revision = VALUES(revision)", [row.category, typeof row.data === 'string' ? row.data : JSON.stringify(row.data), row.revision]).catch(() => {});
+    }
   }
 });
 
 test('legacy shared provider-test endpoint is retired instead of reporting false success', async () => {
-  const response = await request(app).post('/api/admin/test-connection').set(bearer('admin')).send({ type: 'gemini' });
+  const response = await request(app).post('/api/admin/test-connection').set(bearer('super-admin')).send({ type: 'gemini' });
   assert.equal(response.status, 404);
 });
 

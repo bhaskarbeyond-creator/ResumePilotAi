@@ -612,23 +612,25 @@ export default function PlatformTenants() {
             Global multi-tenant directory, provisioning controls, and organizational lifecycle management.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           {error !== 'ENTERPRISE_DISABLED' && (
             <>
               <button
                 type="button"
                 onClick={fetchTenants}
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-800 hover:bg-slate-50 transition shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
               >
-                <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Refresh
+                <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowProvisionModal(true)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold hover:bg-indigo-700 transition shadow-xs cursor-pointer whitespace-nowrap"
               >
-                <FiPlus /> Provision Tenant
+                <FiPlus className="h-3.5 w-3.5 text-indigo-100" />
+                <span>Provision Tenant</span>
               </button>
             </>
           )}
@@ -1223,6 +1225,40 @@ export default function PlatformTenants() {
                               <p className="text-[10px] text-slate-400 mt-0.5">{item?.source || 'measured'}</p>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Workspaces & Organizational Units */}
+                      {selectedDetail?.workspaces?.items && selectedDetail.workspaces.items.length > 0 && (
+                        <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                              <FiLayers className="text-indigo-600" /> Configured Workspaces &amp; Departments ({selectedDetail.workspaces.items.length})
+                            </h4>
+                            <span className="text-[10px] text-slate-400 font-mono">Authoritative MariaDB Store</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {selectedDetail.workspaces.items.map(ws => (
+                              <div key={ws.id} className="p-3 bg-white border border-slate-200/80 rounded-xl flex items-center justify-between gap-2 shadow-2xs">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-slate-900 truncate">{ws.name}</span>
+                                    {ws.isDefault && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+                                        Primary
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 font-mono truncate mt-0.5">ID: {ws.id}</p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                  ws.lifecycleState === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                }`}>
+                                  {ws.lifecycleState || 'ACTIVE'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaBuilding, FaSpinner, FaExclamationTriangle, FaCheckCircle, FaExclamationCircle, FaImage } from 'react-icons/fa';
 import { withTranslation } from 'react-i18next';
 import { createCompany } from '../../../services/api/platform';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import LocationAutocomplete from '../../JobsListings/LocationAutocomplete';
 import { sanitizeImageUrl, sanitizeUrl } from '../../../utils/sanitizeHtml';
 

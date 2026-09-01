@@ -471,6 +471,11 @@ class InMemoryRepository {
         this._coupons.set(code, { code, ...coupon });
         return this._coupons.get(code);
     }
+    async deleteCoupon(code) {
+        const cCode = String(code).toUpperCase();
+        this._coupons.delete(cCode);
+        return { success: true, deleted: true, code: cCode };
+    }
     async getCouponRedemption({ couponCode, userId }) {
         const key = `${couponCode}:${userId}`;
         return this._couponRedemptions.get(key) || null;
@@ -582,8 +587,9 @@ class InMemoryRepository {
         this._stats.set(key, cur + amount);
         return true;
     }
-    async saveContactMessage(msg) {
-        const saved = { id: this._id('msg'), createdAt: new Date().toISOString(), ...msg };
+    async saveContactMessage(arg1, arg2) {
+        const msg = (arg2 && typeof arg2 === 'object') ? { id: arg1, ...arg2 } : (arg1 || {});
+        const saved = { id: msg.id || this._id('msg'), createdAt: new Date().toISOString(), ...msg };
         this._contactMessages.push(saved);
         return saved;
     }

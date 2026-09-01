@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './backend/.env' });
 const { chromium } = require('playwright');
 const path = require('path');
 
@@ -18,13 +19,13 @@ const path = require('path');
     });
 
     // Set auth
-    await page.goto('http://ai-resume-builder.local/build-resume/heading');
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading');
     await page.evaluate(() => {
         localStorage.setItem('authUser', JSON.stringify({uid:'test123',email:'test@test.com',displayName:'Test User'}));
     });
 
     // Navigate with import=true
-    await page.goto('http://ai-resume-builder.local/build-resume/heading?import=true');
+    await page.goto('${process.env.TARGET_URL || process.env.APP_URL}/build-resume/heading?import=true');
     await page.waitForTimeout(3000);
 
     // Check modal

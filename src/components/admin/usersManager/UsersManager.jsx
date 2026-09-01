@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FiUsers, FiUser, FiUserCheck, FiShield, FiCreditCard, FiAlertTriangle, FiSearch, FiFilter, FiPlus, FiDownload, FiRefreshCw, FiMoreVertical, FiEdit2, FiTrash2, FiLock, FiUnlock, FiBriefcase, FiCpu, FiCheck, FiChevronLeft, FiChevronRight, FiSliders, FiDollarSign, FiKey, FiCopy, FiShieldOff } from 'react-icons/fi';
 import fire from '../../../conf/fire';
-import { getAdminUsers, getPlatformTenants, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, exportUserData } from '../../../services/platformApi';
+import { getAdminUsers, getPlatformTenants, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, exportUserData, bulkAdminUsersAction } from '../../../services/platformApi';
 
 import { toggleUserSuspension, deleteUserByAdmin } from '../../../services/api/platform';
 import useConfirmDialog from '../../../hooks/useConfirmDialog';
@@ -329,27 +329,32 @@ export default function UsersManager() {
   const handleBulkSuspend = async (willSuspend) => {
     if (selectedUserIds.size === 0) return;
     const targetUids = Array.from(selectedUserIds).filter(id => id !== currentUser?.uid);
+    if (!targetUids.length) {
+      setError('Cannot apply bulk actions to your own account.');
+      return;
+    }
     setBulkBusy(true);
     setError('');
     setSuccess('');
-    let succeeded = 0;
-    const failed = [];
-    for (const id of targetUids) {
-      try {
-        await toggleUserSuspension(id, willSuspend);
-        succeeded++;
-      } catch (err) {
-        failed.push(err.message || id);
+    try {
+      const res = await bulkAdminUsersAction({
+        uids: targetUids,
+        action: willSuspend ? 'suspend' : 'activate',
+      });
+      setSelectedUserIds(new Set());
+      if (res?.success) {
+        setSuccess(`Bulk action completed: ${res.summary?.succeeded || targetUids.length} user(s) ${willSuspend ? 'suspended' : 'restored'}.`);
+      } else {
+        const failedCount = res?.summary?.failed || 0;
+        const succeededCount = res?.summary?.succeeded || 0;
+        setError(`Bulk action partial: ${succeededCount} updated, ${failedCount} failed.`);
       }
+      await loadUsers();
+    } catch (err) {
+      setError(err.message || 'Bulk operation failed.');
+    } finally {
+      setBulkBusy(false);
     }
-    setBulkBusy(false);
-    setSelectedUserIds(new Set());
-    if (failed.length > 0) {
-      setError(`Some accounts could not be updated: ${failed.join(', ')}`);
-    } else {
-      setSuccess(`Bulk action completed: ${succeeded} user(s) ${willSuspend ? 'suspended' : 'restored'}.`);
-    }
-    await loadUsers();
   };
 
   // Export CSV (neutralizes spreadsheet formulas to prevent CSV injection)
@@ -416,31 +421,33 @@ export default function UsersManager() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap shrink-0">
           <button
             type="button"
             onClick={handleExportCsv}
             disabled={loading || users.length === 0}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-200 transition flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-800 text-xs font-extrabold hover:bg-slate-50 transition inline-flex items-center justify-center gap-2 shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            <FiDownload /> Export CSV
+            <FiDownload className="h-3.5 w-3.5 text-slate-600" />
+            <span>Export CSV</span>
           </button>
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition flex items-center gap-1.5 shadow-xs"
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold hover:bg-indigo-700 transition inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer whitespace-nowrap"
           >
-            <FiPlus /> Provision User
+            <FiPlus className="h-3.5 w-3.5 text-indigo-100" />
+            <span>Provision User</span>
           </button>
           <button
             type="button"
             onClick={() => loadUsers()}
             disabled={loading}
-            className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition"
+            className="p-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition shadow-2xs cursor-pointer disabled:opacity-50"
             title="Refresh Directory"
             aria-label="Refresh"
           >
-            <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <FiRefreshCw className={`h-4 w-4 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -619,6 +626,19 @@ export default function UsersManager() {
           <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
             <FiRefreshCw className="h-8 w-8 animate-spin text-indigo-600" />
             <p className="text-xs font-bold uppercase tracking-wider">Fetching directory records…</p>
+          </div>
+        ) : error ? (
+          <div className="py-20 text-center text-slate-500 space-y-3">
+            <FiAlertTriangle className="h-10 w-10 mx-auto text-rose-500" />
+            <p className="text-sm font-bold text-slate-800">Failed to load user directory</p>
+            <p className="text-xs text-rose-600 max-w-md mx-auto font-mono">{error}</p>
+            <button
+              type="button"
+              onClick={() => loadUsers(pageToken)}
+              className="mt-2 px-3.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 border border-indigo-200 inline-flex items-center gap-1.5"
+            >
+              <FiRefreshCw className="h-3.5 w-3.5" /> Retry Directory Query
+            </button>
           </div>
         ) : users.length === 0 ? (
           <div className="py-20 text-center text-slate-400 space-y-2">

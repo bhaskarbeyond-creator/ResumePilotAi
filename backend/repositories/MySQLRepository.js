@@ -446,6 +446,7 @@ class MySQLRepository {
         }
         return {
             ...r,
+            id: r.id,
             userId: r.id,
             suspended: r.suspended === 1,
             cancellationRequested: r.cancellationRequested === 1,
@@ -1605,8 +1606,10 @@ class MySQLRepository {
         return { id: notifId, ...data };
     }
 
-    async saveContactMessage(msgId, data) {
+    async saveContactMessage(arg1, arg2) {
         const pool = this._getPool();
+        const msgId = (arg2 && typeof arg2 === 'object') ? arg1 : (arg1?.id || `msg_${Date.now()}`);
+        const data = (arg2 && typeof arg2 === 'object') ? arg2 : (arg1 || {});
         const values = {
             id: msgId,
             name: data.name || '',
@@ -2757,6 +2760,13 @@ class MySQLRepository {
             Object.values(values)
         );
         return { code: cCode, ...data };
+    }
+
+    async deleteCoupon(code) {
+        const pool = this._getPool();
+        const cCode = String(code).toUpperCase();
+        await pool.query('DELETE FROM coupons WHERE code = ?', [cCode]);
+        return { success: true, deleted: true, code: cCode };
     }
 
     async getCouponRedemption(redemptionId) {

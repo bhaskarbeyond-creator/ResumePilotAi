@@ -1,7 +1,7 @@
 import React, { Component, Suspense, lazy } from 'react';
 import './DashboardMain.scss';
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthContext } from '../../../main';
+import { AuthContext } from '../../../context/AuthContext';
 import Toasts from '../../Toasts/Toats';
 import fire from '../../../conf/fire';
 import ProfileDisplay from '../ProfileDisplay/ProfileDisplay';
@@ -325,12 +325,47 @@ class DashboardMain extends Component {
         };
         // ────────────────────────────────────────────────────────────────────────
 
+        const isSuperAdminUserView = typeof window !== 'undefined' && (sessionStorage.getItem('superadmin_role_view') === 'USER' || new URLSearchParams(window.location.search).get('superadmin_view') === '1');
         const resolvedUser = this.state.user || this.context?.uid || null;
+
+        const roleViewBanner = isSuperAdminUserView ? (
+            <div
+                role="status"
+                aria-live="polite"
+                data-testid="superadmin-user-view-banner"
+                className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 border-b border-amber-300 bg-linear-to-r from-amber-500 via-amber-600 to-amber-500 px-4 py-2.5 text-white shadow-md"
+            >
+                <div className="flex items-center gap-2 text-xs font-bold">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs">👑</span>
+                    <span>
+                        <strong>Super Admin Role View:</strong> Simulating candidate user dashboard. Real Super Admin authority is preserved.
+                    </span>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => {
+                        sessionStorage.removeItem('superadmin_role_view');
+                        window.location.href = '/adm/dashboard';
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1 text-xs font-black text-amber-900 transition hover:bg-amber-50 cursor-pointer shadow-xs"
+                    data-testid="return-from-user-view-button"
+                >
+                    Return to Super Admin Console →
+                </button>
+            </div>
+        ) : null;
+
         if (!resolvedUser) {
-            return <Spinner />;
+            return (
+                <div className="min-h-screen bg-slate-50">
+                    {roleViewBanner}
+                    <Spinner />
+                </div>
+            );
         }
         return (
             <div className="dashboardWrapper" style={{ overflow: 'hidden' }}>
+                {roleViewBanner}
                 {/* Floating Mobile Sidebar Toggle */}
                 <button
                     onClick={() => {

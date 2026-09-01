@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AuthContext } from '../main';
+import { AuthContext } from '../context/AuthContext';
 import { enterpriseFetch } from './enterpriseApi';
 
 const EnterpriseTenantContext = createContext(null);
@@ -60,7 +60,8 @@ export function EnterpriseTenantProvider({ children }) {
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const paramTenantId = urlParams?.get('tenant') || '';
       const paramWorkspaceId = urlParams?.get('workspace') || '';
-      const requestedTenantId = tenantId || paramTenantId || readStorage(tenantStorageKey(user.uid));
+      const simulatedTenant = readStorage('superadmin_enterprise_tenant');
+      const requestedTenantId = tenantId || paramTenantId || simulatedTenant || readStorage(tenantStorageKey(user.uid));
       const requestedWorkspaceId = workspaceId || paramWorkspaceId || (requestedTenantId ? readStorage(workspaceStorageKey(user.uid, requestedTenantId)) : '');
       const [tenantList, active] = await Promise.all([
         enterpriseFetch('/api/enterprise/tenants'),
@@ -82,6 +83,8 @@ export function EnterpriseTenantProvider({ children }) {
         workspace: active.workspace || null,
         // Server-derived capability for the platform administration surface.
         platformAdmin: active.platformAdmin === true,
+        simulatedRole: active.context?.simulatedRole || null,
+        isSimulating: Boolean(active.context?.simulatedRole),
       };
       setState(next);
       return next;

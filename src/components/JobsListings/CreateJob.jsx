@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaExclamationTriangle } from 'react-icons/fa';
 import HomepageNavbar from '../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../Dashboard2/elements/HomepageFooter';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../services/api/platform';
 import EmployerApplicationForm from './EmployerApplicationForm';
 import countries from './countries';

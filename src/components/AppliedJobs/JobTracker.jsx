@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { AuthContext } from '../../main';
+import { AuthContext } from '../../context/AuthContext';
 import { createTrackedJob, deleteTrackedJob, getTrackedJobs, updateTrackedJob } from '../../services/api/platform';
 import { filterAndSortTrackedJobs, JOB_TRACKER_STATUSES, validateTrackedJob } from '../../utils/jobTracker';
 

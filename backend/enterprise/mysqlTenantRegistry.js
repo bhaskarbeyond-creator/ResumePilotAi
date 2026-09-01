@@ -229,7 +229,7 @@ function validateTenantRecord(record) {
     id: String(record.id).toLowerCase(),
     lifecycleState,
     isolationTier: normalizeTier(record.isolationTier),
-    dataPlane: normalizeDataPlane(record.dataPlane ? parseJsonField(record.dataPlane, {}) : record),
+    dataPlane: normalizeDataPlane(record.dataPlane ? parseJsonField(record.dataPlane, {}) : DEFAULT_DATA_PLANE),
     createdAt: record.createdAt || record.created_at || null,
     updatedAt: record.updatedAt || record.updated_at || null,
   };
@@ -1357,6 +1357,23 @@ class MySqlTenantRegistry {
     return rows.map(r => ({ ...r, isDefault: Boolean(r.isDefault) }));
   }
 
+  async listAccessibleWorkspaces({ tenantId, principalId, roles = [] }) {
+    this.assertAvailable();
+    tenantId = assertUuid(tenantId, 'Tenant identifier');
+    const workspaces = await this.listWorkspaces(tenantId);
+    if (hasTenantWideWorkspaceAccess(roles)) return workspaces;
+
+    const [rows] = await this.pool.query(
+      'SELECT workspaceId FROM enterprise_memberships WHERE tenantId = ? AND principalId = ? AND status = "ACTIVE"',
+      [tenantId, principalId]
+    );
+    const accessibleWorkspaceIds = new Set(rows.map(r => r.workspaceId).filter(Boolean));
+    if (accessibleWorkspaceIds.size === 0) {
+      return workspaces.filter(w => w.isDefault);
+    }
+    return workspaces.filter(w => accessibleWorkspaceIds.has(w.id));
+  }
+
   async updateWorkspace({ tenantId, workspaceId, name }) {
     this.assertAvailable();
     tenantId = assertUuid(tenantId, 'Tenant identifier');
@@ -1462,9 +1479,16 @@ class MySqlTenantRegistry {
     return rows[0];
   }
 
-  async listTeams(tenantId, { workspaceId = null } = {}) {
+  async listTeams(tenantIdOrOpts, opts = {}) {
     this.assertAvailable();
+    let tenantId = tenantIdOrOpts;
+    let workspaceId = opts.workspaceId || null;
+    if (typeof tenantIdOrOpts === 'object' && tenantIdOrOpts !== null) {
+      tenantId = tenantIdOrOpts.tenantId;
+      workspaceId = tenantIdOrOpts.workspaceId || null;
+    }
     tenantId = assertUuid(tenantId, 'Tenant identifier');
+    if (workspaceId) workspaceId = assertUuid(workspaceId, 'Workspace identifier');
     const sql = workspaceId
       ? 'SELECT * FROM enterprise_teams WHERE tenantId = ? AND workspaceId = ? ORDER BY name ASC'
       : 'SELECT * FROM enterprise_teams WHERE tenantId = ? ORDER BY name ASC';

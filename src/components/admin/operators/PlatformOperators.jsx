@@ -230,15 +230,15 @@ export default function PlatformOperators() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
           <button 
             type="button" 
             onClick={load} 
             disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-extrabold transition shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            <FiRefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> 
-            {loading ? 'Refreshing…' : 'Refresh Operators'}
+            <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Refreshing…' : 'Refresh Operators'}</span>
           </button>
         </div>
       </div>

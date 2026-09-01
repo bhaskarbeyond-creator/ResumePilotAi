@@ -32,7 +32,7 @@ const { createRoot } = await import('react-dom/client');
 const stubPlugin = {
     name: 'interview-coach-test-stubs',
     load(id) {
-        if (/\/src\/main\.jsx(\?.*)?$/.test(id)) {
+        if (/\/src\/context\/AuthContext(\.jsx)?(\?.*)?$/.test(id) || /\/src\/main\.jsx(\?.*)?$/.test(id)) {
             return "import { createContext } from 'react';\nexport const AuthContext = createContext(null);\n";
         }
         if (/\/src\/conf\/fire(\.\w+)?(\?.*)?$/.test(id)) {
@@ -81,7 +81,7 @@ function textOf(root) {
 
 async function renderComponent(vite, _root) {
     const module = await vite.ssrLoadModule('/src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx');
-    const AuthContextMod = await vite.ssrLoadModule('/src/main.jsx');
+    const AuthContextMod = await vite.ssrLoadModule('/src/context/AuthContext.jsx');
     const container = document.getElementById('test-root');
     const reactRoot = createRoot(container);
     await act(async () => {
@@ -348,7 +348,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
         await act(async () => {
             reactRoot.render(React.createElement('div')); // force full remount path
         });
-        const { component: Component2, AuthContext: AuthContext2 } = { component: (await vite.ssrLoadModule('/src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx')).default, AuthContext: (await vite.ssrLoadModule('/src/main.jsx')).AuthContext };
+        const { component: Component2, AuthContext: AuthContext2 } = { component: (await vite.ssrLoadModule('/src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx')).default, AuthContext: (await vite.ssrLoadModule('/src/context/AuthContext.jsx')).AuthContext };
         await act(async () => {
             reactRoot.render(React.createElement(AuthContext2.Provider, { value: mockUser() }, React.createElement(Component2)));
         });

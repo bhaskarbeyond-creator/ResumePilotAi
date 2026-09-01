@@ -1,7 +1,7 @@
 import { isAuthoritativeCreditNote, isAuthoritativeInvoice, printAuthoritativeCreditNote, printAuthoritativeInvoice } from '../../../utils/authoritativeInvoice';
 import React, { Component } from 'react';
-import { setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getAdminSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider } from '../../../services/api/platform';
-import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo, FaExclamationCircle, FaSyncAlt } from 'react-icons/fa';
+import { setSubscriptionsData, getAllCouponsAdmin, saveCoupon, deleteCoupon, getAdminSystemSettings, saveSystemSettings, getAllAdminTransactions, refundOrderTransaction, getAdminPaymentSettings, testAdminPaymentProvider, getPaymentWebhooks, replayPaymentWebhook } from '../../../services/api/platform';
+import { FaCheck, FaTimes, FaCreditCard, FaRupeeSign, FaDollarSign, FaToggleOn, FaToggleOff, FaPaypal, FaStripe, FaFlask, FaShieldAlt, FaTag, FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaPercent, FaEye, FaEyeSlash, FaDownload, FaSearch, FaFileInvoice, FaPrint, FaListAlt, FaCog, FaUndo, FaExclamationCircle, FaSyncAlt, FaBolt, FaCode } from 'react-icons/fa';
 import { useAdminSession } from '../AdminContext';
 
 class SubscriptionSetting extends Component {
@@ -74,6 +74,16 @@ class SubscriptionSetting extends Component {
             loadingInvoices: false,
             invoiceLedgerError: '',
             refundingDocId: null,
+
+            // Webhook Diagnostics & Telemetry State
+            webhooksList: [],
+            loadingWebhooks: false,
+            webhookSearchQuery: '',
+            webhookProviderFilter: 'all',
+            webhookError: '',
+            selectedWebhookPayload: null,
+            replayingWebhookId: null,
+            webhookSuccessNotice: null,
 
             // Sales Tax & GST Config State
             enableTax: false,
@@ -258,6 +268,36 @@ class SubscriptionSetting extends Component {
                 loadingInvoices: false,
                 invoiceLedgerError: err.message || 'The authoritative payment and invoice ledger is unavailable.',
             });
+        }
+    }
+
+    async fetchWebhooks() {
+        this.setState({ loadingWebhooks: true, webhookError: '', webhookSuccessNotice: null });
+        try {
+            const result = await getPaymentWebhooks({
+                provider: this.state.webhookProviderFilter !== 'all' ? this.state.webhookProviderFilter : undefined,
+                q: this.state.webhookSearchQuery || undefined,
+                limit: 50
+            });
+            this.setState({ webhooksList: result.events || [], loadingWebhooks: false });
+        } catch (err) {
+            console.error('Error loading payment webhooks:', err);
+            this.setState({ webhookError: err.message || 'Failed to load payment webhooks telemetry.', loadingWebhooks: false });
+        }
+    }
+
+    async handleReplayWebhook(eventId) {
+        if (!this.props.isSuperAdmin) return;
+        this.setState({ replayingWebhookId: eventId, webhookError: '', webhookSuccessNotice: null });
+        try {
+            const result = await replayPaymentWebhook(eventId);
+            this.setState({
+                webhookSuccessNotice: result.message || `Webhook event ${eventId} replayed successfully.`,
+                replayingWebhookId: null
+            });
+            this.fetchWebhooks();
+        } catch (err) {
+            this.setState({ webhookError: err.message || 'Replay operation failed.', replayingWebhookId: null });
         }
     }
 
@@ -515,7 +555,7 @@ class SubscriptionSetting extends Component {
 
     async handleToggleCouponsModule() {
         const nextState = !this.state.enableCouponsModule;
-        this.setState({ enableCouponsModule: nextState });
+        this.setState({ enableCouponsModule: nextState, couponErrorMsg: '', couponSuccessMsg: '' });
 
         try {
             await saveSystemSettings('modules', { enableCouponsModule: nextState });
@@ -533,6 +573,11 @@ class SubscriptionSetting extends Component {
             setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
         } catch (err) {
             console.error('Error toggling coupon module:', err);
+            this.setState({
+                enableCouponsModule: !nextState,
+                couponErrorMsg: err.message || 'Failed to update coupons module setting. Please try again.'
+            });
+            setTimeout(() => this.setState({ couponErrorMsg: '' }), 5000);
         }
     }
 
@@ -585,31 +630,43 @@ class SubscriptionSetting extends Component {
             return;
         }
 
-        const res = await saveCoupon(code.trim(), discount, description, active, {
-            expiryDate,
-            maxUses,
-            singleUsePerUser,
-            revision,
-        });
-
-        if (res.success) {
-            this.setState({
-                showCouponModal: false,
-                couponSuccessMsg: res.message,
+        try {
+            const res = await saveCoupon(code.trim(), discount, description, active, {
+                expiryDate,
+                maxUses,
+                singleUsePerUser,
+                revision,
             });
-            this.fetchAdminCoupons();
-            setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
-        } else {
-            this.setState({ couponErrorMsg: res.error });
+
+            if (res.success !== false) {
+                this.setState({
+                    showCouponModal: false,
+                    couponSuccessMsg: res.message || 'Coupon saved successfully!',
+                    couponErrorMsg: '',
+                });
+                await this.fetchAdminCoupons();
+                setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
+            } else {
+                this.setState({ couponErrorMsg: res.error || 'Failed to save coupon.' });
+            }
+        } catch (err) {
+            this.setState({ couponErrorMsg: err.message || 'Unable to save coupon.' });
         }
     }
 
     async handleToggleCouponStatus(c) {
-        const result = await saveCoupon(c.code, c.discount, c.description, !c.active, {
-            expiryDate: c.expiryDate, maxUses: c.maxUses, singleUsePerUser: c.singleUsePerUser, revision: c.revision,
-        });
-        if (!result.success) { this.setState({ couponErrorMsg: result.error || 'Coupon could not be updated.' }); return; }
-        await this.fetchAdminCoupons();
+        try {
+            const result = await saveCoupon(c.code, c.discount, c.description, !c.active, {
+                expiryDate: c.expiryDate, maxUses: c.maxUses, singleUsePerUser: c.singleUsePerUser, revision: c.revision,
+            });
+            if (result.success !== false) {
+                await this.fetchAdminCoupons();
+            } else {
+                this.setState({ couponErrorMsg: result.error || 'Coupon could not be updated.' });
+            }
+        } catch (err) {
+            this.setState({ couponErrorMsg: err.message || 'Coupon could not be updated.' });
+        }
     }
 
     handleDeleteCouponCode(code) {
@@ -620,18 +677,23 @@ class SubscriptionSetting extends Component {
         const code = this.state.deleteConfirmCode;
         if (!code) return;
         this.setState({ isDeleting: true });
-        const coupon = this.state.adminCoupons.find(item => item.code === code);
-        const res = await deleteCoupon(code, coupon?.revision || 0);
-        if (res.success !== false) {
-            await this.fetchAdminCoupons();
-            this.setState({
-                deleteConfirmCode: null,
-                isDeleting: false,
-                couponSuccessMsg: `Coupon ${code} deleted permanently!`
-            });
-            setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
-        } else {
-            this.setState({ isDeleting: false, couponErrorMsg: res.error || 'Failed to delete coupon' });
+        try {
+            const coupon = (this.state.couponsList || []).find(item => item.code === code);
+            const res = await deleteCoupon(code, coupon?.revision || 0);
+            if (res.success !== false) {
+                await this.fetchAdminCoupons();
+                this.setState({
+                    deleteConfirmCode: null,
+                    isDeleting: false,
+                    couponSuccessMsg: `Coupon ${code} deleted permanently!`,
+                    couponErrorMsg: '',
+                });
+                setTimeout(() => this.setState({ couponSuccessMsg: '' }), 4000);
+            } else {
+                this.setState({ isDeleting: false, couponErrorMsg: res.error || 'Failed to delete coupon' });
+            }
+        } catch (err) {
+            this.setState({ isDeleting: false, couponErrorMsg: err.message || 'Failed to delete coupon' });
         }
     }
 
@@ -898,8 +960,183 @@ class SubscriptionSetting extends Component {
                             <FaListAlt className="w-3.5 h-3.5" />
                             <span>Payment &amp; Invoice Ledger ({this.state.adminInvoicesList.length})</span>
                         </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                this.setState({ adminTab: 'webhooks' });
+                                this.fetchWebhooks();
+                            }}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                                this.state.adminTab === 'webhooks'
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                            }`}
+                        >
+                            <FaBolt className="w-3.5 h-3.5" />
+                            <span>Webhook Diagnostics ({this.state.webhooksList.length})</span>
+                        </button>
                     </div>
                 </div>
+
+                {/* --- TAB 6: INBOUND PAYMENT WEBHOOK TELEMETRY & DIAGNOSTICS --- */}
+                {this.state.adminTab === 'webhooks' && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                    <FaBolt className="text-amber-500" /> Inbound Payment Webhooks &amp; Idempotency Stream
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Live inspection of inbound gateway delivery events (`payment_webhook_events`), signature validation, and payload diagnostics.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                <select
+                                    value={this.state.webhookProviderFilter}
+                                    onChange={(e) => this.setState({ webhookProviderFilter: e.target.value }, () => this.fetchWebhooks())}
+                                    className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700"
+                                >
+                                    <option value="all">All Gateways</option>
+                                    <option value="stripe">Stripe</option>
+                                    <option value="razorpay">Razorpay</option>
+                                    <option value="paypal">PayPal</option>
+                                    <option value="paytm">Paytm</option>
+                                    <option value="phonepe">PhonePe</option>
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => this.fetchWebhooks()}
+                                    disabled={this.state.loadingWebhooks}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-extrabold text-slate-800 hover:bg-slate-50 transition shadow-2xs cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                                >
+                                    <FaSyncAlt className={`h-3.5 w-3.5 text-slate-600 ${this.state.loadingWebhooks ? 'animate-spin' : ''}`} />
+                                    <span>Refresh Stream</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {this.state.webhookSuccessNotice && (
+                            <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
+                                <span>✅ {this.state.webhookSuccessNotice}</span>
+                                <button type="button" onClick={() => this.setState({ webhookSuccessNotice: null })} className="text-emerald-600 hover:text-emerald-800"><FaTimes /></button>
+                            </div>
+                        )}
+                        {this.state.webhookError && (
+                            <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
+                                <span>⚠️ {this.state.webhookError}</span>
+                                <button type="button" onClick={() => this.setState({ webhookError: '' })} className="text-rose-600 hover:text-rose-800"><FaTimes /></button>
+                            </div>
+                        )}
+
+                        <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                            <table className="w-full text-left text-xs border-collapse">
+                                <thead className="bg-slate-50/80 text-slate-500 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                                    <tr>
+                                        <th className="py-3 px-4">Event ID / Timestamp</th>
+                                        <th className="py-3 px-4">Gateway</th>
+                                        <th className="py-3 px-4">Event Type</th>
+                                        <th className="py-3 px-4">Linked Order</th>
+                                        <th className="py-3 px-4">Delivery Status</th>
+                                        <th className="py-3 px-4 text-right">Diagnostic Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700">
+                                    {this.state.webhooksList.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="py-12 text-center text-slate-400">
+                                                <FaBolt className="h-6 w-6 text-slate-300 mx-auto mb-2" />
+                                                <p className="font-bold text-slate-600">No webhook events logged</p>
+                                                <p className="text-[11px] text-slate-400 mt-0.5">Inbound webhook notifications from payment providers will appear here in real-time.</p>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        this.state.webhooksList.map((ev) => (
+                                            <tr key={ev.eventId} className="hover:bg-slate-50/80 transition-colors">
+                                                <td className="py-3 px-4">
+                                                    <span className="font-mono font-bold text-slate-900 block truncate max-w-[180px]">{ev.eventId}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">{ev.receivedAt ? new Date(ev.receivedAt).toLocaleString() : '—'}</span>
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-200">
+                                                        {ev.provider}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 font-mono font-bold text-indigo-700">
+                                                    {ev.eventType}
+                                                </td>
+                                                <td className="py-3 px-4 font-mono text-slate-600">
+                                                    {ev.orderId || '—'}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                        <FaCheck className="h-2.5 w-2.5" /> IDEMPOTENT_LOGGED
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-right space-x-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => this.setState({ selectedWebhookPayload: ev })}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+                                                    >
+                                                        <FaCode className="h-3 w-3 text-slate-500" />
+                                                        <span>Payload</span>
+                                                    </button>
+                                                    {this.props.isSuperAdmin && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => this.handleReplayWebhook(ev.eventId)}
+                                                            disabled={this.state.replayingWebhookId === ev.eventId}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition cursor-pointer disabled:opacity-50"
+                                                        >
+                                                            <FaSyncAlt className={`h-3 w-3 ${this.state.replayingWebhookId === ev.eventId ? 'animate-spin' : ''}`} />
+                                                            <span>{this.state.replayingWebhookId === ev.eventId ? 'Replaying...' : 'Replay'}</span>
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Webhook Payload Modal */}
+                        {this.state.selectedWebhookPayload && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                                <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-4 max-h-[85vh] flex flex-col">
+                                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                        <div>
+                                            <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                                                <FaCode className="text-indigo-600" /> Webhook Payload Diagnostic
+                                            </h4>
+                                            <p className="text-[11px] font-mono text-slate-400 mt-0.5">Event ID: {this.state.selectedWebhookPayload.eventId}</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState({ selectedWebhookPayload: null })}
+                                            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg"
+                                        >
+                                            <FaTimes />
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-950 text-emerald-400 font-mono text-xs p-4 rounded-xl overflow-auto flex-1 max-h-[50vh]">
+                                        <pre>{JSON.stringify(this.state.selectedWebhookPayload.payload, null, 2)}</pre>
+                                    </div>
+                                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => this.setState({ selectedWebhookPayload: null })}
+                                            className="px-4 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 hover:bg-slate-50 cursor-pointer"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* --- TAB 5: INVOICES AUDIT LEDGER / ORDERS MANAGEMENT --- */}
                 {this.state.adminTab === 'invoices' && (
@@ -1966,6 +2203,13 @@ class SubscriptionSetting extends Component {
                         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-xl flex items-center gap-2">
                             <FaCheck className="w-3.5 h-3.5 text-emerald-600" />
                             <span>{this.state.couponSuccessMsg}</span>
+                        </div>
+                    )}
+
+                    {this.state.couponErrorMsg && (
+                        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-2">
+                            <span className="font-bold text-rose-600">✕</span>
+                            <span>{this.state.couponErrorMsg}</span>
                         </div>
                     )}
 

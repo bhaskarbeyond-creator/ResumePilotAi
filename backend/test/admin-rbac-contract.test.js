@@ -32,7 +32,7 @@ test('ordinary Admin cannot replace secrets or run external provider tests', asy
 });
 
 test('an explicitly unsupported email test type still returns validation, not a misleading auth result', async () => {
-  const response = await request(app).post('/api/email/admin/test-connection').set(bearer('admin')).send({ type: 'gemini' });
+  const response = await request(app).post('/api/email/admin/test-connection').set(bearer('super')).send({ type: 'gemini' });
   assert.equal(response.status, 400);
   assert.equal(response.body.code, 'EMAIL_TEST_TYPE_UNSUPPORTED');
 });

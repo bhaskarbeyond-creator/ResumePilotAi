@@ -182,10 +182,26 @@ router.post('/phrases', requireAuth, requirePermission('system.config.write'), e
 router.get('/phrases/:category', async (req, res) => {
     try {
         const doc = await req.repository.getDocument('phrases', req.params.category);
-        if (!doc) return res.status(404).json({ success: false, error: 'Category not found' });
+        if (!doc) return res.json({ success: true, category: { id: req.params.category, name: req.params.category, phrases: [] } });
         return res.json({ success: true, category: { ...doc, id: doc.id } });
     } catch (_err) {
         return res.status(500).json({ success: false, error: 'Failed to load phrase category' });
+    }
+});
+
+// DELETE /api/phrases/:category — delete a phrase category (Admin)
+router.delete('/phrases/:category', requireAuth, requirePermission('system.config.write'), async (req, res) => {
+    try {
+        const categoryId = String(req.params.category || '').slice(0, 128);
+        const current = await req.repository.getDocument('phrases', categoryId);
+        if (!current) return res.status(404).json({ success: false, error: 'Phrase category not found' });
+        const expectedRevisionRaw = req.body?.expectedRevision ?? req.query?.expectedRevision;
+        const expectedRevision = expectedRevisionRaw !== undefined && expectedRevisionRaw !== null && expectedRevisionRaw !== '' ? Number(expectedRevisionRaw) : Number(current.revision || 1);
+        await req.repository.deleteDocument('phrases', categoryId, expectedRevision);
+        return res.json({ success: true, message: 'Phrase category deleted successfully.' });
+    } catch (err) {
+        const status = err.status || (err.code === 'CAS_CONFLICT' ? 409 : 500);
+        return res.status(status).json({ success: false, error: err.message || 'Failed to delete phrase category' });
     }
 });
 

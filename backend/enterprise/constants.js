@@ -22,13 +22,17 @@ const TENANT_ROLES = Object.freeze({
     'tenant.read', 'tenant.settings.write', 'tenant.members.read', 'tenant.members.invite',
     'tenant.members.manage', 'tenant.roles.manage', 'tenant.workspaces.manage',
     'tenant.audit.read', 'tenant.security.read', 'tenant.security.manage',
-    'tenant.ai.manage', 'tenant.integrations.manage', 'tenant.usage.read'
+    'tenant.ai.manage', 'tenant.integrations.manage', 'tenant.usage.read',
+    'workspace.read', 'workspace.manage', 'workspace.members.manage',
+    'resource.read', 'resource.create', 'resource.update', 'resource.share'
   ],
   ENTERPRISE_ADMIN: [
     'tenant.read', 'tenant.settings.write', 'tenant.members.read', 'tenant.members.invite',
     'tenant.members.manage', 'tenant.roles.manage', 'tenant.workspaces.manage',
     'tenant.audit.read', 'tenant.security.read', 'tenant.security.manage',
-    'tenant.ai.manage', 'tenant.integrations.manage', 'tenant.usage.read'
+    'tenant.ai.manage', 'tenant.integrations.manage', 'tenant.usage.read',
+    'workspace.read', 'workspace.manage', 'workspace.members.manage',
+    'resource.read', 'resource.create', 'resource.update', 'resource.share'
   ],
   BILLING_ADMIN: [
     'tenant.read', 'tenant.billing.read', 'tenant.billing.manage', 'tenant.usage.read'

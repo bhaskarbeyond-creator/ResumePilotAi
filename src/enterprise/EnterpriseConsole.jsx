@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiActivity, FiBarChart2, FiChevronRight, FiCommand, FiFileText, FiHelpCircle, FiLock, FiSearch, FiSettings, FiShield, FiSliders, FiUserPlus, FiUsers, FiZap, FiMenu, FiPlus, FiLogOut, FiHome, FiGrid, FiExternalLink, FiChevronDown, FiUser, FiX } from 'react-icons/fi';
-import { AuthContext } from '../main';
+import { AuthContext } from '../context/AuthContext';
 import { signOutUser } from '../utils/signOut';
 import { EnterpriseTenantProvider, useEnterpriseTenant } from './EnterpriseContext';
 import EnterpriseOverviewTab from './components/EnterpriseOverviewTab';
@@ -18,6 +18,7 @@ import EnterpriseEmailTab from './components/EnterpriseEmailTab';
 import EnterpriseSettingsTab from './components/EnterpriseSettingsTab';
 import EnterpriseSupportTab from './components/EnterpriseSupportTab';
 import EnterprisePlatformTab from './components/EnterprisePlatformTab';
+import fire from '../conf/fire';
 import './enterprise.css';
 
 // Information architecture: the flat module list is grouped so the sidebar
@@ -454,7 +455,7 @@ function CommandPalette({ open, onClose, navigation, actions, recents, onSelect 
 
 function EnterpriseConsoleInner() {
   const user = useContext(AuthContext);
-  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload, platformAdmin } = useEnterpriseTenant();
+  const { tenant, workspace, workspaces, selectWorkspace, enabled, loading, context, error, reload, platformAdmin, simulatedRole, isSimulating } = useEnterpriseTenant();
   const permissions = useMemo(
     () => (loading ? ['*'] : (Array.isArray(context?.permissions) ? context.permissions : [])),
     [context?.permissions, loading],
@@ -468,6 +469,22 @@ function EnterpriseConsoleInner() {
   // Cross-tab investigation handoff (e.g. "view member activity" jumps to the
   // audit log with the actor filter pre-applied). Consumed once by the audit tab.
   const [auditPreset, setAuditPreset] = useState(null);
+
+  const handleExitEnterpriseSimulation = useCallback(async () => {
+    try {
+      sessionStorage.removeItem('superadmin_role_view');
+      sessionStorage.removeItem('superadmin_enterprise_tenant');
+      const token = await fire?.auth?.().currentUser?.getIdToken();
+      if (token) {
+        await fetch('/api/platform/role-view-audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ targetRole: 'SUPER_ADMIN' })
+        });
+      }
+    } catch (_) {}
+    navigate('/adm/dashboard');
+  }, [navigate]);
 
   const visibleNav = useMemo(() => {
     return NAVIGATION.filter(item => canSee(item, permissions, platformAdmin));
@@ -530,6 +547,38 @@ function EnterpriseConsoleInner() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const [reauthPassword, setReauthPassword] = useState('');
+  const [reauthError, setReauthError] = useState('');
+  const [reauthenticating, setReauthenticating] = useState(false);
+  const [showReauthModal, setShowReauthModal] = useState(false);
+
+  const handleInteractiveReauth = async (e) => {
+    e?.preventDefault();
+    setReauthenticating(true);
+    setReauthError('');
+    try {
+      const { reauthenticateUser } = await import('../services/api/platform');
+      await reauthenticateUser(reauthPassword);
+      await fire?.auth?.().currentUser?.getIdToken(true);
+      setShowReauthModal(false);
+      setReauthPassword('');
+      await reload();
+    } catch (err) {
+      setReauthError(err?.message || 'Reauthentication failed. Please check your credentials.');
+    } finally {
+      setReauthenticating(false);
+    }
+  };
+
+  const handleSignInAgain = () => {
+    const safeNext = encodeURIComponent(location.pathname + location.search);
+    signOutUser().then(() => {
+      navigate(`/login?next=${safeNext}`);
+    }).catch(() => {
+      navigate(`/login?next=${safeNext}`);
+    });
+  };
+
   useEffect(() => {
     const currentNav = NAVIGATION.find(item => item.id === activeTab);
     const tabLabel = currentNav ? currentNav.label : 'Console';
@@ -557,11 +606,12 @@ function EnterpriseConsoleInner() {
     const code = error?.code || '';
     const status = error?.status || 0;
     const isRateLimited = status === 429 || code === 'RATE_LIMITED';
+    const isSessionExpired = code === 'TENANT_SESSION_REAUTH_REQUIRED';
     const title = isRateLimited
       ? 'Rate Limit Active'
       : code === 'TENANT_MFA_REQUIRED'
         ? 'Multi-Factor Authentication Required'
-        : code === 'TENANT_SESSION_REAUTH_REQUIRED'
+        : isSessionExpired
           ? 'Session Re-Authentication Required'
           : code === 'TENANT_INACTIVE'
             ? 'Organization Suspended'
@@ -570,8 +620,8 @@ function EnterpriseConsoleInner() {
       ? 'The enterprise service received a high volume of requests. Please wait a moment and click Retry Connection.'
       : code === 'TENANT_MFA_REQUIRED'
         ? 'This organization requires administrators to sign in with a second factor. Enroll MFA on your account and sign in again.'
-        : code === 'TENANT_SESSION_REAUTH_REQUIRED'
-          ? 'Your session exceeded the maximum session length configured by this organization. Sign out and sign in again to continue.'
+        : isSessionExpired
+          ? 'Your session exceeded the maximum session length configured by this organization. Re-authenticate to resume immediately without losing your context, or sign in again.'
           : code === 'TENANT_INACTIVE'
             ? 'This organization is currently suspended. A platform administrator must reactivate it before members can access enterprise features.'
             : (error?.message || 'The enterprise service did not respond as expected.');
@@ -588,10 +638,63 @@ function EnterpriseConsoleInner() {
         </div>
         <h1>{title}</h1>
         <p>{hint}</p>
-        <div className="enterprise-inline-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
-          <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
-            Retry Connection
-          </button>
+
+        {isSessionExpired && showReauthModal && (
+          <form onSubmit={handleInteractiveReauth} style={{ maxWidth: '380px', margin: '16px auto', textAlign: 'left', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Confirm Password
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                value={reauthPassword}
+                onChange={e => setReauthPassword(e.target.value)}
+                placeholder="Enter current password"
+                style={{ width: '100%', padding: '8px 12px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1', marginTop: '4px' }}
+                autoFocus
+              />
+            </label>
+            {reauthError && (
+              <p style={{ color: '#b91c1c', fontSize: '11px', marginTop: '6px' }}>{reauthError}</p>
+            )}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => { setShowReauthModal(false); setReauthError(''); }} className="enterprise-button enterprise-button-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>
+                Cancel
+              </button>
+              <button type="submit" disabled={reauthenticating || !reauthPassword} className="enterprise-button enterprise-button-primary" style={{ padding: '6px 12px', fontSize: '12px' }}>
+                {reauthenticating ? 'Verifying…' : 'Verify & Continue'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="enterprise-inline-actions" style={{ justifyContent: 'center', gap: '0.75rem', marginTop: '16px' }}>
+          {isSessionExpired ? (
+            <>
+              {!showReauthModal && (
+                <button
+                  type="button"
+                  data-testid="enterprise-reauth-button"
+                  className="enterprise-button enterprise-button-primary"
+                  onClick={() => setShowReauthModal(true)}
+                >
+                  Re-authenticate Session
+                </button>
+              )}
+              <button
+                type="button"
+                data-testid="enterprise-signin-again-button"
+                className="enterprise-button enterprise-button-secondary"
+                onClick={handleSignInAgain}
+              >
+                Sign In Again
+              </button>
+            </>
+          ) : (
+            <button type="button" className="enterprise-button enterprise-button-primary" onClick={() => reload().catch(() => {})}>
+              Retry Connection
+            </button>
+          )}
           <Link to="/dashboard" className="enterprise-button enterprise-button-secondary">Return to Dashboard</Link>
         </div>
       </main>
@@ -652,6 +755,57 @@ function EnterpriseConsoleInner() {
           </button>
         </div>
       </header>
+
+      {/* Super Admin Enterprise Role Simulation Banner */}
+      {isSimulating && (
+        <aside
+          role="status"
+          aria-live="polite"
+          data-testid="enterprise-role-simulation-banner"
+          style={{
+            backgroundColor: '#fef3c7',
+            borderBottom: '1px solid #fcd34d',
+            padding: '0.625rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            fontSize: '0.8125rem',
+            color: '#78350f',
+            fontWeight: '600',
+            position: 'sticky',
+            top: '64px',
+            zIndex: 35,
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '1.1rem' }} aria-hidden="true">🛡️</span>
+            <span>
+              <strong>Enterprise Role Simulation:</strong> Viewing console as <span style={{ textDecoration: 'underline', fontWeight: '800' }}>{simulatedRole?.replace('ENTERPRISE_', '')}</span> for organization <strong>{tenant?.displayName || 'Active Workspace'}</strong>. Super Admin credentials remain active.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleExitEnterpriseSimulation}
+            data-testid="exit-enterprise-role-view"
+            style={{
+              padding: '0.35rem 0.85rem',
+              backgroundColor: '#b45309',
+              color: '#ffffff',
+              borderRadius: '0.5rem',
+              fontSize: '0.75rem',
+              fontWeight: '700',
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            Exit Enterprise Role View
+          </button>
+        </aside>
+      )}
 
       {/* Mobile Horizontal Quick-Navigation Pill Bar */}
       <nav className="enterprise-mobile-pill-strip" aria-label="Quick module navigation">

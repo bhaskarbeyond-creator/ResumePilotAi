@@ -228,9 +228,10 @@ export default function PlatformHealth() {
             type="button"
             onClick={() => load({ manual: true })}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 shadow-2xs transition hover:bg-slate-50 cursor-pointer disabled:opacity-50 whitespace-nowrap"
           >
-            <FiRefreshCw className={refreshing ? 'animate-spin' : ''} aria-hidden="true" /> Refresh
+            <FiRefreshCw className={`h-3.5 w-3.5 text-slate-600 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <span>Refresh</span>
           </button>
         </div>
       </header>

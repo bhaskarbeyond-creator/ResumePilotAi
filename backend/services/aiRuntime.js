@@ -823,7 +823,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         try {
             const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
             if (provider === 'openrouter') {
-                headers['HTTP-Referer'] = 'https://airesume.projectdemo.guru';
+                headers['HTTP-Referer'] = process.env.APP_URL || process.env.TARGET_URL || 'https://resumepilot.ai';
                 headers['X-Title'] = 'ResumePilot AI';
             }
             const response = await fetchWithDeadline(fetchImpl, chatCompletionsUrl(provider, providerConfig.baseUrl), {

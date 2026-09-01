@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard, FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw, FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign, FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff } from 'react-icons/fi';
+import { FiX, FiUser, FiMail, FiShield, FiBriefcase, FiCreditCard, FiCpu, FiActivity, FiCheck, FiAlertTriangle, FiRefreshCw, FiLock, FiUnlock, FiPlus, FiTrash2, FiClock, FiDollarSign, FiCalendar, FiExternalLink, FiKey, FiCopy, FiDownload, FiShieldOff, FiFileText } from 'react-icons/fi';
 import { getUser360, assignUserTenant, removeUserTenant, updateUserAiEntitlement, removeUserAiEntitlement, resetUserAiQuota, sendUserPasswordReset, verifyUserEmail, revokeUserSessions, unenrollUserMfa, exportUserData, getTenantDetail } from '../../../services/platformApi';
 
 import { setUserRole, updateUserSubscription, toggleUserSuspension } from '../../../services/api/platform';
@@ -571,6 +571,7 @@ export default function User360Drawer({
               <p className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">User 360 Workspace</p>
               {[
                 { id: 'identity', label: 'Identity & Security', desc: 'Auth, status, 2FA & reset', icon: <FiShield /> },
+                { id: 'content', label: 'Resumes & Content', count: (effectiveUserData?.content?.resumeCount || 0) + (effectiveUserData?.content?.portfolioCount || 0), desc: 'Compiled resumes & portfolios', icon: <FiFileText /> },
                 { id: 'tenancy', label: 'Tenants & Orgs', count: userData?.tenancy?.totalTenants || 0, desc: 'Enterprise workspaces', icon: <FiBriefcase /> },
                 { id: 'rbac', label: 'Roles & Access', desc: 'Platform permissions', icon: <FiKey /> },
                 { id: 'billing', label: 'Subscription & Billing', desc: 'Plan tier & invoices', icon: <FiCreditCard /> },
@@ -855,6 +856,136 @@ export default function User360Drawer({
                 </div>
               )}
 
+              {/* TAB 2: RESUMES & CONTENT */}
+              {activeTab === 'content' && (
+                <div className="space-y-5 text-xs">
+                  {/* Summary Metric Counters */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Resumes Created</p>
+                      <p className="text-2xl font-black text-slate-900 mt-1">{effectiveUserData.content?.resumeCount || 0}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Compiled CV documents</p>
+                    </div>
+                    <div className="p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Portfolios Built</p>
+                      <p className="text-2xl font-black text-slate-900 mt-1">{effectiveUserData.content?.portfolioCount || 0}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Online showcase sites</p>
+                    </div>
+                    <div className="p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl shadow-2xs">
+                      <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Cover Letters</p>
+                      <p className="text-2xl font-black text-slate-900 mt-1">{effectiveUserData.content?.coverCount || 0}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">AI tailored applications</p>
+                    </div>
+                  </div>
+
+                  {/* Resumes List */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-slate-900 text-xs">Engineered Resumes ({effectiveUserData.content?.resumes?.length || 0})</h3>
+                      <span className="text-[10px] text-slate-400 font-mono">Authoritative MariaDB Store</span>
+                    </div>
+
+                    {(!effectiveUserData.content?.resumes || effectiveUserData.content.resumes.length === 0) ? (
+                      <div className="p-8 text-center bg-slate-50 border border-slate-200/80 rounded-2xl text-slate-400 space-y-1">
+                        <FiFileText className="h-6 w-6 mx-auto text-slate-300 mb-1" />
+                        <p className="font-bold text-slate-600">No resumes created by this user yet.</p>
+                        <p className="text-[10px]">When the user compiles CVs, they will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {effectiveUserData.content.resumes.map((resume) => (
+                          <div
+                            key={resume.id}
+                            className="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-slate-50 transition"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-900 truncate">{resume.title}</span>
+                                <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] font-mono font-bold shrink-0">
+                                  {resume.template || 'classic'}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                ID: {resume.id} {resume.updatedAt && `• Updated: ${new Date(resume.updatedAt).toLocaleString()}`}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg shrink-0">
+                              Active
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Portfolios List */}
+                  {effectiveUserData.content?.portfolios && effectiveUserData.content.portfolios.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-slate-900 text-xs">Public Portfolios ({effectiveUserData.content.portfolios.length})</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {effectiveUserData.content.portfolios.map((portfolio) => (
+                          <div
+                            key={portfolio.id}
+                            className="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-slate-50 transition"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-900 truncate">{portfolio.title}</span>
+                                <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-mono font-bold shrink-0">
+                                  {portfolio.theme || 'modern'}
+                                </span>
+                                {portfolio.isPublished && (
+                                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold shrink-0">
+                                    Published
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                slug: /{portfolio.slug} {portfolio.updatedAt && `• Updated: ${new Date(portfolio.updatedAt).toLocaleString()}`}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cover Letters List */}
+                  {effectiveUserData.content?.covers && effectiveUserData.content.covers.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-slate-900 text-xs">Cover Letters ({effectiveUserData.content.covers.length})</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {effectiveUserData.content.covers.map((cover) => (
+                          <div
+                            key={cover.id}
+                            className="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-slate-50 transition"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-900 truncate">{cover.jobTitle}</span>
+                                <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100 text-[10px] font-mono font-bold shrink-0">
+                                  {cover.companyName}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                ID: {cover.id} {cover.updatedAt && `• Updated: ${new Date(cover.updatedAt).toLocaleString()}`}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg shrink-0">
+                              Cover Letter
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
 
 
 
@@ -1112,19 +1243,44 @@ export default function User360Drawer({
                     {effectiveUserData.billing?.orders?.length === 0 ? (
                       <p className="text-slate-400 text-[11px] py-2">No transaction records found for this account.</p>
                     ) : (
-                      <div className="space-y-1.5 pt-1 max-h-40 overflow-y-auto">
-                        {(effectiveUserData.billing?.orders || []).map((o) => (
-                          <div key={o.id} className="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg text-[11px]">
-                            <div>
-                              <span className="font-bold text-slate-800">{o.planId}</span>
-                              <span className="text-slate-400 ml-2">{o.provider}</span>
+                      <div className="space-y-2 pt-1 max-h-56 overflow-y-auto">
+                        {(effectiveUserData.billing?.orders || []).map((o) => {
+                          const isSuccess = ['COMPLETED', 'ACTIVE', 'PAID'].includes(String(o.status || '').toUpperCase());
+                          const isRefunded = String(o.status || '').toUpperCase() === 'REFUNDED';
+                          return (
+                            <div key={o.id} className="p-3 bg-white border border-slate-200/80 rounded-xl text-xs space-y-1.5 shadow-2xs">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-slate-900">{o.planId}</span>
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold uppercase">
+                                    {o.provider || 'Gateway'}
+                                  </span>
+                                  {o.couponCode && (
+                                    <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[9px] font-mono font-bold">
+                                      Coupon: {o.couponCode}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-extrabold text-slate-900">
+                                    {o.currency} {o.amount ? (o.amount / 100).toFixed(2) : '0.00'}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                    isSuccess ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                    isRefunded ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                                    'bg-rose-50 text-rose-700 border border-rose-100'
+                                  }`}>
+                                    {o.status}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                                <span className="truncate">Order: {o.id} {o.providerPaymentId && `• PayID: ${o.providerPaymentId}`}</span>
+                                <span>{o.createdAt ? new Date(o.createdAt).toLocaleString() : ''}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className="font-mono font-bold text-slate-900">{o.currency} {o.amount ? (o.amount / 100).toFixed(2) : '0.00'}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">{o.status}</span>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

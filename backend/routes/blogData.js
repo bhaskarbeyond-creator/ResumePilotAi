@@ -36,6 +36,17 @@ router.get('/slug/:slug', async (req, res) => {
     }
 });
 
+// GET /api/blog-data/:id - Post by ID (Public read / Author read)
+router.get('/:id', async (req, res) => {
+    try {
+        const post = await req.repository.getBlogPostById(req.params.id);
+        if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
+        return res.json({ success: true, post });
+    } catch (_err) {
+        return res.status(500).json({ success: false, error: 'Failed to fetch blog post' });
+    }
+});
+
 // POST /api/blog-data/:id - Save post (Admin only)
 router.post('/:id', requirePermission('system.config.write'), async (req, res) => {
     try {
@@ -49,10 +60,12 @@ router.post('/:id', requirePermission('system.config.write'), async (req, res) =
 // DELETE /api/blog-data/:id - Delete post (Admin only)
 router.delete('/:id', requirePermission('system.config.write'), async (req, res) => {
     try {
-        await req.repository.deleteBlogPost(req.params.id);
+        const expectedRevision = req.body?.expectedRevision ?? req.query?.expectedRevision;
+        await req.repository.deleteBlogPost(req.params.id, expectedRevision);
         return res.json({ success: true });
-    } catch (_err) {
-        return res.status(500).json({ success: false, error: 'Failed to delete blog post' });
+    } catch (err) {
+        const status = err.status || (err.code === 'REVISION_REQUIRED' ? 400 : err.code === 'CAS_CONFLICT' ? 409 : 500);
+        return res.status(status).json({ success: false, error: err.message || 'Failed to delete blog post' });
     }
 });
 

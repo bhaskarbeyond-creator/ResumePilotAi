@@ -163,13 +163,11 @@ export async function updateAdminSupportTicketStatus(ticketId, status) {
 }
 
 export async function getAllMessages() {
-    // Realtime chat delivery is read through the backend API (never Firestore).
-    try {
-        const { conversations } = await apiJson('/api/messages/conversations');
-        return conversations || [];
-    } catch {
-        return [];
+    const data = await apiJson('/api/notifications-data/contact/list');
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch contact messages.');
     }
+    return data?.messages || [];
 }
 
 export async function addContactMessage(email, name, message) {
@@ -542,12 +540,11 @@ export async function createCompany(employerId, companyData) {
 }
 
 export async function getEmployerCompanies(_employerId) {
-    try {
-        const data = await apiJson('/api/employer/companies');
-        return data.companies || [];
-    } catch {
-        return [];
+    const data = await apiJson('/api/employer/companies');
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch companies.');
     }
+    return data.companies || [];
 }
 
 export async function getApprovedEmployerCompanies(employerId) {
@@ -661,12 +658,11 @@ export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
 }
 
 export async function getEmployerJobs(_employerId) {
-    try {
-        const data = await apiJson('/api/employer/jobs');
-        return data.jobs || [];
-    } catch {
-        return [];
+    const data = await apiJson('/api/employer/jobs');
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch jobs.');
     }
+    return data.jobs || [];
 }
 
 export async function updateJobPosting(jobId, updateData, expectedRevision = 0) {
@@ -706,12 +702,11 @@ export async function deleteJobByAdmin(jobId, expected = {}) {
 }
 
 export async function getJobApplications(jobId) {
-    try {
-        const data = await apiJson(`/api/jobs/${encodeURIComponent(jobId)}/applications`);
-        return data.applications || [];
-    } catch {
-        return [];
+    const data = await apiJson(`/api/jobs/${encodeURIComponent(jobId)}/applications`);
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch applications.');
     }
+    return data.applications || [];
 }
 
 export async function submitJobApplication(userId, jobId, applicationData) {
@@ -950,6 +945,25 @@ export async function testAdminPaymentProvider(type, credentials = {}) {
 
 export async function getAllInvoicesAdmin() {
     return getAllAdminTransactions();
+}
+
+export async function getPaymentWebhooks(params = {}) {
+    const query = new URLSearchParams();
+    if (params.provider) query.set('provider', params.provider);
+    if (params.q) query.set('q', params.q);
+    if (params.limit) query.set('limit', params.limit);
+    const queryString = query.toString();
+    const data = await apiJson(`/api/platform/payment-webhooks${queryString ? `?${queryString}` : ''}`);
+    return data || { events: [], total: 0 };
+}
+
+export async function replayPaymentWebhook(eventId) {
+    const { response, data } = await fetchAdminWithReauth(`/api/platform/payment-webhooks/${encodeURIComponent(eventId)}/replay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok || !data?.success) throw new Error(data?.error?.message || data?.error || 'Webhook replay failed.');
+    return data;
 }
 
 export async function grantProSubscriptionAdmin(userId, _planType = 'yearly', _durationMonths = 12) {
@@ -1242,17 +1256,21 @@ export async function getAds() {
     }
 }
 
+export async function saveBlogPost(id, postData, options = {}) {
+    const blogApi = await import('./blog.js');
+    const fn = blogApi.saveBlogPost || blogApi.default?.saveBlogPost;
+    return fn(id, postData, options);
+}
+
 export async function createBlogPost(userId, postData) {
-    const { default: blogApi } = await import('./blog.js');
     const normalized = normalizeBlogPost({ ...postData, authorUid: userId });
     if (!blogPostFitsStorageLimit(normalized)) throw new Error('Blog post is too large to save.');
     const id = postData.id || `post_${Date.now()}`;
-    return blogApi.saveBlogPost(id, normalized);
+    return saveBlogPost(id, normalized);
 }
 
 export async function updateBlogPost(postId, updateData, _userId = null, expectedRevision = null) {
-    const { default: blogApi } = await import('./blog.js');
-    return blogApi.saveBlogPost(postId, updateData, { expectedRevision });
+    return saveBlogPost(postId, updateData, { expectedRevision });
 }
 
 export async function getBlogPostByIdForAuthor(postId, userId) {
@@ -1317,13 +1335,14 @@ export async function listBlogPosts(options = {}) {
         };
         return { success: true, posts, error: null, pagination };
     } catch (_error) {
-        return { ...emptyEnvelope, success: true, error: null };
+        return { ...emptyEnvelope, success: true, error: _error.message || null };
     }
 }
 
 export async function deleteBlogPost(postId, _userId = null, _expectedRevision = null) {
-    const { default: blogApi } = await import('./blog.js');
-    return blogApi.deleteBlogPost(postId);
+    const blogApi = await import('./blog.js');
+    const delFn = blogApi.deleteBlogPost || blogApi.default?.deleteBlogPost;
+    return delFn(postId);
 }
 
 export async function createBlogCategory(categoryData) {
@@ -1336,12 +1355,11 @@ export async function createBlogCategory(categoryData) {
 }
 
 export async function listBlogCategories() {
-    try {
-        const data = await apiJson('/api/admin/blog/categories');
-        return data.categories || [];
-    } catch {
-        return [];
+    const data = await apiJson('/api/admin/blog/categories');
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch categories.');
     }
+    return data.categories || [];
 }
 
 export async function updateBlogCategory(categoryId, updateData, expectedRevision = 0) {
@@ -1363,12 +1381,11 @@ export async function deleteBlogCategory(categoryId, expectedRevision = 0) {
 }
 
 export async function getBlogSettings() {
-    try {
-        const data = await apiJson('/api/admin/settings/blog');
-        return data.settings || {};
-    } catch {
-        return {};
+    const data = await apiJson('/api/admin/settings/blog');
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch blog settings.');
     }
+    return data.settings || {};
 }
 
 export async function updateBlogSettings(settings, expectedRevision = -1) {
@@ -1709,12 +1726,11 @@ export async function addCategoryToData(category, phrases) {
 }
 
 export async function getAllCategories() {
-    try {
-        const data = await apiJson('/api/phrases');
-        return data.categories || {};
-    } catch {
-        return {};
+    const data = await apiJson('/api/phrases');
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to fetch categories.');
     }
+    return data.categories || [];
 }
 
 // NOTE: must stay SYNCHRONOUS — callers use the return value directly as an
@@ -1759,12 +1775,11 @@ export async function addPhraseToCategory(category, phrase) {
 }
 
 export async function getPhrasesOfCategory(category) {
-    try {
-        const data = await apiJson(`/api/phrases/${encodeURIComponent(category)}`);
-        return Array.isArray(data.category?.phrases) ? data.category.phrases : [];
-    } catch {
-        return [];
+    const data = await apiJson(`/api/phrases/${encodeURIComponent(category)}`);
+    if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to load phrases');
     }
+    return Array.isArray(data.category?.phrases) ? data.category.phrases : [];
 }
 
 export async function removePhraseFromCategory(category, phrase) {
@@ -1926,7 +1941,7 @@ export async function getSystemSettings({ admin = false } = {}) {
             default: true,
         },
         exportPdf: {
-            websiteDomain: config?.backendUrl || 'ai-resume-builder.local',
+            websiteDomain: config?.backendUrl || (typeof window !== 'undefined' ? window.location.hostname : 'localhost'),
             backendExportUrl: '', renderTimeout: 60000, paperFormat: 'A4', chromiumPath: '',
         },
         jobScraper: { keywords: 'web developer', location: 'United States', maxJobs: 25, scrapeIntervalHours: 24 },
