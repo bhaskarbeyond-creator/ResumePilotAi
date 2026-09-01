@@ -64,20 +64,22 @@ export function EnterpriseTenantProvider({ children }) {
       const requestedTenantId = tenantId || paramTenantId || simulatedTenant || readStorage(tenantStorageKey(user.uid));
       const requestedWorkspaceId = workspaceId || paramWorkspaceId || (requestedTenantId ? readStorage(workspaceStorageKey(user.uid, requestedTenantId)) : '');
       const [tenantList, active] = await Promise.all([
-        enterpriseFetch('/api/enterprise/tenants'),
+        enterpriseFetch('/api/enterprise/tenants').catch(() => ({ tenants: [] })),
         enterpriseFetch('/api/enterprise/context', { method: 'POST', body: { tenantId: requestedTenantId, workspaceId: requestedWorkspaceId } }),
       ]);
       const activeTenantId = active.tenant?.id || '';
       const activeWorkspaceId = active.workspace?.id || '';
-      const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: activeTenantId, workspaceId: activeWorkspaceId });
+      const workspaceList = await enterpriseFetch('/api/enterprise/workspaces', { tenantId: activeTenantId, workspaceId: activeWorkspaceId }).catch(() => ({ workspaces: [] }));
       writeStorage(tenantStorageKey(user.uid), activeTenantId);
       if (activeTenantId) writeStorage(workspaceStorageKey(user.uid, activeTenantId), activeWorkspaceId);
+      const rawTenants = Array.isArray(tenantList?.tenants) ? tenantList.tenants : [];
+      const tenants = rawTenants.length > 0 ? rawTenants : (active.tenant ? [active.tenant] : []);
       const next = {
         loading: false,
         error: null,
         serverDisabled: false,
-        tenants: Array.isArray(tenantList.tenants) ? tenantList.tenants : [],
-        workspaces: Array.isArray(workspaceList.workspaces) ? workspaceList.workspaces : [],
+        tenants,
+        workspaces: Array.isArray(workspaceList?.workspaces) ? workspaceList.workspaces : [],
         context: active.context || null,
         tenant: active.tenant || null,
         workspace: active.workspace || null,

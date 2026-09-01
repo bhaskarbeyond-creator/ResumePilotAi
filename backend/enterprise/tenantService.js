@@ -196,19 +196,24 @@ class TenantService {
   }
 
   async listTenants({ user }) {
-    const rows = await this.registry.listMemberships(user?.uid);
-    return rows.map(({ membership, tenant }) => ({
-      id: tenant.id,
-      slug: tenant.slug,
-      displayName: tenant.displayName,
-      lifecycleState: tenant.lifecycleState,
-      isolationTier: tenant.isolationTier,
-      region: tenant.dataPlane.region,
-      dataPlaneType: tenant.dataPlane.type,
-      roles: membership.roles,
-      defaultWorkspaceId: membership.workspaceId || null,
-      personalTenant: membership.personalTenant === true,
-    }));
+    if (!user?.uid) return [];
+    const rows = await this.registry.listMemberships(user.uid);
+    return (rows || []).map(row => {
+      const tenant = row?.tenant || row || {};
+      const membership = row?.membership || row || {};
+      return {
+        id: tenant.id || membership.tenantId || row.tenantId || row.id,
+        slug: tenant.slug || row.slug || row.tenantId,
+        displayName: tenant.displayName || row.displayName || 'Workspace',
+        lifecycleState: tenant.lifecycleState || row.tenantLifecycleState || 'ACTIVE',
+        isolationTier: tenant.isolationTier || row.isolationTier || 'STANDARD',
+        region: tenant.dataPlane?.region || row.region || 'us-east-1',
+        dataPlaneType: tenant.dataPlane?.type || row.dataPlaneType || 'MYSQL_ISOLATED_DATABASE',
+        roles: Array.isArray(membership.roles) ? membership.roles : (Array.isArray(row.roles) ? row.roles : []),
+        defaultWorkspaceId: membership.workspaceId || row.workspaceId || null,
+        personalTenant: membership.personalTenant === true || row.personalTenant === true,
+      };
+    });
   }
 
   async createSupportGrant({ user, context = null, input, requestId }) {

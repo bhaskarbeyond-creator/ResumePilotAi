@@ -770,6 +770,7 @@ class MySqlTenantRegistry {
     principalId = assertPrincipalId(principalId);
     const [rows] = await this.pool.query(
       `SELECT m.*, t.displayName, t.slug, t.lifecycleState AS tenantLifecycleState,
+              t.isolationTier, t.dataPlane,
               i.recipientEmail AS invitationEmail, i.invitedAt, i.acceptedAt,
               i.expiresAt AS invitationExpiresAt, i.invitationState,
               COALESCE(o.state, i.deliveryState) AS invitationDeliveryState,
@@ -784,11 +785,20 @@ class MySqlTenantRegistry {
     return rows.map(r => {
       try {
         const mem = validateMembership(r, principalId);
+        let dataPlane = {};
+        if (typeof r.dataPlane === 'string') {
+          try { dataPlane = JSON.parse(r.dataPlane); } catch { /* default */ }
+        } else if (r.dataPlane && typeof r.dataPlane === 'object') {
+          dataPlane = r.dataPlane;
+        }
         return {
           ...mem,
           displayName: r.displayName || r.tenantId,
           slug: r.slug || r.tenantId,
           tenantLifecycleState: r.tenantLifecycleState || 'ACTIVE',
+          isolationTier: r.isolationTier || 'STANDARD',
+          region: dataPlane.region || 'us-east-1',
+          dataPlaneType: dataPlane.type || 'MYSQL_ISOLATED_DATABASE',
         };
       } catch {
         return null;
