@@ -62,10 +62,10 @@ body {
 a {
     text-decoration: inherit;
 }
-a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]) {
+a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):not([class*="enterprise-"]):not([class*="button"]) {
     color: #4a6cf7;
 }
-a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):hover {
+a:not([class*="bg-"]):not([class*="text-"]):not([class*="btn"]):not([class*="enterprise-"]):not([class*="button"]):hover {
     color: #6c7ee1;
 }
 

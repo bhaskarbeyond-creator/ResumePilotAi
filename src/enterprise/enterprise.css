@@ -1245,43 +1245,54 @@
   box-shadow: var(--enterprise-ring);
 }
 
-.enterprise-button-primary {
-  background: linear-gradient(135deg, var(--ep-brand-600), var(--ep-brand-500));
-  color: #fff;
+.enterprise-button-primary,
+a.enterprise-button-primary {
+  background: linear-gradient(135deg, var(--ep-brand-600), var(--ep-brand-500)) !important;
+  color: #ffffff !important;
   box-shadow: var(--enterprise-shadow-sm), 0 2px 8px rgba(79, 70, 229, 0.2);
 }
 
-.enterprise-button-primary:hover {
-  background: linear-gradient(135deg, var(--ep-brand-700), var(--ep-brand-600));
+.enterprise-button-primary:hover,
+a.enterprise-button-primary:hover {
+  background: linear-gradient(135deg, var(--ep-brand-700), var(--ep-brand-600)) !important;
+  color: #ffffff !important;
   box-shadow: var(--enterprise-shadow), 0 4px 12px rgba(79, 70, 229, 0.25);
   transform: translateY(-1px);
 }
 
-.enterprise-button-primary:active {
-  background: var(--ep-brand-800);
+.enterprise-button-primary:active,
+a.enterprise-button-primary:active {
+  background: var(--ep-brand-800) !important;
+  color: #ffffff !important;
   transform: translateY(0);
 }
 
-.enterprise-button-secondary {
-  background: #fff;
-  border-color: var(--enterprise-border);
-  color: var(--enterprise-ink);
+.enterprise-button-secondary,
+a.enterprise-button-secondary {
+  background: #ffffff !important;
+  border-color: var(--enterprise-border) !important;
+  color: var(--enterprise-ink) !important;
   box-shadow: var(--enterprise-shadow-sm);
 }
 
-.enterprise-button-secondary:hover {
-  background: var(--ep-slate-50);
-  border-color: var(--ep-slate-300);
+.enterprise-button-secondary:hover,
+a.enterprise-button-secondary:hover {
+  background: var(--ep-slate-50) !important;
+  border-color: var(--ep-slate-300) !important;
+  color: var(--ep-slate-900) !important;
 }
 
-.enterprise-button-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: #fff;
+.enterprise-button-danger,
+a.enterprise-button-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #ffffff !important;
   box-shadow: var(--enterprise-shadow-sm), 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
-.enterprise-button-danger:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
+.enterprise-button-danger:hover,
+a.enterprise-button-danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: #ffffff !important;
   box-shadow: var(--enterprise-shadow), 0 4px 12px rgba(239, 68, 68, 0.25);
   transform: translateY(-1px);
 }
