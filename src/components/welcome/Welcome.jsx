@@ -1326,7 +1326,7 @@ class Welcome extends Component {
         };
 
         return (
-            <div className="wrapper">
+            <div className={`wrapper ${this.state.currentStep === 'Introduction' ? 'introduction-mode' : ''}`}>
                 {/* Dynamic SEO Meta Management */}
                 <MetaManager 
                     title={this.state.websiteTitle || 'Resume Builder App'}

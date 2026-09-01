@@ -6,7 +6,7 @@ import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 
 const BlogCard = ({ post, viewMode = 'grid' }) => {
     const { t } = useTranslation('common');
-    const featuredImage = sanitizeImageUrl(post.featuredImage);
+    const featuredImage = sanitizeImageUrl(post.featuredImage || post.coverImage || post.cover_image);
     const formatDate = (date) => {
         if (!date) return t('blog.recently', 'Recently');
         const postDate = date instanceof Date ? date : new Date(date);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaCubes, FaDownload, FaBriefcase, FaGlobe, FaFileAlt, FaMagic, FaChartLine, FaShareAlt, FaCheckCircle, FaSave, FaSpinner, FaInfoCircle, FaTag, FaGoogle, FaFacebook, FaLinkedin, FaGithub, FaEnvelope, FaShieldAlt, FaComments, FaClipboardList } from 'react-icons/fa';
+import { FaCubes, FaDownload, FaBriefcase, FaGlobe, FaFileAlt, FaMagic, FaChartLine, FaShareAlt, FaCheckCircle, FaSave, FaSpinner, FaInfoCircle, FaTag, FaGoogle, FaFacebook, FaLinkedin, FaGithub, FaEnvelope, FaShieldAlt, FaComments, FaClipboardList, FaBookOpen } from 'react-icons/fa';
 import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { buildModuleSettingsPatch } from '../../../utils/moduleFlags';
 
@@ -22,6 +22,7 @@ const ModulesSettings = () => {
         enablePublicSharingModule: false,
         enableCouponsModule: false,
         enableSalesTaxModule: false,
+        enableBlogModule: true,
     });
 
     const [loading, setLoading] = useState(true);
@@ -56,6 +57,7 @@ const ModulesSettings = () => {
                 enablePublicSharingModule: mods.enablePublicSharingModule !== undefined ? mods.enablePublicSharingModule : false,
                 enableCouponsModule: mods.enableCouponsModule !== undefined ? mods.enableCouponsModule : false,
                 enableSalesTaxModule: mods.enableSalesTaxModule !== undefined ? mods.enableSalesTaxModule : false,
+                enableBlogModule: mods.enableBlogModule !== undefined ? mods.enableBlogModule : (mods.blog !== undefined ? mods.blog : true),
             });
             const isAuthoritative = settings?._settingsSource === 'remote' && settings?._settingsStale !== true;
             setSettingsHydrated(isAuthoritative);
@@ -321,6 +323,15 @@ const ModulesSettings = () => {
             icon: FaShareAlt,
             badgeColor: modulesConfig.enablePublicSharingModule ? 'teal' : 'slate',
             statusText: modulesConfig.enablePublicSharingModule ? 'ENABLED' : 'DISABLED',
+        },
+        {
+            key: 'enableBlogModule',
+            title: 'Career Blog & CMS Knowledge Hub Module',
+            subtitle: 'Public Content & SEO Engine',
+            description: 'Enables public Career Blog listings, dynamic article reading, category taxonomy, and author publishing across the platform.',
+            icon: FaBookOpen,
+            badgeColor: modulesConfig.enableBlogModule ? 'blue' : 'slate',
+            statusText: modulesConfig.enableBlogModule ? 'ENABLED' : 'DISABLED',
         },
     ];
 

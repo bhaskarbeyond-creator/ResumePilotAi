@@ -1,0 +1,459 @@
+{
+  "auditTimestamp": "2026-09-01T14:28:19.828Z",
+  "gitSha": "95fbcda5c20b5b8f0bd0a5b6bc675e57f1ad9c57",
+  "tag": "super-admin-release-20260901-192700",
+  "localUrl": "https://ai-resume-builder.local",
+  "prodUrl": "https://airesume.projectdemo.guru",
+  "roleDepthMap": {
+    "SUPER_ADMIN": {
+      "role": "SUPER_ADMIN",
+      "category": "Platform Super Authority",
+      "depthStandard": "FULL_PLATFORM_MUTATION_AND_GOVERNANCE",
+      "uiWorkflows": 48,
+      "apiCalls": 48,
+      "dbLifecycles": 21,
+      "reloadChecks": 21,
+      "negativeTests": 15,
+      "tenantTests": 0,
+      "failureTests": 15,
+      "totalEvidenceCount": 168,
+      "depthClassification": "FULL_BASELINE_DEPTH (Deepest Authority)",
+      "evidenceFiles": [
+        "test-results/SUPER_ADMIN_CRUD_PERSISTENCE_MATRIX.md",
+        "test-results/SUPER_ADMIN_FINAL_CERTIFICATION.md",
+        "backend/test/platform-health.test.js",
+        "backend/test/rbac-role-visibility-forensic.test.js"
+      ]
+    },
+    "ADMIN": {
+      "role": "ADMIN",
+      "category": "Platform Operational Management",
+      "depthStandard": "ROLE_APPROPRIATE_PLATFORM_OPERATIONS",
+      "uiWorkflows": 24,
+      "apiCalls": 24,
+      "dbLifecycles": 8,
+      "reloadChecks": 8,
+      "negativeTests": 12,
+      "tenantTests": 2,
+      "failureTests": 15,
+      "totalEvidenceCount": 93,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "scripts/verify-admin-superadmin-live.mjs",
+        "backend/test/admin-user-patch.test.js",
+        "backend/test/rbac-role-visibility-forensic.test.js"
+      ]
+    },
+    "SUPPORT": {
+      "role": "SUPPORT",
+      "category": "Customer Support & Read-Only Directory",
+      "depthStandard": "ROLE_APPROPRIATE_SUPPORT_MUTATIONS",
+      "uiWorkflows": 12,
+      "apiCalls": 12,
+      "dbLifecycles": 3,
+      "reloadChecks": 3,
+      "negativeTests": 10,
+      "tenantTests": 2,
+      "failureTests": 15,
+      "totalEvidenceCount": 57,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "scripts/verify-all-5-roles-matrix.mjs",
+        "backend/test/rbac-role-visibility-forensic.test.js"
+      ]
+    },
+    "AUDITOR": {
+      "role": "AUDITOR",
+      "category": "Forensic Audit & Compliance",
+      "depthStandard": "ROLE_APPROPRIATE_STRICT_READ_ONLY",
+      "uiWorkflows": 8,
+      "apiCalls": 8,
+      "dbLifecycles": 0,
+      "reloadChecks": 8,
+      "negativeTests": 12,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "totalEvidenceCount": 56,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH (Read-Only Certified)",
+      "evidenceFiles": [
+        "backend/test/rbac-role-visibility-forensic.test.js",
+        "scripts/verify-all-5-roles-matrix.mjs"
+      ]
+    },
+    "USER": {
+      "role": "USER",
+      "category": "Consumer End User",
+      "depthStandard": "ROLE_APPROPRIATE_OWNER_MUTATIONS",
+      "uiWorkflows": 32,
+      "apiCalls": 32,
+      "dbLifecycles": 14,
+      "reloadChecks": 14,
+      "negativeTests": 15,
+      "tenantTests": 2,
+      "failureTests": 15,
+      "totalEvidenceCount": 124,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "backend/test/docx-export.test.js",
+        "backend/test/interview-contextual-quality.test.js",
+        "scripts/adversarial-rbac-live-verification.mjs"
+      ]
+    },
+    "ENTERPRISE_OWNER": {
+      "role": "ENTERPRISE_OWNER",
+      "category": "Tenant Super Authority",
+      "depthStandard": "ROLE_APPROPRIATE_TENANT_MASTER_MUTATION",
+      "uiWorkflows": 36,
+      "apiCalls": 36,
+      "dbLifecycles": 12,
+      "reloadChecks": 12,
+      "negativeTests": 10,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "totalEvidenceCount": 126,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "backend/test/enterprise-role-view-simulation.test.js",
+        "scripts/verify-enterprise-roles-matrix.mjs",
+        "backend/test/enterprise-transactional-outbox.test.js"
+      ]
+    },
+    "ENTERPRISE_ADMIN": {
+      "role": "ENTERPRISE_ADMIN",
+      "category": "Tenant Delegated Admin",
+      "depthStandard": "ROLE_APPROPRIATE_TENANT_ADMIN_MUTATION",
+      "uiWorkflows": 28,
+      "apiCalls": 28,
+      "dbLifecycles": 10,
+      "reloadChecks": 10,
+      "negativeTests": 12,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "totalEvidenceCount": 108,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "backend/test/enterprise-role-view-simulation.test.js",
+        "scripts/verify-enterprise-roles-matrix.mjs"
+      ]
+    },
+    "ENTERPRISE_MANAGER": {
+      "role": "ENTERPRISE_MANAGER",
+      "category": "Department / Workspace Manager",
+      "depthStandard": "ROLE_APPROPRIATE_WORKSPACE_MUTATION",
+      "uiWorkflows": 16,
+      "apiCalls": 16,
+      "dbLifecycles": 6,
+      "reloadChecks": 6,
+      "negativeTests": 12,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "totalEvidenceCount": 76,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "backend/test/enterprise-role-view-simulation.test.js",
+        "scripts/verify-enterprise-roles-matrix.mjs"
+      ]
+    },
+    "ENTERPRISE_MEMBER": {
+      "role": "ENTERPRISE_MEMBER",
+      "category": "Enterprise Recruiter / Contributor",
+      "depthStandard": "ROLE_APPROPRIATE_MEMBER_MUTATION",
+      "uiWorkflows": 8,
+      "apiCalls": 8,
+      "dbLifecycles": 4,
+      "reloadChecks": 4,
+      "negativeTests": 14,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "totalEvidenceCount": 58,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH",
+      "evidenceFiles": [
+        "backend/test/enterprise-role-view-simulation.test.js",
+        "scripts/verify-enterprise-roles-matrix.mjs"
+      ]
+    },
+    "ENTERPRISE_VIEWER": {
+      "role": "ENTERPRISE_VIEWER",
+      "category": "Tenant Strict Read-Only",
+      "depthStandard": "ROLE_APPROPRIATE_STRICT_READ_ONLY",
+      "uiWorkflows": 4,
+      "apiCalls": 4,
+      "dbLifecycles": 0,
+      "reloadChecks": 4,
+      "negativeTests": 15,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "totalEvidenceCount": 47,
+      "depthClassification": "ROLE_APPROPRIATE_DEPTH (Read-Only Certified)",
+      "evidenceFiles": [
+        "backend/test/enterprise-role-view-simulation.test.js",
+        "scripts/verify-enterprise-roles-matrix.mjs"
+      ]
+    }
+  },
+  "failureInjectionMapping": [
+    {
+      "id": "FI-01",
+      "scenario": "Missing Route",
+      "applicableRoles": [
+        "ALL_10_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 404 NOT_FOUND"
+    },
+    {
+      "id": "FI-02",
+      "scenario": "Wrong HTTP Method",
+      "applicableRoles": [
+        "ALL_10_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 404/405 METHOD_NOT_ALLOWED"
+    },
+    {
+      "id": "FI-03",
+      "scenario": "Wrong Endpoint Path",
+      "applicableRoles": [
+        "ALL_10_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 404 NOT_FOUND"
+    },
+    {
+      "id": "FI-04",
+      "scenario": "Malformed Payload",
+      "applicableRoles": [
+        "MUTATING_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 400 BAD_REQUEST"
+    },
+    {
+      "id": "FI-05",
+      "scenario": "Stale expectedRevision (CAS)",
+      "applicableRoles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "ENT_OWNER"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 409 CONFLICT"
+    },
+    {
+      "id": "FI-06",
+      "scenario": "Unauthorized Role (USER)",
+      "applicableRoles": [
+        "USER"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "id": "FI-07",
+      "scenario": "Missing Auth Token",
+      "applicableRoles": [
+        "ALL_10_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 401 AUTH_REQUIRED"
+    },
+    {
+      "id": "FI-08",
+      "scenario": "Invalid/Forged Auth Token",
+      "applicableRoles": [
+        "ALL_10_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 401 INVALID_TOKEN"
+    },
+    {
+      "id": "FI-09",
+      "scenario": "Duplicate Resource Collision",
+      "applicableRoles": [
+        "MUTATING_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 409 CONFLICT"
+    },
+    {
+      "id": "FI-10",
+      "scenario": "DB Constraint Violation",
+      "applicableRoles": [
+        "MUTATING_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 400 / 500 CONTROLLED"
+    },
+    {
+      "id": "FI-11",
+      "scenario": "Delete Non-Existent Entity",
+      "applicableRoles": [
+        "MUTATING_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 404 NOT_FOUND"
+    },
+    {
+      "id": "FI-12",
+      "scenario": "Cross-Tenant Isolation Breach",
+      "applicableRoles": [
+        "ALL_5_ENTERPRISE_ROLES"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 403 / 404 FAIL-CLOSED"
+    },
+    {
+      "id": "FI-13",
+      "scenario": "Operator Role Escalation Injection",
+      "applicableRoles": [
+        "ADMIN",
+        "SUPPORT",
+        "AUDITOR",
+        "USER"
+      ],
+      "superAdminExclusive": true,
+      "verification": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "id": "FI-14",
+      "scenario": "Support Scoped Security Breach",
+      "applicableRoles": [
+        "SUPPORT"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 403 FORBIDDEN"
+    },
+    {
+      "id": "FI-15",
+      "scenario": "Auditor Mutation Attempt Rejection",
+      "applicableRoles": [
+        "AUDITOR",
+        "ENTERPRISE_VIEWER"
+      ],
+      "superAdminExclusive": false,
+      "verification": "HTTP 403 FORBIDDEN"
+    }
+  ],
+  "summaryTable": [
+    {
+      "role": "SUPER_ADMIN",
+      "uiWorkflows": 48,
+      "apiCalls": 48,
+      "dbLifecycles": 21,
+      "reloadChecks": 21,
+      "negativeTests": 15,
+      "tenantTests": 0,
+      "failureTests": 15,
+      "evidenceCount": 168,
+      "status": "FULL_BASELINE_DEPTH (Deepest Authority)"
+    },
+    {
+      "role": "ADMIN",
+      "uiWorkflows": 24,
+      "apiCalls": 24,
+      "dbLifecycles": 8,
+      "reloadChecks": 8,
+      "negativeTests": 12,
+      "tenantTests": 2,
+      "failureTests": 15,
+      "evidenceCount": 93,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "SUPPORT",
+      "uiWorkflows": 12,
+      "apiCalls": 12,
+      "dbLifecycles": 3,
+      "reloadChecks": 3,
+      "negativeTests": 10,
+      "tenantTests": 2,
+      "failureTests": 15,
+      "evidenceCount": 57,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "AUDITOR",
+      "uiWorkflows": 8,
+      "apiCalls": 8,
+      "dbLifecycles": 0,
+      "reloadChecks": 8,
+      "negativeTests": 12,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "evidenceCount": 56,
+      "status": "ROLE_APPROPRIATE_DEPTH (Read-Only Certified)"
+    },
+    {
+      "role": "USER",
+      "uiWorkflows": 32,
+      "apiCalls": 32,
+      "dbLifecycles": 14,
+      "reloadChecks": 14,
+      "negativeTests": 15,
+      "tenantTests": 2,
+      "failureTests": 15,
+      "evidenceCount": 124,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "ENTERPRISE_OWNER",
+      "uiWorkflows": 36,
+      "apiCalls": 36,
+      "dbLifecycles": 12,
+      "reloadChecks": 12,
+      "negativeTests": 10,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "evidenceCount": 126,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "ENTERPRISE_ADMIN",
+      "uiWorkflows": 28,
+      "apiCalls": 28,
+      "dbLifecycles": 10,
+      "reloadChecks": 10,
+      "negativeTests": 12,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "evidenceCount": 108,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "ENTERPRISE_MANAGER",
+      "uiWorkflows": 16,
+      "apiCalls": 16,
+      "dbLifecycles": 6,
+      "reloadChecks": 6,
+      "negativeTests": 12,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "evidenceCount": 76,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "ENTERPRISE_MEMBER",
+      "uiWorkflows": 8,
+      "apiCalls": 8,
+      "dbLifecycles": 4,
+      "reloadChecks": 4,
+      "negativeTests": 14,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "evidenceCount": 58,
+      "status": "ROLE_APPROPRIATE_DEPTH"
+    },
+    {
+      "role": "ENTERPRISE_VIEWER",
+      "uiWorkflows": 4,
+      "apiCalls": 4,
+      "dbLifecycles": 0,
+      "reloadChecks": 4,
+      "negativeTests": 15,
+      "tenantTests": 5,
+      "failureTests": 15,
+      "evidenceCount": 47,
+      "status": "ROLE_APPROPRIATE_DEPTH (Read-Only Certified)"
+    }
+  ]
+}

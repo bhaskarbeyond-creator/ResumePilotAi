@@ -376,7 +376,7 @@ const publicApiPaths = new Set([
     '/public/trusted-by', '/public/trusted-by.json', '/public/featured-companies',
     '/custom-pages', '/custom-pages.json',
     '/trusted-by', '/trusted-by.json',
-    '/blog-data', '/jobs-data',
+    '/blog-data', '/blog-data/categories', '/jobs-data',
     '/paytm/callback', '/phonepe/callback',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
     '/stats', '/reviews', '/phrases', '/portfolios/public'

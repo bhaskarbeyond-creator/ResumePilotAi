@@ -2,459 +2,387 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { listBlogPosts, listBlogCategories, getBlogSettings } from '../../../services/api/platform';
-import BlogCard from '../components/BlogCard';
-import CategoryFilter from '../components/CategoryFilter';
+import { sanitizeImageUrl } from '../../../utils/sanitizeHtml';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
+import '../../Dashboard2/public-site.css';
 import { AuthContext } from '../../../context/AuthContext';
 import fire from '../../../conf/fire';
-import { FiSearch, FiCalendar, FiUser, FiEye, FiBookmark, FiEdit3, FiX, FiGrid, FiList, FiFilter, FiChevronDown } from 'react-icons/fi';
+import { 
+  FaSearch, 
+  FaCalendarAlt, 
+  FaClock, 
+  FaArrowRight, 
+  FaTimes, 
+  FaThLarge, 
+  FaList, 
+  FaBookOpen,
+  FaLightbulb,
+  FaShieldAlt
+} from 'react-icons/fa';
 
-const BlogList = () => {
-    const { t } = useTranslation('common');
-    const user = React.useContext(AuthContext);
-    const navigate = useNavigate();
-    const [posts, setPosts] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [blogSettings, setBlogSettings] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pagination, setPagination] = useState(null);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-    const [sortBy, setSortBy] = useState('newest');
-    const [loadError, setLoadError] = useState('');
-    const requestGeneration = useRef(0);
+export default function BlogList() {
+  const { t } = useTranslation('common');
+  const user = React.useContext(AuthContext);
+  const navigate = useNavigate();
 
-    // Auth handlers for navbar
-    const authBtnHandler = () => {
-        navigate('/');
-    };
+  const [posts, setPosts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [blogSettings, setBlogSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
+  const [sortBy, setSortBy] = useState('newest');
+  const [loadError, setLoadError] = useState('');
+  const requestGeneration = useRef(0);
 
-    const logout = async () => {
-        try {
-            await fire.auth().signOut();
-            navigate('/');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
-    };
+  const authBtnHandler = () => {
+    navigate('/');
+  };
 
-    useEffect(() => {
-        initializeBlog();
-    }, []);
-
-    useEffect(() => {
-        fetchPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCategory, currentPage]);
-
-    useEffect(() => {
-        // Update document title
-        document.title = blogSettings?.seoTitle || 'Blog';
-    }, [blogSettings]);
-
-    const initializeBlog = async () => {
-        setLoading(true);
-        try {
-            // Fetch categories and settings in parallel with fallbacks
-            const [categoriesResult, settingsResult] = await Promise.all([
-                listBlogCategories().catch(() => []),
-                getBlogSettings().catch(() => null)
-            ]);
-            
-            setCategories(categoriesResult || []);
-            setBlogSettings(settingsResult);
-        } catch (error) {
-            console.warn('Blog initialization handled non-fatal error:', error?.message);
-        }
-    };
-
-    const fetchPosts = async () => {
-        const generation = ++requestGeneration.current;
-        setLoadError('');
-        if (currentPage === 1) {
-            setLoading(true);
-        } else {
-            setLoadingMore(true);
-        }
-
-        try {
-            const options = {
-                status: 'approved',
-                limit: blogSettings?.postsPerPage || 10,
-                page: currentPage,
-                orderBy: 'publishedAt', // Order by publish date for public blog
-                orderDirection: 'desc'
-            };
-
-            if (selectedCategory && selectedCategory !== 'all') {
-                options.categoryId = selectedCategory;
-            }
-
-            const result = await listBlogPosts(options);
-            
-            if (generation !== requestGeneration.current) return;
-            if (result.success) {
-                if (currentPage === 1) {
-                    setPosts(result.posts);
-                } else {
-                    setPosts(prev => [...prev, ...result.posts]);
-                }
-                setPagination(result.pagination);
-            } else {
-                setPosts([]);
-                setLoadError(result.error || 'Blog posts are unavailable.');
-            }
-        } catch (error) {
-            if (generation === requestGeneration.current) { setPosts([]); setLoadError(error.message || 'Blog posts are unavailable.'); }
-        } finally {
-            if (generation === requestGeneration.current) { setLoading(false); setLoadingMore(false); }
-        }
-    };
-
-    const handleCategoryChange = (categoryId) => {
-        setSelectedCategory(categoryId);
-        setCurrentPage(1);
-        setPosts([]);
-    };
-
-    const handleLoadMore = () => {
-        if (pagination && pagination.hasNextPage) {
-            setCurrentPage(prev => prev + 1);
-        }
-    };
-
-    const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
-    const filteredPosts = posts.filter((post) => {
-        if (!normalizedSearch) return true;
-        return String(post.title || '').toLocaleLowerCase().includes(normalizedSearch)
-            || String(post.excerpt || '').toLocaleLowerCase().includes(normalizedSearch);
-    });
-
-    if (loading) {
-        return (
-            <>
-                <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-16">
-                    <Spinner />
-                </div>
-                <HomepageFooter />
-            </>
-        );
+  const logout = async () => {
+    try {
+      await fire.auth().signOut();
+      navigate('/');
+    } catch (err) {
+      console.error('Error signing out:', err);
     }
+  };
 
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      listBlogCategories().catch(() => []),
+      getBlogSettings().catch(() => null),
+    ]).then(([cats, sets]) => {
+      if (mounted) {
+        setCategories(cats || []);
+        setBlogSettings(sets);
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [selectedCategory, currentPage]);
+
+  useEffect(() => {
+    document.title = blogSettings?.seoTitle || 'Career Resources & Guides — ResumePilot AI';
+  }, [blogSettings]);
+
+  const fetchPosts = async () => {
+    const gen = ++requestGeneration.current;
+    setLoadError('');
+    if (currentPage === 1) setLoading(true);
+
+    try {
+      const options = {
+        limit: blogSettings?.postsPerPage || 20,
+        page: currentPage,
+      };
+      if (selectedCategory && selectedCategory !== 'all') {
+        options.categoryId = selectedCategory;
+      }
+
+      const result = await listBlogPosts(options);
+      if (gen !== requestGeneration.current) return;
+
+      if (result && result.success) {
+        const loadedPosts = Array.isArray(result.posts) ? result.posts : [];
+        if (currentPage === 1) {
+          setPosts(loadedPosts);
+        } else {
+          setPosts(prev => [...prev, ...loadedPosts]);
+        }
+        setPagination(result.pagination);
+      } else {
+        setPosts([]);
+        setLoadError(result?.error || 'Unable to load blog articles.');
+      }
+    } catch (error) {
+      if (gen === requestGeneration.current) {
+        setPosts([]);
+        setLoadError(error.message || 'Unable to load blog articles.');
+      }
+    } finally {
+      if (gen === requestGeneration.current) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const calculateReadingTime = (content) => {
+    if (!content) return '3 min read';
+    const words = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
+    const mins = Math.max(1, Math.ceil(words / 200));
+    return `${mins} min read`;
+  };
+
+  const formatDate = (val) => {
+    if (!val) return 'Recent';
+    try {
+      const d = new Date(val);
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (_) {
+      return 'Recent';
+    }
+  };
+
+  // Filter & Sort
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  let displayedPosts = posts.filter(post => {
+    if (selectedCategory !== 'all') {
+      const postCatNorm = String(post.category || post.categoryName || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+      const selCatNorm = String(selectedCategory || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+      if (!postCatNorm.includes(selCatNorm) && !selCatNorm.includes(postCatNorm)) return false;
+    }
+    if (!normalizedSearch) return true;
     return (
-        <>
-            <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
-            <div className="min-h-screen bg-white pt-16">
-                {/* Hero Header Section */}
-                <div className="bg-slate-900 relative overflow-hidden">
-                    {/* Subtle geometric pattern */}
-                    <div className="absolute inset-0 opacity-5">
-                        <div className="absolute inset-0" style={{
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                        }}></div>
-                    </div>
-                    
-                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                        <div className="text-center max-w-4xl mx-auto">
-                            <div className="inline-flex items-center px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-sm font-medium mb-6">
-                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
-                                {t('blog.knowledgeHub', 'Knowledge Hub')}
-                            </div>
-                            
-                            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-                                {blogSettings?.blogTitle || t('blog.blogTitle', 'Insights & Resources')}
-                            </h1>
-                            
-                            <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-10">
-                                {blogSettings?.blogDescription || t('blog.blogDescription', 'Expert insights, industry trends, and practical guides to help you succeed')}
-                            </p>
-
-                            {/* Enhanced Search Bar */}
-                            <div className="max-w-2xl mx-auto">
-                                <div className="relative group">
-                                    <div className="absolute inset-0 bg-white/10 rounded-xl blur-sm group-focus-within:bg-white/20 transition-all duration-300"></div>
-                                    <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-1">
-                                        <div className="relative flex items-center">
-                                            <FiSearch className="absolute left-4 text-slate-400 w-5 h-5" />
-                                            <input
-                                                type="text"
-                                                placeholder={t('blog.searchPlaceholder', 'Search articles, guides, and insights...')}
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="w-full pl-12 pr-32 py-4 bg-transparent text-white placeholder-slate-400 border-0 focus:outline-none focus:ring-0 text-lg"
-                                            />
-                                            <div className="absolute right-2 flex items-center space-x-2">
-                                                <span className="hidden sm:block text-xs text-slate-500 bg-slate-800/50 px-2 py-1 rounded border border-slate-700">
-                                                    ⌘K
-                                                </span>
-                                                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium">
-                                                    {t('blog.search', 'Search')}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Content Section */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-                    {/* Professional Header Bar */}
-                    <div className="bg-white border-b border-slate-200 mb-8">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6">
-                            {/* Left Side - Title and Stats */}
-                            <div className="flex-1">
-                                <div className="flex items-center gap-4 mb-2">
-                                    <h1 className="text-2xl font-bold text-slate-900">
-                                        {selectedCategory === 'all' ? t('blog.allArticles', 'All Articles') : 
-                                         categories.find(cat => cat.id === selectedCategory)?.name || t('blog.articleLabel', 'Articles')}
-                                    </h1>
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-sm bg-slate-100 text-slate-600 font-medium">
-                                        {filteredPosts.length} {filteredPosts.length === 1 ? t('blog.articleLabel', 'article') : t('blog.articles', 'articles')}
-                                    </span>
-                                </div>
-                                {searchTerm && (
-                                    <p className="text-slate-600">
-                                        {t('blog.searchResultsFor', 'Search results for')} <span className="font-medium text-slate-900">"{searchTerm}"</span>
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Right Side - Controls */}
-                            <div className="flex items-center gap-3">
-                                {/* Category Filter */}
-                                <div className="relative">
-                                    <label htmlFor="blog-category-filter" className="sr-only">Filter by category</label>
-                                    <select
-                                        id="blog-category-filter"
-                                        aria-label="Filter by category"
-                                        value={selectedCategory}
-                                        onChange={(e) => handleCategoryChange(e.target.value)}
-                                        className="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                        <option value="all">{t('blog.allCategories', 'All Categories')}</option>
-                                        {categories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <FiChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                                </div>
-
-                                {/* Sort Dropdown */}
-                                <div className="relative">
-                                    <label htmlFor="blog-sort-by" className="sr-only">Sort blogs</label>
-                                    <select
-                                        id="blog-sort-by"
-                                        aria-label="Sort blogs"
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                        className="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                        <option value="newest">Newest First</option>
-                                        <option value="oldest">Oldest First</option>
-                                        <option value="popular">Most Popular</option>
-                                        <option value="alphabetical">A-Z</option>
-                                    </select>
-                                    <FiChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                                </div>
-
-                                {/* View Toggle */}
-                                <div className="flex items-center bg-slate-100 rounded-lg p-1">
-                                    <button
-                                        onClick={() => setViewMode('grid')}
-                                        className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
-                                            viewMode === 'grid'
-                                                ? 'bg-white text-slate-900 shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-700'
-                                        }`}
-                                        title="Grid view"
-                                    >
-                                        <FiGrid className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('list')}
-                                        className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
-                                            viewMode === 'list'
-                                                ? 'bg-white text-slate-900 shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-700'
-                                        }`}
-                                        title="List view"
-                                    >
-                                        <FiList className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                {/* Write Article Button for Authenticated Users */}
-                                {user && (
-                                    <Link
-                                        to="/blog-editor"
-                                        className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
-                                    >
-                                        <FiEdit3 className="w-4 h-4 mr-2" />
-                                        Write Article
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="">
-                        {loadError && <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}</div>}
-                        {filteredPosts.length === 0 && !loading && !loadError ? (
-                            <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
-                                <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                    <FiSearch className="w-12 h-12 text-slate-400" />
-                                </div>
-                                <h3 className="text-2xl font-semibold text-slate-900 mb-3">No articles found</h3>
-                                <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                                    {searchTerm 
-                                        ? `We couldn't find any articles matching "${searchTerm}". Try adjusting your search terms.`
-                                        : 'No articles are available in this category yet. Check back soon for new content.'
-                                    }
-                                </p>
-                                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                    {searchTerm && (
-                                        <button
-                                            onClick={() => setSearchTerm('')}
-                                            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors duration-200"
-                                        >
-                                            <FiX className="w-4 h-4 mr-2" />
-                                            Clear Search
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => setSelectedCategory('all')}
-                                        className="inline-flex items-center px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors duration-200"
-                                    >
-                                        <FiBookmark className="w-4 h-4 mr-2" />
-                                        View All Categories
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Grid View */}
-                                {viewMode === 'grid' && (
-                                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-                                        {filteredPosts.map((post, index) => (
-                                            <BlogCard key={`${post.id}-${index}`} post={post} viewMode="grid" />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* List View */}
-                                {viewMode === 'list' && (
-                                    <div className="space-y-4">
-                                        {filteredPosts.map((post, index) => (
-                                            <BlogCard key={`${post.id}-${index}`} post={post} viewMode="list" />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Enhanced Pagination */}
-                                {pagination && pagination.totalPages > 1 && (
-                                    <div className="mt-16 border-t border-slate-200 pt-12">
-                                        <div className="flex flex-col sm:flex-row items-center justify-between">
-                                            <div className="flex items-center space-x-4 mb-6 sm:mb-0">
-                                                <span className="text-sm text-slate-600">
-                                                    Showing <span className="font-medium">{Math.min(currentPage * (blogSettings?.postsPerPage || 10), pagination.totalCount)}</span> of <span className="font-medium">{pagination.totalCount}</span> articles
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="flex items-center space-x-2">
-                                                {pagination.hasPreviousPage && (
-                                                    <button
-                                                        onClick={() => setCurrentPage(prev => prev - 1)}
-                                                        className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors duration-200"
-                                                    >
-                                                        Previous
-                                                    </button>
-                                                )}
-                                                
-                                                <div className="flex items-center space-x-1">
-                                                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                                                        let pageNum;
-                                                        if (pagination.totalPages <= 5) {
-                                                            pageNum = i + 1;
-                                                        } else if (currentPage <= 3) {
-                                                            pageNum = i + 1;
-                                                        } else if (currentPage >= pagination.totalPages - 2) {
-                                                            pageNum = pagination.totalPages - 4 + i;
-                                                        } else {
-                                                            pageNum = currentPage - 2 + i;
-                                                        }
-                                                        
-                                                        return (
-                                                            <button
-                                                                key={pageNum}
-                                                                onClick={() => setCurrentPage(pageNum)}
-                                                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                                                                    currentPage === pageNum
-                                                                        ? 'bg-blue-600 text-white'
-                                                                        : 'text-slate-700 hover:bg-slate-100'
-                                                                }`}
-                                                            >
-                                                                {pageNum}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                
-                                                {pagination.hasNextPage && (
-                                                    <button
-                                                        onClick={() => setCurrentPage(prev => prev + 1)}
-                                                        className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors duration-200"
-                                                    >
-                                                        Next
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {/* Load More Alternative */}
-                                {pagination && pagination.hasNextPage && currentPage < pagination.totalPages && (
-                                    <div className="mt-12 text-center">
-                                        <button
-                                            onClick={handleLoadMore}
-                                            disabled={loadingMore}
-                                            className="inline-flex items-center px-8 py-3 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-medium rounded-xl transition-all duration-200 group"
-                                        >
-                                            {loadingMore ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent mr-3"></div>
-                                                    Loading more articles...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span>Load More Articles</span>
-                                                    <FiEye className="w-4 h-4 ml-2 group-hover:translate-y-0.5 transition-transform duration-200" />
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
-            <HomepageFooter />
-        </>
+      String(post.title || '').toLowerCase().includes(normalizedSearch) ||
+      String(post.excerpt || '').toLowerCase().includes(normalizedSearch) ||
+      String(post.category || '').toLowerCase().includes(normalizedSearch)
     );
-};
+  });
 
-export default BlogList;
+  if (sortBy === 'oldest') {
+    displayedPosts.sort((a, b) => new Date(a.createdAt || a.publishedAt || 0) - new Date(b.createdAt || b.publishedAt || 0));
+  } else if (sortBy === 'alphabetical') {
+    displayedPosts.sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
+  } else {
+    // Newest
+    displayedPosts.sort((a, b) => new Date(b.createdAt || b.publishedAt || 0) - new Date(a.createdAt || a.publishedAt || 0));
+  }
+
+  // Derive active category list including from loaded posts
+  const dynamicCategories = categories.length > 0 
+    ? categories 
+    : [...new Set(posts.map(p => p.category || p.categoryName).filter(Boolean))].map(name => ({
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        name
+      }));
+
+  return (
+    <div className="rp-public-site">
+      <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
+
+      {/* Hero Knowledge Hub */}
+      <section className="rp-blog-hero" aria-labelledby="rp-blog-heading">
+        <div className="rp-container">
+          <div className="rp-hero-eyebrow" style={{ margin: '0 auto 16px auto' }}>
+            <FaBookOpen style={{ color: 'var(--rp-blue)', fontSize: '13px' }} />
+            <span>Career Knowledge & Playbooks</span>
+          </div>
+
+          <h1 id="rp-blog-heading" className="rp-hero-headline" style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', marginBottom: '14px' }}>
+            Expert Career Insights & Strategies
+          </h1>
+
+          <p className="rp-hero-subheadline" style={{ maxWidth: '680px', margin: '0 auto 28px auto', fontSize: '16px' }}>
+            {blogSettings?.blogDescription || 'Proven frameworks on beating ATS algorithms, crafting high-impact bullets, and acing technical & behavioral interviews.'}
+          </p>
+
+          {/* Search Box */}
+          <div className="rp-blog-search-container">
+            <FaSearch className="rp-blog-search-icon" />
+            <input
+              type="text"
+              id="rp-blog-search-input"
+              className="rp-blog-search-input"
+              placeholder="Search articles, ATS tips, bullet formulas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search career articles"
+            />
+            {searchTerm && (
+              <button 
+                type="button" 
+                className="rp-blog-search-clear" 
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+              >
+                <FaTimes />
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content Area */}
+      <main className="rp-container" style={{ paddingBottom: '96px', paddingTop: '24px' }}>
+        
+        {/* Filter & Controls Bar */}
+        <div className="rp-blog-filter-bar">
+          {/* Category Pills */}
+          <div className="rp-blog-category-pills" role="tablist" aria-label="Category Filters">
+            <button
+              type="button"
+              className={`rp-blog-pill ${selectedCategory === 'all' ? 'active' : ''}`}
+              onClick={() => { setSelectedCategory('all'); setCurrentPage(1); }}
+              role="tab"
+              aria-selected={selectedCategory === 'all'}
+            >
+              All Articles ({posts.length})
+            </button>
+            {dynamicCategories.map(cat => (
+              <button
+                key={cat.id || cat.slug || cat.name}
+                type="button"
+                className={`rp-blog-pill ${selectedCategory === cat.slug || selectedCategory === cat.id || selectedCategory === cat.name ? 'active' : ''}`}
+                onClick={() => { setSelectedCategory(cat.slug || cat.id || cat.name); setCurrentPage(1); }}
+                role="tab"
+                aria-selected={selectedCategory === cat.slug || selectedCategory === cat.name}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Controls: Sort & View Toggle */}
+          <div className="rp-blog-controls">
+            <label htmlFor="rp-blog-sort-select" className="sr-only">Sort Articles</label>
+            <select
+              id="rp-blog-sort-select"
+              className="rp-blog-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort Articles"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="alphabetical">Title (A-Z)</option>
+            </select>
+
+            <div className="rp-blog-view-toggle">
+              <button
+                type="button"
+                className={`rp-blog-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+                aria-label="Grid View"
+                title="Grid View"
+              >
+                <FaThLarge />
+              </button>
+              <button
+                type="button"
+                className={`rp-blog-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+                aria-label="List View"
+                title="List View"
+              >
+                <FaList />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Spinner */}
+        {loading && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '64px 0' }}>
+            <Spinner />
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {loadError && !loading && (
+          <div role="alert" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '14px', padding: '20px', textAlign: 'center', color: '#991b1b', marginBottom: '32px' }}>
+            <p style={{ fontWeight: '700', margin: '0 0 6px 0' }}>Failed to load articles</p>
+            <p style={{ fontSize: '13px', margin: 0 }}>{loadError}</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !loadError && displayedPosts.length === 0 && (
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '56px 24px', textAlign: 'center', maxWidth: '540px', margin: '32px auto' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: '#e8f0fe', color: 'var(--rp-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 18px auto' }}>
+              <FaSearch />
+            </div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>
+              No articles found
+            </h3>
+            <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+              {searchTerm ? `No articles matching "${searchTerm}". Try another search keyword or clear filters.` : 'No published articles match the selected category.'}
+            </p>
+            <button
+              type="button"
+              className="rp-btn-primary"
+              onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }}
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
+
+        {/* Articles Grid or List */}
+        {!loading && displayedPosts.length > 0 && (
+          <div className={viewMode === 'grid' ? 'rp-blog-grid' : 'rp-blog-list-view'}>
+            {displayedPosts.map((post) => {
+              const cover = sanitizeImageUrl(post.featuredImage || post.coverImage || post.cover_image);
+              const categoryName = post.category || post.categoryName || 'Career Strategy';
+              const readTime = calculateReadingTime(post.content);
+              const postSlug = post.slug || post.id;
+
+              return (
+                <article key={post.id || post.slug} className="rp-blog-card">
+                  <Link to={`/blog/${postSlug}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    {/* Media */}
+                    <div className="rp-blog-card-media">
+                      {cover ? (
+                        <img 
+                          src={cover} 
+                          alt={post.title} 
+                          className="rp-blog-card-img" 
+                          loading="lazy" 
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="rp-blog-card-placeholder">
+                          <FaBookOpen />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Body */}
+                    <div className="rp-blog-card-body">
+                      <div className="rp-blog-card-meta">
+                        <span className="rp-blog-badge">{categoryName}</span>
+                        <span>•</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <FaClock style={{ fontSize: '11px' }} />
+                          {readTime}
+                        </span>
+                        <span>•</span>
+                        <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                      </div>
+
+                      <h2 className="rp-blog-card-title">
+                        {post.title}
+                      </h2>
+
+                      <p className="rp-blog-card-excerpt">
+                        {post.excerpt || (post.content ? post.content.replace(/<[^>]*>/g, '').slice(0, 140) + '...' : 'Explore comprehensive career guidance and actionable insights.')}
+                      </p>
+
+                      <div className="rp-blog-card-footer">
+                        <span>Read Full Guide</span>
+                        <FaArrowRight style={{ fontSize: '12px' }} />
+                      </div>
+                    </div>
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+        )}
+
+      </main>
+
+      <HomepageFooter />
+    </div>
+  );
+}

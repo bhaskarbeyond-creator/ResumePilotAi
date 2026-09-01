@@ -35,11 +35,11 @@ test('builder paths are application-shell routes; dashboard/settings are not dou
   assert.equal(isApplicationShellRoute('/login'), false);
 });
 
-test('router wraps authenticated builder routes in MaybeApplicationShell and does not wait on module flags', () => {
+test('router wraps authenticated builder routes in AuthenticatedAppShell and does not wait on module flags', () => {
   const main = fs.readFileSync('src/main.jsx', 'utf8');
-  assert.match(main, /MaybeApplicationShell/);
+  assert.match(main, /AuthenticatedAppShell/);
   assert.match(main, /path="\/build-resume\/\*"/);
-  assert.match(main, /<MaybeApplicationShell user=\{user\}><BuildResume/);
+  assert.match(main, /<AuthenticatedAppShell><BuildResume/);
   assert.match(main, /if \(authLoading \|\| maintenance\.loading\) return <Spinner \/>/);
   const shell = fs.readFileSync('src/components/AppShell/AuthenticatedAppShell.jsx', 'utf8');
   assert.match(shell, /data-testid="application-shell"/);

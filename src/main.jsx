@@ -6,6 +6,7 @@ import { isSafeInternalPath, loginPathWithNext, getPostLoginRedirectPath, clearP
 import './tailwind.css';
 import './index.scss';
 import './index.css';
+import './components/Dashboard2/public-site.css';
 import './cv-templates/css/globalTemplateEnhancements.css';
 import './i18n'; // Import i18n configuration
 
@@ -480,9 +481,9 @@ const AuthWrapper = () => {
                             <Route path="/dashboard/*" element={<RequireAuthenticated user={user}><Dashboard key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/enterprise/*" element={<RequireAuthenticated user={user}><EnterpriseConsole key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/contact" element={<Contact user={user} />} />
-                            <Route path="/build-resume/*" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
-                            <Route path="/create-resume/*" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
-                            <Route path="/create-resume" element={<MaybeApplicationShell user={user}><BuildResume key={user?.uid || 'guest'} /></MaybeApplicationShell>} />
+                            <Route path="/build-resume/*" element={<RequireAuthenticated user={user}><AuthenticatedAppShell><BuildResume key={user?.uid || 'authenticated'} /></AuthenticatedAppShell></RequireAuthenticated>} />
+                            <Route path="/create-resume/*" element={<RequireAuthenticated user={user}><AuthenticatedAppShell><BuildResume key={user?.uid || 'authenticated'} /></AuthenticatedAppShell></RequireAuthenticated>} />
+                            <Route path="/create-resume" element={<RequireAuthenticated user={user}><AuthenticatedAppShell><BuildResume key={user?.uid || 'authenticated'} /></AuthenticatedAppShell></RequireAuthenticated>} />
                             {/* Legacy in-page builder URLs previously mounted an obsolete client-only workflow.
                                 Keep old links useful, but route every variant into the maintained,
                                 MariaDB-backed builder rather than reviving two competing drafts. */}
@@ -502,6 +503,16 @@ const AuthWrapper = () => {
                             <Route path="/adm/*" element={<RequireAuthenticated user={user}><Admin key={user?.uid || 'unauthenticated'} /></RequireAuthenticated>} />
                             <Route path="/front" element={<Navigate to="/" replace />} />
                             <Route path="/features" element={<Features user={user} />} />
+                            <Route path="/templates" element={<Navigate to="/#templates" replace />} />
+                            <Route path="/faq" element={<Navigate to="/#faqs" replace />} />
+                            <Route path="/faqs" element={<Navigate to="/#faqs" replace />} />
+                            <Route path="/plans" element={<Navigate to="/pricing" replace />} />
+                            <Route path="/career-resources" element={<Navigate to="/blog" replace />} />
+                            <Route path="/privacy" element={<Navigate to="/p/privacy-policy" replace />} />
+                            <Route path="/terms" element={<Navigate to="/p/terms-of-service" replace />} />
+                            <Route path="/cookies" element={<Navigate to="/p/cookie-policy" replace />} />
+                            <Route path="/about" element={<Navigate to="/p/about-us" replace />} />
+                            <Route path="/about-us" element={<Navigate to="/p/about-us" replace />} />
                             <Route path="/jobs" element={<JobsLanding />} />
                             <Route path="/jobs/portal" element={<MainJobListings key={user?.uid || 'guest'} />} />
                             <Route path="/jobs/portal/:jobId" element={<MainJobListings key={user?.uid || 'guest'} />} />

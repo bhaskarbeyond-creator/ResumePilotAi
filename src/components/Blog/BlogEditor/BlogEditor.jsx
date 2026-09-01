@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -13,1472 +13,1619 @@ import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { createBlogPost, updateBlogPost, listBlogCategories, getUserBlogPosts, getBlogPostByIdForAuthor, deleteBlogPost } from '../../../services/api/platform';
+import { 
+  createBlogPost, 
+  updateBlogPost, 
+  deleteBlogPost, 
+  getBlogPostById, 
+  listBlogCategories, 
+  listBlogPosts, 
+  getUserBlogPosts 
+} from '../../../services/api/platform';
 import { AuthContext } from '../../../context/AuthContext';
 import Spinner from '../../Spinner/Spinner';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
-import BlogPreviewModal from '../../admin/blogManagement/BlogPreviewModal';
-import fire from '../../../conf/fire';
-import { sanitizeBlogHtml, sanitizeImageUrl, sanitizePlainText, sanitizeUrl } from '../../../utils/sanitizeHtml';
+import '../../Dashboard2/public-site.css';
 import './TiptapEditor.css';
-import { FiSave, FiEye, FiArrowLeft, FiTrash2, FiAlertCircle, FiCheck, FiX, FiImage, FiTag, FiFileText, FiBold, FiItalic, FiList, FiCode, FiLink, FiType, FiUnderline, FiAlignLeft, FiAlignCenter, FiAlignRight, FiAlignJustify, FiGrid, FiPlusCircle, FiMinus, FiEdit2, FiRotateCcw, FiRotateCw, FiShield } from 'react-icons/fi';
+import fire from '../../../conf/fire';
+import { sanitizeBlogHtml, sanitizeImageUrl } from '../../../utils/sanitizeHtml';
+import { 
+  FiSave, FiEye, FiArrowLeft, FiTrash2, FiAlertCircle, FiCheck, FiX, 
+  FiImage, FiTag, FiFileText, FiBold, FiItalic, FiList, FiCode, 
+  FiLink, FiType, FiUnderline, FiAlignLeft, FiAlignCenter, FiAlignRight, 
+  FiAlignJustify, FiGrid, FiPlusCircle, FiMinus, FiEdit2, FiRotateCcw, 
+  FiRotateCw, FiShield, FiExternalLink, FiSearch, FiSliders, FiClock, 
+  FiCheckCircle, FiShare2, FiLock, FiUnlock, FiRefreshCw
+} from 'react-icons/fi';
 
-const BlogEditor = ({ user: propUser }) => {
-    const { postId } = useParams();
-    const navigate = useNavigate();
-    const ctxUser = useContext(AuthContext);
-    const user = propUser || ctxUser || fire.auth()?.currentUser;
-    
-    const [post, setPost] = useState({
-        title: '',
-        content: '',
-        excerpt: '',
-        categoryId: '',
-        tags: [],
-        featuredImage: '',
-        seoTitle: '',
-        seoDescription: '',
-        status: 'draft',
-        revision: null,
-        updatedAt: null,
-    });
-    
-    const [categories, setCategories] = useState([]);
-    const [userPosts, setUserPosts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
-    const [errors, setErrors] = useState({});
-    const [tagInput, setTagInput] = useState('');
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [saveConflict, setSaveConflict] = useState(null);
-    const handleSaveRef = useRef(null);
-    const [notification, setNotification] = useState(null);
-    const [showImageModal, setShowImageModal] = useState(false);
-    const [showLinkModal, setShowLinkModal] = useState(false);
-    const [imageUrl, setImageUrl] = useState('');
-    const [imageAlt, setImageAlt] = useState('');
-    const [linkUrl, setLinkUrl] = useState('');
-    const [linkText, setLinkText] = useState('');
+const SAMPLE_COVERS = [
+  'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=1200&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&auto=format&fit=crop&q=80',
+];
 
-    // Tiptap editor initialization
-    const editor = useEditor({
-        extensions: [
-            StarterKit,
-            Image.configure({
-                inline: false,
-                allowBase64: false,
-                HTMLAttributes: {
-                    class: 'max-w-full h-auto rounded-lg shadow-sm',
-                },
-            }),
-            TiptapLink.configure({
-                openOnClick: false,
-                HTMLAttributes: {
-                    class: 'text-blue-600 hover:text-blue-800 underline cursor-pointer',
-                },
-            }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-            }),
-            Table.configure({
-                resizable: true,
-            }),
-            TableRow,
-            TableHeader,
-            TableCell,
-            Underline,
-            Highlight.configure({
-                HTMLAttributes: {
-                    class: 'bg-yellow-200 px-1 rounded',
-                },
-            }),
-            TextStyle,
-            Color,
-        ],
-        content: post.content,
-        onUpdate: ({ editor }) => {
-            setPost(prev => ({ ...prev, content: editor.getHTML() }));
-            setHasUnsavedChanges(true);
+const DEFAULT_CATEGORIES = [
+  'ATS Resumes',
+  'Career Growth',
+  'Interview Prep',
+  'AI & Technology',
+  'Job Search',
+  'General'
+];
+
+export default function BlogEditor({ user: propUser }) {
+  const { postId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const ctxUser = useContext(AuthContext);
+  const user = propUser || ctxUser || fire.auth()?.currentUser;
+
+  const [post, setPost] = useState({
+    id: '',
+    title: '',
+    slug: '',
+    content: '',
+    excerpt: '',
+    category: 'ATS Resumes',
+    tags: [],
+    coverImage: '',
+    author: 'Editorial Team',
+    authorId: '',
+    seoTitle: '',
+    seoDescription: '',
+    status: 'draft',
+    published: false,
+    revision: 1,
+    views: 0,
+    likes: 0,
+    updatedAt: null,
+  });
+
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [allPosts, setAllPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [slugLocked, setSlugLocked] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkText, setLinkText] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [activeTab, setActiveTab] = useState('editor'); // 'editor' | 'settings' | 'seo'
+
+  // Is navigated from Admin panel
+  const isFromAdmin = location.state?.fromAdmin || document.referrer?.includes('/adm') || location.search.includes('admin=1');
+
+  // Calculate read time and words
+  const stats = useMemo(() => {
+    const plain = (post.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = plain ? plain.split(/\s+/).length : 0;
+    const chars = plain.length;
+    const readTimeMinutes = Math.max(1, Math.ceil(words / 200));
+    return { words, chars, readTimeMinutes };
+  }, [post.content]);
+
+  // Tiptap editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: {
+          class: 'rp-editor-img max-w-full h-auto rounded-xl shadow-md my-4',
         },
-        editorProps: {
-            attributes: {
-                class: 'prose prose-lg max-w-none focus:outline-none min-h-[500px] p-4',
-                'aria-label': 'Post content',
-            },
+      }),
+      TiptapLink.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 hover:text-blue-800 underline font-medium',
         },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Underline,
+      Highlight.configure({
+        HTMLAttributes: {
+          class: 'bg-yellow-200 px-1 rounded',
+        },
+      }),
+      TextStyle,
+      Color,
+    ],
+    content: post.content || '',
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      setPost((prev) => ({ ...prev, content: html }));
+      setHasUnsavedChanges(true);
+    },
+    editorProps: {
+      attributes: {
+        class: 'rp-tiptap-content prose prose-lg max-w-none focus:outline-none min-h-[480px] p-6 text-slate-800',
+        'aria-label': 'Post content editor',
+      },
+    },
+  });
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Helper to generate slug from title
+  const generateSlug = (text) => {
+    return (text || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 80);
+  };
+
+  // Handle title changes and auto-slug
+  const handleTitleChange = (e) => {
+    const newTitle = e.target.value;
+    setHasUnsavedChanges(true);
+    setPost((prev) => {
+      const next = { ...prev, title: newTitle };
+      if (!isEditing || !slugLocked) {
+        next.slug = generateSlug(newTitle);
+      }
+      if (!prev.seoTitle || prev.seoTitle === prev.title) {
+        next.seoTitle = newTitle;
+      }
+      return next;
     });
+  };
 
-    // Auth handlers for navbar
-    const authBtnHandler = () => {
-        navigate('/');
-    };
+  // Auto-generate excerpt from content
+  const handleAutoExcerpt = () => {
+    const plain = (post.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (plain) {
+      const excerpt = plain.slice(0, 160) + (plain.length > 160 ? '...' : '');
+      setPost((prev) => ({ ...prev, excerpt, seoDescription: prev.seoDescription || excerpt }));
+      setHasUnsavedChanges(true);
+      showNotification('Excerpt auto-generated from content.');
+    }
+  };
 
-    const logout = async () => {
-        try {
-            await fire.auth().signOut();
-            navigate('/');
-        } catch (error) {
-            console.error('Error signing out:', error);
-        }
-    };
+  // Load categories and post data on mount or param change
+  useEffect(() => {
+    let mounted = true;
 
-    useEffect(() => {
-        if (!user) {
-            navigate('/');
-            return;
-        }
-        
-        initializeEditor();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, postId]);
-
-    useEffect(() => {
-        const previousTitle = document.title;
-        return () => {
-            document.title = previousTitle;
-        };
-    }, []);
-
-    useEffect(() => {
-        const title = isEditing && post.title ? `Edit: ${post.title}` : 'Create New Post';
-        document.title = `${title} - Blog Editor`;
-    }, [isEditing, post.title]);
-
-    useEffect(() => {
-        const warnAboutUnsavedChanges = (event) => {
-            if (!hasUnsavedChanges) return;
-            event.preventDefault();
-            event.returnValue = '';
-        };
-        window.addEventListener('beforeunload', warnAboutUnsavedChanges);
-        return () => window.removeEventListener('beforeunload', warnAboutUnsavedChanges);
-    }, [hasUnsavedChanges]);
-
-    // Sync editor content when post content changes
-    useEffect(() => {
-        if (!editor || editor.isDestroyed || !editor.schema) return;
-        try {
-            if (editor.getHTML() !== post.content) {
-                editor.commands.setContent(post.content, { emitUpdate: false });
-            }
-        } catch (_) {
-            // Non-fatal schema sync
-        }
-    }, [editor, post.content]);
-
-    const initializeEditor = async () => {
-        setLoading(true);
-        
-        try {
-            // Fetch categories
-            const categoriesResult = await listBlogCategories();
-            setCategories(categoriesResult);
-
-            // If editing existing post
-            if (postId) {
-                // Load the target directly and only the small recent-post sidebar set.
-                const [postResult, userPostsResult] = await Promise.all([
-                    getBlogPostByIdForAuthor(postId, user.uid),
-                    getUserBlogPosts(user.uid, { status: 'all', limit: 6 }),
-                ]);
-                const postData = postResult?.success ? postResult.post : (postResult?.title ? postResult : null);
-                const userPostsList = Array.isArray(userPostsResult) ? userPostsResult : (userPostsResult?.posts || []);
-                setUserPosts(userPostsList);
-                
-                if (postData && (postData.authorUid === user.uid || !postData.authorUid)) {
-                    if (postData.status === 'approved' || postData.status === 'scheduled') {
-                        showNotification('Published or scheduled posts are managed through moderation. Create a new draft for revisions.', 'error');
-                        navigate(postData.slug ? `/blog/${postData.slug}` : '/blog-editor');
-                        return;
-                    }
-                    setPost({
-                        title: postData.title || '',
-                        content: postData.content || '',
-                        excerpt: postData.excerpt || '',
-                        categoryId: postData.categoryId || '',
-                        tags: postData.tags || [],
-                        featuredImage: postData.featuredImage || '',
-                        seoTitle: postData.seoTitle || '',
-                        seoDescription: postData.seoDescription || '',
-                        slug: postData.slug || '',
-                        status: postData.status || 'draft',
-                        revision: Number(postData.revision) || 0,
-                        updatedAt: postData.updatedAt || null,
-                    });
-                    setIsEditing(true);
-                } else {
-                    showNotification('Post not found or you do not have permission to edit it.', 'error');
-                    navigate('/blog-editor');
-                }
-            } else {
-                // Load user's posts for the dashboard
-                const userPostsResult = await getUserBlogPosts(user.uid, {
-                    status: 'all',
-                    limit: 6
-                });
-                
-                const userPostsList = Array.isArray(userPostsResult) ? userPostsResult : (userPostsResult?.posts || []);
-                setUserPosts(userPostsList);
-            }
-        } catch (error) {
-            console.error('Error initializing editor:', error);
-            showNotification('Failed to load editor. Please try again.', 'error');
-        } finally {
-            setHasUnsavedChanges(false);
-            setLoading(false);
-        }
-    };
-
-    const showNotification = (message, type = 'success') => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification(null), 5000);
-    };
-
-    const validateForm = (submitForReview = true) => {
-        const newErrors = {};
-        
-        if (!post.title.trim()) {
-            newErrors.title = 'Title is required';
-        } else if (post.title.length > 200) {
-            newErrors.title = 'Title must be less than 200 characters';
-        }
-        
-        // Check content from the editor
-        const editorContent = editor ? editor.getHTML() : '';
-        const hasContent = editorContent.trim().length > 0 && 
-                          editorContent.replace(/<[^>]*>/g, '').trim().length > 0; // Remove HTML tags to check actual text content
-        
-        if (submitForReview && !hasContent) {
-            newErrors.content = 'Content is required before review';
-        }
-        
-        if (submitForReview && !post.categoryId) {
-            newErrors.categoryId = 'Category is required before review';
-        }
-        
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSave = async (submitForReview = true) => {
-        if (saveConflict) {
-            showNotification('Resolve the newer-revision conflict before saving.', 'error');
-            return;
-        }
-        if (!validateForm(submitForReview)) {
-            showNotification('Please fix the errors before saving.', 'error');
-            return;
+    async function loadInitialData() {
+      setLoading(true);
+      try {
+        // 1. Fetch categories
+        const catRes = await listBlogCategories();
+        if (mounted && Array.isArray(catRes) && catRes.length > 0) {
+          const names = catRes.map((c) => (typeof c === 'string' ? c : c.name || c.id)).filter(Boolean);
+          if (names.length > 0) setCategories(Array.from(new Set([...DEFAULT_CATEGORIES, ...names])));
         }
 
-        setSaving(true);
-        
-        try {
-            // Get the HTML content from the editor
-            const editorContent = editor ? editor.getHTML() : '';
-            
-            // Sanitize all content before saving
-            const sanitizedContent = sanitizeContent(editorContent);
-            const sanitizedTitle = sanitizeText(post.title);
-            const sanitizedExcerpt = post.excerpt ? sanitizeText(post.excerpt) : generateExcerpt(sanitizedContent);
-            
-            // Validate that sanitization didn't remove critical content
-            if (sanitizedContent.trim().length === 0 && editorContent.trim().length > 0) {
-                showNotification('Content contains invalid or potentially dangerous HTML that was removed. Please review your content.', 'error');
-                setSaving(false);
-                return;
-            }
-            
-            // Sanitize tags as well
-            const sanitizedTags = post.tags.map(tag => sanitizeText(tag)).filter(tag => tag.trim().length > 0);
-            
-            // Validate and sanitize featured image URL
-            let sanitizedFeaturedImage = '';
-            if (post.featuredImage) {
-                sanitizedFeaturedImage = sanitizeImageUrl(post.featuredImage);
-                if (!sanitizedFeaturedImage) {
-                    showNotification('Featured image must use a valid HTTPS URL.', 'error');
-                    setSaving(false);
-                    return;
-                }
-            }
-            
-            const postData = {
-                ...post,
-                title: sanitizedTitle,
-                content: sanitizedContent,
-                excerpt: sanitizedExcerpt,
-                tags: sanitizedTags,
-                featuredImage: sanitizedFeaturedImage,
-                seoTitle: sanitizeText(post.seoTitle || sanitizedTitle),
-                seoDescription: sanitizeText(post.seoDescription || sanitizedExcerpt),
-                status: submitForReview ? 'pending' : 'draft',
-            };
+        // 2. Fetch recent post list for switcher
+        const postsRes = await listBlogPosts({ limit: 20 });
+        if (mounted && postsRes?.posts) {
+          setAllPosts(postsRes.posts);
+        }
 
-            let result;
-            if (isEditing && postId) {
-                result = await updateBlogPost(postId, postData, user.uid, post.revision);
-            } else {
-                result = await createBlogPost(user.uid, postData);
+        // 3. If editing existing post
+        if (postId) {
+          const loaded = await getBlogPostById(postId);
+          if (mounted && loaded) {
+            const rawTags = loaded.tags;
+            let parsedTags = [];
+            if (Array.isArray(rawTags)) parsedTags = rawTags;
+            else if (typeof rawTags === 'string') {
+              try { parsedTags = JSON.parse(rawTags); } catch (_) { parsedTags = rawTags.split(',').map((t) => t.trim()).filter(Boolean); }
             }
 
-            if (result.success) {
-                setPost(current => ({ ...current, revision: result.revision ?? current.revision, status: result.status || postData.status, slug: result.slug || current.slug, updatedAt: new Date() }));
-                setSaveConflict(null);
-                setHasUnsavedChanges(false);
-                showNotification(
-                    submitForReview
-                        ? (isEditing ? 'Post updated and submitted for review.' : 'Post created and submitted for review.')
-                        : (isEditing ? 'Draft saved.' : 'Draft created.'),
-                    'success'
-                );
-                
-                // Refresh user posts
-                const userPostsResult = await getUserBlogPosts(user.uid, {
-                    status: 'all',
-                    limit: 6
-                });
-                
-                if (userPostsResult.success) {
-                    setUserPosts(userPostsResult.posts);
-                }
+            const cover = loaded.cover_image || loaded.coverImage || loaded.featuredImage || '';
+            const status = loaded.status || (loaded.published ? 'approved' : 'draft');
+            const isPub = status === 'approved' || status === 'published' || Boolean(loaded.published);
 
-                // If it's a new post, redirect to edit mode
-                if (!isEditing && result.postId) {
-                    navigate(`/blog-editor/${result.postId}`);
-                }
-            } else {
-                if (result.code === 'BLOG_CONFLICT') setSaveConflict({ revision: result.remoteRevision, status: result.remoteStatus });
-                showNotification(result.code === 'BLOG_CONFLICT' ? 'This post changed in another tab. Autosave is paused; choose a recovery action below.' : result.error || 'Failed to save post. Please try again.', 'error');
+            setPost({
+              id: loaded.id || postId,
+              title: loaded.title || '',
+              slug: loaded.slug || '',
+              content: loaded.content || '',
+              excerpt: loaded.excerpt || '',
+              category: loaded.category || loaded.categoryName || 'ATS Resumes',
+              tags: parsedTags,
+              coverImage: cover,
+              author: loaded.author || (user?.displayName || user?.email?.split('@')[0] || 'Admin'),
+              authorId: loaded.author_id || loaded.authorUid || user?.uid || '',
+              seoTitle: loaded.seoTitle || loaded.seo_title || loaded.title || '',
+              seoDescription: loaded.seoDescription || loaded.seo_description || loaded.excerpt || '',
+              status: isPub ? 'approved' : status,
+              published: isPub,
+              revision: Number(loaded.revision || 1),
+              views: Number(loaded.views || 0),
+              likes: Number(loaded.likes || 0),
+              updatedAt: loaded.updated_at || loaded.updatedAt || null,
+            });
+
+            setIsEditing(true);
+            setSlugLocked(true);
+
+            if (editor && !editor.isDestroyed) {
+              editor.commands.setContent(loaded.content || '', { emitUpdate: false });
             }
-        } catch (error) {
-            console.error('Error saving post:', error);
-            showNotification('Failed to save post. Please try again.', 'error');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    handleSaveRef.current = handleSave;
-
-    useEffect(() => {
-        if (!isEditing || !hasUnsavedChanges || saving || saveConflict || post.status === 'approved' || post.status === 'scheduled') return undefined;
-        const timer = setTimeout(() => handleSaveRef.current?.(false), 3000);
-        return () => clearTimeout(timer);
-    }, [isEditing, hasUnsavedChanges, saving, post, saveConflict]);
-
-    const reloadAfterConflict = async () => {
-        setSaveConflict(null);
-        await initializeEditor();
-        showNotification('Latest saved version loaded.', 'success');
-    };
-
-    const overwriteAfterConflict = () => {
-        if (saveConflict?.status === 'approved' || saveConflict?.status === 'scheduled') {
-            showNotification('The remote post is now published or scheduled and cannot be overwritten from the author editor.', 'error');
-            return;
-        }
-        setPost(current => ({ ...current, revision: saveConflict.revision, status: saveConflict.status || current.status }));
-        setSaveConflict(null);
-        setHasUnsavedChanges(true);
-        showNotification('Conflict acknowledged. Your local draft will be saved as the next revision.', 'success');
-    };
-
-    const handleDelete = async () => {
-        if (!isEditing || !postId) return;
-
-        setSaving(true);
-        
-        try {
-            const result = await deleteBlogPost(postId, user.uid, post.revision);
-            
-            if (result.success) {
-                setHasUnsavedChanges(false);
-                showNotification('Post deleted successfully.', 'success');
-                setTimeout(() => navigate('/blog-editor'), 1000);
-            } else {
-                showNotification(result.error || 'Failed to delete post.', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting post:', error);
-            showNotification('Failed to delete post. Please try again.', 'error');
-        } finally {
-            setSaving(false);
-            setShowDeleteConfirm(false);
-        }
-    };
-
-    const handleTagAdd = () => {
-        if (tagInput.trim() && !post.tags.includes(tagInput.trim())) {
-            setPost(prev => ({
-                ...prev,
-                tags: [...prev.tags, tagInput.trim()]
-            }));
-            setHasUnsavedChanges(true);
-            setTagInput('');
-        }
-    };
-
-    const handleTagRemove = (tagToRemove) => {
-        setPost(prev => ({
+          } else if (mounted) {
+            showNotification('Post could not be loaded or not found.', 'error');
+          }
+        } else if (mounted) {
+          // New post initial setup
+          const defaultAuthor = user?.displayName || user?.email?.split('@')[0] || 'Editorial Team';
+          setPost((prev) => ({
             ...prev,
-            tags: prev.tags.filter(tag => tag !== tagToRemove)
+            id: `post_${Date.now()}`,
+            author: defaultAuthor,
+            authorId: user?.uid || '',
+          }));
+          setIsEditing(false);
+          setSlugLocked(false);
+        }
+      } catch (err) {
+        console.error('[BlogEditor] Failed to initialize editor:', err);
+        if (mounted) showNotification('Failed to initialize blog editor.', 'error');
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setHasUnsavedChanges(false);
+        }
+      }
+    }
+
+    loadInitialData();
+
+    return () => { mounted = false; };
+  }, [postId, user]);
+
+  // Sync editor content when post content changes initially
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    if (post.content && editor.getHTML() !== post.content) {
+      editor.commands.setContent(post.content, { emitUpdate: false });
+    }
+  }, [editor, post.id]);
+
+  // Handle Save (Draft vs Publish)
+  const handleSave = async (publishStatus = null) => {
+    if (!post.title.trim()) {
+      showNotification('Please enter a post title before saving.', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const editorHtml = editor ? editor.getHTML() : post.content;
+      const sanitizedHtml = sanitizeBlogHtml(editorHtml);
+      const isPublishing = publishStatus === 'publish' || (publishStatus === null && post.published);
+      const nextStatus = isPublishing ? 'approved' : 'draft';
+      const cleanSlug = (post.slug || generateSlug(post.title)).trim();
+
+      const payload = {
+        ...post,
+        id: post.id || (postId ? postId : `post_${Date.now()}`),
+        title: post.title.trim(),
+        slug: cleanSlug,
+        content: sanitizedHtml,
+        excerpt: post.excerpt.trim() || sanitizedHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
+        category: post.category || 'General',
+        tags: post.tags || [],
+        coverImage: post.coverImage ? sanitizeImageUrl(post.coverImage) : null,
+        cover_image: post.coverImage ? sanitizeImageUrl(post.coverImage) : null,
+        author: post.author || 'Admin',
+        authorId: post.authorId || user?.uid || null,
+        author_id: post.authorId || user?.uid || null,
+        seoTitle: post.seoTitle || post.title,
+        seoDescription: post.seoDescription || post.excerpt,
+        status: nextStatus,
+        published: isPublishing ? 1 : 0,
+        publishedAt: isPublishing ? (post.publishedAt || new Date().toISOString()) : null,
+        revision: Number(post.revision || 1) + 1,
+      };
+
+      const targetId = payload.id;
+      let res;
+      if (isEditing && postId) {
+        res = await updateBlogPost(targetId, payload, user?.uid, post.revision);
+      } else {
+        res = await createBlogPost(user?.uid || 'admin', payload);
+      }
+
+      if (res?.success) {
+        setPost((prev) => ({
+          ...prev,
+          ...payload,
+          status: nextStatus,
+          published: isPublishing,
+          revision: payload.revision,
+          updatedAt: new Date().toISOString(),
         }));
+        setHasUnsavedChanges(false);
+        setIsEditing(true);
+        showNotification(
+          isPublishing 
+            ? '🎉 Post published and live on the public blog!' 
+            : '✓ Draft saved successfully.', 
+          'success'
+        );
+
+        if (!postId && targetId) {
+          navigate(`/blog-editor/${targetId}`, { replace: true });
+        }
+      } else {
+        showNotification(res?.error || 'Failed to save post. Please try again.', 'error');
+      }
+    } catch (err) {
+      console.error('[BlogEditor] Save error:', err);
+      showNotification('Error saving blog post: ' + (err.message || 'Unknown error'), 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle Delete
+  const handleDelete = async () => {
+    if (!postId && !post.id) return;
+    setSaving(true);
+    try {
+      await deleteBlogPost(postId || post.id);
+      showNotification('Post deleted successfully.', 'success');
+      setShowDeleteConfirm(false);
+      setTimeout(() => {
+        if (isFromAdmin) navigate('/adm');
+        else navigate('/blog');
+      }, 700);
+    } catch (err) {
+      console.error('[BlogEditor] Delete error:', err);
+      showNotification('Failed to delete post: ' + err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Tag helpers
+  const handleAddTag = (val = null) => {
+    const candidate = (val || tagInput).trim();
+    if (candidate && !post.tags.includes(candidate)) {
+      setPost((prev) => ({ ...prev, tags: [...prev.tags, candidate] }));
+      setHasUnsavedChanges(true);
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setPost((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tagToRemove) }));
+    setHasUnsavedChanges(true);
+  };
+
+  // Insert Image via Modal
+  const handleInsertImage = () => {
+    if (imageUrl && editor) {
+      const safe = sanitizeImageUrl(imageUrl);
+      if (safe) {
+        editor.chain().focus().setImage({ src: safe, alt: post.title || 'Blog image' }).run();
+        setShowImageModal(false);
+        setImageUrl('');
         setHasUnsavedChanges(true);
-    };
-
-    const handleTagInputKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleTagAdd();
-        }
-    };
-
-    // Image insertion handler
-    const handleImageInsert = () => {
-        if (imageUrl && editor) {
-            const safeImageUrl = sanitizeImageUrl(imageUrl);
-            if (!safeImageUrl) {
-                showNotification('Please enter a valid HTTPS image URL.', 'error');
-                return;
-            }
-
-            editor.chain().focus().setImage({
-                src: safeImageUrl,
-                alt: sanitizeText(imageAlt) || 'Article image',
-                loading: 'lazy'
-            }).run();
-            setImageUrl('');
-            setImageAlt('');
-            setShowImageModal(false);
-        }
-    };
-
-    // Link insertion handler
-    const handleLinkInsert = () => {
-        if (linkUrl && editor) {
-            const safeLinkUrl = sanitizeUrl(linkUrl);
-            if (!safeLinkUrl) {
-                showNotification('Please enter a valid web, email, phone, or page link.', 'error');
-                return;
-            }
-
-            const sanitizedLinkText = linkText ? sanitizeText(linkText) : '';
-            if (sanitizedLinkText) {
-                // Structured Tiptap content avoids constructing an HTML injection sink.
-                editor.chain().focus().insertContent({
-                    type: 'text',
-                    text: sanitizedLinkText,
-                    marks: [{ type: 'link', attrs: { href: safeLinkUrl, target: '_blank', rel: 'noopener noreferrer' } }],
-                }).run();
-            } else {
-                editor.chain().focus().setLink({
-                    href: safeLinkUrl,
-                    target: '_blank', 
-                    rel: 'noopener noreferrer' 
-                }).run();
-            }
-            setLinkUrl('');
-            setLinkText('');
-            setShowLinkModal(false);
-        }
-    };
-
-    // Remove link handler
-    const handleLinkRemove = () => {
-        if (editor) {
-            editor.chain().focus().unsetLink().run();
-        }
-    };
-
-    const sanitizeContent = sanitizeBlogHtml;
-    const sanitizeText = sanitizePlainText;
-
-    const generateExcerpt = (content) => {
-        if (!content) return '';
-        
-        // First sanitize the content to ensure it's safe
-        const sanitizedContent = sanitizeContent(content);
-        
-        // Strip HTML tags and get plain text
-        const plainText = sanitizedContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-        
-        // Generate excerpt with appropriate length
-        return plainText.length > 160 ? plainText.substring(0, 160).trim() + '...' : plainText;
-    };
-
-    const getStatusBadge = (status) => {
-        const badges = {
-            draft: { color: 'bg-slate-100 text-slate-800', text: 'Private Draft' },
-            pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending Review' },
-            approved: { color: 'bg-green-100 text-green-800', text: 'Published' },
-            scheduled: { color: 'bg-purple-100 text-purple-800', text: 'Scheduled' },
-            rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' }
-        };
-        
-        const badge = badges[status] || badges.draft;
-        
-        return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                {badge.text}
-            </span>
-        );
-    };
-
-    if (loading) {
-        return (
-            <>
-                <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-16">
-                    <Spinner />
-                </div>
-                <HomepageFooter />
-            </>
-        );
+      } else {
+        showNotification('Please enter a valid HTTPS image URL.', 'error');
+      }
     }
+  };
 
-    if (!user) {
-        return (
-            <>
-                <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-16">
-                    <div className="text-center">
-                        <FiAlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-                        <p className="text-gray-600 mb-6">You must be logged in to create or edit blog posts.</p>
-                        <Link to="/" className="text-blue-600 hover:text-blue-700 font-medium">
-                            Go to Home
-                        </Link>
-                    </div>
-                </div>
-                <HomepageFooter />
-            </>
-        );
+  // Insert Link via Modal
+  const handleInsertLink = () => {
+    if (linkUrl && editor) {
+      if (linkText) {
+        editor.chain().focus().insertContent(`<a href="${linkUrl}">${linkText}</a>`).run();
+      } else {
+        editor.chain().focus().setLink({ href: linkUrl }).run();
+      }
+      setShowLinkModal(false);
+      setLinkUrl('');
+      setLinkText('');
+      setHasUnsavedChanges(true);
     }
+  };
 
+  if (loading) {
     return (
-        <>
-            <HomepageNavbar authBtnHandler={authBtnHandler} user={user} logout={logout} />
-            <div className="min-h-screen bg-gray-50 pt-16">
-                {/* Professional Notification */}
-                {notification && (
-                    <div role={notification.type === 'success' ? 'status' : 'alert'} aria-live="polite" className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-xl border ${
-                        notification.type === 'success' 
-                            ? 'bg-green-50 border-green-200 text-green-800' 
-                            : 'bg-red-50 border-red-200 text-red-800'
-                    }`}>
-                        <div className="flex items-center">
-                            {notification.type === 'success' ? 
-                                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                    <FiCheck className="w-4 h-4 text-green-600" />
-                                </div> : 
-                                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                                    <FiAlertCircle className="w-4 h-4 text-red-600" />
-                                </div>
-                            }
-                            <span className="font-medium text-sm">{notification.message}</span>
-                        </div>
-                    </div>
-                )}
-
-                <div className="max-w-7xl mx-auto px-6 py-8">
-                    {saveConflict && (
-                        <div role="alert" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950">
-                            <h2 className="font-semibold">A newer revision was saved elsewhere</h2>
-                            <p className="mt-1 text-sm">Your unsaved local content remains in this editor and autosave is paused. Choose whether to discard it or explicitly replace revision {saveConflict.revision}.</p>
-                            <div className="mt-3 flex flex-wrap gap-3">
-                                <button type="button" onClick={reloadAfterConflict} className="rounded-md border border-amber-400 bg-white px-3 py-2 text-sm font-medium">Discard local changes and load latest</button>
-                                <button type="button" onClick={overwriteAfterConflict} className="rounded-md bg-amber-800 px-3 py-2 text-sm font-medium text-white">Overwrite latest with this local draft</button>
-                            </div>
-                        </div>
-                    )}
-                    <div className="flex flex-col gap-8 lg:flex-row">
-                        {/* Main Editor */}
-                        <div className="min-w-0 flex-1 max-w-4xl space-y-6">
-                            {/* Navigation and Title Section */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                                {/* Navigation */}
-                                <div className="flex items-center space-x-3 mb-6">
-                                    <Link 
-                                        to="/blog"
-                                        className="inline-flex items-center text-sm text-gray-500 hover:text-blue-600 transition-colors duration-200"
-                                    >
-                                        <FiArrowLeft className="w-4 h-4 mr-2" />
-                                        Back to Blog
-                                    </Link>
-                                    <span className="text-gray-300">•</span>
-                                    <span className="text-sm text-gray-500">
-                                        {isEditing ? 'Editing Post' : 'Creating New Post'}
-                                    </span>
-                                    
-                                    {/* Preview Button (moved here) */}
-                                    {(post.title || post.content) && (
-                                        <>
-                                            <span className="text-gray-300">•</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPreview(true)}
-                                                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                                            >
-                                                <FiEye className="w-4 h-4 mr-1" />
-                                                Preview Draft
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                                
-                                {/* Title Input */}
-                                <div>
-                                    <input
-                                        type="text"
-                                        id="title"
-                                        aria-label="Post title"
-                                        value={post.title}
-                                        onChange={(e) => { setPost(prev => ({ ...prev, title: e.target.value })); setHasUnsavedChanges(true); }}
-                                        placeholder="Enter your post title here..."
-                                        className={`w-full px-0 py-3 text-3xl font-bold placeholder-gray-300 border-0 focus:outline-none focus:ring-0 bg-transparent ${
-                                            errors.title ? 'text-red-600' : 'text-gray-900'
-                                        }`}
-                                        style={{ fontSize: '1.875rem', lineHeight: '2.25rem' }}
-                                    />
-                                    {errors.title && (
-                                        <p className="mt-3 text-sm text-red-600 flex items-center">
-                                            <FiAlertCircle className="w-4 h-4 mr-2" />
-                                            {errors.title}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Tiptap Rich Text Editor */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                {/* Editor Header */}
-                                <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-4">
-                                            <h3 className="text-sm font-semibold text-gray-900">Rich Text Editor</h3>
-                                            <div className="flex items-center space-x-2 text-xs">
-                                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-md font-medium">WYSIWYG</span>
-                                                <span className="text-gray-400">•</span>
-                                                <span className="text-gray-500">Rich formatting</span>
-                                            </div>
-                                        </div>
-                                        <div className="text-xs text-gray-400">
-                                            {post.content ? post.content.replace(/<[^>]*>/g, '').length : 0} characters
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Professional Multi-Row Toolbar */}
-                                {editor && (
-                                    <div className="overflow-x-auto border-b border-gray-100 bg-gray-50/80">
-                                        {/* Main Toolbar Row */}
-                                        <div className="px-6 py-3 flex items-center justify-between">
-                                            <div className="flex items-center space-x-1">
-                                                {/* Undo/Redo */}
-                                                <div className="flex items-center space-x-1 pr-3 border-r border-gray-300">
-                                                    <button
-                                                        onClick={() => editor.chain().focus().undo().run()}
-                                                        disabled={!editor.can().undo()}
-                                                        className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
-                                                        aria-label="Undo (Ctrl+Z)"
-                                                        title="Undo (Ctrl+Z)"
-                                                    >
-                                                        <FiRotateCcw className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().redo().run()}
-                                                        disabled={!editor.can().redo()}
-                                                        className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
-                                                        aria-label="Redo (Ctrl+Y)"
-                                                        title="Redo (Ctrl+Y)"
-                                                    >
-                                                        <FiRotateCw className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-
-                                                {/* Text Formatting */}
-                                                <div className="flex items-center space-x-1 pr-3 border-r border-gray-300">
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleBold().run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('bold') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Bold (Ctrl+B)"
-                                                        title="Bold (Ctrl+B)"
-                                                    >
-                                                        <FiBold className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('italic') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Italic (Ctrl+I)"
-                                                        title="Italic (Ctrl+I)"
-                                                    >
-                                                        <FiItalic className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleUnderline().run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('underline') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Underline (Ctrl+U)"
-                                                        title="Underline (Ctrl+U)"
-                                                    >
-                                                        <FiUnderline className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleHighlight().run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('highlight') ? 'bg-yellow-100 text-yellow-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Highlight"
-                                                        title="Highlight"
-                                                    >
-                                                        <div className="w-4 h-4 bg-current rounded-sm opacity-60"></div>
-                                                    </button>
-                                                </div>
-
-                                                {/* Headings */}
-                                                <div className="flex items-center space-x-1 pr-3 border-r border-gray-300">
-                                                    <button
-                                                        onClick={() => editor.chain().focus().setParagraph().run()}
-                                                        className={`px-2 py-1 text-xs font-semibold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('paragraph') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Normal Text"
-                                                        title="Normal Text"
-                                                    >
-                                                        P
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                                                        className={`px-2 py-1 text-xs font-bold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('heading', { level: 1 }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Heading 1"
-                                                        title="Heading 1"
-                                                    >
-                                                        H1
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                                                        className={`px-2 py-1 text-xs font-bold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('heading', { level: 2 }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Heading 2"
-                                                        title="Heading 2"
-                                                    >
-                                                        H2
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                                                        className={`px-2 py-1 text-xs font-bold rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('heading', { level: 3 }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Heading 3"
-                                                        title="Heading 3"
-                                                    >
-                                                        H3
-                                                    </button>
-                                                </div>
-
-                                                {/* Text Alignment */}
-                                                <div className="flex items-center space-x-1 pr-3 border-r border-gray-300">
-                                                    <button
-                                                        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive({ textAlign: 'left' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Align Left"
-                                                        title="Align Left"
-                                                    >
-                                                        <FiAlignLeft className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive({ textAlign: 'center' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Align Center"
-                                                        title="Align Center"
-                                                    >
-                                                        <FiAlignCenter className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive({ textAlign: 'right' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Align Right"
-                                                        title="Align Right"
-                                                    >
-                                                        <FiAlignRight className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Justify"
-                                                        title="Justify"
-                                                    >
-                                                        <FiAlignJustify className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-
-                                                {/* Lists */}
-                                                <div className="flex items-center space-x-1 pr-3 border-r border-gray-300">
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('bulletList') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Bullet List"
-                                                        title="Bullet List"
-                                                    >
-                                                        <FiList className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('orderedList') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Numbered List"
-                                                        title="Numbered List"
-                                                    >
-                                                        <span className="text-xs font-bold">1.</span>
-                                                    </button>
-                                                </div>
-
-                                                {/* Insert Elements */}
-                                                <div className="flex items-center space-x-1">
-                                                    <button
-                                                        onClick={() => setShowImageModal(true)}
-                                                        className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600"
-                                                        aria-label="Insert Image"
-                                                        title="Insert Image"
-                                                    >
-                                                        <FiImage className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setShowLinkModal(true)}
-                                                        className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                            editor.isActive('link') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                        }`}
-                                                        aria-label="Insert Link"
-                                                        title="Insert Link"
-                                                    >
-                                                        <FiLink className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-                                                        className="p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 text-gray-600"
-                                                        aria-label="Insert Table"
-                                                        title="Insert Table"
-                                                    >
-                                                        <FiGrid className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Secondary Actions */}
-                                            <div className="flex items-center space-x-1">
-                                                <button
-                                                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                                                    className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                        editor.isActive('blockquote') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                    }`}
-                                                    aria-label="Quote"
-                                                    title="Quote"
-                                                >
-                                                    <span className="text-sm font-bold">&ldquo;&rdquo;</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => editor.chain().focus().toggleCode().run()}
-                                                    className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                        editor.isActive('code') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                    }`}
-                                                    aria-label="Inline Code"
-                                                    title="Inline Code"
-                                                >
-                                                    <FiCode className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                                                    className={`p-2 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 ${
-                                                        editor.isActive('codeBlock') ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-600'
-                                                    }`}
-                                                    aria-label="Code Block"
-                                                    title="Code Block"
-                                                >
-                                                    <span className="text-xs font-mono">&lt;/&gt;</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {/* Tiptap Editor Content */}
-                                <div className="relative">
-                                    <div 
-                                        className={`min-h-[600px] p-6 focus-within:bg-white ${
-                                            errors.content ? 'bg-red-50' : 'bg-white'
-                                        }`}
-                                    >
-                                        <EditorContent 
-                                            editor={editor}
-                                            className="prose max-w-none focus:outline-none"
-                                        />
-                                        
-                                        {/* Placeholder */}
-                                        {editor && editor.isEmpty && (
-                                            <div className="absolute top-6 left-6 text-gray-400 pointer-events-none">
-                                                Start writing your amazing content here...
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {errors.content && (
-                                        <div className="absolute top-6 right-6 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm flex items-center shadow-sm">
-                                            <FiAlertCircle className="w-4 h-4 mr-2" />
-                                            {errors.content}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Excerpt Section - Enhanced */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-gray-900">Post Excerpt</h3>
-                                            <p className="text-xs text-gray-500 mt-1">A brief summary that appears in post previews</p>
-                                        </div>
-                                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                                            Optional
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-6">
-                                    <textarea
-                                        id="excerpt"
-                                        aria-label="Post excerpt"
-                                        value={post.excerpt}
-                                        onChange={(e) => { setPost(prev => ({ ...prev, excerpt: e.target.value })); setHasUnsavedChanges(true); }}
-                                        placeholder="Write a compelling excerpt that summarizes your post and entices readers..."
-                                        rows={4}
-                                        className="w-full border-0 focus:outline-none resize-none text-gray-800 leading-6 placeholder-gray-400 bg-transparent"
-                                        style={{ fontSize: '14px' }}
-                                    />
-                                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
-                                        <span className="text-xs text-gray-400">
-                                            {post.excerpt ? `${post.excerpt.length} characters` : 'Auto-generated if empty'}
-                                        </span>
-                                        <span className="text-xs text-gray-400">
-                                            Recommended: 150-160 characters
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                                <h3 className="text-sm font-semibold text-gray-900">Search & Social Metadata</h3>
-                                <label className="mt-4 block text-xs font-medium text-gray-700" htmlFor="seoTitle">SEO title</label>
-                                <input id="seoTitle" value={post.seoTitle || ''} onChange={event => { setPost(current => ({ ...current, seoTitle: event.target.value })); setHasUnsavedChanges(true); }} maxLength={120} placeholder={post.title || 'Article title'} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
-                                <label className="mt-3 block text-xs font-medium text-gray-700" htmlFor="seoDescription">SEO description</label>
-                                <textarea id="seoDescription" value={post.seoDescription || ''} onChange={event => { setPost(current => ({ ...current, seoDescription: event.target.value })); setHasUnsavedChanges(true); }} maxLength={320} rows={3} placeholder={post.excerpt || 'Article description'} className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm" />
-                            </div>
-
-                            {/* Security Notice */}
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div className="flex items-start space-x-3">
-                                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-                                        <FiShield className="w-3 h-3 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-medium text-blue-900 mb-1">Content Security</h4>
-                                        <p className="text-xs text-blue-700 leading-relaxed">
-                                            Your content is automatically sanitized for security. Potentially harmful scripts, 
-                                            unsafe HTML tags, and malicious links are removed or modified to keep the platform safe.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Professional Sidebar */}
-                        <div className="w-full space-y-6 lg:w-80 lg:flex-none">
-                            {/* Post Status Panel */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
-                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-                                        Publish Settings
-                                    </h3>
-                                </div>
-                                <div className="p-6 space-y-5">
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Status</span>
-                                            {isEditing ? getStatusBadge(post.status) : (
-                                                <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">New Post</span>
-                                            )}
-                                        </div>
-                                        
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">Visibility</span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {post.status === 'approved' ? 'Public' : post.status === 'scheduled' ? 'Private until scheduled' : 'Private'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between" aria-live="polite">
-                                            <span className="text-sm text-gray-600">Save state</span>
-                                            <span className={`text-sm font-medium ${saveConflict ? 'text-amber-700' : saving || hasUnsavedChanges ? 'text-blue-700' : post.revision ? 'text-green-700' : 'text-gray-600'}`}>
-                                                {saveConflict ? 'Conflict—action required' : saving ? 'Saving…' : hasUnsavedChanges ? (isEditing ? 'Pending autosave' : 'Unsaved') : post.revision ? 'Saved' : 'Not saved'}
-                                            </span>
-                                        </div>
-                                        
-                                        {isEditing && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600">Last Modified</span>
-                                                <span className="text-sm text-gray-500">
-                                                    {post.updatedAt ? new Date(post.updatedAt).toLocaleDateString() : 'Not saved yet'}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="pt-4 border-t border-gray-100 space-y-3">
-                                        {/* Primary Action Button */}
-                                        <button
-                                            onClick={() => handleSave(true)}
-                                            disabled={saving || Boolean(saveConflict)}
-                                            className="w-full px-4 py-3 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg flex items-center justify-center"
-                                        >
-                                            {saving ? (
-                                                <>
-                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                                    Saving Changes...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FiSave className="w-4 h-4 mr-2" />
-                                                    {isEditing ? 'Save & Submit for Review' : 'Create & Submit for Review'}
-                                                </>
-                                            )}
-                                        </button>
-                                        
-                                        {/* Save as Draft Option for new posts */}
-                                        {(
-                                            <button
-                                                onClick={() => handleSave(false)}
-                                                disabled={saving || Boolean(saveConflict)}
-                                                className="w-full px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-all duration-200 flex items-center justify-center"
-                                            >
-                                                <FiFileText className="w-4 h-4 mr-2" />
-                                                Save as Draft
-                                            </button>
-                                        )}
-                                    </div>
-                                    
-                                    {isEditing && (
-                                        <div>
-                                            <button
-                                                onClick={() => setShowDeleteConfirm(true)}
-                                                className="w-full px-4 py-2 text-red-600 text-sm font-medium border-2 border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all duration-200 flex items-center justify-center"
-                                            >
-                                                <FiTrash2 className="w-4 h-4 mr-2" />
-                                                Move to Trash
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Categories Panel */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
-                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-                                        <FiFileText className="w-4 h-4 mr-2 text-gray-500" />
-                                        Category
-                                    </h3>
-                                </div>
-                                <div className="p-6">
-                                    <select
-                                        id="category"
-                                        aria-label="Post category"
-                                        value={post.categoryId}
-                                        onChange={(e) => { setPost(prev => ({ ...prev, categoryId: e.target.value })); setHasUnsavedChanges(true); }}
-                                        className={`w-full px-4 py-3 border text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
-                                            errors.categoryId ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <option value="">Select a category</option>
-                                        {categories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {errors.categoryId && (
-                                        <p className="mt-3 text-sm text-red-600 flex items-center">
-                                            <FiAlertCircle className="w-4 h-4 mr-1" />
-                                            {errors.categoryId}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Tags Panel */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
-                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-                                        <FiTag className="w-4 h-4 mr-2 text-gray-500" />
-                                        Tags
-                                    </h3>
-                                </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            aria-label="Add a tag"
-                                            value={tagInput}
-                                            onChange={(e) => setTagInput(e.target.value)}
-                                            onKeyPress={handleTagInputKeyPress}
-                                            placeholder="Add tag..."
-                                            className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-300 transition-all duration-200"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleTagAdd}
-                                            disabled={!tagInput.trim()}
-                                            className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                    
-                                    {post.tags.length > 0 && (
-                                        <div className="space-y-2">
-                                            <div className="text-xs text-gray-500 font-medium mb-2">
-                                                {post.tags.length} {post.tags.length === 1 ? 'tag' : 'tags'}
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {post.tags.map((tag, index) => (
-                                                    <span
-                                                        key={index}
-                                                        className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-200"
-                                                    >
-                                                        #{tag}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleTagRemove(tag)}
-                                                            aria-label={`Remove tag ${tag}`}
-                                                            className="ml-2 text-blue-500 hover:text-blue-700 transition-colors duration-200"
-                                                        >
-                                                            <FiX className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Featured Image Panel */}
-                            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="border-b border-gray-100 px-6 py-4 bg-gray-50/50">
-                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-                                        <FiImage className="w-4 h-4 mr-2 text-gray-500" />
-                                        Featured Image
-                                    </h3>
-                                </div>
-                                <div className="p-6 space-y-4">
-                                    <label htmlFor="featuredImage" className="block text-xs font-medium text-gray-700">HTTPS or site image URL</label>
-                                    <input
-                                        type="url"
-                                        id="featuredImage"
-                                        value={post.featuredImage}
-                                        onChange={(e) => { setPost(prev => ({ ...prev, featuredImage: e.target.value })); setHasUnsavedChanges(true); }}
-                                        placeholder="https://example.com/image.jpg"
-                                        className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-300 transition-all duration-200"
-                                    />
-                                    {sanitizeImageUrl(post.featuredImage) && (
-                                        <div className="space-y-2">
-                                            <img 
-                                                src={sanitizeImageUrl(post.featuredImage)}
-                                                alt="Featured preview" 
-                                                className="w-full h-40 object-cover rounded-lg border border-gray-200 shadow-sm"
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                            <p className="text-xs text-gray-500">
-                                                Preview of your featured image
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Recent Posts Panel */}
-                            {userPosts.length > 0 && (
-                                <div className="bg-white border border-gray-300 rounded-sm">
-                                    <div className="border-b border-gray-200 px-4 py-3 bg-gray-50">
-                                        <h3 className="text-sm font-medium text-gray-900">Your Recent Posts</h3>
-                                    </div>
-                                    <div className="divide-y divide-gray-100">
-                                        {userPosts.slice(0, 5).map((userPost) => (
-                                            <div key={userPost.id} className="p-3 hover:bg-gray-50 transition-colors duration-200">
-                                                <Link
-                                                    to={`/blog-editor/${userPost.id}`}
-                                                    className="block"
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-gray-900 truncate hover:text-blue-600 transition-colors duration-200">
-                                                                {userPost.title || 'Untitled'}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500 mt-1">
-                                                                {new Date(userPost.createdAt).toLocaleDateString()}
-                                                            </p>
-                                                        </div>
-                                                        <div className="ml-2 flex-shrink-0">
-                                                            {getStatusBadge(userPost.status)}
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            </div>
-                                        ))}
-                                        {userPosts.length > 5 && (
-                                            <div className="p-3 text-center">
-                                                <span className="text-xs text-gray-500">
-                                                    +{userPosts.length - 5} more posts
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Image Insert Modal */}
-                {showImageModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="insert-image-title" onKeyDown={event => { if (event.key === 'Escape') setShowImageModal(false); }}>
-                        <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 id="insert-image-title" className="text-xl font-semibold text-gray-900 flex items-center">
-                                    <FiImage className="w-5 h-5 mr-2 text-blue-600" />
-                                    Insert Image
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowImageModal(false)}
-                                    aria-label="Close image dialog"
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                                >
-                                    <FiX className="w-5 h-5 text-gray-500" />
-                                </button>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="insert-image-url" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Image URL
-                                    </label>
-                                    <input
-                                        id="insert-image-url"
-                                        type="url"
-                                        autoFocus
-                                        value={imageUrl}
-                                        onChange={(e) => setImageUrl(e.target.value)}
-                                        placeholder="https://example.com/image.jpg"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        onKeyPress={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleImageInsert();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="insert-image-alt" className="block text-sm font-medium text-gray-700 mb-2">Image description</label>
-                                    <input id="insert-image-alt" type="text" value={imageAlt} onChange={event => setImageAlt(event.target.value)} maxLength={200} placeholder="Describe the image for screen readers" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                                </div>
-                                
-                                {sanitizeImageUrl(imageUrl) && (
-                                    <div className="border border-gray-200 rounded-lg p-4">
-                                        <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                                        <img 
-                                            src={sanitizeImageUrl(imageUrl)}
-                                            alt="Preview" 
-                                            className="max-w-full h-32 object-cover rounded-lg"
-                                            onError={(e) => {
-                                                e.target.src = '';
-                                                e.target.style.display = 'none';
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                            
-                            <div className="flex justify-end space-x-3 mt-6">
-                                <button
-                                    onClick={() => setShowImageModal(false)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleImageInsert}
-                                    disabled={!imageUrl}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                                >
-                                    Insert Image
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Link Insert Modal */}
-                {showLinkModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="insert-link-title" onKeyDown={event => { if (event.key === 'Escape') setShowLinkModal(false); }}>
-                        <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 id="insert-link-title" className="text-xl font-semibold text-gray-900 flex items-center">
-                                    <FiLink className="w-5 h-5 mr-2 text-blue-600" />
-                                    Insert Link
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowLinkModal(false)}
-                                    aria-label="Close link dialog"
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                                >
-                                    <FiX className="w-5 h-5 text-gray-500" />
-                                </button>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="insert-link-url" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Link URL
-                                    </label>
-                                    <input
-                                        id="insert-link-url"
-                                        type="url"
-                                        autoFocus
-                                        value={linkUrl}
-                                        onChange={(e) => setLinkUrl(e.target.value)}
-                                        placeholder="https://example.com"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label htmlFor="insert-link-text" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Link Text (optional)
-                                    </label>
-                                    <input
-                                        id="insert-link-text"
-                                        type="text"
-                                        value={linkText}
-                                        onChange={(e) => setLinkText(e.target.value)}
-                                        placeholder="Click here"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                        onKeyPress={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleLinkInsert();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                
-                                {editor && editor.isActive('link') && (
-                                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                        <p className="text-sm text-yellow-800 flex items-center">
-                                            <FiAlertCircle className="w-4 h-4 mr-2" />
-                                            Link is currently selected. This will update the existing link.
-                                        </p>
-                                        <button
-                                            onClick={handleLinkRemove}
-                                            className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium"
-                                        >
-                                            Remove Link
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            <div className="flex justify-end space-x-3 mt-6">
-                                <button
-                                    onClick={() => setShowLinkModal(false)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleLinkInsert}
-                                    disabled={!linkUrl}
-                                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                                >
-                                    Insert Link
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <BlogPreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} post={{ ...post, content: editor?.getHTML() || post.content, status: post.status || 'draft' }} />
-
-                {/* Delete Confirmation Modal */}
-                {showDeleteConfirm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="alertdialog" aria-modal="true" aria-labelledby="delete-post-title" aria-describedby="delete-post-description" onKeyDown={event => { if (event.key === 'Escape' && !saving) setShowDeleteConfirm(false); }}>
-                        <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 id="delete-post-title" className="text-xl font-semibold text-gray-900 flex items-center">
-                                    <FiTrash2 className="w-5 h-5 mr-2 text-red-600" />
-                                    Delete Post
-                                </h3>
-                            </div>
-                            <p id="delete-post-description" className="text-gray-600 mb-6">
-                                Are you sure you want to delete this post? This action cannot be undone.
-                            </p>
-                            <div className="flex justify-end space-x-3">
-                                <button
-                                    type="button"
-                                    autoFocus
-                                    onClick={() => setShowDeleteConfirm(false)}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleDelete}
-                                    disabled={saving}
-                                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200"
-                                >
-                                    {saving ? 'Deleting...' : 'Delete'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+      <div className="rp-public-site">
+        <HomepageNavbar />
+        <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <Spinner />
+          <p style={{ marginTop: '16px', color: '#64748b', fontWeight: '500' }}>Loading Blog Studio...</p>
         </div>
-            <HomepageFooter />
-        </>
+        <HomepageFooter />
+      </div>
     );
-};
+  }
 
-export default BlogEditor;
+  return (
+    <div className="rp-public-site" style={{ background: '#f8fafd', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* 1. Studio Header Bar */}
+      <header 
+        style={{ 
+          background: 'rgba(255, 255, 255, 0.95)', 
+          backdropFilter: 'blur(16px)', 
+          borderBottom: '1px solid #e2e8f0', 
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 1000, 
+          padding: '12px 24px' 
+        }}
+      >
+        <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+          
+          {/* Left: Return breadcrumb + Post Title Summary */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              type="button"
+              id="rp-btn-return-admin"
+              onClick={() => {
+                if (isFromAdmin) navigate('/adm');
+                else navigate('/blog');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#475569',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <FiArrowLeft /> {isFromAdmin ? 'Admin Console' : 'Career Blog'}
+            </button>
+
+            <span style={{ color: '#cbd5e1' }}>|</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a' }}>
+                {isEditing ? 'Editing Article' : 'New Article'}
+              </span>
+              <span 
+                aria-live="polite"
+                style={{ 
+                  fontSize: '11px', 
+                  fontWeight: '700', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.05em', 
+                  padding: '3px 8px', 
+                  borderRadius: '20px', 
+                  background: post.published ? '#e6f4ea' : '#fef3c7', 
+                  color: post.published ? '#137333' : '#b45309' 
+                }}
+              >
+                ● {post.published ? 'Published' : 'Private Draft'}
+              </span>
+              {hasUnsavedChanges && (
+                <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '500' }}>
+                  (Unsaved Changes)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Studio Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            
+            {/* Live Preview Button */}
+            <button
+              type="button"
+              id="rp-btn-preview-post"
+              onClick={() => setShowPreview(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#1e293b',
+                cursor: 'pointer',
+              }}
+            >
+              <FiEye /> Preview
+            </button>
+
+            {/* Public Link (if published) */}
+            {post.published && post.slug && (
+              <a
+                href={`/blog/${post.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                id="rp-btn-view-live"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#1a73e8',
+                  textDecoration: 'none',
+                }}
+              >
+                <FiExternalLink /> Live Page
+              </a>
+            )}
+
+            {/* Save as Draft */}
+            <button
+              type="button"
+              id="rp-btn-save-draft"
+              disabled={saving}
+              onClick={() => handleSave('draft')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#334155',
+                cursor: saving ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <FiSave /> {saving ? 'Saving...' : 'Save Draft'}
+            </button>
+
+            {/* Primary Action: Publish / Update Live Post */}
+            <button
+              type="button"
+              id="rp-btn-publish-post"
+              disabled={saving}
+              onClick={() => handleSave('publish')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 20px',
+                borderRadius: '10px',
+                background: '#1a73e8',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: '700',
+                boxShadow: '0 4px 12px rgba(26, 115, 232, 0.25)',
+                cursor: saving ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <FiCheckCircle /> {post.published ? 'Update Live Article' : 'Publish Article'}
+            </button>
+
+            {/* Delete button (if existing) */}
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  background: '#fef2f2',
+                  border: '1px solid #fee2e2',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                }}
+                title="Delete Post"
+              >
+                <FiTrash2 />
+              </button>
+            )}
+
+          </div>
+
+        </div>
+      </header>
+
+      {/* 2. Toast Notification Bar */}
+      {notification && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: '72px', 
+            right: '24px', 
+            zIndex: 9999, 
+            background: notification.type === 'success' ? '#137333' : '#b3261e', 
+            color: '#ffffff', 
+            padding: '12px 20px', 
+            borderRadius: '12px', 
+            boxShadow: '0 10px 25px rgba(0,0,0,0.15)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px',
+            fontSize: '14px',
+            fontWeight: '600',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          {notification.type === 'success' ? <FiCheck /> : <FiAlertCircle />}
+          {notification.message}
+        </div>
+      )}
+
+      {/* 3. Studio Workspace Layout (2-Column Grid) */}
+      <main style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '24px', flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: '24px', alignItems: 'start' }}>
+          
+          {/* Column A: Main Content Editor Canvas */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* Title & Slug Box */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              
+              {/* Title Input */}
+              <input
+                type="text"
+                value={post.title}
+                onChange={handleTitleChange}
+                placeholder="Article headline / title..."
+                style={{
+                  width: '100%',
+                  fontSize: '28px',
+                  fontWeight: '800',
+                  color: '#0f172a',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '4px 0',
+                  fontFamily: 'inherit',
+                  lineHeight: '1.3',
+                }}
+              />
+
+              {/* Slug / Permalinks helper */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', fontSize: '13px', color: '#64748b' }}>
+                <span style={{ fontWeight: '600' }}>Permalink:</span>
+                <span style={{ color: '#94a3b8' }}>
+                  {typeof window !== 'undefined' ? `${window.location.origin}/blog/` : '/blog/'}
+                </span>
+                <input
+                  type="text"
+                  value={post.slug}
+                  disabled={slugLocked}
+                  onChange={(e) => {
+                    setPost((prev) => ({ ...prev, slug: generateSlug(e.target.value) }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: slugLocked ? '1px transparent solid' : '1px solid #cbd5e1',
+                    background: slugLocked ? '#f8fafc' : '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    outline: 'none',
+                    minWidth: '180px',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSlugLocked(!slugLocked)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: slugLocked ? '#94a3b8' : '#1a73e8',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title={slugLocked ? 'Unlock to edit URL slug' : 'Lock URL slug'}
+                >
+                  {slugLocked ? <FiLock /> : <FiUnlock />} {slugLocked ? 'Edit' : 'Done'}
+                </button>
+              </div>
+
+            </div>
+
+            {/* Excerpt Summary Box */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155' }}>
+                  Article Excerpt / Summary
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAutoExcerpt}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#1a73e8',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <FiRefreshCw /> Auto-generate from content
+                </button>
+              </div>
+              <textarea
+                value={post.excerpt}
+                onChange={(e) => {
+                  setPost((prev) => ({ ...prev, excerpt: e.target.value }));
+                  setHasUnsavedChanges(true);
+                }}
+                rows={2}
+                placeholder="A compelling 1-2 sentence preview summary of the post..."
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '14px',
+                  color: '#1e293b',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
+            {/* Rich Text Editor Box with Sticky Toolbar */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              
+              {/* Modern Formatting Toolbar */}
+              {editor && (
+                <div 
+                  style={{ 
+                    background: '#f8fafc', 
+                    borderBottom: '1px solid #e2e8f0', 
+                    padding: '10px 16px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    flexWrap: 'wrap' 
+                  }}
+                >
+                  {/* Undo / Redo */}
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().undo().run()}
+                    disabled={!editor.can().undo()}
+                    style={toolbarBtnStyle(false, !editor.can().undo())}
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <FiRotateCcw />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().redo().run()}
+                    disabled={!editor.can().redo()}
+                    style={toolbarBtnStyle(false, !editor.can().redo())}
+                    title="Redo (Ctrl+Y)"
+                  >
+                    <FiRotateCw />
+                  </button>
+
+                  <span style={dividerStyle} />
+
+                  {/* Headings */}
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().setParagraph().run()}
+                    style={toolbarBtnStyle(editor.isActive('paragraph'))}
+                    title="Paragraph"
+                  >
+                    P
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    style={toolbarBtnStyle(editor.isActive('heading', { level: 1 }))}
+                    title="Heading 1"
+                  >
+                    H1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    style={toolbarBtnStyle(editor.isActive('heading', { level: 2 }))}
+                    title="Heading 2"
+                  >
+                    H2
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                    style={toolbarBtnStyle(editor.isActive('heading', { level: 3 }))}
+                    title="Heading 3"
+                  >
+                    H3
+                  </button>
+
+                  <span style={dividerStyle} />
+
+                  {/* Formatting: Bold, Italic, Underline, Highlight */}
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    style={toolbarBtnStyle(editor.isActive('bold'))}
+                    title="Bold (Ctrl+B)"
+                  >
+                    <FiBold />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    style={toolbarBtnStyle(editor.isActive('italic'))}
+                    title="Italic (Ctrl+I)"
+                  >
+                    <FiItalic />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                    style={toolbarBtnStyle(editor.isActive('underline'))}
+                    title="Underline (Ctrl+U)"
+                  >
+                    <FiUnderline />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHighlight().run()}
+                    style={toolbarBtnStyle(editor.isActive('highlight'))}
+                    title="Highlight"
+                  >
+                    <span style={{ background: '#fef08a', padding: '0 4px', borderRadius: '3px', color: '#854d0e', fontWeight: '700' }}>H</span>
+                  </button>
+
+                  <span style={dividerStyle} />
+
+                  {/* Alignment */}
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                    style={toolbarBtnStyle(editor.isActive({ textAlign: 'left' }))}
+                    title="Align Left"
+                  >
+                    <FiAlignLeft />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                    style={toolbarBtnStyle(editor.isActive({ textAlign: 'center' }))}
+                    title="Align Center"
+                  >
+                    <FiAlignCenter />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                    style={toolbarBtnStyle(editor.isActive({ textAlign: 'right' }))}
+                    title="Align Right"
+                  >
+                    <FiAlignRight />
+                  </button>
+
+                  <span style={dividerStyle} />
+
+                  {/* Lists & Quotes */}
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    style={toolbarBtnStyle(editor.isActive('bulletList'))}
+                    title="Bullet List"
+                  >
+                    <FiList />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                    style={toolbarBtnStyle(editor.isActive('blockquote'))}
+                    title="Blockquote"
+                  >
+                    “
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                    style={toolbarBtnStyle(editor.isActive('codeBlock'))}
+                    title="Code Block"
+                  >
+                    <FiCode />
+                  </button>
+
+                  <span style={dividerStyle} />
+
+                  {/* Image & Link Insert */}
+                  <button
+                    type="button"
+                    onClick={() => setShowImageModal(true)}
+                    style={toolbarBtnStyle(false)}
+                    title="Insert Image"
+                  >
+                    <FiImage /> Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkModal(true)}
+                    style={toolbarBtnStyle(editor.isActive('link'))}
+                    title="Insert Link"
+                  >
+                    <FiLink /> Link
+                  </button>
+                </div>
+              )}
+
+              {/* Tiptap Canvas */}
+              <EditorContent editor={editor} />
+
+              {/* Status Bar */}
+              <div 
+                style={{ 
+                  background: '#f8fafc', 
+                  borderTop: '1px solid #f1f5f9', 
+                  padding: '10px 20px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  fontSize: '12px', 
+                  color: '#64748b' 
+                }}
+              >
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <span><strong>{stats.words}</strong> words</span>
+                  <span><strong>{stats.chars}</strong> characters</span>
+                  <span>~<strong>{stats.readTimeMinutes}</strong> min read</span>
+                </div>
+                <div>
+                  Revision: <strong>#{post.revision}</strong>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Column B: Right Inspector Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* 1. Publishing & Category Card */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiSliders style={{ color: '#1a73e8' }} /> Publishing Settings
+              </h3>
+
+              {/* Status Selector */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '6px' }}>
+                  Visibility Status
+                </label>
+                <select
+                  value={post.published ? 'approved' : 'draft'}
+                  onChange={(e) => {
+                    const isPub = e.target.value === 'approved';
+                    setPost((prev) => ({ ...prev, published: isPub, status: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    outline: 'none',
+                    background: '#ffffff',
+                  }}
+                >
+                  <option value="approved">Published (Live on Website)</option>
+                  <option value="draft">Draft (Hidden from Public)</option>
+                </select>
+              </div>
+
+              {/* Category Selector */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '6px' }}>
+                  Category
+                </label>
+                <select
+                  value={post.category}
+                  onChange={(e) => {
+                    setPost((prev) => ({ ...prev, category: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    outline: 'none',
+                    background: '#ffffff',
+                  }}
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Author Display Name */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '6px' }}>
+                  Author Name
+                </label>
+                <input
+                  type="text"
+                  value={post.author}
+                  onChange={(e) => {
+                    setPost((prev) => ({ ...prev, author: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    color: '#0f172a',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+            </div>
+
+            {/* 2. Featured Cover Image Card */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiImage style={{ color: '#1a73e8' }} /> Featured Cover Image
+              </h3>
+
+              {post.coverImage ? (
+                <div style={{ position: 'relative', marginBottom: '12px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  <img
+                    src={post.coverImage}
+                    alt="Cover preview"
+                    style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPost((prev) => ({ ...prev, coverImage: '' }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      background: 'rgba(15, 23, 42, 0.75)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '26px',
+                      height: '26px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <FiX />
+                  </button>
+                </div>
+              ) : null}
+
+              <input
+                type="text"
+                value={post.coverImage}
+                onChange={(e) => {
+                  setPost((prev) => ({ ...prev, coverImage: e.target.value }));
+                  setHasUnsavedChanges(true);
+                }}
+                placeholder="https://images.unsplash.com/..."
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '12px',
+                  color: '#0f172a',
+                  outline: 'none',
+                  marginBottom: '10px',
+                }}
+              />
+
+              {/* Sample Covers */}
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>
+                Quick Preset Covers
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+                {SAMPLE_COVERS.map((sampleUrl, idx) => (
+                  <img
+                    key={idx}
+                    src={sampleUrl}
+                    alt={`Sample cover ${idx}`}
+                    onClick={() => {
+                      setPost((prev) => ({ ...prev, coverImage: sampleUrl }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '36px',
+                      objectFit: 'cover',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      border: post.coverImage === sampleUrl ? '2px solid #1a73e8' : '1px solid #e2e8f0',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Tags Management Card */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiTag style={{ color: '#1a73e8' }} /> Tags & Keywords
+              </h3>
+
+              {/* Tag Chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                {(post.tags || []).map((tag) => (
+                  <span
+                    key={tag}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      background: '#f1f5f9',
+                      color: '#334155',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                    }}
+                  >
+                    #{tag}
+                    <FiX 
+                      style={{ cursor: 'pointer', color: '#94a3b8' }} 
+                      onClick={() => handleRemoveTag(tag)} 
+                    />
+                  </span>
+                ))}
+              </div>
+
+              {/* Tag Input */}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  placeholder="Add tag (press Enter)..."
+                  style={{
+                    flex: 1,
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12px',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddTag()}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Google Search SEO Preview Card */}
+            <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiSearch style={{ color: '#1a73e8' }} /> Google Search Snippet
+              </h3>
+
+              {/* SERP Preview Box */}
+              <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
+                <div style={{ fontSize: '11px', color: '#475569' }}>
+                  {typeof window !== 'undefined' ? window.location.host : 'airesume.projectdemo.guru'} › blog › {post.slug || 'article'}
+                </div>
+                <div style={{ fontSize: '15px', color: '#1a0dab', fontWeight: '600', marginTop: '2px', lineHeight: 1.3 }}>
+                  {post.seoTitle || post.title || 'Untitled Post — ResumePilot AI'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#4d5156', marginTop: '4px', lineHeight: 1.4 }}>
+                  {post.seoDescription || post.excerpt || 'Read this in-depth guide on ResumePilot AI.'}
+                </div>
+              </div>
+
+              {/* SEO Title Input */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>
+                  SEO Meta Title
+                </label>
+                <input
+                  type="text"
+                  value={post.seoTitle}
+                  onChange={(e) => {
+                    setPost((prev) => ({ ...prev, seoTitle: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  placeholder={post.title}
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* SEO Description Input */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', marginBottom: '4px' }}>
+                  Meta Description
+                </label>
+                <textarea
+                  value={post.seoDescription}
+                  onChange={(e) => {
+                    setPost((prev) => ({ ...prev, seoDescription: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  rows={2}
+                  placeholder={post.excerpt}
+                  style={{
+                    width: '100%',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12px',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+            </div>
+
+            {/* 5. Switcher Drawer: Recent Posts */}
+            {allPosts.length > 0 && (
+              <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                    Other Articles
+                  </h3>
+                  <Link 
+                    to="/blog-editor" 
+                    style={{ fontSize: '12px', fontWeight: '700', color: '#1a73e8', textDecoration: 'none' }}
+                  >
+                    + New
+                  </Link>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+                  {allPosts.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => navigate(`/blog-editor/${item.id}`)}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        background: item.id === postId ? '#e8f0fe' : '#f8fafc',
+                        border: item.id === postId ? '1px solid #bfdbfe' : '1px solid #f1f5f9',
+                        cursor: 'pointer',
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: item.id === postId ? '#1a73e8' : '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                        {item.title || 'Untitled Post'}
+                      </div>
+                      <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                        {item.category || 'General'} · #{item.id}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      </main>
+
+      {/* 4. Fullscreen Interactive Live Preview Modal */}
+      {showPreview && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(15, 23, 42, 0.75)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 100000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: '24px' 
+          }}
+        >
+          <div 
+            style={{ 
+              background: '#ffffff', 
+              borderRadius: '24px', 
+              maxWidth: '860px', 
+              width: '100%', 
+              maxHeight: '90vh', 
+              overflowY: 'auto', 
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', 
+              display: 'flex', 
+              flexDirection: 'column' 
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: '#ffffff', zIndex: 10 }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#64748b' }}>
+                Preview Mode · Public Article Reader Experience
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569' }}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            {/* Modal Body: Public Article Rendering */}
+            <div style={{ padding: '36px 40px' }}>
+              <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '20px', background: '#e8f0fe', color: '#1a73e8', fontWeight: '700', fontSize: '12px', marginBottom: '16px' }}>
+                {post.category || 'Career Advice'}
+              </div>
+
+              <h1 style={{ fontSize: '36px', fontWeight: '900', color: '#0f172a', lineHeight: 1.2, marginBottom: '20px' }}>
+                {post.title || 'Untitled Post'}
+              </h1>
+
+              {/* Author and Date Meta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingBottom: '24px', borderBottom: '1px solid #f1f5f9', marginBottom: '24px', color: '#64748b', fontSize: '14px' }}>
+                <div>By <strong>{post.author || 'Editorial Team'}</strong></div>
+                <span>•</span>
+                <div>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                <span>•</span>
+                <div>~{stats.readTimeMinutes} min read</div>
+              </div>
+
+              {/* Cover Image */}
+              {post.coverImage && (
+                <div style={{ marginBottom: '32px', borderRadius: '20px', overflow: 'hidden' }}>
+                  <img
+                    src={post.coverImage}
+                    alt={post.title}
+                    style={{ width: '100%', maxHeight: '420px', objectFit: 'cover' }}
+                  />
+                </div>
+              )}
+
+              {/* Formatted Content */}
+              <div 
+                className="rp-article-body"
+                dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(editor ? editor.getHTML() : post.content) }}
+                style={{ fontSize: '17px', lineHeight: 1.8, color: '#334155' }}
+              />
+
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '36px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+                  {post.tags.map((t) => (
+                    <span key={t} style={{ padding: '4px 12px', borderRadius: '20px', background: '#f8fafc', color: '#64748b', fontSize: '13px', fontWeight: '600' }}>
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                type="button"
+                id="rp-btn-close-preview"
+                onClick={() => setShowPreview(false)}
+                style={{ padding: '8px 16px', borderRadius: '10px', background: '#ffffff', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Image URL Modal */}
+      {showImageModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', maxWidth: '440px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '12px' }}>Insert Image</h3>
+            <input
+              type="text"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', marginBottom: '16px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setShowImageModal(false)}
+                style={{ padding: '8px 14px', borderRadius: '8px', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleInsertImage}
+                style={{ padding: '8px 16px', borderRadius: '8px', background: '#1a73e8', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+              >
+                Insert Image
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Link Modal */}
+      {showLinkModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', maxWidth: '440px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '12px' }}>Insert Link</h3>
+            <input
+              type="text"
+              value={linkText}
+              onChange={(e) => setLinkText(e.target.value)}
+              placeholder="Display text (optional)"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', marginBottom: '10px' }}
+            />
+            <input
+              type="text"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', marginBottom: '16px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setShowLinkModal(false)}
+                style={{ padding: '8px 14px', borderRadius: '8px', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleInsertLink}
+                style={{ padding: '8px 16px', borderRadius: '8px', background: '#1a73e8', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+              >
+                Insert Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', padding: '28px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.25)' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '16px' }}>
+              <FiTrash2 />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>Delete this blog post?</h3>
+            <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.5, marginBottom: '20px' }}>
+              Are you sure you want to delete <strong>"{post.title || 'Untitled Post'}"</strong>? This will permanently remove the article from the public blog.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{ padding: '10px 18px', borderRadius: '10px', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                style={{ padding: '10px 20px', borderRadius: '10px', background: '#dc2626', color: '#ffffff', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}
+              >
+                Yes, Delete Post
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <HomepageFooter />
+    </div>
+  );
+}
+
+// Helpers for toolbar buttons
+function toolbarBtnStyle(isActive = false, disabled = false) {
+  return {
+    padding: '6px 10px',
+    borderRadius: '8px',
+    background: isActive ? '#e8f0fe' : 'transparent',
+    color: isActive ? '#1a73e8' : disabled ? '#cbd5e1' : '#475569',
+    fontWeight: isActive ? '700' : '600',
+    fontSize: '13px',
+    border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    transition: 'all 0.15s ease',
+  };
+}
+
+const dividerStyle = {
+  width: '1px',
+  height: '18px',
+  background: '#e2e8f0',
+  margin: '0 4px',
+};

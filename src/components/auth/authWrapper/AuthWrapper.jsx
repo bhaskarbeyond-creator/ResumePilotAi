@@ -8,8 +8,9 @@ import Toast from '../../Toasts/Toats';
 class AuthWrapper extends Component {
     constructor(props) {
         super(props);
+        const isRegister = props?.initialMode === 'signup' || props?.mode === 'signup' || props?.initialTab === 'register';
         this.state = {
-            isLoggedInShowed: true,
+            isLoggedInShowed: !isRegister,
             isRecoverPasswordShowed: false,
             isErrorToastShowed: false,
             isSuccessToastShowed: false,

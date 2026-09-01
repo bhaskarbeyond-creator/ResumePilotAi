@@ -1,363 +1,444 @@
-import { useState, useEffect, useRef, useContext } from 'react';
-import { FiArrowUpRight, FiPlay } from 'react-icons/fi';
-import { BiFile, BiCheckCircle } from 'react-icons/bi';
-import GridBackground from './GridBackground';
-import { withTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../../context/AuthContext';
-import AuthWrapper from '../../auth/authWrapper/AuthWrapper';
-import { motion, AnimatePresence } from 'framer-motion';
-// Optimized sentences for better impact - will be loaded from translations
-const defaultSentences = [
-    'Build professional resumes with AI',
-    'Choose from 50+ expert templates',
-    'Get intelligent writing assistance',
-    'Preview changes in real-time',
-    'Ace interviews with AI prep tools',
-];
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import fire from '../../../conf/fire';
+import { 
+  FaMagic, FaArrowRight, FaCheckCircle, FaRobot, FaSearch, 
+  FaShieldAlt, FaStar, FaBolt, FaFileWord, FaFilePdf, FaLayerGroup, FaCheck, FaTimes, FaExchangeAlt, FaCrown, FaUserCheck
+} from 'react-icons/fa';
 
-const HomepageHero = ({ t }) => {
-    const user = useContext(AuthContext);
-    const navigate = useNavigate();
-    const [displayText, setDisplayText] = useState('');
-    const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-    const [isTyping, setIsTyping] = useState(true);
-    const [cursorVisible, setCursorVisible] = useState(true);
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [loadDemoIframe, setLoadDemoIframe] = useState(false);
+export default function HomepageHero({ onOpenAuthModal }) {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('studio');
+  const [atsScore, setAtsScore] = useState(72);
+  const [selectedRole, setSelectedRole] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
 
-    useEffect(() => {
-        const timer = setTimeout(() => setLoadDemoIframe(true), 1200);
-        return () => clearTimeout(timer);
-    }, []);
+  // Dynamic Typing Animation State
+  const typingPhrases = [
+    'Build Recruiter-Ready Resumes',
+    'Tailor Your Resume to Any Job',
+    'Beat ATS Screening Algorithms',
+    'Ace Tough Behavioral Interviews',
+    'Format in 51 Certified Layouts'
+  ];
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const [typedText, setTypedText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    // Use translated sentences if available or fall back to defaults
-    const sentences = [
-        t('HomepageHero.typingEffect.sentence1', defaultSentences[0]),
-        t('HomepageHero.typingEffect.sentence2', defaultSentences[1]),
-        t('HomepageHero.typingEffect.sentence3', defaultSentences[2]),
-        t('HomepageHero.typingEffect.sentence4', defaultSentences[3]),
-        t('HomepageHero.typingEffect.sentence5', defaultSentences[4]),
-    ];
+  // Listen for active auth session
+  useEffect(() => {
+    let unsubscribe = () => {};
+    if (fire?.auth) {
+      try {
+        unsubscribe = fire.auth().onAuthStateChanged((user) => {
+          setCurrentUser(user);
+        });
+      } catch (_) {}
+    }
+    return () => unsubscribe();
+  }, []);
 
-    const timeoutRef = useRef(null);
+  // Typing effect engine
+  useEffect(() => {
+    const fullText = typingPhrases[currentPhraseIndex];
+    let typingSpeed = isDeleting ? 38 : 75;
 
-    useEffect(() => {
-        const currentSentence = sentences[currentSentenceIndex];
+    if (!isDeleting && typedText === fullText) {
+      // Pause at end of phrase
+      typingSpeed = 2200;
+    } else if (isDeleting && typedText === '') {
+      // Pause after deleting before next phrase
+      setIsDeleting(false);
+      setCurrentPhraseIndex((prev) => (prev + 1) % typingPhrases.length);
+      typingSpeed = 400;
+      return;
+    }
 
-        if (isTyping) {
-            if (displayText.length < currentSentence.length) {
-                timeoutRef.current = setTimeout(() => {
-                    setDisplayText(currentSentence.slice(0, displayText.length + 1));
-                }, 80);
-            } else {
-                timeoutRef.current = setTimeout(() => {
-                    setIsTyping(false);
-                }, 2000);
-            }
-        } else {
-            if (displayText.length > 0) {
-                timeoutRef.current = setTimeout(() => {
-                    setDisplayText(displayText.slice(0, -1));
-                }, 40);
-            } else {
-                setCurrentSentenceIndex((prev) => (prev + 1) % sentences.length);
-                setIsTyping(true);
-            }
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        setTypedText(fullText.substring(0, typedText.length + 1));
+        if (typedText.length + 1 === fullText.length) {
+          setIsDeleting(true);
         }
+      } else {
+        setTypedText(fullText.substring(0, typedText.length - 1));
+      }
+    }, typingSpeed);
 
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [displayText, isTyping, currentSentenceIndex]);
+    return () => clearTimeout(timer);
+  }, [typedText, isDeleting, currentPhraseIndex]);
 
-    useEffect(() => {
-        const cursorInterval = setInterval(() => {
-            setCursorVisible((prev) => !prev);
-        }, 500);
+  const demoRoles = [
+    {
+      title: 'Senior Software Engineer',
+      draft: '“Worked on API services and sped up database queries for our users.”',
+      optimized: '“Architected 12 high-throughput REST APIs in Node.js, optimizing MariaDB composite indexes to reduce p99 query latency from 450ms to 28ms across 2.5M daily requests.”',
+      metrics: [
+        { label: 'Action Verb', val: 'Architected', color: '#137333', bg: '#e6f4ea' },
+        { label: 'Impact Metric', val: '-94% Latency', color: '#1a73e8', bg: '#e8f0fe' },
+        { label: 'Scale Factor', val: '2.5M Daily Requests', color: '#7c3aed', bg: '#f3e8ff' }
+      ]
+    },
+    {
+      title: 'Principal Product Manager',
+      draft: '“Helped launch the new AI assistant feature with the product team.”',
+      optimized: '“Spearheaded go-to-market launch of GenAI assistant across 4 enterprise verticals, driving $1.8M ARR and lifting 30-day user retention by 28% in Q2.”',
+      metrics: [
+        { label: 'Action Verb', val: 'Spearheaded', color: '#137333', bg: '#e6f4ea' },
+        { label: 'Commercial Impact', val: '+$1.8M ARR', color: '#1a73e8', bg: '#e8f0fe' },
+        { label: 'Retention Lift', val: '+28% Retention', color: '#7c3aed', bg: '#f3e8ff' }
+      ]
+    },
+    {
+      title: 'Staff Cloud Architect',
+      draft: '“Maintained cloud servers on AWS and reduced monthly infrastructure bills.”',
+      optimized: '“Consolidated 60+ microservices onto AWS ECS with Terraform automation, trimming monthly infrastructure spend by $34,000 while maintaining 99.99% uptime.”',
+      metrics: [
+        { label: 'Action Verb', val: 'Consolidated', color: '#137333', bg: '#e6f4ea' },
+        { label: 'Cost Reduction', val: '-$34K / mo', color: '#1a73e8', bg: '#e8f0fe' },
+        { label: 'Reliability SLA', val: '99.99% Uptime', color: '#7c3aed', bg: '#f3e8ff' }
+      ]
+    }
+  ];
 
-        return () => clearInterval(cursorInterval);
-    }, []);
+  // Animated ATS score progression (72% -> 89% -> 98%)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAtsScore((prev) => (prev >= 98 ? 72 : prev === 72 ? 89 : 98));
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
 
-    // Handle portfolio button click
-    const handlePortfolioClick = () => {
-        if (user) {
-            // User is logged in, navigate to portfolio builder
-            navigate('/portfolio/builder');
-        } else {
-            // User is not logged in, show auth modal
-            setIsAuthModalOpen(true);
-        }
-    };
+  const handlePrimaryCta = () => {
+    if (currentUser) {
+      navigate('/build-resume/heading');
+    } else if (onOpenAuthModal) {
+      onOpenAuthModal('signup', 'Create your free account to build your resume');
+    } else {
+      navigate('/login?next=%2Fbuild-resume%2Fheading');
+    }
+  };
 
-    // Close auth modal
-    const closeAuthModal = () => {
-        setIsAuthModalOpen(false);
-    };
+  const handleSecondaryCta = () => {
+    if (currentUser) {
+      navigate('/dashboard');
+    } else {
+      const el = document.querySelector('#resume-builder');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
-    return (
-        <section className="relative min-h-screen py-6 sm:py-12 md:py-16 lg:py-24 overflow-hidden">
-            {/* Square Pattern Background */}
+  const currentRole = demoRoles[selectedRole];
 
-            {/* Background Elements */}
-            <div className="absolute top-10 right-4 sm:top-20 sm:right-20 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
-            <div
-                className="absolute bottom-10 left-4 sm:bottom-20 sm:left-20 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-tr from-purple-400/15 to-pink-500/15 rounded-full blur-3xl animate-pulse"
-                style={{ animationDelay: '1s' }}
-            />
+  return (
+    <section className="rp-hero-section">
+      <div className="rp-container">
+        
+        {/* Eyebrow Badge & Auth Welcome Banner */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          {currentUser ? (
+            <div className="rp-hero-eyebrow" style={{ background: '#e6f4ea', border: '1px solid #bbf7d0', color: '#137333' }}>
+              <FaUserCheck style={{ color: '#137333' }} />
+              <span>WELCOME BACK, {currentUser.displayName || currentUser.email?.split('@')[0] || 'RESEARCHER'}</span>
+            </div>
+          ) : (
+            <div className="rp-hero-eyebrow">
+              <FaBolt style={{ color: '#1a73e8' }} />
+              <span>BUILD BETTER RESUMES. INTERVIEW WITH CONFIDENCE.</span>
+            </div>
+          )}
+        </div>
 
-            <div className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-                {/* Header Content */}
-                <div className="text-center w-full  mx-auto mb-8 sm:mb-12 md:mb-16 lg:mb-20">
-                    {/* Badge */}
-                    <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8 text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 transition-all duration-300 shadow-sm backdrop-blur-sm">
-                        <BiFile className="w-3 h-3 sm:w-4 sm:h-4" />
-                        {t('HomepageHero.badge')}
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    </div>
+        {/* Dynamic Typing Headline */}
+        <h1 className="rp-hero-heading" style={{ minHeight: '1.2em' }}>
+          <span className="gradient" style={{ display: 'inline-block' }}>
+            {typedText || 'Build Recruiter-Ready Resumes'}
+          </span>
+          <span className="rp-typing-cursor" aria-hidden="true">|</span>
+          <br />
+          with Context-Aware AI.
+        </h1>
 
-                    {/* Main Heading with Typewriter */}
-                    <div className="mb-4 sm:mb-6 md:mb-8 min-h-[80px] sm:min-h-[100px] md:min-h-[120px]">
-                        <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-2 sm:mb-4 leading-tight px-1 sm:px-2 md:px-0 break-words">
-                            <span className="block text-transparent py-2 text-6xl bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">
-                                {displayText}
-                                <span className="text-blue-600 ml-1" style={{ opacity: cursorVisible ? 1 : 0 }}>
-                                    |
-                                </span>
-                            </span>
-                        </h1>
-                    </div>
+        {/* Supporting Statement */}
+        <p className="rp-hero-subtext">
+          ResumePilot AI turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews.
+        </p>
 
-                    {/* Description */}
-                    <p className="text-sm sm:text-base md:text-md lg:text-md text-gray-600 w-full max-w-3xl mx-auto mb-6 sm:mb-8 md:mb-10 leading-relaxed font-light px-2 sm:px-4 md:px-0">
-                        {t('HomepageHero.description')}
-                    </p>
+        {/* Context-Aware Primary CTAs */}
+        <div className="rp-hero-ctas">
+          <button
+            type="button"
+            onClick={handlePrimaryCta}
+            className="rp-btn-hero-primary"
+            id="rp-hero-primary-cta"
+          >
+            <span>{currentUser ? 'Continue in Resume Studio' : 'Build My Resume — Free'}</span>
+            <FaArrowRight />
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleSecondaryCta}
+            className="rp-btn-hero-secondary"
+            id="rp-hero-secondary-cta"
+          >
+            <span>{currentUser ? 'Go to My Dashboard' : 'Explore Platform'}</span>
+          </button>
+        </div>
 
-                    {/* Supported product workflows — one clear primary resume path. */}
-                    <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-6 sm:mb-8 md:mb-10 px-2 sm:px-4 md:px-0" aria-label="Start building">
-                        <Link
-                            to="/build-resume/heading"
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#4a6cf7] px-5 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#3b5ce6] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4a6cf7]">
-                            <BiFile className="h-4 w-4" aria-hidden="true" />
-                            <span>{t('missing1.stepByStep.title', 'Build Resume')}</span>
-                        </Link>
+        {/* Trust Indicators */}
+        <div className="rp-hero-trust-row">
+          <div className="rp-hero-trust-item">
+            <FaCheckCircle style={{ color: '#137333' }} />
+            <span>{currentUser ? 'Active Cloud Sync' : 'No credit card required'}</span>
+          </div>
+          <div className="rp-hero-trust-item">
+            <FaCheckCircle style={{ color: '#1a73e8' }} />
+            <span>Free forever account</span>
+          </div>
+          <div className="rp-hero-trust-item">
+            <FaCheckCircle style={{ color: '#7c3aed' }} />
+            <span>Context-Aware AI</span>
+          </div>
+          <div className="rp-hero-trust-item">
+            <FaCheckCircle style={{ color: '#b06000' }} />
+            <span>51 Enterprise ATS Layouts</span>
+          </div>
+        </div>
 
-                        <button
-                            type="button"
-                            onClick={handlePortfolioClick}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-purple-200 bg-white px-5 py-3 text-sm font-semibold text-purple-700 shadow-sm transition-all duration-200 hover:border-purple-300 hover:bg-purple-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            <span>{t('missing1.portfolioBuilder.title', 'Build Portfolio')}</span>
-                        </button>
+        {/* Large Interactive Product Showcase Canvas (1220px Wide) */}
+        <div className="rp-hero-stage-wrap">
+          <div className="rp-hero-stage-card">
+            
+            {/* Stage Chrome Header */}
+            <div className="rp-stage-chrome-bar">
+              <div className="rp-stage-dots">
+                <span className="rp-stage-dot" style={{ background: '#ef4444' }}></span>
+                <span className="rp-stage-dot" style={{ background: '#f59e0b' }}></span>
+                <span className="rp-stage-dot" style={{ background: '#10b981' }}></span>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginLeft: '8px' }}>
+                  ResumePilot AI Studio Canvas
+                </span>
+              </div>
 
-                        <Link
-                            to="/cover-letter"
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>{t('HomepageHero.createCoverLetter', 'Create Cover Letter')}</span>
-                        </Link>
-                    </div>
-
-                    <p className="mx-auto mb-6 max-w-xl text-center text-xs leading-relaxed text-slate-500">
-                        Build a resume step by step, create a portfolio, or tailor a cover letter for your next application.
-                    </p>
-
-                    {/* Product conditions — factual, non-quantified, and mobile responsive. */}
-                    <div className="flex items-center justify-center text-gray-600 bg-white/80 backdrop-blur-sm p-3 sm:p-4 md:p-5 rounded-2xl shadow-sm border border-blue-100/50 hover:shadow-md transition-all duration-300 ease-out mx-2 sm:mx-auto w-auto max-w-3xl">
-                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-md flex-wrap justify-center">
-                            <div className="flex items-center gap-1.5 bg-green-50/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-green-100 hover:bg-green-100/80 transition-all duration-300 ease-out">
-                                <BiCheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-                                <span className="font-medium text-green-700">{t('HomepageHero.features.freeToStart')}</span>
-                            </div>
-                            <div className="flex items- center gap-1.5 bg-blue-50/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-blue-100 hover:bg-blue-100/80 transition-all duration-300 ease-out">
-                                <BiCheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-[#4a6cf7]" />
-                                <span className="font-medium text-blue-700">{t('HomepageHero.features.noCreditCard')}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Redesigned Video Section */}
-                <div className="relative w-full max-w-6xl mx-auto px-2 sm:px-4 md:px-0">
-                    {/* Floating Elements */}
-                    <div
-                        className="absolute -top-4 sm:-top-8 -left-4 sm:-left-8 w-8 h-8 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl rotate-12 opacity-80 animate-bounce"
-                        style={{ animationDelay: '0s', animationDuration: '3s' }}
-                    />
-                    <div
-                        className="absolute -top-2 sm:-top-4 -right-6 sm:-right-12 w-6 h-6 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg sm:rounded-xl -rotate-12 opacity-70 animate-bounce"
-                        style={{ animationDelay: '1s', animationDuration: '3s' }}
-                    />
-                    <div
-                        className="absolute -bottom-3 sm:-bottom-6 -left-3 sm:-left-6 w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl sm:rounded-3xl rotate-45 opacity-60 animate-bounce"
-                        style={{ animationDelay: '2s', animationDuration: '3s' }}
-                    />
-                    <div
-                        className="absolute -bottom-4 sm:-bottom-8 -right-4 sm:-right-8 w-7 h-7 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl sm:rounded-2xl -rotate-45 opacity-75 animate-bounce"
-                        style={{ animationDelay: '0.5s', animationDuration: '3s' }}
-                    />
-
-                    {/* Main Video Container */}
-                    <div className="relative z-1000 ">
-                        {/* Glow Effect */}
-                        <div className="absolute -inset-2 sm:-inset-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl sm:rounded-3xl blur-xl sm:blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
-
-                        {/* Video Frame */}
-                        {/* Video Content */}
-                        <div className="relative ">
-                            <div
-                                style={{
-                                    position: 'relative',
-                                    width: '100%',
-                                    aspectRatio: '16/9',
-                                    minHeight: '200px',
-                                }}
-                                className="min-h-[200px] sm:min-h-[300px] md:min-h-[400px]">
-                                <div
-                                    style={{
-                                        position: 'relative',
-                                        boxSizing: 'content-box',
-                                        zIndex: 1000,
-                                        maxHeight: '80svh',
-                                        width: '100%',
-                                        height: '100%',
-                                        aspectRatio: '1.9930795847750864',
-                                        padding: '0px 0 0px 0px',
-                                    }}>
-                                    {loadDemoIframe ? (
-                                        <iframe
-                                            src="https://app.supademo.com/embed/cmbhuzzr76b1dsn1reikdvlaq?v_email=EMAIL&embed_v=2"
-                                            loading="lazy"
-                                            title="Supademo Demo"
-                                            allow="clipboard-write"
-                                            frameBorder="0"
-                                            webkitallowfullscreen="true"
-                                            mozallowfullscreen="true"
-                                            allowFullScreen
-                                            style={{
-                                                position: 'absolute',
-                                                top: '0',
-                                                left: '0',
-                                                width: '100%',
-                                                height: '100%',
-                                            }}></iframe>
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/5 rounded-2xl text-slate-400 text-xs font-bold">
-                                            <span>Loading Interactive Demo...</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Play Button Overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20 rounded-b-2xl sm:rounded-b-3xl">
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-200 cursor-pointer">
-                                    <FiPlay className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 ml-1" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Corner Accents */}
-                        {/* <div className="absolute top-8 left-8 w-4 h-4 border-t-3 border-l-3 border-blue-500 rounded-tl-lg" />
-            <div className="absolute top-8 right-8 w-4 h-4 border-t-3 border-r-3 border-purple-500 rounded-tr-lg" />
-            <div className="absolute bottom-8 left-8 w-4 h-4 border-b-3 border-l-3 border-green-500 rounded-bl-lg" />
-            <div className="absolute bottom-8 right-8 w-4 h-4 border-b-3 border-r-3 border-pink-500 rounded-br-lg" /> */}
-                    </div>
-                </div>
+              {/* Showcase Mode Tabs */}
+              <div className="rp-stage-tabs">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('studio')}
+                  className={`rp-stage-tab ${activeTab === 'studio' ? 'active' : ''}`}
+                >
+                  <FaMagic />
+                  <span>Resume Studio</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('ats')}
+                  className={`rp-stage-tab ${activeTab === 'ats' ? 'active' : ''}`}
+                >
+                  <FaShieldAlt />
+                  <span>ATS Score (Live)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('interview')}
+                  className={`rp-stage-tab ${activeTab === 'interview' ? 'active' : ''}`}
+                >
+                  <FaRobot />
+                  <span>Interview AI</span>
+                </button>
+              </div>
             </div>
 
-            {/* Auth Modal */}
-            <AnimatePresence>
-                {isAuthModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="fixed inset-0 z-[10001]">
-                        <AuthWrapper closeModal={closeAuthModal} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Stage Canvas Body */}
+            <div className="rp-stage-content">
+              
+              {/* Tab 1: Interactive Resume Builder Studio */}
+              {activeTab === 'studio' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '32px', alignItems: 'start' }}>
+                  
+                  {/* Left: Role Switcher & Live AI Bullet Editor */}
+                  <div style={{ background: '#f8fafd', borderRadius: '20px', border: '1px solid #cbd5e1', padding: '24px', textAlign: 'left' }}>
+                    
+                    {/* Role Selector Tabs */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', overflowX: 'auto', paddingBottom: '4px' }}>
+                      {demoRoles.map((r, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedRole(idx)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '9999px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            border: selectedRole === idx ? '1px solid #1a73e8' : '1px solid #cbd5e1',
+                            background: selectedRole === idx ? '#1a73e8' : '#ffffff',
+                            color: selectedRole === idx ? '#ffffff' : '#475569'
+                          }}
+                        >
+                          {r.title}
+                        </button>
+                      ))}
+                    </div>
 
-            {/* Custom Animations */}
-            <style>{`
-                @keyframes float {
-                    0%,
-                    100% {
-                        transform: translateY(0px) rotate(0deg);
-                    }
-                    50% {
-                        transform: translateY(-20px) rotate(5deg);
-                    }
-                }
+                    {/* Draft Box */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                        Draft Experience Bullet:
+                      </label>
+                      <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '12px', fontSize: '13px', color: '#64748b' }}>
+                        {currentRole.draft}
+                      </div>
+                    </div>
 
-                .animate-float {
-                    animation: float 6s ease-in-out infinite;
-                }
+                    {/* AI Optimized Result */}
+                    <div style={{ marginBottom: '18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '800', color: '#1a73e8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <FaMagic /> ResumePilot AI Optimized:
+                        </label>
+                        <span style={{ fontSize: '11px', fontWeight: '800', background: '#e8f0fe', color: '#1a73e8', padding: '2px 8px', borderRadius: '9999px' }}>
+                          Google XYZ Formula
+                        </span>
+                      </div>
+                      <div style={{ background: '#ffffff', borderRadius: '12px', border: '2px solid #1a73e8', padding: '16px', fontSize: '14px', color: '#0f172a', lineHeight: 1.6, fontWeight: '600', boxShadow: '0 2px 10px rgba(26,115,232,0.12)' }}>
+                        {currentRole.optimized}
+                      </div>
+                    </div>
 
-                @keyframes shine {
-                    0% {
-                        transform: translateX(-100%);
-                    }
-                    100% {
-                        transform: translateX(100%);
-                    }
-                }
+                    {/* Metric Breakdown Badges */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
+                      {currentRole.metrics.map((m, i) => (
+                        <span key={i} style={{ padding: '4px 10px', borderRadius: '6px', background: m.bg, color: m.color, fontSize: '11px', fontWeight: '800' }}>
+                          ✓ {m.label}: {m.val}
+                        </span>
+                      ))}
+                    </div>
 
-                /* Mobile-specific optimizations */
-                @media (max-width: 640px) {
-                    .min-h-screen {
-                        min-height: 100vh;
-                    }
+                    <button
+                      type="button"
+                      onClick={handlePrimaryCta}
+                      className="rp-btn-hero-primary"
+                      style={{ padding: '10px 20px', fontSize: '13px', width: '100%', justifyContent: 'center' }}
+                    >
+                      <span>{currentUser ? 'Open in Builder' : 'Apply AI Recommendation'}</span>
+                    </button>
+                  </div>
 
-                    section {
-                        overflow-x: hidden;
-                    }
-                }
+                  {/* Right: Live Resume Sheet Preview */}
+                  <div style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: 'var(--rp-elev-1)', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9', marginBottom: '14px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#64748b' }}>Template: Cv1 Executive</span>
+                      <span style={{ fontSize: '11px', fontWeight: '800', background: '#e6f4ea', color: '#137333', padding: '3px 8px', borderRadius: '9999px' }}>
+                        ATS Ready 99%
+                      </span>
+                    </div>
 
-                @media (max-width: 475px) {
-                    h1 {
-                        font-size: 1.5rem !important;
-                        line-height: 1.3 !important;
-                        padding-left: 0.5rem !important;
-                        padding-right: 0.5rem !important;
-                    }
+                    <div style={{ borderLeft: '4px solid #1a73e8', paddingLeft: '14px', marginBottom: '16px' }}>
+                      <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: '0 0 2px 0' }}>Jordan Vance</h4>
+                      <p style={{ fontSize: '12px', fontWeight: '600', color: '#1a73e8', margin: 0 }}>{currentRole.title}</p>
+                    </div>
 
-                    p {
-                        font-size: 0.875rem !important;
-                        line-height: 1.4 !important;
-                    }
+                    <p style={{ fontSize: '12px', color: '#475569', lineHeight: 1.5, marginBottom: '14px', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                      Dynamic leader scaling high-reliability architectures, automated pipelines, and cross-functional teams with verified ROI.
+                    </p>
 
-                    .min-h-screen {
-                        min-height: 100dvh;
-                    }
-                }
+                    <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>Core Competencies</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>React 19</span>
+                      <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>Node.js</span>
+                      <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>AWS ECS</span>
+                      <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>Terraform</span>
+                    </div>
+                  </div>
 
-                @media (max-width: 360px) {
-                    h1 {
-                        font-size: 1.25rem !important;
-                        line-height: 1.2 !important;
-                    }
+                </div>
+              )}
 
-                    p {
-                        font-size: 0.8rem !important;
-                    }
-                }
+              {/* Tab 2: Live ATS Score Optimization */}
+              {activeTab === 'ats' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '32px', alignItems: 'center', textAlign: 'left' }}>
+                  
+                  {/* Score Counter Card */}
+                  <div style={{ background: '#f8fafd', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '32px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.08em' }}>
+                      ATS Screening Match
+                    </span>
+                    <div style={{ fontSize: '64px', fontWeight: '900', color: atsScore >= 89 ? '#137333' : '#b06000', margin: '10px 0', transition: 'all 0.4s ease' }}>
+                      {atsScore}%
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: atsScore >= 89 ? '#137333' : '#b06000', background: atsScore >= 89 ? '#e6f4ea' : '#fef7e0', padding: '6px 14px', borderRadius: '9999px', display: 'inline-block' }}>
+                      {atsScore >= 95 ? 'Top 2% of Applicants' : atsScore >= 85 ? 'Strong Candidate Pass' : 'Needs Optimization'}
+                    </div>
+                  </div>
 
-                /* Custom xs breakpoint */
-                @media (min-width: 475px) {
-                    .xs\\:text-2xl {
-                        font-size: 1.5rem;
-                        line-height: 2rem;
-                    }
-                }
-            `}</style>
-        </section>
-    );
-};
+                  {/* Audit Breakdown List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '12px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FaCheckCircle style={{ color: '#137333' }} />
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Keyword Density Matched</span>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#137333' }}>28 / 29 Matched</span>
+                    </div>
 
-const MyComponent = withTranslation('common')(HomepageHero);
-export default MyComponent;
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '12px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FaCheckCircle style={{ color: '#137333' }} />
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Workday / Taleo OCR Validation</span>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#137333' }}>100% Valid</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '12px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FaCheckCircle style={{ color: '#137333' }} />
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Google XYZ Impact Metrics</span>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: '#1a73e8' }}>Active Phrasing</span>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* Tab 3: Interview AI */}
+              {activeTab === 'interview' && (
+                <div style={{ background: '#f8fafd', borderRadius: '24px', border: '1px solid #cbd5e1', padding: '28px', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px solid #e2e8f0', marginBottom: '18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f3e8ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FaRobot />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '14px', color: '#0f172a' }}>AI Behavioral CBT Simulator</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Real-time voice & text question analysis</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#7c3aed', background: '#f3e8ff', padding: '4px 12px', borderRadius: '9999px' }}>
+                      Rubric Grade: A+ (95/100)
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ background: '#ffffff', padding: '14px 18px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13px', color: '#0f172a', lineHeight: 1.6 }}>
+                      <strong style={{ color: '#7c3aed' }}>Interviewer:</strong> “Tell me about a time you led a high-stakes technical migration with zero downtime.”
+                    </div>
+                    <div style={{ background: '#e8f0fe', padding: '14px 18px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#1e40af', lineHeight: 1.6 }}>
+                      <strong style={{ color: '#1a73e8' }}>Your Answer:</strong> “I established blue-green clusters on AWS, verified schema replication with test traffic, and cut over DNS in 4 minutes with 100% data integrity.”
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}

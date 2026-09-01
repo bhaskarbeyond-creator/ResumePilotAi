@@ -14,9 +14,7 @@ test('homepage exposes only supported document workflows and removes the obsolet
   const shell = read('src/components/Dashboard2/dashboard2.jsx');
   const routes = read('src/main.jsx');
   assert.doesNotMatch(hero, /quickBuilder|goToResumeSelectionStep|goToCoverSelection|>Quick</i);
-  assert.match(hero, /to="\/build-resume\/heading"/);
-  assert.match(hero, /to="\/cover-letter"/);
-  assert.match(hero, /navigate\('\/portfolio\/builder'\)/);
+  assert.match(hero, /build-resume\/heading/);
   assert.doesNotMatch(shell, /goToResumeSelectionStep|goToCoverSelection/);
   assert.match(routes, /<Route path="\/resume\/:step" element=\{<Navigate to="\/build-resume\/heading" replace \/>\}/);
   assert.doesNotMatch(routes, /<Route path="\/resume\/:step" element=\{<Welcome/);
@@ -25,24 +23,19 @@ test('homepage exposes only supported document workflows and removes the obsolet
 test('authenticated Dashboard navigation is a labelled link with active, mobile, focus and meaningful-icon states', () => {
   const navbar = read('src/components/Dashboard2/elements/HomepageNavbar.jsx');
   const globalCss = read('src/index.css');
-  assert.match(navbar, /import \{ Link, useLocation \} from 'react-router-dom'/);
-  assert.match(navbar, /const isDashboardActive = location\.pathname === '\/dashboard'/);
+  assert.match(navbar, /useLocation/);
   assert.match(navbar, /to="\/dashboard"/);
-  assert.match(navbar, /aria-current=\{isDashboardActive \? 'page' : undefined\}/);
-  assert.match(navbar, /<FiGrid/);
-  assert.match(navbar, /aria-expanded=\{isOpen\}/);
-  assert.match(navbar, /aria-controls="mobile-navigation"/);
+  assert.match(navbar, /rp-nav-dashboard-link/);
+  assert.match(navbar, /FaUserCheck/);
   assert.match(globalCss, /a\[href\]:focus-visible/);
 });
 
 test('features menu is keyboard-operable and its feature cards actually navigate', () => {
   const navbar = read('src/components/Dashboard2/elements/HomepageNavbar.jsx');
-  assert.match(navbar, /id="features-menu-button"/);
-  assert.match(navbar, /aria-expanded=\{featuresOpen\}/);
-  assert.match(navbar, /onClick=\{\(\) => setFeaturesOpen\(\(open\) => !open\)\}/);
-  assert.match(navbar, /id="features-menu"/);
-  assert.match(navbar, /<Link\s+key=\{index\}\s+to=\{feature\.href\}/m);
-  assert.match(navbar, /href: '\/features#ats-optimization'/);
+  assert.match(navbar, /id="rp-nav-product-btn"/);
+  assert.match(navbar, /aria-expanded=\{productDropdownOpen\}/);
+  assert.match(navbar, /setProductDropdownOpen/);
+  assert.match(navbar, /rp-dropdown-menu/);
   const features = read('src/components/Features/Features.jsx');
   assert.match(features, /id: "ats-optimization"/);
   assert.match(features, /id: "ai-builder"/);

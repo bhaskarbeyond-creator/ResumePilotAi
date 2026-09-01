@@ -119,6 +119,9 @@ export function buildModuleSettingsPatch(nextConfig = {}, targetKey = null) {
     if (!targetKey || targetKey === 'enableGithubAuthModule') {
         patch.enableGithubLogin = source.enableGithubAuthModule;
     }
+    if (!targetKey || targetKey === 'enableBlogModule') {
+        patch.blog = source.enableBlogModule;
+    }
     return patch;
 }
 

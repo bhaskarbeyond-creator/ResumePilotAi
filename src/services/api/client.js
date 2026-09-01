@@ -14,8 +14,15 @@ async function getFire() {
 }
 
 export async function apiFetch(url, options = {}) {
-    const fire = await getFire();
-    const user = fire?.auth?.().currentUser;
+    const fireMod = await getFire();
+    const fireInstance = fireMod?.default || fireMod || (typeof window !== 'undefined' ? window.fire : null);
+    let user = null;
+    try {
+        if (fireInstance?.auth) {
+            user = typeof fireInstance.auth === 'function' ? fireInstance.auth().currentUser : fireInstance.auth.currentUser;
+        }
+    } catch (_) {}
+
     let headers = {
         'Content-Type': 'application/json',
         ...(options.headers || {})

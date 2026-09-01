@@ -1,0 +1,292 @@
+{
+  "timestamp": "2026-09-01T19:02:52.168Z",
+  "totalRoutesDiscovered": 31,
+  "routesTested": 31,
+  "passed": 31,
+  "failed": 0,
+  "brokenPages": 0,
+  "brokenLinks": 0,
+  "notFoundCount": 0,
+  "consoleErrorsCount": 0,
+  "routes": [
+    {
+      "route": "/",
+      "fullUrl": "https://ai-resume-builder.local/",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/blog",
+      "fullUrl": "https://ai-resume-builder.local/blog",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/pricing",
+      "fullUrl": "https://ai-resume-builder.local/pricing",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/contact",
+      "fullUrl": "https://ai-resume-builder.local/contact",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/p/privacy-policy",
+      "fullUrl": "https://ai-resume-builder.local/p/privacy-policy",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/p/terms-of-service",
+      "fullUrl": "https://ai-resume-builder.local/p/terms-of-service",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/p/cookie-policy",
+      "fullUrl": "https://ai-resume-builder.local/p/cookie-policy",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/p/about-us",
+      "fullUrl": "https://ai-resume-builder.local/p/about-us",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/features",
+      "fullUrl": "https://ai-resume-builder.local/features",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/jobs",
+      "fullUrl": "https://ai-resume-builder.local/jobs",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/jobs/portal",
+      "fullUrl": "https://ai-resume-builder.local/jobs/portal",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/jobs/browse",
+      "fullUrl": "https://ai-resume-builder.local/jobs/browse",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/jobs/categories",
+      "fullUrl": "https://ai-resume-builder.local/jobs/categories",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/portfolios",
+      "fullUrl": "https://ai-resume-builder.local/portfolios",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/login",
+      "fullUrl": "https://ai-resume-builder.local/login",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/sign-up",
+      "fullUrl": "https://ai-resume-builder.local/sign-up",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/templates",
+      "fullUrl": "https://ai-resume-builder.local/templates",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/faq",
+      "fullUrl": "https://ai-resume-builder.local/faq",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/faqs",
+      "fullUrl": "https://ai-resume-builder.local/faqs",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/plans",
+      "fullUrl": "https://ai-resume-builder.local/plans",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/career-resources",
+      "fullUrl": "https://ai-resume-builder.local/career-resources",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/privacy",
+      "fullUrl": "https://ai-resume-builder.local/privacy",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/terms",
+      "fullUrl": "https://ai-resume-builder.local/terms",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/cookies",
+      "fullUrl": "https://ai-resume-builder.local/cookies",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/about",
+      "fullUrl": "https://ai-resume-builder.local/about",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/about-us",
+      "fullUrl": "https://ai-resume-builder.local/about-us",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/enterprise",
+      "fullUrl": "https://ai-resume-builder.local/enterprise",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/portfolio/builder",
+      "fullUrl": "https://ai-resume-builder.local/portfolio/builder",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/blog/how-to-beat-ats-screening-2026",
+      "fullUrl": "https://ai-resume-builder.local/blog/how-to-beat-ats-screening-2026",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/blog/google-xyz-resume-bullet-formula",
+      "fullUrl": "https://ai-resume-builder.local/blog/google-xyz-resume-bullet-formula",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    },
+    {
+      "route": "/blog/mastering-the-star-interview-method",
+      "fullUrl": "https://ai-resume-builder.local/blog/mastering-the-star-interview-method",
+      "httpStatus": 200,
+      "title": "ResumePilot AI — Resume Builder & CV Maker",
+      "status": "PASS",
+      "failReason": null,
+      "consoleErrors": []
+    }
+  ]
+}

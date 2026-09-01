@@ -8,6 +8,21 @@
     display: flex;
     flex-direction: row;
 
+    &.introduction-mode {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden;
+
+        .actions {
+            width: 100%;
+            max-width: 100%;
+            display: block;
+            flex: none;
+        }
+    }
+
     // Mobile responsiveness
     @media (max-width: 640px) {
         flex-direction: column;

@@ -375,7 +375,8 @@ const BlogManagement = () => {
                         Refresh
                     </button>
                     <Link
-                        to="/blog-editor"
+                        to="/blog-editor?admin=1"
+                        state={{ fromAdmin: true }}
                         className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 text-sm font-medium transition-colors"
                     >
                         <FiEdit3 className="w-4 h-4 mr-2" />
@@ -676,7 +677,8 @@ const BlogManagement = () => {
                                                     
                                                     {/* Super Admins and Admins can edit any post */}
                                                     <Link
-                                                        to={`/blog-editor/${post.id}`}
+                                                        to={`/blog-editor/${post.id}?admin=1`}
+                                                        state={{ fromAdmin: true }}
                                                         className="inline-flex items-center p-2 text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
                                                         aria-label="Edit post"
                                                         title="Edit post"
@@ -777,14 +779,13 @@ const BlogManagement = () => {
                                                                         >
                                                                             Full Preview
                                                                         </button>
-                                                                        {post.authorUid === fire.auth().currentUser?.uid && ['draft', 'pending', 'rejected'].includes(post.status) && (
                                                                             <Link
-                                                                                to={`/blog-editor/${post.id}`}
+                                                                                to={`/blog-editor/${post.id}?admin=1`}
+                                                                                state={{ fromAdmin: true }}
                                                                                 className="w-full inline-block px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium text-center hover:bg-gray-200 transition-colors"
                                                                             >
-                                                                                Edit Your Post
+                                                                                Edit Post in Studio
                                                                             </Link>
-                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>

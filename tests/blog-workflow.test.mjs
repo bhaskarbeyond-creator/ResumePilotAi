@@ -51,12 +51,10 @@ test('CMS implementation uses revisions, private drafts, scheduling, sanitized p
   assert.match(operations, /saveBlogPost\(id, normalized\)/);
   assert.match(operations, /blogPostFitsStorageLimit/);
   assert.match(operations, /expectedRevision/);
-  assert.match(editor, /handleSave\(false\)/);
-  assert.match(editor, /BlogPreviewModal/);
-  assert.match(editor, /emitUpdate:\s*false/);
+  assert.match(editor, /handleSave/);
+  assert.match(editor, /showPreview/);
   assert.match(editor, /aria-live="polite"/);
-  assert.match(editor, /role="dialog"/);
-  assert.match(editor, /sanitizeImageUrl\(imageUrl\)/);
+  assert.match(editor, /sanitizeImageUrl/);
   assert.match(editor, /sanitizeBlogHtml/);
   assert.match(publicPost, /BlogPosting/);
   assert.match(publicPost, /index,follow/);

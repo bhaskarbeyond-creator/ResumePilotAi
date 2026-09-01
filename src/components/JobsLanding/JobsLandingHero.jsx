@@ -214,7 +214,7 @@ const JobsLandingHero = ({ t, authBtnHandler, user: propUser }) => {
 
                         {/* Career Resources */}
                         <Link
-                            to="/career-resources"
+                            to="/blog"
                             className="flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium text-sm shadow-md hover:shadow-lg min-w-[140px]">
                             <FiTrendingUp className="w-4 h-4" />
                             <span>{t('JobsUpdate.JobsLandingHero.careerResources', 'Career Tips')}</span>

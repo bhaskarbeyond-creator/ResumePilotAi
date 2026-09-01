@@ -131,9 +131,9 @@ const Contact = ({ user, t }) => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen rp-public-site">
       {/* Navbar */}
-      <HomepageNavbar user={user} />
+      <HomepageNavbar />
 
       {/* Contact Section */}
       <section
