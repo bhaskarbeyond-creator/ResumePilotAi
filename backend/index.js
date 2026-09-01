@@ -4026,17 +4026,24 @@ app.get('/api/service-availability', async (req, res) => {
 
 let globalCommitSha = process.env.COMMIT_SHA;
 try {
-  const fs = require('fs');
-  const shaPath = require('path').join(__dirname, 'COMMIT_SHA');
-  if (fs.existsSync(shaPath)) {
-    const bytes = fs.readFileSync(shaPath);
-    const decoded = bytes[0] === 0xff && bytes[1] === 0xfe
-      ? bytes.toString('utf16le')
-      : bytes.toString('utf8');
-    const candidate = decoded.replace(/^\uFEFF/, '').trim();
-    if (/^[0-9a-f]{40}$/i.test(candidate)) globalCommitSha = candidate;
-  }
+  const { execSync } = require('child_process');
+  const gitSha = execSync('git rev-parse HEAD', { encoding: 'utf8', timeout: 1000 }).trim();
+  if (/^[0-9a-f]{40}$/i.test(gitSha)) globalCommitSha = gitSha;
 } catch (_) {}
+if (!globalCommitSha) {
+  try {
+    const fs = require('fs');
+    const shaPath = require('path').join(__dirname, 'COMMIT_SHA');
+    if (fs.existsSync(shaPath)) {
+      const bytes = fs.readFileSync(shaPath);
+      const decoded = bytes[0] === 0xff && bytes[1] === 0xfe
+        ? bytes.toString('utf16le')
+        : bytes.toString('utf8');
+      const candidate = decoded.replace(/^\uFEFF/, '').trim();
+      if (/^[0-9a-f]{40}$/i.test(candidate)) globalCommitSha = candidate;
+    }
+  } catch (_) {}
+}
 
 function databaseHealthPayload() {
     const status = databaseAuthority.getStatus();

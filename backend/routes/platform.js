@@ -66,6 +66,18 @@ function getFrontendBuildSha() {
 let cachedCommitSha = null;
 function getCommitSha() {
   if (cachedCommitSha) return cachedCommitSha;
+  if (process.env.COMMIT_SHA && /^[0-9a-f]{7,40}$/i.test(process.env.COMMIT_SHA.trim())) {
+    cachedCommitSha = process.env.COMMIT_SHA.trim();
+    return cachedCommitSha;
+  }
+  try {
+    const { execSync } = require('child_process');
+    const gitSha = execSync('git rev-parse HEAD', { encoding: 'utf8', timeout: 1000 }).trim();
+    if (/^[0-9a-f]{40}$/i.test(gitSha)) {
+      cachedCommitSha = gitSha;
+      return cachedCommitSha;
+    }
+  } catch (_) { /* ignore */ }
   try {
     const shaPath = path.join(__dirname, '..', 'COMMIT_SHA');
     if (fs.existsSync(shaPath)) {
