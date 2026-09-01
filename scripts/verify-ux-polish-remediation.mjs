@@ -216,7 +216,7 @@ async function runUxPolishAudit() {
     const res = await fetch(`${API_BASE}/api/auth/preview-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'superadmin@resumepilot.test', password: 'password123' })
+      body: JSON.stringify({ email: 'superadmin@resumepilot.test', password: process.env.TEST_PASSWORD || '' })
     });
     if (res.ok) adminAuth = await res.json();
   } catch (_e) {}

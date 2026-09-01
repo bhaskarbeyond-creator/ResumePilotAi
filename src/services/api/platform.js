@@ -401,11 +401,12 @@ export async function deleteUserByAdmin(userId, email = null) {
 }
 
 export async function getCoupons() {
+    if (!isUserAuthenticated()) return {};
     try {
         const { response, data } = await fetchAdminWithReauth('/api/admin/coupons');
-        if (response.ok && data?.success) return data.coupons || [];
+        if (response.ok && data?.success) return data.coupons || {};
     } catch { /* fall through */ }
-    return [];
+    return {};
 }
 
 export async function getAllCouponsAdmin() {

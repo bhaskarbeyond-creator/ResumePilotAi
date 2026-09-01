@@ -5081,17 +5081,66 @@ app.get(['/public/custom-pages.json', '/api/public/custom-pages', '/api/custom-p
     }
 });
 
+const DEFAULT_BUILTIN_PAGES = {
+    'privacy-policy': {
+        slug: 'privacy-policy',
+        title: 'Privacy Policy — ResumePilot AI',
+        description: 'Comprehensive Privacy Policy detailing data protection, encryption, and GDPR compliance on ResumePilot AI.',
+        pagecontent: `<div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;"><div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;"><span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">Legal & Privacy</span><h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Privacy Policy</h1><p style="color: #64748b; font-size: 14px; margin: 0;">Last Updated: September 2026 • Certified GDPR & CCPA Compliant</p></div><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">1. Information We Collect</h2><p>ResumePilot AI collects account credentials, career experience data, education, skills, and job target details provided directly when crafting resumes, portfolios, and practicing interview simulations.</p></section><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">2. AI Processing & Zero Training Pledge</h2><p>Your resume data, job descriptions, and mock interview transcripts processed through NVIDIA NIM and Google AI APIs are strictly ephemeral. We enforce a strict zero-retention pledge: your private career data is never used to train public foundation models.</p></section><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">3. Data Security & Encryption</h2><p>All stored records in MariaDB and session tokens are encrypted in transit via TLS 1.3 and protected with AES-256-GCM encryption at rest.</p></section></div>`,
+        published: true,
+        status: 'published'
+    },
+    'terms-of-service': {
+        slug: 'terms-of-service',
+        title: 'Terms of Service — ResumePilot AI',
+        description: 'Terms of Service and acceptable use policy for ResumePilot AI platform.',
+        pagecontent: `<div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;"><div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;"><span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">Terms of Agreement</span><h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Terms of Service</h1><p style="color: #64748b; font-size: 14px; margin: 0;">Effective Date: September 2026</p></div><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">1. Acceptance of Terms</h2><p>By accessing ResumePilot AI, you agree to these Terms of Service, all applicable laws, and regulations.</p></section><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">2. User Accounts & Subscriptions</h2><p>Free accounts receive access to foundational ATS resume templates and standard AI tailoring. Pro Subscriptions unlock full access to all 51 certified templates.</p></section></div>`,
+        published: true,
+        status: 'published'
+    },
+    'cookie-policy': {
+        slug: 'cookie-policy',
+        title: 'Cookie Policy — ResumePilot AI',
+        description: 'Cookie Policy and local storage usage on ResumePilot AI.',
+        pagecontent: `<div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;"><div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;"><span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">Cookie Compliance</span><h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Cookie Policy</h1><p style="color: #64748b; font-size: 14px; margin: 0;">Last Updated: September 2026</p></div><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">1. Essential Cookies</h2><p>We use essential cookies strictly required to authenticate sessions, maintain secure CSRF protection, and persist your draft builder steps.</p></section></div>`,
+        published: true,
+        status: 'published'
+    },
+    'about-us': {
+        slug: 'about-us',
+        title: 'About Us — ResumePilot AI',
+        description: 'About ResumePilot AI: Next-generation career platform empowering professionals with AI-driven resumes, portfolios, and interview practice.',
+        pagecontent: `<div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;"><div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;"><span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">About ResumePilot AI</span><h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Empowering Career Excellence</h1><p style="color: #64748b; font-size: 14px; margin: 0;">Built for modern job seekers, engineers, leaders, and career changers.</p></div><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Our Mission</h2><p>ResumePilot AI combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide.</p></section></div>`,
+        published: true,
+        status: 'published'
+    },
+    'about': {
+        slug: 'about',
+        title: 'About Us — ResumePilot AI',
+        description: 'About ResumePilot AI: Next-generation career platform empowering professionals with AI-driven resumes, portfolios, and interview practice.',
+        pagecontent: `<div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;"><div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;"><span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">About ResumePilot AI</span><h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Empowering Career Excellence</h1><p style="color: #64748b; font-size: 14px; margin: 0;">Built for modern job seekers, engineers, leaders, and career changers.</p></div><section style="margin-bottom: 32px;"><h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Our Mission</h2><p>ResumePilot AI combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide.</p></section></div>`,
+        published: true,
+        status: 'published'
+    }
+};
+
 app.get('/api/public/custom-pages/:slug', async (req, res) => {
     const slug = String(req.params.slug || '').toLowerCase();
     if (!/^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/.test(slug)) {
         return res.status(400).json({ success: false, code: 'INVALID_PAGE_SLUG', error: 'Invalid page slug.' });
     }
     try {
-        const page = await getRepository().getCustomPageBySlug(slug, { publishedOnly: true });
+        let page = await getRepository().getCustomPageBySlug(slug, { publishedOnly: true });
+        if (!page && DEFAULT_BUILTIN_PAGES[slug]) {
+            page = { ...DEFAULT_BUILTIN_PAGES[slug], id: slug, source: 'BUILTIN_LEGAL_PAGE' };
+        }
         res.setHeader('Cache-Control', 'no-store');
         if (!page) return res.status(404).json({ success: false, code: 'CUSTOM_PAGE_NOT_FOUND', error: 'Page not found.' });
-        return res.json({ success: true, page, source: 'MARIADB_CUSTOM_PAGES' });
+        return res.json({ success: true, page, source: page.source || 'MARIADB_CUSTOM_PAGES' });
     } catch (_error) {
+        if (DEFAULT_BUILTIN_PAGES[slug]) {
+            return res.json({ success: true, page: { ...DEFAULT_BUILTIN_PAGES[slug], id: slug, source: 'BUILTIN_FALLBACK' } });
+        }
         return res.status(503).json({
             success: false,
             code: 'CUSTOM_PAGES_UNAVAILABLE',

@@ -134,7 +134,7 @@ async function runV2Audit() {
     const res = await fetch('http://127.0.0.1:8080/api/auth/preview-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'user@test.test', password: 'password123' })
+      body: JSON.stringify({ email: 'user@test.test', password: process.env.TEST_PASSWORD || '' })
     });
     if (res.ok) freeUserToken = await res.json();
   } catch (_e) {}
@@ -250,7 +250,7 @@ async function runV2Audit() {
     const res = await fetch('http://127.0.0.1:8080/api/auth/preview-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'superadmin@resumepilot.test', password: 'password123' })
+      body: JSON.stringify({ email: 'superadmin@resumepilot.test', password: process.env.TEST_PASSWORD || '' })
     });
     if (res.ok) adminAuth = await res.json();
   } catch (_e) {}
