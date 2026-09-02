@@ -1053,11 +1053,13 @@ export async function getSubscriptionStatus() {
             throw new Error('Subscription configuration has not been loaded from MariaDB.');
         }
         const subscriptions = data?.subscriptions || {};
+        const effectiveCurrency = String(subscriptions?.currency || data?.currency || 'INR').toUpperCase();
+        const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'CA$', AUD: 'AU$' };
         return {
             ...subscriptions,
             sandboxMode: subscriptions.sandboxMode !== false,
-            currency: data?.currency || 'INR',
-            currencySymbol: data?.currencySymbol || undefined,
+            currency: effectiveCurrency,
+            currencySymbol: subscriptions.currencySymbol || data?.currencySymbol || symbols[effectiveCurrency] || (effectiveCurrency === 'INR' ? '₹' : '$'),
             allowMultiCurrency: data?.allowMultiCurrency === true,
             _settingsSource: 'remote',
             _settingsStale: false,
