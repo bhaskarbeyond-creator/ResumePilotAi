@@ -61,6 +61,10 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
             currency: curr,
             currencySymbol: data.currencySymbol || (curr === 'USD' ? '$' : '₹'),
             pricingMatrix: data.pricingMatrix || {},
+            basicDailyLimit: Number(data.basicDailyLimit || data.aiQuota?.basicDailyLimit || 10),
+            premiumDailyLimit: Number(data.premiumDailyLimit || data.aiQuota?.premiumDailyLimit || 100),
+            enterpriseDailyLimit: Number(data.enterpriseDailyLimit || data.aiQuota?.enterpriseDailyLimit || 5000),
+            subscriptionsState: data.state !== false,
             razorpayEnabled: data.razorpayEnabled !== false,
             stripeEnabled: data.stripeEnabled === true,
             paypalEnabled: data.paypalEnabled === true,
@@ -247,9 +251,9 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
                 {[
                   'Access to all 51 ATS Resume Templates',
                   'Real-time ATS Score & Keyword Parser',
-                  'Basic AI Bullet Generator (10 requests/day)',
+                  `Basic AI Bullet Generator (${pricingData.basicDailyLimit || 10} requests/day)`,
                   'Full-Resolution Interactive Preview Modal',
-                  'High-Resolution PDF Download',
+                  pricingData.subscriptionsState === false ? 'High-Resolution PDF Download (Free Mode)' : 'Standard PDF Export (Watermarked)',
                   '1-Click Public Review Share Link'
                 ].map((f, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', color: '#334155', lineHeight: 1.4 }}>
@@ -305,7 +309,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '36px' }}>
                 {[
-                  { text: 'Unlimited STAR AI Bullet Writer & Summary Synthesizer', strong: true },
+                  { text: `STAR AI Bullet Writer (${pricingData.premiumDailyLimit || 100} ops/day) & Summary Synthesizer`, strong: true },
                   { text: 'AI Mock Interview Coach & Timed CBT Exam Simulator', strong: true },
                   { text: 'Native Microsoft Word (.docx) & Vector PDF Export', strong: true },
                   { text: 'AI Cover Letter Tailoring Engine (4 Tones & 4 Templates)', strong: false },
@@ -447,10 +451,10 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
                     {[
                       { cap: 'Resume Builder & 11 Step Pipeline', free: 'Included', pro: 'Included', ent: 'Included' },
                       { cap: 'ATS Resume Template Designs', free: 'All 51 Templates', pro: 'All 51 Templates', ent: 'All 51 + Custom' },
-                      { cap: 'Daily AI Generation Quota', free: '10 requests / day', pro: '100 requests / day', ent: '5,000+ requests / day' },
+                      { cap: 'Daily AI Generation Quota', free: `${pricingData.basicDailyLimit || 10} requests / day`, pro: `${pricingData.premiumDailyLimit || 100} requests / day`, ent: `${(pricingData.enterpriseDailyLimit || 5000).toLocaleString()}+ requests / day` },
                       { cap: 'ATS Score & STAR Bullet Optimizer', free: 'Basic Parser', pro: 'Full Intelligence', ent: 'Full Intelligence' },
                       { cap: 'Native Microsoft Word (.docx) Export', free: false, pro: true, ent: true },
-                      { cap: 'Vector PDF Export (Watermark-Free)', free: 'Watermarked', pro: '100% Clean', ent: '100% Clean' },
+                      { cap: 'Vector PDF Export (Clean & Watermark-Free)', free: pricingData.subscriptionsState === false ? '100% Clean (Free Mode)' : 'Watermarked', pro: '100% Clean', ent: '100% Clean' },
                       { cap: 'AI Cover Letter Tailoring Engine', free: false, pro: '4 Tones & Templates', ent: 'Unlimited' },
                       { cap: 'AI Mock Interview Coach & CBT Simulator', free: false, pro: true, ent: true },
                       { cap: 'Custom Web CV & Portfolio URL', free: false, pro: '/portfolio/:slug', ent: 'Custom Domain' },

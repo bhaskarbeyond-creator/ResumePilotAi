@@ -6,9 +6,25 @@ const router = express.Router();
 const VALID_ID = /^[A-Za-z0-9_-]{4,128}$/;
 const VALID_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/;
 
-router.use((req, res, next) => {
+router.use(async (req, res, next) => {
     try {
-        req.repository = getRepository();
+        req.repository = req.repository || getRepository();
+        if (typeof req.repository?.getSetting === 'function') {
+            const config = await req.repository.getSetting('public_config');
+            const isModuleEnabled = config?.modules?.enablePortfolioModule !== false;
+            if (!isModuleEnabled) {
+                const isPublicRoute = req.path.startsWith('/public');
+                const isOperator = ['ADMIN', 'SUPER_ADMIN'].includes(String(req.user?.role || '').toUpperCase());
+                if (!isPublicRoute && !isOperator) {
+                    return res.status(403).json({
+                        success: false,
+                        code: 'PORTFOLIO_MODULE_DISABLED',
+                        error: 'Portfolio module is currently disabled by system administration.',
+                        requestId: res.locals?.requestId,
+                    });
+                }
+            }
+        }
         next();
     } catch (_error) {
         return res.status(503).json({ success: false, code: 'APPLICATION_DATABASE_UNAVAILABLE', error: 'Application database unavailable' });

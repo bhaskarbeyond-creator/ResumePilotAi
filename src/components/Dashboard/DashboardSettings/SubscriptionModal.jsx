@@ -19,11 +19,11 @@ const DEFAULT_COUPONS = {
 };
 
 const PRO_UNLOCKED_FEATURES = [
-    'Unlimited AI Resume Builds & Downloads',
-    'Executive Bio & Summary AI Synthesizer',
+    'All 51 ATS Resume Templates & Real-time ATS Score',
+    'Executive Bio & Summary AI Synthesizer (100 ops/day)',
+    'AI Mock Interview Coach & CBT Simulator',
     'Cover Letter AI Builder & Job Tailoring',
-    'ATS Smart Keyword Optimization Engine',
-    '1-Click PDF, Word DocX & Public Portfolio Links',
+    '1-Click Clean PDF, Word DocX & Public Portfolio Links',
     'Priority Cloud Sync & 24/7 VIP Support'
 ];
 
@@ -69,12 +69,17 @@ const SubscriptionModal = ({ isOpen, onClose, user }) => {
             // Fetch global pricing settings
             getSubscriptionStatus().then((data) => {
                 if (data) {
-                    const currSymbol = (data.currency === 'INR' || data.currency === '₹') ? '₹' : '$';
+                    const curr = data.currency || 'INR';
+                    const matrix = data.pricingMatrix?.[curr] || {};
+                    const mPrice = Number(matrix.monthly ?? data.monthlyPrice) || (curr === 'INR' ? 199 : 19);
+                    const qPrice = Number(matrix.quartarly ?? data.quartarlyPrice) || (curr === 'INR' ? 399 : 39);
+                    const yPrice = Number(matrix.yearly ?? data.yearlyPrice) || (curr === 'INR' ? 499 : 49);
+                    const currSymbol = data.currencySymbol || ((curr === 'INR' || curr === '₹') ? '₹' : '$');
                     setSubscriptionConfig({
-                        monthlyPrice: Number(data.monthlyPrice) || 199,
-                        quartarlyPrice: Number(data.quartarlyPrice) || 399,
-                        yearlyPrice: Number(data.yearlyPrice) || 499,
-                        currency: data.currency || 'USD',
+                        monthlyPrice: mPrice,
+                        quartarlyPrice: qPrice,
+                        yearlyPrice: yPrice,
+                        currency: curr,
                         symbol: currSymbol,
                         onlyPP: Boolean(data.onlyPP),
                         razorpayUPI: Boolean(data.razorpayUPI),

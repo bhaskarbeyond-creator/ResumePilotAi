@@ -68,7 +68,7 @@ const KNOWLEDGE_BASE_ITEMS = [
             },
             {
                 q: 'Is my personal career information used to train AI models?',
-                a: 'No. ResumePilot AI strictly enforces a zero-retention pledge. All data sent to AI providers (NVIDIA NIM, Google AI) is ephemeral and never used to train public foundation models.'
+                a: 'No. ResumePilot AI strictly enforces a zero-retention pledge. All data processed by enterprise AI generation services is ephemeral and never used to train public foundation models.'
             }
         ]
     },

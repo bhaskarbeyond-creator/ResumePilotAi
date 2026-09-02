@@ -28,7 +28,7 @@ const DEFAULT_LEGAL_PAGES = {
 
                 <section style="margin-bottom: 32px;">
                     <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">2. AI Processing & Zero Training Pledge</h2>
-                    <p>Your resume data, job descriptions, and mock interview transcripts processed through NVIDIA NIM and Google AI APIs are strictly ephemeral. We enforce a strict zero-retention pledge: your private career data is never used to train public foundation models.</p>
+                    <p>Your resume data, job descriptions, and mock interview transcripts processed through secure enterprise AI generation services are strictly ephemeral. We enforce a strict zero-retention pledge: your private career data is never used to train public foundation models.</p>
                 </section>
 
                 <section style="margin-bottom: 32px;">

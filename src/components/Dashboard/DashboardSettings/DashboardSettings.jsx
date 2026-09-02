@@ -2306,17 +2306,23 @@ function DashboardSettings(_props) {
                                     <div className="flex items-center gap-2 mb-0.5">
                                         <h3 className="text-sm font-bold text-white uppercase tracking-wider">Subscription Tier</h3>
                                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-indigo-300 bg-indigo-500/30 border border-indigo-400/40 uppercase">
-                                            {effectiveMembership || 'PRO PLAN'}
+                                            {effectiveMembership || 'Basic'}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-slate-300 font-normal">Active access to unlimited AI resumes, cover letters &amp; job tracking tools.</p>
+                                    <p className="text-xs text-slate-300 font-normal">
+                                        {effectiveMembership === 'Enterprise'
+                                            ? 'Enterprise workspace access with dedicated organization governance & AI quotas.'
+                                            : effectiveMembership === 'Premium' || effectiveMembership === 'Pro'
+                                                ? 'Active PRO membership with STAR AI bullet synthesizer, clean PDF & Word DocX export.'
+                                                : 'Free Basic tier. Access to all 51 ATS templates, real-time score, and basic AI.'}
+                                    </p>
                                 </div>
                             </div>
                             <a
                                 href="/dashboard/plans"
                                 className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer">
                                 <FaCrown className="w-3.5 h-3.5 text-amber-300" />
-                                <span>Manage Subscription &amp; Plans</span>
+                                <span>{effectiveMembership === 'Enterprise' ? 'Manage Enterprise & Plans' : (effectiveMembership === 'Premium' || effectiveMembership === 'Pro') ? 'Manage Subscription & Plans' : 'Upgrade to PRO Career Pass'}</span>
                             </a>
                         </div>
 

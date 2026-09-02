@@ -3015,6 +3015,7 @@ app.post('/api/admin/ai/quota-limits', requireRecentAdminAuthentication, async (
             basicDailyLimit: req.body?.basicDailyLimit,
             premiumDailyLimit: req.body?.premiumDailyLimit,
             adminDailyLimit: req.body?.adminDailyLimit,
+            enterpriseDailyLimit: req.body?.enterpriseDailyLimit,
             expectedRevision: req.body?.expectedRevision,
             actorUid: req.user.uid,
             requestId: res.locals.requestId,

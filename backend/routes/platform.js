@@ -228,17 +228,26 @@ router.get('/public-config', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const repo = getRepository();
   try {
-    const [settings, websiteMeta] = await Promise.all([
+    const [settings, websiteMeta, aiQuota] = await Promise.all([
       repo.getSetting('public_config'),
       repo.getSetting('website_meta'),
+      repo.getSetting('ai_quota'),
     ]);
     if (!settings || typeof settings !== 'object') {
       return res.status(503).json({
         error: { code: 'PUBLIC_CONFIGURATION_NOT_INITIALIZED', message: 'Public configuration is not initialized in MariaDB.', requestId: res.locals?.requestId },
       });
     }
+    const publicQuota = aiQuota && typeof aiQuota === 'object' ? {
+      basicDailyLimit: Number(aiQuota.basicDailyLimit || 10),
+      premiumDailyLimit: Number(aiQuota.premiumDailyLimit || 100),
+      adminDailyLimit: Number(aiQuota.adminDailyLimit || 10000),
+      enterpriseDailyLimit: Number(aiQuota.enterpriseDailyLimit || 5000),
+    } : { basicDailyLimit: 10, premiumDailyLimit: 100, adminDailyLimit: 10000, enterpriseDailyLimit: 5000 };
+
     return res.json({
       ...settings,
+      aiQuota: publicQuota,
       website: websiteMeta && typeof websiteMeta === 'object' ? websiteMeta : undefined,
       _settingsSource: 'mariadb',
     });

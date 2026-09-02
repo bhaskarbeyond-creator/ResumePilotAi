@@ -1057,6 +1057,10 @@ export async function getSubscriptionStatus() {
         const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'CA$', AUD: 'AU$' };
         return {
             ...subscriptions,
+            aiQuota: data?.aiQuota || { basicDailyLimit: 10, premiumDailyLimit: 100, enterpriseDailyLimit: 5000 },
+            basicDailyLimit: Number(data?.aiQuota?.basicDailyLimit || 10),
+            premiumDailyLimit: Number(data?.aiQuota?.premiumDailyLimit || 100),
+            enterpriseDailyLimit: Number(data?.aiQuota?.enterpriseDailyLimit || 5000),
             sandboxMode: subscriptions.sandboxMode !== false,
             currency: effectiveCurrency,
             currencySymbol: subscriptions.currencySymbol || data?.currencySymbol || symbols[effectiveCurrency] || (effectiveCurrency === 'INR' ? '₹' : '$'),
@@ -1067,7 +1071,7 @@ export async function getSubscriptionStatus() {
     } catch {
         // No provider is enabled when authoritative payment configuration cannot
         // be read. The shell values are display-only and explicitly stale.
-        return { sandboxMode: true, currency: 'INR', _settingsSource: 'unavailable', _settingsStale: true };
+        return { sandboxMode: true, currency: 'INR', basicDailyLimit: 10, premiumDailyLimit: 100, enterpriseDailyLimit: 5000, _settingsSource: 'unavailable', _settingsStale: true };
 
     }
 }

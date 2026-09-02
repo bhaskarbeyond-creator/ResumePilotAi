@@ -161,6 +161,7 @@ async function getGlobalAiDashboardData() {
     basic: Number(storedQuota.basicDailyLimit || process.env.AI_BASIC_DAILY_LIMIT || 10),
     premium: Number(storedQuota.premiumDailyLimit || process.env.AI_PREMIUM_DAILY_LIMIT || 100),
     admin: Number(storedQuota.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000),
+    enterprise: Number(storedQuota.enterpriseDailyLimit || process.env.AI_ENTERPRISE_DAILY_LIMIT || 5000),
   };
   const todayRecords = consumerRows.map(row => ({
     docId: `${today}:${row.uid}`,
@@ -202,10 +203,13 @@ function boundedQuota(value, minimum, maximum, label) {
   return parsed;
 }
 
-async function setGlobalAiQuotaLimits({ basicDailyLimit, premiumDailyLimit, adminDailyLimit, expectedRevision, actorUid, requestId }) {
+async function setGlobalAiQuotaLimits({ basicDailyLimit, premiumDailyLimit, adminDailyLimit, enterpriseDailyLimit, expectedRevision, actorUid, requestId }) {
   const basic = boundedQuota(basicDailyLimit, 1, 100000, 'Basic daily limit');
   const premium = boundedQuota(premiumDailyLimit, 1, 100000, 'Premium daily limit');
   const admin = boundedQuota(adminDailyLimit, 1, 1000000, 'Admin daily limit');
+  const enterprise = enterpriseDailyLimit !== undefined
+    ? boundedQuota(enterpriseDailyLimit, 100, 1000000, 'Enterprise daily limit')
+    : undefined;
   if (!Number.isInteger(Number(expectedRevision)) || Number(expectedRevision) < 0) {
     throw Object.assign(new Error('expectedRevision is required'), { code: 'AI_QUOTA_REVISION_REQUIRED', status: 400 });
   }
@@ -228,6 +232,7 @@ async function setGlobalAiQuotaLimits({ basicDailyLimit, premiumDailyLimit, admi
       basicDailyLimit: basic,
       premiumDailyLimit: premium,
       adminDailyLimit: admin,
+      ...(enterprise !== undefined ? { enterpriseDailyLimit: enterprise } : {}),
       updatedAt: new Date().toISOString(),
       updatedBy: actorUid || 'system',
     };

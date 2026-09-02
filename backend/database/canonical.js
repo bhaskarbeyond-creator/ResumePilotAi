@@ -146,7 +146,7 @@ function toCanonicalMembership(value) {
     if (upper === 'FREE' || upper === 'BASIC') return 'Basic';
     if (upper === 'PREMIUM' || upper.includes('PREMIUM')) return 'Premium';
     if (upper === 'PRO' || upper.includes('PRO')) return 'Pro';
-    if (upper === 'ENTERPRISE' || upper.includes('ENTERPRISE')) return 'Enterprise';
+    if (upper === 'ENTERPRISE' || upper.includes('ENTERPRISE') || upper === 'ENT') return 'Enterprise';
     if (upper === 'ADMIN' || upper === 'SUPER_ADMIN') return raw;
     return raw;
 }
@@ -156,6 +156,7 @@ function isPaidMembershipTier(membership) {
     return PAID_MEMBERSHIP_TIERS.includes(upper)
         || upper.includes('PREMIUM')
         || upper.includes('ENTERPRISE')
+        || upper === 'ENT'
         || (upper.includes('PRO') && !upper.includes('PROFILE'));
 }
 

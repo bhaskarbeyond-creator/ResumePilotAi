@@ -20,11 +20,11 @@ import './Plans.scss';
 import '../../CustomPage/CustomPage.scss';
 
 const PRO_UNLOCKED_FEATURES = [
-    'Unlimited AI Resume Builds & Downloads',
-    'Executive Bio & Summary AI Synthesizer',
+    'All 51 ATS Resume Templates & Real-time ATS Score',
+    'Executive Bio & Summary AI Synthesizer (100 ops/day)',
+    'AI Mock Interview Coach & CBT Simulator',
     'Cover Letter AI Builder & Job Tailoring',
-    'ATS Smart Keyword Optimization Engine',
-    '1-Click PDF, Word DocX & Public Portfolio Links',
+    '1-Click Clean PDF, Word DocX & Public Portfolio Links',
     'Priority Cloud Sync & 24/7 VIP Support'
 ];
 
@@ -210,9 +210,12 @@ const PlansPage = (props) => {
                             }
                         }
 
-                        const isPremium = isUserPremium(rawMembership, isExpired ? new Date(0) : membershipEndsRaw);
+                        const isEnterprise = String(rawMembership).toLowerCase() === 'enterprise' || Boolean(userProfile?.hasEnterpriseMembership);
+                        const isPremium = isEnterprise || isUserPremium(rawMembership, isExpired ? new Date(0) : membershipEndsRaw);
 
-                        if (isPremium && !isExpired) {
+                        if (isEnterprise) {
+                            resolvedTier = isExpired ? 'Enterprise (Suspended)' : 'Enterprise';
+                        } else if (isPremium && !isExpired) {
                             resolvedTier = 'Premium Pro';
                         } else if (isPremium && isExpired) {
                             resolvedTier = 'Premium (Expired)';
@@ -423,7 +426,7 @@ const PlansPage = (props) => {
         'disable-funding': 'credit,card',
     };
     const membershipKnown = !['Loading Tier...', 'Unavailable'].includes(userCurrentMembership);
-    const membershipActive = userCurrentMembership === 'Premium Pro';
+    const membershipActive = userCurrentMembership === 'Premium Pro' || userCurrentMembership === 'Enterprise';
 
     // IF ACCESSED AS PUBLIC PAGE (/billing/plans) -> RENDER THE CLASSIC ORIGINAL PUBLIC VIEW
     if (!isEmbeddedInDashboard) {
@@ -516,11 +519,15 @@ const PlansPage = (props) => {
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <h1 className="text-xl font-extrabold text-slate-900">PRO Membership &amp; Subscription Plans</h1>
                                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${
-                                        userCurrentMembership.includes('Premium')
-                                            ? (userCurrentMembership.includes('Expired')
+                                        userCurrentMembership.includes('Enterprise')
+                                            ? (userCurrentMembership.includes('Suspended')
                                                 ? 'bg-red-50 text-red-700 border-red-300'
-                                                : 'bg-amber-50 text-amber-800 border-amber-300')
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                : 'bg-violet-50 text-violet-800 border-violet-300')
+                                            : (userCurrentMembership.includes('Premium')
+                                                ? (userCurrentMembership.includes('Expired')
+                                                    ? 'bg-red-50 text-red-700 border-red-300'
+                                                    : 'bg-amber-50 text-amber-800 border-amber-300')
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200')
                                     }`}>
                                         Active Tier: {userCurrentMembership}
                                     </span>
@@ -597,13 +604,17 @@ const PlansPage = (props) => {
                                                 </span>
                                             </div>
                                             <h3 className="text-xl font-extrabold text-white tracking-tight">
-                                                {userCurrentMembership && userCurrentMembership !== 'Free' && userCurrentMembership !== 'Loading Tier...'
-                                                    ? <>Renew or Upgrade to <strong className="text-amber-400">AI Resume Builder PRO</strong></>
-                                                    : <>Unlock <strong className="text-amber-400">AI Resume Builder PRO</strong> — Full Power Access</>
+                                                {userCurrentMembership === 'Enterprise'
+                                                    ? <>Manage <strong className="text-violet-400">Enterprise Organization Plan</strong></>
+                                                    : userCurrentMembership && userCurrentMembership !== 'Free' && userCurrentMembership !== 'Free Basic' && userCurrentMembership !== 'Loading Tier...'
+                                                        ? <>Renew or Extend <strong className="text-amber-400">PRO Membership</strong></>
+                                                        : <>Unlock <strong className="text-amber-400">AI Resume Builder PRO</strong> — Full Power Access</>
                                                 }
                                             </h3>
                                             <p className="text-xs text-slate-300">
-                                                Unlock full AI power, unlimited exports, ATS optimization, and VIP candidate support.
+                                                {userCurrentMembership === 'Enterprise'
+                                                    ? 'Your organization workspace includes team governance, institutional AI limits, and all career features.'
+                                                    : 'Unlock full STAR AI synthesizer, watermark-free vector PDF, Word DocX export, and priority candidate support.'}
                                             </p>
                                         </div>
 
