@@ -14,7 +14,7 @@
 ### GR-001: Security Static Test False Positive
 - **Category:** Security / Test Infrastructure
 - **Severity:** P3 (polish/infrastructure)
-- **Description:** `security-static.test.mjs` flagged `scripts/capture-user-dashboard-visuals.mjs` for containing a hardcoded API key (`AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc`). This is a test/capture script used for visual evidence generation, not production code.
+- **Description:** `security-static.test.mjs` flagged `scripts/capture-user-dashboard-visuals.mjs` for containing a hardcoded test API key. This is a test/capture script used for visual evidence generation, not production code. (Key pattern: `AIzaSy*`, resolved per GR-001.)
 - **Root Cause:** The capture script was committed to git with a test API key for local development visual capture.
 - **Resolution:** Removed `scripts/capture-user-dashboard-visuals.mjs` from git tracking (`git rm --cached`) and added to `.gitignore`. The script remains in the local workspace for development use only.
 - **Evidence:** Test now passes (28/29 checks); the 1 remaining check is a fixture that intentionally uses fake credentials per the test's own fixture policy.

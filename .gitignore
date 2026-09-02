@@ -117,3 +117,4 @@ tests/.auth-states/
 test-results/
 playwright-report/
 scripts/capture-user-dashboard-visuals.mjs
+scripts/capture-user-dashboard-visuals.mjs

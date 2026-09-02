@@ -480,7 +480,7 @@ All viewports verified (390x844, 768x1024, 1024x768, 1280x720, 1440x900, 1920x10
 ## 16. Summary of Changes Made
 
 ### 16.1 Fixes During This Audit
-1. **Removed `scripts/capture-user-dashboard-visuals.mjs` from git tracking** — contained hardcoded test API key `AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc` that triggered security-static test failure. The script is local-only and will remain in `.gitignore`.
+1. **Removed `scripts/capture-user-dashboard-visuals.mjs` from git tracking** — contained hardcoded test API key that triggered security-static test failure. The script is local-only and will remain in `.gitignore`. (Key pattern: `AIzaSy*`, resolved by removing from git tracking per GR-001.)
 2. **Verified and documented** that all 34 failing integration tests are SUPER_ADMIN–scoped, not USER dashboard–related (pre-existing state from previous developer work).
 
 ### 16.2 Confirmed Working (No Changes Needed)
