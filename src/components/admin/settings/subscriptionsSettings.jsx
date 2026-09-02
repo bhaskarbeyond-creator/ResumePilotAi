@@ -183,13 +183,43 @@ class SubscriptionSetting extends Component {
         try {
             const paymentData = await getAdminPaymentSettings();
             const { settings, publicKeys, configuredProviders, maskedKeys, credentialSources } = paymentData;
+            
+            const defaultMatrixRates = {
+                INR: { monthly: 199, quartarly: 399, yearly: 499 },
+                USD: { monthly: 19, quartarly: 39, yearly: 49 },
+                EUR: { monthly: 19, quartarly: 39, yearly: 49 },
+                GBP: { monthly: 15, quartarly: 35, yearly: 45 },
+            };
+            const loadedMatrix = settings.pricingMatrix && typeof settings.pricingMatrix === 'object' ? { ...settings.pricingMatrix } : {};
+            const primaryCurr = settings.currency || 'INR';
+
+            ['INR', 'USD', 'EUR', 'GBP'].forEach((c) => {
+                if (!loadedMatrix[c] || typeof loadedMatrix[c] !== 'object') {
+                    if (c === primaryCurr) {
+                        loadedMatrix[c] = {
+                            monthly: settings.monthlyPrice ?? defaultMatrixRates[c].monthly,
+                            quartarly: settings.quartarlyPrice ?? defaultMatrixRates[c].quartarly,
+                            yearly: settings.yearlyPrice ?? defaultMatrixRates[c].yearly,
+                        };
+                    } else {
+                        loadedMatrix[c] = { ...defaultMatrixRates[c] };
+                    }
+                } else {
+                    loadedMatrix[c] = {
+                        monthly: loadedMatrix[c].monthly ?? (c === primaryCurr ? settings.monthlyPrice ?? defaultMatrixRates[c].monthly : defaultMatrixRates[c].monthly),
+                        quartarly: loadedMatrix[c].quartarly ?? (c === primaryCurr ? settings.quartarlyPrice ?? defaultMatrixRates[c].quartarly : defaultMatrixRates[c].quartarly),
+                        yearly: loadedMatrix[c].yearly ?? (c === primaryCurr ? settings.yearlyPrice ?? defaultMatrixRates[c].yearly : defaultMatrixRates[c].yearly),
+                    };
+                }
+            });
+
             this.setState({
                 checkedSubscriptions: settings.state === true,
-                monthlyPrice: settings.monthlyPrice ?? '',
-                quartarlyPrice: settings.quartarlyPrice ?? '',
-                yearlyPrice: settings.yearlyPrice ?? '',
-                currency: settings.currency || '',
-                pricingMatrix: settings.pricingMatrix && typeof settings.pricingMatrix === 'object' ? settings.pricingMatrix : {},
+                monthlyPrice: settings.monthlyPrice ?? loadedMatrix[primaryCurr]?.monthly ?? '',
+                quartarlyPrice: settings.quartarlyPrice ?? loadedMatrix[primaryCurr]?.quartarly ?? '',
+                yearlyPrice: settings.yearlyPrice ?? loadedMatrix[primaryCurr]?.yearly ?? '',
+                currency: primaryCurr,
+                pricingMatrix: loadedMatrix,
                 checkedOnlyPP: settings.onlyPP === true,
                 checkedRazorpayUPI: settings.razorpayUPI === true,
                 checkedStripe: settings.stripeEnabled === true,
@@ -453,9 +483,17 @@ class SubscriptionSetting extends Component {
             case 'yearly':
                 this.setState({ yearlyPrice: event.target.value });
                 break;
-            case 'currency':
-                this.setState({ currency: event.target.value });
+            case 'currency': {
+                const newCurr = event.target.value;
+                const matrixForCurr = this.state.pricingMatrix?.[newCurr];
+                this.setState({
+                    currency: newCurr,
+                    monthlyPrice: matrixForCurr?.monthly ?? this.state.monthlyPrice,
+                    quartarlyPrice: matrixForCurr?.quartarly ?? this.state.quartarlyPrice,
+                    yearlyPrice: matrixForCurr?.yearly ?? this.state.yearlyPrice,
+                });
                 break;
+            }
             default:
                 break;
         }
@@ -463,15 +501,22 @@ class SubscriptionSetting extends Component {
 
     
     handleMatrixChange(currency, planType, value) {
-        this.setState(prevState => ({
-            pricingMatrix: {
+        this.setState(prevState => {
+            const nextMatrix = {
                 ...prevState.pricingMatrix,
                 [currency]: {
                     ...prevState.pricingMatrix[currency],
                     [planType]: value
                 }
+            };
+            const updates = { pricingMatrix: nextMatrix };
+            if (currency === (prevState.currency || 'INR')) {
+                if (planType === 'monthly') updates.monthlyPrice = value;
+                if (planType === 'quartarly') updates.quartarlyPrice = value;
+                if (planType === 'yearly') updates.yearlyPrice = value;
             }
-        }));
+            return updates;
+        });
     }
 
     handleSubscriptionToggleChange() {
@@ -2493,14 +2538,14 @@ class SubscriptionSetting extends Component {
                                               <tr key={curr} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                                   <td className="px-4 py-3 font-bold text-slate-900">{curr}</td>
                                                   <td className="px-4 py-2">
-                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.monthly || ''} onChange={(e) => this.handleMatrixChange(curr, 'monthly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="199" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
-                                                  </td>
-                                                  <td className="px-4 py-2">
-                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.quartarly || ''} onChange={(e) => this.handleMatrixChange(curr, 'quartarly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="399" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
-                                                  </td>
-                                                  <td className="px-4 py-2">
-                                                      <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.yearly || ''} onChange={(e) => this.handleMatrixChange(curr, 'yearly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder="499" className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
-                                                  </td>
+                                                       <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.monthly ?? ''} onChange={(e) => this.handleMatrixChange(curr, 'monthly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder={curr === 'INR' ? '199' : (curr === 'GBP' ? '15' : '19')} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
+                                                   </td>
+                                                   <td className="px-4 py-2">
+                                                       <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.quartarly ?? ''} onChange={(e) => this.handleMatrixChange(curr, 'quartarly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder={curr === 'INR' ? '399' : (curr === 'GBP' ? '35' : '39')} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
+                                                   </td>
+                                                   <td className="px-4 py-2">
+                                                       <input type="number" step="1" min="0" value={this.state.pricingMatrix?.[curr]?.yearly ?? ''} onChange={(e) => this.handleMatrixChange(curr, 'yearly', e.target.value)} disabled={!this.state.checkedSubscriptions} placeholder={curr === 'INR' ? '499' : (curr === 'GBP' ? '45' : '49')} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800" />
+                                                   </td>
                                               </tr>
                                           ))}
                                       </tbody>
