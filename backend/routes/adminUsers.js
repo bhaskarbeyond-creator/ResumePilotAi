@@ -761,8 +761,16 @@ router.patch('/:uid', async (req, res) => {
     if (expected.membership !== undefined && expected.membership !== currentMembership) {
       return res.status(409).json({ success: false, code: 'ADMIN_TARGET_CHANGED', error: 'This membership changed after the page loaded. Refresh before retrying.' });
     }
+    const callerPermissions = permissionsFor(req.user);
+    const callerIsSuperAdmin = callerPermissions.has('*') || String(req.user?.claims?.role || req.user?.role || '').toUpperCase() === 'SUPER_ADMIN';
+
     if (currentRole === 'SUPER_ADMIN') {
-      return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'SUPER_ADMIN identities cannot be changed from this API.' });
+      if (!callerIsSuperAdmin) {
+        return res.status(403).json({ success: false, code: 'SUPER_ADMIN_PROTECTED', error: 'Only SUPER_ADMIN can modify a SUPER_ADMIN account.' });
+      }
+      if (identityFieldChange && changes.role !== undefined && changes.role !== 'SUPER_ADMIN') {
+        return res.status(400).json({ success: false, code: 'SUPER_ADMIN_DEMOTION_PROTECTED', error: 'SUPER_ADMIN role demotion is protected.' });
+      }
     }
     if (uid === req.user?.uid && changes.role !== undefined && !['ADMIN', 'SUPER_ADMIN'].includes(changes.role)) {
       return res.status(400).json({ success: false, code: 'SELF_DEMOTION_PROHIBITED', error: 'Self-demotion is prohibited.' });
