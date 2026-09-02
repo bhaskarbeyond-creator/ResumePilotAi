@@ -367,16 +367,35 @@ export async function addUser(userId, firstname, lastname, email) {
 }
 
 export async function editUser(userId, _email, membership, membershipsEnds, _isA = null, suspended = null, expected = {}) {
+    const hasMembership = membership !== null && membership !== undefined;
+    const hasSuspended = suspended !== null && suspended !== undefined;
+
+    // If both domains are requested in a single call, sequence them to respect backend cross-domain isolation
+    if (hasMembership && hasSuspended) {
+        await editUser(userId, null, null, null, null, suspended, {
+            expectedSuspended: expected.expectedSuspended,
+        });
+        return editUser(userId, null, membership, membershipsEnds, null, null, {
+            expectedMembership: expected.expectedMembership,
+            expectedRevision: expected.expectedRevision,
+        });
+    }
+
+    const payload = {};
+    if (hasMembership) {
+        payload.membership = membership;
+        payload.membershipEnds = membershipsEnds || null;
+        if (expected.expectedMembership !== undefined) payload.expectedMembership = expected.expectedMembership;
+        if (expected.expectedRevision !== undefined) payload.expectedRevision = Number(expected.expectedRevision);
+    }
+    if (hasSuspended) {
+        payload.suspended = Boolean(suspended);
+        if (expected.expectedSuspended !== undefined) payload.expectedSuspended = Boolean(expected.expectedSuspended);
+    }
+
     const { response, data } = await fetchAdminWithReauth(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            membership,
-            membershipEnds: membershipsEnds || null,
-            expectedMembership: expected.expectedMembership,
-            expectedSuspended: expected.expectedSuspended,
-            expectedRevision: expected.expectedRevision !== undefined ? Number(expected.expectedRevision) : undefined,
-            suspended: suspended === null ? undefined : Boolean(suspended),
-        }),
+        body: JSON.stringify(payload),
     });
     if (!response.ok || !data?.success) {
         const conflict = response.status === 409;
