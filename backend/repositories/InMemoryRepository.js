@@ -645,7 +645,20 @@ class InMemoryRepository {
     async getPublicResume(resumeId) {
         const r = this._resumes.get(resumeId);
         if (!r || !r.isPublished) return null;
-        return r;
+        const snapshot = { ...r };
+        delete snapshot.userId;
+        delete snapshot.user_id;
+        delete snapshot.deleted_at;
+        return {
+            id: resumeId,
+            ownerUid: r.userId || r.ownerUid || 'anonymous',
+            isPublished: true,
+            publicationMode: 'explicit',
+            data: snapshot,
+            sourceRevision: r.revision || 1,
+            publicationRevision: r.publicationRevision || 1,
+            publishedAt: r.publishedAt || new Date().toISOString(),
+        };
     }
     async getResumePublication(userId, resumeId) {
         const r = this._resumes.get(resumeId);

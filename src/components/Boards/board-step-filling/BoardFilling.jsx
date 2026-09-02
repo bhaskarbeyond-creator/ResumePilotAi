@@ -18,6 +18,8 @@ import { FaEye, FaDownload, FaSave, FaPalette } from 'react-icons/fa';
 import { trackDownload, trackEvent, trackEngagement } from '../../../utils/ga4';
 import { evaluateDownloadAccess } from '../../../utils/subscriptionUtils';
 import { toValidatedPdfBlob } from '../../../utils/pdfDownload';
+import PremiumUpgradeModal from '../../common/PremiumUpgradeModal';
+import SubscriptionModal from '../../Dashboard/DashboardSettings/SubscriptionModal';
 
 class BoardFilling extends Component {
     constructor(props) {
@@ -29,6 +31,8 @@ class BoardFilling extends Component {
             isSuccessToastVisible: false,
             isDownloadToastVisible: false,
             isUpgradeToastVisible: false,
+            showPremiumUpgradeModal: false,
+            showSubscriptionModal: false,
             isSaving: false,
             showSavedIcon: false,
             count: 0,
@@ -130,10 +134,8 @@ class BoardFilling extends Component {
 
         if (access.reason === 'PREMIUM_REQUIRED') {
             this.saveToDatabase();
-            this.ShowToast('Upgrade');
-            setTimeout(() => {
-                window.location.href = '/billing/plans';
-            }, 3000);
+            this.setState({ showPremiumUpgradeModal: true });
+            return;
         }
     }
 
@@ -737,6 +739,26 @@ class BoardFilling extends Component {
                         animation-delay: 2s;
                     }
                 `}</style>
+
+                {/* Premium Upgrade Modal */}
+                <PremiumUpgradeModal
+                    isOpen={this.state.showPremiumUpgradeModal}
+                    onClose={() => this.setState({ showPremiumUpgradeModal: false })}
+                    onUpgrade={() => this.setState({ showPremiumUpgradeModal: false, showSubscriptionModal: true })}
+                    downloadType="pdf"
+                    resumeTitle="Resume"
+                />
+
+                {/* In-Place Subscription Modal */}
+                <SubscriptionModal
+                    isOpen={this.state.showSubscriptionModal}
+                    onClose={() => this.setState({ showSubscriptionModal: false })}
+                    user={this.props.values.user}
+                    onSuccess={() => {
+                        this.setState({ showSubscriptionModal: false });
+                        this.download();
+                    }}
+                />
             </div>
         );
     }

@@ -379,11 +379,13 @@ const publicApiPaths = new Set([
     '/blog-data', '/blog-data/categories', '/jobs-data',
     '/paytm/callback', '/phonepe/callback',
     // Public read surfaces (MySQL-backed); mutating variants still require auth.
-    '/stats', '/reviews', '/phrases', '/portfolios/public'
+    '/stats', '/reviews', '/phrases', '/portfolios/public',
+    '/coupons/active', '/coupons/validate'
 ]);
 function isPublicApiPath(pathname) {
     if (pathname.startsWith('/jobs-data/tracker')) return false;
     return publicApiPaths.has(pathname)
+        || /^\/resumes\/public\/[a-zA-Z0-9_-]+$/i.test(pathname)
         || /^\/blog-data\/slug\/[a-z0-9](?:[a-z0-9-]{0,178}[a-z0-9])?$/i.test(pathname)
         || /^\/jobs-data\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
         || /^\/phrases\/[a-z0-9](?:[a-z0-9_-]{0,127})$/i.test(pathname)
@@ -2161,6 +2163,26 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         } catch (preferenceError) {
             console.warn('[Export preferences] unavailable; using bounded defaults:', preferenceError.message);
         }
+
+        try {
+            const { isPaidMembershipTier } = require('./security/entitlements');
+            const { isMembershipActive } = require('./database/domain');
+            const isPaid = isPaidMembershipTier(ownerCanonical?.membership) || isMembershipActive(ownerCanonical);
+            const watermarkConfig = (publicConfig && publicConfig.watermark) || {};
+            if (!isPaid && watermarkConfig.enableFreeWatermark !== false) {
+                stored._watermark = {
+                    enableFreeWatermark: true,
+                    watermarkText: watermarkConfig.watermarkText || 'Created with ResumePilot AI (Free Plan)',
+                    opacity: Number(watermarkConfig.opacity) || 0.18,
+                    position: watermarkConfig.position || 'diagonal',
+                };
+            } else {
+                stored._watermark = null;
+            }
+        } catch (_entErr) {
+            // Graceful non-fatal fallback
+        }
+
         renderToken = await createExportRenderToken(stored);
         const launchOptions = {
             headless: true,
@@ -3370,6 +3392,83 @@ app.get('/api/admin/coupons', requireAuth, requirePermission(['payments.read', '
         return res.json({ success: true, coupons });
     } catch (_error) {
         return res.status(503).json({ success: false, error: 'Coupon service unavailable.' });
+    }
+});
+
+// Public active coupons for checkout (MariaDB authoritative)
+app.get('/api/coupons/active', async (_req, res) => {
+    try {
+        const pool = require('./database/mysql').getPool();
+        const [rows] = await pool.query(
+            "SELECT code, discount, description, expiry_date, max_uses, used_count FROM coupons WHERE active = 1 AND (expiry_date IS NULL OR expiry_date = '' OR expiry_date > NOW()) ORDER BY discount DESC LIMIT 10"
+        );
+        const coupons = rows.map(r => ({
+            code: r.code,
+            discount: Number(r.discount || 0),
+            description: r.description || `${r.discount}% Discount`,
+            expiryDate: r.expiry_date || null,
+        }));
+        return res.json({ success: true, coupons });
+    } catch (_error) {
+        try {
+            const repo = resilientMutations.repoFor();
+            const coupons = [];
+            if (typeof repo.getAllCoupons === 'function') {
+                const all = await repo.getAllCoupons();
+                coupons.push(...all.filter(c => c.active !== false));
+            }
+            return res.json({ success: true, coupons });
+        } catch {
+            return res.status(503).json({ success: false, error: 'Coupon service unavailable.' });
+        }
+    }
+});
+
+// Authoritative public coupon validation endpoint (MariaDB authoritative)
+app.post('/api/coupons/validate', async (req, res) => {
+    const code = String(req.body?.code || '').trim().toUpperCase();
+    const uid = req.user?.uid || req.body?.uid || null;
+    if (!code || !/^[A-Z0-9_-]{3,32}$/.test(code)) {
+        return res.status(400).json({ success: false, valid: false, error: 'Invalid coupon code format. Must be 3-32 characters.' });
+    }
+    try {
+        const repo = resilientMutations.repoFor();
+        const coupon = await repo.getCoupon(code);
+        if (!coupon) {
+            return res.status(404).json({ success: false, valid: false, error: `Coupon code "${code}" does not exist.` });
+        }
+        if (coupon.active === false) {
+            return res.status(409).json({ success: false, valid: false, error: `Coupon code "${code}" is currently inactive.` });
+        }
+        const expiryMs = coupon.expiryDate ? Date.parse(coupon.expiryDate) : 0;
+        if (expiryMs && expiryMs <= Date.now()) {
+            return res.status(409).json({ success: false, valid: false, error: `Coupon code "${code}" has expired.` });
+        }
+        const maxUses = Number(coupon.maxUses || 0);
+        const usedCount = Number(coupon.usedCount || 0);
+        if (maxUses > 0 && usedCount >= maxUses) {
+            return res.status(409).json({ success: false, valid: false, error: `Coupon code "${code}" has reached its maximum redemptions.` });
+        }
+        if (coupon.singleUsePerUser && uid && typeof repo.getCouponRedemption === 'function') {
+            const crypto = require('crypto');
+            const redemptionId = crypto.createHash('sha256').update(`${code}:${uid}`).digest('hex');
+            const existing = await repo.getCouponRedemption(redemptionId);
+            if (existing?.status === 'USED') {
+                return res.status(409).json({ success: false, valid: false, error: `You have already redeemed coupon "${code}".` });
+            }
+        }
+        return res.json({
+            success: true,
+            valid: true,
+            coupon: {
+                code: coupon.code,
+                discount: Number(coupon.discount || 0),
+                description: coupon.description || `${coupon.discount}% Discount`,
+                expiryDate: coupon.expiryDate || null,
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, valid: false, error: error.message });
     }
 });
 

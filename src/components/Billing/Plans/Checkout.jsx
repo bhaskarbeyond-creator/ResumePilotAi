@@ -150,9 +150,24 @@ class Checkout extends Component {
             toast: { show: false, type: 'error', message: '' },
             // Stripe idempotency key — generated once per checkout attempt
             idempotencyKey: `ck_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-            taxConfig: props.taxConfig && typeof props.taxConfig === 'object'
-                ? { ...props.taxConfig }
-                : null
+            taxConfig: (props.taxConfig && typeof props.taxConfig === 'object')
+                ? {
+                    enableTax: false,
+                    taxName: 'GST',
+                    taxRate: 0,
+                    taxInclusive: false,
+                    companyTaxId: '',
+                    requireCustomerTaxId: false,
+                    ...props.taxConfig
+                }
+                : {
+                    enableTax: false,
+                    taxName: 'GST',
+                    taxRate: 0,
+                    taxInclusive: false,
+                    companyTaxId: '',
+                    requireCustomerTaxId: false
+                }
         };
 
         this.handleInput = this.handleInput.bind(this);
@@ -202,6 +217,12 @@ class Checkout extends Component {
             throw new Error('Payment activation did not include its required immutable invoice.');
         }
         this.setState({ invoiceStatus: 'GENERATED', invoiceError: '' });
+        try {
+            window.dispatchEvent(new CustomEvent('userMembershipUpdated', { detail: { membership: 'Premium', activation } }));
+        } catch (_e) {}
+        if (typeof this.props.onPaymentSuccess === 'function') {
+            this.props.onPaymentSuccess(activation);
+        }
         return true;
     };
 
@@ -215,6 +236,28 @@ class Checkout extends Component {
             prevProps.phonepeEnabled !== this.props.phonepeEnabled
         ) {
             this.syncPaymentMethod();
+        }
+        if (prevProps.taxConfig !== this.props.taxConfig) {
+            this.setState({
+                taxConfig: (this.props.taxConfig && typeof this.props.taxConfig === 'object')
+                    ? {
+                        enableTax: false,
+                        taxName: 'GST',
+                        taxRate: 0,
+                        taxInclusive: false,
+                        companyTaxId: '',
+                        requireCustomerTaxId: false,
+                        ...this.props.taxConfig
+                    }
+                    : {
+                        enableTax: false,
+                        taxName: 'GST',
+                        taxRate: 0,
+                        taxInclusive: false,
+                        companyTaxId: '',
+                        requireCustomerTaxId: false
+                    }
+            });
         }
     }
 
@@ -813,9 +856,9 @@ class Checkout extends Component {
                         <span className="text-slate-500">Base Price</span>
                         <span className="font-semibold text-slate-900">{this.props.currency}{tax.subtotal}</span>
                     </div>
-                    {this.state.taxConfig.enableTax ? (
+                    {this.state.taxConfig?.enableTax ? (
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-500">{this.state.taxConfig.taxName} ({this.state.taxConfig.taxRate}%){this.state.taxConfig.taxInclusive ? ' incl.' : ''}</span>
+                            <span className="text-slate-500">{this.state.taxConfig?.taxName || 'GST'} ({this.state.taxConfig?.taxRate || 0}%){this.state.taxConfig?.taxInclusive ? ' incl.' : ''}</span>
                             <span className="font-semibold text-indigo-700">{this.props.currency}{tax.taxAmount}</span>
                         </div>
                     ) : (
@@ -837,10 +880,10 @@ class Checkout extends Component {
                         { icon: FaDownload, text: 'PDF, Word DocX & Portfolio Links', color: 'text-indigo-600' },
                         { icon: FaRocket, text: 'ATS Keyword Optimization Engine', color: 'text-blue-600' },
                         { icon: FaHeadset, text: '24/7 VIP Priority Support', color: 'text-emerald-600' },
-                    ].map(({ icon: _Icon, text, color }, i) => (
+                    ].map(({ icon: IconComponent, text, color }, i) => (
                         <div key={i} className="flex items-center gap-2.5 text-xs text-slate-600">
                             <div className={`w-5 h-5 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 ${color}`}>
-                                <Icon className="w-2.5 h-2.5" />
+                                <IconComponent className="w-2.5 h-2.5" />
                             </div>
                             <span className="font-medium">{text}</span>
                         </div>
@@ -1081,10 +1124,10 @@ class Checkout extends Component {
                                                 {this.renderInvoiceAddressFields('checkout-input')}
 
                                                 {/* Tax ID */}
-                                                {this.state.taxConfig.enableTax && (
+                                                {Boolean(this.state.taxConfig?.enableTax) && (
                                                     <div>
                                                         <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-                                                            <span>Business {this.state.taxConfig.taxName}IN / Tax ID <span className="text-slate-400 font-normal normal-case">(Optional — for B2B invoices)</span></span>
+                                                            <span>Business {this.state.taxConfig?.taxName || 'GST'}IN / Tax ID <span className="text-slate-400 font-normal normal-case">(Optional — for B2B invoices)</span></span>
                                                             {this.state.customerTaxId && (
                                                                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
                                                                     this.state.customerTaxId.length === 15 && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(this.state.customerTaxId)
@@ -1114,7 +1157,7 @@ class Checkout extends Component {
                                                                     validationErrors: { ...prev.validationErrors, customerTaxId: '' }
                                                                 }));
                                                             }}
-                                                            placeholder={`Enter 15-character ${this.state.taxConfig.taxName} number (e.g. 27AAAAA0000A1Z5)`}
+                                                            placeholder={`Enter 15-character ${this.state.taxConfig?.taxName || 'GST'} number (e.g. 27AAAAA0000A1Z5)`}
                                                             className={`checkout-input uppercase font-mono ${this.state.gstinError ? 'border-amber-400 bg-amber-50/20' : ''}`}
                                                         />
                                                         {this.state.gstinError && (
@@ -1126,11 +1169,11 @@ class Checkout extends Component {
                                                 )}
 
                                                 {/* Tax Info Card */}
-                                                {this.state.taxConfig.enableTax && (
+                                                {Boolean(this.state.taxConfig?.enableTax) && (
                                                     <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'linear-gradient(135deg, #eff6ff, #f0f9ff)', border: '1px solid #bfdbfe' }}>
                                                         <FaShieldAlt className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                                                         <div>
-                                                            <p className="text-xs font-bold text-blue-900">{this.state.taxConfig.taxName} @ {this.state.taxConfig.taxRate}% {this.state.taxConfig.taxInclusive ? '(Included in price)' : '(Added to total)'}</p>
+                                                            <p className="text-xs font-bold text-blue-900">{this.state.taxConfig?.taxName || 'GST'} @ {this.state.taxConfig?.taxRate || 0}% {this.state.taxConfig?.taxInclusive ? '(Included in price)' : '(Added to total)'}</p>
                                                             <p className="text-[11px] text-blue-600 mt-0.5">Applicable for your region. Full invoice with GSTIN issued on payment.</p>
                                                         </div>
                                                     </div>
@@ -1754,10 +1797,10 @@ class Checkout extends Component {
                                                 { icon: FaHeadset, text: '24/7 Priority VIP Support' },
                                                 { icon: FaFileAlt, text: '51+ Premium ATS Resume Templates' },
                                                 { icon: FaInfinity, text: 'Unlimited Cloud Sync & Resume Storage' },
-                                            ].map(({ icon: _Icon, text }, i) => (
+                                            ].map(({ icon: IconComponent, text }, i) => (
                                                 <div key={i} className="flex items-center gap-3 text-xs text-slate-200">
                                                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                                        <Icon className="w-3 h-3 text-indigo-300" />
+                                                        <IconComponent className="w-3 h-3 text-indigo-300" />
                                                     </div>
                                                     <span className="font-semibold">{text}</span>
                                                     <FaCheck className="w-3 h-3 text-emerald-400 ml-auto shrink-0" />
@@ -1920,20 +1963,20 @@ class Checkout extends Component {
 
                         {this.renderInvoiceAddressFields('checkout-input-emb')}
 
-                        {this.state.taxConfig.enableTax && (
+                        {Boolean(this.state.taxConfig?.enableTax) && (
                             <div>
                                 <label className="block text-xs font-black text-slate-700 uppercase tracking-wide mb-1.5">
-                                    Business {this.state.taxConfig.taxName}IN <span className="text-slate-400 font-normal normal-case">(Optional — B2B invoices)</span>
+                                    Business {this.state.taxConfig?.taxName || 'GST'}IN <span className="text-slate-400 font-normal normal-case">(Optional — B2B invoices)</span>
                                 </label>
-                                <input type="text" value={this.state.customerTaxId} onChange={(e) => this.handleInput('customerTaxId', { target: { value: e.target.value.toUpperCase().trim() } })} placeholder={`Enter ${this.state.taxConfig.taxName} registration number`} className={`checkout-input-emb uppercase font-mono ${this.state.validationErrors.customerTaxId ? 'border-rose-500 bg-rose-50/30' : ''}`} maxLength={15} />
+                                <input type="text" value={this.state.customerTaxId} onChange={(e) => this.handleInput('customerTaxId', { target: { value: e.target.value.toUpperCase().trim() } })} placeholder={`Enter ${this.state.taxConfig?.taxName || 'GST'} registration number`} className={`checkout-input-emb uppercase font-mono ${this.state.validationErrors.customerTaxId ? 'border-rose-500 bg-rose-50/30' : ''}`} maxLength={15} />
                                 {this.state.validationErrors.customerTaxId && <p className="text-[11px] font-bold text-rose-500 mt-1">⚠️ {this.state.validationErrors.customerTaxId}</p>}
                             </div>
                         )}
 
-                        {this.state.taxConfig.enableTax && (
+                        {Boolean(this.state.taxConfig?.enableTax) && (
                             <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-blue-50 border border-blue-100">
                                 <FaShieldAlt className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
-                                <p className="text-xs text-blue-800 font-medium">{this.state.taxConfig.taxName} @ {this.state.taxConfig.taxRate}% {this.state.taxConfig.taxInclusive ? '(included in price)' : '(added to total)'}. Full invoice issued on payment.</p>
+                                <p className="text-xs text-blue-800 font-medium">{this.state.taxConfig?.taxName || 'GST'} @ {this.state.taxConfig?.taxRate || 0}% {this.state.taxConfig?.taxInclusive ? '(included in price)' : '(added to total)'}. Full invoice issued on payment.</p>
                             </div>
                         )}
 
@@ -2370,10 +2413,10 @@ class Checkout extends Component {
                                     { icon: FaDownload, text: 'PDF, Word DocX & Portfolio Links' },
                                     { icon: FaRocket, text: 'ATS Smart Keyword Optimization' },
                                     { icon: FaHeadset, text: '24/7 Priority VIP Support' },
-                                ].map(({ icon: _Icon, text }, i) => (
+                                ].map(({ icon: IconComponent, text }, i) => (
                                     <div key={i} className="flex items-center gap-2.5 text-xs text-slate-200">
                                         <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                            <Icon className="w-2.5 h-2.5 text-indigo-300" />
+                                            <IconComponent className="w-2.5 h-2.5 text-indigo-300" />
                                         </div>
                                         <span className="font-semibold">{text}</span>
                                         <FaCheck className="w-3 h-3 text-emerald-400 ml-auto shrink-0" />

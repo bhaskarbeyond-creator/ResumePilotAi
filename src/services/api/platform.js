@@ -469,6 +469,33 @@ export async function getCoupons() {
     return {};
 }
 
+export async function getActiveCoupons() {
+    try {
+        const response = await fetch('/api/coupons/active');
+        if (response.ok) {
+            const data = await response.json();
+            if (data?.success && Array.isArray(data.coupons)) {
+                return data.coupons;
+            }
+        }
+    } catch { /* fall through */ }
+    return [];
+}
+
+export async function validateCoupon(code, planId = 'monthly', uid = null) {
+    try {
+        const response = await fetch('/api/coupons/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: String(code).trim().toUpperCase(), planId, uid })
+        });
+        const data = await response.json();
+        return data;
+    } catch (err) {
+        return { success: false, valid: false, error: err.message || 'Unable to validate coupon.' };
+    }
+}
+
 export async function getAllCouponsAdmin() {
     return getCoupons();
 }
@@ -1680,7 +1707,12 @@ export async function getResumeById(resumeId) {
 }
 
 export async function getJsonById(resumeId) {
-    const resume = await getResumeById(resumeId);
+    try {
+        const { getPublicResume } = await import('./resumes.js');
+        const pub = await getPublicResume(resumeId);
+        if (pub) return pub;
+    } catch (_) {}
+    const resume = await getResumeById(resumeId).catch(() => null);
     return resume || null;
 }
 

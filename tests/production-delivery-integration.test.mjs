@@ -26,6 +26,14 @@ const hasPython3 = (() => {
   }
 })();
 
+const pythonHost = (() => {
+  try {
+    return spawnSync(bashBin, ['-c', 'command -v python3 || command -v python'], { encoding: 'utf8' }).stdout.trim();
+  } catch (_) {
+    return '';
+  }
+})();
+
 function write(target, content, mode) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, content);
@@ -38,11 +46,19 @@ function commitFixture(source, marker) {
   write(path.join(source, 'backend/package.json'), '{"name":"fixture","version":"1.0.0"}');
   write(path.join(source, 'backend/package-lock.json'), '{"name":"fixture","version":"1.0.0","lockfileVersion":3,"packages":{}}');
   for (const relative of [
-    'routes/index.js', 'services/index.js', 'security/index.js', 'enterprise/index.js',
-    'repositories/index.js', 'database/schema.sql', 'fonts/fixture.ttf',
+    'backend/routes/index.js',
+    'backend/services/index.js',
+    'backend/security/index.js',
+    'backend/enterprise/index.js',
+    'backend/repositories/index.js',
   ]) {
-    write(path.join(source, 'backend', relative), `fixture-${marker}`);
+    write(path.join(source, relative), 'module.exports = {};');
   }
+  write(path.join(source, 'backend/database/schema.sql'), 'SELECT 1;');
+  write(path.join(source, 'backend/fonts/fixture.ttf'), 'font');
+  execFileSync('git', ['init', '-q'], { cwd: source });
+  execFileSync('git', ['config', 'user.email', 'receiver-test@example.invalid'], { cwd: source });
+  execFileSync('git', ['config', 'user.name', 'Receiver Test'], { cwd: source });
   execFileSync('git', ['add', '.'], { cwd: source });
   execFileSync('git', ['commit', '-qm', marker], { cwd: source });
   const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: source, encoding: 'utf8' }).trim();
@@ -68,6 +84,31 @@ function signBundle(bundle, sha, privateKeyFile) {
   return Object.fromEntries(output.trim().split('\n').map((line) => line.split('=', 2)));
 }
 
+const toPosix = (p) => {
+  if (process.platform !== 'win32' || !p) return p;
+  try {
+    const res = spawnSync(bashBin, ['-c', 'cygpath -u "$1"', '_', p], { encoding: 'utf8' });
+    return res.status === 0 ? res.stdout.trim() : p.replace(/\\/g, '/');
+  } catch (_) {
+    return p.replace(/\\/g, '/');
+  }
+};
+
+function runReceiver(args, options = {}) {
+  if (process.platform === 'win32') {
+    const home = options.env?.HOME;
+    const config = options.env?.RESUMEPILOT_DEPLOY_CONFIG;
+    const pathEnv = options.env?.PATH;
+    const receiverPosix = toPosix(receiver);
+    return spawnSync(
+      bashBin,
+      ['-c', 'HOME="$1" RESUMEPILOT_DEPLOY_CONFIG="$2" PATH="$3" "$4" "${@:5}"', '_', home, config, pathEnv, receiverPosix, ...args],
+      options
+    );
+  }
+  return spawnSync(receiver, args, options);
+}
+
 test('gateway installer creates an idempotent forced-command key and denies arbitrary SSH commands', { timeout: 15_000 }, (t) => {
   if (!hasPython3) {
     t.skip('python3 is required for gateway installer test');
@@ -83,6 +124,10 @@ test('gateway installer creates an idempotent forced-command key and denies arbi
     fs.mkdirSync(localBin, { recursive: true });
     write(path.join(backend, 'COMMIT_SHA'), `${'0'.repeat(40)}\n`);
     write(path.join(webroot, 'index.html'), '<!doctype html>');
+    if (pythonHost) {
+      write(path.join(localBin, 'python3'), `#!/usr/bin/env bash\nexec "${pythonHost}" "$@"\n`, 0o700);
+    }
+    write(path.join(localBin, 'curl'), '#!/usr/bin/env bash\nexit 0\n', 0o700);
     write(path.join(localBin, 'npm'), '#!/usr/bin/env bash\nexit 0\n', 0o700);
     write(path.join(localBin, 'pm2'), `#!/usr/bin/env bash
 [[ "\${1:-}" == "pid" ]] && { printf '12345\\n'; exit 0; }
@@ -193,6 +238,9 @@ test('receiver rejects tampering, activates healthy code, and rolls back interru
     write(path.join(webroot, 'stale.txt'), 'remove me');
     write(path.join(webroot, '.well-known/provider-token'), 'keep me');
 
+    if (pythonHost) {
+      write(path.join(fakeBin, 'python3'), `#!/usr/bin/env bash\nexec "${pythonHost}" "$@"\n`, 0o700);
+    }
     write(path.join(fakeBin, 'npm'), `#!/usr/bin/env bash
 set -e
 [[ "\${1:-}" == "ci" ]]
@@ -236,16 +284,16 @@ fi
 
     fs.mkdirSync(configDir, { recursive: true });
     write(config, [
-      `APP_HOME=${appHome}`,
-      `BACKEND_DIR=${backend}`,
-      `WEBROOT_DIR=${webroot}`,
-      'PUBLIC_URL=https://example.test',
-      'PM2_APP=airesume-backend',
-      `NODE_BIN=${process.execPath}`,
-      `NPM_BIN=${path.join(fakeBin, 'npm')}`,
-      `PM2_BIN=${path.join(fakeBin, 'pm2')}`,
-      `DEPLOY_STATE_DIR=${path.join(home, '.local/state/resumepilot-deploy')}`,
-      `RELEASE_SIGNING_PUBLIC_KEY=${signingPublicKey}`,
+      `APP_HOME="${toPosix(appHome)}"`,
+      `BACKEND_DIR="${toPosix(backend)}"`,
+      `WEBROOT_DIR="${toPosix(webroot)}"`,
+      'PUBLIC_URL="https://example.test"',
+      'PM2_APP="airesume-backend"',
+      `NODE_BIN="${toPosix(process.execPath)}"`,
+      `NPM_BIN="${toPosix(path.join(fakeBin, 'npm'))}"`,
+      `PM2_BIN="${toPosix(path.join(fakeBin, 'pm2'))}"`,
+      `DEPLOY_STATE_DIR="${toPosix(path.join(home, '.local/state/resumepilot-deploy'))}"`,
+      `RELEASE_SIGNING_PUBLIC_KEY="${toPosix(signingPublicKey)}"`,
       'MAX_BUNDLE_BYTES=268435456',
       'RETAIN_RELEASES=3',
       'VERIFY_ATTEMPTS=1',
@@ -255,14 +303,14 @@ fi
 
     const commonEnv = {
       ...process.env,
-      HOME: home,
-      PATH: `${fakeBin}:/usr/local/bin:/usr/bin:/bin`,
-      RESUMEPILOT_DEPLOY_CONFIG: config,
+      HOME: toPosix(home),
+      PATH: `${toPosix(fakeBin)}:/usr/local/bin:/usr/bin:/bin`,
+      RESUMEPILOT_DEPLOY_CONFIG: toPosix(config),
     };
     const firstSignature = signBundle(firstBundle, firstSha, signingPrivateKey);
     const firstBundleBytes = fs.readFileSync(firstBundle);
 
-    const wrongClaimedDigest = spawnSync(receiver, [
+    const wrongClaimedDigest = runReceiver([
       'receive', firstSha, '0'.repeat(64), firstSignature.signature,
     ], {
       input: firstBundleBytes,
@@ -275,7 +323,7 @@ fi
 
     const alteredBundleBytes = Buffer.from(firstBundleBytes);
     alteredBundleBytes[alteredBundleBytes.length - 1] ^= 0xff;
-    const alteredBundle = spawnSync(receiver, [
+    const alteredBundle = runReceiver([
       'receive', firstSha, firstSignature.bundle_sha256, firstSignature.signature,
     ], {
       input: alteredBundleBytes,
@@ -287,7 +335,7 @@ fi
     assert.match(`${alteredBundle.stdout}\n${alteredBundle.stderr}`, /received bundle digest does not match/);
 
     const wrongKeySignature = signBundle(firstBundle, firstSha, wrongSigningPrivateKey);
-    const wrongSigningKey = spawnSync(receiver, [
+    const wrongSigningKey = runReceiver([
       'receive', firstSha, wrongKeySignature.bundle_sha256, wrongKeySignature.signature,
     ], {
       input: firstBundleBytes,
@@ -298,7 +346,7 @@ fi
     assert.notEqual(wrongSigningKey.status, 0, 'a signature from an untrusted signing key must be rejected');
     assert.match(`${wrongSigningKey.stdout}\n${wrongSigningKey.stderr}`, /signature verification failed/);
 
-    const forged = spawnSync(receiver, [
+    const forged = runReceiver([
       'receive', firstSha, firstSignature.bundle_sha256, 'A'.repeat(86),
     ], {
       input: fs.readFileSync(firstBundle),
@@ -310,7 +358,7 @@ fi
     assert.match(`${forged.stdout}\n${forged.stderr}`, /signature verification failed/);
     assert.equal(fs.readFileSync(path.join(backend, 'COMMIT_SHA'), 'utf8').trim(), originalSha);
 
-    const first = spawnSync(receiver, [
+    const first = runReceiver([
       'receive', firstSha, firstSignature.bundle_sha256, firstSignature.signature,
     ], {
       input: fs.readFileSync(firstBundle),
@@ -329,7 +377,7 @@ fi
 
     const secondSignature = signBundle(secondBundle, secondSha, signingPrivateKey);
     write(path.join(home, 'interrupt_on_restart'), 'yes\n');
-    const interrupted = spawnSync(receiver, [
+    const interrupted = runReceiver([
       'receive', secondSha, secondSignature.bundle_sha256, secondSignature.signature,
     ], {
       input: fs.readFileSync(secondBundle),
@@ -344,7 +392,7 @@ fi
     assert.equal(fs.existsSync(path.join(home, '.local/state/resumepilot-deploy/deploy.lock')), false);
 
     write(path.join(home, 'fail_sha'), secondSha);
-    const second = spawnSync(receiver, [
+    const second = runReceiver([
       'receive', secondSha, secondSignature.bundle_sha256, secondSignature.signature,
     ], {
       input: fs.readFileSync(secondBundle),

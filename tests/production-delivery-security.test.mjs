@@ -220,7 +220,7 @@ test('release builder emits only the fixed outer payload and allow-listed backen
       stdio: 'pipe',
     });
 
-    const outer = execFileSync('tar', ['-tzf', output], { encoding: 'utf8' }).trim().split('\n').sort();
+    const outer = execFileSync('tar', ['-tzf', output], { encoding: 'utf8' }).trim().split(/\r?\n/).sort();
     assert.deepEqual(outer, ['SHA256SUMS', 'backend.tar.gz', 'frontend.tar.gz', 'manifest.env'].sort());
 
     const extracted = path.join(outputDir, 'outer');

@@ -18,6 +18,8 @@ import { getTemplateComponent } from "../../../utils/templateRegistry";
 import { calculateAtsScore } from "../../../utils/atsScore";
 import TemplateRenderer from "../../TemplateRenderer";
 import PreviewModal from "../../BuildResume/PreviewModal";
+import PremiumUpgradeModal from "../../common/PremiumUpgradeModal";
+import SubscriptionModal from "../DashboardSettings/SubscriptionModal";
 
 const LoaderView = () => {
   const loaderOptions = {
@@ -61,6 +63,10 @@ class DashboardHomepage extends Component {
         resumeName: "",
         isDeleting: false,
       },
+      showPremiumUpgradeModal: false,
+      showSubscriptionModal: false,
+      pendingDownloadDocument: null,
+      pendingDownloadType: 'pdf',
       onboardingSteps: [
         {
           id: 1,
@@ -567,6 +573,14 @@ class DashboardHomepage extends Component {
     } catch (error) {
       console.error("PDF download failed:", error);
       trackEvent("download_failed", "Documents", document?.template || "Unknown", 0);
+      if (error?.response?.status === 402 || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED' || error?.message?.toLowerCase().includes('subscription')) {
+        this.setState({
+          showPremiumUpgradeModal: true,
+          pendingDownloadDocument: document,
+          pendingDownloadType: 'pdf'
+        });
+        return;
+      }
       this.props.showToast?.(
         error?.message?.startsWith("Download failed")
           ? error.message
@@ -611,6 +625,14 @@ class DashboardHomepage extends Component {
     } catch (error) {
       console.error("DOCX download failed:", error);
       trackEvent("download_failed_docx", "Documents", document?.template || "Unknown", 0);
+      if (error?.response?.status === 402 || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED' || error?.message?.toLowerCase().includes('subscription')) {
+        this.setState({
+          showPremiumUpgradeModal: true,
+          pendingDownloadDocument: document,
+          pendingDownloadType: 'docx'
+        });
+        return;
+      }
       this.props.showToast?.(
         error?.message?.startsWith("Download failed") ? error.message : "The DOCX could not be generated. Please try again.",
         "error"
@@ -1555,6 +1577,35 @@ class DashboardHomepage extends Component {
               isDownloadingDocx={this.state.downloadingDocxIds.has(this.state.previewingDocument.id)}
             />
           )}
+
+          {/* Premium Upgrade Modal for Free Candidate download upsell */}
+          <PremiumUpgradeModal
+            isOpen={this.state.showPremiumUpgradeModal}
+            onClose={() => this.setState({ showPremiumUpgradeModal: false, pendingDownloadDocument: null })}
+            onUpgrade={() => this.setState({ showPremiumUpgradeModal: false, showSubscriptionModal: true })}
+            downloadType={this.state.pendingDownloadType}
+            resumeTitle={this.state.pendingDownloadDocument?.item?.firstname || "Resume"}
+          />
+
+          {/* In-Place Checkout Modal */}
+          <SubscriptionModal
+            isOpen={this.state.showSubscriptionModal}
+            onClose={() => this.setState({ showSubscriptionModal: false, pendingDownloadDocument: null })}
+            user={fire.auth().currentUser}
+            onSuccess={async () => {
+              this.setState({ showSubscriptionModal: false });
+              const doc = this.state.pendingDownloadDocument;
+              const type = this.state.pendingDownloadType;
+              this.setState({ pendingDownloadDocument: null });
+              if (doc) {
+                if (type === 'docx') {
+                  await this.downloadResumeDocx(doc);
+                } else {
+                  await this.downloadResume(doc);
+                }
+              }
+            }}
+          />
         </div>
       </div>
     );

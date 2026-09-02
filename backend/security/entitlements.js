@@ -17,11 +17,11 @@ const { isMembershipActive } = require('../database/domain');
  * 4. Basic / Free User -> Basic tier, 10 requests/day, standard templates.
  */
 
-function isUserAdmin(_userData = {}, userClaims = {}) {
+function isUserAdmin(userData = {}, userClaims = {}) {
   const claims = userClaims?.claims && typeof userClaims.claims === 'object'
     ? userClaims.claims
     : userClaims;
-  const role = String(claims?.role || '').toUpperCase();
+  const role = String(claims?.role || userData?.role || '').toUpperCase();
   return Boolean(claims?.admin === true || claims?.superAdmin === true || role === 'ADMIN' || role === 'SUPER_ADMIN');
 }
 

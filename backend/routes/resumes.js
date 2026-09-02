@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.use((req, res, next) => {
     try {
-        req.repository = getRepository();
+        req.repository = req.repository || getRepository();
         next();
     } catch (_err) {
         return res.status(500).json({ error: 'Database layer unavailable' });
@@ -20,6 +20,59 @@ router.get('/', async (req, res) => {
     } catch (err) {
         console.error('[Resumes API] getResumes error:', err.message);
         return replyRepoError(res, err, 'Failed to fetch resumes');
+    }
+});
+
+// GET /api/resumes/public/:id - Get publicly published resume
+router.get('/public/:id', async (req, res) => {
+    try {
+        const published = await req.repository.getPublicResume(req.params.id);
+        if (!published || published.isPublished !== true || published.publicationMode !== 'explicit') {
+            return res.status(404).json({ success: false, error: 'Resume not found or no longer published' });
+        }
+        let watermark = null;
+        try {
+            if (published.ownerUid && typeof req.repository.getUser === 'function') {
+                const owner = await req.repository.getUser(published.ownerUid);
+                const { isPaidMembershipTier } = require('../security/entitlements');
+                const { isMembershipActive } = require('../database/domain');
+                const isPaid = isPaidMembershipTier(owner?.membership) || isMembershipActive(owner);
+                if (!isPaid) {
+                    const publicConfig = (typeof req.repository.getSetting === 'function' ? await req.repository.getSetting('public_config') : null) || {};
+                    const watermarkConfig = publicConfig.watermark;
+                    if (watermarkConfig && watermarkConfig.enableFreeWatermark !== false) {
+                        watermark = {
+                            enableFreeWatermark: true,
+                            watermarkText: watermarkConfig.watermarkText || 'Created with ResumePilot AI (Free Plan)',
+                            opacity: Number(watermarkConfig.opacity) || 0.18,
+                            position: watermarkConfig.position || 'diagonal'
+                        };
+                    }
+                }
+            }
+        } catch (_wmErr) {
+            // Graceful non-fatal fallback
+        }
+
+        const resumeData = { ...(published.data || {}) };
+        if (watermark) {
+            resumeData._watermark = watermark;
+        }
+
+        return res.json({
+            success: true,
+            resume: resumeData,
+            watermark,
+            publication: {
+                isPublished: true,
+                publishedAt: published.publishedAt,
+                publicationRevision: published.publicationRevision,
+                sourceRevision: published.sourceRevision,
+            }
+        });
+    } catch (err) {
+        console.error('[Resumes API] getPublicResume error:', err.message);
+        return replyRepoError(res, err, 'Failed to fetch public resume');
     }
 });
 

@@ -10,6 +10,11 @@ export async function getResume(resumeId) {
     return data.resume;
 }
 
+export async function getPublicResume(resumeId) {
+    const data = await apiFetch(`/api/resumes/public/${resumeId}`);
+    return data.resume;
+}
+
 export async function saveResume(resumeId, resumeData, options = {}) {
     const data = await apiFetch(`/api/resumes/${resumeId}`, {
         method: 'POST',

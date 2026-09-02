@@ -5,7 +5,7 @@ import { Elements, ElementsConsumer } from '@stripe/react-stripe-js';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import conf from '../../../conf/configuration';
 import Checkout from './Checkout';
-import { getSubscriptionStatus, getCoupons, getUserTransactions, getUserInvoices, getSystemSettings } from '../../../services/api/platform';
+import { getSubscriptionStatus, getCoupons, getActiveCoupons, validateCoupon, getUserTransactions, getUserInvoices, getSystemSettings } from '../../../services/api/platform';
 import { useServiceAvailability, resolveUsable } from '../../../hooks/useServiceAvailability';
 import { getUserMembership } from '../../../data/entitlements';
 import { parseSafeDate, isUserPremium } from '../../../utils/subscriptionUtils';
@@ -130,17 +130,17 @@ const PlansPage = (props) => {
                 setEnableCouponsModule(isCouponsOn);
                 if (!isCouponsOn) {
                     setAppliedCoupon(null);
-                    setAvailableCoupons({});
+                    setAvailableCoupons([]);
                 } else {
-                    getCoupons().then((dynamic) => setAvailableCoupons(dynamic || {}));
+                    getActiveCoupons().then((dynamic) => setAvailableCoupons(Array.isArray(dynamic) ? dynamic : []));
                 }
             }
         };
         window.addEventListener('systemSettingsUpdated', handleModulesUpdate);
 
         // Fetch dynamic coupons from the authoritative backend API.
-        getCoupons().then((dynamic) => {
-            setAvailableCoupons(dynamic || {});
+        getActiveCoupons().then((dynamic) => {
+            setAvailableCoupons(Array.isArray(dynamic) ? dynamic : []);
         });
 
         // Realtime Auth State Listener for robust dynamic details
@@ -210,7 +210,7 @@ const PlansPage = (props) => {
                             }
                         }
 
-                        const isEnterprise = String(rawMembership).toLowerCase() === 'enterprise' || Boolean(userProfile?.hasEnterpriseMembership);
+                        const isEnterprise = String(rawMembership).toLowerCase() === 'enterprise' || Boolean(data?.hasEnterpriseMembership || data?.profile?.hasEnterpriseMembership);
                         const isPremium = isEnterprise || isUserPremium(rawMembership, isExpired ? new Date(0) : membershipEndsRaw);
 
                         if (isEnterprise) {
@@ -359,7 +359,7 @@ const PlansPage = (props) => {
         return Math.max(1, subtotal - discount - proCredit);
     };
 
-    const handleApplyCoupon = (e, explicitCode = null) => {
+    const handleApplyCoupon = async (e, explicitCode = null) => {
         if (e) e.preventDefault();
         setCouponError('');
         if (!enableCouponsModule) {
@@ -372,43 +372,23 @@ const PlansPage = (props) => {
             return;
         }
 
-        const coupon = availableCoupons[code];
+        const planId = selectedDuration === '1' ? 'monthly' : selectedDuration === '6' ? 'halfYear' : 'yearly';
+        const currentUser = fire.auth().currentUser;
 
-        if (!coupon) {
-            setCouponError(`Invalid or inactive coupon code "${code}".`);
-            return;
-        }
-
-        // Rule A: Active Status Check
-        if (coupon.active === false) {
-            setCouponError(`Coupon code "${code}" is currently disabled by administrator.`);
-            return;
-        }
-
-        // Rule B: Expiry Date Validation
-        if (coupon.expiryDate) {
-            const exp = new Date(coupon.expiryDate);
-            if (!isNaN(exp.getTime()) && exp < new Date()) {
-                setCouponError(`Coupon code "${code}" expired on ${exp.toLocaleDateString()}.`);
-                return;
+        try {
+            const res = await validateCoupon(code, planId, currentUser?.uid);
+            if (res && res.valid && res.coupon) {
+                setAppliedCoupon(res.coupon);
+                setCouponInput(res.coupon.code);
+                setCouponError('');
+            } else {
+                setCouponError(res?.error || `Coupon "${code}" is invalid, inactive, or expired.`);
+                setAppliedCoupon(null);
             }
+        } catch (_err) {
+            setCouponError('Coupon verification service temporarily unavailable.');
+            setAppliedCoupon(null);
         }
-
-        // Rule C: Maximum Usage Limit Check
-        if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) {
-            setCouponError(`Coupon code "${code}" has reached its maximum redemptions limit.`);
-            return;
-        }
-
-        // Rule D: Per-User Single Use Check
-        if (coupon.singleUsePerUser && transactionsList.some(t => t.couponUsed === code)) {
-            setCouponError(`You have already redeemed promo coupon "${code}" on your account.`);
-            return;
-        }
-
-        setAppliedCoupon({ code, ...coupon });
-        setCouponInput(code);
-        setCouponError('');
     };
 
     const handleRemoveCoupon = () => {
@@ -777,23 +757,26 @@ const PlansPage = (props) => {
                                                 </div>
 
                                                 {/* 1-Click Quick Coupon Pills */}
-                                                {Object.keys(availableCoupons).length > 0 && (
+                                                {(Array.isArray(availableCoupons) ? availableCoupons : Object.values(availableCoupons)).length > 0 && (
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <span className="text-xs text-slate-500 font-semibold mr-1">Available Promo Coupons:</span>
-                                                        {Object.keys(availableCoupons).map((code) => (
-                                                            <button
-                                                                key={code}
-                                                                type="button"
-                                                                onClick={(e) => handleApplyCoupon(e, code)}
-                                                                className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all flex items-center gap-1 cursor-pointer ${
-                                                                    appliedCoupon?.code === code
-                                                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                                                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-600 hover:text-indigo-700'
-                                                                }`}>
-                                                                <FaTag className="w-2.5 h-2.5 text-indigo-500" />
-                                                                <span>{code} (-{availableCoupons[code].discount}%)</span>
-                                                            </button>
-                                                        ))}
+                                                        {(Array.isArray(availableCoupons) ? availableCoupons : Object.values(availableCoupons)).map((couponItem) => {
+                                                            const code = couponItem.code;
+                                                            return (
+                                                                <button
+                                                                    key={code}
+                                                                    type="button"
+                                                                    onClick={(e) => handleApplyCoupon(e, code)}
+                                                                    className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all flex items-center gap-1 cursor-pointer ${
+                                                                        appliedCoupon?.code === code
+                                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-indigo-600 hover:text-indigo-700'
+                                                                    }`}>
+                                                                    <FaTag className="w-2.5 h-2.5 text-indigo-500" />
+                                                                    <span>{code} (-{couponItem.discount}%)</span>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
 

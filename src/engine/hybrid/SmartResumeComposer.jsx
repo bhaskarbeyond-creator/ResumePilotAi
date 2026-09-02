@@ -7,6 +7,7 @@ import SmartHobbies from './components/SmartHobbies';
 import SmartCertifications from './components/SmartCertifications';
 import SmartLanguages from './components/SmartLanguages';
 import SmartFlowRenderer from './components/SmartFlowRenderer';
+import ResumeWatermarkOverlay from '../../components/common/ResumeWatermarkOverlay';
 import './smartEngine.css';
 
 export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'en', values = {} }) {
@@ -70,8 +71,9 @@ export default function SmartResumeComposer({ templateId = 'Cv1', _language = 'e
               data-template={templateId}
               data-archetype={theme.archetype}
               data-density={theme.density || 'standard'}
-              style={{ fontFamily: 'var(--font-family)' }}
+              style={{ fontFamily: 'var(--font-family)', position: 'relative' }}
             >
+              <ResumeWatermarkOverlay watermark={values._watermark || values.watermark} />
               <div className="smart-page-body">
                 {/* 1. Continuation Header (Page 2+) */}
                 {!isFirstPage && (

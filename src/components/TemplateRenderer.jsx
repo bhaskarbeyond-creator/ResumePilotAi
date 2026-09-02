@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect } from 'react';
 import { getTemplateComponent, isKnownTemplate } from '../utils/templateRegistry';
 import SmartResumeComposer from '../engine/hybrid/SmartResumeComposer';
+import ResumeWatermarkOverlay from './common/ResumeWatermarkOverlay';
 
 class TemplateErrorBoundary extends React.Component {
     constructor(props) {
@@ -53,7 +54,10 @@ export default function TemplateRenderer({ templateId = 'Cv1', values, language 
                     {isResumeTemplate ? (
                         <SmartResumeComposer templateId={safeTemplateId} language={language} values={values} />
                     ) : (
-                        <TemplateComponent values={values} language={language} />
+                        <div style={{ position: 'relative' }}>
+                            <ResumeWatermarkOverlay watermark={values?._watermark || values?.watermark} />
+                            <TemplateComponent values={values} language={language} />
+                        </div>
                     )}
                 </TemplateCommit>
             </Suspense>

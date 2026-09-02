@@ -18,12 +18,18 @@ USAGE
 [[ "${1:-}" != "-h" && "${1:-}" != "--help" ]] || { usage; exit 0; }
 
 TOOL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+if command -v cygpath >/dev/null 2>&1; then
+  [[ -n "${RELEASE_SOURCE_ROOT:-}" ]] && RELEASE_SOURCE_ROOT="$(cygpath -u "$RELEASE_SOURCE_ROOT")"
+fi
 ROOT="${RELEASE_SOURCE_ROOT:-$TOOL_ROOT}"
 ROOT="$(cd "$ROOT" && pwd -P)"
 cd "$ROOT"
 
 COMMIT_SHA="${1:-$(git rev-parse HEAD)}"
 OUTPUT_FILE="${2:-$ROOT/.release/resumepilot-${COMMIT_SHA}.tar.gz}"
+if command -v cygpath >/dev/null 2>&1; then
+  OUTPUT_FILE="$(cygpath -u "$OUTPUT_FILE")"
+fi
 
 if [[ ! "$COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
   echo "ERROR: release commit must be a full, lowercase 40-character Git SHA." >&2

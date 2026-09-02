@@ -115,7 +115,7 @@ test('Resume Builder Reliability — FinalizeStep completeness computation handl
             { name: 'JavaScript' },
             { skillName: null }
         ],
-        summary: 12345678901234567890
+        summary: 1234567890
     };
 
     assert.doesNotThrow(() => {

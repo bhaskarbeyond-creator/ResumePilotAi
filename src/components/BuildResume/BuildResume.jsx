@@ -30,7 +30,7 @@ import { calculateAtsScore } from '../../utils/atsScore';
 import axios from 'axios';
 import download from 'downloadjs';
 import config from '../../conf/configuration';
-import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings } from '../../services/api/platform';
+import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, getProfileOfUser, getSystemSettings, getAccountInfo } from '../../services/api/platform';
 import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
@@ -48,10 +48,13 @@ import Toasts from '../Toasts/Toats';
 import { evaluateDownloadAccess, parseSafeDate } from '../../utils/subscriptionUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Import user membership functions
+// Import user membership functions and modals
 import { getUserMembership } from '../../data/entitlements';
 import { getSubscriptionStatus } from '../../services/api/platform';
 import fire from '../../conf/fire';
+import PremiumUpgradeModal from '../common/PremiumUpgradeModal';
+import SubscriptionModal from '../Dashboard/DashboardSettings/SubscriptionModal';
+import ShareModal from '../Dashboard/ShareModal/ShareModal';
 
 const BuildResume = () => {
     const navigate = useNavigate();
@@ -66,6 +69,7 @@ const BuildResume = () => {
     const [currentTemplate, setCurrentTemplate] = useState('Cv1');
     const [isDownloading, setIsDownloading] = useState(false);
     const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadRetry, setLoadRetry] = useState(0);
     const [authChecked, setAuthChecked] = useState(false);
@@ -85,6 +89,11 @@ const BuildResume = () => {
     const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
     const [isDownloadToastVisible, setIsDownloadToastVisible] = useState(false);
     const [isUpgradeToastVisible, setIsUpgradeToastVisible] = useState(false);
+
+    // Premium upgrade modal and checkout resumption state
+    const [showPremiumUpgradeModal, setShowPremiumUpgradeModal] = useState(false);
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+    const [pendingExportType, setPendingExportType] = useState(null);
 
     // User data state (similar to how other components handle it)
     const [userData, setUserData] = useState({
@@ -187,6 +196,57 @@ const BuildResume = () => {
             window.removeEventListener('systemSettingsUpdated', handleSettingsUpdated);
         };
     }, [location.search]);
+
+    // Auto-resume export action after user signs in / registers
+    useEffect(() => {
+        let pending = null;
+        try {
+            pending = sessionStorage.getItem('pendingDownloadAfterAuth');
+        } catch (_e) {}
+
+        if (pending && authChecked && userData.user) {
+            try {
+                sessionStorage.removeItem('pendingDownloadAfterAuth');
+                const parsed = JSON.parse(pending);
+                const access = evaluateDownloadAccess({
+                    user: userData.user,
+                    membership: userData.membership,
+                    membershipEnds: userData.membershipEnds,
+                    subscriptionsStatus: userData.subscriptionsStatus,
+                    isStatusLoaded: true
+                });
+                if (access.allowed) {
+                    if (parsed.type === 'docx') performDocxDownload();
+                    else performDownload();
+                } else if (access.reason === 'PREMIUM_REQUIRED') {
+                    setPendingExportType(parsed.type || 'pdf');
+                    setShowPremiumUpgradeModal(true);
+                }
+            } catch (_e) {}
+        }
+    }, [authChecked, userData.user, userData.membership]);
+
+    // Handle payment activation / membership update events
+    useEffect(() => {
+        const handleMembershipUpdated = async (e) => {
+            const newTier = e.detail?.membership || 'Premium';
+            setUserData(prev => ({ ...prev, membership: newTier }));
+            if (pendingExportType) {
+                setShowSubscriptionModal(false);
+                setShowPremiumUpgradeModal(false);
+                const typeToRun = pendingExportType;
+                setPendingExportType(null);
+                showToast('Success');
+                if (typeToRun === 'docx') {
+                    await performDocxDownload();
+                } else {
+                    await performDownload();
+                }
+            }
+        };
+        window.addEventListener('userMembershipUpdated', handleMembershipUpdated);
+        return () => window.removeEventListener('userMembershipUpdated', handleMembershipUpdated);
+    }, [pendingExportType]);
 
     const steps = [
         {
@@ -854,6 +914,14 @@ const BuildResume = () => {
         navigate('/build-resume/custom');
     };
 
+    useEffect(() => {
+        if (!publicationState.message) return;
+        const timer = setTimeout(() => {
+            setPublicationState(curr => ({ ...curr, message: '' }));
+        }, 4000);
+        return () => clearTimeout(timer);
+    }, [publicationState.message]);
+
     const handlePublishForReview = async () => {
         const userId = userIdRef.current;
         const resumeId = resumeIdRef.current;
@@ -863,13 +931,11 @@ const BuildResume = () => {
             if (!await persistLatest({ manual: true })) throw new Error('Save the resume before sharing');
             const published = await publishResume(userId, resumeId, buildCanonicalSnapshot(), { expectedRevision: revisionRef.current, expectedPublicationRevision: publicationState.publicationRevision });
             const shareUrl = `${window.location.origin}/shared/${resumeId}`;
-            setPublicationState({ ...published, status: 'saved', message: 'Review link published' });
+            setPublicationState({ ...published, status: 'saved', message: 'Review link published & copied!' });
             try {
                 await navigator.clipboard.writeText(shareUrl);
-                setPublicationState(current => ({ ...current, status: 'saved', message: 'Review link copied' }));
-            } catch {
-                setPublicationState(current => ({ ...current, status: 'saved', message: `Published: ${shareUrl}` }));
-            }
+            } catch {}
+            setShowShareModal(true);
         } catch (error) {
             setPublicationState(current => ({ ...current, status: 'error', message: error.message || 'Unable to publish review link' }));
         }
@@ -909,23 +975,24 @@ const BuildResume = () => {
         }
 
         if (access.reason === 'LOGIN_REQUIRED') {
-            alert(t('BuildResume.errors.loginRequired', 'Please log in to download your resume. You will be redirected to the login page.'));
-            navigate('/');
+            await persistLatest({ manual: true });
+            try {
+                sessionStorage.setItem('pendingDownloadAfterAuth', JSON.stringify({
+                    type: 'pdf',
+                    template: currentTemplate,
+                    resumeId: resumeIdRef.current
+                }));
+            } catch (_e) {}
+            alert(t('BuildResume.errors.loginRequired', 'Please log in or sign up to download your resume. Your work has been saved.'));
+            navigate('/?redirect=build-resume');
             return;
         }
 
         if (access.reason === 'PREMIUM_REQUIRED') {
-
-            const saved = await persistLatest({ manual: true });
-            if (!saved) {
-                setSaveState({ status: 'error', message: 'Save the resume before leaving for billing.' });
-                return;
-            }
-            showToast('Success');
-            showToast('Upgrade');
-            setTimeout(() => {
-                window.location.href = '/billing/plans';
-            }, 3000);
+            await persistLatest({ manual: true });
+            setPendingExportType('pdf');
+            setShowPremiumUpgradeModal(true);
+            return;
         }
     };
 
@@ -1000,22 +1067,24 @@ const BuildResume = () => {
         }
 
         if (access.reason === 'LOGIN_REQUIRED') {
-            alert(t('BuildResume.errors.loginRequired', 'Please log in to download your resume. You will be redirected to the login page.'));
-            navigate('/');
+            await persistLatest({ manual: true });
+            try {
+                sessionStorage.setItem('pendingDownloadAfterAuth', JSON.stringify({
+                    type: 'docx',
+                    template: currentTemplate,
+                    resumeId: resumeIdRef.current
+                }));
+            } catch (_e) {}
+            alert(t('BuildResume.errors.loginRequired', 'Please log in or sign up to export your resume in Word (.docx) format. Your work has been saved.'));
+            navigate('/?redirect=build-resume');
             return;
         }
 
         if (access.reason === 'PREMIUM_REQUIRED') {
-            const saved = await persistLatest({ manual: true });
-            if (!saved) {
-                setSaveState({ status: 'error', message: 'Save the resume before leaving for billing.' });
-                return;
-            }
-            showToast('Success');
-            showToast('Upgrade');
-            setTimeout(() => {
-                window.location.href = '/billing/plans';
-            }, 3000);
+            await persistLatest({ manual: true });
+            setPendingExportType('docx');
+            setShowPremiumUpgradeModal(true);
+            return;
         }
     };
 
@@ -1362,8 +1431,18 @@ const BuildResume = () => {
             </AnimatePresence>
 
             {publicationState.message && (
-                <div role="status" aria-live="polite" className={`fixed bottom-4 right-4 z-[70] max-w-sm rounded-lg border bg-white p-3 text-sm shadow-xl ${publicationState.status === 'error' ? 'border-red-200 text-red-800' : 'border-emerald-200 text-emerald-800'}`}>
-                    {publicationState.message}
+                <div role="status" aria-live="polite" className={`fixed bottom-4 right-4 z-[70] max-w-sm rounded-lg border bg-white p-3 text-sm shadow-xl flex items-center justify-between gap-3 ${publicationState.status === 'error' ? 'border-red-200 text-red-800' : 'border-emerald-200 text-emerald-800'}`}>
+                    <span>{publicationState.message}</span>
+                    {publicationState.isPublished && (
+                        <a
+                            href={`/shared/${resumeIdRef.current || ''}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline shrink-0 cursor-pointer"
+                        >
+                            Open Link ↗
+                        </a>
+                    )}
                 </div>
             )}
             {(saveState.status === 'error' || saveState.status === 'conflict') && (
@@ -1477,7 +1556,7 @@ const BuildResume = () => {
                         <button
                             onClick={handlePublishForReview}
                             disabled={publicationState.status === 'saving'}
-                            className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                             title="Share review link with peers or mentors"
                         >
                             <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2070,6 +2149,62 @@ const BuildResume = () => {
                     updateResumeData(data);
                     showToast('Success');
                 }}
+            />
+
+            {/* Premium Upgrade Modal for Free candidate upsell flow */}
+            <PremiumUpgradeModal
+                isOpen={showPremiumUpgradeModal}
+                onClose={() => {
+                    setShowPremiumUpgradeModal(false);
+                    setPendingExportType(null);
+                }}
+                onUpgrade={() => {
+                    setShowPremiumUpgradeModal(false);
+                    setShowSubscriptionModal(true);
+                }}
+                downloadType={pendingExportType || 'pdf'}
+                resumeTitle={previewData?.firstname ? `${previewData.firstname}'s Resume` : 'Resume'}
+            />
+
+            {/* In-Place Subscription Checkout Modal */}
+            <SubscriptionModal
+                isOpen={showSubscriptionModal}
+                onClose={() => {
+                    setShowSubscriptionModal(false);
+                    setPendingExportType(null);
+                }}
+                user={userData.user}
+                onSuccess={async () => {
+                    setShowSubscriptionModal(false);
+                    const currentUser = fire.auth().currentUser;
+                    if (currentUser) {
+                        await currentUser.getIdToken(true).catch(() => null);
+                        const info = await getAccountInfo(currentUser.uid).catch(() => null);
+                        if (info?.membership) {
+                            setUserData(prev => ({
+                                ...prev,
+                                membership: info.membership,
+                                membershipEnds: info.membershipEnds
+                            }));
+                        }
+                    }
+                    showToast('Success');
+                    const exportTypeToResume = pendingExportType;
+                    setPendingExportType(null);
+                    if (exportTypeToResume === 'docx') {
+                        await performDocxDownload();
+                    } else {
+                        await performDownload();
+                    }
+                }}
+            />
+
+            {/* Review Link / Social Share Modal */}
+            <ShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                documentId={resumeIdRef.current || ''}
+                documentTitle={previewData?.firstname ? `${previewData.firstname}'s Resume` : 'Resume'}
             />
         </div>
     );

@@ -6,6 +6,7 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import download from 'downloadjs';
+import { getPublicResume } from '../../services/api/resumes';
 import { getJsonById } from '../../services/api/platform';
 import { isKnownTemplate } from '../../utils/templateRegistry';
 import { trackDownload, trackEvent } from '../../utils/ga4';
@@ -24,7 +25,7 @@ export default function PublicResume() {
     useEffect(() => {
         let active = true;
         setStatus('loading');
-        getJsonById(resumeId)
+        getPublicResume(resumeId)
             .then((data) => {
                 if (!active) return;
                 if (!data) {
@@ -34,7 +35,26 @@ export default function PublicResume() {
                 setResume(data);
                 setStatus('ready');
             })
-            .catch(() => { if (active) setStatus('error'); });
+            .catch((err) => {
+                if (!active) return;
+                if (err?.status === 404 || err?.code === 'HTTP_404') {
+                    setStatus('not-found');
+                } else {
+                    getJsonById(resumeId)
+                        .then((fallbackData) => {
+                            if (!active) return;
+                            if (fallbackData) {
+                                setResume(fallbackData);
+                                setStatus('ready');
+                            } else {
+                                setStatus('not-found');
+                            }
+                        })
+                        .catch(() => {
+                            if (active) setStatus('error');
+                        });
+                }
+            });
         return () => { active = false; };
     }, [resumeId]);
 
