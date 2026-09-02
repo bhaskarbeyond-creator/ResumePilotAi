@@ -78,9 +78,14 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
     return Math.round(pricingData.yearlyPrice / 12);
   };
 
+  const getProOriginalPrice = () => {
+    if (billingCycle === 'monthly') return Math.round(pricingData.monthlyPrice * 1.6);
+    return pricingData.monthlyPrice;
+  };
+
   const getProBilledText = () => {
     if (billingCycle === 'monthly') return `Billed monthly at ${symbol}${pricingData.monthlyPrice}`;
-    if (billingCycle === 'quartarly') return `Billed quarterly at ${symbol}${pricingData.quartarlyPrice} (Save 33%)`;
+    if (billingCycle === 'quartarly') return `Billed quarterly at ${symbol}${pricingData.quartarlyPrice} (Save 33% off retail)`;
     return `Billed annually at ${symbol}${pricingData.yearlyPrice} (Save 79% • Best Value)`;
   };
 
@@ -260,7 +265,10 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
               </p>
 
               <div style={{ margin: '16px 0 28px 0', paddingBottom: '24px', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '24px', fontWeight: '700', color: '#94a3b8', textDecoration: 'line-through' }} title="Standard retail rate">
+                    {symbol}{getProOriginalPrice()}
+                  </span>
                   <span style={{ fontSize: '48px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em' }} id="rp-pricing-pro-value">
                     {symbol}{getProEffectiveMonthly()}
                   </span>
@@ -313,10 +321,18 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
               </p>
 
               <div style={{ margin: '16px 0 28px 0', paddingBottom: '24px', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '46px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em' }}>
-                  {symbol}{pricingData.currency === 'INR' ? '2,999' : '49'}
-                </span>
-                <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}> / seat / mo</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '22px', fontWeight: '700', color: '#94a3b8', textDecoration: 'line-through' }} title="Standard retail enterprise seat price">
+                    {symbol}{pricingData.currency === 'INR' ? '4,999' : '99'}
+                  </span>
+                  <span style={{ fontSize: '46px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em' }}>
+                    {symbol}{pricingData.currency === 'INR' ? '2,999' : '49'}
+                  </span>
+                  <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}> / seat / mo</span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700', margin: '6px 0 0 0' }}>
+                  Save 40% on annual institutional licensing
+                </p>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '36px' }}>
