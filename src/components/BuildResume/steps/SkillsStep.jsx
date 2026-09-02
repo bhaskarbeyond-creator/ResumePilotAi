@@ -125,7 +125,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
         updateResumeData({ skills });
 
         // Mark step as completed if at least 3 skills are added
-        const validSkills = skills.filter((skill) => skill.skillName.trim() !== '');
+        const validSkills = skills.filter((skill) => String(skill?.skillName || skill?.name || '').trim() !== '');
 
         if (validSkills.length >= 3) {
             const completedSteps = [...(resumeData.completedSteps || [])];
@@ -181,10 +181,10 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
 
     // Compute unadded skill pills so already-added skills are never recommended again
     const existingSkillNames = new Set(
-        skills.map((s) => (s.skillName || s.name || '').trim().toLowerCase()).filter(Boolean)
+        skills.map((s) => String(s?.skillName || s?.name || '').trim().toLowerCase()).filter(Boolean)
     );
     const availableSkills = popularSkills.filter(
-        (suggestedSkill) => !existingSkillNames.has(suggestedSkill.trim().toLowerCase())
+        (suggestedSkill) => !existingSkillNames.has(String(suggestedSkill || '').trim().toLowerCase())
     );
 
     return (
@@ -207,7 +207,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                         {/* Accent Line */}
                         <div
                             className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${
-                                skill.skillName && skill.skillName.trim() !== '' ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-gray-300 to-gray-400'
+                                (skill.skillName || skill.name) && String(skill.skillName || skill.name).trim() !== '' ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-gray-300 to-gray-400'
                             }`}></div>
 
                         {/* Header */}
@@ -221,11 +221,11 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                 {/* Position Number Badge */}
                                 <div
                                     className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold mr-4 flex-shrink-0 shadow-sm ${
-                                        skill.skillName && skill.skillName.trim() !== ''
+                                        (skill.skillName || skill.name) && String(skill.skillName || skill.name).trim() !== ''
                                             ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-green-200'
                                             : 'bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-blue-200'
                                     }`}>
-                                    {skill.skillName && skill.skillName.trim() !== '' ? <MdCheck className="w-5 h-5" /> : <span className="font-bold">{index + 1}</span>}
+                                    {(skill.skillName || skill.name) && String(skill.skillName || skill.name).trim() !== '' ? <MdCheck className="w-5 h-5" /> : <span className="font-bold">{index + 1}</span>}
                                 </div>
 
                                 {/* Content */}
@@ -247,7 +247,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                             {/* Right Section - Actions */}
                             <div className="flex items-center space-x-2 sm:space-x-3 ml-2 sm:ml-4">
                                 {/* Status Indicator */}
-                                <div className={`w-3 h-3 rounded-full ${skill.skillName && skill.skillName.trim() !== '' ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                                <div className={`w-3 h-3 rounded-full ${(skill.skillName || skill.name) && String(skill.skillName || skill.name).trim() !== '' ? 'bg-green-400' : 'bg-gray-300'}`}></div>
 
                                 <button type="button" onClick={(e) => { e.stopPropagation(); moveSkill(skill.id, -1); }} disabled={index === 0} aria-label={`Move ${skill.skillName || 'skill'} up`} className="p-1 text-slate-500 disabled:opacity-30">↑</button>
                                 <button type="button" onClick={(e) => { e.stopPropagation(); moveSkill(skill.id, 1); }} disabled={index === skills.length - 1} aria-label={`Move ${skill.skillName || 'skill'} down`} className="p-1 text-slate-500 disabled:opacity-30">↓</button>
@@ -412,7 +412,7 @@ const SkillsStep = ({ resumeData, updateResumeData }) => {
                                 <button
                                     key={suggestedSkill}
                                     onClick={() => {
-                                        if (!existingSkillNames.has(suggestedSkill.trim().toLowerCase())) {
+                                        if (!existingSkillNames.has(String(suggestedSkill || '').trim().toLowerCase())) {
                                             const newSkill = { ...createNewSkill(), skillName: suggestedSkill };
                                             setSkills((prevSkills) => [...prevSkills, newSkill]);
                                             setExpandedCards((prev) => {

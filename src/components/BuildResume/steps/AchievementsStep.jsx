@@ -78,7 +78,7 @@ const AchievementsStep = ({ resumeData, updateResumeData }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
             const validAchievements = achievements.filter(
-                (item) => (item.title || item.name || '').trim() !== ''
+                (item) => String(item?.title || item?.name || '').trim() !== ''
             );
 
             const completedSteps = [...(resumeData.completedSteps || [])];

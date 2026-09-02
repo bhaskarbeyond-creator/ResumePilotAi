@@ -215,7 +215,7 @@ class Cv2 extends Component {
         const fullName = `${firstname} ${lastname}`.trim();
         const occupation = values.occupation || '';
 
-        const fullAddress = values.fullAddress || [values.address, values.city, values.postalcode || values.postalCode || values.postalecode, values.country].map(i => (i || '').trim()).filter(Boolean).join(', ');
+        const fullAddress = values.fullAddress || [values.address, values.city, values.postalcode || values.postalCode || values.postalecode, values.country].map(i => String(i || '').trim()).filter(Boolean).join(', ');
 
         // Placeholder names must never leak into a real document.
         const footerName = values.signName || fullName;

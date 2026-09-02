@@ -6,43 +6,43 @@ import SectionCard from './components/SectionCard';
 import PhotoUpload from './components/PhotoUpload';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
 
-const HeadingStep = ({ resumeData, updateResumeData }) => {
+const HeadingStep = ({ resumeData = {}, updateResumeData }) => {
     const { t } = useTranslation('common');
     const [formData, setFormData] = useState({
-        firstname: resumeData.firstname || '',
-        lastname: resumeData.lastname || '',
-        email: resumeData.email || '',
-        phone: resumeData.phone || '',
-        occupation: resumeData.occupation || '',
-        country: resumeData.country || '',
-        city: resumeData.city || '',
-        address: resumeData.address || '',
-        postalcode: resumeData.postalcode || '',
-        website: resumeData.website || '',
-        linkedin: resumeData.linkedin || '',
-        github: resumeData.github || '',
-        photo: resumeData.photo || null,
-        showPhoto: resumeData.showPhoto !== undefined ? resumeData.showPhoto : true,
+        firstname: resumeData?.firstname || '',
+        lastname: resumeData?.lastname || '',
+        email: resumeData?.email || '',
+        phone: resumeData?.phone || '',
+        occupation: resumeData?.occupation || '',
+        country: resumeData?.country || '',
+        city: resumeData?.city || '',
+        address: resumeData?.address || '',
+        postalcode: resumeData?.postalcode || '',
+        website: resumeData?.website || '',
+        linkedin: resumeData?.linkedin || '',
+        github: resumeData?.github || '',
+        photo: resumeData?.photo || null,
+        showPhoto: resumeData?.showPhoto !== undefined ? resumeData.showPhoto : true,
     });
 
     useEffect(() => {
         setFormData({
-            firstname: resumeData.firstname || '',
-            lastname: resumeData.lastname || '',
-            email: resumeData.email || '',
-            phone: resumeData.phone || '',
-            occupation: resumeData.occupation || '',
-            country: resumeData.country || '',
-            city: resumeData.city || '',
-            address: resumeData.address || '',
-            postalcode: resumeData.postalcode || '',
-            website: resumeData.website || '',
-            linkedin: resumeData.linkedin || '',
-            github: resumeData.github || '',
-            photo: resumeData.photo || null,
-            showPhoto: resumeData.showPhoto !== undefined ? resumeData.showPhoto : true,
+            firstname: resumeData?.firstname || '',
+            lastname: resumeData?.lastname || '',
+            email: resumeData?.email || '',
+            phone: resumeData?.phone || '',
+            occupation: resumeData?.occupation || '',
+            country: resumeData?.country || '',
+            city: resumeData?.city || '',
+            address: resumeData?.address || '',
+            postalcode: resumeData?.postalcode || '',
+            website: resumeData?.website || '',
+            linkedin: resumeData?.linkedin || '',
+            github: resumeData?.github || '',
+            photo: resumeData?.photo || null,
+            showPhoto: resumeData?.showPhoto !== undefined ? resumeData.showPhoto : true,
         });
-    }, [resumeData.firstname, resumeData.lastname, resumeData.email, resumeData.phone, resumeData.occupation, resumeData.city, resumeData.country, resumeData.address, resumeData.postalcode, resumeData.website, resumeData.linkedin, resumeData.github, resumeData.photo, resumeData.showPhoto]);
+    }, [resumeData?.firstname, resumeData?.lastname, resumeData?.email, resumeData?.phone, resumeData?.occupation, resumeData?.city, resumeData?.country, resumeData?.address, resumeData?.postalcode, resumeData?.website, resumeData?.linkedin, resumeData?.github, resumeData?.photo, resumeData?.showPhoto]);
 
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -75,11 +75,11 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
     const validateField = (name, value) => {
         let error = '';
 
-        if (requiredFields.includes(name) && !value.trim()) {
+        if (requiredFields.includes(name) && !String(value || '').trim()) {
             error = t('HeadingStep.errors.required', { field: name.charAt(0).toUpperCase() + name.slice(1) });
-        } else if (name === 'email' && value && !/\S+@\S+\.\S+/.test(value)) {
+        } else if (name === 'email' && value && !/\S+@\S+\.\S+/.test(String(value))) {
             error = t('HeadingStep.errors.invalidEmail');
-        } else if (name === 'phone' && value && !/^[+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-()]/g, ''))) {
+        } else if (name === 'phone' && value && !/^[+]?[1-9][\d]{0,15}$/.test(String(value).replace(/[\s\-()]/g, ''))) {
             error = t('HeadingStep.errors.invalidPhone');
         }
 
@@ -104,17 +104,17 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
         updateResumeData(formData);
 
         // Mark step as completed if required fields are filled and valid
-        const isComplete = requiredFields.every((field) => formData[field].trim() !== '') && allValid;
+        const isComplete = requiredFields.every((field) => String(formData[field] || '').trim() !== '') && allValid;
 
         if (isComplete) {
-            const completedSteps = [...(resumeData.completedSteps || [])];
+            const completedSteps = [...(resumeData?.completedSteps || [])];
             if (!completedSteps.includes(1)) {
                 completedSteps.push(1);
                 updateResumeData({ ...formData, completedSteps });
             }
         } else {
             // Remove step from completed if it no longer meets requirements
-            const completedSteps = [...(resumeData.completedSteps || [])];
+            const completedSteps = [...(resumeData?.completedSteps || [])];
             const updatedSteps = completedSteps.filter((step) => step !== 1);
             if (updatedSteps.length !== completedSteps.length) {
                 updateResumeData({ ...formData, completedSteps: updatedSteps });
@@ -140,10 +140,10 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
     // the resume. Commit the latest form data synchronously on unmount.
     const formDataRef = useRef(formData);
     const updateResumeDataRef = useRef(updateResumeData);
-    const completedStepsRef = useRef(resumeData.completedSteps || []);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
     useEffect(() => { formDataRef.current = formData; }, [formData]);
     useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
-    useEffect(() => { completedStepsRef.current = resumeData.completedSteps || []; }, [resumeData.completedSteps]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
     useEffect(() => () => {
         const data = formDataRef.current;
         updateResumeDataRef.current(data);
@@ -155,13 +155,13 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    const completedRequiredFields = requiredFields.filter((field) => formData[field].trim() !== '').length;
+    const completedRequiredFields = requiredFields.filter((field) => String(formData[field] || '').trim() !== '').length;
     const totalProgress = (completedRequiredFields / requiredFields.length) * 100;
     const isStepComplete = completedRequiredFields === requiredFields.length;
 
     // Calculate optional fields completion
     const optionalFields = ['country', 'city', 'address', 'postalcode'];
-    const completedOptionalFields = optionalFields.filter((field) => formData[field].trim() !== '').length;
+    const completedOptionalFields = optionalFields.filter((field) => String(formData[field] || '').trim() !== '').length;
 
     return (
         <div className="px-4 py-6 max-w-6xl mx-auto w-full min-h-full">
@@ -214,7 +214,7 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
                         </svg>
                     }
                     iconColor="text-blue-600"
-                    badge={t('HeadingStep.sections.personalInfo.badge', { completed: ['firstname', 'lastname', 'occupation'].filter((field) => formData[field].trim() !== '').length })}>
+                    badge={t('HeadingStep.sections.personalInfo.badge', { completed: ['firstname', 'lastname', 'occupation'].filter((field) => String(formData[field] || '').trim() !== '').length })}>
                     <div className="space-y-4">
                         {/* Photo and Name Section */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
@@ -287,7 +287,7 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
                         </svg>
                     }
                     iconColor="text-green-600"
-                    badge={t('HeadingStep.sections.contactInfo.badge', { completed: ['email', 'phone'].filter((field) => formData[field].trim() !== '').length })}>
+                    badge={t('HeadingStep.sections.contactInfo.badge', { completed: ['email', 'phone'].filter((field) => String(formData[field] || '').trim() !== '').length })}>
                     <div className="space-y-4">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-start gap-3">
@@ -407,8 +407,8 @@ const HeadingStep = ({ resumeData, updateResumeData }) => {
                         </svg>
                     }
                     iconColor="text-indigo-600"
-                    badge={['website', 'linkedin', 'github'].filter((f) => (formData[f] || '').trim() !== '').length > 0
-                        ? `${['website', 'linkedin', 'github'].filter((f) => (formData[f] || '').trim() !== '').length} Added`
+                    badge={['website', 'linkedin', 'github'].filter((f) => String(formData[f] || '').trim() !== '').length > 0
+                        ? `${['website', 'linkedin', 'github'].filter((f) => String(formData[f] || '').trim() !== '').length} Added`
                         : 'Optional'}>
                     <div className="space-y-4">
                         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">

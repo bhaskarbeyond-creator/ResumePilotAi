@@ -176,9 +176,9 @@ const AutocompleteInputField = ({
     return (
         <div className="relative w-full" ref={containerRef}>
             {!hideLabel && label && (
-                <label htmlFor={name} className={labelClassName || "block text-sm font-semibold text-slate-800 mb-1.5 tracking-wide"}>
+                <label htmlFor={name} className={labelClassName || "block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5"}>
                     {label}
-                    {required && <span className="text-red-500 ml-1">*</span>}
+                    {required && <span className="text-red-500 ml-1 font-bold">*</span>}
                 </label>
             )}
             
@@ -192,28 +192,24 @@ const AutocompleteInputField = ({
                     onKeyDown={handleKeyDown}
                     disabled={disabled}
                     spellCheck="true"
-                    className={inputClassName || `w-full px-3 py-3 pr-10 border rounded-sm transition-all duration-200 text-sm text-slate-900 placeholder-slate-400 bg-white
+                    className={inputClassName || `w-full px-3.5 py-2.5 pr-10 border rounded-xl transition-all duration-150 text-sm text-slate-900 placeholder-slate-400 bg-white
                         ${
                             disabled
-                                ? 'border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed'
-                                : value && value.trim() !== ''
-                                ? 'border-green-300 bg-green-50 focus:border-green-500 focus:ring-2 focus:ring-green-100'
-                                : 'border-slate-300 hover:border-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                                ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                                : error
+                                ? 'border-red-300 bg-red-50/50 focus:border-red-500 focus:ring-3 focus:ring-red-500/15'
+                                : 'border-slate-200 hover:border-slate-300 focus:border-indigo-600 focus:ring-3 focus:ring-indigo-500/15'
                         } 
-                        focus:outline-none focus:ring-opacity-50`}
+                        focus:outline-none shadow-2xs`}
                     placeholder={placeholder}
                     autoComplete="off"
                 />
 
-                {/* Right side loader / checkmark */}
+                {/* Right side loader */}
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    {loading ? (
+                    {loading && (
                         <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                    ) : value && value.trim() !== '' && !disabled ? (
-                        <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                    ) : null}
+                    )}
                 </div>
             </div>
 

@@ -116,8 +116,29 @@ async function main() {
     await page.route('**/api/generate-summary**', r => r.fulfill({ json: { summary: 'Experienced software engineer with expertise in React, Node.js, and cloud services. Proven track record of delivering scalable web applications.' } }));
     await page.route('**/api/generate-work-description**', r => r.fulfill({ json: { description: '• Led development of microservices architecture\n• Improved page load times by 40%\n• Mentored junior engineers' } }));
     await page.route('**/api/generate-content**', r => r.fulfill({ json: { content: 'Generated AI content for resume section.' } }));
-    await page.route('**/api/ai/recommend-skills**', r => r.fulfill({ json: { skills: ['Docker', 'Kubernetes', 'GraphQL', 'AWS', 'CI/CD'] } }));
-    await page.route('**/api/ai/recommend-certifications**', r => r.fulfill({ json: { certifications: ['AWS Solutions Architect', 'Google Cloud Professional'] } }));
+    const mockResume = {
+      id: 'res-1',
+      title: 'Senior Software Engineer Resume',
+      firstname: 'Alex',
+      lastname: 'Morgan',
+      occupation: 'Staff Software Architect',
+      email: 'alex.morgan@example.com',
+      phone: '+1 (555) 234-5678',
+      city: 'San Francisco',
+      country: 'United States',
+      summary: 'Experienced software architect building cloud SaaS platforms.',
+      workHistory: [{ jobTitle: 'Principal Engineer', employer: 'Vanguard Systems', startYear: '2021', isCurrent: true, jobDescription: 'Led platform migration to microservices.' }],
+      skills: [{ skill: 'TypeScript' }, { skill: 'React' }, { skill: 'Node.js' }],
+      revision: 1,
+      template: 'Cv1',
+    };
+    await page.route('**/api/resumes/**', r => r.fulfill({ json: { success: true, resume: mockResume, data: mockResume } }));
+    await page.route('**/api/resumes', r => {
+      if (r.request().method() === 'POST') return r.fulfill({ json: { success: true, resume: mockResume, data: mockResume } });
+      return r.fulfill({ json: { success: true, resumes: [mockResume] } });
+    });
+    await page.route('**/data/resumes/**', r => r.fulfill({ json: mockResume }));
+    await page.route('**/api/user/profile**', r => r.fulfill({ json: { success: true, profile: { firstname: 'Alex', lastname: 'Morgan', occupation: 'Staff Software Architect', email: 'alex.morgan@example.com', phone: '+1 (555) 234-5678', city: 'San Francisco', country: 'United States' } } }));
 
     // ════════════════════════════════════════════════════════════════
     // SECTION A: NAVIGATE TO RESUME BUILDER
@@ -136,8 +157,8 @@ async function main() {
     console.log('\n── SECTION B: PERSONAL STEP ──');
     // Navigate to heading/personal step
     await page.goto(`${base}/build-resume/heading`, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    metrics.navigations++;
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1000);
+    await page.waitForSelector('input, form, [class*="step"]', { timeout: 8000 }).catch(() => {});
 
     // First Name
     const firstNameInput = await page.locator('input[name="firstName"], input[placeholder*="first" i], input[id*="first" i]').first();
@@ -302,12 +323,11 @@ async function main() {
     // SECTION D: SIDEBAR STEP LINKS
     // ════════════════════════════════════════════════════════════════
     console.log('\n── SECTION D: SIDEBAR NAVIGATION ──');
-    await page.goto(`${base}/build-resume`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    await page.goto(`${base}/build-resume/heading`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     metrics.navigations++;
-    await page.waitForTimeout(1500);
-
-    const sidebarLinks = await page.locator('aside a, .sidebar a, nav[class*="step"] a, [class*="sidebar"] a, [class*="step-nav"] a, [class*="stepNav"] a').all();
-    check('SD-001', `Sidebar has ${sidebarLinks.length} step links`, sidebarLinks.length >= 1, 'locator sidebar links', `${sidebarLinks.length} links`);
+    await page.waitForSelector('.step-nav-btn, .step-nav, nav button, main', { timeout: 8000 }).catch(() => {});
+    const sidebarLinks = await page.locator('aside a, aside button, .sidebar a, .sidebar button, nav[class*="step"] a, nav[class*="step"] button, [class*="step-nav"] a, [class*="step-nav"] button, [class*="stepNav"] a, [class*="stepNav"] button, .step-nav-btn, nav button').all();
+    check('SD-001', `Sidebar/Ribbon has ${sidebarLinks.length} step links`, sidebarLinks.length >= 1, 'locator sidebar links', `${sidebarLinks.length} links`);
 
     for (let i = 0; i < Math.min(sidebarLinks.length, 9); i++) {
       const linkText = (await sidebarLinks[i].textContent()).trim();

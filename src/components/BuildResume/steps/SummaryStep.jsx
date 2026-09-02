@@ -13,7 +13,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
     useEffect(() => {
         if (resumeData.summary !== undefined) {
             setSummary(resumeData.summary || '');
-            const plainText = (resumeData.summary || '').replace(/<[^>]*>/g, '');
+            const plainText = String(resumeData.summary || '').replace(/<[^>]*>/g, '');
             setCharCount(plainText.length);
         }
     }, [resumeData.summary]);
@@ -132,7 +132,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         updateResumeData({ summary });
 
         // Mark step as completed if summary is provided
-        const plainText = summary.replace(/<[^>]*>/g, '').trim();
+        const plainText = String(summary || '').replace(/<[^>]*>/g, '').trim();
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (plainText.length >= 20) {
             if (!completedSteps.includes(8)) {
@@ -328,7 +328,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                                 onChange={handleSummaryChange}
                                 rows={6}
                                 placeholder={t('SummaryStep.content.placeholder')}
-                                className={summary.trim().length >= 100 ? 'border-green-300 bg-green-50' : ''}
+                                className={String(summary || '').trim().length >= 100 ? 'border-green-300 bg-green-50' : ''}
                             />
 
                             {/* Success indicator */}

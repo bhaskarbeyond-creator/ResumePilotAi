@@ -96,7 +96,7 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
         updateResumeData({ educations });
 
         // Mark step as completed if at least one education is filled
-        const hasValidEducation = educations.some((edu) => edu.school.trim() !== '' && edu.degree.trim() !== '');
+        const hasValidEducation = educations.some((edu) => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
 
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (hasValidEducation && !completedSteps.includes(3)) {
@@ -320,10 +320,10 @@ const EducationStep = ({ resumeData, updateResumeData }) => {
                                             onChange={(value) => updateEducation(education.id, 'description', value)}
                                             rows={4}
                                             placeholder={t('EducationStep.fields.description.placeholder')}
-                                            className={education.description && education.description.trim() !== '' ? 'border-green-300 bg-green-50' : ''}
+                                            className={education.description && String(education.description).trim() !== '' ? 'border-green-300 bg-green-50' : ''}
                                         />
                                         <p className="mt-2 text-xs text-slate-500">Enter verified coursework, projects, activities, or honors first. AI can rephrase these notes but cannot invent academic achievements.</p>
-                                        {education.description && education.description.trim() !== '' && (
+                                        {education.description && String(education.description).trim() !== '' && (
                                             <div className="absolute top-3 right-3 flex items-center pointer-events-none">
                                                 <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

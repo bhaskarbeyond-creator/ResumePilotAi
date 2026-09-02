@@ -162,6 +162,46 @@ export async function updateAdminSupportTicketStatus(ticketId, status) {
     return data;
 }
 
+export async function getUserSupportTickets() {
+    const data = await apiJson('/api/support/tickets');
+    if (data && data.success === false) {
+        throw new Error(data.error?.message || data.error || 'Unable to load support tickets.');
+    }
+    return data?.tickets || [];
+}
+
+export async function getUserSupportTicket(ticketId) {
+    const data = await apiJson(`/api/support/tickets/${encodeURIComponent(ticketId)}`);
+    if (data && data.success === false) {
+        throw new Error(data.error?.message || data.error || 'Unable to load support ticket.');
+    }
+    return data?.ticket || null;
+}
+
+export async function createUserSupportTicket({ subject, body, priority = 'NORMAL' }) {
+    const data = await apiJson('/api/support/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body, priority }),
+    });
+    if (data && data.success === false) {
+        throw new Error(data.error?.message || data.error || 'Unable to create support ticket.');
+    }
+    return data?.ticket;
+}
+
+export async function replyUserSupportTicket(ticketId, body) {
+    const data = await apiJson(`/api/support/tickets/${encodeURIComponent(ticketId)}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+    });
+    if (data && data.success === false) {
+        throw new Error(data.error?.message || data.error || 'Unable to send ticket reply.');
+    }
+    return data?.ticket;
+}
+
 export async function getAllMessages() {
     const data = await apiJson('/api/notifications-data/contact/list');
     if (data && data.success === false) {

@@ -157,9 +157,9 @@ const CustomSectionsStep = ({ resumeData, updateResumeData }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
             const hasMeaningful = customSections.some((section) =>
-                (section.items || []).some((item) =>
-                    (item.title || item.name || item.description || item.content || '').trim()
-                ) || (section.content || '').trim()
+                (section?.items || []).some((item) =>
+                    String(item?.title || item?.name || item?.description || item?.content || '').trim()
+                ) || String(section?.content || '').trim()
             );
 
             const completedSteps = [...(resumeData.completedSteps || [])];
@@ -222,7 +222,7 @@ const CustomSectionsStep = ({ resumeData, updateResumeData }) => {
                 {customSections.map((section, sectionIndex) => {
                     const isExpanded = expandedSections.has(section.id);
                     const items = section.items || [];
-                    const isComplete = items.some((item) => (item.title || item.description || '').trim());
+                    const isComplete = items.some((item) => String(item?.title || item?.description || '').trim() !== '');
 
                     return (
                         <div

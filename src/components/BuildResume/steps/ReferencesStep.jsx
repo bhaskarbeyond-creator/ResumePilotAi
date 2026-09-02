@@ -74,7 +74,7 @@ const ReferencesStep = ({ resumeData, updateResumeData }) => {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            const validReferences = references.filter((item) => (item.name || '').trim() !== '');
+            const validReferences = references.filter((item) => String(item?.name || '').trim() !== '');
 
             const completedSteps = [...(resumeData.completedSteps || [])];
             let updatedCompletedSteps = null;

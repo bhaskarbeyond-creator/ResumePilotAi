@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiChevronDown, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell, FiMenu, FiMessageSquare } from 'react-icons/fi';
+import { FiGrid, FiSettings, FiFileText, FiBarChart, FiMousePointer, FiDownload, FiSearch, FiChevronLeft, FiChevronRight, FiChevronDown, FiSun, FiMoon, FiSidebar, FiX, FiUser, FiShield, FiLogOut, FiBell, FiMenu, FiMessageSquare, FiLifeBuoy } from 'react-icons/fi';
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import { FaRegComments, FaBriefcase, FaBuilding, FaCrown } from 'react-icons/fa';
 import { FaListCheck } from 'react-icons/fa6';
@@ -64,7 +64,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
             setOpenGroups(prev => ({ ...prev, career: true }));
         } else if (p === '/dashboard/applied-jobs' || p === '/dashboard/job-tracker' || p === '/dashboard/interview' || p === '/dashboard/messages' || p === '/dashboard/my-employments' || p === '/dashboard/my-companies') {
             setOpenGroups(prev => ({ ...prev, jobIntel: true }));
-        } else if (p === '/dashboard/settings' || p === '/dashboard/plans') {
+        } else if (p === '/dashboard/settings' || p === '/dashboard/plans' || p === '/dashboard/support' || p === '/dashboard/tickets' || p === '/dashboard/help') {
             setOpenGroups(prev => ({ ...prev, billing: true }));
         }
     }, [location.pathname]);
@@ -739,6 +739,18 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                                         } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
                                         <FiShield className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
                                         {!sidebarCollapsed && <span className="flex-1">Security &amp; 2FA Hub</span>}
+                                    </div>
+                                </Link>
+
+                                <Link to="/dashboard/support" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname === '/dashboard/support' || location.pathname === '/dashboard/tickets' || location.pathname === '/dashboard/help'
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiLifeBuoy className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">Help Desk &amp; Support</span>}
                                     </div>
                                 </Link>
                             </div>

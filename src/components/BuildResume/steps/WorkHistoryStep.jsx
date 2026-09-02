@@ -99,7 +99,7 @@ const WorkHistoryStep = ({ resumeData, updateResumeData }) => {
         updateResumeData({ employments });
 
         // Mark step as completed if at least one employment is filled
-        const hasValidEmployment = employments.some((emp) => emp.jobTitle.trim() !== '' && emp.employer.trim() !== '');
+        const hasValidEmployment = employments.some((emp) => String(emp?.jobTitle || '').trim() !== '' && String(emp?.employer || '').trim() !== '');
 
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (hasValidEmployment && !completedSteps.includes(2)) {

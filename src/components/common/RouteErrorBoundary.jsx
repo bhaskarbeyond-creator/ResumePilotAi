@@ -26,6 +26,13 @@ export class RouteErrorBoundary extends React.Component {
         if (this.state.hasError) {
             const isDev = Boolean(import.meta.env?.DEV);
             const errorMessage = this.state.error?.message || 'An unexpected rendering error occurred.';
+            const isAdminRoute = typeof window !== 'undefined' && (
+                window.location.pathname.startsWith('/adm') ||
+                window.location.pathname.startsWith('/admin') ||
+                window.location.pathname.startsWith('/platform')
+            );
+            const returnPath = isAdminRoute ? '/adm' : '/dashboard';
+            const returnLabel = isAdminRoute ? 'Return to Admin' : 'Return to Dashboard';
             
             return (
                 <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-6 select-none font-sans">
@@ -55,12 +62,12 @@ export class RouteErrorBoundary extends React.Component {
                                 <span>Reload View</span>
                             </button>
                             <Link
-                                to="/adm"
+                                to={returnPath}
                                 onClick={() => this.setState({ hasError: false })}
                                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 !text-slate-100 text-xs font-bold transition border border-slate-600/80 cursor-pointer"
                             >
                                 <FiHome className="h-3.5 w-3.5" />
-                                <span>Return to Admin</span>
+                                <span>{returnLabel}</span>
                             </Link>
                         </div>
                     </div>

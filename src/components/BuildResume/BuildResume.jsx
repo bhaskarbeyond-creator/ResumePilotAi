@@ -24,6 +24,7 @@ import PreviewModal from './PreviewModal';
 import TemplateSelectionModal from './TemplateSelectionModal';
 import AtsScoreMeter from './AtsScoreMeter';
 import ResumeImportModal from './ResumeImportModal';
+import { calculateAtsScore } from '../../utils/atsScore';
 
 // Import necessary modules for PDF export
 import axios from 'axios';
@@ -71,10 +72,14 @@ const BuildResume = () => {
     const [isManualSaving, setIsManualSaving] = useState(false);
     const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
 
-    // Mobile responsiveness states
+    // Mobile responsiveness and studio drawer states
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
     const [isFooterCompressed, setIsFooterCompressed] = useState(true);
+    const [showAtsDrawer, setShowAtsDrawer] = useState(false);
+    const [showDesktopSplitPreview, setShowDesktopSplitPreview] = useState(false);
+    const [showAllStepsModal, setShowAllStepsModal] = useState(false);
+    const stepRibbonRef = useRef(null);
 
     // Toast notification states
     const [isSuccessToastVisible, setIsSuccessToastVisible] = useState(false);
@@ -106,17 +111,37 @@ const BuildResume = () => {
     const saveInFlightRef = useRef(null);
     const retryTimerRef = useRef(null);
 
+    // Scroll helper for Step Navigation Ribbon
+    const scrollRibbon = (direction) => {
+        if (stepRibbonRef.current) {
+            const offset = direction === 'left' ? -240 : 240;
+            stepRibbonRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+        }
+    };
+
+    // Auto-scroll active step into center view on navigation
     useEffect(() => {
-        if (!isMobileMenuOpen && !isMobilePreviewOpen) return undefined;
+        if (stepRibbonRef.current) {
+            const activeBtn = stepRibbonRef.current.querySelector('.step-nav-btn[aria-current="step"]');
+            if (activeBtn) {
+                activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }
+    }, [location.pathname]);
+
+    useEffect(() => {
+        if (!isMobileMenuOpen && !isMobilePreviewOpen && !showAllStepsModal && !showAtsDrawer) return undefined;
         const closeOnEscape = event => {
             if (event.key === 'Escape') {
                 setIsMobileMenuOpen(false);
                 setIsMobilePreviewOpen(false);
+                setShowAllStepsModal(false);
+                setShowAtsDrawer(false);
             }
         };
         document.addEventListener('keydown', closeOnEscape);
         return () => document.removeEventListener('keydown', closeOnEscape);
-    }, [isMobileMenuOpen, isMobilePreviewOpen]);
+    }, [isMobileMenuOpen, isMobilePreviewOpen, showAllStepsModal, showAtsDrawer]);
 
     // Load module settings (Import Module, ATS Score Module, etc.)
     useEffect(() => {
@@ -424,7 +449,119 @@ const BuildResume = () => {
             11: [11, 'custom'],
         };
         const aliases = legacyMap[stepId] || [];
-        return aliases.some((alias) => completed.includes(alias));
+        if (aliases.some((alias) => completed.includes(alias))) return true;
+
+        // Substantive content verification for instant dynamic feedback
+        const targetPath = stepPath || (orderedSteps.find(s => s.id === stepId)?.path);
+        switch (targetPath) {
+            case 'heading':
+                return Boolean(resumeData.firstname?.trim() || resumeData.email?.trim());
+            case 'work-history':
+                return Array.isArray(resumeData.workHistory) && resumeData.workHistory.length > 0;
+            case 'education':
+                return Array.isArray(resumeData.educations) && resumeData.educations.length > 0;
+            case 'skills':
+                return Array.isArray(resumeData.skills) && resumeData.skills.length > 0;
+            case 'projects':
+                return Array.isArray(resumeData.projects) && resumeData.projects.length > 0;
+            case 'certifications':
+                return Array.isArray(resumeData.certifications) && resumeData.certifications.length > 0;
+            case 'languages':
+                return Array.isArray(resumeData.languages) && resumeData.languages.length > 0;
+            case 'summary':
+                return Boolean(resumeData.summary && resumeData.summary.trim().length > 10);
+            case 'achievements':
+                return Array.isArray(resumeData.achievements) && resumeData.achievements.length > 0;
+            case 'references':
+                return Array.isArray(resumeData.references) && resumeData.references.length > 0;
+            case 'custom':
+                return Array.isArray(resumeData.customSections) && resumeData.customSections.length > 0;
+            default:
+                return false;
+        }
+    };
+
+    const getStepAiGuidance = (stepPath) => {
+        switch (stepPath) {
+            case 'heading':
+                return {
+                    title: 'Contact Details & Location',
+                    tip: 'Include your full name, location, and verified email. ATS parsers match geographic location to check residency eligibility.',
+                    statusBadge: (resumeData.firstname && resumeData.email) ? '✓ Verified Contact' : 'Incomplete',
+                };
+            case 'work-history':
+                return {
+                    title: 'Professional Experience & Impact',
+                    tip: 'Use action verbs (Architected, Engineered, Spearheaded) and quantify achievements with percentages, revenue, or team scale.',
+                    statusBadge: `${(resumeData.workHistory || []).length} role(s) recorded`,
+                };
+            case 'education':
+                return {
+                    title: 'Academic Degrees & Honors',
+                    tip: 'List your highest degrees, academic institutions, graduation dates, and relevant awards or coursework.',
+                    statusBadge: `${(resumeData.educations || []).length} degree(s) recorded`,
+                };
+            case 'skills':
+                return {
+                    title: 'Core Technical & Professional Skills',
+                    tip: 'List 6–12 target role keywords, frameworks, and methodologies to maximize automated keyword matching.',
+                    statusBadge: `${(resumeData.skills || []).length} skill(s) listed`,
+                };
+            case 'projects':
+                return {
+                    title: 'Highlighted Technical Projects',
+                    tip: 'Showcase standout projects with live demo links, repository URLs, and descriptions of technical challenges solved.',
+                    statusBadge: `${(resumeData.projects || []).length} project(s) added`,
+                };
+            case 'certifications':
+                return {
+                    title: 'Industry Certifications',
+                    tip: 'Active cloud and professional credentials (AWS, GCP, PMP, CISSP) increase hiring manager interview rates by 35%.',
+                    statusBadge: `${(resumeData.certifications || []).length} cert(s) added`,
+                };
+            case 'languages':
+                return {
+                    title: 'Languages & Proficiency',
+                    tip: 'Specify native, fluent, or professional proficiency levels to highlight multilingual communication capability.',
+                    statusBadge: `${(resumeData.languages || []).length} language(s) added`,
+                };
+            case 'summary':
+                return {
+                    title: 'Executive Career Summary',
+                    tip: 'Craft a 2–3 sentence high-impact summary capturing years of domain expertise, primary stack, and leadership impact.',
+                    statusBadge: resumeData.summary?.trim() ? 'Summary drafted ✓' : 'Summary pending',
+                };
+            case 'achievements':
+                return {
+                    title: 'Key Honors & Awards',
+                    tip: 'Highlight recognitions, hackathon wins, patents, or publications that demonstrate proven excellence.',
+                    statusBadge: `${(resumeData.achievements || []).length} award(s) listed`,
+                };
+            case 'references':
+                return {
+                    title: 'Professional References',
+                    tip: 'Add verified managerial references or indicate "Available upon request" according to application instructions.',
+                    statusBadge: `${(resumeData.references || []).length} reference(s)`,
+                };
+            case 'custom':
+                return {
+                    title: 'Custom Sections & Portfolio',
+                    tip: 'Include custom categories such as Volunteering, Publications, Speaking, or Open Source Contributions.',
+                    statusBadge: `${(resumeData.customSections || []).length} custom section(s)`,
+                };
+            case 'review':
+                return {
+                    title: 'Quality Review & Document Export',
+                    tip: 'Inspect formatting across all sections, review your ATS score breakdown, choose a CV template, and export to PDF or DOCX.',
+                    statusBadge: `${progressPercentage}% Complete`,
+                };
+            default:
+                return {
+                    title: 'Resume Studio Workspace',
+                    tip: 'Complete each step thoroughly to produce an ATS-optimized, recruiter-ready resume.',
+                    statusBadge: `${progressPercentage}% Complete`,
+                };
+        }
     };
 
     const updateResumeData = useCallback((newData) => {
@@ -653,7 +790,7 @@ const BuildResume = () => {
             resumeData.city,
             resumeData.postalcode || resumeData.postalCode,
             resumeData.country
-        ].map(item => (item || '').trim()).filter(Boolean);
+        ].map(item => String(item || '').trim()).filter(Boolean);
         const formattedFullAddress = addressParts.join(', ');
 
         return {
@@ -1198,7 +1335,7 @@ const BuildResume = () => {
     }
 
     return (
-        <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex overflow-hidden">
+        <div className="h-screen w-full bg-slate-50 flex flex-col overflow-hidden">
             {/* Toast Notifications */}
             <AnimatePresence>
                 {isSuccessToastVisible && (
@@ -1242,38 +1379,450 @@ const BuildResume = () => {
                 </div>
             )}
 
-            {/* Mobile Header - Only visible on mobile */}
-            <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-slate-200 px-4 py-3 z-30 flex items-center justify-between">
-                {/* Mobile Menu Button */}
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg" aria-label="Open navigation menu">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-
-                {/* Logo */}
-                <div className="flex flex-col items-center">
-                    <button type="button" onClick={handleExitBuilder} aria-label="Save and exit to dashboard">
-                        <img src={logo} alt="Logo" className="h-7 w-auto object-contain" />
+            {/* Unified Top Studio Header */}
+            <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-3 sm:px-6 py-2.5 flex items-center justify-between shadow-2xs gap-2 sm:gap-4">
+                {/* Left: Brand / Dashboard Link & Resume Context */}
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 max-w-[42%] sm:max-w-[48%]">
+                    <button
+                        type="button"
+                        onClick={handleExitBuilder}
+                        className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 border border-slate-200/80 transition-all cursor-pointer shrink-0 shadow-2xs"
+                        aria-label="Save and exit to dashboard"
+                    >
+                        <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span className="hidden md:inline">Dashboard</span>
                     </button>
-                    <span role="status" aria-live="polite" className={`text-[10px] font-semibold ${saveState.status === 'error' || saveState.status === 'conflict' ? 'text-red-700' : saveState.status === 'saved' ? 'text-emerald-700' : 'text-amber-700'}`}>{saveState.message || 'Draft ready'}</span>
+
+                    <div className="h-4 w-px bg-slate-200 hidden md:block shrink-0"></div>
+
+                    {/* Resume Title & Active Template Badge */}
+                    <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 truncate tracking-tight" title={resumeData?.title || 'My Resume'}>
+                            {resumeData?.title || `${resumeData?.firstname || ''} ${resumeData?.lastname || ''}`.trim() || t('DashboardHomepage.tabs.resumes', 'My Resume')}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setShowTemplateSelection(true)}
+                            className="hidden 2xl:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold border border-slate-200/80 transition-colors cursor-pointer shrink-0"
+                            title="Click to switch template"
+                        >
+                            <span>{getTemplateName(currentTemplate)}</span>
+                            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Auto-save Status Pill */}
+                    <div role="status" aria-live="polite" className="hidden 2xl:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 ml-1 shrink-0">
+                        <span className={`w-2 h-2 rounded-full ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
+                        <span className="truncate">{saveState.status === 'saved' ? 'Saved' : (saveState.message || 'Saving...')}</span>
+                    </div>
                 </div>
 
-                {/* Mobile Preview Button */}
-                <button onClick={() => setIsMobilePreviewOpen(true)} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg" aria-label="Open resume preview">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
+                {/* Center: First-Class ATS Career Readiness Companion Pill */}
+                {isAtsEnabled === true && (() => {
+                    const atsResult = calculateAtsScore(resumeData);
+                    const atsScore = atsResult?.qualityScore || 0;
+                    const atsStatus = atsResult?.status?.label || 'Getting Started';
+                    const isGood = atsScore >= 75;
+                    const isMedium = atsScore >= 45 && atsScore < 75;
+                    
+                    return (
+                        <div className="flex items-center justify-center shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowAtsDrawer(prev => !prev)}
+                                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
+                                    isGood ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' :
+                                    isMedium ? 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100' :
+                                    'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                                }`}
+                                title="Click to open ATS Career Readiness Intelligence"
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${isGood ? 'bg-emerald-500' : isMedium ? 'bg-indigo-500' : 'bg-amber-500'}`}></span>
+                                    <span className="text-xs font-black tracking-tight">ATS: {atsScore}/100</span>
+                                </div>
+                                <span className="hidden lg:inline text-[11px] font-bold text-slate-600 border-l border-slate-300/80 pl-1.5">
+                                    {atsStatus}
+                                </span>
+                                <svg className={`w-3.5 h-3.5 transition-transform ${showAtsDrawer ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+                    );
+                })()}
+
+                {/* Right: Studio Quick Actions */}
+                <div className="flex items-center gap-2">
+                    {/* Switch Template */}
+                    <button
+                        onClick={() => setShowTemplateSelection(true)}
+                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                        title="Change resume template"
+                    >
+                        <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Template</span>
+                    </button>
+
+                    {/* AI Import (if enabled) */}
+                    {isImportEnabled && (
+                        <button
+                            onClick={() => setShowImportModal(true)}
+                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-purple-700 hover:from-purple-100 hover:to-indigo-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                        >
+                            <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span>AI Import</span>
+                        </button>
+                    )}
+
+                    {/* Share for Review */}
+                    {isPublicSharingEnabled && (
+                        <button
+                            onClick={handlePublishForReview}
+                            disabled={publicationState.status === 'saving'}
+                            className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                            title="Share review link with peers or mentors"
+                        >
+                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                            <span>{publicationState.isPublished ? 'Review Link' : 'Share'}</span>
+                        </button>
+                    )}
+
+
+                    {/* Full Preview Modal Button */}
+                    <button
+                        onClick={() => setShowPreview(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-700 bg-indigo-50/60 hover:bg-indigo-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                    >
+                        <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span className="hidden sm:inline">Preview</span>
+                    </button>
+
+                    {/* Download PDF Button */}
+                    <button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                    >
+                        {isDownloading ? (
+                            <>
+                                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span className="hidden sm:inline">Exporting...</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Download</span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Mobile Menu Drawer Toggle */}
+                    <button
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl cursor-pointer"
+                        aria-label="Open navigation menu"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            {/* Horizontal Step Navigation Ribbon (Sleek, Scrollable, Complete 11-Step Discoverability) */}
+            <nav aria-label="Resume Steps Stepper" className="step-nav-ribbon step-nav sticky top-[57px] z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shadow-2xs">
+                {/* Scroll Left Button */}
+                <button
+                    type="button"
+                    onClick={() => scrollRibbon('left')}
+                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                    aria-label="Scroll steps left"
+                    title="Scroll left"
+                >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
+
+                {/* Horizontal Steps Container */}
+                <div ref={stepRibbonRef} className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar py-0.5 min-w-0 flex-1">
+                    {orderedSteps.map((step, index) => {
+                        const isActive = currentStep.id === step.id;
+                        const isCompleted = isStepCompleted(step.id, step.path);
+
+                        return (
+                            <button
+                                key={step.id}
+                                onClick={() => handleStepClick(step.path)}
+                                className={`step-nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                                    isActive
+                                        ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/25 font-bold'
+                                        : isCompleted
+                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100 font-semibold'
+                                        : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                                }`}
+                                aria-current={isActive ? 'step' : undefined}
+                                title={`${step.name} (${isCompleted ? 'Completed' : 'Pending'})`}
+                            >
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                    isActive
+                                        ? 'bg-white text-indigo-700'
+                                        : isCompleted
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'bg-slate-200 text-slate-600'
+                                }`}>
+                                    {isCompleted ? '✓' : index + 1}
+                                </span>
+                                <span>{step.name}</span>
+                            </button>
+                        );
+                    })}
+
+                    {/* Add Custom Section Pill */}
+                    <button
+                        type="button"
+                        onClick={handleAddCustomSection}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200 text-xs font-bold transition-all shrink-0 cursor-pointer shadow-2xs"
+                        title="Add Custom Section"
+                    >
+                        <span>+ Custom</span>
+                    </button>
+                </div>
+
+                {/* Scroll Right Button */}
+                <button
+                    type="button"
+                    onClick={() => scrollRibbon('right')}
+                    className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                    aria-label="Scroll steps right"
+                    title="Scroll right"
+                >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+
+                {/* Stepper Overview Modal Trigger & Progress Summary */}
+                <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-200">
+                    <button
+                        type="button"
+                        onClick={() => setShowAllStepsModal(true)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200/80 transition-colors cursor-pointer shadow-2xs"
+                        title="View all resume sections in detail"
+                    >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span className="hidden md:inline">11 Steps</span>
+                        <span className="text-[11px] text-slate-500 font-medium">({completedStepCount}/{contentSteps.length})</span>
+                        <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div className="hidden lg:flex items-center text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-xl">
+                        <span>{progressPercentage}% Complete</span>
+                    </div>
+                </div>
+            </nav>
+
+            {/* Main Editing Canvas */}
+            <div className="flex-1 flex overflow-hidden relative">
+                {/* Scrollable Form Content */}
+                <div className={`flex-1 overflow-y-auto bg-slate-50 ${showDesktopSplitPreview ? 'xl:max-w-[58%]' : ''} transition-all duration-300`}>
+                    <div className="min-h-[calc(100vh-190px)] max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-32 sm:pb-28 space-y-4">
+                        {/* Contextual AI Studio Micro-Guidance Banner */}
+                        {(() => {
+                            const guidance = getStepAiGuidance(currentStep.path);
+                            return (
+                                <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-white border border-indigo-100/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-2xs shrink-0 mt-0.5 sm:mt-0">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider">{guidance.title}</h4>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200/70 shadow-2xs">{guidance.statusBadge}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{guidance.tip}</p>
+                                        </div>
+                                    </div>
+                                    {isAtsEnabled === true && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAtsDrawer(true)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-200/80 shadow-2xs transition-colors shrink-0 cursor-pointer self-start sm:self-center"
+                                        >
+                                            <span>ATS Insights</span>
+                                            <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {/* Step Form Routes */}
+                        <Routes>
+                            <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="review" element={<ReviewStep resumeData={resumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
+                            <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                        </Routes>
+                    </div>
+
+                    {/* Fixed Bottom Action Footer (Never covers form content, sticky to viewport bottom) */}
+                    <footer className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 sm:px-6 lg:px-8 py-3.5 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+                        <div className="flex justify-between items-center max-w-5xl mx-auto gap-3">
+                            {/* Previous Button */}
+                            <button
+                                onClick={handlePrevious}
+                                disabled={currentStepIndex === 0}
+                                className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs rounded-xl shadow-2xs cursor-pointer"
+                                aria-label="Go to previous step"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span className="hidden sm:inline">{currentStepIndex > 0 ? `Previous: ${orderedSteps[currentStepIndex - 1]?.name}` : t('BuildResume.navigation.previous')}</span>
+                                <span className="sm:hidden">Back</span>
+                            </button>
+
+                            {/* Center Status */}
+                            <div className="hidden sm:flex items-center gap-2.5 text-xs font-semibold text-slate-500">
+                                <span>Step {currentStepIndex + 1} of {orderedSteps.length}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span className="font-bold text-slate-900">{orderedSteps[currentStepIndex]?.name}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span className={saveState.status === 'saved' ? 'text-emerald-600 font-bold' : 'text-amber-600'}>
+                                    {saveState.status === 'saved' ? 'Saved ✓' : 'Saving...'}
+                                </span>
+                            </div>
+
+                            {/* Right Actions & Primary CTA */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPreview(true)}
+                                    className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                                >
+                                    <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span>Preview</span>
+                                </button>
+
+                                {currentStepIndex < orderedSteps.length - 1 ? (
+                                    <button
+                                        onClick={handleNext}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs shadow-sm hover:shadow-md cursor-pointer"
+                                    >
+                                        <span>{t('BuildResume.navigation.nextStep', { stepName: orderedSteps[currentStepIndex + 1]?.name })}</span>
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleCompleteResume}
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs shadow-md hover:shadow-lg cursor-pointer"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>{t('BuildResume.navigation.complete', 'Finalize & Export Resume')}</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+
             </div>
 
-            {/* Mobile Navigation Overlay */}
+            {/* ATS Career Readiness Slide-Over Companion Drawer */}
+            <AnimatePresence>
+                {showAtsDrawer && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex justify-end"
+                        onClick={() => setShowAtsDrawer(false)}
+                    >
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="ATS Career Readiness Companion"
+                        >
+                            {/* Drawer Header */}
+                            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-indigo-600 text-white rounded-lg shadow-2xs">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">ATS Readiness Companion</h3>
+                                        <p className="text-[11px] text-slate-500">Real-time keyword &amp; structure diagnostics</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowAtsDrawer(false)}
+                                    className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition-colors cursor-pointer"
+                                    aria-label="Close ATS Drawer"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Drawer Content */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Mobile Navigation Drawer Overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <motion.div
@@ -1288,15 +1837,15 @@ const BuildResume = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl"
+                            className="fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl flex flex-col"
                             role="dialog"
                             aria-modal="true"
                             aria-label="Resume builder navigation"
                             onClick={(e) => e.stopPropagation()}>
                             {/* Mobile Navigation Header */}
-                            <div className="px-4 py-6 border-b border-slate-100 flex justify-between items-center">
+                            <div className="px-4 py-4 border-b border-slate-100 flex justify-between items-center">
                                 <button type="button" onClick={async () => { setIsMobileMenuOpen(false); await handleExitBuilder(); }} aria-label="Save and exit to dashboard">
-                                    <img src={logo} alt="Logo" className="h-8 w-auto object-contain" />
+                                    <img src={logo} alt="Logo" className="h-7 w-auto object-contain" />
                                 </button>
                                 <button type="button" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close navigation menu" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1311,7 +1860,6 @@ const BuildResume = () => {
                                     {orderedSteps.map((step, index) => {
                                         const isActive = currentStep.id === step.id;
                                         const isCompleted = isStepCompleted(step.id, step.path);
-                                        const isPrevious = index < currentStepIndex;
 
                                         return (
                                             <button
@@ -1322,852 +1870,189 @@ const BuildResume = () => {
                                                 }}
                                                 className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all duration-200 group relative ${
                                                     isActive
-                                                        ? 'bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 text-blue-900 shadow-2xs'
+                                                        ? 'bg-indigo-50 text-indigo-900 border border-indigo-200 font-bold shadow-2xs'
                                                         : isCompleted
-                                                        ? 'text-slate-700 hover:bg-slate-50/90 hover:border-slate-200/80 border border-transparent'
-                                                        : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
+                                                        ? 'text-slate-700 hover:bg-slate-50'
+                                                        : 'text-slate-600 hover:bg-slate-50'
                                                 }`}
                                                 aria-current={isActive ? 'step' : undefined}>
                                                 <div className="flex items-center gap-2.5 min-w-0">
-                                                    {/* Step Icon/Status */}
                                                     <div
-                                                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 transition-all duration-200 ${
+                                                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 transition-all ${
                                                             isActive
-                                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                                ? 'bg-indigo-600 text-white'
                                                                 : isCompleted
-                                                                ? 'bg-emerald-500 text-white shadow-2xs'
-                                                                : isPrevious
-                                                                ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                                                                : 'bg-slate-50 text-slate-400 border border-slate-200/60'
+                                                                ? 'bg-emerald-500 text-white'
+                                                                : 'bg-slate-100 text-slate-500'
                                                         }`}>
-                                                        {isCompleted ? (
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                        ) : (
-                                                            step.icon
-                                                        )}
+                                                        {isCompleted ? '✓' : index + 1}
                                                     </div>
 
                                                     <div className="min-w-0 text-left">
-                                                        <span className={`text-xs block truncate ${isActive ? 'font-bold text-blue-950' : isCompleted ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>
+                                                        <span className={`text-xs block truncate ${isActive ? 'font-bold text-indigo-950' : isCompleted ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>
                                                             {step.name}
-                                                        </span>
-                                                        <span className={`text-[10px] block leading-tight ${isActive ? 'font-bold text-blue-600' : isCompleted ? 'font-medium text-emerald-600' : 'text-slate-400'}`}>
-                                                            {isActive ? 'Editing' : isCompleted ? 'Complete' : 'Pending'}
                                                         </span>
                                                     </div>
                                                 </div>
-
-                                                {/* Active left indicator */}
-                                                {isActive && <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full"></div>}
                                             </button>
                                         );
                                     })}
                                 </nav>
 
-                                {/* Mobile Progress Section */}
+                                {/* Mobile ATS Section */}
                                 {isAtsEnabled === true && (
                                     <div className="mt-4">
                                         <AtsScoreMeter resumeData={resumeData} onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }} />
                                     </div>
                                 )}
-
-                                <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-semibold text-slate-700">{t('BuildResume.progress.progress')}</span>
-                                        <span className="text-sm font-bold text-slate-900">{progressPercentage}%</span>
-                                    </div>
-
-                                    <div className="w-full bg-slate-200 rounded-full h-2 mb-2 overflow-hidden">
-                                        <div
-                                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out"
-                                            style={{ width: `${progressPercentage}%` }}></div>
-                                    </div>
-
-                                    <p className="text-xs text-slate-600">
-                                        {completedStepCount}/{contentSteps.length} {t('BuildResume.progress.completed')}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Mobile User Status and Actions */}
-                            <div className="px-4 py-4 border-t border-slate-200 bg-white">
-                                {/* User Status */}
-                                {userData.user && (
-                                    <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200/80">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-slate-800">Plan:</span>
-                                            <span
-                                                className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                                    userData.membership === 'Premium' ||
-                                                    userData.subscriptionsStatus === false ||
-                                                    (userData.subscriptionsStatus && userData.subscriptionsStatus.state === false)
-                                                        ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200/80'
-                                                        : 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200/80'
-                                                }`}>
-                                                {userData.subscriptionsStatus === false || (userData.subscriptionsStatus && userData.subscriptionsStatus.state === false)
-                                                    ? 'Free Access'
-                                                    : userData.membership}
-                                                {(userData.membership === 'Premium' ||
-                                                    userData.subscriptionsStatus === false ||
-                                                    (userData.subscriptionsStatus && userData.subscriptionsStatus.state === false)) && <span className="ml-1">✓</span>}
-                                            </span>
-                                        </div>
-                                        {userData.membership === 'Basic' &&
-                                            userData.subscriptionsStatus !== false &&
-                                            !(userData.subscriptionsStatus && userData.subscriptionsStatus.state === false) && (
-                                                <button
-                                                    onClick={() => {
-                                                        window.location.href = '/billing/plans';
-                                                        setIsMobileMenuOpen(false);
-                                                    }}
-                                                    className="w-full mt-3 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md">
-                                                    Upgrade to Premium
-                                                </button>
-                                            )}
-                                        {(userData.subscriptionsStatus === false || (userData.subscriptionsStatus && userData.subscriptionsStatus.state === false)) && (
-                                            <div className="w-full mt-2 text-sm text-center text-green-700 font-semibold">🎉 Free downloads enabled</div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Mobile Action Buttons */}
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={() => {
-                                            setShowTemplateSelection(true);
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg text-sm flex items-center justify-center space-x-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                            />
-                                        </svg>
-                                        <span>{t('BuildResume.preview.changeTemplate')}</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            setShowPreview(true);
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        className="w-full border border-slate-300 text-slate-700 py-3 px-4 rounded-lg font-medium hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm flex items-center justify-center space-x-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                            />
-                                        </svg>
-                                        <span>{t('BuildResume.preview.viewFullSize')}</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            handleDownload();
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        disabled={isDownloading}
-                                        className={`w-full py-3 px-4 font-medium transition-all duration-200 text-sm rounded-lg flex items-center justify-center space-x-2 ${
-                                            isDownloading
-                                                ? 'border border-slate-300 text-slate-400 cursor-not-allowed'
-                                                : 'border border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400'
-                                        }`}>
-                                        {isDownloading ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                                <span className="hidden sm:inline">{t('BuildResume.navigation.downloading')}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                    />
-                                                </svg>
-                                                <span className="hidden sm:inline">{t('BuildResume.navigation.download')}</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Mobile Preview Overlay */}
+            {/* All 11 Steps Stepper Overview Modal */}
             <AnimatePresence>
-                {isMobilePreviewOpen && (
+                {showAllStepsModal && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-30"
-                        onClick={() => setIsMobilePreviewOpen(false)}>
+                        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+                        onClick={() => setShowAllStepsModal(false)}
+                    >
                         <motion.div
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed right-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl"
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh]"
+                            onClick={(e) => e.stopPropagation()}
                             role="dialog"
                             aria-modal="true"
-                            aria-label="Mobile resume preview"
-                            onClick={(e) => e.stopPropagation()}>
-                            {/* Mobile Preview Header */}
-                            <div className="px-4 py-4 border-b border-slate-100 flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-sm font-semibold text-slate-900">{t('BuildResume.preview.livePreview')}</h3>
-                                    <p className="text-xs text-slate-600 mt-1">{getTemplateName(currentTemplate)}</p>
+                            aria-label="Resume Sections & Step Overview"
+                        >
+                            {/* Modal Header */}
+                            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 font-bold">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Resume Sections Overview (11 Steps)</h3>
+                                        <p className="text-xs text-slate-500 font-medium">Jump instantly to any section or inspect overall completion</p>
+                                    </div>
                                 </div>
-                                <button type="button" onClick={() => setIsMobilePreviewOpen(false)} aria-label="Close mobile preview" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button
+                                    onClick={() => setShowAllStepsModal(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                                    aria-label="Close overview modal"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
                             </div>
 
-                            {/* Mobile Resume Preview */}
-                            <div className="flex-1 px-4 py-4 overflow-y-auto">
-                                {/* Preview Window */}
-                                <div className="bg-white border-2 border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                                    {/* Preview Header */}
-                                    <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-2.5 flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="flex space-x-1">
-                                                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                                                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                            </div>
-                                            <div className="text-white text-xs font-medium ml-2">{t('BuildResume.preview.resumePdf')}</div>
-                                        </div>
+                            {/* Overall Progress Gauge Bar */}
+                            <div className="px-6 py-3 bg-indigo-50/60 border-b border-indigo-100/60 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
+                                    <span>Overall Completion:</span>
+                                    <span className="text-indigo-600 font-extrabold">{completedStepCount} of {contentSteps.length} Sections Finished</span>
+                                </div>
+                                <div className="flex items-center gap-3 flex-1 max-w-xs">
+                                    <div className="flex-1 h-2 bg-indigo-200/80 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                                            style={{ width: `${progressPercentage}%` }}
+                                        ></div>
                                     </div>
+                                    <span className="text-xs font-black text-indigo-700">{progressPercentage}%</span>
+                                </div>
+                            </div>
 
-                                    {/* Resume Content */}
-                                    <div className="relative h-80 overflow-hidden bg-gradient-to-br from-slate-50 to-gray-50">
-                                        <div style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
-                                            <TemplateRenderer
-                                                templateId={currentTemplate}
-                                                values={previewData}
-                                                language={i18n.language}
-                                                onError={(error) => console.error('Template preview failed:', error)}
-                                            />
-                                        </div>
+                            {/* Steps Grid */}
+                            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50/40">
+                                {orderedSteps.map((step, index) => {
+                                    const isActive = currentStep.id === step.id;
+                                    const isCompleted = isStepCompleted(step.id, step.path);
+                                    const guidance = getStepAiGuidance(step.path);
+
+                                    return (
                                         <button
-                                            type="button"
-                                            onClick={() => { setShowPreview(true); setIsMobilePreviewOpen(false); }}
-                                            aria-label="Open full-size resume preview"
-                                            className="absolute inset-0 flex items-center justify-center bg-transparent text-transparent focus-visible:bg-slate-950/20 focus-visible:text-slate-800">
-                                            <span className="rounded-md bg-white/95 px-3 py-2 text-xs font-semibold shadow-sm">Open full preview</span>
+                                            key={step.id}
+                                            onClick={() => {
+                                                handleStepClick(step.path);
+                                                setShowAllStepsModal(false);
+                                            }}
+                                            className={`p-3.5 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md ${
+                                                isActive
+                                                    ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/25 shadow-md'
+                                                    : isCompleted
+                                                    ? 'bg-white text-slate-900 border-emerald-200/90 hover:border-emerald-400'
+                                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                                        isActive
+                                                            ? 'bg-white/20 text-white'
+                                                            : isCompleted
+                                                            ? 'bg-emerald-600 text-white'
+                                                            : 'bg-slate-100 text-slate-500'
+                                                    }`}>
+                                                        {isCompleted ? '✓' : index + 1}
+                                                    </span>
+                                                    <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                                                        {step.name}
+                                                    </span>
+                                                </div>
+                                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                                    isActive
+                                                        ? 'bg-white text-indigo-700'
+                                                        : isCompleted
+                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                        : 'bg-slate-100 text-slate-500'
+                                                }`}>
+                                                    {isActive ? 'Current' : isCompleted ? 'Completed' : 'Pending'}
+                                                </span>
+                                            </div>
+
+                                            <p className={`text-[11px] line-clamp-1 ${isActive ? 'text-indigo-100' : 'text-slate-500'}`}>
+                                                {guidance.statusBadge || guidance.title}
+                                            </p>
                                         </button>
-                                    </div>
+                                    );
+                                })}
+                            </div>
 
-                                    {/* Progress indicator */}
-                                    <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-3 py-2 border-t border-slate-200">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-slate-600">{t('BuildResume.progress.completeness')}</span>
-                                            <span className="text-blue-600 font-semibold">{progressPercentage}%</span>
-                                        </div>
-                                        <div className="mt-1 w-full bg-slate-200 rounded-full h-1 overflow-hidden">
-                                            <div
-                                                className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 rounded-full transition-all duration-500 ease-out"
-                                                style={{ width: `${progressPercentage}%` }}></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Mobile Action Buttons */}
-                                <div className="mt-4 space-y-2">
-                                    <button
-                                        onClick={() => {
-                                            setShowTemplateSelection(true);
-                                            setIsMobilePreviewOpen(false);
-                                        }}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg text-sm flex items-center justify-center space-x-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                            />
-                                        </svg>
-                                        <span>{t('BuildResume.preview.changeTemplate')}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowPreview(true);
-                                            setIsMobilePreviewOpen(false);
-                                        }}
-                                        className="w-full border border-slate-300 text-slate-700 py-2.5 px-4 rounded-lg font-medium hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm flex items-center justify-center space-x-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                            />
-                                        </svg>
-                                        <span>{t('BuildResume.preview.viewFullSize')}</span>
-                                    </button>
-                                    <button type="button" onClick={handlePublishForReview} disabled={publicationState.status === 'saving'} className="w-full border border-indigo-300 text-indigo-700 py-2.5 px-4 rounded-lg font-medium disabled:opacity-60">
-                                        {publicationState.isPublished ? 'Copy / Update Review Link' : 'Share for Review'}
-                                    </button>
-                                    {publicationState.isPublished && <button type="button" onClick={handleStopSharing} className="w-full text-red-700 py-2 text-sm font-medium">Stop Sharing</button>}
-                                </div>
+                            {/* Modal Footer */}
+                            <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleAddCustomSection();
+                                        setShowAllStepsModal(false);
+                                    }}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                                >
+                                    <span>+ Add Custom Section</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllStepsModal(false)}
+                                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
+                                >
+                                    Close Overview
+                                </button>
                             </div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Left Sidebar - Steps Navigation - Always Visible */}
-            <div className="hidden md:flex flex-col w-56 lg:w-64 bg-white border-r border-slate-200 shadow-sm min-h-screen flex-shrink-0 relative z-20">
-                {/* Header */}
-                <div className="px-4 py-3.5 border-b border-slate-100 flex-shrink-0 flex flex-col gap-2.5">
-                    {/* Top Row: Steps Title & Exit to Dashboard */}
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                                Resume Steps
-                            </span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={handleExitBuilder}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 transition-all shadow-2xs cursor-pointer">
-                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            <span>Dashboard</span>
-                        </button>
-                    </div>
-
-                    {/* Dedicated Auto-Save Status Bar: Clean 1-line display */}
-                    <div role="status" aria-live="polite" className={`flex items-center justify-between text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
-                        saveState.status === 'saved' ? 'text-emerald-800 bg-emerald-50/90 border-emerald-200/90' :
-                        saveState.status === 'error' || saveState.status === 'conflict' ? 'text-red-800 bg-red-50 border-red-200' :
-                        'text-amber-800 bg-amber-50 border-amber-200'
-                    }`}>
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${saveState.status === 'saved' ? 'bg-emerald-500' : saveState.status === 'error' || saveState.status === 'conflict' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'}`}></span>
-                            <span className="truncate font-medium">{saveState.status === 'saved' ? 'All changes saved' : (saveState.message || 'Saving changes...')}</span>
-                        </div>
-                        {saveState.status === 'saved' && (
-                            <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        )}
-                    </div>
-                </div>
-
-                {/* Steps Navigation */}
-                <div className="flex-1 px-3 py-3.5 overflow-y-auto">
-                    <nav className="space-y-1.5">
-                        {orderedSteps.map((step, index) => {
-                            const isActive = currentStep.id === step.id;
-                            const isCompleted = isStepCompleted(step.id, step.path);
-                            const isPrevious = index < currentStepIndex;
-
-                            return (
-                                <button
-                                    key={step.id}
-                                    onClick={() => handleStepClick(step.path)}
-                                    className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all duration-200 group relative ${
-                                        isActive
-                                            ? 'bg-gradient-to-r from-blue-50/90 to-indigo-50/60 border border-blue-200/90 text-blue-900 shadow-2xs'
-                                            : isCompleted
-                                            ? 'text-slate-700 hover:bg-slate-50/90 hover:border-slate-200/80 border border-transparent'
-                                            : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200/80 border border-transparent'
-                                    }`}
-                                    aria-current={isActive ? 'step' : undefined}>
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                        {/* Step Icon/Status */}
-                                        <div
-                                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold shrink-0 transition-all duration-200 ${
-                                                isActive
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : isCompleted
-                                                    ? 'bg-emerald-500 text-white shadow-2xs'
-                                                    : isPrevious
-                                                    ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                                                    : 'bg-slate-50 text-slate-400 border border-slate-200/60'
-                                            }`}>
-                                            {isCompleted ? (
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            ) : (
-                                                step.icon
-                                            )}
-                                        </div>
-
-                                        <div className="min-w-0 text-left">
-                                            <span className={`text-xs block truncate ${isActive ? 'font-bold text-blue-950' : isCompleted ? 'font-semibold text-slate-800' : 'font-medium text-slate-600'}`}>
-                                                {step.name}
-                                            </span>
-                                            <span className={`text-[10px] block leading-tight ${isActive ? 'font-bold text-blue-600' : isCompleted ? 'font-medium text-emerald-600' : 'text-slate-400'}`}>
-                                                {isActive ? 'Editing' : isCompleted ? 'Complete' : 'Pending'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Active indicator bar */}
-                                    {isActive && <div className="absolute left-0 top-2 bottom-2 w-1 bg-blue-600 rounded-r-full"></div>}
-                                </button>
-                            );
-                        })}
-                    </nav>
-
-                    {/* Add Custom Section Action */}
-                    <button
-                        type="button"
-                        onClick={handleAddCustomSection}
-                        className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-indigo-50/70 to-purple-50/70 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 font-semibold text-xs rounded-xl border border-indigo-200/70 hover:border-indigo-300 transition-all shadow-2xs group">
-                        <div className="w-4 h-4 rounded-md bg-indigo-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <svg className="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                            </svg>
-                        </div>
-                        <span>{t('BuildResume.customSection.add', 'Add Custom Section')}</span>
-                    </button>
-
-                    {/* Real-Time ATS Score Meter Widget */}
-                    {isAtsEnabled === true && (
-                        <div className="mt-4">
-                            <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
-                        </div>
-                    )}
-
-                    {/* Progress Section */}
-                    <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-slate-700">{t('BuildResume.progress.progress')}</span>
-                            <span className="text-xs font-bold text-slate-900">{progressPercentage}%</span>
-                        </div>
-
-                        <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2 overflow-hidden">
-                            <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div>
-                        </div>
-
-                        <p className="text-xs text-slate-600">
-                            {completedStepCount}/{contentSteps.length} {t('BuildResume.progress.completed')}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="px-4 py-3 border-t border-slate-200 bg-white flex-shrink-0 sticky bottom-0 z-20 shadow-md">
-                    {/* Expand/Compress Header */}
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-1.5">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Plan:</span>
-                            <span
-                                className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full ${
-                                    userData.membership === 'Premium' || userData.subscriptionsStatus === false || (userData.subscriptionsStatus && userData.subscriptionsStatus.state === false)
-                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                        : 'bg-amber-100 text-amber-800 border border-amber-300'
-                                }`}>
-                                {userData.subscriptionsStatus === false || (userData.subscriptionsStatus && userData.subscriptionsStatus.state === false)
-                                    ? 'Free Access ✓'
-                                    : (userData.membership || 'Basic')}
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => setIsFooterCompressed(!isFooterCompressed)}
-                            className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-                            title={isFooterCompressed ? "Expand Footer" : "Compress Footer"}>
-                            {isFooterCompressed ? (
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
-                                </svg>
-                            ) : (
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Upgrade to Premium Button - ALWAYS visible even when compressed */}
-                    {userData.membership !== 'Premium' && userData.subscriptionsStatus !== false && !(userData.subscriptionsStatus && userData.subscriptionsStatus.state === false) && (
-                        <button
-                            onClick={() => (window.location.href = '/billing/plans')}
-                            className="w-full text-xs bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white py-2 px-3 rounded-lg transition-all duration-200 font-bold shadow-sm hover:shadow-md flex items-center justify-center gap-1.5">
-                            <svg className="w-3.5 h-3.5 text-amber-300 fill-current" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            Upgrade to Premium
-                        </button>
-                    )}
-
-                    {/* Expanded Details: Help & Support, Privacy Policy, Copyright */}
-                    {!isFooterCompressed && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1.5 animate-in fade-in duration-150">
-                            <a href="/contact" target="_blank" rel="noopener noreferrer" className="flex items-center text-xs text-slate-600 hover:text-indigo-600 transition-colors font-medium group py-0.5">
-                                <svg className="w-3.5 h-3.5 mr-2 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span>Help & Support</span>
-                            </a>
-                            <a href="/p/privacy-policy" target="_blank" rel="noopener noreferrer" className="flex items-center text-xs text-slate-600 hover:text-indigo-600 transition-colors font-medium group py-0.5">
-                                <svg className="w-3.5 h-3.5 mr-2 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                                </svg>
-                                <span>Privacy Policy</span>
-                            </a>
-                            <div className="text-[10px] text-slate-400 pt-2 border-t border-slate-100 font-medium">
-                                © {new Date().getFullYear()} {config?.brand?.name || 'Bold Limited'}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Main Content Area - Responsive Center Section */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative pt-16 md:pt-0">
-                {/* Main Form Content */}
-                <div className="flex-1 bg-white flex flex-col h-full overflow-hidden">
-                    {/* Scrollable content area */}
-                    <div className="flex-1 overflow-y-auto bg-slate-50">
-                        <div className="min-h-full pb-6">
-                            <Routes>
-                                <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                                <Route path="review" element={<ReviewStep resumeData={resumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
-                                <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            </Routes>
-                        </div>
-                    </div>
-
-                    {/* Navigation Footer - Sticky at bottom with shadow */}
-                    <div className="sticky bottom-0 bg-white border-t border-slate-200 px-4 md:px-6 py-3 md:py-4 flex-shrink-0 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
-                        <div className="flex justify-between items-center max-w-4xl mx-auto">
-                            {/* Left side - Progress indicator - Hidden on mobile */}
-                            <div className="hidden md:flex items-center space-x-3">
-                                <div className="text-xs text-slate-600">{t('BuildResume.progress.step', { current: currentStepIndex + 1, total: orderedSteps.length })}</div>
-                                <div className="flex items-center space-x-1">
-                                    {orderedSteps.map((_, index) => (
-                                        <div key={index} className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${index <= currentStepIndex ? 'bg-blue-500' : 'bg-slate-200'}`} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Mobile progress indicator */}
-                            <div className="md:hidden flex items-center space-x-2">
-                                <span className="text-xs font-medium text-slate-600">
-                                    {currentStepIndex + 1}/{orderedSteps.length}
-                                </span>
-                                <div className="flex items-center space-x-1">
-                                    {orderedSteps.map((_, index) => (
-                                        <div key={index} className={`w-2 h-2 rounded-full transition-all duration-200 ${index <= currentStepIndex ? 'bg-blue-500' : 'bg-slate-200'}`} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Right side - Action buttons */}
-                            <div className="flex items-center gap-2">
-                                {/* Previous Button */}
-                                <button
-                                    onClick={handlePrevious}
-                                    disabled={currentStepIndex === 0}
-                                    className="flex items-center px-3 py-2 border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 text-xs rounded-xl shadow-2xs">
-                                    <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                    <span className="hidden sm:inline">{t('BuildResume.navigation.previous')}</span>
-                                </button>
-
-                                {/* AI Import Resume Button */}
-                                {isImportEnabled && (
-                                    <button
-                                        onClick={() => setShowImportModal(true)}
-                                        className="hidden xl:flex items-center px-3 py-2 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-purple-700 font-semibold hover:bg-purple-100/70 hover:border-purple-300 transition-all duration-200 text-xs rounded-xl shadow-2xs">
-                                        <svg className="w-3.5 h-3.5 mr-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                        </svg>
-                                        Import Resume
-                                    </button>
-                                )}
-
-                                {/* Share for Mentor Review & Comments */}
-                                {isPublicSharingEnabled && (
-                                    <>
-                                        <button
-                                            onClick={handlePublishForReview}
-                                            disabled={publicationState.status === 'saving'}
-                                            className="hidden xl:flex items-center px-3 py-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-60 transition-all text-xs rounded-xl shadow-2xs font-medium">
-                                            <svg className="w-3.5 h-3.5 mr-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                            </svg>
-                                            {publicationState.status === 'saving' ? 'Updating…' : publicationState.isPublished ? 'Copy Link' : 'Share Review'}
-                                        </button>
-                                        {publicationState.isPublished && (
-                                            <button type="button" onClick={handleStopSharing} disabled={publicationState.status === 'saving'} className="hidden xl:flex items-center px-2 py-2 text-red-600 hover:text-red-700 text-xs font-semibold disabled:opacity-60 transition-all">
-                                                Stop Sharing
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-
-                                {/* Mobile Menu and Preview buttons - Only on mobile */}
-                                <button
-                                    onClick={() => setIsMobileMenuOpen(true)}
-                                    className="md:hidden flex items-center px-2.5 py-2 border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-all duration-200 text-xs rounded-xl shadow-2xs">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                    </svg>
-                                </button>
-
-                                <button
-                                    onClick={() => setIsMobilePreviewOpen(true)}
-                                    className="md:hidden flex items-center px-2.5 py-2 border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-all duration-200 text-xs rounded-xl shadow-2xs">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                </button>
-
-                                {/* Desktop Preview Button */}
-                                <button
-                                    onClick={() => setShowPreview(true)}
-                                    className="hidden md:flex items-center px-3.5 py-2 border border-blue-200 text-blue-700 bg-blue-50/40 hover:bg-blue-100/70 hover:border-blue-300 font-semibold transition-all duration-200 text-xs rounded-xl shadow-2xs">
-                                    <svg className="w-3.5 h-3.5 mr-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                        />
-                                    </svg>
-                                    {t('BuildResume.navigation.preview')}
-                                </button>
-
-                                {/* Download Button */}
-                                <button
-                                    onClick={handleDownload}
-                                    disabled={isDownloading}
-                                    className={`flex items-center px-3.5 py-2 font-semibold transition-all duration-200 text-xs rounded-xl shadow-2xs ${
-                                        isDownloading
-                                            ? 'border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                                            : 'border border-emerald-200 text-emerald-700 bg-emerald-50/40 hover:bg-emerald-100/70 hover:border-emerald-300'
-                                    }`}>
-                                    {isDownloading ? (
-                                        <>
-                                            <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin mr-1.5"></div>
-                                            <span className="hidden sm:inline">{t('BuildResume.navigation.downloading')}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-3.5 h-3.5 mr-1 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                />
-                                            </svg>
-                                            <span className="hidden sm:inline">{t('BuildResume.navigation.download')}</span>
-                                        </>
-                                    )}
-                                </button>
-
-                                {/* Next/Complete Button */}
-                                {currentStepIndex < orderedSteps.length - 1 ? (
-                                    <button
-                                        onClick={handleNext}
-                                        className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-xs shadow-sm hover:shadow-md">
-                                        <span className="hidden sm:inline">{t('BuildResume.navigation.nextStep', { stepName: orderedSteps[currentStepIndex + 1]?.name })}</span>
-                                        <span className="sm:hidden">Next</span>
-                                        <svg className="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={handleCompleteResume}
-                                        className="flex items-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-bold hover:from-emerald-700 hover:to-green-700 transition-all duration-200 text-xs shadow-sm hover:shadow-md">
-                                        <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span className="hidden sm:inline">{t('BuildResume.navigation.complete')}</span>
-                                        <span className="sm:hidden">Done</span>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Sidebar - Resume Preview - Improved Desktop Support */}
-            <div className="hidden lg:flex w-80 bg-white border-l border-slate-200 flex-col min-h-screen flex-shrink-0">
-                {/* Simplified Header Section */}
-                <div className="px-4 py-4 border-b border-slate-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-semibold text-slate-900">{t('BuildResume.preview.livePreview')}</h3>
-                            <p className="text-xs text-slate-600 mt-1">{getTemplateName(currentTemplate)}</p>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                            <span className="text-xs text-slate-600">{t('BuildResume.preview.autoUpdating')}</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Resume Preview - Scrollable */}
-                <div className="flex-1 px-4 py-4 overflow-y-auto">
-                    {/* Preview Window */}
-                    <div className="bg-white border-2 border-slate-200 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                        {/* Enhanced Preview Header */}
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-2.5 flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <div className="flex space-x-1">
-                                    <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                                    <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                </div>
-                                <div className="text-white text-xs font-medium ml-2">{t('BuildResume.preview.resumePdf')}</div>
-                            </div>
-                        </div>
-
-                        {/* Resume Content with Loading State - A4 Proportion Container */}
-                        <div className="relative aspect-[1/1.414] w-full overflow-hidden bg-gradient-to-br from-slate-50 to-gray-50">
-                            <div className="transition-transform duration-200 group-hover:scale-105" style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
-                                <TemplateRenderer
-                                    templateId={currentTemplate}
-                                    values={previewData}
-                                    language={i18n.language}
-                                    onError={(error) => console.error('Template preview failed:', error)}
-                                />
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowPreview(true)}
-                                aria-label="Open full-size live resume preview"
-                                className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/0 text-transparent transition-colors duration-200 hover:bg-slate-950/20 hover:text-slate-800 focus-visible:bg-slate-950/20 focus-visible:text-slate-800">
-                                <span className="rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold shadow-lg">{t('BuildResume.preview.clickToView')}</span>
-                            </button>
-                        </div>
-
-                        {/* Progress indicator */}
-                        <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-3 py-2 border-t border-slate-200">
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-600">{t('BuildResume.progress.completeness')}</span>
-                                <span className="text-blue-600 font-semibold">{progressPercentage}%</span>
-                            </div>
-                            <div className="mt-1 w-full bg-slate-200 rounded-full h-1 overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-1 rounded-full transition-all duration-500 ease-out" style={{ width: `${progressPercentage}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Enhanced Action Buttons */}
-                    <div className="mt-4 space-y-2">
-                        <button
-                            onClick={() => setShowTemplateSelection(true)}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg text-sm flex items-center justify-center space-x-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                />
-                            </svg>
-                            <span>{t('BuildResume.preview.changeTemplate')}</span>
-                        </button>
-                        <button
-                            onClick={() => setShowPreview(true)}
-                            className="w-full border border-slate-300 text-slate-700 py-2.5 px-4 rounded-lg font-medium hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm flex items-center justify-center space-x-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                />
-                            </svg>
-                            <span>{t('BuildResume.preview.viewFullSize')}</span>
-                        </button>
-                        <button
-                            onClick={handleManualSave}
-                            disabled={isManualSaving}
-                            className={`w-full py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 shadow-md text-sm flex items-center justify-center space-x-2 ${
-                                saveSuccessMsg
-                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                    : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 hover:shadow-lg'
-                            }`}>
-                            {isManualSaving ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                    <span>Saving Resume State...</span>
-                                </>
-                            ) : saveSuccessMsg ? (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    <span>Resume Saved Completely!</span>
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                    </svg>
-                                    <span>Save Resume State</span>
-                                </>
-                            )}
-                        </button>
-                        {isImportEnabled && (
-                            <button
-                                onClick={() => setShowImportModal(true)}
-                                className="w-full border border-purple-300 text-purple-700 py-2.5 px-4 rounded-lg font-medium hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 text-sm flex items-center justify-center space-x-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                <span>{t('BuildResume.preview.importResume')}</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Enhanced Footer */}
-                <div className="px-4 py-4 bg-white border-t border-slate-200 flex-shrink-0">
-                    <div className="text-center">
-                        <p className="text-sm text-slate-700 font-semibold">{t('BuildResume.preview.trustedBy')}</p>
-                        <p className="text-xs text-slate-500 mt-1">{t('BuildResume.preview.joinSuccess')}</p>
-                    </div>
-                </div>
-            </div>
 
             {/* Modal Components */}
             <PreviewModal

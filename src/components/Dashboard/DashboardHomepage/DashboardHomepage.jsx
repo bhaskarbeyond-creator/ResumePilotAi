@@ -7,7 +7,7 @@ import LoaderAnimation from "../../../assets/animations/lottie-loader.json";
 import { withTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useLottie } from "lottie-react";
-import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye } from "react-icons/fa";
+import { FaCheckCircle, FaChevronRight, FaPencilAlt, FaEllipsisH, FaEnvelope, FaPlus, FaBullseye, FaShareAlt, FaTrashAlt, FaFileAlt, FaClock, FaDownload, FaStar, FaCalendarAlt, FaUsers, FaBars, FaInbox, FaEye, FaSearch, FaTimes, FaChartLine, FaMagic, FaBolt, FaArrowRight, FaLightbulb } from "react-icons/fa";
 import axios from "axios";
 import download from "downloadjs";
 import config from "../../../conf/configuration";
@@ -15,6 +15,7 @@ import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
 import { toValidatedPdfBlob, pdfFileName } from "../../../utils/pdfDownload";
 import { executeDocxDownload } from "../../../utils/docxDownload";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
+import { calculateAtsScore } from "../../../utils/atsScore";
 import TemplateRenderer from "../../TemplateRenderer";
 import PreviewModal from "../../BuildResume/PreviewModal";
 
@@ -86,6 +87,7 @@ class DashboardHomepage extends Component {
         occupation: "",
       },
       activeTab: "all",
+      searchQuery: "",
       userStats: {
         documentsGenerated: 0,
         documentsDownloaded: 0,
@@ -515,96 +517,26 @@ class DashboardHomepage extends Component {
   }
 
   // Download resume as PDF
+  // Download resume as PDF using authoritative direct export pipeline
   async downloadResume(document) {
-    // Prevent multiple simultaneous downloads of the same document
-    if (this.state.downloadingResumeIds.has(document.id)) {
-      return;
-    }
+    if (!document?.id) return;
+    if (this.state.downloadingResumeIds.has(document.id)) return;
 
-    // Add to downloading set
     this.setState((prevState) => ({
-      downloadingResumeIds: new Set(prevState.downloadingResumeIds).add(
-        document.id
-      ),
+      downloadingResumeIds: new Set(prevState.downloadingResumeIds).add(document.id),
     }));
 
     try {
-      const templateName =
-        document?.template || document?.item?.template || "Cv1";
+      const templateName = document?.template || document?.item?.template || "Cv1";
       const resumeId = document.id;
       const language = document?.item?.language || "en";
-
-      // Reconstruct the complete resume data structure that the export expects
-      const completeResumeData = {
-        ...document.item,
-        // Basic personal information
-        firstname: document.item?.firstname || "",
-        lastname: document.item?.lastname || "",
-        email: document.item?.email || "",
-        phone: document.item?.phone || "",
-        address: document.item?.address || "",
-        city: document.item?.city || "",
-        country: document.item?.country || "",
-        postalcode: document.item?.postalcode || "",
-        occupation: document.item?.occupation || "",
-        photo: document.item?.photo || null,
-
-        // Transform employments to ensure proper field names
-        employments: (document.employments || []).map((emp, index) => ({
-          jobTitle: emp.jobTitle || emp.job_title || "",
-          employer: emp.employer || emp.company || "",
-          begin: emp.begin || emp.start_date || "",
-          end: emp.end || emp.end_date || "",
-          description: emp.description || "",
-          date: emp.date || index + 1,
-        })),
-
-        // Transform educations to ensure proper field names
-        educations: (document.educations || []).map((edu, index) => ({
-          degree: edu.degree || edu.qualification || "",
-          school: edu.school || edu.institution || "",
-          started: edu.started || edu.start_year || "",
-          finished: edu.finished || edu.end_year || "",
-          description: edu.description || "",
-          date: edu.date || index + 1,
-        })),
-
-        // Transform skills to match CV template expectations (skillName -> name)
-        skills: (document.skills || []).map((skill, index) => ({
-          name: skill.skillName || skill.name || skill.skill || "",
-          rating: typeof skill.rating === 'number' && Number.isFinite(skill.rating) ? skill.rating : null,
-          date: skill.date || index + 1,
-        })),
-
-        // Transform languages to ensure proper field names
-        languages: (document.languages || []).map((lang, index) => ({
-          name: lang.name || lang.language || "",
-          level: lang.level || lang.proficiency || "",
-          date: lang.date || index + 1,
-        })),
-
-        // Template and export metadata
-        template: templateName,
-        resumeName: templateName, // This is what the backend might be looking for
-        summary: document.item?.summary || '',
-        components: document.item?.components || [],
-        colors: document.item?.colors || this.getTemplateColors(templateName),
-        language: language,
-      };
-
-      // Save the canonical owner-scoped draft before export; never publish implicitly.
-      const userId = fire.auth().currentUser?.uid;
-      if (!userId) throw new Error('Authentication is required');
-      const saved = await saveResumeDraft(userId, resumeId, completeResumeData, { expectedRevision: Number(document.item?.revision) || 0 });
-      document.item = { ...saved.data, revision: saved.revision };
 
       const currentUser = fire.auth().currentUser;
       const token = currentUser && typeof currentUser.getIdToken === 'function' ? await currentUser.getIdToken().catch(() => null) : null;
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // Call the export API
       const response = await axios.post(
-        config.provider + "://" + config.backendUrl + "/api/export",
+        `${config.provider}://${config.backendUrl}/api/export`,
         {
           language: language,
           resumeId: resumeId,
@@ -616,12 +548,9 @@ class DashboardHomepage extends Component {
         }
       );
 
-      // Verify the payload really is a PDF before saving it. A blob response type also
-      // delivers JSON error bodies, which would otherwise be saved as a corrupt .pdf.
       const pdfBlob = await toValidatedPdfBlob(response.data);
-      const fileName = pdfFileName(document.item?.firstname, document.item?.lastname);
+      const fileName = pdfFileName(document.item?.firstname || document.firstname, document.item?.lastname || document.lastname);
 
-      // Track the download event
       trackDownload(templateName, "resume");
       trackEvent("download_document", "Documents", templateName, 1);
       trackEngagement("document_downloaded", {
@@ -634,23 +563,17 @@ class DashboardHomepage extends Component {
         IncrementDownloads(),
         addOneToNumberOfDocumentsDownloaded(fire.auth().currentUser?.uid),
       ]);
+      this.props.showToast?.("PDF downloaded successfully.", "success");
     } catch (error) {
-      // Track download failure
-      trackEvent(
-        "download_failed",
-        "Documents",
-        document?.template || "Unknown",
-        0
-      );
-      // A failed export must never look like a completed one.
+      console.error("PDF download failed:", error);
+      trackEvent("download_failed", "Documents", document?.template || "Unknown", 0);
       this.props.showToast?.(
-        error?.message?.startsWith('Download failed')
+        error?.message?.startsWith("Download failed")
           ? error.message
-          : 'The PDF could not be generated. Please try again.',
-        'error'
+          : "The PDF could not be generated. Please try again.",
+        "error"
       );
     } finally {
-      // Always remove from downloading set when finished (success or failure)
       this.setState((prevState) => {
         const newDownloadingIds = new Set(prevState.downloadingResumeIds);
         newDownloadingIds.delete(document.id);
@@ -659,96 +582,42 @@ class DashboardHomepage extends Component {
     }
   }
 
-  // Download resume as Word (DOCX)
+  // Download resume as Word (DOCX) using authoritative direct export pipeline
   async downloadResumeDocx(document) {
-    if (this.state.downloadingDocxIds.has(document.id)) {
-      return;
-    }
+    if (!document?.id) return;
+    if (this.state.downloadingDocxIds?.has(document.id)) return;
 
     this.setState((prevState) => ({
-      downloadingDocxIds: new Set(prevState.downloadingDocxIds).add(
-        document.id
-      ),
+      downloadingDocxIds: new Set(prevState.downloadingDocxIds || []).add(document.id),
     }));
 
     try {
-      const templateName =
-        document?.template || document?.item?.template || "Cv1";
+      const templateName = document?.template || document?.item?.template || "Cv1";
       const resumeId = document.id;
       const language = document?.item?.language || "en";
-
-      const completeResumeData = {
-        ...document.item,
-        firstname: document.item?.firstname || "",
-        lastname: document.item?.lastname || "",
-        email: document.item?.email || "",
-        phone: document.item?.phone || "",
-        address: document.item?.address || "",
-        city: document.item?.city || "",
-        country: document.item?.country || "",
-        postalcode: document.item?.postalcode || "",
-        occupation: document.item?.occupation || "",
-        photo: document.item?.photo || null,
-        employments: (document.employments || []).map((emp, index) => ({
-          jobTitle: emp.jobTitle || emp.job_title || "",
-          employer: emp.employer || emp.company || "",
-          begin: emp.begin || emp.start_date || "",
-          end: emp.end || emp.end_date || "",
-          description: emp.description || "",
-          date: emp.date || index + 1,
-        })),
-        educations: (document.educations || []).map((edu, index) => ({
-          degree: edu.degree || edu.qualification || "",
-          school: edu.school || edu.institution || "",
-          started: edu.started || edu.start_year || "",
-          finished: edu.finished || edu.end_year || "",
-          description: edu.description || "",
-          date: edu.date || index + 1,
-        })),
-        skills: (document.skills || []).map((skill, index) => ({
-          name: skill.skillName || skill.name || skill.skill || "",
-          rating: typeof skill.rating === 'number' && Number.isFinite(skill.rating) ? skill.rating : null,
-          date: skill.date || index + 1,
-        })),
-        languages: (document.languages || []).map((lang, index) => ({
-          name: lang.name || lang.language || "",
-          level: lang.level || lang.proficiency || "",
-          date: lang.date || index + 1,
-        })),
-        template: templateName,
-        resumeName: templateName,
-        summary: document.item?.summary || '',
-        components: document.item?.components || [],
-        colors: document.item?.colors || this.getTemplateColors(templateName),
-        language: language,
-      };
-
       const userId = fire.auth().currentUser?.uid;
-      if (!userId) throw new Error('Authentication is required');
-      const saved = await saveResumeDraft(userId, resumeId, completeResumeData, { expectedRevision: Number(document.item?.revision) || 0 });
-      document.item = { ...saved.data, revision: saved.revision };
 
       await executeDocxDownload({
         resumeId,
         resumeName: templateName,
         language,
-        firstname: document.item?.firstname,
-        lastname: document.item?.lastname,
+        firstname: document.item?.firstname || document.firstname,
+        lastname: document.item?.lastname || document.lastname,
         colors: document.item?.colors || null,
         userId,
       });
 
-      this.props.showToast?.('DOCX downloaded.', 'success');
+      this.props.showToast?.("DOCX downloaded successfully.", "success");
     } catch (error) {
-      console.error('DOCX download failed:', error);
-      trackEvent('download_failed_docx', 'Documents', document?.template || 'Unknown', 0);
+      console.error("DOCX download failed:", error);
+      trackEvent("download_failed_docx", "Documents", document?.template || "Unknown", 0);
       this.props.showToast?.(
-        error?.message?.startsWith('Download failed') ? error.message : 'The DOCX could not be generated. Please try again.',
-        'error'
+        error?.message?.startsWith("Download failed") ? error.message : "The DOCX could not be generated. Please try again.",
+        "error"
       );
     } finally {
       this.setState((prevState) => {
-        const newSet = new Set(prevState.downloadingDocxIds);
+        const newSet = new Set(prevState.downloadingDocxIds || []);
         newSet.delete(document.id);
         return { downloadingDocxIds: newSet };
       });
@@ -913,19 +782,169 @@ class DashboardHomepage extends Component {
             </div>
           </div>
 
-          {/* Category Folder Filter Tabs & Activity Stream */}
-          <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-200 gap-2 overflow-x-auto">
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => this.setState({ activeTab: 'all' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.fetchedDocuments?.length || 0})</button>
+          {/* Career Command Center — AI Next Best Action Hub */}
+          {(() => {
+            const docs = this.state.fetchedDocuments || [];
+            const hasResumes = docs.length > 0;
+            const topDoc = hasResumes ? docs[0] : null;
+            const topAtsResult = topDoc ? calculateAtsScore(topDoc.item || topDoc) : null;
+            const topAtsScore = topAtsResult?.qualityScore || 0;
+            const rawName = (this.props.profile?.name || '').trim();
+            const candidateName = rawName && rawName !== 'null null' && rawName !== 'undefined undefined' ? rawName.split(' ')[0] : 'Candidate';
+
+            if (!hasResumes) {
+              return (
+                <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 p-6 text-white shadow-md border border-indigo-700/50">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-white/10 rounded-xl backdrop-blur-xs shrink-0">
+                        <FaMagic className="w-6 h-6 text-indigo-300" />
+                      </div>
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-xs font-semibold mb-2 border border-indigo-400/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse"></span>
+                          Career Command Center • Step 1
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                          Welcome, {candidateName}! Build your primary job-ready resume
+                        </h2>
+                        <p className="text-xs sm:text-sm text-indigo-200 mt-1 max-w-2xl leading-relaxed">
+                          Choose from 51 certified high-fidelity templates with automated STAR bullet point generation and instant ATS keyword scoring.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem("currentResumeId");
+                          localStorage.removeItem("currentResumeItem");
+                          this.props.navigate("/build-resume/heading");
+                        }}
+                        className="px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-900 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>Create Primary Resume</span>
+                        <FaArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            if (topAtsScore < 75) {
+              return (
+                <div className="mb-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-md border border-slate-700">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-amber-500/20 rounded-xl backdrop-blur-xs border border-amber-500/30 shrink-0">
+                        <FaBolt className="w-6 h-6 text-amber-400" />
+                      </div>
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold mb-2 border border-amber-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                          Next Best Action • ATS Score: {topAtsScore}/100
+                        </div>
+                        <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                          Optimize "{topDoc.item?.title || 'Resume'}" for Recruiter ATS Passes
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                          Your resume match score can be increased to 85%+ by adding measurable metrics in work experience and enriching relevant technical skills.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+                      <button
+                        onClick={() => this.setAsCurrentResume(topDoc.id, topDoc)}
+                        className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>Optimize Resume</span>
+                        <FaArrowRight className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => this.props.navigate("/dashboard/interview")}
+                        className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold rounded-xl border border-white/20 transition-all cursor-pointer"
+                      >
+                        Mock Interview
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 p-6 text-white shadow-md border border-emerald-800/40">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-emerald-500/20 rounded-xl backdrop-blur-xs border border-emerald-500/30 shrink-0">
+                      <FaCheckCircle className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2 border border-emerald-500/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        Market-Ready • ATS Score: {topAtsScore}/100
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                        Your Resume is Market-Ready, {candidateName}!
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                        High-fidelity content benchmarks achieved. Take the next leap: practice role-specific technical &amp; behavioral drills with AI Interview Coach.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+                    <button
+                      onClick={() => this.props.navigate("/dashboard/interview")}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>Start Mock Interview</span>
+                      <FaArrowRight className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => this.props.navigate("/dashboard/job-tracker")}
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold rounded-xl border border-white/20 transition-all cursor-pointer"
+                    >
+                      Track Applications
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Real-Time Search & Category Folder Filter Tabs */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              <button onClick={() => this.setState({ activeTab: 'all' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.fetchedDocuments?.length || 0})</button>
               {this.state.enableCoverLetterModule && (
-              <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
+              <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
               )}
-              <button onClick={() => this.setState({ activeTab: 'tech' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'tech' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech & Engineering</button>
-              <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${this.state.activeTab === 'mgmt' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
+              <button onClick={() => this.setState({ activeTab: 'tech' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'tech' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Tech &amp; Engineering</button>
+              <button onClick={() => this.setState({ activeTab: 'mgmt' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'mgmt' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Management</button>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <FaClock className="w-3 h-3 text-slate-400" />
-              <span>Last activity: Today at {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            
+            {/* Search Box */}
+            <div className="flex items-center gap-2">
+              <div className="relative w-full md:w-72">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search resumes by title, role, skill..."
+                  value={this.state.searchQuery}
+                  onChange={(e) => this.setState({ searchQuery: e.target.value })}
+                  className="w-full pl-8 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  aria-label="Search resumes"
+                />
+                {this.state.searchQuery && (
+                  <button
+                    onClick={() => this.setState({ searchQuery: '' })}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-0.5 rounded"
+                    aria-label="Clear search"
+                  >
+                    <FaTimes />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1079,6 +1098,14 @@ class DashboardHomepage extends Component {
               this.state.displayDocuments.length > 0 &&
               this.state.displayDocuments
                 .filter(document => {
+                  const query = (this.state.searchQuery || '').trim().toLowerCase();
+                  if (query) {
+                    const matchTitle = (document.item?.title || '').toLowerCase().includes(query);
+                    const matchName = `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.toLowerCase().includes(query);
+                    const matchOcc = (document.item?.occupation || '').toLowerCase().includes(query);
+                    const matchSkills = Array.isArray(document.skills) ? document.skills.some(s => (s.name || s.skill || s || '').toLowerCase().includes(query)) : false;
+                    if (!matchTitle && !matchName && !matchOcc && !matchSkills) return false;
+                  }
                   if (this.state.activeTab === 'tech') {
                     const str = JSON.stringify(document).toLowerCase();
                     return str.includes('engineer') || str.includes('developer') || str.includes('tech') || str.includes('software');
@@ -1091,6 +1118,7 @@ class DashboardHomepage extends Component {
                 })
                 .map((document) => {
                 if (document) {
+                  const atsScore = calculateAtsScore(document.item)?.qualityScore || 0;
                   return (
                     <div key={document.id} className="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between">
                       {/* Header */}
@@ -1107,16 +1135,25 @@ class DashboardHomepage extends Component {
                               ? `${document.item?.firstname || ''} ${document.item?.lastname || ''}`.trim()
                               : t("DashboardHomepage.card.untitledResume", "Untitled Resume")}
                           </button>
-                          <p className="text-sm text-slate-500 mt-1">
-                            {t("DashboardHomepage.card.created", "Created")}{" "}
-                            {new Date(
-                              document.item?.created_at?.seconds * 1000 || Date.now()
-                            ).toLocaleDateString("en-US", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="text-xs text-slate-500">
+                              {t("DashboardHomepage.card.created", "Created")}{" "}
+                              {new Date(
+                                document.item?.created_at?.seconds * 1000 || Date.now()
+                              ).toLocaleDateString("en-US", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              atsScore >= 75 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              atsScore >= 50 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                              'bg-amber-50 text-amber-700 border-amber-200'
+                            }`} title="ATS Readiness Score">
+                              ATS: {atsScore}/100
+                            </span>
+                          </div>
                         </div>
 
                         {/* Action Menu */}
@@ -1150,6 +1187,12 @@ class DashboardHomepage extends Component {
                                 </button>
                                 <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.duplicateResume(document); this.setState({ openDropdownId: null }); }}>
                                   <FaFileAlt className="w-3 h-3 mr-3" /><span>Duplicate</span>
+                                </button>
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResume(document); this.setState({ openDropdownId: null }); }}>
+                                  <FaDownload className="w-3 h-3 mr-3 text-emerald-600" /><span>Download PDF</span>
+                                </button>
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.downloadResumeDocx(document); this.setState({ openDropdownId: null }); }}>
+                                  <FaFileAlt className="w-3 h-3 mr-3 text-blue-600" /><span>Download Word (DOCX)</span>
                                 </button>
                                 <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left" onClick={(e) => {
                                     e.preventDefault();

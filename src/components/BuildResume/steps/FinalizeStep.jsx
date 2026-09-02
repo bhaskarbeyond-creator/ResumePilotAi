@@ -3,10 +3,10 @@ import download from 'downloadjs';
 import fire from '../../../services/firebase';
 import { executeDocxDownload } from '../../../utils/docxDownload';
 
-const FinalizeStep = ({ resumeData, updateResumeData }) => {
-    const [selectedTemplate, setSelectedTemplate] = useState('Cv1');
+const FinalizeStep = ({ resumeData = {}, updateResumeData }) => {
+    const [selectedTemplate, setSelectedTemplate] = useState(resumeData?.template || 'Cv1');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [resumeTitle, setResumeTitle] = useState(resumeData.title || 'My Resume');
+    const [resumeTitle, setResumeTitle] = useState(resumeData?.title || 'My Resume');
 
     // Template options
     const templates = [
@@ -43,7 +43,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
         });
 
         // Mark step as completed
-        const completedSteps = [...(resumeData.completedSteps || [])];
+        const completedSteps = [...(resumeData?.completedSteps || [])];
         if (!completedSteps.includes(5)) {
             completedSteps.push(5);
             updateResumeData({
@@ -72,25 +72,26 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
         const personalFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
         personalFields.forEach((field) => {
             total += 4;
-            if (resumeData[field]?.trim()) score += 4;
+            if (String(resumeData?.[field] || '').trim()) score += 4;
         });
 
         // Work Experience (30 points)
         total += 30;
-        const validEmployments = (resumeData.employments || []).filter((emp) => emp.jobTitle?.trim() && emp.employer?.trim());
+        const validEmployments = (resumeData?.employments || []).filter((emp) => String(emp?.jobTitle || '').trim() && String(emp?.employer || '').trim());
         score += Math.min(30, validEmployments.length * 15);
 
         // Skills (25 points)
         total += 25;
-        const validSkills = (resumeData.skills || []).filter((skill) => (skill.skillName || skill.name)?.trim());
+        const validSkills = (resumeData?.skills || []).filter((skill) => String(skill?.skillName || skill?.name || '').trim());
         score += Math.min(25, validSkills.length * 5);
 
         // Summary (25 points)
         total += 25;
-        if (resumeData.summary?.trim()) {
-            if (resumeData.summary.length >= 200) score += 25;
-            else if (resumeData.summary.length >= 100) score += 15;
-            else if (resumeData.summary.length >= 50) score += 10;
+        const summaryText = String(resumeData?.summary || '').trim();
+        if (summaryText) {
+            if (summaryText.length >= 200) score += 25;
+            else if (summaryText.length >= 100) score += 15;
+            else if (summaryText.length >= 50) score += 10;
         }
 
         return { score, total, percentage: Math.round((score / total) * 100) };
@@ -102,13 +103,13 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
         setIsGenerating(true);
         try {
             if (format === 'docx') {
-                const resumeId = localStorage.getItem('currentResumeId') || resumeData.id;
+                const resumeId = localStorage.getItem('currentResumeId') || resumeData?.id;
                 const userId = fire.auth().currentUser?.uid;
-                const templateName = resumeData.template || selectedTemplate || 'Cv1';
+                const templateName = resumeData?.template || selectedTemplate || 'Cv1';
                 await executeDocxDownload({
                     resumeId,
                     resumeName: templateName,
-                    language: resumeData.language || 'en',
+                    language: resumeData?.language || 'en',
                     firstname: resumeData?.firstname,
                     lastname: resumeData?.lastname,
                     colors: resumeData?.colors || null,
@@ -117,7 +118,7 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
             } else if (format === 'pdf') {
                 alert('Please use the top navigation download button for PDF export.');
             } else if (format === 'txt') {
-                const textContent = `${resumeData.firstname || ''} ${resumeData.lastname || ''}\n${resumeData.email || ''}\n\nSummary:\n${resumeData.summary || ''}`;
+                const textContent = `${resumeData?.firstname || ''} ${resumeData?.lastname || ''}\n${resumeData?.email || ''}\n\nSummary:\n${resumeData?.summary || ''}`;
                 const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
                 download(blob, 'resume.txt', 'text/plain');
             }
@@ -186,19 +187,19 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
                     <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="text-center">
                             <div className="font-medium text-gray-900">Personal Info</div>
-                            <div className="text-gray-600">{resumeData.firstname && resumeData.lastname && resumeData.email && resumeData.phone ? '✓' : '○'}</div>
+                            <div className="text-gray-600">{resumeData?.firstname && resumeData?.lastname && resumeData?.email && resumeData?.phone ? '✓' : '○'}</div>
                         </div>
                         <div className="text-center">
                             <div className="font-medium text-gray-900">Work Experience</div>
-                            <div className="text-gray-600">{(resumeData.employments || []).filter((emp) => emp.jobTitle?.trim()).length > 0 ? '✓' : '○'}</div>
+                            <div className="text-gray-600">{(resumeData?.employments || []).filter((emp) => String(emp?.jobTitle || '').trim()).length > 0 ? '✓' : '○'}</div>
                         </div>
                         <div className="text-center">
                             <div className="font-medium text-gray-900">Skills</div>
-                            <div className="text-gray-600">{(resumeData.skills || []).filter((skill) => (skill.skillName || skill.name)?.trim()).length >= 3 ? '✓' : '○'}</div>
+                            <div className="text-gray-600">{(resumeData?.skills || []).filter((skill) => String(skill?.skillName || skill?.name || '').trim()).length >= 3 ? '✓' : '○'}</div>
                         </div>
                         <div className="text-center">
                             <div className="font-medium text-gray-900">Summary</div>
-                            <div className="text-gray-600">{resumeData.summary?.trim().length >= 100 ? '✓' : '○'}</div>
+                            <div className="text-gray-600">{String(resumeData?.summary || '').trim().length >= 100 ? '✓' : '○'}</div>
                         </div>
                     </div>
                 </div>
@@ -250,15 +251,15 @@ const FinalizeStep = ({ resumeData, updateResumeData }) => {
                                 </svg>
                             </div>
                             <h2 className="text-xl font-bold text-gray-900 mb-1">
-                                {resumeData.firstname} {resumeData.lastname}
+                                {resumeData?.firstname} {resumeData?.lastname}
                             </h2>
-                            <p className="text-gray-600 mb-2">{resumeData.occupation}</p>
+                            <p className="text-gray-600 mb-2">{resumeData?.occupation}</p>
                             <p className="text-sm text-gray-500">
-                                {resumeData.email} • {resumeData.phone}
+                                {resumeData?.email} • {resumeData?.phone}
                             </p>
-                            {resumeData.city && resumeData.country && (
+                            {resumeData?.city && resumeData?.country && (
                                 <p className="text-sm text-gray-500">
-                                    {resumeData.city}, {resumeData.country}
+                                    {resumeData?.city}, {resumeData?.country}
                                 </p>
                             )}
                         </div>

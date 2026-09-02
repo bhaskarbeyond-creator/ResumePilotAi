@@ -71,7 +71,7 @@ const ProjectsStep = ({ resumeData, updateResumeData }) => {
     // Auto-save on change — same 500 ms debounce pattern as other steps
     useEffect(() => {
         const timer = setTimeout(() => {
-            const validProjects = projects.filter((p) => (p.title || '').trim() !== '');
+            const validProjects = projects.filter((p) => String(p?.title || p?.name || '').trim() !== '');
 
             // Mark the step complete once at least one titled project exists,
             // and unmark it when the list no longer has any — the same contract

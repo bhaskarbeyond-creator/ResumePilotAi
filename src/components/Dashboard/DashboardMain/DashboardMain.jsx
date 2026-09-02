@@ -29,6 +29,7 @@ const JobTracker = lazy(() => import('../../AppliedJobs/JobTracker'));
 const EmployerDashboard = lazy(() => import('../EmployerDashboard/EmployerDashboard'));
 const CompaniesManagement = lazy(() => import('../EmployerDashboard/CompaniesManagement'));
 const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessages'));
+const DashboardSupport = lazy(() => import('../DashboardSupport/DashboardSupport'));
 const CoverLetter = lazy(() => import('../../CoverLetter/CoverLetter'));
 const Billing = lazy(() => import('../../Billing/Plans/Plans'));
 class DashboardMain extends Component {
@@ -537,6 +538,9 @@ class DashboardMain extends Component {
                                 <Route path="my-companies" element={<CompaniesManagement showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
                                 <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />
                                 <Route path="plans" element={<Billing user={this.state.user} showToast={this.showToast} />} />
+                                <Route path="support" element={<DashboardSupport showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                <Route path="tickets" element={<Navigate to="/dashboard/support" replace />} />
+                                <Route path="help" element={<Navigate to="/dashboard/support" replace />} />
                             </Routes>
                         </Suspense>
                     </div>

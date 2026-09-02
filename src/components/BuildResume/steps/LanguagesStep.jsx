@@ -93,11 +93,11 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
     };
 
     const addHobby = (hobbyName) => {
-        const trimmed = (hobbyName || hobbyInput).trim();
+        const trimmed = String(hobbyName || hobbyInput || '').trim();
         if (!trimmed) return;
         const exists = hobbies.some(h => {
-            const val = typeof h === 'string' ? h : (h.name || h.hobby || '');
-            return val.toLowerCase() === trimmed.toLowerCase();
+            const val = typeof h === 'string' ? h : (h?.name || h?.hobby || '');
+            return String(val).toLowerCase() === trimmed.toLowerCase();
         });
         if (!exists) {
             setHobbies(prev => [...prev, trimmed]);
@@ -112,7 +112,7 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
     const handleSave = () => {
         updateResumeData({ languages, hobbies });
 
-        const validLangs = languages.filter((lang) => (lang.name || lang.language || '').trim() !== '');
+        const validLangs = languages.filter((lang) => String(lang?.name || lang?.language || '').trim() !== '');
 
         if (validLangs.length > 0 || hobbies.length > 0) {
             const completedSteps = [...(resumeData.completedSteps || [])];
@@ -338,7 +338,7 @@ const LanguagesStep = ({ resumeData, updateResumeData }) => {
                     <button
                         type="button"
                         onClick={() => addHobby()}
-                        disabled={!hobbyInput.trim()}
+                        disabled={!String(hobbyInput || '').trim()}
                         className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer h-[42px] shrink-0"
                     >
                         <MdAdd className="w-4 h-4" />

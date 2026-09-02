@@ -163,8 +163,8 @@ export function duplicateResumeItem(items, id, patch = {}) {
 export function resumeHasMeaningfulData(input) {
     const resume = normalizeResumeData(input);
     return Boolean([resume.firstname, resume.lastname, resume.email, resume.phone, resume.occupation, resume.summary]
-        .some(value => value.trim()) || ['employments', 'educations', 'skills', 'languages', 'projects', 'certifications', 'achievements', 'references', 'customSections']
-        .some(key => resume[key].length));
+        .some(value => String(value || '').trim()) || ['employments', 'educations', 'skills', 'languages', 'projects', 'certifications', 'achievements', 'references', 'customSections']
+        .some(key => resume[key]?.length));
 }
 
 export function createResumeRecoveryEnvelope({ userId, resumeId, revision = 0, data }) {
