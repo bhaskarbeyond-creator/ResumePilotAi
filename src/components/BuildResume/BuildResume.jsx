@@ -45,7 +45,7 @@ import logo from '../../assets/logo/logo.png';
 import Toasts from '../Toasts/Toats';
 
 // Import animation library for toast animations
-import { evaluateDownloadAccess, parseSafeDate } from '../../utils/subscriptionUtils';
+import { evaluateDownloadAccess, parseSafeDate, isPaidMembershipTier } from '../../utils/subscriptionUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import user membership functions and modals
@@ -94,6 +94,7 @@ const BuildResume = () => {
     const [showPremiumUpgradeModal, setShowPremiumUpgradeModal] = useState(false);
     const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
     const [pendingExportType, setPendingExportType] = useState(null);
+    const [freeTierAccess, setFreeTierAccess] = useState(null);
 
     // User data state (similar to how other components handle it)
     const [userData, setUserData] = useState({
@@ -170,6 +171,10 @@ const BuildResume = () => {
                 ? settings.modules.enablePublicSharingModule === true
                 : true;
             setIsPublicSharingEnabled(sharingEnabled);
+
+            if (settings?.watermark) {
+                setFreeTierAccess(settings.watermark);
+            }
         };
 
         getSystemSettings().then((settings) => {
@@ -177,9 +182,13 @@ const BuildResume = () => {
         }).catch(() => {
             setIsImportEnabled(false);
             setIsAtsEnabled(false);
+            setFreeTierAccess({});
         });
 
         const handleSettingsUpdated = (e) => {
+            if (e.detail?.category === 'watermark' && e.detail.settings) {
+                setFreeTierAccess(e.detail.settings);
+            }
             if (e.detail?.modules) {
                 syncSettings({ modules: e.detail.modules }, { allowMissingDefault: false });
                 return;
@@ -926,6 +935,16 @@ const BuildResume = () => {
         const userId = userIdRef.current;
         const resumeId = resumeIdRef.current;
         if (!userId || !resumeId) return;
+
+        const isPaid = isPaidMembershipTier(userData?.membership);
+        const allowShare = isPaid || freeTierAccess?.allowFreeShareLink === true;
+        if (!allowShare) {
+            setShowPreview(false);
+            setPendingExportType('share');
+            setShowPremiumUpgradeModal(true);
+            return;
+        }
+
         setPublicationState(current => ({ ...current, status: 'saving', message: 'Publishing secure review link…' }));
         try {
             if (!await persistLatest({ manual: true })) throw new Error('Save the resume before sharing');
@@ -956,17 +975,16 @@ const BuildResume = () => {
 
     // Enhanced Download PDF functionality with unified subscription verification
     const handleDownload = async () => {
-        if (isDownloading) return;
-
+        if (isDownloading || showPremiumUpgradeModal || showSubscriptionModal) return;
 
         const access = evaluateDownloadAccess({
             user: userData.user,
             membership: userData.membership,
             membershipEnds: userData.membershipEnds,
             subscriptionsStatus: userData.subscriptionsStatus,
+            allowFreeDownload: freeTierAccess?.allowFreePdfDownload === true,
             isStatusLoaded: authChecked
         });
-
 
         if (access.allowed) {
             showToast('Download');
@@ -975,6 +993,7 @@ const BuildResume = () => {
         }
 
         if (access.reason === 'LOGIN_REQUIRED') {
+            setShowPreview(false);
             await persistLatest({ manual: true });
             try {
                 sessionStorage.setItem('pendingDownloadAfterAuth', JSON.stringify({
@@ -989,9 +1008,10 @@ const BuildResume = () => {
         }
 
         if (access.reason === 'PREMIUM_REQUIRED') {
-            await persistLatest({ manual: true });
+            setShowPreview(false);
             setPendingExportType('pdf');
             setShowPremiumUpgradeModal(true);
+            await persistLatest({ manual: true });
             return;
         }
     };
@@ -1040,6 +1060,12 @@ const BuildResume = () => {
             console.error('Download failed:', error);
             // Track download failure
             trackEvent('download_failed', 'Documents', currentTemplate, 0);
+            if (error?.response?.status === 402 || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED') {
+                setShowPreview(false);
+                setPendingExportType('pdf');
+                setShowPremiumUpgradeModal(true);
+                return;
+            }
             // Prefer the server's reason (e.g. subscription required) over a generic string.
             alert(error?.code === 'EXPORT_NOT_PDF' && error.message
                 ? error.message
@@ -1050,13 +1076,14 @@ const BuildResume = () => {
     };
 
     const handleDocxDownload = async () => {
-        if (isDownloadingDocx) return;
+        if (isDownloadingDocx || showPremiumUpgradeModal || showSubscriptionModal) return;
 
         const access = evaluateDownloadAccess({
             user: userData.user,
             membership: userData.membership,
             membershipEnds: userData.membershipEnds,
             subscriptionsStatus: userData.subscriptionsStatus,
+            allowFreeDownload: freeTierAccess?.allowFreeDocxDownload === true,
             isStatusLoaded: authChecked
         });
 
@@ -1067,6 +1094,7 @@ const BuildResume = () => {
         }
 
         if (access.reason === 'LOGIN_REQUIRED') {
+            setShowPreview(false);
             await persistLatest({ manual: true });
             try {
                 sessionStorage.setItem('pendingDownloadAfterAuth', JSON.stringify({
@@ -1081,9 +1109,10 @@ const BuildResume = () => {
         }
 
         if (access.reason === 'PREMIUM_REQUIRED') {
-            await persistLatest({ manual: true });
+            setShowPreview(false);
             setPendingExportType('docx');
             setShowPremiumUpgradeModal(true);
+            await persistLatest({ manual: true });
             return;
         }
     };
@@ -1107,6 +1136,12 @@ const BuildResume = () => {
         } catch (error) {
             console.error('DOCX Download failed:', error);
             trackEvent('download_failed_docx', 'Documents', currentTemplate, 0);
+            if (error?.response?.status === 402 || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED') {
+                setShowPreview(false);
+                setPendingExportType('docx');
+                setShowPremiumUpgradeModal(true);
+                return;
+            }
             alert(error?.code === 'EXPORT_NOT_DOCX' && error.message
                 ? error.message
                 : t('BuildResume.errors.downloadFailed'));
@@ -2126,6 +2161,8 @@ const BuildResume = () => {
                 showPreview={showPreview}
                 setShowPreview={setShowPreview}
                 resumeData={previewData}
+                onShare={handlePublishForReview}
+                isSharing={publicationState.status === 'saving'}
                 onDownload={handleDownload}
                 isDownloading={isDownloading}
                 onDownloadDocx={handleDocxDownload}

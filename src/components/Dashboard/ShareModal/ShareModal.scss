@@ -18,19 +18,23 @@ $light-text: #999999;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
+  pointer-events: auto;
+  padding: 1rem;
 }
 
 .share-modal {
   width: 100%;
   max-width: 500px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.2), 0 10px 15px -5px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   overflow: hidden;
   
   .share-modal-header {
@@ -216,6 +220,28 @@ $light-text: #999999;
         
         &.copied {
           background-color: $success-color;
+        }
+      }
+
+      .open-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 16px;
+        background-color: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 14px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        
+        &:hover {
+          background-color: #e2e8f0;
+          color: #0f172a;
         }
       }
     }

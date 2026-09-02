@@ -323,7 +323,12 @@ class MySQLRepository {
                 'SELECT * FROM resumes WHERE id = ? AND user_id = ? FOR UPDATE',
                 [resumeId, userId]
             );
-            if (!resumeRows.length) throw new Error('Resume not found');
+            if (!resumeRows.length) {
+                const notFound = new Error('Resume not found');
+                notFound.status = 404;
+                notFound.code = 'RESUME_NOT_FOUND';
+                throw notFound;
+            }
             const sourceRev = Number(resumeRows[0].revision || 0);
 
             const [pbRows] = await connection.query(
@@ -378,7 +383,12 @@ class MySQLRepository {
             await connection.beginTransaction();
             const [pbRows] = await connection.query('SELECT * FROM public_resumes WHERE id = ? FOR UPDATE', [resumeId]);
             if (!pbRows.length) return { isPublished: false, publicationRevision: 0 };
-            if (pbRows[0].owner_uid !== userId) throw new Error('Access denied');
+            if (pbRows[0].owner_uid !== userId) {
+                const denied = new Error('Access denied');
+                denied.status = 403;
+                denied.code = 'ACCESS_DENIED';
+                throw denied;
+            }
 
             const current = Number(pbRows[0].publication_revision || 0);
             if (expectedPublicationRevision !== null && current !== Number(expectedPublicationRevision)) {

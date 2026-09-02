@@ -519,6 +519,8 @@ class DashboardMain extends Component {
                                                 country: this.state.profile?.country || '',
                                                 occupation: this.state.profile?.occupation || '',
                                             }}
+                                            membership={this.state.membership}
+                                            role={this.state.role}
                                             showFavorites={this.showFavorites}
                                             showToast={this.showToast}
                                             sidebarCollapsed={this.state.sidebarCollapsed}

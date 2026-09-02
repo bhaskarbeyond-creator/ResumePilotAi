@@ -14,12 +14,14 @@ import config from "../../../conf/configuration";
 import { trackDownload, trackEvent, trackEngagement } from "../../../utils/ga4";
 import { toValidatedPdfBlob, pdfFileName } from "../../../utils/pdfDownload";
 import { executeDocxDownload } from "../../../utils/docxDownload";
+import { isPaidMembershipTier } from "../../../utils/subscriptionUtils";
 import { getTemplateComponent } from "../../../utils/templateRegistry";
 import { calculateAtsScore } from "../../../utils/atsScore";
 import TemplateRenderer from "../../TemplateRenderer";
 import PreviewModal from "../../BuildResume/PreviewModal";
 import PremiumUpgradeModal from "../../common/PremiumUpgradeModal";
 import SubscriptionModal from "../DashboardSettings/SubscriptionModal";
+import ShareModal from "../ShareModal/ShareModal";
 
 const LoaderView = () => {
   const loaderOptions = {
@@ -102,11 +104,23 @@ class DashboardHomepage extends Component {
       loadedTemplates: {}, // Store dynamically loaded template components
       downloadingResumeIds: new Set(), // Track which resumes are currently being downloaded
       downloadingDocxIds: new Set(), // Track which resumes are currently downloading DOCX
+      sharingResumeIds: new Set(), // Track which resumes are currently publishing for share
       isDownloading: false, // Add loading state
       showPreviewModal: false,
       previewingDocument: null,
+      membership: this.props.membership || 'Basic',
+      freeTierAccess: null,
+      shareModal: {
+        isOpen: false,
+        documentId: null,
+        documentTitle: '',
+      },
     };
 
+    this.isPremiumUser = this.isPremiumUser.bind(this);
+    this.allowsPdfExport = this.allowsPdfExport.bind(this);
+    this.allowsDocxExport = this.allowsDocxExport.bind(this);
+    this.allowsShareLink = this.allowsShareLink.bind(this);
     this.addFavorite = this.addFavorite.bind(this);
     this.removeFavorite = this.removeFavorite.bind(this);
     this.getAllDocuments = this.getAllDocuments.bind(this);
@@ -130,6 +144,29 @@ class DashboardHomepage extends Component {
     this.duplicateResume = this.duplicateResume.bind(this);
     this.openDocumentPreview = this.openDocumentPreview.bind(this);
     this.closeDocumentPreview = this.closeDocumentPreview.bind(this);
+  }
+
+  isPremiumUser() {
+    const membership = this.state.membership || this.props.membership || this.state.profile?.membership;
+    return isPaidMembershipTier(membership);
+  }
+
+  allowsPdfExport() {
+    return this.isPremiumUser() || this.state.freeTierAccess?.allowFreePdfDownload === true;
+  }
+
+  allowsDocxExport() {
+    return this.isPremiumUser() || this.state.freeTierAccess?.allowFreeDocxDownload === true;
+  }
+
+  allowsShareLink() {
+    return this.isPremiumUser() || this.state.freeTierAccess?.allowFreeShareLink === true;
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.membership !== prevProps.membership && this.props.membership) {
+      this.setState({ membership: this.props.membership });
+    }
   }
 
   openDocumentPreview(document) {
@@ -213,7 +250,8 @@ class DashboardHomepage extends Component {
         stateProfile[key] = profile[key];
       }
     }
-    this.setState({ profile: stateProfile });
+    const resolvedMembership = profile?.membership || this.state.membership;
+    this.setState({ profile: stateProfile, membership: resolvedMembership });
   }
 
   calculatePages() {
@@ -268,13 +306,15 @@ class DashboardHomepage extends Component {
       const coverEnabled = settings?.modules?.enableCoverLetterModule !== undefined
         ? settings.modules.enableCoverLetterModule === true
         : false;
+      const freeTierAccess = settings?.watermark || {};
       this.setState((prev) => ({
         enableImportModule: enabled,
         enableCoverLetterModule: coverEnabled,
+        freeTierAccess,
         activeTab: !coverEnabled && prev.activeTab === 'cover-letters' ? 'all' : prev.activeTab,
       }));
     }).catch(() => {
-      this.setState({ enableImportModule: false, enableCoverLetterModule: false });
+      this.setState({ enableImportModule: false, enableCoverLetterModule: false, freeTierAccess: {} });
     });
 
     this.handleSystemSettingsUpdated = (e) => {
@@ -293,6 +333,9 @@ class DashboardHomepage extends Component {
         }));
         return;
       }
+      if (e?.detail?.category === 'watermark' && e.detail.settings) {
+        this.setState({ freeTierAccess: e.detail.settings });
+      }
       getSystemSettings().then((settings) => {
         const enabled = settings?.modules?.enableImportModule !== undefined
           ? settings.modules.enableImportModule === true
@@ -300,9 +343,11 @@ class DashboardHomepage extends Component {
         const coverEnabled = settings?.modules?.enableCoverLetterModule !== undefined
           ? settings.modules.enableCoverLetterModule === true
           : false;
+        const freeTierAccess = settings?.watermark || {};
         this.setState((prev) => ({
           enableImportModule: enabled,
           enableCoverLetterModule: coverEnabled,
+          freeTierAccess,
           activeTab: !coverEnabled && prev.activeTab === 'cover-letters' ? 'all' : prev.activeTab,
         }));
       }).catch(() => {});
@@ -413,20 +458,60 @@ class DashboardHomepage extends Component {
   }
 
   async shareResume(document) {
+    const docId = document?.id || document?._id;
+    if (!docId) return;
+    if (this.state.sharingResumeIds?.has(docId)) return;
+    if (this.state.showPremiumUpgradeModal || this.state.showSubscriptionModal) return;
+
+    if (!this.allowsShareLink()) {
+      this.setState({
+        showPreviewModal: false,
+        previewingDocument: null,
+        showPremiumUpgradeModal: true,
+        pendingDownloadDocument: document,
+        pendingDownloadType: 'share',
+      });
+      return;
+    }
+
     const userId = fire.auth().currentUser?.uid;
-    if (!userId) return;
-    const previewWindow = window.open('about:blank', '_blank');
-    if (previewWindow) previewWindow.opener = null;
+    if (!userId) {
+      this.props.showToast?.("Please log in to share your resume.", "error");
+      return;
+    }
+
+    this.setState((prevState) => ({
+      sharingResumeIds: new Set(prevState.sharingResumeIds || []).add(document.id),
+    }));
+
     try {
-      await publishResume(userId, document.id, normalizeResumeData(document.item || document), { expectedRevision: document.revision ?? document.item?.revision ?? null });
-      if (previewWindow) {
-        previewWindow.opener = null;
-        previewWindow.location = `${window.location.origin}/shared/${document.id}`;
-      }
+      await publishResume(
+        userId,
+        document.id,
+        normalizeResumeData(document.item || document),
+        { expectedRevision: document.revision ?? document.item?.revision ?? null }
+      );
+
+      const title = document.item?.firstname && document.item?.lastname
+        ? `${document.item.firstname} ${document.item.lastname}`
+        : (document.item?.title || 'Resume');
+
+      this.setState({
+        shareModal: {
+          isOpen: true,
+          documentId: document.id,
+          documentTitle: title,
+        },
+      });
     } catch (error) {
-      previewWindow?.close();
-      console.error('Unable to share resume:', error);
-      this.props.showToast?.('Resume could not be shared.', 'error');
+      console.error("Unable to share resume:", error);
+      this.props.showToast?.("Resume could not be shared.", "error");
+    } finally {
+      this.setState((prevState) => {
+        const next = new Set(prevState.sharingResumeIds || []);
+        next.delete(document.id);
+        return { sharingResumeIds: next };
+      });
     }
   }
 
@@ -522,11 +607,23 @@ class DashboardHomepage extends Component {
     this.setState({ activeTab: tab });
   }
 
-  // Download resume as PDF
   // Download resume as PDF using authoritative direct export pipeline
   async downloadResume(document) {
-    if (!document?.id) return;
-    if (this.state.downloadingResumeIds.has(document.id)) return;
+    const docId = document?.id || document?._id;
+    if (!docId) return;
+    if (this.state.downloadingResumeIds.has(docId)) return;
+    if (this.state.showPremiumUpgradeModal || this.state.showSubscriptionModal) return;
+
+    if (!this.allowsPdfExport()) {
+      this.setState({
+        showPreviewModal: false,
+        previewingDocument: null,
+        showPremiumUpgradeModal: true,
+        pendingDownloadDocument: document,
+        pendingDownloadType: 'pdf',
+      });
+      return;
+    }
 
     this.setState((prevState) => ({
       downloadingResumeIds: new Set(prevState.downloadingResumeIds).add(document.id),
@@ -575,6 +672,8 @@ class DashboardHomepage extends Component {
       trackEvent("download_failed", "Documents", document?.template || "Unknown", 0);
       if (error?.response?.status === 402 || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED' || error?.message?.toLowerCase().includes('subscription')) {
         this.setState({
+          showPreviewModal: false,
+          previewingDocument: null,
           showPremiumUpgradeModal: true,
           pendingDownloadDocument: document,
           pendingDownloadType: 'pdf'
@@ -598,8 +697,21 @@ class DashboardHomepage extends Component {
 
   // Download resume as Word (DOCX) using authoritative direct export pipeline
   async downloadResumeDocx(document) {
-    if (!document?.id) return;
-    if (this.state.downloadingDocxIds?.has(document.id)) return;
+    const docId = document?.id || document?._id;
+    if (!docId) return;
+    if (this.state.downloadingDocxIds?.has(docId)) return;
+    if (this.state.showPremiumUpgradeModal || this.state.showSubscriptionModal) return;
+
+    if (!this.allowsDocxExport()) {
+      this.setState({
+        showPreviewModal: false,
+        previewingDocument: null,
+        showPremiumUpgradeModal: true,
+        pendingDownloadDocument: document,
+        pendingDownloadType: 'docx',
+      });
+      return;
+    }
 
     this.setState((prevState) => ({
       downloadingDocxIds: new Set(prevState.downloadingDocxIds || []).add(document.id),
@@ -627,6 +739,8 @@ class DashboardHomepage extends Component {
       trackEvent("download_failed_docx", "Documents", document?.template || "Unknown", 0);
       if (error?.response?.status === 402 || error?.code === 'ACTIVE_SUBSCRIPTION_REQUIRED' || error?.message?.toLowerCase().includes('subscription')) {
         this.setState({
+          showPreviewModal: false,
+          previewingDocument: null,
           showPremiumUpgradeModal: true,
           pendingDownloadDocument: document,
           pendingDownloadType: 'docx'
@@ -1210,6 +1324,9 @@ class DashboardHomepage extends Component {
                                 <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
                                   <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
                                 </button>
+                                <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.shareResume(document); this.setState({ openDropdownId: null }); }}>
+                                  <FaShareAlt className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Share Resume</span>
+                                </button>
                                 <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.renameResume(document); this.setState({ openDropdownId: null }); }}>
                                   <FaPencilAlt className="w-3 h-3 mr-3" /><span>Rename</span>
                                 </button>
@@ -1291,14 +1408,37 @@ class DashboardHomepage extends Component {
                         </button>
 
                         {/* Share Button - Secondary Style */}
-                        <button className="w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm" onClick={() => this.shareResume(document)}>
-                          <FaShareAlt className="w-3.5 h-3.5" />
-                          <span>
-                            {t(
-                              "DashboardHomepage.actions.shareResume",
-                              "Share Resume"
-                            )}
-                          </span>
+                        <button
+                          className={`w-full border border-slate-300 text-slate-700 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${
+                            this.state.sharingResumeIds?.has(document.id)
+                              ? "bg-slate-100 cursor-not-allowed opacity-75"
+                              : "bg-white hover:bg-slate-50 cursor-pointer"
+                          }`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!this.state.sharingResumeIds?.has(document.id)) {
+                              this.shareResume(document);
+                            }
+                          }}
+                          disabled={this.state.sharingResumeIds?.has(document.id)}
+                        >
+                          {this.state.sharingResumeIds?.has(document.id) ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                              <span>Publishing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaShareAlt className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>
+                                {t(
+                                  "DashboardHomepage.actions.shareResume",
+                                  "Share Resume"
+                                )}
+                              </span>
+                            </>
+                          )}
                         </button>
 
                         {/* Download Button - Gradient Style */}
@@ -1339,7 +1479,7 @@ class DashboardHomepage extends Component {
                           )}
                         </button>
 
-                        {/* Download Word (DOCX) Button */}
+                        {/* Download Word (DOCX) Button - Visible to all, free users routed to PRO CAREER PASS */}
                         <button className={`w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-sm ${this.state.downloadingDocxIds.has(document.id)
                               ? "bg-slate-400 cursor-not-allowed"
                               : "bg-blue-600 hover:bg-blue-700"
@@ -1571,10 +1711,12 @@ class DashboardHomepage extends Component {
               currentTemplate={this.state.previewingDocument.template || this.state.previewingDocument.item?.template || 'Cv1'}
               getTemplateComponent={getTemplateComponent}
               getTemplateName={(tId) => tId}
+              onShare={() => this.shareResume(this.state.previewingDocument)}
+              isSharing={this.state.sharingResumeIds?.has(this.state.previewingDocument?.id || this.state.previewingDocument?._id)}
               onDownload={() => this.downloadResume(this.state.previewingDocument)}
-              isDownloading={this.state.downloadingResumeIds.has(this.state.previewingDocument.id)}
+              isDownloading={this.state.downloadingResumeIds.has(this.state.previewingDocument.id || this.state.previewingDocument._id)}
               onDownloadDocx={() => this.downloadResumeDocx(this.state.previewingDocument)}
-              isDownloadingDocx={this.state.downloadingDocxIds.has(this.state.previewingDocument.id)}
+              isDownloadingDocx={this.state.downloadingDocxIds.has(this.state.previewingDocument.id || this.state.previewingDocument._id)}
             />
           )}
 
@@ -1606,6 +1748,16 @@ class DashboardHomepage extends Component {
               }
             }}
           />
+
+          {/* Authoritative Canonical Share Modal */}
+          {this.state.shareModal?.isOpen && (
+            <ShareModal
+              isOpen={this.state.shareModal.isOpen}
+              onClose={() => this.setState({ shareModal: { isOpen: false, documentId: null, documentTitle: '' } })}
+              documentId={this.state.shareModal.documentId}
+              documentTitle={this.state.shareModal.documentTitle}
+            />
+          )}
         </div>
       </div>
     );

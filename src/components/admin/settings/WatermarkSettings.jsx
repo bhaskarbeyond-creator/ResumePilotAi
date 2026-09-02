@@ -4,6 +4,9 @@ import { FaStamp, FaCheck, FaTimes, FaSpinner, FaEye } from 'react-icons/fa';
 
 const WatermarkSettings = () => {
     const [watermarkConfig, setWatermarkConfig] = useState({
+        allowFreePdfDownload: false,
+        allowFreeDocxDownload: false,
+        allowFreeShareLink: false,
         enableFreeWatermark: true,
         watermarkText: 'Created with ResumePilot AI (Free Student Plan)',
         opacity: 0.15,
@@ -35,7 +38,7 @@ const WatermarkSettings = () => {
         setSaving(true);
         try {
             await saveSystemSettings('watermark', watermarkConfig);
-            setStatusMessage({ type: 'success', text: 'PDF Watermarking rules saved successfully!' });
+            setStatusMessage({ type: 'success', text: 'Free tier export & watermarking rules saved successfully!' });
         } catch (error) {
             setStatusMessage({ type: 'error', text: `Failed to save settings: ${error.message}` });
         } finally {
@@ -66,12 +69,85 @@ const WatermarkSettings = () => {
                 </div>
             )}
 
+            {/* Granular Free Tier Allowances */}
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
-                    <FaStamp className="text-indigo-600" /> Free Tier PDF Watermark Settings
+                    <FaStamp className="text-indigo-600" /> Free Tier Export & Share Allowances
                 </h3>
                 <p className="text-xs text-slate-500 mb-4">
-                    Automatically print branding watermarks on PDF exports created by non-paying (free) accounts.
+                    Control whether non-paying (Free) candidates can download or share their resumes. When disabled, candidates must purchase the Pro Career Pass.
+                </p>
+
+                <div className="space-y-3">
+                    {/* Toggle 1: PDF */}
+                    <div className="flex items-center justify-between p-3 bg-white rounded border border-slate-200">
+                        <div>
+                            <label htmlFor="allowFreePdfDownload" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                Allow Free Candidates to Download PDF
+                            </label>
+                            <p className="text-xs text-slate-500">
+                                If enabled, free users download PDF with the watermark below. If disabled, clicking Download PDF opens PRO CAREER PASS.
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            id="allowFreePdfDownload"
+                            name="allowFreePdfDownload"
+                            checked={Boolean(watermarkConfig.allowFreePdfDownload)}
+                            onChange={handleChange}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-5 w-5 cursor-pointer"
+                        />
+                    </div>
+
+                    {/* Toggle 2: DOCX */}
+                    <div className="flex items-center justify-between p-3 bg-white rounded border border-slate-200">
+                        <div>
+                            <label htmlFor="allowFreeDocxDownload" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                Allow Free Candidates to Download Word (DOCX)
+                            </label>
+                            <p className="text-xs text-slate-500">
+                                If enabled, free users download DOCX with an editorial branding notice. If disabled, clicking Download Word opens PRO CAREER PASS.
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            id="allowFreeDocxDownload"
+                            name="allowFreeDocxDownload"
+                            checked={Boolean(watermarkConfig.allowFreeDocxDownload)}
+                            onChange={handleChange}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-5 w-5 cursor-pointer"
+                        />
+                    </div>
+
+                    {/* Toggle 3: Share Link */}
+                    <div className="flex items-center justify-between p-3 bg-white rounded border border-slate-200">
+                        <div>
+                            <label htmlFor="allowFreeShareLink" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                Allow Free Candidates to Share Public Review Link
+                            </label>
+                            <p className="text-xs text-slate-500">
+                                If enabled, free users can generate public web links displaying brand banner. If disabled, clicking Share Resume opens PRO CAREER PASS.
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            id="allowFreeShareLink"
+                            name="allowFreeShareLink"
+                            checked={Boolean(watermarkConfig.allowFreeShareLink)}
+                            onChange={handleChange}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-5 w-5 cursor-pointer"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Watermark Styling & Configuration */}
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2 mb-1">
+                    <FaStamp className="text-indigo-600" /> Free Tier Watermark & Branding Rules
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">
+                    Customize branding watermarks applied to free exports when downloads/shares are permitted.
                 </p>
 
                 <div className="space-y-4">
@@ -80,16 +156,16 @@ const WatermarkSettings = () => {
                             type="checkbox"
                             id="enableFreeWatermark"
                             name="enableFreeWatermark"
-                            checked={watermarkConfig.enableFreeWatermark}
+                            checked={watermarkConfig.enableFreeWatermark !== false}
                             onChange={handleChange}
-                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-5 w-5"
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-5 w-5 cursor-pointer"
                         />
                         <div>
-                            <label htmlFor="enableFreeWatermark" className="text-sm font-semibold text-slate-800">
-                                Apply Watermark to Free Plan PDF Exports
+                            <label htmlFor="enableFreeWatermark" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                Apply Watermark to Free Tier Exports
                             </label>
                             <p className="text-xs text-slate-500">
-                                Paid/Premium subscribers will automatically download clean PDFs without watermarks.
+                                Paid/Premium subscribers will always download clean, 100% watermark-free resumes.
                             </p>
                         </div>
                     </div>
@@ -137,7 +213,7 @@ const WatermarkSettings = () => {
                                 step="0.05"
                                 value={watermarkConfig.opacity}
                                 onChange={handleChange}
-                                className="w-full accent-indigo-600"
+                                className="w-full accent-indigo-600 cursor-pointer"
                             />
                         </div>
                     </div>

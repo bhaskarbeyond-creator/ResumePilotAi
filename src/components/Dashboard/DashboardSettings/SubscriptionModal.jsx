@@ -86,6 +86,14 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
 
     useEffect(() => {
         if (!isOpen) return undefined;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
         const handleMembershipUpdated = () => {
             if (typeof onSuccess === 'function') {
                 onSuccess();
@@ -253,7 +261,7 @@ const SubscriptionModal = ({ isOpen, onClose, user, onSuccess }) => {
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200"
+            className="fixed inset-0 z-[10000] bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200 pointer-events-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="subscription-modal-title"

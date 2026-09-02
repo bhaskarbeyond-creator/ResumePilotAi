@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import TemplateRenderer from '../TemplateRenderer';
 import { useTranslation } from 'react-i18next';
 
-const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, onDownloadDocx, isDownloadingDocx, currentTemplate = 'Cv1', getTemplateName }) => {
+const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isDownloading, onDownloadDocx, isDownloadingDocx, onShare, isSharing, currentTemplate = 'Cv1', getTemplateName }) => {
     const { t, i18n } = useTranslation('common');
     const [isVisible, setIsVisible] = useState(false);
     const dialogRef = useRef(null);
@@ -108,6 +108,34 @@ const PreviewModal = ({ showPreview, setShowPreview, resumeData, onDownload, isD
                         </div>
 
                         <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                            {/* Enhanced Share Resume Button */}
+                            {onShare && (
+                                <button
+                                    onClick={onShare}
+                                    disabled={isSharing}
+                                    className={`relative px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm shadow-sm ${
+                                        isSharing
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                            : 'bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-indigo-600 shadow-slate-200 hover:shadow-md transform hover:-translate-y-0.5'
+                                    }`}>
+                                    {isSharing ? (
+                                        <>
+                                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                            <span className="hidden sm:inline">{t('PreviewModal.actions.sharing', 'Sharing...')}</span>
+                                            <span className="sm:hidden">{t('PreviewModal.actions.sharingShort', 'Share...')}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                            </svg>
+                                            <span className="hidden sm:inline">{t('PreviewModal.actions.shareResume', 'Share Resume')}</span>
+                                            <span className="sm:hidden">{t('PreviewModal.actions.shareResumeShort', 'Share')}</span>
+                                        </>
+                                    )}
+                                </button>
+                            )}
+
                             {/* Enhanced Download Word (DOCX) Button */}
                             {onDownloadDocx && (
                                 <button

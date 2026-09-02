@@ -68,7 +68,7 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
   let allowsAllTemplates = false;
   let removesWatermark = false;
 
-  if (admin) {
+  if (admin && (membership === 'Admin' || isB2CSubActive || isEnterprise)) {
     effectiveTier = 'Admin';
     dailyLimit = Number(quotaConfig?.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000);
     allowsDocxExport = true;
@@ -93,6 +93,15 @@ function resolveEffectiveEntitlement(userData = {}, { userClaims = {}, tenantDat
     allowsDocxExport = true;
     allowsAllTemplates = true;
     removesWatermark = true;
+  } else if (admin) {
+    // Admin role without active paid candidate subscription (e.g. SUPER_ADMIN + Basic + INACTIVE):
+    // Role grants administrative console privileges (isAdmin: true, dailyLimit for admin tasks),
+    // but candidate resume features behave strictly according to paid entitlement (Basic tier).
+    effectiveTier = 'Basic';
+    dailyLimit = Number(quotaConfig?.adminDailyLimit || process.env.AI_ADMIN_DAILY_LIMIT || 10000);
+    allowsDocxExport = false;
+    allowsAllTemplates = false;
+    removesWatermark = false;
   }
 
   // Account for manual single-user AI quota override if configured

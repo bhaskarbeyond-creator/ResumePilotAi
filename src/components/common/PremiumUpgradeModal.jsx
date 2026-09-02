@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSubscriptionStatus } from '../../services/api/platform';
@@ -18,6 +18,10 @@ const PremiumUpgradeModal = ({
     resumeTitle = 'Resume'
 }) => {
     const { t } = useTranslation('common');
+    const modalRef = useRef(null);
+    const upgradeBtnRef = useRef(null);
+    const returnFocusRef = useRef(null);
+
     const [pricing, setPricing] = useState({
         monthlyPrice: null,
         yearlyPrice: null,
@@ -61,12 +65,48 @@ const PremiumUpgradeModal = ({
         return () => { isMounted = false; };
     }, [isOpen]);
 
-    // Keyboard accessibility: Close on Escape
+    // Body scroll locking and focus management
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        document.body.style.overflow = 'hidden';
+        returnFocusRef.current = document.activeElement;
+
+        const focusTimer = setTimeout(() => {
+            upgradeBtnRef.current?.focus();
+        }, 50);
+
+        return () => {
+            clearTimeout(focusTimer);
+            document.body.style.overflow = 'unset';
+            returnFocusRef.current?.focus?.();
+        };
+    }, [isOpen]);
+
+    // Keyboard accessibility: Close on Escape and Tab focus trap
     useEffect(() => {
         if (!isOpen) return undefined;
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
+                e.stopPropagation();
                 onClose();
+                return;
+            }
+            if (e.key === 'Tab' && modalRef.current) {
+                const focusable = modalRef.current.querySelectorAll(
+                    'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                );
+                if (focusable.length > 0) {
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -76,18 +116,24 @@ const PremiumUpgradeModal = ({
     if (!isOpen) return null;
 
     const isDocx = downloadType === 'docx';
-    const featureTitle = isDocx ? 'Microsoft Word (.docx)' : 'High-Quality Vector PDF';
+    const isShare = downloadType === 'share';
+    const featureTitle = isDocx 
+        ? 'Microsoft Word (.docx)' 
+        : isShare 
+            ? 'Live Public Share Link' 
+            : 'High-Quality Vector PDF';
 
     return (
         <AnimatePresence>
             <div 
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+                className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm pointer-events-auto"
                 onClick={onClose}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="upgrade-modal-title"
             >
                 <motion.div
+                    ref={modalRef}
                     initial={{ opacity: 0, scale: 0.94, y: 14 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.94, y: 14 }}
@@ -126,7 +172,9 @@ const PremiumUpgradeModal = ({
                             Your Resume Is Ready!
                         </h2>
                         <p className="mt-1 text-sm text-indigo-100/90 leading-relaxed">
-                            Download your polished resume as a {featureTitle} with Pro Career Pass.
+                            {isShare
+                                ? 'Share your live public resume link with Pro Career Pass.'
+                                : `Download your polished resume as a ${featureTitle} with Pro Career Pass.`}
                         </p>
                     </div>
 
@@ -182,6 +230,7 @@ const PremiumUpgradeModal = ({
                         {/* Action Buttons */}
                         <div className="space-y-2.5 pt-1">
                             <button
+                                ref={upgradeBtnRef}
                                 type="button"
                                 onClick={onUpgrade}
                                 disabled={pricing.isLoading || !!pricing.error || pricing.monthlyPrice === null}
@@ -191,7 +240,7 @@ const PremiumUpgradeModal = ({
                                         : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 active:scale-[0.99] shadow-lg shadow-indigo-600/25 cursor-pointer'
                                 }`}
                             >
-                                <span>Upgrade &amp; Download</span>
+                                <span>{isShare ? 'Upgrade & Share' : 'Upgrade & Download'}</span>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
