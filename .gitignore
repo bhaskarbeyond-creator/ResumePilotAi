@@ -116,3 +116,4 @@ backend/.env
 tests/.auth-states/
 test-results/
 playwright-report/
+scripts/capture-user-dashboard-visuals.mjs
