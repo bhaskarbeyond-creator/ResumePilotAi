@@ -15,10 +15,19 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
 
   const [pricingData, setPricingData] = useState({
     monthlyPrice: 199,
+    monthlyOriginalPrice: 349,
     quartarlyPrice: 399,
+    quartarlyOriginalPrice: 597,
     yearlyPrice: 499,
+    yearlyOriginalPrice: 2388,
+    enterprisePrice: 2999,
+    enterpriseOriginalPrice: 4999,
+    quarterlyBadgeText: 'Save 33% off retail',
+    yearlyBadgeText: 'Save 79% • Best Value',
+    enterpriseBadgeText: 'Save 40% on annual licenses',
     currency: 'INR',
     currencySymbol: '₹',
+    pricingMatrix: {},
     razorpayEnabled: true,
     stripeEnabled: false,
     paypalEnabled: false,
@@ -30,12 +39,28 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
     getSubscriptionStatus()
       .then((data) => {
         if (mounted && data) {
+          const curr = data.currency || 'INR';
+          const matrix = data.pricingMatrix?.[curr] || {};
+          const mPrice = Number(matrix.monthly ?? data.monthlyPrice) || (curr === 'INR' ? 199 : 19);
+          const qPrice = Number(matrix.quartarly ?? data.quartarlyPrice) || (curr === 'INR' ? 399 : 39);
+          const yPrice = Number(matrix.yearly ?? data.yearlyPrice) || (curr === 'INR' ? 499 : 49);
+          const entPrice = Number(matrix.enterprise ?? data.enterprisePrice) || (curr === 'INR' ? 2999 : 49);
+
           setPricingData({
-            monthlyPrice: Number(data.monthlyPrice) || 199,
-            quartarlyPrice: Number(data.quartarlyPrice) || 399,
-            yearlyPrice: Number(data.yearlyPrice) || 499,
-            currency: data.currency || 'INR',
-            currencySymbol: data.currencySymbol || (data.currency === 'USD' ? '$' : '₹'),
+            monthlyPrice: mPrice,
+            monthlyOriginalPrice: Number(matrix.monthlyOriginal ?? data.monthlyOriginalPrice) || Math.round(mPrice * 1.6),
+            quartarlyPrice: qPrice,
+            quartarlyOriginalPrice: Number(matrix.quartarlyOriginal ?? data.quartarlyOriginalPrice) || (mPrice * 3),
+            yearlyPrice: yPrice,
+            yearlyOriginalPrice: Number(matrix.yearlyOriginal ?? data.yearlyOriginalPrice) || (mPrice * 12),
+            enterprisePrice: entPrice,
+            enterpriseOriginalPrice: Number(matrix.enterpriseOriginal ?? data.enterpriseOriginalPrice) || (curr === 'INR' ? 4999 : 99),
+            quarterlyBadgeText: data.quarterlyBadgeText || 'Save 33% off retail',
+            yearlyBadgeText: data.yearlyBadgeText || 'Save 79% • Best Value',
+            enterpriseBadgeText: data.enterpriseBadgeText || 'Save 40% on annual licenses',
+            currency: curr,
+            currencySymbol: data.currencySymbol || (curr === 'USD' ? '$' : '₹'),
+            pricingMatrix: data.pricingMatrix || {},
             razorpayEnabled: data.razorpayEnabled !== false,
             stripeEnabled: data.stripeEnabled === true,
             paypalEnabled: data.paypalEnabled === true,
@@ -69,9 +94,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
   };
 
   const symbol = pricingData.currencySymbol || (pricingData.currency === 'INR' ? '₹' : '$');
-  const proMonthlyPrice = pricingData.monthlyPrice;
   
-  // Calculate dynamic effective monthly price according to billing cycle
   const getProEffectiveMonthly = () => {
     if (billingCycle === 'monthly') return pricingData.monthlyPrice;
     if (billingCycle === 'quartarly') return Math.round(pricingData.quartarlyPrice / 3);
@@ -79,14 +102,15 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
   };
 
   const getProOriginalPrice = () => {
-    if (billingCycle === 'monthly') return Math.round(pricingData.monthlyPrice * 1.6);
-    return pricingData.monthlyPrice;
+    if (billingCycle === 'monthly') return pricingData.monthlyOriginalPrice;
+    if (billingCycle === 'quartarly') return Math.round(pricingData.quartarlyOriginalPrice / 3);
+    return Math.round(pricingData.yearlyOriginalPrice / 12);
   };
 
   const getProBilledText = () => {
     if (billingCycle === 'monthly') return `Billed monthly at ${symbol}${pricingData.monthlyPrice}`;
-    if (billingCycle === 'quartarly') return `Billed quarterly at ${symbol}${pricingData.quartarlyPrice} (Save 33% off retail)`;
-    return `Billed annually at ${symbol}${pricingData.yearlyPrice} (Save 79% • Best Value)`;
+    if (billingCycle === 'quartarly') return `Billed quarterly at ${symbol}${pricingData.quartarlyPrice} (${pricingData.quarterlyBadgeText})`;
+    return `Billed annually at ${symbol}${pricingData.yearlyPrice} (${pricingData.yearlyBadgeText})`;
   };
 
   const faqItems = [
@@ -108,25 +132,25 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
     },
     {
       q: 'Which payment methods are accepted?',
-      a: `We support all major payment methods including ${pricingData.razorpayEnabled ? 'Razorpay UPI (GPay, PhonePe, Paytm), RuPay, Visa, Mastercard, NetBanking, ' : ''}Stripe Credit/Debit cards, and PayPal with 256-bit SSL encrypted checkout.`
+      a: 'We support all major payment gateways based on your region, including UPI, Credit/Debit Cards, Net Banking, Razorpay, Stripe, and PayPal.'
     }
   ];
 
   return (
-    <section id="pricing" className="rp-section-pad" style={{ background: '#f8fafd', borderTop: '1px solid #e2e8f0', minHeight: '80vh', paddingTop: '110px', paddingBottom: '80px' }}>
-      <div className="rp-container" style={{ textAlign: 'center' }}>
+    <section className="rp-pricing-section" style={{ background: '#f8fafc', padding: '110px 24px 80px 24px', fontFamily: 'inherit' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
         
-        {/* Header with Enhanced Visual Hierarchy */}
-        <div style={{ maxWidth: '820px', margin: '0 auto 36px auto' }}>
-          <div className="rp-story-tag blue" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '9999px', background: '#e8f0fe', color: '#1a73e8', fontWeight: '800', fontSize: '12px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <FaCrown style={{ color: '#f59e0b' }} />
-            <span>Transparent &amp; Value-Driven Career Pricing</span>
+        {/* Header Badge & Title */}
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#e0e7ff', color: '#4338ca', padding: '6px 16px', borderRadius: '9999px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '16px' }}>
+            <FaStar style={{ fontSize: '13px' }} />
+            <span>Transparent Investment in Your Career</span>
           </div>
-          <h1 style={{ fontSize: 'clamp(2.2rem, 3.5vw + 0.5rem, 3.2rem)', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em', margin: '0 0 16px 0', lineHeight: 1.15 }}>
-            Accelerate Your Career with <span style={{ background: 'linear-gradient(135deg, #1a73e8 0%, #7c3aed 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Guaranteed ROI</span>
+          <h1 style={{ fontSize: '42px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.02em', margin: '0 0 16px 0', lineHeight: 1.2 }}>
+            Simple, Powerful Plans for Every Stage
           </h1>
-          <p style={{ fontSize: '1.125rem', color: '#475569', margin: 0, lineHeight: 1.7, maxWidth: '700px', marginLeft: 'auto', marginRight: 'auto' }}>
-            Start completely free. Upgrade when you are ready for unlimited STAR bullet optimizations, timed AI interview simulations, and native Microsoft Word (.docx) downloads.
+          <p style={{ fontSize: '17px', color: '#475569', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
+            Upgrade your job search with unlimited AI bullet writing, live mock interview coaching, and high-fidelity Word/PDF exports.
           </p>
         </div>
 
@@ -170,7 +194,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
           >
             <span>Quarterly</span>
             <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', background: billingCycle === 'quartarly' ? '#10b981' : '#ecfdf5', color: billingCycle === 'quartarly' ? '#ffffff' : '#059669', fontWeight: '800' }}>
-              Save 33%
+              {pricingData.quarterlyBadgeText}
             </span>
           </button>
 
@@ -195,7 +219,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
           >
             <span>Annual Pass</span>
             <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '9999px', background: billingCycle === 'yearly' ? '#f59e0b' : '#fef3c7', color: billingCycle === 'yearly' ? '#ffffff' : '#b45309', fontWeight: '900', textTransform: 'uppercase' }}>
-              🔥 Best Value
+              {pricingData.yearlyBadgeText}
             </span>
           </button>
         </div>
@@ -323,15 +347,15 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
               <div style={{ margin: '16px 0 28px 0', paddingBottom: '24px', borderBottom: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '22px', fontWeight: '700', color: '#94a3b8', textDecoration: 'line-through' }} title="Standard retail enterprise seat price">
-                    {symbol}{pricingData.currency === 'INR' ? '4,999' : '99'}
+                    {symbol}{pricingData.enterpriseOriginalPrice ? pricingData.enterpriseOriginalPrice.toLocaleString() : (pricingData.currency === 'INR' ? '4,999' : '99')}
                   </span>
                   <span style={{ fontSize: '46px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em' }}>
-                    {symbol}{pricingData.currency === 'INR' ? '2,999' : '49'}
+                    {symbol}{pricingData.enterprisePrice ? pricingData.enterprisePrice.toLocaleString() : (pricingData.currency === 'INR' ? '2,999' : '49')}
                   </span>
                   <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}> / seat / mo</span>
                 </div>
                 <p style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700', margin: '6px 0 0 0' }}>
-                  Save 40% on annual institutional licensing
+                  {pricingData.enterpriseBadgeText || 'Save 40% on annual institutional licensing'}
                 </p>
               </div>
 
