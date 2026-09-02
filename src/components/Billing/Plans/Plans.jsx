@@ -322,7 +322,7 @@ const PlansPage = (props) => {
     const getProRatedCredit = () => 0;
 
     // Pricing calculations for Dashboard View
-    () => {;
+    const getMonthlyEquivalent = () => {
         if (selectedDuration === '1') return subscriptionConfig.monthlyPrice;
         if (selectedDuration === '6') return Math.round(subscriptionConfig.quartarlyPrice / 6 * 10) / 10;
         return Math.round(subscriptionConfig.yearlyPrice / 12 * 10) / 10;
