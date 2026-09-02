@@ -50,6 +50,13 @@ function assertIdentityIssuer(value = 'firebase') {
 
 function normalizeRequestedTenantId(value) {
   if (value === undefined || value === null || value === '') return null;
+  const str = String(value).trim();
+  if (str.includes('_')) {
+    const candidate = str.split('_')[0];
+    if (UUID_PATTERN.test(candidate)) {
+      return candidate.toLowerCase();
+    }
+  }
   return assertUuid(value, 'Requested tenant identifier');
 }
 

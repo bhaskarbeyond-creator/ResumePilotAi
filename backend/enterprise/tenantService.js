@@ -199,11 +199,12 @@ class TenantService {
     if (!user?.uid) return [];
     const rows = await this.registry.listMemberships(user.uid);
     return (rows || []).map(row => {
-      const tenant = row?.tenant || row || {};
+      const tenant = row?.tenant || {};
       const membership = row?.membership || row || {};
+      const resolvedTenantId = tenant.id || row.tenantId || membership.tenantId || (typeof row.id === 'string' && row.id.includes('_') ? row.id.split('_')[0] : row.id);
       return {
-        id: tenant.id || membership.tenantId || row.tenantId || row.id,
-        slug: tenant.slug || row.slug || row.tenantId,
+        id: resolvedTenantId,
+        slug: tenant.slug || row.slug || resolvedTenantId,
         displayName: tenant.displayName || row.displayName || 'Workspace',
         lifecycleState: tenant.lifecycleState || row.tenantLifecycleState || 'ACTIVE',
         isolationTier: tenant.isolationTier || row.isolationTier || 'STANDARD',
