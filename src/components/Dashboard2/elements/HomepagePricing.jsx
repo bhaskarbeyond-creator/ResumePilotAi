@@ -108,7 +108,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
   ];
 
   return (
-    <section id="pricing" className="rp-section-pad" style={{ background: '#f8fafd', borderTop: '1px solid #e2e8f0', minHeight: '80vh' }}>
+    <section id="pricing" className="rp-section-pad" style={{ background: '#f8fafd', borderTop: '1px solid #e2e8f0', minHeight: '80vh', paddingTop: '110px', paddingBottom: '80px' }}>
       <div className="rp-container" style={{ textAlign: 'center' }}>
         
         {/* Header with Enhanced Visual Hierarchy */}
@@ -196,7 +196,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
         </div>
 
         {/* 3-Tier Dynamic Pricing Grid */}
-        <div className="rp-pricing-grid" style={{ marginBottom: '48px' }}>
+        <div className="rp-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px', alignItems: 'stretch', marginBottom: '48px' }}>
           
           {/* Tier 1: Free Starter */}
           <div className="rp-pricing-card" style={{ background: '#ffffff', borderRadius: '24px', padding: '36px 30px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', position: 'relative' }}>

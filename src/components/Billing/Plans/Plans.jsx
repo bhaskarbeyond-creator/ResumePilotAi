@@ -14,6 +14,8 @@ import fire from '../../../conf/fire';
 import HomepageNavbar from '../../Dashboard2/elements/HomepageNavbar';
 import HomepageFooter from '../../Dashboard2/elements/HomepageFooter';
 import HomepagePricing from '../../Dashboard2/elements/HomepagePricing';
+import AuthWrapper from '../../auth/authWrapper/AuthWrapper';
+import '../../Dashboard2/public-site.css';
 import './Plans.scss';
 import '../../CustomPage/CustomPage.scss';
 
@@ -56,6 +58,15 @@ const PlansPage = (props) => {
     // Classic Public View State (for /billing/plans)
     const [publicStep, setPublicStep] = useState(0);
     const [publicSelectedPlan, setPublicSelectedPlan] = useState('monthly');
+    const [authModal, setAuthModal] = useState({ open: false, mode: 'signup', message: '' });
+
+    const handleOpenAuthModal = (mode = 'signup', message = '') => {
+        setAuthModal({ open: true, mode, message });
+    };
+
+    const handleCloseAuthModal = () => {
+        setAuthModal({ open: false, mode: 'signup', message: '' });
+    };
 
     const [subscriptionConfig, setSubscriptionConfig] = useState({
         monthlyPrice: null,
@@ -419,14 +430,14 @@ const PlansPage = (props) => {
         return (
             <PayPalScriptProvider options={paypalOptions} deferLoading={!paymentAvailability.paypalEnabled || !paypalClientId}>
                 <Elements stripe={stripePromise}>
-                    <div className="custom-page">
-                        <HomepageNavbar user={props.user} />
-                        <div className="custom-page__content w-full">
-                            <div className="custom-page__Plans w-full">
-                                {publicStep === 0 && (
-                                    <HomepagePricing nextStep={handlePublicNextStep} />
-                                )}
-                                {publicStep === 1 && (
+                    <div className="rp-public-site">
+                        <HomepageNavbar onOpenAuthModal={handleOpenAuthModal} />
+                        <main style={{ minHeight: '80vh' }}>
+                            {publicStep === 0 && (
+                                <HomepagePricing nextStep={handlePublicNextStep} onOpenAuthModal={handleOpenAuthModal} />
+                            )}
+                            {publicStep === 1 && (
+                                <div className="rp-container" style={{ paddingTop: '110px', paddingBottom: '60px' }}>
                                     <ElementsConsumer>
                                         {({ stripe, elements }) => (
                                             <Checkout
@@ -459,10 +470,20 @@ const PlansPage = (props) => {
                                             />
                                         )}
                                     </ElementsConsumer>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            )}
+                        </main>
                         <HomepageFooter />
+
+                        {/* Integrated Auth Modal */}
+                        {authModal.open && (
+                            <AuthWrapper
+                                isAuthModalOpen={authModal.open}
+                                authModalMode={authModal.mode}
+                                authModalMessage={authModal.message}
+                                closeAuthModal={handleCloseAuthModal}
+                            />
+                        )}
                     </div>
                 </Elements>
             </PayPalScriptProvider>
