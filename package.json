@@ -67,7 +67,7 @@
     "@puckeditor/core": "^0.23.0",
     "@react-google-maps/api": "^2.20.7",
     "@sparticuz/chromium": "^149.0.0",
-    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/react-stripe-js": "^6.8.2",
     "@stripe/stripe-js": "^7.3.1",
     "@tailwindcss/vite": "^4.1.8",
     "@tiptap/extension-color": "^3.4.4",
