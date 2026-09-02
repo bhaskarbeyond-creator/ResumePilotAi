@@ -62,7 +62,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
         const p = location.pathname;
         if (p.startsWith('/build-resume') || p.startsWith('/create-resume') || p === '/dashboard/cover-letters' || p === '/dashboard/portfolios') {
             setOpenGroups(prev => ({ ...prev, career: true }));
-        } else if (p === '/dashboard/applied-jobs' || p === '/dashboard/job-tracker' || p === '/dashboard/interview' || p === '/dashboard/messages' || p === '/dashboard/my-employments' || p === '/dashboard/my-companies') {
+        } else if (p.startsWith('/jobs') || p === '/dashboard/applied-jobs' || p === '/dashboard/job-tracker' || p === '/dashboard/interview' || p === '/dashboard/messages' || p === '/dashboard/my-employments' || p === '/dashboard/my-companies') {
             setOpenGroups(prev => ({ ...prev, jobIntel: true }));
         } else if (p === '/dashboard/settings' || p === '/dashboard/plans' || p === '/dashboard/support' || p === '/dashboard/tickets' || p === '/dashboard/help') {
             setOpenGroups(prev => ({ ...prev, billing: true }));
@@ -601,6 +601,18 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                         {(openGroups.jobIntel || sidebarCollapsed) && (
                             <div className="space-y-0.5">
+                                <Link to="/jobs/portal" onClick={closeMobileSidebar}>
+                                    <div
+                                        className={`flex items-center text-xs transition-all duration-150 rounded-xl ${
+                                            location.pathname.startsWith('/jobs')
+                                                ? 'bg-indigo-50 text-indigo-700 font-bold border-l-3 border-indigo-600 shadow-2xs pl-2.5'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium'
+                                        } ${sidebarCollapsed ? 'p-2.5 justify-center' : 'px-2.5 py-2'}`}>
+                                        <FiSearch className={`text-base min-w-[18px] ${sidebarCollapsed ? 'mr-0' : 'mr-2.5'}`} />
+                                        {!sidebarCollapsed && <span className="flex-1">Browse Job Portal</span>}
+                                    </div>
+                                </Link>
+
                                 {modulesConfig.enableJobTrackerModule && (
                                     <Link to="/dashboard/job-tracker" onClick={closeMobileSidebar}>
                                         <div

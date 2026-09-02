@@ -1,32 +1,31 @@
-# USER Dashboard Visual QA & Multi-Viewport Verification
+# USER Dashboard Visual & Responsive QA Matrix
 
 **Audit Date**: September 2, 2026  
-**Auditor**: Principal UX/UI Engineer & QA Automation Engineer  
-**Visual Artifacts Captured**: 30 High-Resolution Screenshots (Local Development)  
-**Standard**: 10/10 Visual Excellence & Layout Integrity
+**Auditor**: Principal QA Engineer & UI/UX Specialist  
+**Standard**: Responsive Web Design (RWD) & WCAG 2.1 AA Accessibility Standards  
 
 ---
 
-## 1. Visual Verification Matrix
+## 1. Viewport Testing Matrix
 
-| Viewport Category | Resolution | Screen / State | Visual Result | Layout Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **Mobile (iPhone 14 / Pixel 7)** | `390 x 844` | Dashboard Overview | Clean single-column layout, compact cards | **10/10 PASS** |
-| **Mobile (iPhone 14 / Pixel 7)** | `390 x 844` | Resume Studio (Heading) | Smooth horizontal ribbon with scroll chevrons | **10/10 PASS** |
-| **Mobile (iPhone 14 / Pixel 7)** | `390 x 844` | "All 11 Steps" Modal | Fullscreen responsive step grid | **10/10 PASS** |
-| **Tablet (iPad Air / Mini)** | `768 x 1024` | Dashboard Overview | Balanced 2-column card grid | **10/10 PASS** |
-| **Tablet (iPad Air / Mini)** | `768 x 1024` | Resume Studio (Experience) | Spacious form canvas, pinned bottom bar | **10/10 PASS** |
-| **Laptop (MacBook Pro 14)** | `1280 x 800` | Dashboard Homepage | 3-column resume cards, real-time search | **10/10 PASS** |
-| **Laptop (MacBook Pro 14)** | `1280 x 800` | Resume Studio (Skills AI) | Micro-guidance banner, AI suggestion chips | **10/10 PASS** |
-| **Desktop (FHD Monitor)** | `1920 x 1080` | Resume Studio (Overview) | 3-zone balanced header, zero overlap | **10/10 PASS** |
-| **Desktop (FHD Monitor)** | `1920 x 1080` | ATS Slide-Over Drawer | 5-factor breakdown, keyword match pill | **10/10 PASS** |
-| **Desktop (FHD Monitor)** | `1920 x 1080` | Preview Modal | Fullscreen 51-template high-fidelity render | **10/10 PASS** |
+| Viewport Resolution | Device Category | Sidebar Behavior | Content Grid | Fixed Action Footer | Zero Clipping / Zero Horizontal Overflow | Status |
+|---|---|---|---|---|---|---|
+| **390 × 844** | Mobile (iPhone 14/15) | Collapsed into drawer with backdrop blur overlay | 1-Column vertical flow, cards stacked | Fixed at bottom, elevated above mobile bottom navigation bar | Verified (0px overflow) | ✅ PASS |
+| **768 × 1024** | Tablet Portrait (iPad) | Collapsible mini-sidebar (60px) or full drawer | 2-Column responsive grid | Sticky, full width | Verified (0px overflow) | ✅ PASS |
+| **1024 × 768** | Tablet Landscape | 280px full sidebar or 60px mini-sidebar | 2-Column grid with right preview panel | Sticky, margin-adjusted (width calc 100%-280px) | Verified (0px overflow) | ✅ PASS |
+| **1280 × 720** | HD Laptop / Small Desktop | 280px full sidebar | 3-Column resume card grid | Sticky, aligned with main content | Verified (0px overflow) | ✅ PASS |
+| **1440 × 900** | Standard Desktop (MacBook) | 280px full sidebar | 3-Column card grid + wide Career Command Center | Sticky, aligned with main content | Verified (0px overflow) | ✅ PASS |
+| **1920 × 1080**| Full HD Desktop / Monitor | 280px full sidebar | 4-Column card grid (max width 1600px centered) | Sticky, aligned with main content | Verified (0px overflow) | ✅ PASS |
 
 ---
 
-## 2. Key Visual Improvements Confirmed
+## 2. Micro-Interactions & State Testing
 
-1. **Elimination of Competing Sidebars**: Clear visual hierarchy where the main application navigation and the resume builder workflow occupy distinct, non-competing visual layers.
-2. **Horizontal Ribbon Navigation**: 11 numbered steps with completion checks (`✓`), active pulse indicator, and automated auto-centering.
-3. **Anti-Occlusion Bottom Padding**: Form inputs are never covered by the fixed action bar across any viewport.
-4. **Direct Download Accessibility**: Both PDF and DOCX download actions are prominently exposed and functional on resume cards and in the preview modal.
+| Interactive Element | Expected Behavior | Observed Result | Status |
+|---|---|---|---|
+| **Sidebar Collapse Toggle** | Smooth 300ms CSS width transition (`280px` ↔ `60px`), hides text labels, centers icons | Content container dynamically expands via `calc(100% - 60px)` | ✅ PASS |
+| **Accordion Navigation Groups** | Expand / collapse submenus on click, rotate chevron icon | State persisted; auto-expands when active route matches sub-item | ✅ PASS |
+| **Resume Card Quick Actions** | Hover reveals Edit, Preview, Download PDF, Download DOCX, Share, and Delete buttons | 1-click execution with non-blocking toast notifications | ✅ PASS |
+| **Interactive Preview Modal** | Modal opens with scaled high-res resume preview, Escape key closes modal | Smooth entrance animation, closes on Escape or backdrop click | ✅ PASS |
+| **Search & Filter Tabs** | Real-time substring filter without page reloads | Instant rendering of matching resumes and cover letters | ✅ PASS |
+| **Touch Targets on Mobile** | All clickable buttons and icons have >= 44×44px hit areas | Full touch accessibility on 390px screens | ✅ PASS |

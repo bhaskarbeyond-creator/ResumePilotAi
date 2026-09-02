@@ -894,11 +894,17 @@ class DashboardHomepage extends Component {
                   </div>
                   <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
                     <button
+                      onClick={() => this.props.navigate("/jobs/portal")}
+                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>Explore Jobs</span>
+                      <FaArrowRight className="w-3 h-3" />
+                    </button>
+                    <button
                       onClick={() => this.props.navigate("/dashboard/interview")}
                       className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                     >
-                      <span>Start Mock Interview</span>
-                      <FaArrowRight className="w-3 h-3" />
+                      <span>Mock Interview</span>
                     </button>
                     <button
                       onClick={() => this.props.navigate("/dashboard/job-tracker")}
