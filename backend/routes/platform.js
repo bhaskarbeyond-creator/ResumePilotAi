@@ -1817,30 +1817,11 @@ router.post('/payment-webhooks/:eventId/replay', requireSuperAdmin, async (req, 
       status: 'REPLAY_PROCESSED',
       message: `Webhook event ${eventId} successfully re-evaluated and processed for ${event.provider}.`
     });
-    return res.json({ flags });
-  } catch (_error) {
-    return res.status(503).json({ error: { code: 'FEATURE_FLAGS_UNAVAILABLE', message: 'Could not load feature flags' } });
+  } catch (error) {
+    return res.status(500).json({ error: { code: 'REPLAY_FAILED', message: error.message || 'Webhook replay failed' } });
   }
 });
 
-router.put('/feature-flags/:flagKey', requireRecentAdminAuthentication, async (req, res) => {
-  const { flagKey } = req.params;
-  const { value } = req.body;
-  if (typeof value !== 'boolean') {
-    return res.status(400).json({ error: { code: 'INVALID_VALUE', message: 'Flag value must be a boolean' } });
-  }
-  if (!FLAG_DEFINITIONS[flagKey]) {
-    return res.status(400).json({ error: { code: 'UNKNOWN_FEATURE_FLAG', message: `Unknown feature flag: ${flagKey}` } });
-  }
-  try {
-    // MySQL-backed: flags persist in system_settings with a durable audit event.
-    const result = await setFlagValue(flagKey, value, req.user?.uid, res.locals.requestId);
-    return res.json({ success: true, ...result });
-  } catch (error) {
-    const status = Number(error.status) >= 400 && Number(error.status) < 600 ? Number(error.status) : 400;
-    return res.status(status).json({ error: { code: error.code || 'FLAG_UPDATE_FAILED', message: status >= 500 ? 'Feature flag storage is unavailable.' : error.message, requestId: res.locals?.requestId } });
-  }
-});
 
 /* ------------------------------------------------------------------
  * Platform Configuration — SUPER_ADMIN only
