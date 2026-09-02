@@ -161,7 +161,11 @@ export default function User360Drawer({
     setError('');
     setSuccess('');
     try {
-      await updateUserSubscription(uid, selectedPlan, planDuration, { expectedMembership: userData?.billing?.membership });
+      const currentRevision = Number(userData?.identity?.revision ?? userData?.billing?.revision ?? 0);
+      await updateUserSubscription(uid, selectedPlan, planDuration, {
+        expectedMembership: userData?.identity?.membership || userData?.billing?.membership || 'Basic',
+        expectedRevision: currentRevision,
+      });
       setSuccess(`Membership updated to ${selectedPlan} (${planDuration} months).`);
       await loadData();
       if (onUserMutated) onUserMutated();

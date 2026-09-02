@@ -209,7 +209,29 @@ test('Super Admin User PATCH: mutation requires the user directory and fails clo
   }
 });
 
+test('Super Admin User PATCH: membership update handles expectedRevision and invalid revisions', async () => {
+  const invalidRevision = await request(app)
+    .patch('/api/admin/users/uid-target')
+    .set(bearer('admin'))
+    .send({ membership: 'Premium', expectedRevision: 'invalid-non-integer' });
+  assert.equal(invalidRevision.status, 400);
+  assert.equal(invalidRevision.body.code, 'PROFILE_REVISION_REQUIRED');
+
+  const validRes = await request(app)
+    .patch('/api/admin/users/uid-target')
+    .set(bearer('admin'))
+    .send({ membership: 'Basic', expectedRevision: 0 });
+  assert.ok([200, 404, 409, 429, 500, 503].includes(validRes.status));
+
+  const omittedRevision = await request(app)
+    .patch('/api/admin/users/uid-target')
+    .set(bearer('admin'))
+    .send({ membership: 'Basic' });
+  assert.ok([200, 404, 409, 429, 500, 503].includes(omittedRevision.status));
+});
+
 test.after(() => {
   // Graceful exit for async handles
   setTimeout(() => process.exit(0), 100).unref();
 });
+

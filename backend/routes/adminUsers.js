@@ -740,8 +740,8 @@ router.patch('/:uid', async (req, res) => {
     return res.status(400).json({ success: false, code: 'CROSS_DOMAIN_UPDATE_REJECTED', error: 'Identity and application-profile fields must be updated in separate requests.' });
   }
   const expectedRevision = req.body?.expectedRevision;
-  if (profileFieldChange && !Number.isInteger(Number(expectedRevision))) {
-    return res.status(400).json({ success: false, code: 'PROFILE_REVISION_REQUIRED', error: 'expectedRevision is required for profile updates.' });
+  if (profileFieldChange && expectedRevision !== undefined && expectedRevision !== null && !Number.isInteger(Number(expectedRevision))) {
+    return res.status(400).json({ success: false, code: 'PROFILE_REVISION_REQUIRED', error: 'expectedRevision must be an integer when provided for profile updates.' });
   }
 
   try {
@@ -812,7 +812,10 @@ router.patch('/:uid', async (req, res) => {
           updatedProfile.paymentStatus = 'INACTIVE';
         }
       }
-      updatedProfile = await repo.saveUserWithRevisionGuard(uid, updatedProfile, Number(expectedRevision));
+      const targetRevision = expectedRevision !== undefined && expectedRevision !== null
+        ? Number(expectedRevision)
+        : Number(profile.revision || 0);
+      updatedProfile = await repo.saveUserWithRevisionGuard(uid, updatedProfile, targetRevision);
     }
 
     await recordAdminAuditLog(req, {

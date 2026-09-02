@@ -374,6 +374,7 @@ export async function editUser(userId, _email, membership, membershipsEnds, _isA
             membershipEnds: membershipsEnds || null,
             expectedMembership: expected.expectedMembership,
             expectedSuspended: expected.expectedSuspended,
+            expectedRevision: expected.expectedRevision !== undefined ? Number(expected.expectedRevision) : undefined,
             suspended: suspended === null ? undefined : Boolean(suspended),
         }),
     });
@@ -479,6 +480,7 @@ export async function updateUserSubscription(userId, membership, _durationMonths
         expectedMembership: expected.expectedMembership,
         expectedMembershipEnds: expected.expectedMembershipEnds,
         membershipEnds: expected.membershipEnds,
+        expectedRevision: expected.expectedRevision,
     });
 }
 

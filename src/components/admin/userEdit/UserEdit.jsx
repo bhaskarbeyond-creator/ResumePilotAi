@@ -53,6 +53,7 @@ class UserEdit extends Component {
             await editUser(userId, email, membership, membershipsEnds, null, suspended, {
                 expectedMembership: this.state.initialMembership || 'Basic',
                 expectedSuspended: Boolean(this.state.initialSuspended),
+                expectedRevision: Number(this.state.initialRevision || 0),
             });
             
             // Only update role if it changed from initial props
@@ -117,6 +118,7 @@ class UserEdit extends Component {
                             initialMembership: data.membership || this.state.initialMembership || 'Basic',
                             initialRole: data.role || (data.isA ? 'ADMIN' : 'USER'),
                             initialSuspended: data.suspended !== undefined ? Boolean(data.suspended) : this.state.initialSuspended,
+                            initialRevision: Number(data.revision || 0),
                             emailVerified: data.emailVerified === true,
                             mfaEnabled: data.mfaEnabled === true,
                         });
