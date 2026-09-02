@@ -248,7 +248,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
             Object.defineProperty(storageEvent, 'newValue', { value: foreignWrite });
             dom.window.dispatchEvent(storageEvent);
         });
-        await act(async () => { await Promise.resolve(); });
+        await act(async () => { await new Promise(r => setTimeout(r, 50)); });
         assert.ok(textOf(root()).includes('AI Interview Coach'), 'returned to setup after takeover');
         assert.ok(textOf(root()).includes('continued in another tab'), 'takeover notice shown');
         assert.ok(root().querySelector('input[placeholder="Software Engineer"]'), 'setup screen restored, no corrupt exam state');
@@ -263,7 +263,7 @@ test('interview coach lifecycle: keyboard CBT, exit protection, multi-tab, submi
             Object.defineProperty(storageEvent, 'newValue', { value: null });
             dom.window.dispatchEvent(storageEvent);
         });
-        await act(async () => { await Promise.resolve(); });
+        await act(async () => { await new Promise(r => setTimeout(r, 50)); });
         assert.ok(textOf(root()).includes('finished in another tab'), 'submitted-elsewhere notice shown');
 
 // 13. Full submission flow: keyboard-driven exam → report → history.
