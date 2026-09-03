@@ -163,7 +163,7 @@ const FinalizeStep = ({ resumeData = {}, updateResumeData }) => {
                         value={resumeTitle}
                         onChange={(e) => setResumeTitle(e.target.value)}
                         className="w-full px-3 py-4 outline-none border-1 border-gray-300 rounded-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm text-gray-700"
-                        placeholder="e.g., John Doe - Software Engineer"
+                        placeholder={resumeData?.occupation ? `e.g. ${[resumeData.firstname, resumeData.lastname].filter(Boolean).join(' ')} - ${resumeData.occupation}` : 'e.g. Professional Resume - Target Role'}
                     />
                 </div>
 

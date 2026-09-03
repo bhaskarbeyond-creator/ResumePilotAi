@@ -1,14 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdLightbulb } from 'react-icons/md';
-import SectionCard from './components/SectionCard';
+import { MdAutoAwesome, MdCheck } from 'react-icons/md';
 import RichTextEditor from './components/RichTextEditor';
 import { generateUserAiContent } from '../../../services/aiService';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
+import { getCandidateContext } from '../../../utils/candidateContext';
+import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
+import StepWorkspaceLayout from '../components/StepWorkspaceLayout';
+import QuickAddCommandBar from '../components/QuickAddCommandBar';
+import AiDraftReviewModal from '../components/AiDraftReviewModal';
 
-const SummaryStep = ({ resumeData, updateResumeData }) => {
+const TONES = [
+    { id: 'balanced', label: 'Balanced' },
+    { id: 'concise', label: 'Concise' },
+    { id: 'technical', label: 'Specialized / Analytical' },
+    { id: 'executive', label: 'Executive' },
+];
+
+const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const { t } = useTranslation('common');
+    const candidateContext = React.useMemo(() => getCandidateContext(resumeData), [resumeData]);
     const [summary, setSummary] = useState(resumeData.summary || '');
+    const [charCount, setCharCount] = useState(0);
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [selectedTone, setSelectedTone] = useState('balanced');
+    const [error, setError] = useState(null);
+    const [reviewDraft, setReviewDraft] = useState('');
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const aiRequestControllerRef = useRef(null);
 
     useEffect(() => {
         if (resumeData.summary !== undefined) {
@@ -17,16 +36,17 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
             setCharCount(plainText.length);
         }
     }, [resumeData.summary]);
-    const [charCount, setCharCount] = useState(0);
-    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-    const [selectedTone, setSelectedTone] = useState('balanced');
-    const [error, setError] = useState(null);
-    const aiRequestControllerRef = useRef(null);
-    useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
+
+    useEffect(() => {
+        return () => {
+            const controller = aiRequestControllerRef.current;
+            aiRequestControllerRef.current = null;
+            controller?.abort();
+        };
+    }, []);
 
     const handleSummaryChange = (text) => {
         setSummary(text);
-        // Remove HTML tags for character count
         const plainText = text.replace(/<[^>]*>/g, '');
         setCharCount(plainText.length);
         updateResumeData({ summary: text });
@@ -83,6 +103,7 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         setIsGeneratingAI(true);
         try {
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'en';
+            const targetJd = resumeData?.targetJd || localStorage.getItem('rpai.ats.targetJd') || '';
             const data = await generateUserAiContent('generate-summary', {
                 name,
                 jobTitle,
@@ -97,15 +118,17 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
                 existingText,
                 tone: toneToUse,
                 language: preferredLanguage,
+                targetJd,
             }, { signal: requestController.signal });
+
             const generatedSummary = data?.summary;
             if (typeof generatedSummary !== 'string' || !generatedSummary.trim()) {
                 throw new Error('Unable to generate summary');
             }
             const cleanSummary = generatedSummary.trim();
-            setSummary(cleanSummary);
-            setCharCount(cleanText(cleanSummary).length);
-            updateResumeData({ summary: cleanSummary });
+            // ZERO SILENT OVERWRITE: Open confirmation review modal
+            setReviewDraft(cleanSummary);
+            setIsReviewModalOpen(true);
         } catch (error) {
             if (error?.name === 'AbortError') return;
             const friendlyMessage = error.code === 'EMAIL_VERIFICATION_REQUIRED' || error.status === 403
@@ -128,10 +151,29 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         }
     };
 
+    const handleAcceptDraft = (acceptedText) => {
+        const clean = String(acceptedText || '').trim();
+        setSummary(clean);
+        const plainText = clean.replace(/<[^>]*>/g, '');
+        setCharCount(plainText.length);
+        updateResumeData({ summary: clean });
+    };
+
+    const handleQuickAddAction = (actionId) => {
+        switch (actionId) {
+            case 'ai-align-jd':
+                generateAISummary('executive');
+                break;
+            case 'ai-draft-summary':
+            default:
+                generateAISummary(selectedTone);
+                break;
+        }
+    };
+
     const handleSave = () => {
         updateResumeData({ summary });
 
-        // Mark step as completed if summary is provided
         const plainText = String(summary || '').replace(/<[^>]*>/g, '').trim();
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (plainText.length >= 20) {
@@ -145,205 +187,196 @@ const SummaryStep = ({ resumeData, updateResumeData }) => {
         }
     };
 
-    // Auto-save on change
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             handleSave();
         }, 500);
-
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [summary]);
 
-    // Update character count when summary changes from AI generation
-    useEffect(() => {
-        // Remove HTML tags for character count
-        const plainText = summary.replace(/<[^>]*>/g, '');
-        setCharCount(plainText.length);
-    }, [summary]);
-
-    const getProgressColor = () => {
-        if (charCount < 50) return 'bg-red-500';
-        if (charCount < 100) return 'bg-amber-500';
-        if (charCount < 200) return 'bg-blue-500';
-        return 'bg-emerald-500';
+    const getProgressStatus = () => {
+        if (charCount === 0) return { text: 'Empty', color: 'text-slate-400', bar: 'bg-slate-200' };
+        if (charCount < 100) return { text: 'Getting Started', color: 'text-amber-600', bar: 'bg-amber-500' };
+        if (charCount < 200) return { text: 'Good Length', color: 'text-blue-600', bar: 'bg-blue-500' };
+        if (charCount <= 450) return { text: 'Optimal (ATS Recommended)', color: 'text-emerald-600', bar: 'bg-emerald-500' };
+        return { text: 'Too Long', color: 'text-amber-600', bar: 'bg-amber-500' };
     };
 
-    const getProgressText = () => {
-        if (charCount < 50) return t('SummaryStep.progress.tooShort');
-        if (charCount < 100) return t('SummaryStep.progress.gettingThere');
-        if (charCount < 200) return t('SummaryStep.progress.goodLength');
-        if (charCount < 400) return t('SummaryStep.progress.greatLength');
-        return t('SummaryStep.progress.excellent');
-    };
-
-    const getProgressTextColor = () => {
-        if (charCount < 50) return 'text-red-600';
-        if (charCount < 100) return 'text-amber-600';
-        if (charCount < 200) return 'text-blue-600';
-        return 'text-emerald-600';
-    };
+    const progress = getProgressStatus();
+    const hasSummary = charCount >= 80;
 
     return (
-        <div className="px-4 py-6 max-w-6xl mx-auto w-full min-h-full">
-            {/* Header Section */}
-            <div className="mb-4">
-                <div className="flex items-center mb-2">
-                    <div className="mr-3 sm:mr-4 flex-shrink-0">
-                        <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center">
-                            <MdLightbulb className="w-5 h-5" />
+        <StepWorkspaceLayout
+            stepNumber={8}
+            stepPath="summary"
+            title={t('SummaryStep.title', 'Professional Summary')}
+            subtitle={t('SummaryStep.subtitle', 'Craft a high-impact 3–5 sentence executive summary highlighting your career achievements.')}
+            isComplete={hasSummary}
+            statusBadge={`${charCount} Characters`}
+            resumeData={resumeData}
+            onNavigate={onNavigate}
+        >
+            <div className="space-y-3">
+                {/* Command Bar: Contextual Quick-Add Actions (Always Available) */}
+                <QuickAddCommandBar
+                    stepPath="summary"
+                    onAction={handleQuickAddAction}
+                    isAiLoading={isGeneratingAI}
+                />
+
+                {/* AI Draft Review Modal (Explicit Confirmation Gate) */}
+                <AiDraftReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    onAccept={handleAcceptDraft}
+                    draftTitle="Executive Summary Draft"
+                    draftContent={reviewDraft}
+                    existingContent={summary}
+                    targetFieldLabel="Executive Summary"
+                    roleLabel={candidateContext.domainLabel || 'Professional'}
+                    disclaimer="Grounded strictly in the career information and work history you provided. Verify all details before adding to your resume."
+                />
+                {/* Unified High-Density Summary Studio */}
+                <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-3.5">
+                    {/* Header & Character Progress Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div>
+                            <h2 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                                Executive Profile & Career Pitch
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                A high-impact 3–5 sentence career narrative highlighting your core strengths.
+                            </p>
                         </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-sm sm:text-base font-bold text-slate-900 truncate">{t('SummaryStep.title')}</h1>
-                        <p className="text-slate-600 text-sm hidden sm:block">{t('SummaryStep.subtitle')}</p>
-                    </div>
-                </div>
-            </div>
 
-            <div className="space-y-4">
-                {/* Professional Summary Section */}
-                <div className="relative bg-gradient-to-r from-white to-slate-50 border border-gray-200 rounded-xl shadow-md">
-                    {/* Accent Line */}
-                    <div
-                        className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${
-                            charCount >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-gray-300 to-gray-400'
-                        }`}></div>
-
-                    {/* Header */}
-                    <div className="px-4 sm:px-6 py-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                {/* Icon Badge */}
-                                <div
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold mr-3 sm:mr-4 flex-shrink-0 shadow-sm ${
-                                        charCount >= 100
-                                            ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-green-200'
-                                            : 'bg-gradient-to-br from-purple-400 to-indigo-500 text-white shadow-purple-200'
-                                    }`}>
-                                    {charCount >= 100 ? (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                            />
-                                        </svg>
-                                    )}
-                                </div>
-
-                                {/* Title and Description */}
-                                <div className="min-w-0">
-                                    <h3 className="font-semibold text-sm sm:text-base text-gray-800 truncate">{t('SummaryStep.professionalSummary.title')}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">{t('SummaryStep.professionalSummary.description')}</p>
-                                </div>
+                        {/* Density Meter */}
+                        <div className="flex items-center gap-2.5 shrink-0 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
+                            <div className="w-24 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                <div 
+                                    className={`h-full ${progress.bar} transition-all duration-300`} 
+                                    style={{ width: `${Math.min(100, (charCount / 400) * 100)}%` }} 
+                                />
                             </div>
-
-                            {/* Status Indicator */}
-                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${charCount >= 100 ? 'bg-green-400' : 'bg-gray-300'}`}></div>
+                            <span className={`text-[11px] font-bold ${progress.color}`}>
+                                {charCount}/400 {charCount >= 100 && <MdCheck className="inline w-3 h-3 ml-0.5" />}
+                            </span>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-4 sm:p-6 space-y-5 bg-gradient-to-br from-white to-slate-50 rounded-b-xl">
-                        {/* Progress Section */}
-                        <div
-                            className={`p-4 rounded-xl border ${
-                                charCount >= 100 ? 'bg-emerald-50 border-emerald-200' : charCount >= 50 ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'
-                            }`}>
-                            <div className="flex items-center justify-between mb-3">
-                                <span className={`text-sm font-semibold ${getProgressTextColor()}`}>{getProgressText()}</span>
-                                <span className="text-sm font-bold text-slate-700">{t('SummaryStep.characterCount', { current: charCount, max: 400 })}</span>
-                            </div>
-                            <div className="w-full bg-slate-200 rounded-full h-2 shadow-inner">
-                                <div className={`h-2 rounded-full ${getProgressColor()} shadow-sm`} style={{ width: `${Math.min(100, (charCount / 400) * 100)}%` }}></div>
-                            </div>
-                        </div>
-
-                        {/* AI Generation & Tone Selection Section */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+                    {/* AI Writing Studio Toolbar */}
+                    <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Rewrite tone:</span>
-                                {[
-                                    { id: 'balanced', label: 'Balanced' },
-                                    { id: 'concise', label: 'Concise' },
-                                    { id: 'technical', label: 'Technical' },
-                                    { id: 'executive', label: 'Executive' }
-                                ].map((tone) => (
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mr-1">
+                                    Target Tone:
+                                </span>
+                                {TONES.map((tone) => (
                                     <button
                                         key={tone.id}
                                         type="button"
                                         onClick={() => setSelectedTone(tone.id)}
-                                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all border ${
+                                        className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                                             selectedTone === tone.id
-                                                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                                                : 'bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:text-purple-700'
-                                        }`}>
+                                                ? 'bg-purple-600 text-white shadow-2xs'
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:text-slate-900'
+                                        }`}
+                                    >
                                         {tone.label}
                                     </button>
                                 ))}
                             </div>
+
                             <button
+                                type="button"
                                 onClick={() => generateAISummary(selectedTone)}
                                 disabled={isGeneratingAI}
-                                className={`flex items-center justify-center text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg shadow-xs shrink-0 transition-all ${
+                                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs shrink-0 cursor-pointer ${
                                     isGeneratingAI
-                                        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                                        : 'text-purple-700 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 cursor-pointer shadow-purple-100 hover:shadow-purple-200'
+                                        ? 'bg-slate-100 text-slate-400 cursor-wait'
+                                        : 'bg-purple-600 hover:bg-purple-700 text-white'
                                 }`}
-                                title={t('SummaryStep.ai.tooltip')}>
-                                {isGeneratingAI ? (
-                                    <>
-                                        <div className="w-4 h-4 mr-2 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>
-                                        {t('SummaryStep.ai.generating')}
-                                    </>
-                                ) : (
-                                    <>
-                                        <MdLightbulb className="w-4 h-4 mr-2" />
-                                        {t('SummaryStep.ai.generate')}
-                                    </>
-                                )}
+                            >
+                                <MdAutoAwesome className="w-3.5 h-3.5" />
+                                <span>{isGeneratingAI ? 'Generating Narrative...' : '✨ AI Generate Summary'}</span>
                             </button>
                         </div>
-                        <p className="text-xs text-slate-500">
-                            AI crafts a professional summary tailored to your target occupation, experience, and skills.
-                        </p>
 
-                        {/* Error Message */}
-                        {error && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                                <p className="text-sm font-medium text-red-600">{error}</p>
-                            </div>
-                        )}
+                        {/* 1-Click Transformation Action Pills */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-200/60">
+                            <span className="text-[10px] font-bold text-slate-400">Quick AI Prompts:</span>
+                            {[
+                                { label: '✂ Make Concise', tone: 'concise' },
+                                { label: '⚡ Add Quantified Impact', tone: 'balanced' },
+                                { label: '👔 Executive Leadership', tone: 'executive' },
+                                { label: '💻 Technical Deep-Dive', tone: 'technical' }
+                            ].map((action) => (
+                                <button
+                                    key={action.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedTone(action.tone);
+                                        generateAISummary(action.tone);
+                                    }}
+                                    disabled={isGeneratingAI}
+                                    className="px-2 py-0.5 text-[10px] font-bold bg-white hover:bg-purple-50 text-purple-700 rounded-md border border-purple-200/80 transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                        {/* Summary Rich Text Editor */}
+                    {/* Error Notice */}
+                    {error && (
+                        <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl font-medium">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Editor with Live Telemetry */}
+                    <div className="space-y-1.5">
                         <div className="relative">
                             <RichTextEditor
                                 value={summary}
                                 onChange={handleSummaryChange}
                                 rows={6}
-                                placeholder={t('SummaryStep.content.placeholder')}
-                                className={String(summary || '').trim().length >= 100 ? 'border-green-300 bg-green-50' : ''}
+                                placeholder={getDynamicPlaceholder('summary', 'text', candidateContext)}
                             />
-
-                            {/* Success indicator */}
-                            {charCount >= 100 && (
-                                <div className="absolute top-3 right-3 flex items-center pointer-events-none">
-                                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                            )}
+                        </div>
+                        {/* Word Count & Read Time Telemetry */}
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-medium">
+                            <span>
+                                {summary.replace(/<[^>]*>/g, ' ').trim() ? `${summary.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).length} words` : '0 words'}
+                                {' • '}
+                                ~{Math.max(1, Math.round((summary.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length || 0) / 3))} sec read
+                            </span>
+                            <span className="text-slate-500">
+                                Recommended: 3–5 sentences highlighting career achievements
+                            </span>
                         </div>
                     </div>
+
+                    {/* Executive Recruiter Pitch Card Preview */}
+                    {summary.replace(/<[^>]*>/g, ' ').trim().length >= 40 && (
+                        <div className="p-3.5 bg-gradient-to-br from-slate-50 to-indigo-50/30 rounded-xl border border-indigo-100/90 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                                    <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Executive Recruiter Preview</span>
+                                </span>
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                    Active Pitch
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-800 leading-relaxed italic line-clamp-3">
+                                "{summary.replace(/<[^>]*>/g, ' ').trim()}"
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
-        </div>
+        </StepWorkspaceLayout>
     );
 };
 

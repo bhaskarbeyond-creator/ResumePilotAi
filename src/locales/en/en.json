@@ -1260,43 +1260,43 @@
       },
       "firstName": {
         "label": "First Name",
-        "placeholder": "Enter your first name"
+        "placeholder": "e.g. Aarav"
       },
       "lastName": {
         "label": "Last Name",
-        "placeholder": "Enter your last name"
+        "placeholder": "e.g. Sharma"
       },
       "jobTitle": {
         "label": "Job Title / Profession",
-        "placeholder": "e.g., Software Engineer, Marketing Manager, Data Analyst",
+        "placeholder": "e.g. Senior Human Resources Manager, Lead Cloud Architect",
         "hint": "This will be prominently displayed on your resume"
       },
       "email": {
         "label": "Email Address",
-        "placeholder": "your.email@example.com",
+        "placeholder": "aarav.sharma@gmail.com",
         "hint": "Use a professional email address"
       },
       "phone": {
         "label": "Phone Number",
-        "placeholder": "+1 (555) 123-4567",
+        "placeholder": "+91 98765 43210",
         "hint": "Include country code if applicable"
       },
       "address": {
         "label": "Address",
-        "placeholder": "Street address (optional)",
+        "placeholder": "e.g. Madhapur, Hitec City",
         "hint": "Full address is optional, city and country are usually sufficient"
       },
       "city": {
         "label": "City",
-        "placeholder": "City"
+        "placeholder": "e.g. Hyderabad, Bengaluru"
       },
       "postalCode": {
         "label": "Postal Code",
-        "placeholder": "ZIP/Postal code"
+        "placeholder": "e.g. 500081"
       },
       "country": {
         "label": "Country",
-        "placeholder": "Country"
+        "placeholder": "India"
       }
     },
     "tips": {
@@ -1331,19 +1331,19 @@
     "fields": {
       "jobTitle": {
         "label": "Job Title",
-        "placeholder": "Software Engineer"
+        "placeholder": "e.g. Operations Manager, Associate Physician, Lead Counsel"
       },
       "company": {
         "label": "Company",
-        "placeholder": "Google Inc."
+        "placeholder": "e.g. Healthcare Network, Global Enterprise, Consulting Group"
       },
       "startDate": {
         "label": "Start Date",
-        "placeholder": "January 2020"
+        "placeholder": "e.g. Jun 2021"
       },
       "endDate": {
         "label": "End Date",
-        "placeholder": "December 2023"
+        "placeholder": "e.g. Present or Dec 2023"
       },
       "currentWork": {
         "label": "I currently work here"
@@ -1377,26 +1377,26 @@
     "fields": {
       "school": {
         "label": "School",
-        "placeholder": "University of California"
+        "placeholder": "e.g. State University, National Institute, Recognized College"
       },
       "degree": {
         "label": "Degree",
-        "placeholder": "Bachelor of Science"
+        "placeholder": "e.g. Bachelor's Degree in Science, Arts, or Commerce"
       },
       "startDate": {
         "label": "Start Date",
-        "placeholder": "September 2018"
+        "placeholder": "e.g. Aug 2019"
       },
       "endDate": {
         "label": "End Date",
-        "placeholder": "May 2022"
+        "placeholder": "e.g. May 2023"
       },
       "currentStudy": {
         "label": "I currently study here"
       },
       "description": {
         "label": "Education Description",
-        "placeholder": "Relevant coursework, achievements, honors, GPA, research projects, thesis work, etc..."
+        "placeholder": "Relevant coursework, achievements, honors, CGPA (e.g. 8.8/10), research projects, thesis work..."
       }
     },
     "actions": {
@@ -1449,18 +1449,18 @@
       "subtitle": "Click to add popular skills instantly"
     },
     "popularSkills": [
-      "JavaScript",
-      "Python",
-      "React",
-      "Node.js",
-      "SQL",
-      "Git",
-      "Communication",
-      "Leadership",
-      "Problem Solving",
-      "Teamwork",
       "Project Management",
-      "Data Analysis"
+      "Strategic Planning",
+      "Team Leadership",
+      "Data Analysis",
+      "Communication",
+      "Problem Solving",
+      "Process Optimization",
+      "Client Relations",
+      "Quality Assurance",
+      "Cross-Functional Collaboration",
+      "Risk Management",
+      "Time Management"
     ]
   },
   "SummaryStep": {
@@ -1507,15 +1507,15 @@
     "fields": {
       "title": {
         "label": "Project Name",
-        "placeholder": "e.g. E-commerce Platform"
+        "placeholder": "e.g. Operational Workflow Overhaul or Community Initiative"
       },
       "url": {
         "label": "Project URL",
-        "placeholder": "https://github.com/..."
+        "placeholder": "https://portfolio.com/project or documentation link"
       },
       "description": {
         "label": "Description",
-        "placeholder": "Describe what the project does, technologies used, your contributions and impact…"
+        "placeholder": "Describe the project objectives, methodologies used, key deliverables, and measurable outcomes…"
       }
     }
   },
@@ -1534,11 +1534,11 @@
     "fields": {
       "title": {
         "label": "Certification Name",
-        "placeholder": "e.g. AWS Solutions Architect"
+        "placeholder": "e.g. Project Management Professional (PMP) or State License"
       },
       "issuer": {
         "label": "Issuing Organization",
-        "placeholder": "e.g. Amazon Web Services"
+        "placeholder": "e.g. Accredited Licensing Board or Professional Association"
       },
       "date": {
         "label": "Date Earned",

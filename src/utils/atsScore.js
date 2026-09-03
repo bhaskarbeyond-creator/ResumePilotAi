@@ -46,12 +46,60 @@ const PUNCTUATION_SKILL_VARIANTS = Object.freeze({
 export const JD_STORAGE_KEY = 'rpai.ats.targetJd';
 
 const ACTION_VERBS = Object.freeze([
+    // General leadership, management & execution
     'architected', 'automated', 'built', 'created', 'delivered', 'designed',
     'developed', 'drove', 'engineered', 'established', 'expanded', 'generated',
     'implemented', 'improved', 'increased', 'launched', 'led', 'managed',
     'mentored', 'migrated', 'negotiated', 'optimized', 'orchestrated', 'owned',
     'pioneered', 'reduced', 'refactored', 'scaled', 'secured', 'shipped',
-    'spearheaded', 'streamlined', 'transformed',
+    'spearheaded', 'streamlined', 'transformed', 'supervised', 'coordinated', 'executed',
+    // Healthcare, Clinical & Dental
+    'diagnosed', 'treated', 'administered', 'prescribed', 'rehabilitated', 'monitored',
+    'triaged', 'counseled', 'restored', 'extracted', 'operated', 'examined',
+    // Legal & Regulatory
+    'litigated', 'drafted', 'arbitrated', 'advocated', 'defended', 'prosecuted',
+    'filed', 'settled', 'briefed', 'advised',
+    // Education & Pedagogy
+    'instructed', 'taught', 'facilitated', 'assessed', 'evaluated', 'trained',
+    'curated', 'fostered', 'tutored', 'guided',
+    // Accounting & Finance
+    'audited', 'reconciled', 'budgeted', 'forecasted', 'balanced', 'consolidated',
+    'appraised', 'analyzed', 'underwrote', 'allocated',
+    // Research, Science & Architecture
+    'investigated', 'synthesized', 'formulated', 'published', 'experimented',
+    'hypothesized', 'discovered', 'commissioned', 'surveyed', 'inspected',
+    // Aviation & Flight Operations
+    'piloted', 'navigated', 'commanded', 'briefed', 'landed',
+    // Judiciary & Dispute Resolution
+    'adjudicated', 'presided', 'ruled', 'deliberated',
+    // Culinary, Hospitality & Food Safety
+    'prepared', 'curated', 'standardized', 'sourced', 'costed',
+    // Music, Performing Arts & Audio
+    'composed', 'performed', 'arranged', 'rehearsed', 'recorded', 'mastered',
+    // Public Safety, Law Enforcement & Defense
+    'patrolled', 'apprehended', 'de-escalated', 'mobilized', 'enforced',
+    // Skilled Trades & Industrial Fabrication
+    'fabricated', 'calibrated', 'installed', 'wired', 'welded', 'machined', 'repaired',
+    // Agriculture, Agronomy & Soil
+    'cultivated', 'harvested', 'propagated', 'irrigated', 'sampled',
+    // Veterinary & Animal Care
+    'inoculated', 'vaccinated',
+    // Corporate Governance & Secretarial
+    'convened', 'governed',
+    // Supply Chain, Freight & Logistics
+    'procured', 'dispatched', 'routed', 'inventoried',
+    // Real Estate & Commercial Brokerage
+    'brokered', 'valued',
+    // Construction & Infrastructure
+    'constructed',
+    // Content, Editorial & Technical Writing
+    'authored', 'edited',
+    // Acting & Performance
+    'portrayed', 'voiced',
+    // Visual & Fine Arts
+    'exhibited', 'painted', 'sculpted',
+    // Commercial Experience & Retail
+    'merchandised',
 ]);
 
 const ENGLISH_STOPWORDS = new Set([
@@ -196,11 +244,19 @@ const DOMAIN_ANCHOR_TERMS = new Set([
     'lead', 'senior', 'data', 'project', 'projects', 'product', 'products', 'system', 'systems',
     'design', 'designed', 'designer', 'sales', 'business', 'team', 'teams', 'client', 'clients',
     'customer', 'customers', 'service', 'services', 'health', 'healthcare', 'nurse', 'nursing',
-    'patient', 'patients', 'medical', 'financial', 'finance', 'marketing', 'operations', 'operational',
+    'patient', 'patients', 'medical', 'dental', 'dentist', 'clinic', 'clinical', 'treatment',
+    'doctor', 'physician', 'hospital', 'surgery', 'care', 'therapy', 'law', 'legal', 'attorney',
+    'lawyer', 'counsel', 'litigation', 'court', 'contract', 'contracts', 'compliance', 'regulatory',
+    'teacher', 'teaching', 'student', 'students', 'curriculum', 'classroom', 'school', 'academic',
+    'education', 'instruction', 'accountant', 'accounting', 'audit', 'auditing', 'tax', 'financial',
+    'finance', 'ledger', 'budget', 'fiscal', 'revenue', 'human', 'resources', 'recruiting',
+    'talent', 'employee', 'employees', 'marketing', 'campaign', 'brand', 'content', 'growth',
+    'research', 'laboratory', 'experiment', 'study', 'publication', 'hospitality', 'guest',
+    'guests', 'hotel', 'restaurant', 'dining', 'catering', 'operations', 'operational',
     'director', 'analyst', 'analysis', 'cloud', 'security', 'infrastructure', 'architecture',
     'architect', 'technical', 'technology', 'technologies', 'code', 'quality', 'built', 'led',
     'managed', 'created', 'worked', 'work', 'using', 'used', 'including', 'years', 'experience',
-    'responsible', 'skills', 'education', 'degree', 'university', 'college', 'school'
+    'responsible', 'skills', 'degree', 'university', 'college'
 ]);
 
 export function analyzeStuffing(text) {
@@ -530,7 +586,7 @@ function scoreSkills(data, stuffing) {
         } else if (skills.length < 6) {
             action = 'Add 3–5 more skills or tools to strengthen keyword coverage.';
         } else if (skills.length < 8) {
-            action = 'Add 2–3 specialized technical tools or frameworks to maximize score.';
+            action = 'Add 2–3 specialized tools, methodologies, or core competencies to maximize score.';
         } else if (skills.length > 18) {
             action = 'Prune skill list down to 8–16 high-impact core skills.';
         }
@@ -697,7 +753,7 @@ function classifyKeyword(term) {
     const compact = compactToken(term);
     if (/[./+#\d-]/.test(term) || /^[A-Z]{2,5}$/.test(term.trim())) return 'Tools';
     if (/\s/.test(term.trim()) || TECH_TOKEN_RE.test(term)) return 'Technical Skills';
-    if (/(agile|scrum|kanban|devops|tdd|ci|cd|lean|waterfall)/i.test(compact)) return 'Methodologies';
+    if (/(agile|scrum|kanban|devops|tdd|ci|cd|lean|waterfall|six sigma|kaizen|sop|iso|haccp)/i.test(compact)) return 'Methodologies';
     return 'Role / Domain';
 }
 
@@ -749,8 +805,8 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
         phrases.push({ term: display, key, weight, category: classifyKeyword(display) });
     };
 
-    const punctuationSkills = source.match(/\.NET\b|(?:^|[^A-Za-z0-9])C#(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])C\+\+(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])F#(?=[^A-Za-z0-9]|$)|(?<![A-Za-z])SQL(?![A-Za-z])|Power\s+BI/gi) || [];
-    punctuationSkills.forEach((item) => remember(item, 6));
+    const punctuationSkills = source.match(/\.NET\b|(?:^|[^A-Za-z0-9])C#(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])C\+\+(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])F#(?=[^A-Za-z0-9]|$)|(?<![A-Za-z])SQL(?![A-Za-z])|Power\s+BI|BLS\b|ACLS\b|PMP\b|CPA\b|CFA\b|SHRM\b|LEED\b/gi) || [];
+    punctuationSkills.forEach((item) => remember(item, 5));
 
     const specials = source.match(/\b[A-Za-z][\w+#]*(?:\.[\w+#]+)+\b|\b[A-Za-z]+(?:\/[A-Za-z+]+)+\b|\b[A-Za-z][\w]*-[\w-]+\b|\b[A-Z]{2,5}\b/g) || [];
     specials.forEach((item) => remember(item, 5));

@@ -9,16 +9,19 @@ import {
     MdLightbulb,
     MdVerified,
     MdWorkspacePremium,
+    MdContentCopy,
+    MdArrowUpward,
+    MdArrowDownward,
 } from 'react-icons/md';
 import InputField from './components/InputField';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 import { generateUserAiContent } from '../../../services/aiService';
+import StepWorkspaceLayout from '../components/StepWorkspaceLayout';
+import { getCandidateContext } from '../../../utils/candidateContext';
+import QuickAddCommandBar from '../components/QuickAddCommandBar';
+import TrackGuidanceBanner from '../components/TrackGuidanceBanner';
 
-/**
- * CertificationsStep — wizard step for the `certifications` section with
- * built-in AI recommendation engine, quick-add cards, and auto-sync.
- */
-const CertificationsStep = ({ resumeData, updateResumeData }) => {
+const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const { t } = useTranslation('common');
     const [certifications, setCertifications] = useState(resumeData.certifications || []);
     const [expandedCards, setExpandedCards] = useState(new Set());
@@ -27,9 +30,11 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
     const [addedFeedback, setAddedFeedback] = useState(null);
     const [certError, setCertError] = useState(null);
 
+    const candidateContext = getCandidateContext(resumeData);
+    const certBlueprints = candidateContext.starterBlueprints?.certifications || [];
+
     const aiRequestControllerRef = useRef(null);
 
-    // Abort in-flight AI requests on unmount
     useEffect(() => {
         return () => {
             const controller = aiRequestControllerRef.current;
@@ -53,13 +58,29 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
         id: Date.now() + Math.floor(Math.random() * 1000),
         title: initialData.title || '',
         issuer: initialData.issuer || '',
-        date: initialData.date || `${new Date().getFullYear()}`,
+        date: initialData.date || '', // BLANK by default - NEVER fabricate current year!
+        isLicense: Boolean(initialData.isLicense),
     });
 
-    const addCertification = () => {
-        const newCertification = createNewCertification();
+    const addCertification = (overrides = {}) => {
+        const newCertification = createNewCertification(overrides);
         setCertifications((prev) => [...prev, newCertification]);
-        setExpandedCards(() => new Set([newCertification.id]));
+        setExpandedCards(new Set([newCertification.id]));
+    };
+
+    const handleQuickAddAction = (actionId) => {
+        switch (actionId) {
+            case 'add-license':
+                addCertification({ isLicense: true });
+                break;
+            case 'ai-find-certs':
+                handleGenerateAiCertifications();
+                break;
+            case 'add-cert':
+            default:
+                addCertification();
+                break;
+        }
     };
 
     const removeCertification = (id) => {
@@ -71,8 +92,10 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
         });
     };
 
-    const moveCertification = (id, direction) =>
-        setCertifications((current) => moveResumeItem(current, id, direction));
+    const moveCertification = (id, direction) => {
+        const dir = direction === 'up' ? -1 : 1;
+        setCertifications((current) => moveResumeItem(current, id, dir));
+    };
 
     const duplicateCertification = (id) =>
         setCertifications((current) => {
@@ -123,9 +146,8 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
         return () => clearTimeout(timer);
     }, [certifications]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Auto-expand the only card when there is exactly one certification
     useEffect(() => {
-        if (certifications.length === 1) {
+        if (certifications.length === 1 && expandedCards.size === 0) {
             setExpandedCards(new Set([certifications[0].id]));
         }
     }, [certifications.length]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -158,13 +180,14 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
             const data = await generateUserAiContent(
                 'generate-certifications',
                 {
-                    jobTitle: effectiveRole || 'Professional',
-                    occupation: effectiveRole || 'Professional',
+                    jobTitle: effectiveRole || candidateContext.profession || 'Professional',
+                    occupation: effectiveRole || candidateContext.profession || 'Professional',
                     workHistory: expDetails,
                     education: eduDetails,
                     skills: skillsDetails,
                     existingCertifications: existingCerts,
                     language: currentLanguage,
+                    context: candidateContext,
                 },
                 { signal: requestController.signal }
             );
@@ -197,17 +220,17 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
                     setCertError(null);
                 } else {
                     setAiRecommendations([]);
-                    setCertError(t('CertificationsStep.ai.noResults', 'No credentials found for this target role. Please specify a more detailed role or job title.'));
+                    setCertError('No credentials found for this target role.');
                 }
             } else {
                 setAiRecommendations([]);
-                setCertError(t('CertificationsStep.ai.noResults', 'No credentials found for this target role. Please specify a more detailed role or job title.'));
+                setCertError('No credentials found for this target role.');
             }
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI Certifications generation error:', err);
             const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
-                ? 'Daily AI generation limit reached. Please upgrade your plan or try again tomorrow.'
+                ? 'Daily AI limit reached. Please try again tomorrow.'
                 : (err?.message || 'Unable to generate certifications at this time.');
             setCertError(msg);
             setAiRecommendations([]);
@@ -219,28 +242,25 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
         }
     };
 
-    // Helper: is a certification already in user's list?
     const isCertAlreadyAdded = (title) => {
         if (!title) return false;
         const normalized = title.trim().toLowerCase();
         return certifications.some((c) => (c.title || c.name || '').trim().toLowerCase() === normalized);
     };
 
-    // Add a single recommended certification
     const handleAddRecommendedCert = (rec) => {
         if (isCertAlreadyAdded(rec.title)) return;
         const newCert = createNewCertification({
             title: rec.title,
-            issuer: rec.issuer || 'Accredited Body',
-            date: `${new Date().getFullYear()}`,
+            issuer: rec.issuer || '',
+            date: '', // Candidate must specify actual year
         });
         setCertifications((prev) => [...prev, newCert]);
         setExpandedCards((prev) => new Set([...prev, newCert.id]));
-        setAddedFeedback(rec.title);
+        setAddedFeedback(`Added ${rec.title} — enter verified date`);
         setTimeout(() => setAddedFeedback(null), 2500);
     };
 
-    // Add all unadded recommended certifications at once
     const handleAddAllRecommended = () => {
         const unadded = aiRecommendations.filter((rec) => !isCertAlreadyAdded(rec.title));
         if (unadded.length === 0) return;
@@ -248,469 +268,356 @@ const CertificationsStep = ({ resumeData, updateResumeData }) => {
         const newCerts = unadded.map((rec) =>
             createNewCertification({
                 title: rec.title,
-                issuer: rec.issuer || 'Accredited Body',
-                date: `${new Date().getFullYear()}`,
+                issuer: rec.issuer || '',
+                date: '', // Candidate must specify actual year
             })
         );
 
         setCertifications((prev) => [...prev, ...newCerts]);
         setExpandedCards((prev) => new Set([...prev, ...newCerts.map((c) => c.id)]));
-        setAddedFeedback(`Added ${newCerts.length} certifications!`);
+        setAddedFeedback(`Added ${newCerts.length} certifications — enter verified dates`);
         setTimeout(() => setAddedFeedback(null), 3000);
     };
 
+    const hasCertifications = certifications.some((c) => String(c?.title || '').trim() !== '');
+
+    const unaddedRecommendations = aiRecommendations.filter((rec) => !isCertAlreadyAdded(rec.title));
+
     return (
-        <div className="px-4 py-6 max-w-6xl mx-auto w-full min-h-full">
-            {/* Section Header */}
-            <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-                        <MdWorkspacePremium className="w-5 h-5 text-indigo-600" />
-                        {t('CertificationsStep.title', 'Certifications')}
-                    </h1>
-                    <p className="text-gray-600 text-sm">
-                        {t(
-                            'CertificationsStep.subtitle',
-                            'Add professional certifications and credentials that validate your expertise.'
-                        )}
-                    </p>
-                </div>
+        <StepWorkspaceLayout
+            stepNumber={6}
+            stepPath="certifications"
+            title={t('CertificationsStep.title', 'Certifications & Credentials')}
+            subtitle={t('CertificationsStep.subtitle', 'Add professional certifications and credentials that validate your expertise.')}
+            isComplete={hasCertifications}
+            statusBadge={`${certifications.length} Credential${certifications.length === 1 ? '' : 's'}`}
+            resumeData={resumeData}
+            onNavigate={onNavigate}
+        >
+            <div className="space-y-3">
+                {/* Command Bar: Contextual Quick-Add Actions (Always Available) */}
+                <QuickAddCommandBar
+                    stepPath="certifications"
+                    onAction={handleQuickAddAction}
+                    isAiLoading={isAiGenerating}
+                />
 
-                {/* Top AI Trigger Button */}
-                <button
-                    type="button"
-                    onClick={handleGenerateAiCertifications}
-                    disabled={isAiGenerating}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer shadow-xs hover:shadow-md ${
-                        isAiGenerating
-                            ? 'bg-indigo-100 text-indigo-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white'
-                    }`}
-                    title={t('CertificationsStep.ai.tooltip', 'Generate AI certification recommendations tailored to your profile')}
-                >
-                    <MdAutoAwesome className={`w-4 h-4 ${isAiGenerating ? 'animate-spin' : 'text-yellow-300'}`} />
-                    {isAiGenerating ? (
-                        <span>{t('CertificationsStep.ai.generating', 'Analyzing & Generating...')}</span>
-                    ) : (
-                        <span>{t('CertificationsStep.ai.recommend', 'Recommend Certifications (AI)')}</span>
-                    )}
-                </button>
-            </div>
-
-            {/* Added Feedback Badge */}
-            {addedFeedback && (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2 animate-fade-in">
-                    <MdCheck className="w-4 h-4 text-emerald-600" />
-                    <span>
-                        {addedFeedback.startsWith('Added ')
-                            ? addedFeedback
-                            : `${t('CertificationsStep.ai.addedBadge', 'Added')}: ${addedFeedback}`}
-                    </span>
-                </div>
-            )}
-
-            {/* AI Recommendations Panel */}
-            <div className="mb-6 bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-pink-50/40 border border-indigo-100 rounded-2xl p-4 sm:p-5 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xs">
-                            <MdAutoAwesome className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                {t('CertificationsStep.ai.panelTitle', 'AI Certification Recommendations')}
-                                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-                                    AI Powered
-                                </span>
-                            </h2>
-                            <p className="text-xs text-gray-500">
-                                {effectiveRole
-                                    ? t(
-                                          'CertificationsStep.ai.tailoredSubtitle',
-                                          'Recognized industry credentials tailored for {{role}}',
-                                          { role: effectiveRole }
-                                      )
-                                    : t(
-                                          'CertificationsStep.ai.genericSubtitle',
-                                          'Top accredited industry credentials based on your skills and career path'
-                                      )}
-                            </p>
-                        </div>
+                {/* Feedback Toast */}
+                {addedFeedback && (
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-2xs">
+                        <MdCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{addedFeedback.startsWith('Added ') ? addedFeedback : `Added: ${addedFeedback}`}</span>
                     </div>
+                )}
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                        {aiRecommendations.length > 0 && (
-                            <button
-                                type="button"
-                                onClick={handleAddAllRecommended}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer"
-                            >
-                                <MdCheck className="w-3.5 h-3.5" />
-                                {t('CertificationsStep.ai.addAll', 'Add All Recommended')}
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={handleGenerateAiCertifications}
-                            disabled={isAiGenerating}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 border ${
-                                isAiGenerating
-                                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                    : 'bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-200 shadow-xs cursor-pointer'
-                            }`}
-                        >
-                            <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-600" />
-                            {isAiGenerating ? (
-                                <span>{t('CertificationsStep.ai.generating', 'Generating...')}</span>
-                            ) : (
-                                <span>
-                                    {aiRecommendations.length > 0
-                                        ? t('CertificationsStep.ai.refresh', 'Refresh Recommendations')
-                                        : t('CertificationsStep.ai.getRecommendations', 'Get Recommendations')}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Recommendations Grid or Empty Prompt State */}
-                {aiRecommendations.length === 0 && !isAiGenerating ? (
-                    <div className="p-6 bg-white/80 border border-indigo-100/60 rounded-xl text-center">
-                        <div className="w-12 h-12 mx-auto mb-2 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                            <MdLightbulb className="w-6 h-6" />
-                        </div>
-                        <h3 className="text-sm font-bold text-gray-800 mb-1">
-                            {t('CertificationsStep.ai.promptTitle', 'Supercharge Your Resume with Validated Certifications')}
-                        </h3>
-                        <p className="text-xs text-gray-600 mb-4 max-w-md mx-auto">
-                            {effectiveRole
-                                ? t(
-                                      'CertificationsStep.ai.promptDescRole',
-                                      'Let AI analyze your experience as {{role}} and recommend the highest-value certifications hiring managers look for.',
-                                      { role: effectiveRole }
-                                  )
-                                : t(
-                                      'CertificationsStep.ai.promptDescGeneric',
-                                      'Generate industry-standard credentials and certifications matched to your field to boost ATS ranking and employer credibility.'
-                                  )}
-                        </p>
-                        {certError && (
-                            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3 max-w-md mx-auto" role="status">
-                                {certError}
-                            </p>
-                        )}
-                        <button
-                            type="button"
-                            onClick={handleGenerateAiCertifications}
-                            disabled={isAiGenerating}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition-all cursor-pointer"
-                        >
-                            <MdAutoAwesome className="w-4 h-4 text-yellow-300" />
-                            {t('CertificationsStep.ai.generateNow', 'Generate AI Recommendations Now')}
-                        </button>
-                    </div>
+                {certifications.length === 0 ? (
+                    /* Guided Certifications Setup Banner (Zero-Fabrication Architecture) */
+                    <TrackGuidanceBanner
+                        candidateContext={candidateContext}
+                        stepName="Certification or License"
+                        stepPath="certifications"
+                        focusAreas={['Professional Licensing & State Registration', 'Board Certifications & Accreditations', 'Technical & Domain Accreditations', 'Safety, Compliance & Quality Standards', 'Continuing Education Credits']}
+                        examples={certBlueprints.slice(0, 3).map((b) => ({
+                            title: b.title || 'Professional Certification',
+                            description: `Issued by ${b.issuer || 'Accredited Authority'}`
+                        }))}
+                        onStartBlank={() => addCertification()}
+                    />
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {aiRecommendations.map((rec, index) => {
-                            const alreadyAdded = isCertAlreadyAdded(rec.title);
-                            const isMandatory = rec.category === 'mandatory';
+                    /* High-Density Certification Studio with Milestone Bar */
+                    <div className="space-y-2.5">
+                        {/* Milestone Bar */}
+                        <div className="px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                                <span className="font-bold text-slate-800 truncate">
+                                    {certifications.length} Credential{certifications.length === 1 ? '' : 's'} Documented
+                                </span>
+                                <span className="text-[11px] text-slate-400 hidden sm:inline">• Verified Standing</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateAiCertifications}
+                                    disabled={isAiGenerating}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                                >
+                                    <MdAutoAwesome className="w-3.5 h-3.5 text-purple-600" />
+                                    <span className="hidden sm:inline">{isAiGenerating ? 'Discovering...' : 'AI Recommend'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={addCertification}
+                                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer"
+                                >
+                                    <MdAdd className="w-3.5 h-3.5" />
+                                    <span>Add Credential</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {certifications.map((certification, index) => {
+                            const isExpanded = expandedCards.has(certification.id);
+                            const certTitle = certification.title || certification.name || '';
+                            const isFilled = Boolean(certTitle);
 
                             return (
                                 <div
-                                    key={`${rec.title}-${index}`}
-                                    className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
-                                        alreadyAdded
-                                            ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
-                                            : 'bg-white hover:bg-slate-50/80 border-indigo-100 hover:border-indigo-300 shadow-xs hover:shadow-md'
+                                    key={certification.id}
+                                    className={`bg-white rounded-xl border transition-all duration-150 ${
+                                        isExpanded 
+                                            ? 'border-indigo-300 shadow-md ring-2 ring-indigo-500/10' 
+                                            : 'border-slate-200/90 shadow-2xs hover:border-slate-300'
                                     }`}
                                 >
-                                    <div>
-                                        <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                                            <span
-                                                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                                                    isMandatory
-                                                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                                        : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                                                }`}
-                                            >
-                                                {isMandatory
-                                                    ? t('CertificationsStep.ai.mandatoryBadge', 'Industry Standard')
-                                                    : t('CertificationsStep.ai.recommendedBadge', 'Recommended')}
-                                            </span>
+                                    {/* Compact Card Header / Summary Row */}
+                                    <div 
+                                        className={`px-3.5 sm:px-4 py-2.5 flex items-center justify-between gap-3 cursor-pointer ${
+                                            isExpanded ? 'border-b border-slate-100 bg-slate-50/50 rounded-t-xl' : 'rounded-xl'
+                                        }`}
+                                        onClick={() => toggleCardExpansion(certification.id)}
+                                    >
+                                        {/* Left: Badge + Title + Issuer */}
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                                                isFilled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                                            }`}>
+                                                {isFilled ? <MdCheck className="w-4 h-4" /> : index + 1}
+                                            </div>
 
-                                            {alreadyAdded && (
-                                                <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
-                                                    <MdCheck className="w-3.5 h-3.5" />
-                                                    {t('CertificationsStep.ai.added', 'Added')}
-                                                </span>
-                                            )}
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className={`text-xs sm:text-sm font-bold truncate ${certTitle ? 'text-slate-900' : 'text-slate-400 italic'}`}>
+                                                        {certTitle || 'Untitled Certification'}
+                                                    </h3>
+                                                    {certification.issuer && (
+                                                        <>
+                                                            <span className="text-slate-300 text-xs">•</span>
+                                                            <span className="text-xs font-medium text-slate-600 truncate">
+                                                                {certification.issuer}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {certification.date && (
+                                                    <div className="text-[11px] text-slate-500 mt-0.5">
+                                                        <span>Earned: {certification.date}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        <h4 className="font-bold text-xs text-gray-900 leading-snug line-clamp-2">
-                                            {rec.title}
-                                        </h4>
-
-                                        {rec.issuer && (
-                                            <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1 truncate">
-                                                <MdVerified className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                                                <span className="truncate">{rec.issuer}</span>
-                                            </p>
-                                        )}
+                                        {/* Right: Quick Action Controls */}
+                                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                            <button
+                                                type="button"
+                                                onClick={() => moveCertification(certification.id, 'up')}
+                                                disabled={index === 0}
+                                                aria-label="Move certification up"
+                                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                                                title="Move up"
+                                            >
+                                                <MdArrowUpward className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => moveCertification(certification.id, 'down')}
+                                                disabled={index === certifications.length - 1}
+                                                aria-label="Move certification down"
+                                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                                                title="Move down"
+                                            >
+                                                <MdArrowDownward className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => duplicateCertification(certification.id)}
+                                                aria-label="Duplicate certification"
+                                                className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                                                title="Duplicate"
+                                            >
+                                                <MdContentCopy className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeCertification(certification.id)}
+                                                aria-label="Remove certification"
+                                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                                                title="Delete"
+                                            >
+                                                <MdDelete className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleCardExpansion(certification.id)}
+                                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer ml-1"
+                                                title={isExpanded ? 'Collapse' : 'Expand'}
+                                            >
+                                                <MdKeyboardArrowDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                        <span className="text-[10px] text-slate-400 font-medium">
-                                            {new Date().getFullYear()}
-                                        </span>
+                                    {/* Expanded Form Fields */}
+                                    {isExpanded && (
+                                        <div className="p-4 sm:p-5 space-y-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <InputField
+                                                    label={t('CertificationsStep.fields.title.label', 'Certification Name')}
+                                                    name={`certification-title-${certification.id}`}
+                                                    placeholder={certBlueprints[0]?.title ? `e.g. ${certBlueprints[0].title}` : 'e.g. Professional Board Certification, Practice License, PMP'}
+                                                    value={certification.title || certification.name || ''}
+                                                    onChange={(e) => updateCertification(certification.id, 'title', e.target.value)}
+                                                    required
+                                                />
+                                                <div className="space-y-1.5">
+                                                    <InputField
+                                                        label={t('CertificationsStep.fields.issuer.label', 'Issuing Organization')}
+                                                        name={`certification-issuer-${certification.id}`}
+                                                        placeholder={certBlueprints[0]?.issuer ? `e.g. ${certBlueprints[0].issuer}` : 'e.g. Accredited Licensing Board, National Council, University'}
+                                                        value={certification.issuer || ''}
+                                                        onChange={(e) => updateCertification(certification.id, 'issuer', e.target.value)}
+                                                    />
+                                                    {/* Quick Authority Pills */}
+                                                    <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                                                        <span className="text-[10px] font-bold text-slate-400">Popular:</span>
+                                                        {([...new Set(certBlueprints.map(c => c.issuer).filter(Boolean))].slice(0, 5).length > 0
+                                                            ? [...new Set(certBlueprints.map(c => c.issuer).filter(Boolean))].slice(0, 5)
+                                                            : ['Licensing Board', 'State Council', 'Accredited Institute', 'PMI', 'University']
+                                                        ).map((auth) => (
+                                                            <button
+                                                                key={auth}
+                                                                type="button"
+                                                                onClick={() => updateCertification(certification.id, 'issuer', auth)}
+                                                                className="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded border border-slate-200/80 transition-colors cursor-pointer"
+                                                            >
+                                                                {auth}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAddRecommendedCert(rec)}
-                                            disabled={alreadyAdded}
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                                                alreadyAdded
-                                                    ? 'bg-emerald-100/80 text-emerald-700 cursor-default'
-                                                    : 'bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 hover:border-transparent cursor-pointer'
-                                            }`}
-                                        >
-                                            {alreadyAdded ? (
-                                                <>
-                                                    <MdCheck className="w-3 h-3" />
-                                                    <span>{t('CertificationsStep.ai.added', 'Added')}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <MdAdd className="w-3 h-3" />
-                                                    <span>{t('CertificationsStep.ai.add', 'Add')}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <InputField
+                                                    label={t('CertificationsStep.fields.date.label', 'Date Earned')}
+                                                    name={`certification-date-${certification.id}`}
+                                                    placeholder="e.g. 2024 or Nov 2023"
+                                                    value={certification.date || ''}
+                                                    onChange={(e) => updateCertification(certification.id, 'date', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
+
+                        {/* Add Button Row */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={addCertification}
+                                className="flex-1 h-11 border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+                            >
+                                <MdAdd className="w-4 h-4" />
+                                <span>Add Another Credential</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleGenerateAiCertifications}
+                                disabled={isAiGenerating}
+                                className="h-11 px-4 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/80 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0"
+                            >
+                                <MdAutoAwesome className="w-3.5 h-3.5 text-purple-600" />
+                                <span>{isAiGenerating ? 'Discovering...' : 'AI Recommendations'}</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* AI Recommendations Tray */}
+                {aiRecommendations.length > 0 && (
+                    <div className="p-4 bg-white rounded-xl border border-indigo-100 shadow-2xs space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <div>
+                                <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                                    <MdVerified className="w-4 h-4 text-indigo-600" />
+                                    <span>Recommended Credentials for {effectiveRole || 'Your Role'}</span>
+                                </h3>
+                                <p className="text-[11px] text-slate-500">
+                                    Click any credential to add it instantly to your resume.
+                                </p>
+                            </div>
+                            {unaddedRecommendations.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={handleAddAllRecommended}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs shrink-0"
+                                >
+                                    <MdCheck className="w-3.5 h-3.5" />
+                                    <span>Add All ({unaddedRecommendations.length})</span>
+                                </button>
+                            )}
+                        </div>
+
+                        {unaddedRecommendations.length === 0 ? (
+                            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-semibold flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                    <MdCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    All recommended certifications from this batch have been added!
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateAiCertifications}
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                                >
+                                    Get More
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {aiRecommendations.map((rec, idx) => {
+                                    const added = isCertAlreadyAdded(rec.title);
+                                    return (
+                                        <div
+                                            key={`${rec.title}-${idx}`}
+                                            className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 transition-all ${
+                                                added 
+                                                    ? 'bg-slate-50 border-slate-200 opacity-60' 
+                                                    : 'bg-white border-indigo-100 hover:border-indigo-300 shadow-2xs'
+                                            }`}
+                                        >
+                                            <div className="min-w-0">
+                                                <span className="font-bold text-slate-900 block truncate">
+                                                    {rec.title}
+                                                </span>
+                                                <span className="text-[10px] text-slate-500 block truncate">
+                                                    {rec.issuer}
+                                                </span>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAddRecommendedCert(rec)}
+                                                disabled={added}
+                                                className={`px-2 py-1 rounded-lg text-[10px] font-extrabold shrink-0 transition-all ${
+                                                    added
+                                                        ? 'bg-emerald-100 text-emerald-700 cursor-default'
+                                                        : 'bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 hover:border-transparent cursor-pointer'
+                                                }`}
+                                            >
+                                                {added ? 'Added ✓' : '+ Add'}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-
-            {/* Certification Cards List */}
-            <div className="space-y-4">
-                {certifications.map((certification, index) => {
-                    const isExpanded = expandedCards.has(certification.id);
-                    const isComplete = Boolean(certification.title || certification.name);
-                    const certTitle = certification.title || certification.name || '';
-
-                    return (
-                        <div
-                            key={certification.id}
-                            className={`relative bg-gradient-to-r from-white to-slate-50 border ${
-                                isExpanded
-                                    ? 'border-indigo-200 rounded-xl shadow-lg shadow-indigo-50'
-                                    : 'border-gray-200 rounded-xl shadow-md hover:shadow-lg hover:border-indigo-300 hover:from-indigo-50 hover:to-slate-50'
-                            }`}
-                        >
-                            {/* Accent line */}
-                            <div
-                                className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${
-                                    isComplete
-                                        ? 'bg-gradient-to-r from-indigo-400 to-purple-500'
-                                        : 'bg-gradient-to-r from-gray-300 to-gray-400'
-                                }`}
-                            />
-
-                            {/* Card header — click to expand/collapse */}
-                            <div
-                                className={`px-4 sm:px-6 py-4 ${
-                                    isExpanded
-                                        ? 'border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-xl'
-                                        : 'rounded-xl'
-                                } flex items-center cursor-pointer hover:bg-gradient-to-r hover:from-indigo-50 hover:to-slate-50 group`}
-                                onClick={() => toggleCardExpansion(certification.id)}
-                            >
-                                {/* Left: badge + title */}
-                                <div className="flex items-center flex-1 min-w-0">
-                                    <div
-                                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold mr-4 flex-shrink-0 shadow-sm ${
-                                            isComplete
-                                                ? 'bg-gradient-to-br from-indigo-400 to-purple-500 text-white shadow-indigo-200'
-                                                : 'bg-gradient-to-br from-indigo-400 to-purple-500 text-white shadow-indigo-200'
-                                        }`}
-                                    >
-                                        {isComplete ? (
-                                            <MdCheck className="w-5 h-5" />
-                                        ) : (
-                                            <span className="font-bold">{index + 1}</span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex-1 min-w-0">
-                                        <h3
-                                            className={`font-semibold text-base mb-1 truncate ${
-                                                certTitle ? 'text-gray-800' : 'text-gray-400'
-                                            }`}
-                                        >
-                                            {certTitle ||
-                                                t(
-                                                    'CertificationsStep.defaultValues.untitledCertification',
-                                                    'Untitled Certification'
-                                                )}
-                                        </h3>
-                                        {certification.issuer && (
-                                            <span className="block text-xs text-indigo-500 font-medium truncate">
-                                                {certification.issuer}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Right: reorder, duplicate, expand, delete */}
-                                <div className="flex items-center space-x-1 sm:space-x-2">
-                                    <div className="w-2 h-2 rounded-full bg-indigo-500 opacity-60 mr-1" />
-
-                                    {/* Move Up */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            moveCertification(certification.id, 'up');
-                                        }}
-                                        disabled={index === 0}
-                                        aria-label="Move certification up"
-                                        className={`p-1 ${
-                                            index === 0
-                                                ? 'text-slate-300 cursor-not-allowed'
-                                                : 'text-slate-500 hover:text-slate-800'
-                                        }`}
-                                    >
-                                        ↑
-                                    </button>
-
-                                    {/* Move Down */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            moveCertification(certification.id, 'down');
-                                        }}
-                                        disabled={index === certifications.length - 1}
-                                        aria-label="Move certification down"
-                                        className={`p-1 ${
-                                            index === certifications.length - 1
-                                                ? 'text-slate-300 cursor-not-allowed'
-                                                : 'text-slate-500 hover:text-slate-800'
-                                        }`}
-                                    >
-                                        ↓
-                                    </button>
-
-                                    {/* Duplicate */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            duplicateCertification(certification.id);
-                                        }}
-                                        aria-label={`Duplicate ${certTitle || 'certification'}`}
-                                        className="p-1 text-slate-500 hover:text-indigo-600"
-                                        title={t('CertificationsStep.actions.duplicate', 'Duplicate')}
-                                    >
-                                        ⧉
-                                    </button>
-
-                                    {/* Expand/Collapse */}
-                                    <button
-                                        type="button"
-                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-100 rounded-lg"
-                                        title={
-                                            isExpanded
-                                                ? t('CertificationsStep.actions.collapse', 'Collapse')
-                                                : t('CertificationsStep.actions.expand', 'Expand')
-                                        }
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleCardExpansion(certification.id);
-                                        }}
-                                    >
-                                        <MdKeyboardArrowDown
-                                            className={`w-5 h-5 transition-transform duration-200 ${
-                                                isExpanded ? 'rotate-180' : ''
-                                            }`}
-                                        />
-                                    </button>
-
-                                    {/* Delete */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeCertification(certification.id);
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-                                        title={t('CertificationsStep.actions.remove', 'Remove certification')}
-                                    >
-                                        <MdDelete className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Expanded form body */}
-                            {isExpanded && (
-                                <div className="p-4 sm:p-6 space-y-5 bg-gradient-to-br from-white to-slate-50 rounded-b-xl">
-                                    {/* Certification name + issuing organization */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <InputField
-                                            label={t('CertificationsStep.fields.title.label', 'Certification Name')}
-                                            name={`certification-title-${certification.id}`}
-                                            placeholder={t(
-                                                'CertificationsStep.fields.title.placeholder',
-                                                'e.g. AWS Solutions Architect'
-                                            )}
-                                            value={certification.title || certification.name || ''}
-                                            onChange={(e) => updateCertification(certification.id, 'title', e.target.value)}
-                                            required
-                                        />
-                                        <InputField
-                                            label={t('CertificationsStep.fields.issuer.label', 'Issuing Organization')}
-                                            name={`certification-issuer-${certification.id}`}
-                                            placeholder={t(
-                                                'CertificationsStep.fields.issuer.placeholder',
-                                                'e.g. Amazon Web Services'
-                                            )}
-                                            value={certification.issuer || ''}
-                                            onChange={(e) => updateCertification(certification.id, 'issuer', e.target.value)}
-                                        />
-                                    </div>
-
-                                    {/* Date issued */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <InputField
-                                            label={t('CertificationsStep.fields.date.label', 'Date Earned')}
-                                            name={`certification-date-${certification.id}`}
-                                            placeholder={t(
-                                                'CertificationsStep.fields.date.placeholder',
-                                                'e.g. 2024'
-                                            )}
-                                            value={certification.date || ''}
-                                            onChange={(e) => updateCertification(certification.id, 'date', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-
-                {/* Add Certification button */}
-                <button
-                    type="button"
-                    onClick={addCertification}
-                    className="w-full p-6 border-2 border-dashed border-indigo-300 rounded-xl text-indigo-600 hover:border-indigo-500 hover:text-indigo-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 flex items-center justify-center font-semibold text-base shadow-sm hover:shadow-md transition-all cursor-pointer"
-                >
-                    <MdAdd className="w-6 h-6 mr-3" />
-                    {t('CertificationsStep.actions.addCertification', 'Add Certification')}
-                </button>
-            </div>
-        </div>
+        </StepWorkspaceLayout>
     );
 };
 

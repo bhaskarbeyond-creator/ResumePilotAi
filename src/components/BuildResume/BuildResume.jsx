@@ -551,71 +551,74 @@ const BuildResume = () => {
     };
 
     const getStepAiGuidance = (stepPath) => {
+        const candidateContext = getCandidateContext(resumeData);
+        const actionVerbSample = candidateContext.actionVerbs?.slice(0, 3).join(', ') || 'Delivered, Spearheaded, Managed';
+
         switch (stepPath) {
             case 'heading':
                 return {
-                    title: 'Contact Details & Location',
-                    tip: 'Include your full name, location, and verified email. ATS parsers match geographic location to check residency eligibility.',
+                    title: 'Contact Details & Identity',
+                    tip: 'Include your full legal name, target job title, location, and verified email so ATS algorithms and recruiters can index your profile accurately.',
                     statusBadge: (resumeData.firstname && resumeData.email) ? '✓ Verified Contact' : 'Incomplete',
                 };
             case 'work-history':
                 return {
                     title: 'Professional Experience & Impact',
-                    tip: 'Use action verbs (Architected, Engineered, Spearheaded) and quantify achievements with percentages, revenue, or team scale.',
-                    statusBadge: `${(resumeData.workHistory || []).length} role(s) recorded`,
+                    tip: `Begin accomplishment bullets with strong action verbs (${actionVerbSample}) and quantify outcomes with measurable scale, efficiency gains, or key results.`,
+                    statusBadge: `${(resumeData.employments || []).length} role(s) recorded`,
                 };
             case 'education':
                 return {
-                    title: 'Academic Degrees & Honors',
-                    tip: 'List your highest degrees, academic institutions, graduation dates, and relevant awards or coursework.',
+                    title: 'Academic Qualifications & Credentials',
+                    tip: 'List your highest completed degrees or diplomas, recognized academic institutions, graduation timelines, and relevant honors or coursework.',
                     statusBadge: `${(resumeData.educations || []).length} degree(s) recorded`,
                 };
             case 'skills':
                 return {
-                    title: 'Core Technical & Professional Skills',
-                    tip: 'List 6–12 target role keywords, frameworks, and methodologies to maximize automated keyword matching.',
+                    title: 'Core Competencies & Domain Skills',
+                    tip: 'Include 8–16 core competencies, methodologies, tools, and domain-specific skills matching your target career path to maximize ATS indexing.',
                     statusBadge: `${(resumeData.skills || []).length} skill(s) listed`,
                 };
             case 'projects':
                 return {
-                    title: 'Highlighted Technical Projects',
-                    tip: 'Showcase standout projects with live demo links, repository URLs, and descriptions of technical challenges solved.',
+                    title: 'Key Initiatives & Case Studies',
+                    tip: 'Showcase 1–3 practical initiatives, case studies, or deliverables highlighting scope, actions taken, and tangible results achieved.',
                     statusBadge: `${(resumeData.projects || []).length} project(s) added`,
                 };
             case 'certifications':
                 return {
-                    title: 'Industry Certifications',
-                    tip: 'Active cloud and professional credentials (AWS, GCP, PMP, CISSP) increase hiring manager interview rates by 35%.',
+                    title: 'Professional Certifications & Licenses',
+                    tip: 'Accredited professional licenses, board certifications, and industry credentials validate your qualifications against competing applicants.',
                     statusBadge: `${(resumeData.certifications || []).length} cert(s) added`,
                 };
             case 'languages':
                 return {
-                    title: 'Languages & Proficiency',
-                    tip: 'Specify native, fluent, or professional proficiency levels to highlight multilingual communication capability.',
+                    title: 'Languages & Fluency Levels',
+                    tip: 'Specify native, fluent, or professional proficiency levels to demonstrate multilingual communication capability.',
                     statusBadge: `${(resumeData.languages || []).length} language(s) added`,
                 };
             case 'summary':
                 return {
                     title: 'Executive Career Summary',
-                    tip: 'Craft a 2–3 sentence high-impact summary capturing years of domain expertise, primary stack, and leadership impact.',
+                    tip: 'Craft a 2–3 sentence high-impact summary capturing your years of domain expertise, core professional strengths, and top delivered impact.',
                     statusBadge: resumeData.summary?.trim() ? 'Summary drafted ✓' : 'Summary pending',
                 };
             case 'achievements':
                 return {
-                    title: 'Key Honors & Awards',
-                    tip: 'Highlight recognitions, hackathon wins, patents, or publications that demonstrate proven excellence.',
+                    title: 'Key Honors & Distinctions',
+                    tip: 'Highlight recognitions, performance awards, honors, or citations that demonstrate proven professional excellence.',
                     statusBadge: `${(resumeData.achievements || []).length} award(s) listed`,
                 };
             case 'references':
                 return {
                     title: 'Professional References',
-                    tip: 'Add verified managerial references or indicate "Available upon request" according to application instructions.',
+                    tip: 'Add verified professional references or declare "Available upon request" according to application guidelines.',
                     statusBadge: `${(resumeData.references || []).length} reference(s)`,
                 };
             case 'custom':
                 return {
-                    title: 'Custom Sections & Portfolio',
-                    tip: 'Include custom categories such as Volunteering, Publications, Speaking, or Open Source Contributions.',
+                    title: 'Specialized Profile Modules',
+                    tip: 'Include specialized categories such as Community Volunteering, Publications, Speaking, Committees, or Professional Affiliations.',
                     statusBadge: `${(resumeData.customSections || []).length} custom section(s)`,
                 };
             case 'review':
@@ -1721,88 +1724,51 @@ const BuildResume = () => {
                     </svg>
                 </button>
 
-                {/* Stepper Overview Modal Trigger & Progress Summary */}
+                {/* Stepper Overview Modal Trigger & Consolidated Progress Summary */}
                 <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-200">
                     <button
                         type="button"
                         onClick={() => setShowAllStepsModal(true)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200/80 transition-colors cursor-pointer shadow-2xs"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200/90 transition-all cursor-pointer shadow-2xs"
                         title="View all resume sections in detail"
                     >
                         <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span className="hidden md:inline">11 Steps</span>
-                        <span className="text-[11px] text-slate-500 font-medium">({completedStepCount}/{contentSteps.length})</span>
+                        <span>{completedStepCount}/{contentSteps.length} Done</span>
+                        <span className="text-slate-300">|</span>
+                        <span className="text-indigo-700 font-extrabold">{progressPercentage}%</span>
                         <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
-                    <div className="hidden lg:flex items-center text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-xl">
-                        <span>{progressPercentage}% Complete</span>
-                    </div>
                 </div>
             </nav>
 
             {/* Main Editing Canvas */}
             <div className="flex-1 flex overflow-hidden relative">
                 {/* Scrollable Form Content */}
-                <div className={`flex-1 overflow-y-auto bg-slate-50 ${showDesktopSplitPreview ? 'xl:max-w-[58%]' : ''} transition-all duration-300`}>
-                    <div className="min-h-[calc(100vh-190px)] max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-32 sm:pb-28 space-y-4">
-                        {/* Contextual AI Studio Micro-Guidance Banner */}
-                        {(() => {
-                            const guidance = getStepAiGuidance(currentStep.path);
-                            return (
-                                <div className="bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-white border border-indigo-100/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
-                                    <div className="flex items-start gap-3 min-w-0">
-                                        <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-2xs shrink-0 mt-0.5 sm:mt-0">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider">{guidance.title}</h4>
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200/70 shadow-2xs">{guidance.statusBadge}</span>
-                                            </div>
-                                            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{guidance.tip}</p>
-                                        </div>
-                                    </div>
-                                    {isAtsEnabled === true && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowAtsDrawer(true)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-200/80 shadow-2xs transition-colors shrink-0 cursor-pointer self-start sm:self-center"
-                                        >
-                                            <span>ATS Insights</span>
-                                            <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })()}
-
+                <div className={`flex-1 overflow-y-auto bg-slate-50/80 ${showDesktopSplitPreview ? 'xl:max-w-[58%]' : ''} transition-all duration-300`}>
+                    <div className="min-h-[calc(100vh-180px)] w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 pt-2 pb-24 space-y-3">
                         {/* Step Form Routes */}
                         <Routes>
-                            <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
-                            <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="heading" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="work-history" element={<WorkHistoryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="education" element={<EducationStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="skills" element={<SkillsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="languages" element={<LanguagesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="summary" element={<SummaryStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="projects" element={<ProjectsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="certifications" element={<CertificationsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
+                            <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                             <Route path="review" element={<ReviewStep resumeData={resumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
-                            <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} />} />
+                            <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                         </Routes>
                     </div>
 
                     {/* Fixed Bottom Action Footer (Never covers form content, sticky to viewport bottom) */}
                     <footer className="sticky bottom-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-4 sm:px-6 lg:px-8 py-3.5 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-                        <div className="flex justify-between items-center max-w-5xl mx-auto gap-3">
+                        <div className="flex justify-between items-center max-w-7xl mx-auto gap-3">
                             {/* Previous Button */}
                             <button
                                 onClick={handlePrevious}

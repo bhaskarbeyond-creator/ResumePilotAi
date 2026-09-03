@@ -1255,12 +1255,12 @@
       },
       "email": {
         "label": "ईमेल पता",
-        "placeholder": "your.email@example.com",
+        "placeholder": "aarav.sharma@gmail.com",
         "hint": "एक पेशेवर ईमेल पते का उपयोग करें"
       },
       "phone": {
         "label": "फ़ोन नंबर",
-        "placeholder": "+1 (555) 123-4567",
+        "placeholder": "+91 98765 43210",
         "hint": "यदि लागू हो तो देश कोड शामिल करें"
       },
       "address": {
