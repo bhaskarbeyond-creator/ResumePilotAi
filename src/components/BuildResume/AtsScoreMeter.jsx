@@ -44,16 +44,45 @@ const RadialGauge = ({ score = 0, stroke = '#475569', label = '' }) => {
     );
 };
 
-const AtsScoreMeter = ({ resumeData = {}, onNavigate }) => {
+/**
+ * AtsScoreMeter.
+ *
+ * JD source of truth: the resume document's `targetJobDescription` (passed as
+ * `jobDescription` + `onJobDescriptionChange`) when available — the same JD the
+ * Review step, Skills step, and step-level ATS findings use. The per-device
+ * localStorage JD remains as a fallback for standalone/legacy usage so nothing
+ * is lost; when the document is wired in, the two stores no longer diverge.
+ */
+const AtsScoreMeter = ({ resumeData = {}, onNavigate, jobDescription, onJobDescriptionChange, defaultExpanded = false }) => {
     const { t } = useTranslation('common');
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [showMatcher, setShowMatcher] = useState(false);
-    const [jdText, setJdText] = useState(() => readStoredJobDescription());
-    const [jdDraft, setJdDraft] = useState(() => readStoredJobDescription());
+    const documentManaged = jobDescription != null;
+    const [jdText, setJdText] = useState(() => (documentManaged ? jobDescription : readStoredJobDescription()));
+    const [jdDraft, setJdDraft] = useState(() => (documentManaged ? jobDescription : readStoredJobDescription()));
+
+    // Keep the meter in sync when the document's JD changes elsewhere
+    // (e.g. pasted in the Review step) while this meter is open.
+    useEffect(() => {
+        if (documentManaged && jobDescription !== jdText) {
+            setJdText(jobDescription);
+            setJdDraft(jobDescription);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [jobDescription, documentManaged]);
 
     useEffect(() => {
-        writeStoredJobDescription(jdText);
-    }, [jdText]);
+        if (!documentManaged) writeStoredJobDescription(jdText);
+    }, [jdText, documentManaged]);
+
+    const commitJd = (value) => {
+        setJdText(value);
+        if (typeof onJobDescriptionChange === 'function') {
+            onJobDescriptionChange(value);
+        } else {
+            writeStoredJobDescription(value);
+        }
+    };
 
     const result = useMemo(
         () => calculateAtsScore(resumeData, { jobDescription: jdText }) || {
@@ -79,13 +108,13 @@ const AtsScoreMeter = ({ resumeData = {}, onNavigate }) => {
         : t('AtsScoreMeter.jdMatchPct', '{{score}}% match', { score: result.jdMatch.score });
 
     const applyJobDescription = () => {
-        setJdText(jdDraft);
+        commitJd(jdDraft);
         setShowMatcher(true);
     };
 
     const clearJobDescription = () => {
         setJdDraft('');
-        setJdText('');
+        commitJd('');
     };
 
     const go = (path) => {

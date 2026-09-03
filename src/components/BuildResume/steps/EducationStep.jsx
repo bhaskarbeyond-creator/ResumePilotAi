@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-    MdDelete, 
-    MdKeyboardArrowDown, 
-    MdAdd, 
-    MdCheck, 
-    MdLightbulb, 
-    MdSchool,
-    MdContentCopy,
-    MdArrowUpward,
-    MdArrowDownward 
-} from 'react-icons/md';
-import EducationSuggestionModal from './components/EducationSuggestionModal';
-import InputField from './components/InputField';
+import { MdAdd, MdLightbulb } from 'react-icons/md';
+import StepShell from '../components/StepShell.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import EntryList from '../components/EntryList.jsx';
+import AiPromptCard from '../components/AiPromptCard.jsx';
+import Field from '../components/Field.jsx';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import RichTextEditor from './components/RichTextEditor';
+import { useAiAssist } from '../ai/useAiAssist.js';
+import { canRunAssistOperation } from '../ai/aiContract.js';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
-import StepWorkspaceLayout from '../components/StepWorkspaceLayout';
 import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
-import QuickAddCommandBar from '../components/QuickAddCommandBar';
-import TrackGuidanceBanner from '../components/TrackGuidanceBanner';
 
+/**
+ * Education — entry list. Institutions and degrees are typed by the
+ * candidate (no "popular" lists, no grade presets — those were fabricated
+ * content). Inline AI rewrites only the candidate's own notes.
+ */
 const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const { t } = useTranslation('common');
     const [educations, setEducations] = useState(resumeData.educations || []);
-    const candidateContext = getCandidateContext(resumeData);
-    const blueprints = candidateContext.starterBlueprints?.education || [];
+    const candidateContext = getCandidateContext(resumeData, resumeData.targetJobDescription || '');
+
+    const ai = useAiAssist();
+    const [activeEducationId, setActiveEducationId] = useState(null);
 
     useEffect(() => {
         if (resumeData.educations && Array.isArray(resumeData.educations)) {
@@ -34,52 +33,24 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
     }, [resumeData.educations]);
 
-    const [expandedCards, setExpandedCards] = useState(new Set());
-    const [aiModalOpen, setAiModalOpen] = useState(false);
-    const [selectedEducationId, setSelectedEducationId] = useState(null);
-
-    const createNewEducation = (overrides = {}) => ({
+    const createNewEducation = () => ({
         id: Date.now(),
         school: '',
-        degree: overrides.degree || '',
-        degreeType: overrides.degreeType || 'degree',
+        degree: '',
+        degreeType: 'degree',
         started: '',
         finished: '',
         description: '',
         current: false,
     });
 
-    const addEducation = (overrides = {}) => {
-        const newEducation = createNewEducation(overrides);
+    const addEducation = () => {
+        const newEducation = createNewEducation();
         setEducations(prev => [...prev, newEducation]);
-        setExpandedCards(new Set([newEducation.id]));
-    };
-
-    const handleQuickAddAction = (actionId) => {
-        switch (actionId) {
-            case 'add-diploma':
-                addEducation({ degreeType: 'diploma' });
-                break;
-            case 'add-training':
-                addEducation({ degreeType: 'training' });
-                break;
-            case 'add-continuing-ed':
-                addEducation({ degreeType: 'continuing-ed' });
-                break;
-            case 'add-degree':
-            default:
-                addEducation();
-                break;
-        }
     };
 
     const removeEducation = (id) => {
-        setEducations(educations.filter((edu) => edu.id !== id));
-        setExpandedCards((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
-        });
+        setEducations(current => current.filter(edu => edu.id !== id));
     };
 
     const moveEducation = (id, direction) => setEducations(current => moveResumeItem(current, id, direction));
@@ -89,48 +60,61 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
         return duplicateResumeItem(current, id, { degree: `${source?.degree || 'Degree'} (Copy)` });
     });
 
-    const toggleCardExpansion = (id) => {
-        setExpandedCards((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) {
-                newSet.delete(id);
-            } else {
-                newSet.add(id);
-            }
-            return newSet;
-        });
-    };
-
     const updateEducation = (id, field, value) => {
-        setEducations((prevEducations) =>
-            prevEducations.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
+        setEducations(prevEducations =>
+            prevEducations.map(edu => (edu.id === id ? { ...edu, [field]: value } : edu))
         );
     };
 
-    const openAiModal = (educationId) => {
-        setSelectedEducationId(educationId);
-        setAiModalOpen(true);
+    // ——— AI: evidence-gated, per entry ———
+    const activeEducation = educations.find(edu => String(edu.id) === String(activeEducationId)) || null;
+
+    const runAiFor = (education) => {
+        setActiveEducationId(education.id);
+        ai.run({
+            operation: 'generate-education-description',
+            resumeData,
+            targetJd: resumeData.targetJobDescription || '',
+            entry: education,
+        });
     };
 
-    const closeAiModal = () => {
-        setAiModalOpen(false);
-        setSelectedEducationId(null);
-    };
-
-    const applyAiSuggestion = (suggestion) => {
-        if (selectedEducationId) {
-            updateEducation(selectedEducationId, 'description', suggestion);
+    const handleAiAnswers = (answers) => {
+        if (!activeEducation) return;
+        const lines = Object.values(answers).map(v => String(v || '').trim()).filter(Boolean);
+        if (lines.length) {
+            const current = String(activeEducation.description || '').trim();
+            updateEducation(activeEducation.id, 'description', current ? `${current}\n${lines.join('\n')}` : lines.join('\n'));
         }
+        const withNotes = { ...activeEducation, description: activeEducation.description || lines.join('\n') };
+        ai.run({
+            operation: 'generate-education-description',
+            resumeData,
+            targetJd: resumeData.targetJobDescription || '',
+            entry: withNotes,
+            answers,
+        });
     };
 
-    const selectedEducation = selectedEducationId 
-        ? educations.find((edu) => edu.id === selectedEducationId || String(edu.id) === String(selectedEducationId) || edu.date === selectedEducationId) 
-        : null;
+    const handleAiAccept = (selected) => {
+        if (!activeEducation) return;
+        const bullets = selected.map(s => s.text).filter(Boolean);
+        if (!bullets.length) return;
+        const current = String(activeEducation.description || '').trim();
+        const formatted = bullets.map(b => (b.startsWith('•') ? b : `• ${b}`)).join('\n');
+        updateEducation(activeEducation.id, 'description', current ? `${current}\n${formatted}` : formatted);
+        ai.reset();
+    };
+
+    const closeAiCard = () => {
+        ai.reset();
+        setActiveEducationId(null);
+    };
 
     const handleSave = () => {
         updateResumeData({ educations });
 
-        const hasValidEducation = educations.some((edu) => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
+        const hasValidEducation = educations.some(edu => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (hasValidEducation && !completedSteps.includes(3)) {
             updateResumeData({ educations, completedSteps: [...completedSteps, 3] });
@@ -147,364 +131,174 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [educations]);
 
-    useEffect(() => {
-        if (educations.length === 1 && expandedCards.size === 0) {
-            setExpandedCards(new Set([educations[0].id]));
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [educations.length]);
+    const hasValidEducation = educations.some(edu => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
 
-    const hasValidEducation = educations.some((edu) => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
+    const renderEntryBody = (education) => {
+        const readiness = canRunAssistOperation('generate-education-description', { resumeData, entry: education });
+        const notesPlain = String(education.description || '').replace(/<[^>]*>/g, ' ').trim();
+        const isAiActive = String(education.id) === String(activeEducationId);
 
-    return (
-        <StepWorkspaceLayout
-            stepNumber={3}
-            stepPath="education"
-            title={t('EducationStep.title', 'Education & Qualifications')}
-            subtitle={t('EducationStep.subtitle', 'List your academic background, honors, coursework, and degree details.')}
-            isComplete={hasValidEducation}
-            statusBadge={`${educations.length} Degree${educations.length === 1 ? '' : 's'}`}
-            resumeData={resumeData}
-            onNavigate={onNavigate}
-        >
-            <div className="space-y-3">
-                {/* Command Bar: Contextual Quick-Add Actions (Always Available) */}
-                <QuickAddCommandBar
-                    stepPath="education"
-                    onAction={handleQuickAddAction}
-                />
-
-                {educations.length === 0 ? (
-                    /* Guided Academic Setup Banner (Zero-Fabrication Architecture) */
-                    <TrackGuidanceBanner
-                        candidateContext={candidateContext}
-                        stepName="Academic Credentials"
-                        stepPath="education"
-                        focusAreas={['Accredited Degrees & Diplomas', 'Major / Specialization', 'Honors & Academic Distinctions', 'Continuing Professional Education', 'Relevant Research & Coursework']}
-                        examples={blueprints.slice(0, 2).map((b) => ({
-                            title: b.degree || 'Degree / Diploma',
-                            description: b.description || 'Comprehensive coursework and academic honors in this field.'
-                        }))}
-                        onStartBlank={() => addEducation()}
+        return (
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <AutocompleteInputField
+                        label={t('EducationStep.fields.school.label', 'Institution')}
+                        name={`school-${education.id}`}
+                        placeholder={getDynamicPlaceholder('education', 'school', candidateContext) || 'Enter the institution exactly as it appears on your certificate'}
+                        value={education.school}
+                        onChange={(e) => updateEducation(education.id, 'school', e.target.value)}
+                        required
+                        suggestionType="school"
+                        context={candidateContext}
                     />
-                ) : (
-                    /* High-Density Education Studio with Milestone Bar */
-                    <div className="space-y-2.5">
-                        {/* Milestone Bar */}
-                        <div className="px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 text-xs">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                                <span className="font-bold text-slate-800 truncate">
-                                    {educations.length} Academic Qualification{educations.length === 1 ? '' : 's'} Documented
-                                </span>
-                                <span className="text-[11px] text-slate-400 hidden sm:inline">• Highest Degree First</span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={addEducation}
-                                className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-900 hover:bg-indigo-600 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer shrink-0"
-                            >
-                                <MdAdd className="w-3.5 h-3.5" />
-                                <span>Add Degree</span>
-                            </button>
-                        </div>
+                    <AutocompleteInputField
+                        label={t('EducationStep.fields.degree.label', 'Degree / qualification')}
+                        name={`degree-${education.id}`}
+                        placeholder={getDynamicPlaceholder('education', 'degree', candidateContext) || 'Enter the qualification exactly as it appears on your certificate'}
+                        value={education.degree}
+                        onChange={(e) => updateEducation(education.id, 'degree', e.target.value)}
+                        required
+                        suggestionType="degree"
+                        context={candidateContext}
+                    />
+                </div>
 
-                        {educations.map((education, index) => {
-                            const isExpanded = expandedCards.has(education.id);
-                            const isFilled = Boolean(education.degree && education.school);
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field
+                        label={t('EducationStep.fields.startDate.label', 'Start year')}
+                        name={`started-${education.id}`}
+                        placeholder="e.g. 2019 or Aug 2019"
+                        value={education.started}
+                        onChange={(e) => updateEducation(education.id, 'started', e.target.value)}
+                    />
+                    <div className="space-y-1.5">
+                        <Field
+                            label={t('EducationStep.fields.endDate.label', 'End year')}
+                            name={`finished-${education.id}`}
+                            placeholder={education.current ? 'Present' : 'e.g. 2023 or May 2023'}
+                            value={education.finished}
+                            onChange={(e) => updateEducation(education.id, 'finished', e.target.value)}
+                            disabled={education.current}
+                        />
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-700">
+                            <input
+                                type="checkbox"
+                                checked={!!education.current}
+                                onChange={(e) => {
+                                    const isChecked = e.target.checked;
+                                    setEducations(prev =>
+                                        prev.map(edu => (edu.id === education.id ? { ...edu, current: isChecked, finished: isChecked ? 'Present' : '' } : edu))
+                                    );
+                                }}
+                                className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <span>{t('EducationStep.fields.currentStudy.label', 'I am currently studying here')}</span>
+                        </label>
+                    </div>
+                </div>
 
-                            return (
-                                <div
-                                    key={education.id}
-                                    className={`bg-white rounded-xl border transition-all duration-150 ${
-                                        isExpanded 
-                                            ? 'border-indigo-300 shadow-md ring-2 ring-indigo-500/10' 
-                                            : 'border-slate-200/90 shadow-2xs hover:border-slate-300'
-                                    }`}
-                                >
-                                    {/* Compact Card Header / Summary Row */}
-                                    <div 
-                                        className={`px-3.5 sm:px-4 py-2.5 flex items-center justify-between gap-3 cursor-pointer ${
-                                            isExpanded ? 'border-b border-slate-100 bg-slate-50/50 rounded-t-xl' : 'rounded-xl'
-                                        }`}
-                                        onClick={() => toggleCardExpansion(education.id)}
-                                    >
-                                        {/* Left: Badge + Titles + Dates */}
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                                                isFilled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                                            }`}>
-                                                {isFilled ? <MdCheck className="w-4 h-4" /> : index + 1}
-                                            </div>
+                <div className="space-y-2.5">
+                    <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
+                            Coursework, honors & notable work
+                        </label>
+                        <p className="text-xs text-slate-500 mb-2">
+                            Only what you completed — course names, honors, final-year project, or results you are comfortable listing.
+                        </p>
+                        <RichTextEditor
+                            value={education.description}
+                            onChange={(value) => updateEducation(education.id, 'description', value)}
+                            rows={3}
+                            placeholder={getDynamicPlaceholder('education', 'description', candidateContext) || t('EducationStep.fields.description.placeholder', 'e.g. final-year project, relevant coursework, honors (as printed on your documents)')}
+                        />
+                    </div>
 
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className={`text-xs sm:text-sm font-bold truncate ${education.degree ? 'text-slate-900' : 'text-slate-400 italic'}`}>
-                                                        {education.degree || 'Untitled Degree'}
-                                                    </h3>
-                                                    {education.school && (
-                                                        <>
-                                                            <span className="text-slate-300 text-xs">•</span>
-                                                            <span className="text-xs font-medium text-slate-600 truncate">
-                                                                {education.school}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                                                    {(education.started || education.finished || education.current) && (
-                                                        <span>
-                                                            {education.started || 'Start'} – {education.current ? 'Present' : (education.finished || 'End')}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Right: Quick Action Controls */}
-                                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                                            <button
-                                                type="button"
-                                                onClick={() => moveEducation(education.id, -1)}
-                                                disabled={index === 0}
-                                                aria-label="Move education up"
-                                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
-                                                title="Move up"
-                                            >
-                                                <MdArrowUpward className="w-3.5 h-3.5" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => moveEducation(education.id, 1)}
-                                                disabled={index === educations.length - 1}
-                                                aria-label="Move education down"
-                                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
-                                                title="Move down"
-                                            >
-                                                <MdArrowDownward className="w-3.5 h-3.5" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => duplicateEducation(education.id)}
-                                                aria-label="Duplicate education"
-                                                className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer"
-                                                title="Duplicate"
-                                            >
-                                                <MdContentCopy className="w-3.5 h-3.5" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeEducation(education.id)}
-                                                aria-label="Remove education"
-                                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                                                title="Delete"
-                                            >
-                                                <MdDelete className="w-3.5 h-3.5" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleCardExpansion(education.id)}
-                                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer ml-1"
-                                                title={isExpanded ? 'Collapse' : 'Expand'}
-                                            >
-                                                <MdKeyboardArrowDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded Form Fields */}
-                                    {isExpanded && (
-                                        <div className="p-4 sm:p-5 space-y-4">
-                                            {/* Row 1: School & Degree */}
-                                            <div className="space-y-2.5">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    <div className="space-y-1.5">
-                                                        <AutocompleteInputField
-                                                            label={t('EducationStep.fields.school.label', 'Institution / University')}
-                                                            name={`school-${education.id}`}
-                                                            placeholder={candidateContext.domainData?.schools?.[0] ? `e.g. ${candidateContext.domainData.schools[0]}` : 'e.g. State University, City College'}
-                                                            value={education.school}
-                                                            onChange={(e) => updateEducation(education.id, 'school', e.target.value)}
-                                                            required={true}
-                                                            suggestionType="school"
-                                                            context={candidateContext}
-                                                        />
-                                                        {/* Quick Institution Pills */}
-                                                        <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                                                            <span className="text-[10px] font-bold text-slate-400">Popular:</span>
-                                                            {(candidateContext.domainData?.schools?.length > 0 
-                                                                ? candidateContext.domainData.schools.slice(0, 5) 
-                                                                : ['State University', 'City College', 'National University', 'Technical Institute']
-                                                            ).map((s) => (
-                                                                <button
-                                                                    key={s}
-                                                                    type="button"
-                                                                    onClick={() => updateEducation(education.id, 'school', s)}
-                                                                    className="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded border border-slate-200/80 transition-colors cursor-pointer"
-                                                                >
-                                                                    {s}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-1.5">
-                                                        <AutocompleteInputField
-                                                            label={t('EducationStep.fields.degree.label', 'Degree / Major')}
-                                                            name={`degree-${education.id}`}
-                                                            placeholder={candidateContext.domainData?.degrees?.[0] ? `e.g. ${candidateContext.domainData.degrees[0]}` : 'e.g. Bachelor of Science, Master of Arts'}
-                                                            value={education.degree}
-                                                            onChange={(e) => updateEducation(education.id, 'degree', e.target.value)}
-                                                            required={true}
-                                                            suggestionType="degree"
-                                                            context={candidateContext}
-                                                        />
-                                                        {/* Quick Degree Pills */}
-                                                        <div className="flex items-center gap-1 flex-wrap pt-0.5">
-                                                            <span className="text-[10px] font-bold text-slate-400">Degrees:</span>
-                                                            {(candidateContext.domainData?.degrees?.length > 0 
-                                                                ? candidateContext.domainData.degrees.slice(0, 6) 
-                                                                : ['B.A.', 'B.S.', 'M.A.', 'M.S.', 'MBA', 'Diploma']
-                                                            ).map((d) => (
-                                                                <button
-                                                                    key={d}
-                                                                    type="button"
-                                                                    onClick={() => updateEducation(education.id, 'degree', d)}
-                                                                    className="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded border border-slate-200/80 transition-colors cursor-pointer"
-                                                                >
-                                                                    {d}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Row 2: Dates */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <InputField
-                                                    label={t('EducationStep.fields.startDate.label', 'Start Year')}
-                                                    name={`started-${education.id}`}
-                                                    placeholder="e.g. 2019 or Aug 2019"
-                                                    value={education.started}
-                                                    onChange={(e) => updateEducation(education.id, 'started', e.target.value)}
-                                                />
-                                                <div className="space-y-1.5">
-                                                    <InputField
-                                                        label={t('EducationStep.fields.endDate.label', 'Graduation Year')}
-                                                        name={`finished-${education.id}`}
-                                                        placeholder={education.current ? 'Present' : 'e.g. 2023 or May 2023'}
-                                                        value={education.finished}
-                                                        onChange={(e) => updateEducation(education.id, 'finished', e.target.value)}
-                                                        disabled={education.current}
-                                                    />
-                                                    <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-slate-700">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={!!education.current}
-                                                            onChange={(e) => {
-                                                                const isChecked = e.target.checked;
-                                                                setEducations((prev) =>
-                                                                    prev.map((edu) =>
-                                                                        edu.id === education.id
-                                                                            ? { ...edu, current: isChecked, finished: isChecked ? 'Present' : '' }
-                                                                            : edu
-                                                                    )
-                                                                );
-                                                            }}
-                                                            className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                                                        />
-                                                        <span>{t('EducationStep.fields.currentStudy.label', 'Currently studying here')}</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            {/* Row 3: Honors / Coursework */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                                                        Coursework, CGPA & Honors
-                                                    </label>
-                                                    {(() => {
-                                                        const hasSchool = Boolean(education.school || education.institution);
-                                                        const hasDegree = Boolean(education.degree || education.qualification);
-                                                        const hasSourceNotes = String(education.description || education.userNotes || education.coursework || '').replace(/<[^>]*>/g, ' ').trim().length >= 12;
-                                                        const canRewrite = hasSchool && hasDegree && hasSourceNotes;
-                                                        return (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openAiModal(education.id || education.date)}
-                                                                disabled={!canRewrite}
-                                                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                                                                    canRewrite
-                                                                        ? 'text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 cursor-pointer shadow-2xs'
-                                                                        : 'text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed opacity-70'
-                                                                }`}
-                                                                title={!hasSchool || !hasDegree
-                                                                    ? 'Enter school and degree first.'
-                                                                    : !hasSourceNotes
-                                                                        ? 'Add at least 12 characters of notes first.'
-                                                                        : 'Enhance academic summary.'}
-                                                            >
-                                                                <MdLightbulb className="w-3.5 h-3.5 text-purple-600" />
-                                                                <span>AI Note Polish</span>
-                                                            </button>
-                                                        );
-                                                    })()}
-                                                </div>
-
-                                                <RichTextEditor
-                                                    value={education.description}
-                                                    onChange={(value) => updateEducation(education.id, 'description', value)}
-                                                    rows={3}
-                                                    placeholder={t('EducationStep.fields.description.placeholder', 'Relevant coursework, CGPA (e.g. 8.8/10), academic achievements, or leadership roles...')}
-                                                />
-
-                                                {/* Quick Grade & CGPA Presets */}
-                                                <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
-                                                    <span className="text-slate-400 font-medium">Quick Grade Presets:</span>
-                                                    {['CGPA: 8.5 / 10', 'CGPA: 9.0 / 10', 'First Class with Distinction (82%)', 'First Class (76%)'].map((grade) => (
-                                                        <button
-                                                            key={grade}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const current = education.description ? `${education.description} • ${grade}` : grade;
-                                                                updateEducation(education.id, 'description', current);
-                                                            }}
-                                                            className="px-2 py-0.5 rounded bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-semibold border border-slate-200 transition-colors cursor-pointer text-[10px]"
-                                                        >
-                                                            + {grade}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-
-                        {/* Add Education Button */}
+                    {isAiActive ? (
+                        <AiPromptCard
+                            title={notesPlain ? 'Strengthen this qualification' : 'Describe this qualification with AI'}
+                            buttonLabel={notesPlain ? 'Strengthen with AI' : 'Describe this qualification with AI'}
+                            evidenceHint={notesPlain
+                                ? 'Rewrites only your notes — no invented courses, honors, or results.'
+                                : 'You have no notes for this qualification yet, so it will ask you a few questions first.'}
+                            status={ai.status}
+                            result={ai.result}
+                            error={ai.error?.message}
+                            disabled={!readiness.ok}
+                            disabledReason={readiness.reason}
+                            onRun={() => runAiFor(education)}
+                            onAnswers={handleAiAnswers}
+                            onAccept={handleAiAccept}
+                            onDismiss={closeAiCard}
+                        />
+                    ) : (
                         <button
                             type="button"
-                            onClick={addEducation}
-                            className="w-full h-11 border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
+                            onClick={() => runAiFor(education)}
+                            disabled={!readiness.ok}
+                            title={readiness.ok ? undefined : readiness.reason}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <MdAdd className="w-4 h-4" />
-                            <span>Add Another Qualification</span>
+                            <MdLightbulb className="w-3.5 h-3.5 text-indigo-500" />
+                            {notesPlain ? 'Strengthen with AI' : 'Describe this qualification with AI'}
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
+        );
+    };
 
-            <EducationSuggestionModal 
-                isOpen={aiModalOpen} 
-                onClose={closeAiModal} 
-                selectedEducation={selectedEducation} 
-                onApplySuggestion={applyAiSuggestion} 
-            />
-        </StepWorkspaceLayout>
+    return (
+        <StepShell
+            stepNumber={3}
+            stepPath="education"
+            title={t('EducationStep.title', 'Education & qualifications')}
+            subtitle={t('EducationStep.subtitle', 'List the qualifications you have completed — exactly as they appear on your documents.')}
+            isComplete={hasValidEducation}
+            statusBadge={educations.length > 0 ? `${educations.length} ${educations.length === 1 ? 'qualification' : 'qualifications'}` : ''}
+            resumeData={resumeData}
+            targetJd={resumeData.targetJobDescription || ''}
+        >
+            {educations.length === 0 ? (
+                <EmptyState
+                    title="Add your first qualification"
+                    description="Your highest completed qualification first — the institution, the degree or diploma, and the years. Honors and coursework are optional."
+                    primaryAction={{
+                        label: 'Add a qualification',
+                        icon: <MdAdd className="w-4 h-4" />,
+                        onClick: addEducation,
+                    }}
+                />
+            ) : (
+                <div className="space-y-3">
+                    <EntryList
+                        entries={educations.map(education => ({
+                            ...education,
+                            onMoveUp: () => moveEducation(education.id, -1),
+                            onMoveDown: () => moveEducation(education.id, 1),
+                            onDuplicate: () => duplicateEducation(education.id),
+                            onDelete: () => removeEducation(education.id),
+                        }))}
+                        renderEntryTitle={(education) => ({
+                            title: education.degree || '',
+                            subtitle: education.school || '',
+                            meta: (education.started || education.current || education.finished)
+                                ? `${education.started || '…'} – ${education.current ? 'Present' : (education.finished || '…')}`
+                                : '',
+                        })}
+                        renderEntry={renderEntryBody}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={addEducation}
+                        className="w-full h-11 rounded-xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-semibold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-colors"
+                    >
+                        <MdAdd className="w-4 h-4" />
+                        Add another qualification
+                    </button>
+                </div>
+            )}
+        </StepShell>
     );
 };
 

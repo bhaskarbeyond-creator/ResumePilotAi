@@ -19,32 +19,45 @@
  */
 @import 'tailwindcss';
 
-/* Preserve original heading styles */
-h1 {
+/* Preserve original heading styles.
+ *
+ * IMPORTANT (cascade): this file is loaded alongside Tailwind v4
+ * (`@import 'tailwindcss'`), where utilities live in native cascade layers and
+ * UNLAYERED author CSS beats layered utilities regardless of specificity.
+ * The resume builder is utility-driven, so these legacy element rules must not
+ * match inside it — otherwise every builder heading renders at 2em/1.5em/1.17em
+ * instead of its designed `text-*` size. The builder root (and its portaled
+ * surfaces) carries the `rp-builder-scope` class; inside it, Tailwind preflight
+ * + utilities apply exactly as designed. Outside it, this block behaves exactly
+ * as before (the added `:not(:is(...))` only raises specificity for non-builder
+ * elements, where any competing class-scoped rule in index.scss still wins by
+ * source order — index.scss is imported after this file).
+ */
+h1:not(:is(.rp-builder-scope h1)) {
     font-size: 2em;
     margin: 0.67em 0;
     font-weight: 600;
 }
 
-h2 {
+h2:not(:is(.rp-builder-scope h2)) {
     font-size: 1.5em;
     margin: 0.83em 0;
     font-weight: 600;
 }
 
-h3 {
+h3:not(:is(.rp-builder-scope h3)) {
     font-size: 1.17em;
     margin: 1em 0;
     font-weight: 500;
 }
 
-h4 {
+h4:not(:is(.rp-builder-scope h4)) {
     font-size: 1em;
     margin: 1.33em 0;
     font-weight: 500;
 }
 
-h5 {
+h5:not(:is(.rp-builder-scope h5)) {
     font-size: 0.83em;
     margin: 1.67em 0;
     font-weight: 400;

@@ -145,7 +145,7 @@ test('BuildResume gates both ATS meter mounts and fail-closes on load errors', (
   assert.match(build, /getSystemSettings\(\)/);
   assert.match(build, /systemSettingsUpdated/);
   assert.doesNotMatch(build, /onSnapshot|settingsFromSnapshot|includeMetadataChanges/);
-  assert.equal((build.match(/<AtsScoreMeter /g) || []).length, 2);
+  assert.equal((build.match(/<AtsScoreMeter[\s\n]/g) || []).length, 2);
   assert.match(build, /\{isAtsEnabled === true && \(/);
   assert.doesNotMatch(build, /setIsAtsEnabled\(true\)/);
   assert.match(build, /allowMissingDefault: false/);

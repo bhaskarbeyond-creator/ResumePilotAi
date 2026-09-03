@@ -71,18 +71,22 @@ test('the Create-Resume wizard exposes Certifications between Projects and Langu
     assert.match(langs, /completedSteps\.includes\(7\)/);
 });
 
-test('CertificationsStep includes AI recommendation engine with fallback and quick-add actions', () => {
+test('CertificationsStep uses the shared evidence-gated AI contract (no quick-add)', () => {
     const certStep = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
-    assert.match(certStep, /generateUserAiContent/);
-    assert.match(certStep, /generate-certifications/);
-    assert.match(certStep, /setCertError/);
-    assert.match(certStep, /handleAddRecommendedCert/);
-    assert.match(certStep, /handleAddAllRecommended/);
-    assert.match(certStep, /isCertAlreadyAdded/);
+    // Shared AI lifecycle + explicit operation, gated locally before sending.
+    assert.match(certStep, /useAiAssist/);
+    assert.match(certStep, /canRunAssistOperation\('generate-certifications'/);
+    // The single inline AI surface with accept/answers/dismiss contract.
+    assert.match(certStep, /AiPromptCard/);
+    assert.match(certStep, /onAccept={handleCertAccept}/);
+    // Entry CRUD and fields.
     assert.match(certStep, /updateCertification/);
-    assert.match(certStep, /Certification Name/);
-    assert.match(certStep, /Issuing Organization/);
-    assert.match(certStep, /Date Earned/);
+    assert.match(certStep, /Credential name/);
+    assert.match(certStep, /Issuing organization/);
+    assert.match(certStep, /Date earned/);
+    // Zero-fabrication: no quick-add preset cloud.
+    assert.doesNotMatch(certStep, /QuickAddCommandBar/);
+    assert.doesNotMatch(certStep, /handleAddAllRecommended/);
 });
 
 test('All 16 locales contain complete CertificationsStep and AI recommendation copy', () => {

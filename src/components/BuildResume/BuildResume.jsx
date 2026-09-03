@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -34,6 +35,7 @@ import { getJsonById, IncrementDownloads, addOneToNumberOfDocumentsDownloaded, g
 import { resolveAtsScoreVisibility } from '../../utils/moduleFlags';
 import { createResumeDraft, loadResumeDraft, saveResumeDraft, publishResume, unpublishResume, getResumePublication, writeResumeRecovery, readResumeRecovery, clearResumeRecovery } from '../../services/resumePersistence';
 import { EMPTY_RESUME, DEFAULT_SECTION_ORDER, normalizeResumeData, buildCanonicalResumeDocument } from '../../utils/resumeData';
+import { getCandidateContext } from '../../utils/candidateContext';
 import { trackDownload, trackEvent, trackEngagement } from '../../utils/ga4';
 import { toValidatedPdfBlob, pdfFileName } from '../../utils/pdfDownload';
 import { executeDocxDownload } from '../../utils/docxDownload';
@@ -504,15 +506,21 @@ const BuildResume = () => {
         const completed = resumeData.completedSteps || [];
         if (completed.includes(stepId)) return true;
         if (stepPath && completed.includes(stepPath)) return true;
+        // Legacy flags from pre-rebuild saves. Only string aliases and the step's own
+        // current id are honored: the old app's *numeric* flags pointed at different
+        // section positions, and the renumbered step ids collide with other steps'
+        // current ids (e.g. old projects flag 6 = current certifications step id 6),
+        // which made empty steps report as "Completed". Content checks below are the
+        // authoritative source; flags are cache only.
         const legacyMap = {
             1: [1, 'heading'],
-            2: [3, 2, 'work-history', 'employment'],
-            3: [4, 3, 'education'],
-            4: [5, 4, 'skills'],
-            5: [6, 5, 'projects'],
-            6: [7, 6, 'certifications'],
-            7: [8, 7, 'languages'],
-            8: [2, 8, 'summary'],
+            2: [2, 'work-history', 'employment'],
+            3: [3, 'education'],
+            4: [4, 'skills'],
+            5: [5, 'projects'],
+            6: [6, 'certifications'],
+            7: [7, 'languages'],
+            8: [8, 'summary'],
             9: [9, 'achievements'],
             10: [10, 'references'],
             11: [11, 'custom'],
@@ -526,7 +534,9 @@ const BuildResume = () => {
             case 'heading':
                 return Boolean(resumeData.firstname?.trim() || resumeData.email?.trim());
             case 'work-history':
-                return Array.isArray(resumeData.workHistory) && resumeData.workHistory.length > 0;
+                // Canonical field is `employments` (WorkHistoryStep + buildCanonicalResumeDocument);
+                // `workHistory` is a legacy alias that no longer exists in the normalized model.
+                return Array.isArray(resumeData.employments) && resumeData.employments.length > 0;
             case 'education':
                 return Array.isArray(resumeData.educations) && resumeData.educations.length > 0;
             case 'skills':
@@ -912,18 +922,8 @@ const BuildResume = () => {
     };
 
     const handleAddCustomSection = () => {
-        const title = window.prompt(
-            t('BuildResume.customSection.prompt', 'Enter Custom Section Title (e.g. Volunteer Work, Awards, Publications):'),
-            t('BuildResume.customSection.defaultTitle', 'Awards & Honors')
-        );
-        if (!title?.trim()) return;
-        const id = `custom-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-        const customSections = [...(resumeDataRef.current.customSections || []), { id, title: title.trim().slice(0, 100), items: [], visible: true }];
-        const sectionOrder = [...resumeDataRef.current.sectionOrder];
-        if (!sectionOrder.includes(id)) sectionOrder.push(id);
-        if (!sectionOrder.includes('custom')) sectionOrder.push('custom');
-        updateResumeData({ customSections, sectionOrder });
-        navigate('/build-resume/custom');
+        // Title is entered in a small in-app dialog.
+        openCustomSectionDialog();
     };
 
     useEffect(() => {
@@ -1427,6 +1427,38 @@ const BuildResume = () => {
     const completedStepCount = contentSteps.filter((step) => isStepCompleted(step.id, step.path)).length;
     const progressPercentage = contentSteps.length ? Math.round((completedStepCount / contentSteps.length) * 100) : 0;
 
+    // ATS score for the header pill — computed once per data change, no inline
+    // IIFE during render.
+    const headerAts = useMemo(() => {
+        const atsResult = calculateAtsScore(resumeData);
+        const score = atsResult?.qualityScore || 0;
+        return {
+            score,
+            label: atsResult?.status?.label || 'Getting Started',
+            tone: score >= 75 ? 'good' : (score >= 45 ? 'medium' : 'low'),
+        };
+    }, [resumeData]);
+
+    // Small in-app dialog for custom section titles (no blocking browser prompts).
+    const [customSectionDialogOpen, setCustomSectionDialogOpen] = useState(false);
+    const [customSectionTitleDraft, setCustomSectionTitleDraft] = useState('');
+    const openCustomSectionDialog = useCallback(() => {
+        setCustomSectionTitleDraft('');
+        setCustomSectionDialogOpen(true);
+    }, []);
+    const confirmCustomSection = useCallback(() => {
+        const title = customSectionTitleDraft.trim().slice(0, 100);
+        setCustomSectionDialogOpen(false);
+        if (!title) return;
+        const id = `custom-${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+        const customSections = [...(resumeDataRef.current.customSections || []), { id, title, items: [], visible: true }];
+        const sectionOrder = [...resumeDataRef.current.sectionOrder];
+        if (!sectionOrder.includes(id)) sectionOrder.push(id);
+        if (!sectionOrder.includes('custom')) sectionOrder.push('custom');
+        updateResumeData({ customSections, sectionOrder });
+        navigate('/build-resume/custom');
+    }, [customSectionTitleDraft, navigate, updateResumeData]);
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center w-full" aria-busy="true">
@@ -1442,31 +1474,42 @@ const BuildResume = () => {
     }
 
     return (
-        <div className="h-screen w-full bg-slate-50 flex flex-col overflow-hidden">
-            {/* Toast Notifications */}
-            <AnimatePresence>
-                {isSuccessToastVisible && (
-                    <motion.div initial={{ opacity: 0, y: -20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.9 }} className="fixed top-6 right-6 z-50">
-                        <Toasts type="Success" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+        <div className="rp-builder-scope h-screen w-full bg-slate-50 flex flex-col overflow-hidden">
+            {/* Toast Notifications — portaled to <body> so they escape the
+                dashboard content wrapper's z-index:1 stacking context and
+                render above the mobile topbar (z-[60]). */}
+            {createPortal(
+                <AnimatePresence>
+                    {isSuccessToastVisible && (
+                        <motion.div initial={{ opacity: 0, y: -20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.9 }} className="fixed top-6 right-6 z-[70]">
+                            <Toasts type="Success" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
-            <AnimatePresence>
-                {isDownloadToastVisible && (
-                    <motion.div initial={{ opacity: 0, y: -20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.9 }} className="fixed top-6 right-6 z-50">
-                        <Toasts type="Download" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {createPortal(
+                <AnimatePresence>
+                    {isDownloadToastVisible && (
+                        <motion.div initial={{ opacity: 0, y: -20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.9 }} className="fixed top-6 right-6 z-[70]">
+                            <Toasts type="Download" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
-            <AnimatePresence>
-                {isUpgradeToastVisible && (
-                    <motion.div initial={{ opacity: 0, y: -20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.9 }} className="fixed top-6 right-6 z-50">
-                        <Toasts type="Upgrade" />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {createPortal(
+                <AnimatePresence>
+                    {isUpgradeToastVisible && (
+                        <motion.div initial={{ opacity: 0, y: -20, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20, scale: 0.9 }} className="fixed top-6 right-6 z-[70]">
+                            <Toasts type="Upgrade" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             {publicationState.message && (
                 <div role="status" aria-live="polite" className={`fixed bottom-4 right-4 z-[70] max-w-sm rounded-lg border bg-white p-3 text-sm shadow-xl flex items-center justify-between gap-3 ${publicationState.status === 'error' ? 'border-red-200 text-red-800' : 'border-emerald-200 text-emerald-800'}`}>
@@ -1483,8 +1526,9 @@ const BuildResume = () => {
                     )}
                 </div>
             )}
-            {(saveState.status === 'error' || saveState.status === 'conflict') && (
-                <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] max-w-xl w-[calc(100%_-_2rem)] rounded-lg border border-red-200 bg-white p-3 shadow-xl">
+            {createPortal(
+                (saveState.status === 'error' || saveState.status === 'conflict') && (
+                    <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[70] max-w-xl w-[calc(100%_-_2rem)] rounded-lg border border-red-200 bg-white p-3 shadow-xl">
                     <p className="text-sm font-semibold text-red-800">{saveState.message}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                         {saveState.status === 'error' && <button type="button" onClick={() => persistLatest({ manual: true })} className="rounded bg-red-700 px-3 py-1.5 text-xs font-semibold text-white">Retry save</button>}
@@ -1493,7 +1537,9 @@ const BuildResume = () => {
                             <button type="button" onClick={resolveConflictWithLocal} className="rounded border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-800">Keep my changes</button>
                         </>}
                     </div>
-                </div>
+                    </div>
+                ),
+                document.body
             )}
 
             {/* Unified Top Studio Header */}
@@ -1539,40 +1585,32 @@ const BuildResume = () => {
                     </div>
                 </div>
 
-                {/* Center: First-Class ATS Career Readiness Companion Pill */}
-                {isAtsEnabled === true && (() => {
-                    const atsResult = calculateAtsScore(resumeData);
-                    const atsScore = atsResult?.qualityScore || 0;
-                    const atsStatus = atsResult?.status?.label || 'Getting Started';
-                    const isGood = atsScore >= 75;
-                    const isMedium = atsScore >= 45 && atsScore < 75;
-                    
-                    return (
-                        <div className="flex items-center justify-center shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setShowAtsDrawer(prev => !prev)}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
-                                    isGood ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' :
-                                    isMedium ? 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100' :
-                                    'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
-                                }`}
-                                title="Click to open ATS Career Readiness Intelligence"
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    <span className={`w-2 h-2 rounded-full ${isGood ? 'bg-emerald-500' : isMedium ? 'bg-indigo-500' : 'bg-amber-500'}`}></span>
-                                    <span className="text-xs font-black tracking-tight">ATS: {atsScore}/100</span>
-                                </div>
-                                <span className="hidden lg:inline text-[11px] font-bold text-slate-600 border-l border-slate-300/80 pl-1.5">
-                                    {atsStatus}
-                                </span>
-                                <svg className={`w-3.5 h-3.5 transition-transform ${showAtsDrawer ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                        </div>
-                    );
-                })()}
+                {/* Center: ATS Readiness pill (calm; real score, no invented framing) */}
+                {isAtsEnabled === true && (
+                    <div className="flex items-center justify-center shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setShowAtsDrawer(prev => !prev)}
+                            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
+                                headerAts.tone === 'good' ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' :
+                                headerAts.tone === 'medium' ? 'bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100' :
+                                'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                            }`}
+                            title="View ATS readiness details"
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${headerAts.tone === 'good' ? 'bg-emerald-500' : headerAts.tone === 'medium' ? 'bg-indigo-500' : 'bg-amber-500'}`}></span>
+                                <span className="text-xs font-semibold tracking-tight">ATS: {headerAts.score}/100</span>
+                            </div>
+                            <span className="hidden lg:inline text-[11px] font-semibold text-slate-600 border-l border-slate-300/80 pl-1.5">
+                                {headerAts.label}
+                            </span>
+                            <svg className={`w-3.5 h-3.5 transition-transform ${showAtsDrawer ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
 
                 {/* Right: Studio Quick Actions */}
                 <div className="flex items-center gap-2">
@@ -1580,9 +1618,9 @@ const BuildResume = () => {
                     {isImportEnabled && (
                         <button
                             onClick={() => setShowImportModal(true)}
-                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-purple-700 hover:from-purple-100 hover:to-indigo-100 text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                         >
-                            <svg className="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             <span>AI Import</span>
@@ -1761,7 +1799,7 @@ const BuildResume = () => {
                             <Route path="achievements" element={<AchievementsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                             <Route path="references" element={<ReferencesStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                             <Route path="custom" element={<CustomSectionsStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
-                            <Route path="review" element={<ReviewStep resumeData={resumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
+                            <Route path="review" element={<ReviewStep resumeData={resumeData} updateResumeData={updateResumeData} templateName={getTemplateName(currentTemplate)} saveState={saveState} onNavigate={handleStepClick} onChooseTemplate={() => setShowTemplateSelection(true)} onPreview={() => setShowPreview(true)} onDownload={handleDownload} isDownloading={isDownloading} />} />
                             <Route path="" element={<HeadingStep resumeData={resumeData} updateResumeData={updateResumeData} onNavigate={handleStepClick} />} />
                         </Routes>
                     </div>
@@ -1821,7 +1859,7 @@ const BuildResume = () => {
                                 ) : (
                                     <button
                                         onClick={handleCompleteResume}
-                                        className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs shadow-md hover:shadow-lg cursor-pointer"
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl font-bold transition-all text-xs shadow-sm hover:shadow-md cursor-pointer"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -1836,14 +1874,16 @@ const BuildResume = () => {
 
             </div>
 
-            {/* ATS Career Readiness Slide-Over Companion Drawer */}
-            <AnimatePresence>
-                {showAtsDrawer && (
+            {/* ATS Career Readiness Slide-Over Companion Drawer — portaled
+                to <body> so it renders above the mobile topbar (z-[60]). */}
+            {createPortal(
+                <AnimatePresence>
+                    {showAtsDrawer && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex justify-end"
+                        className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-xs flex justify-end"
                         onClick={() => setShowAtsDrawer(false)}
                     >
                         <motion.div
@@ -1851,7 +1891,7 @@ const BuildResume = () => {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col overflow-hidden"
+                            className="rp-builder-scope w-full max-w-md bg-white h-full shadow-2xl flex flex-col overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                             role="dialog"
                             aria-modal="true"
@@ -1881,31 +1921,46 @@ const BuildResume = () => {
                                 </button>
                             </div>
 
-                            {/* Drawer Content */}
+                            {/* Drawer Content — expanded by default: the drawer's
+                                reason to exist is the diagnostics. JD is wired to
+                                the resume document so a JD pasted in Review shows
+                                up here (and vice versa). */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                <AtsScoreMeter resumeData={resumeData} onNavigate={handleStepClick} />
+                                <AtsScoreMeter
+                                    resumeData={resumeData}
+                                    onNavigate={handleStepClick}
+                                    jobDescription={resumeData.targetJobDescription}
+                                    onJobDescriptionChange={(jd) => updateResumeData({ targetJobDescription: jd })}
+                                    defaultExpanded
+                                />
                             </div>
                         </motion.div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
-            {/* Mobile Navigation Drawer Overlay */}
-            <AnimatePresence>
-                {isMobileMenuOpen && (
+            {/* Mobile Navigation Drawer Overlay — portaled to <body> so the
+                drawer (and its close button) renders above the mobile
+                topbar (z-[60]) instead of inside the content wrapper's
+                z-index:1 stacking context. */}
+            {createPortal(
+                <AnimatePresence>
+                    {isMobileMenuOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="md:hidden fixed inset-0 z-50 bg-black bg-opacity-30"
+                        className="md:hidden fixed inset-0 z-[70] bg-black bg-opacity-30"
                         onClick={() => setIsMobileMenuOpen(false)}>
                         <motion.div
                             initial={{ x: '-100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '-100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl flex flex-col"
+                            className="rp-builder-scope fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl flex flex-col"
                             role="dialog"
                             aria-modal="true"
                             aria-label="Resume builder navigation"
@@ -1970,23 +2025,32 @@ const BuildResume = () => {
                                 {/* Mobile ATS Section */}
                                 {isAtsEnabled === true && (
                                     <div className="mt-4">
-                                        <AtsScoreMeter resumeData={resumeData} onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }} />
+                                        <AtsScoreMeter
+                                            resumeData={resumeData}
+                                            onNavigate={(path) => { handleStepClick(path); setIsMobileMenuOpen(false); }}
+                                            jobDescription={resumeData.targetJobDescription}
+                                            onJobDescriptionChange={(jd) => updateResumeData({ targetJobDescription: jd })}
+                                        />
                                     </div>
                                 )}
                             </div>
                         </motion.div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
-            {/* All 11 Steps Stepper Overview Modal */}
-            <AnimatePresence>
-                {showAllStepsModal && (
+            {/* All 11 Steps Stepper Overview Modal — portaled to <body> for
+                consistent layering above the mobile topbar. */}
+            {createPortal(
+                <AnimatePresence>
+                    {showAllStepsModal && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+                        className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
                         onClick={() => setShowAllStepsModal(false)}
                     >
                         <motion.div
@@ -1994,7 +2058,7 @@ const BuildResume = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 10 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh]"
+                            className="rp-builder-scope w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh]"
                             onClick={(e) => e.stopPropagation()}
                             role="dialog"
                             aria-modal="true"
@@ -2119,8 +2183,10 @@ const BuildResume = () => {
                             </div>
                         </motion.div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             {/* Modal Components */}
             <PreviewModal
@@ -2209,6 +2275,70 @@ const BuildResume = () => {
                 documentId={resumeIdRef.current || ''}
                 documentTitle={previewData?.firstname ? `${previewData.firstname}'s Resume` : 'Resume'}
             />
+
+            {/* Custom Section Title dialog — portaled to <body> for
+                consistent layering above the mobile topbar. */}
+            {createPortal(
+                <AnimatePresence>
+                    {customSectionDialogOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]"
+                        onClick={() => setCustomSectionDialogOpen(false)}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="custom-section-dialog-title"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.97, y: 8 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+                            className="rp-builder-scope w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <h2 id="custom-section-dialog-title" className="text-sm font-bold text-slate-900">
+                                Add a custom section
+                            </h2>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                                Name it — publications, volunteering, speaking, professional affiliations, or
+                                anything else that belongs on your resume.
+                            </p>
+                            <input
+                                autoFocus
+                                value={customSectionTitleDraft}
+                                onChange={(event) => setCustomSectionTitleDraft(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') confirmCustomSection();
+                                }}
+                                maxLength={100}
+                                placeholder="e.g. Publications, Volunteering, Community Speaking"
+                                className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-2xs focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+                            />
+                            <div className="mt-4 flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCustomSectionDialogOpen(false)}
+                                    className="rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmCustomSection}
+                                    disabled={!customSectionTitleDraft.trim()}
+                                    className="rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    Add section
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </div>
     );
 };

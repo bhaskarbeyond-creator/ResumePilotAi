@@ -409,13 +409,17 @@ test('JD is optional and does not call any network surface', () => {
 
 test('BuildResume still mounts the meter on desktop and mobile without touching the renderer', () => {
   const build = fs.readFileSync('src/components/BuildResume/BuildResume.jsx', 'utf8');
-  assert.match(build, /<AtsScoreMeter resumeData=\{resumeData\} onNavigate=\{handleStepClick\} \/>/);
+  // Meter is mounted at two call sites (desktop ATS drawer + mobile nav drawer).
+  assert.match(build, /<AtsScoreMeter\s+resumeData=\{resumeData\}\s+onNavigate=\{handleStepClick\}/);
+  assert.match(build, /<AtsScoreMeter\s+resumeData=\{resumeData\}\s+onNavigate=\{\(path\)/);
+  // Both call sites feed the meter the resume document's JD (single source of truth).
+  assert.equal((build.match(/jobDescription=\{resumeData\.targetJobDescription\}/g) || []).length, 2);
   assert.match(build, /setIsMobileMenuOpen\(false\)/);
   assert.match(build, /isAtsEnabled/);
   assert.match(build, /resolveAtsScoreVisibility/);
   const flags = fs.readFileSync('src/utils/moduleFlags.js', 'utf8');
   assert.match(flags, /enableAtsScoreModule/);
-  assert.equal((build.match(/<AtsScoreMeter /g) || []).length, 2);
+  assert.equal((build.match(/<AtsScoreMeter[\s\n]/g) || []).length, 2);
   assert.match(build, /import TemplateRenderer/);
   const meter = fs.readFileSync('src/components/BuildResume/AtsScoreMeter.jsx', 'utf8');
   assert.match(meter, /from '\.\.\/\.\.\/utils\/atsScore'/);

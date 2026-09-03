@@ -227,7 +227,8 @@ const fireProxy = new Proxy({}, {
     get(_target, prop) {
         if (prop === 'auth') {
             return () => {
-                if (!fire) return localAuth || createNullAuth();
+                if (localAuthEnabled && localAuth) return localAuth;
+                if (!fire) return createNullAuth();
                 try { return fire.auth(); } catch (_error) { return localAuth || createNullAuth(); }
             };
         }

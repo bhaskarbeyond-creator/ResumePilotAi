@@ -1260,43 +1260,43 @@
       },
       "firstName": {
         "label": "First Name",
-        "placeholder": "e.g. Aarav"
+        "placeholder": "Your first name"
       },
       "lastName": {
         "label": "Last Name",
-        "placeholder": "e.g. Sharma"
+        "placeholder": "Your last name"
       },
       "jobTitle": {
         "label": "Job Title / Profession",
-        "placeholder": "e.g. Senior Human Resources Manager, Lead Cloud Architect",
+        "placeholder": "The job title you are targeting",
         "hint": "This will be prominently displayed on your resume"
       },
       "email": {
         "label": "Email Address",
-        "placeholder": "aarav.sharma@gmail.com",
+        "placeholder": "you@example.com",
         "hint": "Use a professional email address"
       },
       "phone": {
         "label": "Phone Number",
-        "placeholder": "+91 98765 43210",
+        "placeholder": "Include your country code",
         "hint": "Include country code if applicable"
       },
       "address": {
         "label": "Address",
-        "placeholder": "e.g. Madhapur, Hitec City",
+        "placeholder": "Street and area — usually city and country are enough",
         "hint": "Full address is optional, city and country are usually sufficient"
       },
       "city": {
         "label": "City",
-        "placeholder": "e.g. Hyderabad, Bengaluru"
+        "placeholder": "Your city"
       },
       "postalCode": {
         "label": "Postal Code",
-        "placeholder": "e.g. 500081"
+        "placeholder": "Your postal code"
       },
       "country": {
         "label": "Country",
-        "placeholder": "India"
+        "placeholder": "Your country"
       }
     },
     "tips": {
@@ -1331,11 +1331,11 @@
     "fields": {
       "jobTitle": {
         "label": "Job Title",
-        "placeholder": "e.g. Operations Manager, Associate Physician, Lead Counsel"
+        "placeholder": "The exact title of the role"
       },
       "company": {
         "label": "Company",
-        "placeholder": "e.g. Healthcare Network, Global Enterprise, Consulting Group"
+        "placeholder": "The organization's official name"
       },
       "startDate": {
         "label": "Start Date",
@@ -1377,11 +1377,11 @@
     "fields": {
       "school": {
         "label": "School",
-        "placeholder": "e.g. State University, National Institute, Recognized College"
+        "placeholder": "The institution's official name"
       },
       "degree": {
         "label": "Degree",
-        "placeholder": "e.g. Bachelor's Degree in Science, Arts, or Commerce"
+        "placeholder": "The degree or qualification you earned"
       },
       "startDate": {
         "label": "Start Date",
@@ -1396,7 +1396,7 @@
       },
       "description": {
         "label": "Education Description",
-        "placeholder": "Relevant coursework, achievements, honors, CGPA (e.g. 8.8/10), research projects, thesis work..."
+        "placeholder": "Relevant coursework, achievements, honors, grade (if you choose to include one), research projects, thesis work..."
       }
     },
     "actions": {
@@ -1422,7 +1422,7 @@
     "fields": {
       "skillName": {
         "label": "Skill Name",
-        "placeholder": "e.g. JavaScript, Leadership, Project Management"
+        "placeholder": "Enter a skill you actually used in your work"
       },
       "proficiencyLevel": {
         "label": "Proficiency Level"
@@ -1507,11 +1507,11 @@
     "fields": {
       "title": {
         "label": "Project Name",
-        "placeholder": "e.g. Operational Workflow Overhaul or Community Initiative"
+        "placeholder": "What you built or led"
       },
       "url": {
         "label": "Project URL",
-        "placeholder": "https://portfolio.com/project or documentation link"
+        "placeholder": "Link to the project or its documentation (optional)"
       },
       "description": {
         "label": "Description",
@@ -1534,15 +1534,15 @@
     "fields": {
       "title": {
         "label": "Certification Name",
-        "placeholder": "e.g. Project Management Professional (PMP) or State License"
+        "placeholder": "The certification or license name"
       },
       "issuer": {
         "label": "Issuing Organization",
-        "placeholder": "e.g. Accredited Licensing Board or Professional Association"
+        "placeholder": "Who issued it"
       },
       "date": {
         "label": "Date Earned",
-        "placeholder": "e.g. 2024"
+        "placeholder": "Year awarded or year it expires"
       }
     },
     "ai": {
@@ -2740,7 +2740,7 @@
     "fields": {
       "title": {
         "label": "Achievement Title",
-        "placeholder": "e.g. Engineering Excellence Award"
+        "placeholder": "The award, honor, or recognition"
       },
       "description": {
         "label": "Description",
@@ -2767,11 +2767,11 @@
     "fields": {
       "name": {
         "label": "Referee Name",
-        "placeholder": "e.g. Priya Nair"
+        "placeholder": "Full name"
       },
       "reference": {
         "label": "Reference Details",
-        "placeholder": "e.g. VP Engineering, Meridian — available on request"
+        "placeholder": "Role and organization — or available on request"
       }
     }
   },
@@ -2798,11 +2798,11 @@
     "fields": {
       "sectionTitle": {
         "label": "Section Title",
-        "placeholder": "e.g. Volunteer Work, Publications, Patents"
+        "placeholder": "The section title, in your own words"
       },
       "itemTitle": {
         "label": "Item Title",
-        "placeholder": "e.g. Community Mentor"
+        "placeholder": "What this item is"
       },
       "itemDescription": {
         "label": "Item Description",

@@ -71,9 +71,9 @@ test('Resume Builder Reliability — Step components contain zero uncoerced trim
     assert.ok(!headingStepContent.includes('formData[field].trim()'), 'HeadingStep must coerce formData[field] to String');
     assert.ok(!headingStepContent.includes('!value.trim()'), 'HeadingStep must coerce validateField value to String');
 
-    // Read InputField.jsx
-    const inputFieldContent = fs.readFileSync(path.join(srcDir, 'steps/components/InputField.jsx'), 'utf-8');
-    assert.ok(!inputFieldContent.includes('value.trim() !== \'\''), 'InputField must coerce value safely');
+    // Read Field.jsx (the single input language for every builder field)
+    const fieldContent = fs.readFileSync(path.join(srcDir, 'components/Field.jsx'), 'utf-8');
+    assert.ok(!fieldContent.includes('value.trim() !== \'\''), 'Field must coerce value safely');
 
     // Read AtsScoreMeter.jsx
     const atsScoreMeterContent = fs.readFileSync(path.join(srcDir, 'AtsScoreMeter.jsx'), 'utf-8');

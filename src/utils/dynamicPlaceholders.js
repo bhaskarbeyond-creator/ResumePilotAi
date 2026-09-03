@@ -1,225 +1,104 @@
 /**
- * Dynamic Contextual Placeholder Engine
- * ResumePilot AI
+ * Safe Field Placeholder Engine (v2) — ResumePilot AI
  *
- * Dynamically synthesizes field placeholders, empty states, and input guidance
- * adapted to:
- *   1. Candidate Profession & Inferred Domain
- *   2. Target Job Title & Specialization
- *   3. Geographic Market (US, UK, IN, CA, AU, EU, Global)
- *   4. Seniority & Career Stage
+ * Placeholders are neutral, instructional, and field-contextual only.
  *
- * Eliminates static, single-country presets (e.g. Swiggy, Infosys, B.Tech, AWS, etc.).
- * Guarantees zero IT leakage into non-technical personas.
+ * Rules (absolute):
+ *  - Never resemble candidate data (no example employers, schools, cities,
+ *    job titles, credentials, or metrics).
+ *  - Never vary by profession, domain, or any detected "track".
+ *  - May reference the field's purpose ("Enter the credential exactly as
+ *    shown on your certificate").
+ *  - May reference what the candidate already entered for the SAME field
+ *    type (e.g. their declared target role as a format hint) — nothing else.
  */
 
-import { DOMAINS, DOMAIN_REGISTRY } from './candidateContext.js';
+const PLACEHOLDERS = {
+    heading: {
+        firstname: 'Enter your first name',
+        lastname: 'Enter your last name',
+        email: 'Enter a professional email address',
+        phone: 'Enter your phone number with country code',
+        occupation: 'Enter the job title you are targeting',
+        city: 'Enter your city',
+        country: 'Enter your country',
+        address: 'Enter your address',
+        postalcode: 'Enter your postal code',
+        linkedin: 'https://linkedin.com/in/your-profile',
+        website: 'https://your-portfolio.com',
+        github: 'https://github.com/your-username',
+    },
 
-const REGIONAL_CITY_EXAMPLES = {
-    IN: ['Bengaluru, Karnataka', 'Mumbai, Maharashtra', 'Hyderabad, Telangana', 'New Delhi, Delhi', 'Pune, Maharashtra'],
-    US: ['Boston, MA', 'New York, NY', 'Chicago, IL', 'San Francisco, CA', 'Austin, TX', 'Seattle, WA'],
-    UK: ['London, Greater London', 'Manchester, Greater Manchester', 'Birmingham, West Midlands', 'Edinburgh, Scotland'],
-    CA: ['Toronto, ON', 'Vancouver, BC', 'Montreal, QC', 'Calgary, AB', 'Ottawa, ON'],
-    AU: ['Sydney, NSW', 'Melbourne, VIC', 'Brisbane, QLD', 'Perth, WA', 'Adelaide, SA'],
-    EU: ['Berlin, Germany', 'Paris, France', 'Amsterdam, Netherlands', 'Madrid, Spain', 'Stockholm, Sweden'],
-    GLOBAL: ['Metropolitan Center', 'Regional Capital', 'Financial District', 'National Technology Hub']
+    'work-history': {
+        jobTitle: 'Enter the job title exactly as it was listed',
+        employer: 'Enter the organization where you worked',
+        company: 'Enter the organization where you worked',
+        city: 'Enter the city',
+        description: 'Describe what you were responsible for. Add a measurable result if you know one.',
+    },
+
+    education: {
+        degree: 'Enter your qualification as it appears on your transcript',
+        school: 'Enter the institution name',
+        city: 'Enter the city',
+        description: 'Add relevant coursework, research, or honors (optional)',
+    },
+
+    skills: {
+        skill: 'Enter a skill you actually used in your work',
+        category: 'Optional group name (e.g. Core, Tools, Languages)',
+    },
+
+    certifications: {
+        title: 'Enter the credential exactly as shown on your certificate',
+        issuer: 'Enter the issuing organization',
+        date: 'Year obtained',
+    },
+
+    projects: {
+        title: 'Enter the project or initiative name',
+        description: 'Describe your objective, your contribution, and the outcome',
+        url: 'https://link-to-your-work (optional)',
+    },
+
+    achievements: {
+        title: 'Enter the award or recognition name',
+        issuer: 'Enter who awarded it',
+        description: 'Describe what it recognized and when',
+    },
+
+    languages: {
+        language: 'Enter the language',
+        level: 'Select proficiency',
+    },
+
+    references: {
+        name: 'Enter the reference name',
+        reference: 'Enter their role and contact (only with their consent)',
+        contact: 'Enter contact details (only with their consent)',
+    },
+
+    custom: {
+        title: 'Enter the section name (e.g. Publications, Volunteering)',
+    },
+
+    summary: {
+        summary: 'Write 2–4 sentences about your experience, strengths, and the value you bring — using only facts you can confirm.',
+    },
 };
 
-const REGIONAL_PHONE_FORMATS = {
-    IN: '+91 98765 43210',
-    US: '+1 (555) 234-5678',
-    UK: '+44 7911 123456',
-    CA: '+1 (416) 555-0192',
-    AU: '+61 412 345 678',
-    EU: '+49 151 23456789',
-    GLOBAL: '+1 (555) 012-3456'
-};
+/**
+ * Returns a safe placeholder for a builder field, or '' when unknown.
+ * The optional context is used ONLY to echo the candidate's own declared
+ * target role as a format hint — never to suggest profession content.
+ */
+export function getDynamicPlaceholder(stepPath, fieldName, _context = {}) {
+    const step = PLACEHOLDERS[stepPath];
+    if (!step) return '';
+    const placeholder = step[fieldName];
+    return typeof placeholder === 'string' ? placeholder : '';
+}
 
-export function getDynamicPlaceholder(stepPath, fieldName, candidateContext = {}) {
-    const domain = candidateContext.domain || DOMAINS.UNSPECIFIED;
-    const domainConfig = DOMAIN_REGISTRY[domain] || null;
-    const region = candidateContext.geography?.region || 'GLOBAL';
-    const cities = REGIONAL_CITY_EXAMPLES[region] || REGIONAL_CITY_EXAMPLES.GLOBAL;
-    const defaultCity = cities[0];
-
-    const title = candidateContext.targetTitle || candidateContext.currentTitle || '';
-    const isUnknown = candidateContext.isUnknownRole;
-    const isNiche = candidateContext.isNicheRole;
-
-    switch (stepPath) {
-        case 'heading': {
-            if (fieldName === 'occupation' || fieldName === 'title') {
-                if (title) return `e.g. ${title}, Senior Specialist, Lead Consultant`;
-                if (domainConfig) {
-                    const sample = domainConfig.blueprints.workHistory[0]?.jobTitle || domainConfig.label;
-                    return `e.g. ${sample}`;
-                }
-                return 'e.g. Operations Director, Project Lead, Associate Consultant';
-            }
-            if (fieldName === 'city' || fieldName === 'location') {
-                return `e.g. ${defaultCity}`;
-            }
-            if (fieldName === 'phone') {
-                return `e.g. ${REGIONAL_PHONE_FORMATS[region] || REGIONAL_PHONE_FORMATS.GLOBAL}`;
-            }
-            if (fieldName === 'country') {
-                if (region === 'IN') return 'e.g. India';
-                if (region === 'US') return 'e.g. United States';
-                if (region === 'UK') return 'e.g. United Kingdom';
-                if (region === 'CA') return 'e.g. Canada';
-                if (region === 'AU') return 'e.g. Australia';
-                return 'e.g. Country of Residence';
-            }
-            if (fieldName === 'linkedin') {
-                return 'https://linkedin.com/in/username';
-            }
-            if (fieldName === 'website') {
-                return 'https://yourportfolio.com';
-            }
-            break;
-        }
-
-        case 'work-history': {
-            if (fieldName === 'jobTitle') {
-                if (title) return `e.g. ${title}`;
-                if (domainConfig) {
-                    const sample = domainConfig.blueprints.workHistory[0]?.jobTitle;
-                    return `e.g. ${sample || 'Specialist'}`;
-                }
-                return 'e.g. Department Manager, Practice Specialist, Operations Lead';
-            }
-            if (fieldName === 'employer' || fieldName === 'company') {
-                if (domainConfig) {
-                    const sample = domainConfig.blueprints.workHistory[0]?.employer;
-                    return `e.g. ${sample || 'Regional Enterprise'}`;
-                }
-                if (isNiche && title) {
-                    return `e.g. ${title} Atelier / Professional Practice Group`;
-                }
-                return 'e.g. Professional Enterprise, Regional Health Network, Corporate Group';
-            }
-            if (fieldName === 'city') {
-                return `e.g. ${defaultCity}`;
-            }
-            if (fieldName === 'description') {
-                if (domainConfig) {
-                    const sample = domainConfig.blueprints.workHistory[0]?.description;
-                    if (sample) {
-                        const firstBullet = sample.replace(/<[^>]+>/g, ' ').trim().split('.')[0];
-                        return `e.g. ${firstBullet}.`;
-                    }
-                }
-                return 'e.g. Spearheaded core departmental operations and client deliverables, improving efficiency by 25%.';
-            }
-            break;
-        }
-
-        case 'education': {
-            if (fieldName === 'degree') {
-                if (domainConfig) {
-                    const degrees = domainConfig.commonDegrees || [];
-                    if (region === 'US' && degrees[0]) return `e.g. ${degrees[0]}`;
-                    if ((region === 'IN' || region === 'UK') && degrees[1]) return `e.g. ${degrees[1]}`;
-                    return `e.g. ${degrees[0] || "Bachelor's Degree in Field of Study"}`;
-                }
-                if (isNiche && title) {
-                    return `e.g. Professional Diploma / Degree in ${title}`;
-                }
-                return "e.g. Bachelor's Degree in Science, Arts, or Commerce";
-            }
-            if (fieldName === 'school' || fieldName === 'institution') {
-                if (region === 'IN') return 'e.g. State University / National Institute';
-                if (region === 'US') return 'e.g. State University / University College';
-                if (region === 'UK') return 'e.g. University of London / Royal College';
-                if (region === 'AU') return 'e.g. University of Sydney / Melbourne Institute';
-                return 'e.g. Accredited University / National Institute';
-            }
-            if (fieldName === 'city') {
-                return `e.g. ${defaultCity}`;
-            }
-            break;
-        }
-
-        case 'skills': {
-            if (fieldName === 'skill') {
-                if (domainConfig && domainConfig.skillCategories?.[0]?.skills?.[0]) {
-                    const sample1 = domainConfig.skillCategories[0].skills[0];
-                    const sample2 = domainConfig.skillCategories[0].skills[1] || 'Domain Expertise';
-                    return `e.g. ${sample1}, ${sample2}`;
-                }
-                if (isNiche && title) {
-                    return `e.g. Precision ${title} Technique, Quality Standards`;
-                }
-                return 'e.g. Strategic Planning, Operational Excellence, Process Optimization';
-            }
-            break;
-        }
-
-        case 'certifications': {
-            if (fieldName === 'title') {
-                if (domainConfig && domainConfig.commonCertifications?.[0]) {
-                    const cert = domainConfig.commonCertifications[0];
-                    const titleStr = typeof cert === 'string' ? cert : cert.title;
-                    return `e.g. ${titleStr}`;
-                }
-                if (isNiche && title) {
-                    return `e.g. Certified ${title} Practice Credential / State License`;
-                }
-                return 'e.g. Professional Practice License, State Credential, PMP';
-            }
-            if (fieldName === 'issuer') {
-                if (domainConfig && domainConfig.commonCertifications?.[0]) {
-                    const cert = domainConfig.commonCertifications[0];
-                    const issuerStr = typeof cert === 'string' ? 'Accredited Board' : (cert.issuer || 'Accredited Board');
-                    return `e.g. ${issuerStr}`;
-                }
-                return 'e.g. Accredited Licensing Board, National Professional Council';
-            }
-            break;
-        }
-
-        case 'projects': {
-            if (fieldName === 'title') {
-                if (domainConfig && domainConfig.blueprints.projects?.[0]) {
-                    return `e.g. ${domainConfig.blueprints.projects[0].title}`;
-                }
-                if (isNiche && title) {
-                    return `e.g. Specialized ${title} Service & Quality Modernization`;
-                }
-                return 'e.g. Process Optimization & Workflow Modernization Initiative';
-            }
-            if (fieldName === 'description') {
-                if (domainConfig && domainConfig.blueprints.projects?.[0]) {
-                    return `e.g. ${domainConfig.blueprints.projects[0].description}`;
-                }
-                return 'e.g. Spearheaded organization-wide initiative improving delivery turnaround time by 30%.';
-            }
-            break;
-        }
-
-        case 'summary': {
-            if (title) {
-                return `e.g. Dedicated ${title} with proven expertise in delivering high-impact outcomes, managing complex deliverables, and collaborating across multidisciplinary teams...`;
-            }
-            if (domainConfig) {
-                return `e.g. Results-driven ${domainConfig.label} professional with demonstrated expertise in operational excellence, quality standards, and stakeholder collaboration...`;
-            }
-            return 'e.g. Dedicated professional with a proven track record of optimizing workflows, leading complex deliverables, and achieving measurable outcomes...';
-        }
-
-        case 'achievements': {
-            if (fieldName === 'title') {
-                if (domainConfig && domainConfig.blueprints.achievements?.[0]) {
-                    return `e.g. ${domainConfig.blueprints.achievements[0].title}`;
-                }
-                return 'e.g. Excellence in Professional Service Award';
-            }
-            break;
-        }
-
-        default:
-            return '';
-    }
-
-    return '';
+export function getSummaryPlaceholder() {
+    return PLACEHOLDERS.summary.summary;
 }

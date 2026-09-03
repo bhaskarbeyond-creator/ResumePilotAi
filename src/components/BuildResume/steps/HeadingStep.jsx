@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdPerson, MdPlace, MdPublic, MdCheck } from 'react-icons/md';
-import InputField from './components/InputField';
-import PhotoUpload from './components/PhotoUpload';
+import { MdExpandMore, MdExpandLess } from 'react-icons/md';
+import StepShell from '../components/StepShell.jsx';
+import Field from '../components/Field.jsx';
 import AutocompleteInputField from './components/AutocompleteInputField';
-import StepWorkspaceLayout from '../components/StepWorkspaceLayout';
+import PhotoUpload from './components/PhotoUpload';
+import { getCandidateContext } from '../../../utils/candidateContext';
 
+/**
+ * Heading — one form card: name, contact, target title, location.
+ * Optional links/extra fields live behind a quiet "Add more details"
+ * disclosure. No AI in this step. Gap list lives in the Guide rail.
+ */
 const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const { t } = useTranslation('common');
-
     const [formData, setFormData] = useState({
         firstname: resumeData?.firstname || '',
         lastname: resumeData?.lastname || '',
@@ -25,9 +30,13 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         linkedin: resumeData?.linkedin || '',
         github: resumeData?.github || '',
     });
-
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
+    const [moreOpen, setMoreOpen] = useState(
+        Boolean(resumeData?.website || resumeData?.linkedin || resumeData?.github || resumeData?.address || resumeData?.postalcode),
+    );
+
+    const candidateContext = getCandidateContext(resumeData, resumeData?.targetJobDescription || '');
 
     // Keep formData in sync if parent resumeData updates externally
     useEffect(() => {
@@ -51,16 +60,12 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }));
     }, [resumeData]);
 
+    const requiredFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-
-        if (errors[name]) {
-            validateField(name, value);
-        }
+        setFormData((prev) => ({ ...prev, [name]: value }));
+        if (errors[name]) validateField(name, value);
     };
 
     const handleInputBlur = (e) => {
@@ -71,15 +76,13 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const validateField = (name, value) => {
         let error = '';
-
         if (requiredFields.includes(name) && (!value || String(value).trim() === '')) {
             error = t('HeadingStep.errors.required', { field: name.charAt(0).toUpperCase() + name.slice(1) });
         } else if (name === 'email' && value && !/\S+@\S+\.\S+/.test(String(value))) {
-            error = t('HeadingStep.errors.invalidEmail');
-        } else if (name === 'phone' && value && !/^[+]?[1-9][\d]{0,15}$/.test(String(value).replace(/[\s\-()]/g, ''))) {
-            error = t('HeadingStep.errors.invalidPhone');
+            error = t('HeadingStep.errors.invalidEmail', 'That does not look like a valid email address.');
+        } else if (name === 'phone' && value && !/^\+?[1-9][\d]{0,15}$/.test(String(value).replace(/[\s\-()]/g, ''))) {
+            error = t('HeadingStep.errors.invalidPhone', 'That does not look like a valid phone number.');
         }
-
         setErrors((prev) => ({ ...prev, [name]: error }));
         return error === '';
     };
@@ -90,11 +93,8 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const handleSave = () => {
         let allValid = true;
-
         requiredFields.forEach((field) => {
-            if (!validateField(field, formData[field])) {
-                allValid = false;
-            }
+            if (!validateField(field, formData[field])) allValid = false;
         });
 
         updateResumeData(formData);
@@ -121,12 +121,9 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         const timeoutId = setTimeout(() => {
             handleSave();
         }, 500);
-
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
-
-    const requiredFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
 
     // Unmount flush: synchronously commit form data on step exit
     const formDataRef = useRef(formData);
@@ -151,221 +148,170 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const isStepComplete = completedRequiredFields === requiredFields.length;
 
     return (
-        <StepWorkspaceLayout
+        <StepShell
             stepNumber={1}
             stepPath="heading"
-            title={t('HeadingStep.title', 'Personal Details')}
-            subtitle={t('HeadingStep.subtitle', 'Provide your core contact details so employers and automated systems can reach you.')}
+            title={t('HeadingStep.title', 'Your details')}
+            subtitle={t('HeadingStep.subtitle', 'How recruiters reach you, and the role you are targeting.')}
             isComplete={isStepComplete}
-            statusBadge={`${completedRequiredFields}/${requiredFields.length} Required`}
+            statusBadge={`${completedRequiredFields}/${requiredFields.length} required fields`}
             resumeData={resumeData}
-            onNavigate={onNavigate}
+            targetJd={resumeData?.targetJobDescription || ''}
         >
-            {/* Unified High-Density Editor Panel */}
-            <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-4">
-                {/* Candidate ATS Recruiter Screening Index (Top Studio Header) */}
-                <div className={`px-4 py-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all shadow-2xs ${
-                    isStepComplete 
-                        ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' 
-                        : 'bg-slate-50/90 border-slate-200/90 text-slate-800'
-                }`}>
-                    <div className="flex items-center gap-2.5 min-w-0">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isStepComplete ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500'}`} />
-                        <div className="min-w-0">
-                            <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">
-                                ATS Recruiter Search Index
-                            </span>
-                            <span className="font-bold text-slate-900 truncate block">
-                                {formData.firstname || formData.lastname ? `${formData.firstname || ''} ${formData.lastname || ''}`.trim() : 'Candidate Name'}
-                                {' • '}
-                                <span className="text-indigo-600">{formData.occupation || 'Target Job Title'}</span>
-                                {' • '}
-                                <span className="text-slate-500">{[formData.city, formData.country].filter(Boolean).join(', ') || 'Location'}</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                        <span className={`text-[11px] font-extrabold px-2.5 py-1 rounded-md border ${
-                            isStepComplete
-                                ? 'bg-white text-emerald-700 border-emerald-200'
-                                : 'bg-white text-indigo-700 border-indigo-200'
-                        }`}>
-                            {isStepComplete ? '✓ 100% Reachable' : `${completedRequiredFields} of ${requiredFields.length} Core Fields`}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Block 1: Identity & Professional Headline */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs space-y-5">
+                {/* Identity */}
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                        <h2 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                            <MdPerson className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>Identity & Professional Headline</span>
-                        </h2>
-                        <span className="text-[10px] font-bold text-slate-400">Required</span>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3.5 sm:gap-4 items-start">
-                        {/* Profile Avatar */}
+                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
                         <div className="shrink-0 pt-0.5">
                             <PhotoUpload
                                 label=""
                                 value={formData.photo}
                                 onChange={handlePhotoChange}
                                 showPhoto={formData.showPhoto !== false}
-                                onToggleShowPhoto={(show) => setFormData((prev) => ({ ...prev, showPhoto: show }))}
-                                compact={true}
+                                onToggleShowPhoto={(show) => setFormData(prev => ({ ...prev, showPhoto: show }))}
+                                compact
                                 hint=""
                             />
                         </div>
-
-                        {/* Name and Professional Title Fields */}
-                        <div className="flex-1 min-w-0 w-full space-y-2.5">
+                        <div className="flex-1 min-w-0 w-full space-y-3">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InputField
-                                    label={t('HeadingStep.fields.firstName.label', 'First Name')}
+                                <Field
+                                    label={t('HeadingStep.fields.firstName.label', 'First name')}
                                     name="firstname"
-                                    placeholder={t('HeadingStep.fields.firstName.placeholder', 'e.g. Alex, Sarah, Aarav')}
+                                    placeholder={t('HeadingStep.fields.firstName.placeholder', 'Your first name')}
                                     value={formData.firstname}
                                     onChange={handleInputChange}
                                     onBlur={handleInputBlur}
-                                    required={true}
+                                    required
                                     error={touched.firstname ? errors.firstname : ''}
                                 />
-                                <InputField
-                                    label={t('HeadingStep.fields.lastName.label', 'Last Name')}
+                                <Field
+                                    label={t('HeadingStep.fields.lastName.label', 'Last name')}
                                     name="lastname"
-                                    placeholder={t('HeadingStep.fields.lastName.placeholder', 'e.g. Morgan, Taylor, Sharma')}
+                                    placeholder={t('HeadingStep.fields.lastName.placeholder', 'Your last name')}
                                     value={formData.lastname}
                                     onChange={handleInputChange}
                                     onBlur={handleInputBlur}
-                                    required={true}
+                                    required
                                     error={touched.lastname ? errors.lastname : ''}
                                 />
                             </div>
-
                             <AutocompleteInputField
-                                label={t('HeadingStep.fields.jobTitle.label', 'Job Title / Profession')}
+                                label={t('HeadingStep.fields.jobTitle.label', 'Target job title')}
                                 name="occupation"
-                                placeholder={t('HeadingStep.fields.jobTitle.placeholder', 'e.g. General Dentist, Corporate Lawyer, Senior Accountant, Project Manager')}
+                                placeholder={t('HeadingStep.fields.jobTitle.placeholder', 'Enter the job title you are applying for')}
                                 value={formData.occupation}
                                 onChange={handleInputChange}
                                 onBlur={handleInputBlur}
-                                required={true}
+                                required
                                 suggestionType="jobTitle"
-                                context={formData}
+                                context={candidateContext}
                                 error={touched.occupation ? errors.occupation : ''}
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Block 2: Direct Contact & Geographic Location */}
-                <div className="space-y-2.5">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                        <h2 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                            <MdPlace className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>Direct Contact & Location</span>
-                        </h2>
-                        <span className="text-[10px] font-bold text-slate-400">Required & Geo-Filters</span>
-                    </div>
-
+                {/* Contact & location */}
+                <div className="space-y-3 border-t border-slate-100 pt-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <InputField
-                            label={t('HeadingStep.fields.email.label', 'Email Address')}
+                        <Field
+                            label={t('HeadingStep.fields.email.label', 'Email')}
                             name="email"
                             type="email"
-                            placeholder={t('HeadingStep.fields.email.placeholder', 'e.g. alex.morgan@example.com')}
+                            placeholder={t('HeadingStep.fields.email.placeholder', 'you@example.com')}
                             value={formData.email}
                             onChange={handleInputChange}
                             onBlur={handleInputBlur}
-                            required={true}
+                            required
                             error={touched.email ? errors.email : ''}
                         />
-                        <InputField
-                            label={t('HeadingStep.fields.phone.label', 'Phone Number')}
+                        <Field
+                            label={t('HeadingStep.fields.phone.label', 'Phone')}
                             name="phone"
                             type="tel"
-                            placeholder={t('HeadingStep.fields.phone.placeholder', 'e.g. +1 555-019-2834 or +91 98765 43210')}
+                            inputMode="tel"
+                            placeholder={t('HeadingStep.fields.phone.placeholder', 'With country code, e.g. +91 98765 43210')}
                             value={formData.phone}
                             onChange={handleInputChange}
                             onBlur={handleInputBlur}
-                            required={true}
+                            required
                             error={touched.phone ? errors.phone : ''}
                         />
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <AutocompleteInputField
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Field
                             label={t('HeadingStep.fields.city.label', 'City')}
                             name="city"
-                            placeholder={t('HeadingStep.fields.city.placeholder', 'e.g. New York, London, Mumbai')}
+                            placeholder={t('HeadingStep.fields.city.placeholder', 'Enter your city')}
                             value={formData.city}
                             onChange={handleInputChange}
-                            suggestionType="city"
-                            context={formData}
                         />
-                        <InputField
+                        <Field
                             label={t('HeadingStep.fields.country.label', 'Country')}
                             name="country"
-                            placeholder={t('HeadingStep.fields.country.placeholder', 'e.g. United States, United Kingdom, India')}
+                            placeholder={t('HeadingStep.fields.country.placeholder', 'Enter your country')}
                             value={formData.country}
                             onChange={handleInputChange}
                         />
-                        <InputField
-                            label={t('HeadingStep.fields.address.label', 'Address')}
-                            name="address"
-                            placeholder={t('HeadingStep.fields.address.placeholder', 'e.g. 123 Main Street, Suite 400')}
-                            value={formData.address}
-                            onChange={handleInputChange}
-                        />
-                        <InputField
-                            label={t('HeadingStep.fields.postalCode.label', 'PIN / Postal Code')}
-                            name="postalcode"
-                            placeholder={t('HeadingStep.fields.postalCode.placeholder', 'e.g. 10001, SW1A 1AA, 500081')}
-                            value={formData.postalcode}
-                            onChange={handleInputChange}
-                        />
                     </div>
                 </div>
 
-                {/* Block 3: Online Presence & Portfolios */}
-                <div className="space-y-2.5">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                        <h2 className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                            <MdPublic className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>Online Profiles & Portfolios</span>
-                        </h2>
-                        <span className="text-[10px] font-bold text-slate-400">Optional</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <InputField
-                            label={t('HeadingStep.fields.linkedin.label', 'LinkedIn')}
-                            name="linkedin"
-                            placeholder="linkedin.com/in/username"
-                            value={formData.linkedin}
-                            onChange={handleInputChange}
-                        />
-                        <InputField
-                            label={t('HeadingStep.fields.website.label', 'Portfolio / Website')}
-                            name="website"
-                            type="url"
-                            placeholder="https://yourportfolio.com or yoursite.com"
-                            value={formData.website}
-                            onChange={handleInputChange}
-                        />
-                        <InputField
-                            label={t('HeadingStep.fields.github.label', 'Professional Profile / Repository')}
-                            name="github"
-                            placeholder="e.g. github.com/user or dribbble.com/user"
-                            value={formData.github}
-                            onChange={handleInputChange}
-                        />
-                    </div>
+                {/* Optional extras */}
+                <div className="border-t border-slate-100 pt-3">
+                    <button
+                        type="button"
+                        onClick={() => setMoreOpen(prev => !prev)}
+                        aria-expanded={moreOpen}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+                    >
+                        {moreOpen ? <MdExpandLess className="w-4 h-4" /> : <MdExpandMore className="w-4 h-4" />}
+                        More details (optional)
+                    </button>
+                    {moreOpen && (
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <Field
+                                label={t('HeadingStep.fields.address.label', 'Address')}
+                                name="address"
+                                placeholder={t('HeadingStep.fields.address.placeholder', 'Street address')}
+                                value={formData.address}
+                                onChange={handleInputChange}
+                            />
+                            <Field
+                                label={t('HeadingStep.fields.postalCode.label', 'Postal code')}
+                                name="postalcode"
+                                placeholder={t('HeadingStep.fields.postalCode.placeholder', 'PIN / postal code')}
+                                value={formData.postalcode}
+                                onChange={handleInputChange}
+                            />
+                            <Field
+                                label={t('HeadingStep.fields.linkedin.label', 'LinkedIn')}
+                                name="linkedin"
+                                placeholder="linkedin.com/in/yourname"
+                                value={formData.linkedin}
+                                onChange={handleInputChange}
+                            />
+                            <Field
+                                label={t('HeadingStep.fields.website.label', 'Portfolio / website')}
+                                name="website"
+                                type="url"
+                                placeholder="https://yourportfolio.com"
+                                value={formData.website}
+                                onChange={handleInputChange}
+                            />
+                            <Field
+                                label={t('HeadingStep.fields.github.label', 'Professional profile / repository')}
+                                name="github"
+                                placeholder="github.com/yourname"
+                                value={formData.github}
+                                onChange={handleInputChange}
+                                className="sm:col-span-2"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
-        </StepWorkspaceLayout>
+        </StepShell>
     );
 };
 

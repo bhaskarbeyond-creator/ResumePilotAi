@@ -899,35 +899,71 @@ export function keywordOccursInText(resumeText, term) {
     });
 }
 
+/**
+ * Deterministic partial match: a multi-word term counts as PARTIAL when at
+ * least half of its content tokens occur in the resume text (without the full
+ * term occurring). Single-word terms can never be partial — they are either
+ * present or missing. No heuristics beyond token presence.
+ */
+function termPartiallyOccurs(haystack, term) {
+    const tokens = String(term || '')
+        .split(/[^A-Za-z0-9+#./-]+/)
+        .map(token => token.toLowerCase())
+        .filter(token => token.length >= 3);
+    if (tokens.length < 2) return false;
+    let present = 0;
+    for (const token of tokens) {
+        if (boundedMatch(haystack, token)) present += 1;
+    }
+    return present / tokens.length >= 0.5;
+}
+
 export function matchJobDescription(resumeText, jobDescription) {
     const keywords = extractJdKeywords(jobDescription);
     if (!keywords.length) {
         return {
             score: null,
             matched: [],
+            partial: [],
             missing: [],
             groups: {},
             total: 0,
         };
     }
+    const haystack = normalizeToken(resumeText);
     const matched = [];
+    const partial = [];
     const missing = [];
     for (const item of keywords) {
-        (keywordOccursInText(resumeText, item.term) ? matched : missing).push(item);
+        if (keywordOccursInText(resumeText, item.term)) {
+            matched.push(item);
+        } else if (termPartiallyOccurs(haystack, item.term)) {
+            partial.push(item);
+        } else {
+            missing.push(item);
+        }
     }
     const groups = {};
+    const partialGroups = {};
     for (const item of missing) {
         if (!groups[item.category]) groups[item.category] = [];
         groups[item.category].push(item.term);
     }
+    for (const item of partial) {
+        if (!partialGroups[item.category]) partialGroups[item.category] = [];
+        partialGroups[item.category].push(item.term);
+    }
     const missingTerms = missing
         .map((item) => item.term)
         .sort((left, right) => right.length - left.length);
+    const weighted = matched.length + 0.5 * partial.length;
     return {
-        score: Math.round((matched.length / keywords.length) * 100),
+        score: Math.round((weighted / keywords.length) * 100),
         matched: matched.map((item) => item.term),
+        partial: partial.map((item) => item.term).sort((left, right) => right.length - left.length),
         missing: missingTerms,
         groups,
+        partialGroups,
         total: keywords.length,
     };
 }
