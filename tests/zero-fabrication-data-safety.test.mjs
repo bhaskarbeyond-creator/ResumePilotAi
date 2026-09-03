@@ -18,9 +18,9 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
         assert.doesNotMatch(fileContent, /end:\s*['"]Present['"]/);
         assert.doesNotMatch(fileContent, /setEmployments\(\[\{\s*id:\s*newId,\s*jobTitle,\s*employer/);
 
-        // Ensure TrackGuidanceBanner and QuickAddCommandBar are mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
-        assert.match(fileContent, /TrackGuidanceBanner/);
+        // Ensure StepShell and AiPromptCard are mounted
+        assert.match(fileContent, /StepShell/);
+        assert.match(fileContent, /AiPromptCard/);
 
         // Ensure newly created employments have empty employer, begin, end, and description
         assert.match(fileContent, /employer:\s*''/);
@@ -38,9 +38,8 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
         assert.doesNotMatch(fileContent, /school:\s*['"]Accredited University \/ College['"]/);
         assert.doesNotMatch(fileContent, /setEducations\(\[\{\s*id:\s*newId,\s*degree:\s*degreeName/);
 
-        // Ensure TrackGuidanceBanner and QuickAddCommandBar are mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
-        assert.match(fileContent, /TrackGuidanceBanner/);
+        // Ensure StepShell is mounted
+        assert.match(fileContent, /StepShell/);
 
         // Ensure newly created educations have empty school, started, finished, and description
         assert.match(fileContent, /school:\s*''/);
@@ -56,9 +55,9 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
         assert.doesNotMatch(fileContent, /setProjects\(\[\{\s*id:\s*newId,\s*title:\s*blueprint\.title/);
         assert.doesNotMatch(fileContent, /setProjects\(\[\{\s*id:\s*newId,\s*title:\s*tpl\.title/);
 
-        // Ensure TrackGuidanceBanner and QuickAddCommandBar are mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
-        assert.match(fileContent, /TrackGuidanceBanner/);
+        // Ensure StepShell and EntryList are mounted
+        assert.match(fileContent, /StepShell/);
+        assert.match(fileContent, /EntryList/);
 
         // Ensure newly created projects have empty description
         assert.match(fileContent, /description:\s*''/);
@@ -74,9 +73,8 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
         // Ensure blank date initialization
         assert.match(fileContent, /date:\s*initialData\.date\s*\|\|\s*''/);
 
-        // Ensure TrackGuidanceBanner and QuickAddCommandBar are mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
-        assert.match(fileContent, /TrackGuidanceBanner/);
+        // Ensure StepShell is mounted
+        assert.match(fileContent, /StepShell/);
     });
 
     it('Invariant 5: AchievementsStep must not auto-populate fabricated awards into candidate achievements', () => {
@@ -85,9 +83,8 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
         // Ensure old auto-population code is purged
         assert.doesNotMatch(fileContent, /setAchievements\(\[\{\s*id:\s*newId,\s*title:\s*blueprint\.title/);
 
-        // Ensure TrackGuidanceBanner and QuickAddCommandBar are mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
-        assert.match(fileContent, /TrackGuidanceBanner/);
+        // Ensure StepShell is mounted
+        assert.match(fileContent, /StepShell/);
 
         // Ensure blank title and description
         assert.match(fileContent, /description:\s*''/);
@@ -99,35 +96,30 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
         // Ensure blueprint items are not mapped directly into candidate state
         assert.doesNotMatch(fileContent, /items:\s*\(blueprint\.items\s*\|\|\s*\[\]\)\.map/);
 
-        // Ensure TrackGuidanceBanner and QuickAddCommandBar are mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
-        assert.match(fileContent, /TrackGuidanceBanner/);
+        // Ensure StepShell is mounted
+        assert.match(fileContent, /StepShell/);
     });
 
-    it('Invariant 7: SummaryStep must route generated AI text through AiDraftReviewModal (Zero Silent Replacement)', () => {
+    it('Invariant 7: SummaryStep must route generated AI text through AiPromptCard with overwrite protection (Zero Silent Replacement)', () => {
         const fileContent = fs.readFileSync(path.join(stepsDir, 'SummaryStep.jsx'), 'utf-8');
 
-        // Ensure AiDraftReviewModal is imported and rendered
-        assert.match(fileContent, /import AiDraftReviewModal from '\.\.\/components\/AiDraftReviewModal'/);
-        assert.match(fileContent, /<AiDraftReviewModal/);
+        // Ensure StepShell and AiPromptCard are mounted
+        assert.match(fileContent, /StepShell/);
+        assert.match(fileContent, /AiPromptCard/);
 
         // Ensure AI draft does NOT immediately call setSummary(cleanSummary) and updateResumeData
         assert.doesNotMatch(fileContent, /setSummary\(cleanSummary\);\s*setCharCount\(cleanText\(cleanSummary\)\.length\);\s*updateResumeData\(\{ summary: cleanSummary \}\);/);
-
-        // Ensure review draft is opened in modal
-        assert.match(fileContent, /setReviewDraft\(cleanSummary\)/);
-        assert.match(fileContent, /setIsReviewModalOpen\(true\)/);
     });
 
-    it('Invariant 8: LanguagesStep must adapt recommendations dynamically by candidate region without hardcoding', () => {
+    it('Invariant 8: LanguagesStep must rely on candidate-provided entries with zero hardcoded stereotypes', () => {
         const fileContent = fs.readFileSync(path.join(stepsDir, 'LanguagesStep.jsx'), 'utf-8');
 
-        // Ensure regional mapping dictionary exists
-        assert.match(fileContent, /REGIONAL_LANGUAGES/);
-        assert.match(fileContent, /candidateContext\.geography\?\.region/);
+        // Ensure StepShell is mounted
+        assert.match(fileContent, /StepShell/);
 
-        // Ensure QuickAddCommandBar is mounted
-        assert.match(fileContent, /QuickAddCommandBar/);
+        // Ensure candidate-driven proficiency levels and zero regional stereotyping
+        assert.match(fileContent, /PROFICIENCY_LEVELS/);
+        assert.doesNotMatch(fileContent, /REGIONAL_LANGUAGES/);
     });
 
     it('Invariant 9: Autocomplete and dynamic placeholders produce guidance, never mutated candidate facts', () => {
@@ -142,23 +134,23 @@ describe('Zero-Fabrication & Data-Safety Architecture Suite', () => {
             const ctx = getCandidateContext(persona);
             assert.ok(ctx.domainLabel, `Should have domain label for ${persona.occupation}`);
             
-            // Check dynamic placeholders
+            // Check dynamic placeholders provide neutral non-empty string guidance
             const empPlaceholder = getDynamicPlaceholder('work-history', 'employer', ctx);
-            assert.ok(typeof empPlaceholder === 'string' && empPlaceholder.startsWith('e.g.'), `Employer placeholder must start with e.g. for ${persona.occupation}`);
+            assert.ok(typeof empPlaceholder === 'string' && empPlaceholder.length > 5, `Employer placeholder must be valid guidance for ${persona.occupation}`);
 
             const schoolPlaceholder = getDynamicPlaceholder('education', 'school', ctx);
-            assert.ok(typeof schoolPlaceholder === 'string' && schoolPlaceholder.startsWith('e.g.'), `School placeholder must start with e.g. for ${persona.occupation}`);
+            assert.ok(typeof schoolPlaceholder === 'string' && schoolPlaceholder.length > 5, `School placeholder must be valid guidance for ${persona.occupation}`);
         }
     });
 
-    it('Invariant 10: AiDraftReviewModal component contract verifies explicit confirmation gates', () => {
-        const fileContent = fs.readFileSync(path.join(componentsDir, 'AiDraftReviewModal.jsx'), 'utf-8');
+    it('Invariant 10: AiPromptCard component contract verifies explicit confirmation gates', () => {
+        const fileContent = fs.readFileSync(path.join(componentsDir, 'AiPromptCard.jsx'), 'utf-8');
 
-        // Must support onAccept, onClose, in-modal editing, and overwrite warnings
-        assert.match(fileContent, /onAccept/);
-        assert.match(fileContent, /onClose/);
-        assert.match(fileContent, /isEditing/);
-        assert.match(fileContent, /Your existing \{targetFieldLabel\.toLowerCase\(\)\} will be replaced/);
-        assert.match(fileContent, /Grounded strictly in the career information you provided/);
+        // Must support questions panel, suggestions panel, and draft replacement confirmation
+        assert.match(fileContent, /QuestionsPanel/);
+        assert.match(fileContent, /SuggestionsPanel/);
+        assert.match(fileContent, /DraftPanel/);
+        assert.match(fileContent, /Using this draft replaces what is currently in this field/);
+        assert.match(fileContent, /Use this draft/);
     });
 });

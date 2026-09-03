@@ -11,7 +11,7 @@ import {
 } from 'react-icons/md';
 import { calculateAtsScore } from '../../../utils/atsScore';
 
-const personalFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
+const personalFields = ['firstname', 'lastname'];
 
 function hasText(value) {
     return typeof value === 'string' && value.trim().length > 0;
@@ -78,73 +78,51 @@ export default function ReviewStep({
             <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1.5 max-w-2xl">
-                        <h1 id="review-export-title" className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                            Review and export
-                        </h1>
+                        <div className="flex items-center gap-2.5">
+                            <h1 id="review-export-title" className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+                                Review and export
+                            </h1>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${overallTheme.badge}`}>
+                                {atsResult.qualityScore}/100 ATS Score
+                            </span>
+                        </div>
                         <p className="text-slate-500 text-xs leading-relaxed">
                             How each section of your resume checks against ATS parsing and recruiter screening —
                             every claim below comes from the check itself.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5 sm:p-4 shrink-0">
-                        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center text-white ${overallTheme.solid}`}>
-                            <span className="text-xl font-bold tabular-nums leading-none">
-                                {atsResult.qualityScore}
-                            </span>
-                            <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5 opacity-70">
-                                / 100
-                            </span>
-                        </div>
-                        <div>
-                            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                                Overall
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsJdInputOpen(prev => !prev)}
+                            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                            <MdSearch className="w-4 h-4 text-indigo-600" />
+                            <span>{targetJd ? 'Update Job Description' : 'Match Target Job'}</span>
+                        </button>
+
+                        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 sm:p-3">
+                            <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white ${overallTheme.solid}`}>
+                                <span className="text-base font-bold tabular-nums leading-none">
+                                    {atsResult.qualityScore}
+                                </span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5 opacity-70">
+                                    / 100
+                                </span>
                             </div>
-                            <div className="text-sm font-bold text-slate-900 mt-0.5">
-                                {atsResult.status?.label || 'In Progress'}
-                            </div>
-                            <div className={`text-[10px] mt-0.5 ${requiredReady ? 'text-emerald-700' : 'text-amber-700'}`}>
-                                {requiredReady ? '✓ Core details complete' : '⚠ Required fields missing'}
+                            <div>
+                                <div className="text-xs font-bold text-slate-900">
+                                    {atsResult.status?.label || 'In Progress'}
+                                </div>
+                                <div className={`text-[10px] mt-0.5 font-medium ${requiredReady ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                    {requiredReady ? '✓ Core details complete' : '⚠ Required fields missing'}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </header>
-
-            {/* Save Status Alert */}
-            <div
-                className={`rounded-xl border p-4 transition-colors flex items-center justify-between gap-3 ${
-                    saved ? 'border-emerald-200 bg-emerald-50/80 text-emerald-900' : 'border-amber-200 bg-amber-50/80 text-amber-900'
-                }`}
-                role="status"
-                aria-live="polite"
-            >
-                <div className="flex items-center gap-3 min-w-0">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                        saved ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white'
-                    }`}>
-                        {saved ? '✓' : '!'}
-                    </span>
-                    <div className="min-w-0">
-                        <p className="text-xs sm:text-sm font-bold truncate">
-                            {saved ? 'All edits safely saved' : (saveState?.message || 'Syncing edits...')}
-                        </p>
-                        <p className="text-[11px] text-slate-600">
-                            {saved ? 'Your resume state is synced and ready for export.' : 'Please wait for synchronization before leaving.'}
-                        </p>
-                    </div>
-                </div>
-                <div className="shrink-0 flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setIsJdInputOpen(prev => !prev)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1.5"
-                    >
-                        <MdSearch className="w-4 h-4 text-indigo-600" />
-                        <span>{targetJd ? 'Update Job Description' : 'Match Target Job'}</span>
-                    </button>
-                </div>
-            </div>
 
             {/* Target Job Description Matcher */}
             {isJdInputOpen && (
@@ -386,18 +364,18 @@ export default function ReviewStep({
 
                         <button
                             type="button"
-                            onClick={onDownload}
-                            disabled={isDownloading || !requiredReady}
+                            onClick={requiredReady ? onDownload : () => onNavigate?.('heading')}
+                            disabled={isDownloading}
                             aria-describedby={!requiredReady ? 'export-requirement' : undefined}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
                         >
                             <MdFileDownload className="w-4 h-4" />
-                            <span>{isDownloading ? 'Preparing export…' : 'Download Resume (PDF)'}</span>
+                            <span>{isDownloading ? 'Preparing export…' : requiredReady ? 'Download Resume (PDF)' : 'Complete Name to Download (Step 1)'}</span>
                         </button>
 
                         {!requiredReady && (
                             <p id="export-requirement" className="text-[11px] text-amber-300 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60 leading-snug">
-                                Complete the required details in Step 1 (name, email, phone, target title) before downloading.
+                                Add your name in Step 1 before downloading.
                             </p>
                         )}
                     </div>

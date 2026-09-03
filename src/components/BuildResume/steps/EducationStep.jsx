@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdLightbulb } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -112,15 +112,20 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
     };
 
     const handleSave = () => {
-        updateResumeData({ educations });
-
         const hasValidEducation = educations.some(edu => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
         const completedSteps = [...(resumeData.completedSteps || [])];
+        let updatedCompletedSteps = null;
+
         if (hasValidEducation && !completedSteps.includes(3)) {
-            updateResumeData({ educations, completedSteps: [...completedSteps, 3] });
+            updatedCompletedSteps = [...completedSteps, 3];
         } else if (!hasValidEducation && completedSteps.includes(3)) {
-            updateResumeData({ educations, completedSteps: completedSteps.filter(step => step !== 3) });
+            updatedCompletedSteps = completedSteps.filter(step => step !== 3);
         }
+
+        updateResumeData({
+            educations,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     };
 
     useEffect(() => {
@@ -130,6 +135,29 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [educations]);
+
+    // Unmount flush: synchronously commit state on step exit
+    const educationsRef = useRef(educations);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { educationsRef.current = educations; }, [educations]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const edus = educationsRef.current;
+        const hasValid = edus.some(edu => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (hasValid && !completedSteps.includes(3)) {
+            updatedCompletedSteps = [...completedSteps, 3];
+        } else if (!hasValid && completedSteps.includes(3)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 3);
+        }
+        updateResumeDataRef.current({
+            educations: edus,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const hasValidEducation = educations.some(edu => String(edu?.school || '').trim() !== '' && String(edu?.degree || '').trim() !== '');
 

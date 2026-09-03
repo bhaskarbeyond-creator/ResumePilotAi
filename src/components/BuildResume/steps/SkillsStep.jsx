@@ -117,15 +117,20 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
     };
 
     const handleSave = () => {
-        updateResumeData({ skills });
-
         const hasValidSkill = skills.some(s => String(s?.skillName || s?.name || '').trim() !== '');
         const completedSteps = [...(resumeData.completedSteps || [])];
+        let updatedCompletedSteps = null;
+
         if (hasValidSkill && !completedSteps.includes(4)) {
-            updateResumeData({ skills, completedSteps: [...completedSteps, 4] });
+            updatedCompletedSteps = [...completedSteps, 4];
         } else if (!hasValidSkill && completedSteps.includes(4)) {
-            updateResumeData({ skills, completedSteps: completedSteps.filter(step => step !== 4) });
+            updatedCompletedSteps = completedSteps.filter(step => step !== 4);
         }
+
+        updateResumeData({
+            skills,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     };
 
     useEffect(() => {
@@ -135,6 +140,29 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [skills]);
+
+    // Unmount flush: synchronously commit state on step exit
+    const skillsRef = useRef(skills);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { skillsRef.current = skills; }, [skills]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const sks = skillsRef.current;
+        const hasValidSkill = sks.some(s => String(s?.skillName || s?.name || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (hasValidSkill && !completedSteps.includes(4)) {
+            updatedCompletedSteps = [...completedSteps, 4];
+        } else if (!hasValidSkill && completedSteps.includes(4)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 4);
+        }
+        updateResumeDataRef.current({
+            skills: sks,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     // Deterministic duplicate detection
     const nameCounts = new Map();

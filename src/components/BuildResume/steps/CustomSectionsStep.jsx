@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdCheck, MdKeyboardArrowDown, MdDelete } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -197,6 +197,36 @@ const CustomSectionsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timer);
     }, [customSections]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Unmount flush: synchronously commit state on step exit
+    const customSectionsRef = useRef(customSections);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    const sectionOrderRef = useRef(resumeData?.sectionOrder || []);
+    useEffect(() => { customSectionsRef.current = customSections; }, [customSections]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => { sectionOrderRef.current = resumeData?.sectionOrder || []; }, [resumeData?.sectionOrder]);
+    useEffect(() => () => {
+        const secs = customSectionsRef.current;
+        const hasMeaningful = secs.some(s => String(s?.title || '').trim() !== '' || (Array.isArray(s?.items) && s.items.length > 0));
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (hasMeaningful && !completedSteps.includes(11)) {
+            updatedCompletedSteps = [...completedSteps, 11];
+        } else if (!hasMeaningful && completedSteps.includes(11)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 11);
+        }
+        const sectionOrder = [...sectionOrderRef.current];
+        if (secs.length > 0 && !sectionOrder.includes('custom')) {
+            sectionOrder.push('custom');
+        }
+        updateResumeDataRef.current({
+            customSections: secs,
+            sectionOrder,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     useEffect(() => {
         if (customSections.length === 1 && expandedSections.size === 0) {

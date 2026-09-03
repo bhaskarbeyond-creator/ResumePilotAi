@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -81,6 +81,29 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timer);
     }, [certifications]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Unmount flush: synchronously commit state on step exit
+    const certsRef = useRef(certifications);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { certsRef.current = certifications; }, [certifications]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const certs = certsRef.current;
+        const valid = certs.filter(cert => (cert.title || cert.name || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (valid.length > 0 && !completedSteps.includes(6)) {
+            updatedCompletedSteps = [...completedSteps, 6];
+        } else if (valid.length === 0 && completedSteps.includes(6)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 6);
+        }
+        updateResumeDataRef.current({
+            certifications: certs,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     // ——— AI: exploration suggestions, explicitly not claims ———
     const aiReadiness = canRunAssistOperation('generate-certifications', { resumeData });

@@ -218,7 +218,7 @@ async function main() {
     for (let i = 0; i < personalInputs.length; i++) {
       const tag = await personalInputs[i].evaluate(el => el.tagName.toLowerCase());
       const type = await personalInputs[i].evaluate(el => el.type || '');
-      const name = await personalInputs[i].evaluate(el => el.name || el.id || `input-${i}`);
+      const name = (await personalInputs[i].evaluate(el => el.name || el.id)) || `input-${i}`;
       const currentVal = tag === 'input' ? await personalInputs[i].inputValue().catch(() => '') : '';
 
       if (tag === 'input' && ['text', 'email', 'tel', 'url', ''].includes(type) && !currentVal) {
@@ -261,7 +261,7 @@ async function main() {
       // Discover and interact with all form controls in each step
       const inputs = await page.locator('form input[type="text"], form input[type="email"], form input[type="tel"], form input[type="url"], form input[type="number"], form input:not([type]), form textarea').all();
       for (let i = 0; i < Math.min(inputs.length, 5); i++) {
-        const name = await inputs[i].evaluate(el => el.name || el.placeholder || `input-${i}`);
+        const name = (await inputs[i].evaluate(el => el.name || el.placeholder || el.id)) || `input-${i}`;
         await inputs[i].fill(`Test ${step.name} ${i}`).catch(() => {});
         metrics.fills++;
         check(`${step.name.replace(/[\s/]+/g, '').substring(0,3).toUpperCase()}-IN-${i}`, `${step.name} input "${name}" filled`, true, `input[${i}].fill()`, 'filled');
@@ -353,12 +353,16 @@ async function main() {
     // SECTION F: MOBILE RESPONSIVE
     // ════════════════════════════════════════════════════════════════
     console.log('\n── SECTION F: RESUME BUILDER MOBILE RESPONSIVE ──');
-    const mobileViewports = [
+    const testViewports = [
+      { w: 360, h: 800, name: 'Android Compact' },
       { w: 375, h: 667, name: 'iPhone SE' },
       { w: 390, h: 844, name: 'iPhone 12' },
-      { w: 768, h: 1024, name: 'iPad' },
+      { w: 768, h: 1024, name: 'iPad Portrait' },
+      { w: 1024, h: 768, name: 'Tablet Landscape' },
+      { w: 1280, h: 800, name: 'Desktop HD' },
+      { w: 1440, h: 900, name: 'Desktop Large' },
     ];
-    for (const vp of mobileViewports) {
+    for (const vp of testViewports) {
       await page.setViewportSize({ width: vp.w, height: vp.h });
       await page.goto(`${base}/build-resume/heading`, { waitUntil: 'domcontentloaded' });
       metrics.navigations++;

@@ -411,7 +411,9 @@ const AuthWrapper = () => {
 
     if (authLoading || maintenance.loading) return <Spinner />;
 
-    const emergencyPath = window.location.pathname === '/login' || window.location.pathname.startsWith('/adm');
+    const emergencyPath = window.location.pathname === '/login'
+        || window.location.pathname.startsWith('/adm')
+        || window.location.pathname.startsWith('/export/');
     if (maintenance.enabled && !maintenance.admin && !emergencyPath) {
         return <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white"><div className="max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-8 text-center shadow-2xl" role="status"><h1 className="text-2xl font-bold">{maintenance.title || 'Scheduled maintenance'}</h1><p className="mt-4 text-slate-300">{maintenance.message}</p><p className="mt-6 text-sm text-slate-400">Administrators can use the protected console during maintenance.</p><a href="/login" className="mt-5 inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900">Administrator sign in</a></div></main>;
     }

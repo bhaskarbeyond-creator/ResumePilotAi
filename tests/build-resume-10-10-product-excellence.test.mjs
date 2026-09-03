@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
 import { getCandidateContext } from '../src/utils/candidateContext.js';
 import { calculateAtsScore } from '../src/utils/atsScore.js';
+
+const require = createRequire(import.meta.url);
+const { buildClarificationPrompt, needsClarification } = require('../backend/services/aiRuntime.js');
 
 // Adversarial Personas Matrix (29 Real-World, Diverse, Non-IT & Novel Roles)
 const ADVERSARIAL_PERSONAS = [
@@ -151,3 +157,131 @@ test('10/10 Verification: ATS Score Reliability Across 29 Personas', () => {
         assert.ok(eduSec && eduSec.score > 0, 'Education score present');
     }
 });
+
+test('10/10 Verification: Substantive Completion Guard in BuildResume.jsx', () => {
+    const buildResumeContent = fs.readFileSync(path.resolve('src/components/BuildResume/BuildResume.jsx'), 'utf-8');
+
+    // Must evaluate substantive content first before honoring completedSteps cache
+    assert.match(buildResumeContent, /hasSubstantiveContent/);
+    assert.match(buildResumeContent, /if \(!hasSubstantiveContent\) return false;/);
+});
+
+test('10/10 Verification: Mobile Progressive Disclosure in StepShell.jsx', () => {
+    const stepShellContent = fs.readFileSync(path.resolve('src/components/BuildResume/components/StepShell.jsx'), 'utf-8');
+
+    // Must have mobile section guide accordion with aria-expanded controls and StepGuide
+    assert.match(stepShellContent, /isMobileGuideOpen/);
+    assert.match(stepShellContent, /Section Guide & ATS Insights/);
+    assert.match(stepShellContent, /aria-controls=\{`mobile-guide-\$\{stepPath\}`\}/);
+});
+
+test('10/10 Verification: Atomic Save Pipeline Across Form Steps', () => {
+    const stepFiles = [
+        'src/components/BuildResume/steps/HeadingStep.jsx',
+        'src/components/BuildResume/steps/WorkHistoryStep.jsx',
+        'src/components/BuildResume/steps/EducationStep.jsx',
+        'src/components/BuildResume/steps/SkillsStep.jsx',
+        'src/components/BuildResume/steps/LanguagesStep.jsx',
+        'src/components/BuildResume/steps/SummaryStep.jsx'
+    ];
+
+    for (const file of stepFiles) {
+        const content = fs.readFileSync(path.resolve(file), 'utf-8');
+        // Must use updatedCompletedSteps pattern for atomic single dispatch
+        assert.match(content, /updatedCompletedSteps/, `File ${file} must use atomic updatedCompletedSteps`);
+    }
+});
+
+test('10/10 Verification: Dynamic AI Clarification Questions & Zero IT Leakage', () => {
+    // Needs clarification when notes are sparse (< 10 chars)
+    assert.equal(needsClarification('generate-work-description', { existingText: '' }), true);
+    assert.equal(needsClarification('generate-work-description', { existingText: 'too short' }), true);
+    assert.equal(needsClarification('generate-work-description', { existingText: 'A detailed note describing day to day patient responsibilities.' }), false);
+
+    // Targeted role prompts must not leak IT vocabulary
+    const doctorPrompt = buildClarificationPrompt('generate-work-description', {
+        jobTitle: 'Pediatric Cardiologist',
+        employer: 'Children’s Memorial Hospital',
+        existingText: '',
+    });
+    assert.match(doctorPrompt.prompt, /Pediatric Cardiologist/);
+    assert.match(doctorPrompt.prompt, /Children’s Memorial Hospital/);
+    assert.doesNotMatch(doctorPrompt.prompt.toLowerCase(), /\b(react|docker|kubernetes|github|ci\/cd)\b/);
+
+    const chefPrompt = buildClarificationPrompt('generate-work-description', {
+        jobTitle: 'Executive Chef',
+        employer: 'Le Petit Bistro',
+        existingText: '',
+    });
+    assert.match(chefPrompt.prompt, /Executive Chef/);
+    assert.match(chefPrompt.prompt, /Le Petit Bistro/);
+    assert.doesNotMatch(chefPrompt.prompt.toLowerCase(), /\b(react|docker|kubernetes|github|ci\/cd)\b/);
+});
+
+test('10/10 Verification: All 11 Step Components Implement Unmount Flush Keystroke Protection', () => {
+    const allStepFiles = [
+        'src/components/BuildResume/steps/HeadingStep.jsx',
+        'src/components/BuildResume/steps/WorkHistoryStep.jsx',
+        'src/components/BuildResume/steps/EducationStep.jsx',
+        'src/components/BuildResume/steps/SkillsStep.jsx',
+        'src/components/BuildResume/steps/LanguagesStep.jsx',
+        'src/components/BuildResume/steps/SummaryStep.jsx',
+        'src/components/BuildResume/steps/ProjectsStep.jsx',
+        'src/components/BuildResume/steps/CertificationsStep.jsx',
+        'src/components/BuildResume/steps/AchievementsStep.jsx',
+        'src/components/BuildResume/steps/ReferencesStep.jsx',
+        'src/components/BuildResume/steps/CustomSectionsStep.jsx'
+    ];
+
+    for (const file of allStepFiles) {
+        const content = fs.readFileSync(path.resolve(file), 'utf-8');
+        // Must contain unmount flush pattern using ref and cleanup function
+        assert.match(content, /updateResumeDataRef\.current/, `${file} must flush updateResumeDataRef on unmount`);
+        assert.match(content, /useEffect\(\(\) => \(\) =>/, `${file} must have an unmount cleanup effect`);
+    }
+});
+
+test('10/10 Verification: Adversarial Inputs & Extreme Stress Invariance', () => {
+    // 1. Extreme text (10,000 chars)
+    const longText = 'Patient triage protocols. '.repeat(400);
+    const longCandidate = {
+        targetRole: 'Emergency Medicine Physician',
+        summary: longText,
+        employments: [{ id: 1, jobTitle: 'Attending Physician', employer: 'Metro Trauma Center', description: longText }]
+    };
+    const longCtx = getCandidateContext(longCandidate);
+    assert.ok(longCtx.vocabulary.length > 0, 'Vocabulary parsed for long candidate');
+    const longAts = calculateAtsScore(longCandidate);
+    assert.ok(typeof longAts.qualityScore === 'number' && Number.isFinite(longAts.qualityScore), 'ATS score handles 10k text');
+
+    // 2. Completely blank / empty candidate
+    const emptyCtx = getCandidateContext({});
+    assert.ok(emptyCtx.facts, 'Empty context has facts');
+    const emptyAts = calculateAtsScore({});
+    assert.equal(typeof emptyAts.qualityScore, 'number');
+
+    // 3. Malformed primitives (numbers, booleans, symbols where strings expected)
+    const malformedCandidate = {
+        firstname: 12345,
+        lastname: true,
+        occupation: { title: 'Complex Object' },
+        employments: [null, undefined, { jobTitle: 999, employer: null, description: false }]
+    };
+    const malformedCtx = getCandidateContext(malformedCandidate);
+    assert.ok(malformedCtx, 'Context survives malformed primitives');
+    const malformedAts = calculateAtsScore(malformedCandidate);
+    assert.ok(Number.isFinite(malformedAts.qualityScore), 'ATS score survives malformed primitives');
+
+    // 4. Novel / invented roles (Hydroponic Vertical Farmer)
+    const novelCandidate = {
+        targetRole: 'Hydroponic Vertical Aeroponics Specialist',
+        summary: 'Formulated nutrient dosing recipes, calibrated electrical conductivity sensors, and automated LED photoperiods.',
+        employments: [{ id: 1, jobTitle: 'Vertical Agronomist', employer: 'SkyGreens Urban Farm', description: 'Monitored dissolved oxygen levels and managed closed-loop fertigation.' }]
+    };
+    const novelCtx = getCandidateContext(novelCandidate);
+    assert.ok(novelCtx.vocabulary.length > 0, 'Vocabulary parsed for novel role');
+    const novelAts = calculateAtsScore(novelCandidate);
+    assert.ok(novelAts.qualityScore > 0, 'Deterministic ATS score calculated for novel role');
+});
+
+

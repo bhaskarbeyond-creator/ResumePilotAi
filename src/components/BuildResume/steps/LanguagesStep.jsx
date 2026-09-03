@@ -88,21 +88,20 @@ const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const handleSave = () => {
         const hasValid = languages.some(l => String(l?.name || l?.language || l || '').trim() !== '');
-        updateResumeData({ languages, hobbies });
+        const completedSteps = [...(resumeData.completedSteps || [])];
+        let updatedCompletedSteps = null;
 
-        if (hasValid) {
-            const completedSteps = [...(resumeData.completedSteps || [])];
-            if (!completedSteps.includes(7)) {
-                completedSteps.push(7);
-                updateResumeData({ languages, hobbies, completedSteps });
-            }
-        } else {
-            const completedSteps = [...(resumeData.completedSteps || [])];
-            const updatedSteps = completedSteps.filter(step => step !== 7);
-            if (updatedSteps.length !== completedSteps.length) {
-                updateResumeData({ languages, hobbies, completedSteps: updatedSteps });
-            }
+        if (hasValid && !completedSteps.includes(7)) {
+            updatedCompletedSteps = [...completedSteps, 7];
+        } else if (!hasValid && completedSteps.includes(7)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 7);
         }
+
+        updateResumeData({
+            languages,
+            hobbies,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     };
 
     useEffect(() => {
@@ -112,6 +111,33 @@ const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [languages, hobbies]);
+
+    // Unmount flush: synchronously commit state on step exit
+    const languagesRef = useRef(languages);
+    const hobbiesRef = useRef(hobbies);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { languagesRef.current = languages; }, [languages]);
+    useEffect(() => { hobbiesRef.current = hobbies; }, [hobbies]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const langs = languagesRef.current;
+        const hobs = hobbiesRef.current;
+        const hasValid = langs.some(l => String(l?.name || l?.language || l || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (hasValid && !completedSteps.includes(7)) {
+            updatedCompletedSteps = [...completedSteps, 7];
+        } else if (!hasValid && completedSteps.includes(7)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 7);
+        }
+        updateResumeDataRef.current({
+            languages: langs,
+            hobbies: hobs,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const hasLanguages = languages.some(l => String(l?.name || l?.language || l || '').trim() !== '');
 

@@ -83,7 +83,11 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
     const base = { context: contextPayload };
     if (stripHtml(targetJd)) base.targetJd = targetJd;
     if (answers && typeof answers === 'object' && Object.values(answers).some(v => stripHtml(v))) {
-        base.answers = Object.fromEntries(Object.entries(answers).map(([k, v]) => [k, stripHtml(v).slice(0, 600)])).filter(([, v]) => v);
+        base.answers = Object.fromEntries(
+            Object.entries(answers)
+                .map(([k, v]) => [k, stripHtml(v).slice(0, 600)])
+                .filter(([, v]) => Boolean(v))
+        );
     }
     if (tone) base.tone = tone;
 

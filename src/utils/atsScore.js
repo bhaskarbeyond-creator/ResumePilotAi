@@ -45,7 +45,7 @@ const PUNCTUATION_SKILL_VARIANTS = Object.freeze({
 
 export const JD_STORAGE_KEY = 'rpai.ats.targetJd';
 
-const ACTION_VERBS = Object.freeze([
+export const ACTION_VERBS = Object.freeze([
     // General leadership, management & execution
     'architected', 'automated', 'built', 'created', 'delivered', 'designed',
     'developed', 'drove', 'engineered', 'established', 'expanded', 'generated',
@@ -304,14 +304,14 @@ export function analyzeStuffing(text) {
 }
 
 function collectResumePlain(data = {}) {
-    const skills = (data.skills || []).map(skillName).filter(Boolean);
-    const employments = data.employments || [];
-    const educations = data.educations || [];
-    const projects = data.projects || [];
-    const certifications = data.certifications || [];
-    const achievements = data.achievements || [];
-    const customSections = data.customSections || [];
-    const languages = data.languages || [];
+    const skills = (Array.isArray(data.skills) ? data.skills : []).map(skillName).filter(Boolean);
+    const employments = (Array.isArray(data.employments) ? data.employments : []).filter(e => e && typeof e === 'object');
+    const educations = (Array.isArray(data.educations) ? data.educations : []).filter(e => e && typeof e === 'object');
+    const projects = (Array.isArray(data.projects) ? data.projects : []).filter(p => p && typeof p === 'object');
+    const certifications = (Array.isArray(data.certifications) ? data.certifications : []).filter(c => c && typeof c === 'object');
+    const achievements = (Array.isArray(data.achievements) ? data.achievements : []).filter(a => a && typeof a === 'object');
+    const customSections = (Array.isArray(data.customSections) ? data.customSections : []).filter(s => s && typeof s === 'object');
+    const languages = (Array.isArray(data.languages) ? data.languages : []).filter(l => l && (typeof l === 'string' || typeof l === 'object'));
     const parts = [
         data.firstname, data.lastname, data.occupation, data.email, data.phone,
         data.city, data.country, data.summary,
@@ -324,7 +324,7 @@ function collectResumePlain(data = {}) {
         ...customSections.flatMap((section) => [
             section.title,
             section.content,
-            ...((section.items || []).map((item) => (typeof item === 'string' ? item : fieldText(item.title, item.description, item.content)))),
+            ...((Array.isArray(section.items) ? section.items : []).filter(Boolean).map((item) => (typeof item === 'string' ? item : fieldText(item.title, item.description, item.content)))),
         ]),
         ...languages.map((item) => (typeof item === 'string' ? item : item.name || item.language)),
     ];
@@ -457,7 +457,7 @@ function scoreSummary(data, stuffing, language) {
 
 function scoreExperience(data, language) {
     const findings = [];
-    const employments = Array.isArray(data.employments) ? data.employments : [];
+    const employments = (Array.isArray(data.employments) ? data.employments : []).filter((item) => item && typeof item === 'object');
     const completeRoles = employments.filter((item) => stripHtml(item.jobTitle) && stripHtml(item.employer));
     const datedRoles = employments.filter((item) => stripHtml(item.begin || item.startDate || item.started));
     const bullets = uniqueStrings(employments.flatMap((item) => extractBullets(item.description)));
@@ -513,7 +513,7 @@ function scoreExperience(data, language) {
 
 function scoreEducation(data) {
     const findings = [];
-    const educations = Array.isArray(data.educations) ? data.educations : [];
+    const educations = (Array.isArray(data.educations) ? data.educations : []).filter((item) => item && typeof item === 'object');
     const meaningful = educations.filter((item) => stripHtml(item.school) || stripHtml(item.degree));
     const complete = educations.filter((item) => stripHtml(item.school) && stripHtml(item.degree));
     let score = 0;
@@ -603,6 +603,7 @@ function scoreSkills(data, stuffing) {
 }
 
 function projectQuality(project, skillNames) {
+    if (!project || typeof project !== 'object') return 0;
     const title = stripHtml(project.title || project.name);
     const description = stripHtml(project.description);
     const url = stripHtml(project.url || project.link);
@@ -621,6 +622,7 @@ function projectQuality(project, skillNames) {
 }
 
 function certQuality(cert) {
+    if (!cert || typeof cert !== 'object') return 0;
     const title = stripHtml(cert.title || cert.name);
     if (!title || isFillerTitle(title)) return 0;
     let pts = 2;
@@ -630,6 +632,7 @@ function certQuality(cert) {
 }
 
 function achievementQuality(item) {
+    if (!item || typeof item !== 'object') return 0;
     const title = stripHtml(item.title || item.name);
     const description = stripHtml(item.description);
     if ((!title || isFillerTitle(title)) && description.length < 24) return 0;
@@ -1044,9 +1047,10 @@ export function calculateAtsScore(data = {}, options = {}) {
     const language = detectNonEnglish(`${stripHtml(data.summary)} ${resumeText}`);
     const stuffing = analyzeStuffing(resumeText);
     const skills = uniqueSkills(data.skills);
-    const datedRoles = (data.employments || []).some((item) => stripHtml(item.begin || item.startDate || item.started));
+    const employments = (Array.isArray(data.employments) ? data.employments : []).filter((item) => item && typeof item === 'object');
+    const datedRoles = employments.some((item) => stripHtml(item.begin || item.startDate || item.started));
     const hasNarrative = stripHtml(data.summary).length >= 60
-        || (data.employments || []).some((item) => extractBullets(item.description).length > 0);
+        || employments.some((item) => extractBullets(item.description).length > 0);
 
     const scored = {
         contact: scoreContact(data),

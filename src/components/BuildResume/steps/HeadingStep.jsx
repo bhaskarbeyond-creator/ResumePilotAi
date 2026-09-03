@@ -30,13 +30,14 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         linkedin: resumeData?.linkedin || '',
         github: resumeData?.github || '',
     });
+    const [targetJd, setTargetJd] = useState(resumeData?.targetJobDescription || '');
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [moreOpen, setMoreOpen] = useState(
         Boolean(resumeData?.website || resumeData?.linkedin || resumeData?.github || resumeData?.address || resumeData?.postalcode),
     );
 
-    const candidateContext = getCandidateContext(resumeData, resumeData?.targetJobDescription || '');
+    const candidateContext = getCandidateContext(resumeData, targetJd || resumeData?.targetJobDescription || '');
 
     // Keep formData in sync if parent resumeData updates externally
     useEffect(() => {
@@ -58,6 +59,9 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             linkedin: resumeData.linkedin || '',
             github: resumeData.github || '',
         }));
+        if (resumeData.targetJobDescription !== undefined) {
+            setTargetJd(resumeData.targetJobDescription || '');
+        }
     }, [resumeData]);
 
     const requiredFields = ['firstname', 'lastname', 'email', 'phone', 'occupation'];
@@ -97,23 +101,21 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             if (!validateField(field, formData[field])) allValid = false;
         });
 
-        updateResumeData(formData);
-
         const isComplete = requiredFields.every((field) => String(formData[field] || '').trim() !== '') && allValid;
+        const completedSteps = [...(resumeData?.completedSteps || [])];
+        let updatedCompletedSteps = null;
 
-        if (isComplete) {
-            const completedSteps = [...(resumeData?.completedSteps || [])];
-            if (!completedSteps.includes(1)) {
-                completedSteps.push(1);
-                updateResumeData({ ...formData, completedSteps });
-            }
-        } else {
-            const completedSteps = [...(resumeData?.completedSteps || [])];
-            const updatedSteps = completedSteps.filter((step) => step !== 1);
-            if (updatedSteps.length !== completedSteps.length) {
-                updateResumeData({ ...formData, completedSteps: updatedSteps });
-            }
+        if (isComplete && !completedSteps.includes(1)) {
+            updatedCompletedSteps = [...completedSteps, 1];
+        } else if (!isComplete && completedSteps.includes(1)) {
+            updatedCompletedSteps = completedSteps.filter((step) => step !== 1);
         }
+
+        updateResumeData({
+            ...formData,
+            targetJobDescription: targetJd,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     };
 
     // Auto-save on change
@@ -123,24 +125,32 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData]);
+    }, [formData, targetJd]);
 
     // Unmount flush: synchronously commit form data on step exit
     const formDataRef = useRef(formData);
+    const targetJdRef = useRef(targetJd);
     const updateResumeDataRef = useRef(updateResumeData);
     const completedStepsRef = useRef(resumeData?.completedSteps || []);
     useEffect(() => { formDataRef.current = formData; }, [formData]);
+    useEffect(() => { targetJdRef.current = targetJd; }, [targetJd]);
     useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
     useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
     useEffect(() => () => {
         const data = formDataRef.current;
-        updateResumeDataRef.current(data);
         const complete = requiredFields.every((field) => String(data[field] || '').trim() !== '');
         const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
         if (complete && !completedSteps.includes(1)) {
-            completedSteps.push(1);
-            updateResumeDataRef.current({ ...data, completedSteps });
+            updatedCompletedSteps = [...completedSteps, 1];
+        } else if (!complete && completedSteps.includes(1)) {
+            updatedCompletedSteps = completedSteps.filter((step) => step !== 1);
         }
+        updateResumeDataRef.current({
+            ...data,
+            targetJobDescription: targetJdRef.current,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -158,7 +168,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             resumeData={resumeData}
             targetJd={resumeData?.targetJobDescription || ''}
         >
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs space-y-5">
+            <form onSubmit={(e) => e.preventDefault()} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs space-y-5">
                 {/* Identity */}
                 <div className="space-y-3">
                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
@@ -310,7 +320,33 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         </div>
                     )}
                 </div>
-            </div>
+
+                {/* Optional Target Job Description Tailoring */}
+                <div className="border-t border-slate-100 pt-3">
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                                <span>🎯 Target Role & Job Description (Optional)</span>
+                            </span>
+                            {targetJd && targetJd.trim().length > 0 ? (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                    Tailored ✓
+                                </span>
+                            ) : null}
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-slate-500">
+                            Pasting your target job description allows the AI copilot and ATS engine to highlight missing keywords and suggest relevant skills across all subsequent steps.
+                        </p>
+                        <textarea
+                            rows={3}
+                            value={targetJd}
+                            onChange={(e) => setTargetJd(e.target.value)}
+                            placeholder="Paste the target job description or key requirements here…"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                    </div>
+                </div>
+            </form>
         </StepShell>
     );
 };

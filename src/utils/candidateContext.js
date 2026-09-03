@@ -19,8 +19,46 @@
  *                                               candidate's own entries
  */
 
+import { ACTION_VERBS } from './atsScore.js';
+
+export const DOMAINS = Object.freeze({
+    UNSPECIFIED: 'unspecified',
+});
+
+export const DOMAIN_REGISTRY = Object.freeze({});
+
 function cleanText(val) {
     return String(val || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Extracts action verbs present in candidate text or target JD,
+ * or returns role-neutral strong verbs if candidate input is sparse.
+ */
+export function extractCandidateActionVerbs(resumeData = {}, targetJd = '') {
+    const data = (resumeData && typeof resumeData === 'object') ? resumeData : {};
+    const raw = [
+        data.summary,
+        data.occupation,
+        targetJd,
+        ...(Array.isArray(data.employments) ? data.employments.map(e => `${e?.jobTitle || ''} ${e?.description || ''}`) : []),
+        ...(Array.isArray(data.projects) ? data.projects.map(p => `${p?.title || ''} ${p?.description || ''}`) : []),
+    ].join(' ').toLowerCase();
+
+    const matched = [];
+    const verbsPool = Array.isArray(ACTION_VERBS) ? ACTION_VERBS : [];
+    for (const verb of verbsPool) {
+        if (new RegExp(`\\b${verb}\\b`, 'i').test(raw)) {
+            matched.push(verb.charAt(0).toUpperCase() + verb.slice(1));
+        }
+    }
+
+    if (matched.length >= 3) {
+        return matched.slice(0, 8);
+    }
+
+    const neutralFallbacks = ['Delivered', 'Implemented', 'Led', 'Coordinated', 'Optimized', 'Managed', 'Improved', 'Executed'];
+    return [...new Set([...matched, ...neutralFallbacks])].slice(0, 6);
 }
 
 /**
@@ -272,20 +310,21 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     const data = (resumeData && typeof resumeData === 'object') ? resumeData : {};
     const region = detectGeographicRegion(data);
 
-    const employments = Array.isArray(data.employments) ? data.employments : [];
-    const educations = Array.isArray(data.educations) ? data.educations : [];
-    const skills = Array.isArray(data.skills) ? data.skills : [];
-    const certifications = Array.isArray(data.certifications) ? data.certifications : [];
-    const projects = Array.isArray(data.projects) ? data.projects : [];
-    const achievements = Array.isArray(data.achievements) ? data.achievements : [];
-    const languages = Array.isArray(data.languages) ? data.languages : [];
-    const references = Array.isArray(data.references) ? data.references : [];
+    const employments = (Array.isArray(data.employments) ? data.employments : []).filter(e => e && typeof e === 'object');
+    const educations = (Array.isArray(data.educations) ? data.educations : []).filter(e => e && typeof e === 'object');
+    const skills = (Array.isArray(data.skills) ? data.skills : []).filter(s => s && (typeof s === 'string' || typeof s === 'object'));
+    const certifications = (Array.isArray(data.certifications) ? data.certifications : []).filter(c => c && typeof c === 'object');
+    const projects = (Array.isArray(data.projects) ? data.projects : []).filter(p => p && typeof p === 'object');
+    const achievements = (Array.isArray(data.achievements) ? data.achievements : []).filter(a => a && typeof a === 'object');
+    const languages = (Array.isArray(data.languages) ? data.languages : []).filter(l => l && (typeof l === 'string' || typeof l === 'object'));
+    const references = (Array.isArray(data.references) ? data.references : []).filter(r => r && typeof r === 'object');
 
     // `data.title` is the resume document NAME (defaults to "Untitled Resume"), never the
     // candidate's role — it must not leak into the role context, or it contaminates the AI
     // evidence payload, profileHash, and job-title suggestions for resumes that have no
     // declared occupation yet.
-    const declaredTitle = String(data.occupation || data.targetTitle || '').trim();
+    const rawOccupation = typeof data.occupation === 'string' ? data.occupation : (typeof data.targetTitle === 'string' ? data.targetTitle : '');
+    const declaredTitle = rawOccupation.trim();
     const jdRole = extractTargetRoleFromJd(targetJd);
     const isGenericDeclared = /^(consultant|manager|director|specialist|professional|coordinator|associate|analyst|officer)$/i.test(declaredTitle);
     const targetRole = (!declaredTitle || isGenericDeclared) ? jdRole : declaredTitle;
@@ -300,11 +339,11 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     const profileHash = djb2Hash(JSON.stringify({
         role: targetRole,
         jd: jd ? jd.slice(0, 800) : '',
-        roles: employments.map(e => `${e.jobTitle}|${e.employer}|${e.begin || e.startDate || ''}|${e.end || e.endDate || ''}`),
-        edu: educations.map(e => `${e.degree}|${e.school}`),
-        skills: skills.map(s => (typeof s === 'string' ? s : s.skillName || s.name || '')).sort(),
-        certs: certifications.map(c => c.title || c.name || '').sort(),
-        projects: projects.map(p => p.title || p.name || '').sort(),
+        roles: employments.map(e => `${e?.jobTitle || ''}|${e?.employer || ''}|${e?.begin || e?.startDate || ''}|${e?.end || e?.endDate || ''}`),
+        edu: educations.map(e => `${e?.degree || ''}|${e?.school || ''}`),
+        skills: skills.map(s => (typeof s === 'string' ? s : s?.skillName || s?.name || '')).sort(),
+        certs: certifications.map(c => c?.title || c?.name || '').sort(),
+        projects: projects.map(p => p?.title || p?.name || '').sort(),
         summary: summary.slice(0, 400),
     }));
 
@@ -397,7 +436,7 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
             country: data.country || '',
             display: [data.city, data.country].filter(Boolean).join(', ') || 'Global',
         },
-        actionVerbs: [],
+        actionVerbs: extractCandidateActionVerbs(data, targetJd),
         starterBlueprints: null,
         skillCategories: [],
         domainData: null,

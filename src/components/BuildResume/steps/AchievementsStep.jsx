@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdOutlineSearch } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -123,6 +123,29 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timer);
     }, [achievements]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Unmount flush: synchronously commit state on step exit
+    const achievementsRef = useRef(achievements);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { achievementsRef.current = achievements; }, [achievements]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const achs = achievementsRef.current;
+        const valid = achs.filter(item => String(item?.title || item?.name || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (valid.length > 0 && !completedSteps.includes(9)) {
+            updatedCompletedSteps = [...completedSteps, 9];
+        } else if (valid.length === 0 && completedSteps.includes(9)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 9);
+        }
+        updateResumeDataRef.current({
+            achievements: achs,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const hasAchievements = achievements.some(a => String(a?.title || a?.name || '').trim() !== '');
 

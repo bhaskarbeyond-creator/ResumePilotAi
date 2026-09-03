@@ -87,10 +87,24 @@ function formatCleanDateRange(start, end, isCurrent = false) {
   return s || e || '';
 }
 
+function parseJsonIfString(val) {
+  if (typeof val !== 'string') return val;
+  const trimmed = val.trim();
+  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (_) {
+      return val;
+    }
+  }
+  return val;
+}
+
 function list(value) {
-  if (Array.isArray(value)) return value.filter((item) => item != null && item !== '');
-  if (value && typeof value === 'object') return Object.values(value);
-  if (typeof value === 'string' && value.trim()) return value.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+  const parsed = parseJsonIfString(value);
+  if (Array.isArray(parsed)) return parsed.filter((item) => item != null && item !== '');
+  if (parsed && typeof parsed === 'object') return Object.values(parsed);
+  if (typeof parsed === 'string' && parsed.trim()) return parsed.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
   return [];
 }
 
@@ -502,6 +516,17 @@ function hobbyName(item) {
 
 function normalizeResume(input = {}) {
   const resume = input.item && typeof input.item === 'object' ? { ...input.item, ...input } : { ...input };
+  const jsonFields = [
+    'employments', 'experience', 'workExperiences',
+    'educations', 'education',
+    'skills', 'languages', 'projects', 'certifications',
+    'achievements', 'awards', 'hobbies', 'interests', 'references', 'customSections'
+  ];
+  for (const field of jsonFields) {
+    if (typeof resume[field] === 'string') {
+      resume[field] = parseJsonIfString(resume[field]);
+    }
+  }
   const hidden = hiddenSet(resume);
   if (isHidden(hidden, 'heading')) {
     resume.firstname = '';
@@ -747,7 +772,8 @@ function buildProjectsBlock(projects, style, options = {}) {
   const entryNodes = [];
   for (const proj of items) {
     const title = stripAllHtmlTags(proj.title || proj.name || '');
-    const url = stripAllHtmlTags(proj.url || proj.link || '');
+    const rawUrl = typeof proj.url === 'string' ? proj.url : (typeof proj.link === 'string' ? proj.link : '');
+    const url = stripAllHtmlTags(rawUrl);
     const href = safeUrl(url);
     const displayUrl = url.replace(/^https?:\/\//i, '');
     if (title || displayUrl) {
@@ -1065,12 +1091,23 @@ function buildBottomStack(resume, style, options = {}) {
 
 function buildModernSplitDocument(resume, style) {
   const certsInSidebar = certsBelongInSidebar(resume);
-  const sidebar = buildSidebarStack(resume, style, { includeIdentity: true, includeHobbies: true, includeCerts: certsInSidebar });
-  const hero = buildHeroStack(resume, style, { contentWidth: heroInnerWidth(style) });
-  const bottom = buildBottomStack(resume, style, { includeCerts: !certsInSidebar });
+  const sidebar = buildSidebarStack(resume, style, {
+    includeIdentity: true,
+    includeHobbies: true,
+    includeCerts: certsInSidebar,
+  });
+  const width = heroInnerWidth(style);
+  const main = [
+    ...buildHeroStack(resume, style, { contentWidth: width }),
+    ...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 140, contentWidth: width }),
+    ...buildProjectsBlock(resume.projects, style, { beforeSpacing: 140, contentWidth: width }),
+    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 1, contentWidth: width }) : []),
+    ...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 140, contentWidth: width }),
+    ...buildReferencesBlock(resume.references, style, { beforeSpacing: 140, contentWidth: width }),
+    ...buildCustomSections(resume, style, { beforeSpacing: 140, contentWidth: width }),
+  ];
   return [
-    twoColumnTable(sidebar, hero, style, style.sidebarWidth),
-    ...bottom,
+    twoColumnTable(sidebar, main, style, style.sidebarWidth),
   ];
 }
 
@@ -1096,16 +1133,23 @@ function buildExecutiveBannerDocument(resume, style) {
     includeHobbies: true,
     includeCerts: certsInSidebar,
   });
-  const hero = buildHeroStack(resume, style, {
-    summaryTitle: 'Executive Summary',
-    experienceTitle: 'Experience',
-    contentWidth: heroInnerWidth({ ...style, sidebarWidth: style.sidebarWidth || 34 }),
-  });
-  const bottom = buildBottomStack(resume, style, { includeCerts: !certsInSidebar });
+  const width = heroInnerWidth({ ...style, sidebarWidth: style.sidebarWidth || 34 });
+  const hero = [
+    ...buildHeroStack(resume, style, {
+      summaryTitle: 'Executive Summary',
+      experienceTitle: 'Experience',
+      contentWidth: width,
+    }),
+    ...buildEducationBlock(resume.educations || resume.education, style, { beforeSpacing: 140, contentWidth: width }),
+    ...buildProjectsBlock(resume.projects, style, { beforeSpacing: 140, contentWidth: width }),
+    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, style, { beforeSpacing: 140, columns: 1, contentWidth: width }) : []),
+    ...buildAchievementsBlock(resume.achievements || resume.awards, style, { beforeSpacing: 140, contentWidth: width }),
+    ...buildReferencesBlock(resume.references, style, { beforeSpacing: 140, contentWidth: width }),
+    ...buildCustomSections(resume, style, { beforeSpacing: 140, contentWidth: width }),
+  ];
   return [
     bannerTable(banner, bannerFill),
     twoColumnTable(sidebar, hero, { ...style, sidebarBg: style.sidebarBg || 'F8FAFC' }, style.sidebarWidth || 34),
-    ...bottom,
   ];
 }
 
@@ -1160,12 +1204,19 @@ function buildTechGridDocument(resume, style) {
     includeHobbies: true,
     includeCerts: certsInSidebar,
   });
-  const hero = buildHeroStack(resume, techStyle, { contentWidth: heroInnerWidth(techStyle) });
-  const bottom = buildBottomStack(resume, techStyle, { includeCerts: !certsInSidebar });
+  const techWidth = heroInnerWidth(techStyle);
+  const hero = [
+    ...buildHeroStack(resume, techStyle, { contentWidth: techWidth }),
+    ...buildEducationBlock(resume.educations || resume.education, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
+    ...buildProjectsBlock(resume.projects, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
+    ...(!certsInSidebar ? buildCertificationsBlock(resume.certifications, techStyle, { beforeSpacing: 140, columns: 1, contentWidth: techWidth }) : []),
+    ...buildAchievementsBlock(resume.achievements || resume.awards, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
+    ...buildReferencesBlock(resume.references, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
+    ...buildCustomSections(resume, techStyle, { beforeSpacing: 140, contentWidth: techWidth }),
+  ];
   return [
     ...header,
     twoColumnTable(sidebar, hero, techStyle, techStyle.sidebarWidth),
-    ...bottom,
   ];
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import RichTextEditor from './components/RichTextEditor';
 import StepShell from '../components/StepShell.jsx';
@@ -81,19 +81,20 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     };
 
     const handleSave = () => {
-        updateResumeData({ summary });
-
         const plainText = String(summary || '').replace(/<[^>]*>/g, '').trim();
         const completedSteps = [...(resumeData.completedSteps || [])];
-        if (plainText.length >= 20) {
-            if (!completedSteps.includes(8)) {
-                completedSteps.push(8);
-                updateResumeData({ summary, completedSteps });
-            }
-        } else if (completedSteps.includes(8)) {
-            const updatedSteps = completedSteps.filter((step) => step !== 8);
-            updateResumeData({ summary, completedSteps: updatedSteps });
+        let updatedCompletedSteps = null;
+
+        if (plainText.length >= 20 && !completedSteps.includes(8)) {
+            updatedCompletedSteps = [...completedSteps, 8];
+        } else if (plainText.length < 20 && completedSteps.includes(8)) {
+            updatedCompletedSteps = completedSteps.filter((step) => step !== 8);
         }
+
+        updateResumeData({
+            summary,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     };
 
     useEffect(() => {
@@ -103,6 +104,29 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [summary]);
+
+    // Unmount flush: synchronously commit state on step exit
+    const summaryRef = useRef(summary);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { summaryRef.current = summary; }, [summary]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const sum = summaryRef.current;
+        const plainText = String(sum || '').replace(/<[^>]*>/g, '').trim();
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (plainText.length >= 20 && !completedSteps.includes(8)) {
+            updatedCompletedSteps = [...completedSteps, 8];
+        } else if (plainText.length < 20 && completedSteps.includes(8)) {
+            updatedCompletedSteps = completedSteps.filter((step) => step !== 8);
+        }
+        updateResumeDataRef.current({
+            summary: sum,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const getProgressStatus = () => {
         if (charCount === 0) return { text: 'Empty', color: 'text-slate-400', bar: 'bg-slate-200' };

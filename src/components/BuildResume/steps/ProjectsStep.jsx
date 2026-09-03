@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdLaunch } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -73,6 +73,29 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timer);
     }, [projects]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Unmount flush: synchronously commit state on step exit
+    const projectsRef = useRef(projects);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { projectsRef.current = projects; }, [projects]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const projs = projectsRef.current;
+        const validProjects = projs.filter(p => String(p?.title || p?.name || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (validProjects.length > 0 && !completedSteps.includes(5)) {
+            updatedCompletedSteps = [...completedSteps, 5];
+        } else if (validProjects.length === 0 && completedSteps.includes(5)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 5);
+        }
+        updateResumeDataRef.current({
+            projects: projs,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const hasProjects = projects.some(p => String(p?.title || p?.name || '').trim() !== '');
 

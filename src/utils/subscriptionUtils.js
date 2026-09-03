@@ -132,14 +132,14 @@ export const isUserPremium = (membership, membershipEnds) => {
  * Returns { allowed: boolean, reason: 'FREE_MODE' | 'PREMIUM_USER' | 'LOGIN_REQUIRED' | 'PREMIUM_REQUIRED' }
  */
 export const evaluateDownloadAccess = ({ user, membership, membershipEnds, subscriptionsStatus, allowFreeDownload, _isStatusLoaded }) => {
-    // 1. If global subscriptions are disabled, or free tier download is allowed by admin, allow download
-    if (isGlobalSubscriptionDisabled(subscriptionsStatus) || allowFreeDownload === true) {
-        return { allowed: true, reason: 'FREE_MODE' };
-    }
-
-    // 2. If user is not logged in, require login first
+    // 1. If user is not logged in, require login first so the draft is owned and saved
     if (!user) {
         return { allowed: false, reason: 'LOGIN_REQUIRED' };
+    }
+
+    // 2. If global subscriptions are disabled, or free tier download is allowed by admin, allow download
+    if (isGlobalSubscriptionDisabled(subscriptionsStatus) || allowFreeDownload === true) {
+        return { allowed: true, reason: 'FREE_MODE' };
     }
 
     // 3. If user is Premium with active expiration date, allow download

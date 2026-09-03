@@ -77,6 +77,8 @@ const BuildResume = () => {
     const [authChecked, setAuthChecked] = useState(false);
     const [isManualSaving, setIsManualSaving] = useState(false);
     const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [titleInput, setTitleInput] = useState('');
 
     // Mobile responsiveness and studio drawer states
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -503,15 +505,60 @@ const BuildResume = () => {
     };
 
     const isStepCompleted = (stepId, stepPath) => {
+        const targetPath = stepPath || (orderedSteps.find(s => s.id === stepId)?.path);
+        
+        // Substantive content verification is the authoritative source of truth.
+        // A blank or empty section must NEVER count as complete, regardless of stale flags.
+        const hasSubstantiveContent = (() => {
+            switch (targetPath) {
+                case 'heading':
+                    return Boolean(resumeData.firstname?.trim() || resumeData.email?.trim());
+                case 'work-history':
+                    return Array.isArray(resumeData.employments) && resumeData.employments.some(e => Boolean(e?.jobTitle?.trim() || e?.employer?.trim() || (e?.description && String(e.description).replace(/<[^>]*>/g, '').trim().length > 5)));
+                case 'education':
+                    return Array.isArray(resumeData.educations) && resumeData.educations.some(e => Boolean(
+                        e?.school?.trim() || e?.degree?.trim()
+                    ));
+                case 'skills':
+                    return Array.isArray(resumeData.skills) && resumeData.skills.some(s => (
+                        typeof s === 'string' ? Boolean(s.trim()) : Boolean(s?.skillName?.trim() || s?.name?.trim())
+                    ));
+                case 'projects':
+                    return Array.isArray(resumeData.projects) && resumeData.projects.some(p => Boolean(
+                        p?.title?.trim() || p?.name?.trim() || (p?.description && String(p.description).replace(/<[^>]*>/g, '').trim().length > 5)
+                    ));
+                case 'certifications':
+                    return Array.isArray(resumeData.certifications) && resumeData.certifications.some(c => Boolean(
+                        c?.title?.trim() || c?.name?.trim() || c?.issuer?.trim()
+                    ));
+                case 'languages':
+                    return Array.isArray(resumeData.languages) && resumeData.languages.some(l => (
+                        typeof l === 'string' ? Boolean(l.trim()) : Boolean(l?.language?.trim() || l?.name?.trim())
+                    ));
+                case 'summary':
+                    return Boolean(resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, '').trim().length > 10);
+                case 'achievements':
+                    return Array.isArray(resumeData.achievements) && resumeData.achievements.some(a => Boolean(
+                        a?.title?.trim() || (a?.description && String(a.description).replace(/<[^>]*>/g, '').trim().length > 5)
+                    ));
+                case 'references':
+                    return Array.isArray(resumeData.references) && resumeData.references.some(r => Boolean(
+                        r?.name?.trim() || r?.company?.trim() || r?.availableUponRequest
+                    ));
+                case 'custom':
+                    return Array.isArray(resumeData.customSections) && resumeData.customSections.some(s => Boolean(
+                        s?.title?.trim() || (Array.isArray(s?.items) && s.items.length > 0)
+                    ));
+                default:
+                    return false;
+            }
+        })();
+
+        if (!hasSubstantiveContent) return false;
+
         const completed = resumeData.completedSteps || [];
         if (completed.includes(stepId)) return true;
         if (stepPath && completed.includes(stepPath)) return true;
-        // Legacy flags from pre-rebuild saves. Only string aliases and the step's own
-        // current id are honored: the old app's *numeric* flags pointed at different
-        // section positions, and the renumbered step ids collide with other steps'
-        // current ids (e.g. old projects flag 6 = current certifications step id 6),
-        // which made empty steps report as "Completed". Content checks below are the
-        // authoritative source; flags are cache only.
         const legacyMap = {
             1: [1, 'heading'],
             2: [2, 'work-history', 'employment'],
@@ -528,50 +575,7 @@ const BuildResume = () => {
         const aliases = legacyMap[stepId] || [];
         if (aliases.some((alias) => completed.includes(alias))) return true;
 
-        // Substantive content verification for instant dynamic feedback
-        const targetPath = stepPath || (orderedSteps.find(s => s.id === stepId)?.path);
-        switch (targetPath) {
-            case 'heading':
-                return Boolean(resumeData.firstname?.trim() || resumeData.email?.trim());
-            case 'work-history':
-                return Array.isArray(resumeData.employments) && resumeData.employments.some(e => Boolean(e?.jobTitle?.trim() || e?.employer?.trim() || (e?.description && String(e.description).replace(/<[^>]*>/g, '').trim().length > 5)));
-            case 'education':
-                return Array.isArray(resumeData.educations) && resumeData.educations.some(e => Boolean(
-                    e?.school?.trim() || e?.degree?.trim()
-                ));
-            case 'skills':
-                return Array.isArray(resumeData.skills) && resumeData.skills.some(s => (
-                    typeof s === 'string' ? Boolean(s.trim()) : Boolean(s?.skillName?.trim() || s?.name?.trim())
-                ));
-            case 'projects':
-                return Array.isArray(resumeData.projects) && resumeData.projects.some(p => Boolean(
-                    p?.title?.trim() || p?.name?.trim() || (p?.description && String(p.description).replace(/<[^>]*>/g, '').trim().length > 5)
-                ));
-            case 'certifications':
-                return Array.isArray(resumeData.certifications) && resumeData.certifications.some(c => Boolean(
-                    c?.title?.trim() || c?.name?.trim() || c?.issuer?.trim()
-                ));
-            case 'languages':
-                return Array.isArray(resumeData.languages) && resumeData.languages.some(l => (
-                    typeof l === 'string' ? Boolean(l.trim()) : Boolean(l?.language?.trim() || l?.name?.trim())
-                ));
-            case 'summary':
-                return Boolean(resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, '').trim().length > 10);
-            case 'achievements':
-                return Array.isArray(resumeData.achievements) && resumeData.achievements.some(a => Boolean(
-                    a?.title?.trim() || (a?.description && String(a.description).replace(/<[^>]*>/g, '').trim().length > 5)
-                ));
-            case 'references':
-                return Array.isArray(resumeData.references) && resumeData.references.some(r => Boolean(
-                    r?.name?.trim() || r?.company?.trim() || r?.availableUponRequest
-                ));
-            case 'custom':
-                return Array.isArray(resumeData.customSections) && resumeData.customSections.some(s => Boolean(
-                    s?.title?.trim() || (Array.isArray(s?.items) && s.items.length > 0)
-                ));
-            default:
-                return false;
-        }
+        return hasSubstantiveContent;
     };
 
     const getStepAiGuidance = (stepPath) => {
@@ -1083,10 +1087,19 @@ const BuildResume = () => {
                 setShowPremiumUpgradeModal(true);
                 return;
             }
+            let serverErrorMsg = null;
+            if (error?.response?.data instanceof Blob) {
+                try {
+                    const text = await error.response.data.text();
+                    const parsed = JSON.parse(text);
+                    serverErrorMsg = typeof parsed?.error === 'string' ? parsed.error : (parsed?.error?.message || null);
+                } catch (_) {}
+            }
             // Prefer the server's reason (e.g. subscription required) over a generic string.
-            alert(error?.code === 'EXPORT_NOT_PDF' && error.message
-                ? error.message
-                : t('BuildResume.errors.downloadFailed'));
+            alert(serverErrorMsg
+                || (error?.code === 'EXPORT_NOT_PDF' && error.message ? error.message : null)
+                || error?.message
+                || t('BuildResume.errors.downloadFailed'));
         } finally {
             setIsDownloading(false);
         }
@@ -1159,16 +1172,25 @@ const BuildResume = () => {
                 setShowPremiumUpgradeModal(true);
                 return;
             }
-            alert(error?.code === 'EXPORT_NOT_DOCX' && error.message
-                ? error.message
-                : t('BuildResume.errors.downloadFailed'));
+            let serverErrorMsg = null;
+            if (error?.response?.data instanceof Blob) {
+                try {
+                    const text = await error.response.data.text();
+                    const parsed = JSON.parse(text);
+                    serverErrorMsg = typeof parsed?.error === 'string' ? parsed.error : (parsed?.error?.message || null);
+                } catch (_) {}
+            }
+            alert(serverErrorMsg
+                || (error?.code === 'EXPORT_NOT_DOCX' && error.message ? error.message : null)
+                || error?.message
+                || t('BuildResume.errors.downloadFailed'));
         } finally {
             setIsDownloadingDocx(false);
         }
     };
 
     // Export resume in standardized JSON Resume format (jsonresume.org)
-    () => {;
+    const handleExportJson = () => {
         const data = previewData;
         const jsonResumeSchema = {
             $schema: "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
@@ -1576,9 +1598,56 @@ const BuildResume = () => {
 
                     {/* Resume Title & Active Template Badge */}
                     <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 truncate tracking-tight" title={resumeData?.title || 'My Resume'}>
-                            {resumeData?.title || `${resumeData?.firstname || ''} ${resumeData?.lastname || ''}`.trim() || t('DashboardHomepage.tabs.resumes', 'My Resume')}
-                        </span>
+                        {(() => {
+                            const candidateFullName = `${resumeData?.firstname || ''} ${resumeData?.lastname || ''}`.trim();
+                            const hasCustomTitle = Boolean(resumeData?.title && resumeData.title.trim() && resumeData.title.trim() !== 'Untitled Resume');
+                            const displayedTitle = hasCustomTitle
+                                ? resumeData.title.trim()
+                                : candidateFullName || t('DashboardHomepage.card.untitledResume', 'Untitled Resume');
+
+                            if (isEditingTitle) {
+                                return (
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={titleInput}
+                                        onChange={(e) => setTitleInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                const trimmed = titleInput.trim();
+                                                if (trimmed) updateResumeData({ title: trimmed });
+                                                setIsEditingTitle(false);
+                                            } else if (e.key === 'Escape') {
+                                                setIsEditingTitle(false);
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            const trimmed = titleInput.trim();
+                                            if (trimmed) updateResumeData({ title: trimmed });
+                                            setIsEditingTitle(false);
+                                        }}
+                                        className="text-xs sm:text-sm font-extrabold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[160px] sm:max-w-[220px]"
+                                    />
+                                );
+                            }
+
+                            return (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTitleInput(hasCustomTitle ? resumeData.title : candidateFullName || '');
+                                        setIsEditingTitle(true);
+                                    }}
+                                    className="group flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-slate-900 hover:text-indigo-600 truncate tracking-tight transition-colors text-left cursor-pointer"
+                                    title="Click to rename resume"
+                                >
+                                    <span className="truncate">{displayedTitle}</span>
+                                    <svg className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </button>
+                            );
+                        })()}
                         <button
                             type="button"
                             onClick={() => setShowTemplateSelection(true)}
@@ -1778,30 +1847,16 @@ const BuildResume = () => {
 
                 {/* Stepper Overview Modal Trigger & Consolidated Progress Summary */}
                 <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-200">
-                    <select
-                        value={currentStep.path}
-                        onChange={(e) => handleStepClick(e.target.value)}
-                        className="hidden md:block text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 rounded-xl px-2.5 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        aria-label="Jump directly to step"
-                        title="Jump to section"
-                    >
-                        {orderedSteps.map((s, idx) => (
-                            <option key={s.path} value={s.path}>
-                                {isStepCompleted(s.id, s.path) ? '✓ ' : `${idx + 1}. `}{s.name}
-                            </option>
-                        ))}
-                    </select>
-
                     <button
                         type="button"
                         onClick={() => setShowAllStepsModal(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200/90 transition-all cursor-pointer shadow-2xs"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-200/90 transition-all cursor-pointer shadow-2xs"
                         title="View all resume sections in detail"
                     >
                         <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span>{completedStepCount}/{contentSteps.length} Done</span>
-                        <span className="text-slate-300">|</span>
-                        <span className="text-indigo-700 font-extrabold">{progressPercentage}%</span>
+                        <span>{completedStepCount} of {contentSteps.length} complete</span>
+                        <span className="text-slate-300">·</span>
+                        <span className="text-indigo-600 font-bold">{progressPercentage}%</span>
                         <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>

@@ -301,6 +301,47 @@ Return only valid JSON: {"suggestions":["option"]}`;
     return { prompt, system, user, language, payload };
 }
 
+function buildClarificationPrompt(endpointName, rawPayload = {}, _options = {}) {
+    const payload = validateOperation(endpointName, rawPayload);
+    const language = payload.language;
+    const evidence = buildEvidencePayload(endpointName, rawPayload);
+    const entry = evidence.entry || {};
+    const role = entry.jobTitle || evidence.targetRole || 'their profession';
+    const org = entry.employer ? ` at "${entry.employer}"` : '';
+    const degree = entry.degree || 'their qualification';
+    const institution = entry.school ? ` at "${entry.school}"` : '';
+
+    const system = `You are an expert career interviewer and resume coach.
+The candidate wants to document their experience, but has provided sparse or no notes yet.
+Do not invent, assume, or fabricate any candidate facts, dates, employers, or metrics.
+Instead, generate 2-3 specific, high-value clarification questions tailored directly to their role and industry to help them describe what they actually did in ${language}.
+Tailor questions directly to this specific field:
+- For healthcare, clinical, or dental roles: ask about patient volumes, clinical procedures, care units, or treatment protocols.
+- For accounting, audit, or finance: ask about reporting standards (GAAP/IFRS), audits, reconciliations, or budget scope.
+- For culinary or hospitality: ask about station management, volume/covers, food safety, or menu development.
+- For education or pedagogy: ask about grade levels, curricula developed, or student learning outcomes.
+- For legal: ask about practice areas, jurisdictions, case types, or research/motion drafting.
+- For engineering, technical, or trades: ask about systems, project scope, tools used, or safety standards.
+- For management, sales, or executive: ask about team size, quota/revenue, or operational improvements.
+- For any other role: ask about daily responsibilities, tools/systems used, and measurable results.
+Return strictly valid JSON adhering to this schema:
+{"questions": [{"id": "q1", "question": "Clear, direct question tailored to this role"}, {"id": "q2", "question": "Second targeted question"}]}`;
+
+    let user = '';
+    if (endpointName === 'generate-work-description') {
+        user = `The candidate held the role "${role}"${org}. Generate 2-3 targeted clarification questions in ${language} to help them recall their core responsibilities, scope, tools, and measurable achievements in this specific field.`;
+    } else if (endpointName === 'generate-education-description') {
+        user = `The candidate completed "${degree}"${institution}. Generate 2-3 targeted clarification questions in ${language} to help them recall their coursework, projects, honors, or academic highlights.`;
+    } else if (endpointName === 'generate-summary') {
+        user = `The candidate is targeting the field "${evidence.targetRole || 'their profession'}". Generate 2-3 targeted clarification questions in ${language} about their core strengths, years in field, or notable milestones.`;
+    } else {
+        user = `Generate 2-3 targeted clarification questions in ${language} to help the candidate describe their background in this area.`;
+    }
+
+    const prompt = `${system}\n\n${user}`;
+    return { prompt, system, user, language, payload };
+}
+
 // Compatibility export for internal callers; this is the same single grounded implementation.
 const buildLegacyPrompt = buildGroundedPrompt;
 
@@ -1041,11 +1082,46 @@ function deterministicAsk(operation, payload) {
     return null;
 }
 
+function needsClarification(operation, payload) {
+    if (operation === 'generate-work-description' || operation === 'generate-education-description') {
+        return entryNoteLength(operation, payload) < 10;
+    }
+    if (operation === 'generate-summary') {
+        return summaryEvidenceLength(payload) < 10;
+    }
+    return false;
+}
+
 async function executeContentOperation({ operation, payload, environment, fetchImpl, signal, requestId }) {
-    const { prompt, payload: validatedPayload } = buildGroundedPrompt(operation, payload, { sessionId: requestId });
+    const isClarificationNeeded = needsClarification(operation, payload);
+    const promptBuilder = isClarificationNeeded ? buildClarificationPrompt : buildGroundedPrompt;
+    const { prompt, payload: validatedPayload } = promptBuilder(operation, payload, { sessionId: requestId });
+
     const ask = deterministicAsk(operation, validatedPayload);
-    if (ask) return ask;
     const configuration = await loadProviderConfiguration(environment);
+
+    if (isClarificationNeeded) {
+        try {
+            const generated = await generateWithProviders({ prompt, configuration, operation, fetchImpl, signal });
+            const data = parseAiResponse(operation, generated.raw, {
+                payload: validatedPayload,
+                requireGrounding: false,
+            });
+            if (Array.isArray(data?.questions) && data.questions.length > 0) {
+                return {
+                    data: { questions: data.questions, requiresAnswer: true },
+                    provider: generated.provider,
+                    model: generated.model,
+                    grounding: 'ask',
+                };
+            }
+        } catch (err) {
+            // Graceful fallback to deterministic section questions when provider is unavailable/offline/errors
+            return ask;
+        }
+        return ask;
+    }
+
     try {
         const generated = await generateWithProviders({ prompt, configuration, operation, fetchImpl, signal });
         const data = parseAiResponse(operation, generated.raw, {
@@ -1232,6 +1308,7 @@ module.exports = {
     CONTENT_OPERATIONS,
     PROVIDERS,
     assertGroundedGeneratedContent,
+    buildClarificationPrompt,
     buildGroundedPrompt,
     buildLegacyPrompt,
     buildResumeParsingPrompt,
@@ -1243,6 +1320,7 @@ module.exports = {
     getContentOperationFallback,
     groundResumeExtraction,
     loadProviderConfiguration,
+    needsClarification,
     parseAiResponse,
     providerOrder,
     requestProvider,

@@ -2185,10 +2185,19 @@ app.post(['/api/export', '/api/public-export'], async (req, res) => {
         renderToken = await createExportRenderToken(stored);
         const launchOptions = {
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--single-process', '--no-zygote']
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--ignore-certificate-errors'
+            ]
         };
         browser = await chromium.launch(launchOptions);
-        const context = await browser.newContext({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 1 });
+        const context = await browser.newContext({
+            viewport: { width: 794, height: 1123 },
+            deviceScaleFactor: 1,
+            ignoreHTTPSErrors: true
+        });
         const allowedRenderOrigin = new URL(`${protocol}://${websiteName}`).origin;
         const allowedHosts = new Set([
             new URL(`${protocol}://${websiteName}`).hostname,

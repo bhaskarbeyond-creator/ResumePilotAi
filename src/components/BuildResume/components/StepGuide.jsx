@@ -24,6 +24,7 @@ export default function StepGuide({
     stepPath,
     gaps = [],
     atsSection = null,
+    candidateContext = null,
     title = 'Guide',
     children = null,
 }) {
@@ -73,6 +74,17 @@ export default function StepGuide({
                             </li>
                         ))}
                     </ul>
+                </div>
+            )}
+
+            {candidateContext?.domainLabel && stepPath === 'work-history' && Array.isArray(candidateContext?.actionVerbs) && candidateContext.actionVerbs.length > 0 && (
+                <div className="mt-3.5 rounded-lg border border-indigo-100 bg-indigo-50/70 p-2.5 text-xs text-indigo-900">
+                    <p className="font-semibold text-indigo-950 flex items-center gap-1">
+                        <span>💡 Recruiter screening tip</span>
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-indigo-800">
+                        Lead bullet points with active verbs like <span className="font-semibold">{candidateContext.actionVerbs.slice(0, 3).join(', ')}</span> and anchor results to tangible outcomes.
+                    </p>
                 </div>
             )}
 

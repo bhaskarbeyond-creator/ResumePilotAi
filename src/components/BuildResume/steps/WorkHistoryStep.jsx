@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdLightbulb } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -117,15 +117,20 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     };
 
     const handleSave = () => {
-        updateResumeData({ employments });
-
         const hasValidEmployment = employments.some(emp => String(emp?.jobTitle || '').trim() !== '' && String(emp?.employer || '').trim() !== '');
         const completedSteps = [...(resumeData.completedSteps || [])];
+        let updatedCompletedSteps = null;
+
         if (hasValidEmployment && !completedSteps.includes(2)) {
-            updateResumeData({ employments, completedSteps: [...completedSteps, 2] });
+            updatedCompletedSteps = [...completedSteps, 2];
         } else if (!hasValidEmployment && completedSteps.includes(2)) {
-            updateResumeData({ employments, completedSteps: completedSteps.filter(step => step !== 2) });
+            updatedCompletedSteps = completedSteps.filter(step => step !== 2);
         }
+
+        updateResumeData({
+            employments,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
     };
 
     useEffect(() => {
@@ -135,6 +140,29 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate }) => {
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [employments]);
+
+    // Unmount flush: synchronously commit state on step exit
+    const employmentsRef = useRef(employments);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { employmentsRef.current = employments; }, [employments]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const emps = employmentsRef.current;
+        const hasValid = emps.some(emp => String(emp?.jobTitle || '').trim() !== '' && String(emp?.employer || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (hasValid && !completedSteps.includes(2)) {
+            updatedCompletedSteps = [...completedSteps, 2];
+        } else if (!hasValid && completedSteps.includes(2)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 2);
+        }
+        updateResumeDataRef.current({
+            employments: emps,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const hasValidEmployment = employments.some(emp => String(emp?.jobTitle || '').trim() !== '' && String(emp?.employer || '').trim() !== '');
 

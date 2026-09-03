@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdAdd, MdCheck } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
@@ -71,6 +71,29 @@ const ReferencesStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timer);
     }, [references]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Unmount flush: synchronously commit state on step exit
+    const referencesRef = useRef(references);
+    const updateResumeDataRef = useRef(updateResumeData);
+    const completedStepsRef = useRef(resumeData?.completedSteps || []);
+    useEffect(() => { referencesRef.current = references; }, [references]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
+    useEffect(() => () => {
+        const refs = referencesRef.current;
+        const validReferences = refs.filter(item => String(item?.name || '').trim() !== '');
+        const completedSteps = [...(completedStepsRef.current || [])];
+        let updatedCompletedSteps = null;
+        if (validReferences.length > 0 && !completedSteps.includes(10)) {
+            updatedCompletedSteps = [...completedSteps, 10];
+        } else if (validReferences.length === 0 && completedSteps.includes(10)) {
+            updatedCompletedSteps = completedSteps.filter(step => step !== 10);
+        }
+        updateResumeDataRef.current({
+            references: refs,
+            ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
+        });
+    }, []);
 
     const hasReferences = references.some(r => String(r?.name || '').trim() !== '');
 
