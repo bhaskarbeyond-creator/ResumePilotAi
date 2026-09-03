@@ -1095,17 +1095,33 @@ function getContentOperationFallback(operation, rawPayload = {}) {
 function generateDeterministicJobDescription(roleTitle, payload = {}) {
     const role = String(roleTitle || 'Professional').trim();
     const roleLower = role.toLowerCase();
+    const cleanRole = role.replace(/^(?:Senior|Lead|Principal|Junior|Staff|Chief|Head of|Associate|Executive)\s+/i, '').trim();
 
-    let overview = `We are seeking a qualified and driven ${role} to join our growing team. In this position, you will leverage industry best practices and core competencies to deliver high-quality outcomes and partner with cross-functional stakeholders.`;
-    let responsibilities = [
-        `Lead core projects and operational workflows associated with ${role} objectives.`,
-        `Collaborate closely with internal team members and leadership to achieve strategic performance targets.`,
-        `Identify operational bottlenecks, implement continuous improvement initiatives, and maintain rigorous quality standards.`,
-        `Document processes, track key project milestones, and communicate status reports to executive leadership.`
-    ];
-    let keyRequirements = ['Communication', 'Project Management', 'Problem Solving', 'Team Leadership', 'Process Optimization'];
+    // Extract seniority scope
+    const isExecutive = /\b(?:director|head of|vp|vice president|chief|executive|c-level|partner)\b/i.test(role);
+    const isLeadership = isExecutive || /\b(?:lead|senior|principal|manager|supervisor|team lead)\b/i.test(role);
+    const isJunior = /\b(?:junior|entry|associate|intern|trainee|assistant)\b/i.test(role);
 
-    if (/\b(?:data|analyst|analytics|bi|intelligence)\b/.test(roleLower)) {
+    // Extract title keywords for semantic synthesis
+    const titleKeywords = role
+        .split(/[\s/&,–-]+/)
+        .map(w => w.trim())
+        .filter(w => w.length > 2 && !/^(?:and|the|for|with|senior|junior|lead|principal|staff|head|chief|associate|role|job|title)$/i.test(w))
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
+    // Extract candidate context skills if available
+    const contextSkills = (Array.isArray(payload.skills) && payload.skills.length > 0)
+        ? payload.skills
+        : (Array.isArray(payload.context?.facts?.skills) && payload.context.facts.skills.length > 0)
+            ? payload.context.facts.skills
+            : [];
+
+    let overview = '';
+    let responsibilities = [];
+    let keyRequirements = [];
+
+    // Industry domain matchers
+    if (/\b(?:data|analyst|analytics|bi|intelligence|statistician)\b/.test(roleLower)) {
         overview = `We are seeking a talented ${role} to extract actionable insights from complex datasets, develop executive dashboards, and partner with business leaders to drive data-informed decision-making.`;
         responsibilities = [
             'Design, develop, and maintain automated dashboards and interactive business reporting in Power BI or Tableau.',
@@ -1113,8 +1129,8 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
             'Perform exploratory data analysis and statistical modeling using Python or R to uncover key operational trends.',
             'Collaborate with data engineering and business stakeholders to maintain data integrity and robust ETL pipelines.'
         ];
-        keyRequirements = ['SQL', 'Python', 'Power BI', 'Tableau', 'Data Modeling', 'ETL', 'Statistical Analysis'];
-    } else if (/\b(?:software|developer|frontend|backend|full\s*stack|engineer|web)\b/.test(roleLower)) {
+        keyRequirements = ['SQL', 'Python', 'Power BI', 'Tableau', 'Data Modeling', 'ETL Pipelines', 'Statistical Analysis'];
+    } else if (/\b(?:software|developer|frontend|backend|full\s*stack|engineer|web|coder|programmer)\b/.test(roleLower)) {
         overview = `We are looking for an experienced ${role} to design, build, and deploy reliable, scalable software applications and modern digital solutions that elevate our product capabilities.`;
         responsibilities = [
             'Architect, develop, test, and maintain robust frontend and backend services using modern programming frameworks.',
@@ -1123,7 +1139,7 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
             'Troubleshoot production issues, optimize application performance, and implement rigorous unit/integration testing.'
         ];
         keyRequirements = ['JavaScript', 'TypeScript', 'React', 'Node.js', 'REST APIs', 'SQL', 'Git', 'CI/CD'];
-    } else if (/\b(?:devops|cloud|sre|infrastructure|sysadmin)\b/.test(roleLower)) {
+    } else if (/\b(?:devops|cloud|sre|infrastructure|sysadmin|network\s*engineer|systems\s*administrator)\b/.test(roleLower)) {
         overview = `We are seeking a skilled ${role} to architect, automate, and maintain resilient cloud infrastructure, continuous deployment pipelines, and high-availability systems.`;
         responsibilities = [
             'Design, deploy, and administer scalable infrastructure on cloud platforms (AWS, Azure, or GCP) using Terraform/IaC.',
@@ -1131,8 +1147,8 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
             'Implement centralized telemetry, log aggregation, and real-time incident alerting to ensure 99.9%+ system uptime.',
             'Enforce enterprise security best practices, vulnerability scanning, and role-based access controls across all environments.'
         ];
-        keyRequirements = ['Docker', 'Kubernetes', 'AWS', 'Terraform', 'CI/CD', 'Linux', 'Python', 'Bash'];
-    } else if (/\b(?:product\s*manager|product\s*owner|scrum\s*master)\b/.test(roleLower)) {
+        keyRequirements = ['Docker', 'Kubernetes', 'AWS', 'Terraform', 'CI/CD Pipelines', 'Linux Administration', 'Python', 'Bash Scripting'];
+    } else if (/\b(?:product\s*manager|product\s*owner|scrum\s*master|program\s*manager|agile\s*coach)\b/.test(roleLower)) {
         overview = `We are looking for a strategic ${role} to define product roadmaps, lead agile sprint planning, and translate user feedback into high-impact feature releases.`;
         responsibilities = [
             'Define, prioritize, and manage the product backlog and sprint execution in close partnership with engineering and design.',
@@ -1140,8 +1156,8 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
             'Track product KPI metrics, conversion funnels, and feature adoption to iterate on user experience and business value.',
             'Facilitate cross-functional alignment between engineering, marketing, sales, and executive leadership.'
         ];
-        keyRequirements = ['Product Roadmap', 'Agile/Scrum', 'User Stories', 'Product Analytics', 'Jira', 'Stakeholder Management'];
-    } else if (/\b(?:marketing|seo|growth|content|social\s*media)\b/.test(roleLower)) {
+        keyRequirements = ['Product Roadmap', 'Agile/Scrum', 'User Stories', 'Product Analytics', 'Jira', 'Stakeholder Management', 'A/B Testing'];
+    } else if (/\b(?:marketing|seo|growth|content|social\s*media|copywriter|brand|pr|public\s*relations)\b/.test(roleLower)) {
         overview = `We are seeking a results-driven ${role} to lead multi-channel growth campaigns, optimize customer acquisition funnels, and strengthen brand visibility.`;
         responsibilities = [
             'Plan, execute, and monitor paid, organic, and email marketing campaigns across digital growth channels.',
@@ -1149,8 +1165,8 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
             'Conduct continuous A/B testing on landing pages, ad creatives, and messaging to maximize ROI and lower CPA.',
             'Collaborate with creative teams to produce compelling content aligned with target audience personas.'
         ];
-        keyRequirements = ['Google Ads', 'GA4', 'SEO', 'Content Strategy', 'Conversion Optimization', 'Email Marketing'];
-    } else if (/\b(?:accountant|accounting|finance|financial|audit|controller)\b/.test(roleLower)) {
+        keyRequirements = ['Google Ads', 'GA4', 'SEO Strategy', 'Content Marketing', 'Conversion Optimization', 'Email Campaigns', 'Social Media Strategy'];
+    } else if (/\b(?:accountant|accounting|finance|financial|audit|controller|bookkeeper|tax|actuary)\b/.test(roleLower)) {
         overview = `We are seeking a meticulous ${role} to oversee financial reporting, maintain general ledger integrity, and ensure strict compliance with GAAP/IFRS standards.`;
         responsibilities = [
             'Prepare monthly, quarterly, and year-end financial statements, variance reports, and account reconciliations.',
@@ -1158,16 +1174,108 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
             'Coordinate with internal and external auditors to support statutory audit procedures and ensure tax compliance.',
             'Develop financial forecasting models and collaborate with department heads on annual budgeting.'
         ];
-        keyRequirements = ['Financial Reporting', 'GAAP', 'General Ledger', 'Account Reconciliation', 'Financial Modeling', 'Excel'];
-    } else if (/\b(?:nurse|nursing|clinical|health|medical|doctor)\b/.test(roleLower)) {
+        keyRequirements = ['Financial Reporting', 'GAAP/IFRS', 'General Ledger', 'Account Reconciliation', 'Financial Modeling', 'Excel Advanced', 'Audit Procedures'];
+    } else if (/\b(?:nurse|nursing|clinical|health|medical|doctor|physician|therapist|pharmacist|paramedic|dental|hygienist)\b/.test(roleLower)) {
         overview = `We are seeking a compassionate and dedicated ${role} to deliver exceptional patient care, coordinate clinical treatments, and uphold rigorous safety protocols.`;
         responsibilities = [
-            'Conduct comprehensive patient assessments, monitor vital signs, and administer prescribed treatments and medications.',
-            'Maintain accurate and confidential electronic health records (EHR) in compliance with HIPAA and clinical standards.',
+            'Conduct comprehensive patient assessments, monitor vital signs, and administer prescribed treatments and care plans.',
+            'Maintain accurate and confidential electronic health records (EHR/EMR) in compliance with HIPAA and clinical standards.',
             'Collaborate with physicians and interdisciplinary healthcare teams to develop and execute personalized care plans.',
-            'Educate patients and families on post-discharge care, disease management, and wellness strategies.'
+            'Educate patients and families on treatment protocols, disease management, and preventative wellness strategies.'
         ];
-        keyRequirements = ['Patient Care', 'Clinical Assessment', 'EHR/EMR', 'BLS/ACLS', 'HIPAA Compliance', 'Medication Administration'];
+        keyRequirements = ['Patient Care', 'Clinical Assessment', 'EHR/EMR Documentation', 'BLS/ACLS Certification', 'HIPAA Compliance', 'Medication Administration'];
+    } else if (/\b(?:teacher|professor|instructor|educator|tutor|faculty|lecturer|academic|curriculum)\b/.test(roleLower)) {
+        overview = `We are seeking an inspiring and dedicated ${role} to create engaging learning experiences, develop standards-aligned curricula, and foster academic growth.`;
+        responsibilities = [
+            'Design and deliver innovative lesson plans, course materials, and interactive classroom learning activities.',
+            'Evaluate student progress through formative and summative assessments, providing constructive and timely feedback.',
+            'Integrate modern educational technology and multimodal instruction to accommodate diverse learning styles.',
+            'Partner with parents, administrators, and educational specialists to support student development and well-being.'
+        ];
+        keyRequirements = ['Curriculum Development', 'Classroom Management', 'Instructional Design', 'Student Assessment', 'Educational Technology', 'Pedagogy'];
+    } else if (/\b(?:attorney|lawyer|paralegal|legal|counsel|solicitor|barrister|compliance\s*officer)\b/.test(roleLower)) {
+        overview = `We are seeking a highly analytical and thorough ${role} to conduct comprehensive legal research, draft authoritative documents, and protect organizational interests.`;
+        responsibilities = [
+            'Draft, review, and negotiate commercial agreements, contracts, and specialized legal filings with precision.',
+            'Conduct exhaustive legal research, statutory interpretation, and case law analysis to advise stakeholders.',
+            'Ensure full organizational compliance with governing federal, state, and industry regulatory frameworks.',
+            'Manage litigation preparation, discovery requests, and dispute resolution proceedings in coordination with counsel.'
+        ];
+        keyRequirements = ['Contract Drafting', 'Legal Research', 'Regulatory Compliance', 'Case Law Analysis', 'Due Diligence', 'Statutory Interpretation'];
+    } else if (/\b(?:architect|civil|structural|construction|builder|surveyor|estimator|site\s*manager)\b/.test(roleLower)) {
+        overview = `We are seeking a qualified and technically proficient ${role} to plan, design, and supervise architectural and engineering projects from schematic design through completion.`;
+        responsibilities = [
+            'Develop detailed architectural plans, structural drawings, and engineering specifications adhering to building codes.',
+            'Coordinate with clients, contractors, and municipal authorities to ensure permit approvals and zoning compliance.',
+            'Conduct regular on-site inspections to verify construction quality, structural integrity, and project schedule adherence.',
+            'Review submittals, RFIs, and material specifications while managing project budget and timeline constraints.'
+        ];
+        keyRequirements = ['CAD/BIM Software (AutoCAD/Revit)', 'Building Codes & Standards', 'Structural Analysis', 'Project Estimation', 'Site Inspections', 'Safety Regulations'];
+    } else if (/\b(?:chef|cook|culinary|hotel|restaurant|hospitality|sommelier|barista|pastry)\b/.test(roleLower)) {
+        overview = `We are seeking an enthusiastic and skilled ${role} to deliver outstanding guest experiences, maintain impeccable food and hospitality standards, and drive operational excellence.`;
+        responsibilities = [
+            'Oversee daily culinary or hospitality operations, maintaining the highest quality, presentation, and service benchmarks.',
+            'Manage inventory, ingredient sourcing, vendor relationships, and cost control to achieve target margins.',
+            'Enforce rigorous food safety, sanitation, and hygiene standards in strict accordance with health department regulations.',
+            'Train, mentor, and inspire team members in customer service, kitchen techniques, and operational efficiency.'
+        ];
+        keyRequirements = ['Culinary Excellence', 'Food Safety & Sanitation (ServSafe)', 'Inventory Management', 'Menu Development', 'Guest Hospitality', 'Team Leadership'];
+    } else if (/\b(?:designer|ui|ux|graphic|creative|art\s*director|animator|illustrator|visual)\b/.test(roleLower)) {
+        overview = `We are seeking an imaginative and strategic ${role} to conceptualize, design, and deliver compelling visual and interactive experiences that elevate our brand identity.`;
+        responsibilities = [
+            'Create high-fidelity designs, interactive wireframes, and design systems for web, mobile, and digital brand touchpoints.',
+            'Conduct user research, usability testing, and persona analysis to translate insights into intuitive user journeys.',
+            'Collaborate closely with product managers and developers to ensure design fidelity during implementation.',
+            'Maintain and expand brand style guides, asset libraries, and visual guidelines across all marketing and product channels.'
+        ];
+        keyRequirements = ['Figma', 'Adobe Creative Cloud', 'UI/UX Design', 'Design Systems', 'User Research', 'Wireframing & Prototyping', 'Typography'];
+    } else if (/\b(?:sales|account\s*executive|business\s*development|bdr|sdr|account\s*manager|customer\s*success)\b/.test(roleLower)) {
+        overview = `We are seeking an ambitious and relationship-driven ${role} to accelerate revenue growth, prospect high-value opportunities, and build enduring client partnerships.`;
+        responsibilities = [
+            'Execute targeted outbound prospecting, discovery calls, and consultative product demonstrations to prospective clients.',
+            'Manage the complete sales pipeline in CRM (Salesforce/HubSpot), forecasting deal closure timelines with high accuracy.',
+            'Negotiate enterprise contract terms, pricing proposals, and scope of work agreements to exceed quarterly quotas.',
+            'Partner with customer success and delivery teams to ensure seamless client onboarding and long-term retention.'
+        ];
+        keyRequirements = ['Pipeline Management', 'Consultative Selling', 'CRM (Salesforce/HubSpot)', 'Client Relationship Management', 'Contract Negotiation', 'Quota Attainment'];
+    } else {
+        // Universal semantic synthesizer for ANY role across the global economy
+        overview = isExecutive
+            ? `We are seeking an executive and visionary ${role} to direct strategic priorities, champion operational excellence, and drive sustainable organizational growth.`
+            : isLeadership
+            ? `We are seeking an experienced and collaborative ${role} to lead critical project workflows, mentor team members, and uphold the highest professional standards in ${cleanRole}.`
+            : isJunior
+            ? `We are seeking an enthusiastic and motivated ${role} to support core departmental initiatives, master specialized methodologies, and contribute to team milestones.`
+            : `We are seeking a dedicated and qualified ${role} to execute specialized deliverables, implement industry best practices, and deliver high-quality outcomes in our growing team.`;
+
+        responsibilities = [
+            isLeadership
+                ? `Lead and direct end-to-end ${cleanRole} initiatives, aligning project deliverables with strategic organizational benchmarks.`
+                : `Execute core ${cleanRole} operations and technical deliverables with precision, consistency, and high quality.`,
+            `Analyze specialized domain challenges in ${cleanRole} workflows, formulate evidence-based solutions, and drive continuous optimization.`,
+            `Collaborate with cross-functional team members, clients, and leadership to maintain clear communication and meet project milestones.`,
+            `Ensure full compliance with industry standards, regulatory guidelines, and quality assurance protocols governing ${cleanRole}.`
+        ];
+
+        // Synthesize dynamic key requirements derived directly from the title terms and candidate skills
+        const synthesizedSkills = [
+            ...titleKeywords,
+            ...contextSkills.slice(0, 3)
+        ].filter(Boolean);
+
+        const coreSkills = synthesizedSkills.length >= 3 ? synthesizedSkills : [
+            `${cleanRole} Expertise`,
+            'Process Optimization',
+            'Technical Documentation',
+            'Problem Solving',
+            'Stakeholder Communication'
+        ];
+
+        if (isLeadership && !coreSkills.some(s => /lead|manage|strateg/i.test(s))) {
+            coreSkills.unshift('Strategic Planning & Leadership');
+        }
+
+        keyRequirements = Array.from(new Set(coreSkills)).slice(0, 7);
     }
 
     const jobDescription = `${overview}\n\nKey Responsibilities:\n${responsibilities.map(r => `• ${r}`).join('\n')}\n\nCore Requirements & Technical Skills:\n${keyRequirements.map(k => `• Proficiency in ${k} or equivalent industry methodology.`).join('\n')}`;
@@ -1176,7 +1284,7 @@ function generateDeterministicJobDescription(roleTitle, payload = {}) {
         role,
         jobDescription,
         keyRequirements,
-        _source: 'deterministic-fallback',
+        _source: 'role-adaptive-generator',
     };
 }
 

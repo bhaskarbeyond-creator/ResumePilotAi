@@ -9,37 +9,21 @@ import { getCandidateContext, extractTargetRoleFromJd } from '../../../utils/can
 import { extractJdKeywords } from '../../../utils/atsScore';
 import { generateUserAiContent } from '../../../services/aiService';
 
-const CAREER_TRANSITION_MAP = {
-    accountant: ['Senior Accountant', 'Accounting Manager', 'Financial Analyst', 'Controller', 'Audit Manager'],
-    developer: ['Senior Software Engineer', 'Full Stack Developer', 'Tech Lead', 'Solutions Architect', 'Engineering Manager'],
-    engineer: ['Senior Engineer', 'Lead Systems Engineer', 'Engineering Manager', 'Principal Architect'],
-    analyst: ['Senior Data Analyst', 'Data Scientist', 'Analytics Engineer', 'BI Manager', 'Product Analyst'],
-    marketing: ['Digital Marketing Manager', 'Growth Marketing Lead', 'Product Marketing Manager', 'Director of Marketing'],
-    designer: ['Senior UI/UX Designer', 'Lead Product Designer', 'Design Systems Lead', 'Creative Director'],
-    manager: ['Senior Product Manager', 'Director of Operations', 'Program Manager', 'General Manager'],
-    nurse: ['Charge Nurse', 'Nurse Practitioner', 'Clinical Nurse Specialist', 'Healthcare Director'],
-    sales: ['Senior Account Executive', 'Sales Director', 'Enterprise Business Development', 'VP of Sales'],
-    hr: ['HR Business Partner', 'Talent Acquisition Lead', 'People Operations Director', 'Chief People Officer'],
-};
+const aiRoleCache = {};
 
-const POPULAR_TARGET_ROLES = [
-    'Senior Software Engineer',
-    'Full Stack Developer',
-    'Frontend Developer (React/Next.js)',
-    'Backend Engineer (Node.js/Python)',
-    'Senior Data Analyst',
-    'Data Scientist & Machine Learning Engineer',
-    'DevOps & Cloud Solutions Architect',
-    'Product Manager (B2B/SaaS)',
-    'Digital Marketing & Growth Manager',
-    'Senior UI/UX & Product Designer',
-    'Technical Project Manager / Scrum Master',
-    'Financial Analyst & FP&A Specialist',
-    'Senior Accountant & Controller',
-    'Cybersecurity & Information Security Analyst',
-    'Executive Assistant & Operations Lead',
-    'Customer Success & Account Manager',
-];
+function getOrganicRoleProgressions(baseRole) {
+    const role = String(baseRole || '').trim();
+    if (!role || role.length < 2) return [];
+    const clean = role.replace(/^(?:Senior|Lead|Principal|Junior|Staff|Chief|Head of|Associate)\s+/i, '').trim();
+    return [
+        `Senior ${clean}`,
+        `Lead ${clean}`,
+        `Principal ${clean}`,
+        `${clean} Manager`,
+        `Director of ${clean}`,
+        `${clean} Specialist`,
+    ];
+}
 
 /**
  * Heading — one form card: name, contact, target title, location.
@@ -204,32 +188,60 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const suggestedRoles = useMemo(() => {
-        const query = String(targetRole || '').trim().toLowerCase();
-        const occ = String(formData.occupation || '').trim().toLowerCase();
+    // Automatic AI role suggestion fetcher (debounced, with cache)
+    useEffect(() => {
+        if (!roleDropdownOpen) return;
+        const query = String(targetRole || formData.occupation || '').trim();
+        if (!query || query.length < 2) return;
 
-        let transitionSuggestions = [];
-        if (occ) {
-            for (const [key, roles] of Object.entries(CAREER_TRANSITION_MAP)) {
-                if (occ.includes(key)) {
-                    transitionSuggestions.push(...roles);
-                }
-            }
-            if (!transitionSuggestions.length && occ.length >= 3) {
-                const capOcc = formData.occupation.trim();
-                transitionSuggestions = [
-                    `Senior ${capOcc}`,
-                    `Lead ${capOcc}`,
-                    `${capOcc} Manager`,
-                    `Principal ${capOcc}`,
-                ];
-            }
+        const cacheKey = `role_${query.toLowerCase()}`;
+        if (aiRoleCache[cacheKey]) {
+            setAiRoleSuggestions(aiRoleCache[cacheKey]);
+            return;
         }
 
+        const timer = setTimeout(async () => {
+            setIsFetchingAiRoles(true);
+            try {
+                const res = await generateUserAiContent('autocomplete', {
+                    type: 'jobTitle',
+                    query,
+                    context: {
+                        facts: candidateContext?.facts || {},
+                        target: { role: query },
+                    },
+                });
+                if (Array.isArray(res?.suggestions) && res.suggestions.length) {
+                    aiRoleCache[cacheKey] = res.suggestions;
+                    setAiRoleSuggestions(res.suggestions);
+                }
+            } catch (err) {
+                console.warn('[HeadingStep] AI role autocomplete failed:', err);
+            } finally {
+                setIsFetchingAiRoles(false);
+            }
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [roleDropdownOpen, targetRole, formData.occupation, candidateContext]);
+
+    const suggestedRoles = useMemo(() => {
+        const query = String(targetRole || '').trim().toLowerCase();
+        const occ = String(formData.occupation || '').trim();
+
+        // 1. Dynamic seniority progression derived from candidate's actual occupation
+        const organicProgressions = occ ? getOrganicRoleProgressions(occ) : [];
+
+        // 2. Candidate's own past role titles from resumeData
+        const pastRoles = (resumeData?.employments || [])
+            .map((e) => String(e.jobTitle || '').trim())
+            .filter((title) => title && title.toLowerCase() !== occ.toLowerCase());
+
+        // 3. Dynamic AI-generated suggestions
         const allCandidates = [
-            ...transitionSuggestions,
             ...aiRoleSuggestions,
-            ...POPULAR_TARGET_ROLES,
+            ...organicProgressions,
+            ...pastRoles,
         ];
 
         const seen = new Set();
@@ -247,8 +259,9 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             return unique.slice(0, 8);
         }
 
-        return unique.filter((r) => r.toLowerCase().includes(query)).slice(0, 8);
-    }, [targetRole, formData.occupation, aiRoleSuggestions]);
+        const matched = unique.filter((r) => r.toLowerCase().includes(query));
+        return (matched.length > 0 ? matched : unique).slice(0, 8);
+    }, [targetRole, formData.occupation, aiRoleSuggestions, resumeData?.employments]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -603,12 +616,21 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     <div className="flex items-center justify-between px-3 py-1.5 bg-indigo-50/70 border-b border-indigo-100 text-[10px] font-semibold text-indigo-950">
                                         <span className="flex items-center gap-1">
                                             <MdAutoAwesome className="w-3 h-3 text-indigo-600" />
-                                            <span>AI & Industry Target Suggestions</span>
+                                            <span>AI Role Suggestions</span>
+                                            {isFetchingAiRoles && (
+                                                <span className="inline-block w-2.5 h-2.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin ml-1"></span>
+                                            )}
                                         </span>
                                         <span className="text-slate-400 font-normal">
-                                            {suggestedRoles.length} recommendations
+                                            {suggestedRoles.length} suggestions
                                         </span>
                                     </div>
+                                    {suggestedRoles.length === 0 && isFetchingAiRoles && (
+                                        <div className="p-4 text-center text-slate-500 text-xs flex items-center justify-center gap-2">
+                                            <span className="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                                            <span>Consulting AI for role suggestions…</span>
+                                        </div>
+                                    )}
                                     <ul className="max-h-56 overflow-y-auto divide-y divide-slate-100 py-1">
                                         {suggestedRoles.map((roleItem, index) => {
                                             const isSelected = targetRole && targetRole.toLowerCase() === roleItem.toLowerCase();
