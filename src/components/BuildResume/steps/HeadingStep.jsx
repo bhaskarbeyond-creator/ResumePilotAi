@@ -25,6 +25,56 @@ function getOrganicRoleProgressions(baseRole) {
     ];
 }
 
+const UNIVERSAL_ROLE_DIRECTORY = [
+    // Tech & Engineering
+    'Software Engineer', 'Full Stack Developer', 'Frontend Developer', 'Backend Engineer',
+    'Mobile Application Developer', 'DevOps Engineer', 'Cloud Solutions Architect',
+    'Cybersecurity Analyst', 'Systems Administrator', 'Site Reliability Engineer (SRE)',
+    'QA Automation Engineer', 'Embedded Systems Engineer', 'Network Engineer',
+    // Data & AI
+    'Data Analyst', 'Data Scientist', 'Data Engineer', 'Machine Learning Engineer',
+    'Business Intelligence Analyst', 'Database Administrator', 'Analytics Engineer',
+    // Product & Management
+    'Product Manager', 'Technical Project Manager', 'Scrum Master', 'Program Manager',
+    'Operations Manager', 'General Manager', 'Chief Operating Officer (COO)',
+    // Design & Creative
+    'UI/UX Designer', 'Product Designer', 'Graphic Designer', 'Creative Director',
+    'Art Director', 'Content Strategist', 'Technical Writer', 'Video Producer',
+    // Marketing & Growth
+    'Digital Marketing Specialist', 'Growth Marketing Lead', 'SEO & Content Specialist',
+    'Social Media Manager', 'Brand Manager', 'Public Relations Specialist',
+    // Finance & Accounting
+    'Senior Accountant', 'Financial Analyst', 'Accounting Manager', 'Controller',
+    'Auditor', 'Bookkeeper', 'Tax Consultant', 'Investment Banking Analyst',
+    // Healthcare & Medicine
+    'Registered Nurse', 'Nurse Practitioner', 'Clinical Research Coordinator',
+    'Healthcare Administrator', 'Physical Therapist', 'Medical Technologist',
+    'Occupational Therapist', 'Pharmacist', 'Physician Assistant',
+    // Education & Academia
+    'High School Teacher', 'Elementary School Teacher', 'Instructional Designer',
+    'Curriculum Specialist', 'Academic Advisor', 'Corporate Trainer',
+    // Legal & Compliance
+    'Corporate Counsel', 'Paralegal', 'Compliance Officer', 'Legal Assistant', 'Contract Manager',
+    // Sales & Customer Success
+    'Account Executive', 'Sales Development Representative', 'Customer Success Manager',
+    'Business Development Manager', 'Account Manager', 'Client Relations Specialist',
+    // Architecture & Construction
+    'Architectural Designer', 'Civil Engineer', 'Structural Engineer', 'Construction Project Manager',
+    'Estimator', 'Site Superintendent',
+    // Culinary & Hospitality
+    'Executive Chef', 'Sous Chef', 'Restaurant General Manager', 'Hotel Operations Manager',
+    'Event Coordinator', 'Hospitality Director',
+    // Human Resources & People
+    'HR Business Partner', 'Talent Acquisition Specialist', 'People Operations Lead',
+    'Recruiter', 'Compensation & Benefits Specialist',
+    // Trades & Logistics
+    'Supply Chain Specialist', 'Logistics Coordinator', 'Procurement Specialist',
+    'Master Electrician', 'HVAC Technician', 'Fleet Maintenance Supervisor',
+    // Sciences & Research
+    'Research Scientist', 'Biochemist', 'Laboratory Technician', 'Environmental Specialist',
+    'Quality Control Analyst'
+];
+
 /**
  * Heading — one form card: name, contact, target title, location.
  * Optional links/extra fields live behind a quiet "Add more details"
@@ -188,10 +238,13 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const candidateContextRef = useRef(candidateContext);
+    useEffect(() => { candidateContextRef.current = candidateContext; }, [candidateContext]);
+
     // Automatic AI role suggestion fetcher (debounced, with cache)
     useEffect(() => {
         if (!roleDropdownOpen) return;
-        const query = String(targetRole || formData.occupation || '').trim();
+        const query = String(targetRole || '').trim();
         if (!query || query.length < 2) return;
 
         const cacheKey = `role_${query.toLowerCase()}`;
@@ -207,7 +260,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     type: 'jobTitle',
                     query,
                     context: {
-                        facts: candidateContext?.facts || {},
+                        facts: candidateContextRef.current?.facts || {},
                         target: { role: query },
                     },
                 });
@@ -220,10 +273,10 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             } finally {
                 setIsFetchingAiRoles(false);
             }
-        }, 200);
+        }, 150);
 
         return () => clearTimeout(timer);
-    }, [roleDropdownOpen, targetRole, formData.occupation, candidateContext]);
+    }, [roleDropdownOpen, targetRole]);
 
     const suggestedRoles = useMemo(() => {
         const query = String(targetRole || '').trim().toLowerCase();
@@ -238,29 +291,44 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             .filter((title) => title && title.toLowerCase() !== occ.toLowerCase());
 
         // 3. Dynamic AI-generated suggestions
-        const allCandidates = [
-            ...aiRoleSuggestions,
-            ...organicProgressions,
-            ...pastRoles,
-        ];
+        const aiList = aiRoleSuggestions || [];
 
-        const seen = new Set();
-        const unique = [];
-        for (const item of allCandidates) {
-            const trimmed = String(item || '').trim();
-            const norm = trimmed.toLowerCase();
-            if (trimmed && !seen.has(norm)) {
-                seen.add(norm);
-                unique.push(trimmed);
+        // If user is actively typing, filter instantly from all available sources
+        if (query) {
+            const matchedAi = aiList.filter((r) => r.toLowerCase().includes(query));
+            const matchedProg = organicProgressions.filter((r) => r.toLowerCase().includes(query));
+            const matchedPast = pastRoles.filter((r) => r.toLowerCase().includes(query));
+            const matchedDirectory = UNIVERSAL_ROLE_DIRECTORY.filter((r) => r.toLowerCase().includes(query));
+
+            const combined = [...matchedAi, ...matchedProg, ...matchedPast, ...matchedDirectory];
+            const seen = new Set();
+            const unique = [];
+            for (const item of combined) {
+                const norm = String(item || '').trim().toLowerCase();
+                if (norm && !seen.has(norm)) {
+                    seen.add(norm);
+                    unique.push(String(item).trim());
+                }
             }
-        }
-
-        if (!query) {
             return unique.slice(0, 8);
         }
 
-        const matched = unique.filter((r) => r.toLowerCase().includes(query));
-        return (matched.length > 0 ? matched : unique).slice(0, 8);
+        // When query is empty (focused or cleared):
+        const initialCombined = [
+            ...organicProgressions,
+            ...pastRoles,
+            ...UNIVERSAL_ROLE_DIRECTORY.slice(0, 10),
+        ];
+        const seen = new Set();
+        const unique = [];
+        for (const item of initialCombined) {
+            const norm = String(item || '').trim().toLowerCase();
+            if (norm && !seen.has(norm)) {
+                seen.add(norm);
+                unique.push(String(item).trim());
+            }
+        }
+        return unique.slice(0, 8);
     }, [targetRole, formData.occupation, aiRoleSuggestions, resumeData?.employments]);
 
     useEffect(() => {
@@ -346,12 +414,9 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         setIsGeneratingJd(true);
         setJdAutofillMessage('');
         try {
-            const res = await generateUserAiContent('generate-content', {
-                operation: 'generate-job-description',
-                payload: {
-                    targetRole: effectiveRole,
-                    occupation: formData.occupation || '',
-                },
+            const res = await generateUserAiContent('generate-job-description', {
+                targetRole: effectiveRole,
+                occupation: formData.occupation || '',
             });
 
             const generatedText = typeof res?.jobDescription === 'string'

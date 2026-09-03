@@ -54,12 +54,9 @@ export default function ReviewStep({
         }
         setIsGeneratingJd(true);
         try {
-            const res = await generateUserAiContent('generate-content', {
-                operation: 'generate-job-description',
-                payload: {
-                    targetRole: effectiveRole,
-                    occupation: resumeData.occupation || '',
-                },
+            const res = await generateUserAiContent('generate-job-description', {
+                targetRole: effectiveRole,
+                occupation: resumeData.occupation || '',
             });
             const generatedText = typeof res?.jobDescription === 'string'
                 ? res.jobDescription

@@ -49,7 +49,7 @@ const ALLOWED_ENDPOINTS = new Set([
     'generate-summary', 'generate-interview',
     'generate-work-description', 'generate-education-description',
     'generate-skills', 'generate-certifications', 'check-grammar', 'enhance-single-bullet',
-    'autocomplete', 'generate-ai-cover-letter', 'generate-job-description'
+    'autocomplete', 'generate-ai-cover-letter', 'generate-job-description', 'generate-content'
 ]);
 const CONSOLIDATED_CONTENT_OPERATIONS = new Set([
     'generate-summary', 'generate-work-description', 'generate-education-description',
@@ -58,11 +58,20 @@ const CONSOLIDATED_CONTENT_OPERATIONS = new Set([
 ]);
 
 export function buildAiRequest(endpointName, payload = {}) {
-    if (!ALLOWED_ENDPOINTS.has(endpointName)) throw new Error('Unsupported AI operation');
-    if (CONSOLIDATED_CONTENT_OPERATIONS.has(endpointName)) {
-        return { url: '/api/generate-content', body: { operation: endpointName, payload } };
+    let operation = endpointName;
+    let finalPayload = payload;
+
+    // Handle wrapping where caller passed 'generate-content' with operation in payload
+    if ((endpointName === 'generate-content' || endpointName === '/api/generate-content') && payload.operation) {
+        operation = payload.operation;
+        finalPayload = payload.payload !== undefined ? payload.payload : payload;
     }
-    return { url: `/api/${endpointName}`, body: payload };
+
+    if (!ALLOWED_ENDPOINTS.has(operation)) throw new Error(`Unsupported AI operation: ${operation}`);
+    if (CONSOLIDATED_CONTENT_OPERATIONS.has(operation)) {
+        return { url: '/api/generate-content', body: { operation, payload: finalPayload } };
+    }
+    return { url: `/api/${operation}`, body: finalPayload };
 }
 
 async function getAuthHeaders(forceRefresh = false, tenantId = null) {

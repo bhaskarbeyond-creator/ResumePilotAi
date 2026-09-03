@@ -1084,7 +1084,30 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         };
     }
 
-    if (operation === 'autocomplete') return { suggestions: [], _source: 'empty-fallback' };
+    if (operation === 'autocomplete') {
+        const query = String(payload.query || '').trim().toLowerCase();
+        let fallbackSuggestions = [];
+        if (payload.type === 'jobTitle' || payload.type === 'occupation') {
+            const contextRoles = (payload.context?.facts?.roles || []).map(r => typeof r === 'string' ? r : r.title || '');
+            const target = payload.context?.target?.role;
+            const candidates = [
+                target,
+                ...contextRoles,
+                'Software Engineer', 'Full Stack Developer', 'Data Analyst', 'Data Scientist',
+                'Product Manager', 'Project Manager', 'UI/UX Designer', 'Digital Marketing Specialist',
+                'Senior Accountant', 'Financial Analyst', 'Registered Nurse', 'Clinical Specialist',
+                'High School Teacher', 'Instructional Designer', 'Corporate Counsel', 'Paralegal',
+                'Civil Engineer', 'Mechanical Engineer', 'Executive Chef', 'Operations Manager'
+            ].filter(Boolean);
+            fallbackSuggestions = query
+                ? candidates.filter(c => String(c).toLowerCase().includes(query))
+                : candidates;
+        }
+        return {
+            suggestions: Array.from(new Set(fallbackSuggestions)).slice(0, 8),
+            _source: 'local-fallback'
+        };
+    }
     if (operation === 'generate-job-description') {
         const role = String(payload.targetRole || payload.jobTitle || payload.occupation || 'Professional').trim();
         return generateDeterministicJobDescription(role, payload);
@@ -1361,7 +1384,14 @@ async function executeContentOperation({ operation, payload, environment, fetchI
     }
 
     try {
-        const generated = await generateWithProviders({ prompt, configuration, operation, fetchImpl, signal });
+        const generated = await generateWithProviders({
+            prompt,
+            configuration,
+            operation,
+            fetchImpl,
+            signal,
+            timeoutMs: operation === 'autocomplete' ? 5000 : undefined,
+        });
         const data = parseAiResponse(operation, generated.raw, {
             payload: validatedPayload,
             requireGrounding: FACTUAL_CONTENT_OPERATIONS.has(operation),
