@@ -62,8 +62,8 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
             let updatedCompletedSteps = null;
             if (validProjects.length > 0 && !completedSteps.includes(5)) {
                 updatedCompletedSteps = [...completedSteps, 5];
-            } else if (validProjects.length === 0 && (completedSteps.includes(5) || completedSteps.includes(6))) {
-                updatedCompletedSteps = completedSteps.filter(step => step !== 5 && step !== 6);
+            } else if (validProjects.length === 0 && completedSteps.includes(5)) {
+                updatedCompletedSteps = completedSteps.filter(step => step !== 5);
             }
 
             updateResumeData({

@@ -90,8 +90,8 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 completedSteps.push(8);
                 updateResumeData({ summary, completedSteps });
             }
-        } else if (completedSteps.includes(8) || completedSteps.includes(2)) {
-            const updatedSteps = completedSteps.filter((step) => step !== 8 && step !== 2);
+        } else if (completedSteps.includes(8)) {
+            const updatedSteps = completedSteps.filter((step) => step !== 8);
             updateResumeData({ summary, completedSteps: updatedSteps });
         }
     };

@@ -157,3 +157,21 @@ test('P1-3: document title never leaks into the role context (adversarial probe 
     assert.equal(c3.target.role, '');
     assert.equal(c3.facts.headline, '');
 });
+
+test('P0-3: Empty employment and education entries do not falsely complete steps', () => {
+    // Substantive check evaluation: blank entries with only empty strings must not pass.
+    assert.match(SHELL, /case 'work-history':[\s\S]*?\.some\([\s\S]*?e\?\.jobTitle\?\.trim\(\) \|\| e\?\.employer\?\.trim\(\)/);
+    assert.match(SHELL, /case 'education':[\s\S]*?\.some\([\s\S]*?e\?\.school\?\.trim\(\) \|\| e\?\.degree\?\.trim\(\)/);
+});
+
+test('P0-4: Zero neighbor step pruning across all builder step components', () => {
+    const stepFiles = [
+        'WorkHistoryStep.jsx', 'EducationStep.jsx', 'SkillsStep.jsx',
+        'ProjectsStep.jsx', 'CertificationsStep.jsx', 'LanguagesStep.jsx', 'SummaryStep.jsx'
+    ];
+    for (const file of stepFiles) {
+        const content = fs.readFileSync(`src/components/BuildResume/steps/${file}`, 'utf8');
+        // Must not contain multi-step exclusions like step !== X && step !== Y
+        assert.doesNotMatch(content, /step !== \d+ && step !== \d+/, `${file} must not prune neighboring steps`);
+    }
+});

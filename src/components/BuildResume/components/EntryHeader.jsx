@@ -11,6 +11,7 @@ export default function EntryHeader({
     subtitle = '',
     meta = '',
     expanded = false,
+    controlsId = null,
     onToggle,
     onDuplicate = null,
     onDelete = null,
@@ -50,6 +51,7 @@ export default function EntryHeader({
                 type="button"
                 onClick={onToggle}
                 aria-expanded={expanded}
+                aria-controls={controlsId || undefined}
                 className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
             >
                 <span

@@ -100,8 +100,8 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (hasValidSkill && !completedSteps.includes(4)) {
             updateResumeData({ skills, completedSteps: [...completedSteps, 4] });
-        } else if (!hasValidSkill && (completedSteps.includes(4) || completedSteps.includes(5))) {
-            updateResumeData({ skills, completedSteps: completedSteps.filter(step => step !== 4 && step !== 5) });
+        } else if (!hasValidSkill && completedSteps.includes(4)) {
+            updateResumeData({ skills, completedSteps: completedSteps.filter(step => step !== 4) });
         }
     };
 

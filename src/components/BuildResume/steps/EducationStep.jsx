@@ -118,8 +118,8 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (hasValidEducation && !completedSteps.includes(3)) {
             updateResumeData({ educations, completedSteps: [...completedSteps, 3] });
-        } else if (!hasValidEducation && (completedSteps.includes(3) || completedSteps.includes(4))) {
-            updateResumeData({ educations, completedSteps: completedSteps.filter(step => step !== 3 && step !== 4) });
+        } else if (!hasValidEducation && completedSteps.includes(3)) {
+            updateResumeData({ educations, completedSteps: completedSteps.filter(step => step !== 3) });
         }
     };
 

@@ -98,7 +98,7 @@ const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
             }
         } else {
             const completedSteps = [...(resumeData.completedSteps || [])];
-            const updatedSteps = completedSteps.filter(step => step !== 7 && step !== 8);
+            const updatedSteps = completedSteps.filter(step => step !== 7);
             if (updatedSteps.length !== completedSteps.length) {
                 updateResumeData({ languages, hobbies, completedSteps: updatedSteps });
             }

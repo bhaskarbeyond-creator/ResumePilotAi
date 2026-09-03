@@ -123,8 +123,8 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate }) => {
         const completedSteps = [...(resumeData.completedSteps || [])];
         if (hasValidEmployment && !completedSteps.includes(2)) {
             updateResumeData({ employments, completedSteps: [...completedSteps, 2] });
-        } else if (!hasValidEmployment && (completedSteps.includes(2) || completedSteps.includes(3))) {
-            updateResumeData({ employments, completedSteps: completedSteps.filter(step => step !== 2 && step !== 3) });
+        } else if (!hasValidEmployment && completedSteps.includes(2)) {
+            updateResumeData({ employments, completedSteps: completedSteps.filter(step => step !== 2) });
         }
     };
 

@@ -70,8 +70,8 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
             let updatedCompletedSteps = null;
             if (validCertifications.length > 0 && !completedSteps.includes(6)) {
                 updatedCompletedSteps = [...completedSteps, 6];
-            } else if (validCertifications.length === 0 && (completedSteps.includes(6) || completedSteps.includes(7))) {
-                updatedCompletedSteps = completedSteps.filter(step => step !== 6 && step !== 7);
+            } else if (validCertifications.length === 0 && completedSteps.includes(6)) {
+                updatedCompletedSteps = completedSteps.filter(step => step !== 6);
             }
 
             updateResumeData({

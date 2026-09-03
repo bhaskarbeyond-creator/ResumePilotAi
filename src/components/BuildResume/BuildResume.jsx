@@ -534,27 +534,41 @@ const BuildResume = () => {
             case 'heading':
                 return Boolean(resumeData.firstname?.trim() || resumeData.email?.trim());
             case 'work-history':
-                // Canonical field is `employments` (WorkHistoryStep + buildCanonicalResumeDocument);
-                // `workHistory` is a legacy alias that no longer exists in the normalized model.
-                return Array.isArray(resumeData.employments) && resumeData.employments.length > 0;
+                return Array.isArray(resumeData.employments) && resumeData.employments.some(e => Boolean(e?.jobTitle?.trim() || e?.employer?.trim() || (e?.description && String(e.description).replace(/<[^>]*>/g, '').trim().length > 5)));
             case 'education':
-                return Array.isArray(resumeData.educations) && resumeData.educations.length > 0;
+                return Array.isArray(resumeData.educations) && resumeData.educations.some(e => Boolean(
+                    e?.school?.trim() || e?.degree?.trim()
+                ));
             case 'skills':
-                return Array.isArray(resumeData.skills) && resumeData.skills.length > 0;
+                return Array.isArray(resumeData.skills) && resumeData.skills.some(s => (
+                    typeof s === 'string' ? Boolean(s.trim()) : Boolean(s?.skillName?.trim() || s?.name?.trim())
+                ));
             case 'projects':
-                return Array.isArray(resumeData.projects) && resumeData.projects.length > 0;
+                return Array.isArray(resumeData.projects) && resumeData.projects.some(p => Boolean(
+                    p?.title?.trim() || p?.name?.trim() || (p?.description && String(p.description).replace(/<[^>]*>/g, '').trim().length > 5)
+                ));
             case 'certifications':
-                return Array.isArray(resumeData.certifications) && resumeData.certifications.length > 0;
+                return Array.isArray(resumeData.certifications) && resumeData.certifications.some(c => Boolean(
+                    c?.title?.trim() || c?.name?.trim() || c?.issuer?.trim()
+                ));
             case 'languages':
-                return Array.isArray(resumeData.languages) && resumeData.languages.length > 0;
+                return Array.isArray(resumeData.languages) && resumeData.languages.some(l => (
+                    typeof l === 'string' ? Boolean(l.trim()) : Boolean(l?.language?.trim() || l?.name?.trim())
+                ));
             case 'summary':
-                return Boolean(resumeData.summary && resumeData.summary.trim().length > 10);
+                return Boolean(resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, '').trim().length > 10);
             case 'achievements':
-                return Array.isArray(resumeData.achievements) && resumeData.achievements.length > 0;
+                return Array.isArray(resumeData.achievements) && resumeData.achievements.some(a => Boolean(
+                    a?.title?.trim() || (a?.description && String(a.description).replace(/<[^>]*>/g, '').trim().length > 5)
+                ));
             case 'references':
-                return Array.isArray(resumeData.references) && resumeData.references.length > 0;
+                return Array.isArray(resumeData.references) && resumeData.references.some(r => Boolean(
+                    r?.name?.trim() || r?.company?.trim() || r?.availableUponRequest
+                ));
             case 'custom':
-                return Array.isArray(resumeData.customSections) && resumeData.customSections.length > 0;
+                return Array.isArray(resumeData.customSections) && resumeData.customSections.some(s => Boolean(
+                    s?.title?.trim() || (Array.isArray(s?.items) && s.items.length > 0)
+                ));
             default:
                 return false;
         }
