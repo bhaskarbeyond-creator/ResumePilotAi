@@ -1778,6 +1778,20 @@ const BuildResume = () => {
 
                 {/* Stepper Overview Modal Trigger & Consolidated Progress Summary */}
                 <div className="flex items-center gap-2 shrink-0 pl-2 border-l border-slate-200">
+                    <select
+                        value={currentStep.path}
+                        onChange={(e) => handleStepClick(e.target.value)}
+                        className="hidden md:block text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 rounded-xl px-2.5 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        aria-label="Jump directly to step"
+                        title="Jump to section"
+                    >
+                        {orderedSteps.map((s, idx) => (
+                            <option key={s.path} value={s.path}>
+                                {isStepCompleted(s.id, s.path) ? '✓ ' : `${idx + 1}. `}{s.name}
+                            </option>
+                        ))}
+                    </select>
+
                     <button
                         type="button"
                         onClick={() => setShowAllStepsModal(true)}

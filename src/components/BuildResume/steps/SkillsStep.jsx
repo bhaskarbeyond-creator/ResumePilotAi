@@ -55,6 +55,29 @@ const SkillsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const handleAddSkill = (nameToAdd, ratingToAdd) => {
         const raw = nameToAdd || newSkillName;
+        if (!raw || !raw.trim()) return;
+
+        // Multi-skill ingestion support: handles comma, semicolon, or newline delimited paste
+        if (raw.includes(',') || raw.includes(';') || raw.includes('\n')) {
+            const tokens = raw.split(/[,;\n]+/).map(t => cleanSkillName(t)).filter(Boolean);
+            if (tokens.length > 1) {
+                setSkills(prev => {
+                    const existingNames = new Set(prev.map(s => normalizeSkillName(s?.skillName || s?.name)));
+                    const toAdd = [];
+                    for (const token of tokens) {
+                        const norm = normalizeSkillName(token);
+                        if (norm && !existingNames.has(norm)) {
+                            existingNames.add(norm);
+                            toAdd.push(createNewSkill(token, ratingToAdd !== undefined ? ratingToAdd : newSkillLevel));
+                        }
+                    }
+                    return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+                });
+                setNewSkillName('');
+                return;
+            }
+        }
+
         const cleaned = cleanSkillName(raw);
         if (!cleaned || cleaned.trim() === '') return;
         if (skills.some(s => normalizeSkillName(s?.skillName || s?.name) === normalizeSkillName(cleaned))) {

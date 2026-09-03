@@ -77,9 +77,15 @@ export default function StepGuide({
             )}
 
             {ready && (
-                <p className="mt-3 text-[13px] leading-snug text-slate-500">
-                    This section is in good shape. You can revisit it any time.
-                </p>
+                <div className="mt-3 space-y-1.5 rounded-lg border border-emerald-200/90 bg-emerald-50/70 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                        <MdCheckCircle className="w-4 h-4 text-emerald-600" />
+                        <span>Optimized for screening ✓</span>
+                    </div>
+                    <p className="text-[12px] leading-relaxed text-emerald-700/90">
+                        All essential fields and formatting checks for this section are satisfied.
+                    </p>
+                </div>
             )}
 
             {children}
