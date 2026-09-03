@@ -323,11 +323,12 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     // candidate's role — it must not leak into the role context, or it contaminates the AI
     // evidence payload, profileHash, and job-title suggestions for resumes that have no
     // declared occupation yet.
-    const rawOccupation = typeof data.occupation === 'string' ? data.occupation : (typeof data.targetTitle === 'string' ? data.targetTitle : '');
+    const rawOccupation = typeof data.occupation === 'string' ? data.occupation : '';
     const declaredTitle = rawOccupation.trim();
+    const explicitTargetRole = (typeof data.targetRole === 'string' && data.targetRole.trim()) ? data.targetRole.trim() : (typeof data.targetTitle === 'string' && data.targetTitle.trim() ? data.targetTitle.trim() : '');
     const jdRole = extractTargetRoleFromJd(targetJd);
     const isGenericDeclared = /^(consultant|manager|director|specialist|professional|coordinator|associate|analyst|officer)$/i.test(declaredTitle);
-    const targetRole = (!declaredTitle || isGenericDeclared) ? jdRole : declaredTitle;
+    const targetRole = explicitTargetRole || ((!declaredTitle || isGenericDeclared) ? (jdRole || declaredTitle) : declaredTitle);
     const currentRole = String(employments[0]?.jobTitle || '').trim();
     const jd = String(targetJd || '').trim();
     const experienceYears = estimateExperienceYears(employments);

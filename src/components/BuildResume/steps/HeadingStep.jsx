@@ -1,11 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdExpandMore, MdExpandLess } from 'react-icons/md';
+import { MdExpandMore, MdExpandLess, MdAutoAwesome, MdCheck, MdClose } from 'react-icons/md';
 import StepShell from '../components/StepShell.jsx';
 import Field from '../components/Field.jsx';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import PhotoUpload from './components/PhotoUpload';
-import { getCandidateContext } from '../../../utils/candidateContext';
+import { getCandidateContext, extractTargetRoleFromJd } from '../../../utils/candidateContext';
+import { extractJdKeywords } from '../../../utils/atsScore';
+import { generateUserAiContent } from '../../../services/aiService';
+
+const CAREER_TRANSITION_MAP = {
+    accountant: ['Senior Accountant', 'Accounting Manager', 'Financial Analyst', 'Controller', 'Audit Manager'],
+    developer: ['Senior Software Engineer', 'Full Stack Developer', 'Tech Lead', 'Solutions Architect', 'Engineering Manager'],
+    engineer: ['Senior Engineer', 'Lead Systems Engineer', 'Engineering Manager', 'Principal Architect'],
+    analyst: ['Senior Data Analyst', 'Data Scientist', 'Analytics Engineer', 'BI Manager', 'Product Analyst'],
+    marketing: ['Digital Marketing Manager', 'Growth Marketing Lead', 'Product Marketing Manager', 'Director of Marketing'],
+    designer: ['Senior UI/UX Designer', 'Lead Product Designer', 'Design Systems Lead', 'Creative Director'],
+    manager: ['Senior Product Manager', 'Director of Operations', 'Program Manager', 'General Manager'],
+    nurse: ['Charge Nurse', 'Nurse Practitioner', 'Clinical Nurse Specialist', 'Healthcare Director'],
+    sales: ['Senior Account Executive', 'Sales Director', 'Enterprise Business Development', 'VP of Sales'],
+    hr: ['HR Business Partner', 'Talent Acquisition Lead', 'People Operations Director', 'Chief People Officer'],
+};
+
+const POPULAR_TARGET_ROLES = [
+    'Senior Software Engineer',
+    'Full Stack Developer',
+    'Frontend Developer (React/Next.js)',
+    'Backend Engineer (Node.js/Python)',
+    'Senior Data Analyst',
+    'Data Scientist & Machine Learning Engineer',
+    'DevOps & Cloud Solutions Architect',
+    'Product Manager (B2B/SaaS)',
+    'Digital Marketing & Growth Manager',
+    'Senior UI/UX & Product Designer',
+    'Technical Project Manager / Scrum Master',
+    'Financial Analyst & FP&A Specialist',
+    'Senior Accountant & Controller',
+    'Cybersecurity & Information Security Analyst',
+    'Executive Assistant & Operations Lead',
+    'Customer Success & Account Manager',
+];
 
 /**
  * Heading — one form card: name, contact, target title, location.
@@ -31,13 +65,22 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         github: resumeData?.github || '',
     });
     const [targetJd, setTargetJd] = useState(resumeData?.targetJobDescription || '');
+    const [targetRole, setTargetRole] = useState(resumeData?.targetRole || '');
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [moreOpen, setMoreOpen] = useState(
         Boolean(resumeData?.website || resumeData?.linkedin || resumeData?.github || resumeData?.address || resumeData?.postalcode),
     );
 
-    const candidateContext = getCandidateContext(resumeData, targetJd || resumeData?.targetJobDescription || '');
+    const [isGeneratingJd, setIsGeneratingJd] = useState(false);
+    const [jdAutofillMessage, setJdAutofillMessage] = useState('');
+    const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+    const [aiRoleSuggestions, setAiRoleSuggestions] = useState([]);
+    const [isFetchingAiRoles, setIsFetchingAiRoles] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
+    const roleInputContainerRef = useRef(null);
+
+    const candidateContext = getCandidateContext({ ...resumeData, targetRole }, targetJd || resumeData?.targetJobDescription || '');
 
     // Keep formData in sync if parent resumeData updates externally
     useEffect(() => {
@@ -61,6 +104,9 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }));
         if (resumeData.targetJobDescription !== undefined) {
             setTargetJd(resumeData.targetJobDescription || '');
+        }
+        if (resumeData.targetRole !== undefined) {
+            setTargetRole(resumeData.targetRole || '');
         }
     }, [resumeData]);
 
@@ -113,6 +159,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
         updateResumeData({
             ...formData,
+            targetRole,
             targetJobDescription: targetJd,
             ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
         });
@@ -125,14 +172,16 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }, 500);
         return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData, targetJd]);
+    }, [formData, targetRole, targetJd]);
 
     // Unmount flush: synchronously commit form data on step exit
     const formDataRef = useRef(formData);
+    const targetRoleRef = useRef(targetRole);
     const targetJdRef = useRef(targetJd);
     const updateResumeDataRef = useRef(updateResumeData);
     const completedStepsRef = useRef(resumeData?.completedSteps || []);
     useEffect(() => { formDataRef.current = formData; }, [formData]);
+    useEffect(() => { targetRoleRef.current = targetRole; }, [targetRole]);
     useEffect(() => { targetJdRef.current = targetJd; }, [targetJd]);
     useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
     useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
@@ -148,11 +197,173 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
         updateResumeDataRef.current({
             ...data,
+            targetRole: targetRoleRef.current,
             targetJobDescription: targetJdRef.current,
             ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const suggestedRoles = useMemo(() => {
+        const query = String(targetRole || '').trim().toLowerCase();
+        const occ = String(formData.occupation || '').trim().toLowerCase();
+
+        let transitionSuggestions = [];
+        if (occ) {
+            for (const [key, roles] of Object.entries(CAREER_TRANSITION_MAP)) {
+                if (occ.includes(key)) {
+                    transitionSuggestions.push(...roles);
+                }
+            }
+            if (!transitionSuggestions.length && occ.length >= 3) {
+                const capOcc = formData.occupation.trim();
+                transitionSuggestions = [
+                    `Senior ${capOcc}`,
+                    `Lead ${capOcc}`,
+                    `${capOcc} Manager`,
+                    `Principal ${capOcc}`,
+                ];
+            }
+        }
+
+        const allCandidates = [
+            ...transitionSuggestions,
+            ...aiRoleSuggestions,
+            ...POPULAR_TARGET_ROLES,
+        ];
+
+        const seen = new Set();
+        const unique = [];
+        for (const item of allCandidates) {
+            const trimmed = String(item || '').trim();
+            const norm = trimmed.toLowerCase();
+            if (trimmed && !seen.has(norm)) {
+                seen.add(norm);
+                unique.push(trimmed);
+            }
+        }
+
+        if (!query) {
+            return unique.slice(0, 8);
+        }
+
+        return unique.filter((r) => r.toLowerCase().includes(query)).slice(0, 8);
+    }, [targetRole, formData.occupation, aiRoleSuggestions]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (roleInputContainerRef.current && !roleInputContainerRef.current.contains(event.target)) {
+                setRoleDropdownOpen(false);
+                setHighlightedIndex(-1);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelectTargetRole = (selectedRole) => {
+        setTargetRole(selectedRole);
+        targetRoleRef.current = selectedRole;
+        setRoleDropdownOpen(false);
+        setHighlightedIndex(-1);
+        handleSave();
+    };
+
+    const handleFetchAiRoleSuggestions = async () => {
+        const query = String(targetRole || formData.occupation || '').trim();
+        if (!query || isFetchingAiRoles) return;
+        setIsFetchingAiRoles(true);
+        try {
+            const res = await generateUserAiContent('autocomplete', {
+                type: 'jobTitle',
+                query,
+            });
+            if (Array.isArray(res?.suggestions) && res.suggestions.length) {
+                setAiRoleSuggestions(res.suggestions);
+                setRoleDropdownOpen(true);
+            }
+        } catch (err) {
+            console.warn('[HeadingStep] AI role autocomplete failed:', err);
+        } finally {
+            setIsFetchingAiRoles(false);
+        }
+    };
+
+    const handleRoleKeyDown = (e) => {
+        if (!roleDropdownOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                setRoleDropdownOpen(true);
+            }
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHighlightedIndex((prev) => (prev < suggestedRoles.length - 1 ? prev + 1 : 0));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : suggestedRoles.length - 1));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && highlightedIndex < suggestedRoles.length) {
+                handleSelectTargetRole(suggestedRoles[highlightedIndex]);
+            } else {
+                setRoleDropdownOpen(false);
+            }
+        } else if (e.key === 'Escape') {
+            setRoleDropdownOpen(false);
+            setHighlightedIndex(-1);
+        }
+    };
+
+    const handleAutofillJd = async () => {
+        const effectiveRole = String(targetRole || formData.occupation || '').trim();
+        if (!effectiveRole) {
+            setJdAutofillMessage('Please enter or select a Target Job Title first.');
+            setTimeout(() => setJdAutofillMessage(''), 4000);
+            return;
+        }
+
+        if (targetJd && targetJd.trim().length >= 30) {
+            const confirmed = window.confirm(
+                `Your target requirements already contain text. Do you want to replace it with AI-generated requirements for "${effectiveRole}"?`
+            );
+            if (!confirmed) return;
+        }
+
+        setIsGeneratingJd(true);
+        setJdAutofillMessage('');
+        try {
+            const res = await generateUserAiContent('generate-content', {
+                operation: 'generate-job-description',
+                payload: {
+                    targetRole: effectiveRole,
+                    occupation: formData.occupation || '',
+                },
+            });
+
+            const generatedText = typeof res?.jobDescription === 'string'
+                ? res.jobDescription
+                : (typeof res?.text === 'string' ? res.text : '');
+
+            if (generatedText) {
+                setTargetJd(generatedText);
+                targetJdRef.current = generatedText;
+                updateResumeData({
+                    ...formData,
+                    targetRole,
+                    targetJobDescription: generatedText,
+                });
+                setJdAutofillMessage(`✨ Requirements generated and autofilled for ${effectiveRole}!`);
+                setTimeout(() => setJdAutofillMessage(''), 5000);
+            }
+        } catch (err) {
+            console.error('[HeadingStep] Failed to generate job description:', err);
+            setJdAutofillMessage('Failed to generate requirements. Please try again.');
+            setTimeout(() => setJdAutofillMessage(''), 4000);
+        } finally {
+            setIsGeneratingJd(false);
+        }
+    };
 
     const completedRequiredFields = requiredFields.filter((field) => String(formData[field] || '').trim() !== '').length;
     const isStepComplete = completedRequiredFields === requiredFields.length;
@@ -323,27 +534,231 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                 {/* Optional Target Job Description Tailoring */}
                 <div className="border-t border-slate-100 pt-3">
-                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-2">
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-3">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
                                 <span>🎯 Target Role & Job Description (Optional)</span>
                             </span>
-                            {targetJd && targetJd.trim().length > 0 ? (
+                            {(targetJd && targetJd.trim().length > 0) || (targetRole && targetRole.trim().length > 0) ? (
                                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                                     Tailored ✓
                                 </span>
                             ) : null}
                         </div>
                         <p className="text-[11px] leading-relaxed text-slate-500">
-                            Pasting your target job description allows the AI copilot and ATS engine to highlight missing keywords and suggest relevant skills across all subsequent steps.
+                            Specifying your target role and pasting the job description allows the AI copilot and ATS engine to highlight missing keywords, tailor summaries, and suggest relevant skills across all subsequent steps.
                         </p>
-                        <textarea
-                            rows={3}
-                            value={targetJd}
-                            onChange={(e) => setTargetJd(e.target.value)}
-                            placeholder="Paste the target job description or key requirements here…"
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        />
+                        {/* Target Role with Auto AI Dropdown */}
+                        <div ref={roleInputContainerRef} className="relative">
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="block text-[11px] font-semibold text-slate-700">
+                                    Target Job Title (Optional)
+                                </label>
+                                <span className="text-[10px] text-slate-400">
+                                    Select or type your destination role
+                                </span>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={targetRole}
+                                    onChange={(e) => {
+                                        setTargetRole(e.target.value);
+                                        setRoleDropdownOpen(true);
+                                    }}
+                                    onFocus={() => setRoleDropdownOpen(true)}
+                                    onKeyDown={handleRoleKeyDown}
+                                    placeholder="e.g. Senior Data Analyst (if transitioning or targeting a different role)"
+                                    className="w-full rounded-lg border border-slate-200 bg-white pl-3 pr-16 py-1.5 text-xs text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                />
+                                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    {targetRole && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setTargetRole('');
+                                                targetRoleRef.current = '';
+                                                handleSave();
+                                            }}
+                                            className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100"
+                                            title="Clear target role"
+                                        >
+                                            <MdClose className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setRoleDropdownOpen((prev) => !prev)}
+                                        className="p-1 text-indigo-600 hover:text-indigo-800 rounded-md hover:bg-indigo-50"
+                                        title="Toggle role suggestions"
+                                    >
+                                        {roleDropdownOpen ? <MdExpandLess className="w-4 h-4" /> : <MdExpandMore className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Intelligent Auto AI Dropdown */}
+                            {roleDropdownOpen && (
+                                <div className="absolute z-30 mt-1 w-full rounded-xl border border-indigo-200/90 bg-white shadow-xl overflow-hidden text-xs">
+                                    <div className="flex items-center justify-between px-3 py-1.5 bg-indigo-50/70 border-b border-indigo-100 text-[10px] font-semibold text-indigo-950">
+                                        <span className="flex items-center gap-1">
+                                            <MdAutoAwesome className="w-3 h-3 text-indigo-600" />
+                                            <span>AI & Industry Target Suggestions</span>
+                                        </span>
+                                        <span className="text-slate-400 font-normal">
+                                            {suggestedRoles.length} recommendations
+                                        </span>
+                                    </div>
+                                    <ul className="max-h-56 overflow-y-auto divide-y divide-slate-100 py-1">
+                                        {suggestedRoles.map((roleItem, index) => {
+                                            const isSelected = targetRole && targetRole.toLowerCase() === roleItem.toLowerCase();
+                                            const isHighlighted = index === highlightedIndex;
+                                            return (
+                                                <li key={roleItem}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSelectTargetRole(roleItem)}
+                                                        className={`w-full text-left px-3 py-2 flex items-center justify-between transition-colors ${
+                                                            isHighlighted || isSelected
+                                                                ? 'bg-indigo-50/90 text-indigo-950 font-semibold'
+                                                                : 'text-slate-700 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span className="text-indigo-500 font-bold">•</span>
+                                                            <span>{roleItem}</span>
+                                                        </span>
+                                                        {isSelected && (
+                                                            <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">
+                                                                <MdCheck className="w-3 h-3" />
+                                                                <span>Selected</span>
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                </li>
+                                            );
+                                        })}
+                                        {targetRole && targetRole.trim().length >= 2 && (
+                                            <li className="p-1 bg-slate-50/60">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleFetchAiRoleSuggestions}
+                                                    disabled={isFetchingAiRoles}
+                                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-white hover:bg-indigo-50/60 border border-indigo-200/70 rounded-lg transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                                                >
+                                                    {isFetchingAiRoles ? (
+                                                        <>
+                                                            <span className="inline-block w-2.5 h-2.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                                                            <span>Consulting AI autocomplete…</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <MdAutoAwesome className="w-3 h-3 text-indigo-600" />
+                                                            <span>More AI suggestions for &ldquo;{targetRole}&rdquo;</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </li>
+                                        )}
+                                    </ul>
+                                    <div className="px-3 py-1 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                                        <span>Use ↑↓ to navigate, Enter to select</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRoleDropdownOpen(false)}
+                                            className="text-slate-500 hover:text-slate-800 font-medium"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Target Job Description with Manual Autofill Button */}
+                        <div>
+                            <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <label className="block text-[11px] font-semibold text-slate-700">
+                                    Target Job Description / Key Requirements (Optional)
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={handleAutofillJd}
+                                    disabled={isGeneratingJd}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg px-2.5 py-1 transition-all shadow-2xs disabled:opacity-50 cursor-pointer active:scale-95"
+                                    title="Auto-fill realistic requirements using AI for this target role"
+                                >
+                                    {isGeneratingJd ? (
+                                        <>
+                                            <span className="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                                            <span>Generating requirements…</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-600" />
+                                            <span>Autofill Requirements</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {jdAutofillMessage && (
+                                <div className={`text-[11px] px-2.5 py-1.5 rounded-lg mb-1.5 flex items-center justify-between font-medium ${
+                                    jdAutofillMessage.startsWith('✨')
+                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                }`}>
+                                    <span>{jdAutofillMessage}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setJdAutofillMessage('')}
+                                        className="text-slate-400 hover:text-slate-600 ml-2"
+                                    >
+                                        <MdClose className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <textarea
+                                rows={3}
+                                value={targetJd}
+                                onChange={(e) => setTargetJd(e.target.value)}
+                                placeholder="Paste the target job description or click 'Autofill Requirements' above to generate realistic expectations for this role…"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                        </div>
+
+                        {(() => {
+                            if (!targetJd || targetJd.trim().length < 20) return null;
+                            const detectedRole = extractTargetRoleFromJd(targetJd);
+                            const extractedKeywords = extractJdKeywords(targetJd, { limit: 6 });
+                            return (
+                                <div className="mt-2.5 pt-2.5 border-t border-indigo-100/80 space-y-1.5">
+                                    <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
+                                        <span className="font-bold text-indigo-950 flex items-center gap-1.5 flex-wrap">
+                                            <span>✨ Detected Requirements:</span>
+                                            {detectedRole && (
+                                                <span className="font-semibold text-indigo-700 bg-indigo-100/70 border border-indigo-200/60 px-1.5 py-0.5 rounded text-[10px]">
+                                                    Role: {detectedRole}
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500">
+                                            {extractedKeywords.length} key domains parsed
+                                        </span>
+                                    </div>
+                                    {extractedKeywords.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                            {extractedKeywords.map((kw, i) => (
+                                                <span key={`kw-${i}`} className="inline-flex items-center px-2 py-0.5 rounded bg-white border border-indigo-200/80 text-[10px] font-medium text-slate-700 shadow-2xs">
+                                                    {kw.term}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             </form>

@@ -96,6 +96,7 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
             return {
                 payload: {
                     ...base,
+                    targetRole: context.target.role || resumeData.targetRole || resumeData.occupation || '',
                     jobTitle: entry?.jobTitle || '',
                     employer: entry?.employer || '',
                     existingText: entry?.description || '',
@@ -117,7 +118,8 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
                 payload: {
                     ...base,
                     name: context.facts.name || '',
-                    jobTitle: context.target.role || resumeData.occupation || '',
+                    targetRole: context.target.role || resumeData.targetRole || resumeData.occupation || '',
+                    jobTitle: context.target.role || resumeData.targetRole || resumeData.occupation || '',
                     experience: context.facts.experienceYears ? `${context.facts.experienceYears} years` : '',
                     existingText: resumeData.summary || '',
                 },
@@ -127,7 +129,8 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
             return {
                 payload: {
                     ...base,
-                    occupation: context.target.role || resumeData.occupation || '',
+                    targetRole: context.target.role || resumeData.targetRole || resumeData.occupation || '',
+                    occupation: context.target.role || resumeData.targetRole || resumeData.occupation || '',
                     existingSkills: context.facts.skills,
                 },
                 profileHash: context.profileHash,
@@ -136,7 +139,8 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
             return {
                 payload: {
                     ...base,
-                    occupation: context.target.role || resumeData.occupation || '',
+                    targetRole: context.target.role || resumeData.targetRole || resumeData.occupation || '',
+                    occupation: context.target.role || resumeData.targetRole || resumeData.occupation || '',
                 },
                 profileHash: context.profileHash,
             };
@@ -144,6 +148,16 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
             return { payload: { ...base, bullet: extra?.bullet || '' }, profileHash: context.profileHash };
         case 'autocomplete':
             return { payload: { type: extra?.type || 'skill', query: stripHtml(extra?.query).slice(0, 100) }, profileHash: context.profileHash };
+        case 'generate-job-description':
+            return {
+                payload: {
+                    ...base,
+                    targetRole: extra?.targetRole || context.target?.role || resumeData.targetRole || resumeData.occupation || '',
+                    jobTitle: extra?.targetRole || context.target?.role || resumeData.targetRole || resumeData.occupation || '',
+                    seniority: extra?.seniority || '',
+                },
+                profileHash: context.profileHash,
+            };
         default:
             return { payload: { ...base, ...extra }, profileHash: context.profileHash };
     }
@@ -174,6 +188,19 @@ export function normalizeAssistResult(operation, data = {}) {
 
     if (typeof data.summary === 'string' && stripHtml(data.summary)) {
         return { kind: 'draft', draft: { text: stripHtml(data.summary) }, requiresConfirmation: true, source, note: data.note || '' };
+    }
+    if (typeof data.jobDescription === 'string' && stripHtml(data.jobDescription)) {
+        return {
+            kind: 'draft',
+            draft: {
+                text: stripHtml(data.jobDescription),
+                role: stripHtml(data.role || ''),
+                keyRequirements: Array.isArray(data.keyRequirements) ? data.keyRequirements.map(stripHtml).filter(Boolean) : [],
+            },
+            requiresConfirmation: true,
+            source,
+            note: data.note || '',
+        };
     }
     if (typeof data.enhancedBullet === 'string' && stripHtml(data.enhancedBullet)) {
         return { kind: 'draft', draft: { text: stripHtml(data.enhancedBullet) }, requiresConfirmation: true, source, note: data.note || '' };

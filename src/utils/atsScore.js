@@ -41,7 +41,45 @@ const PUNCTUATION_SKILL_VARIANTS = Object.freeze({
     'c++': ['c++', 'cplusplus', 'cpp'],
     '.net': ['.net', 'dotnet', 'dot net'],
     'f#': ['f#', 'fsharp'],
+    'node.js': ['node.js', 'nodejs', 'node js'],
+    'react.js': ['react.js', 'reactjs', 'react js', 'react'],
+    'vue.js': ['vue.js', 'vuejs', 'vue js', 'vue'],
+    'angular.js': ['angular.js', 'angularjs', 'angular js'],
+    'next.js': ['next.js', 'nextjs', 'next js'],
+    'ci/cd': ['ci/cd', 'ci-cd', 'ci cd', 'continuous integration'],
+    'power bi': ['power bi', 'powerbi', 'power-bi'],
+    'google ads': ['google ads', 'adwords', 'google adwords'],
+    'dv360': ['dv360', 'display & video 360', 'display video 360'],
+    'cm360': ['cm360', 'campaign manager 360', 'campaign manager'],
+    'ga4': ['ga4', 'google analytics 4', 'google analytics'],
+    'k8s': ['k8s', 'kubernetes'],
+    'go': ['go', 'golang', 'go language'],
+    'golang': ['golang', 'go', 'go language'],
 });
+
+export const BOILERPLATE_JD_TERMS = Object.freeze(new Set([
+    'equal opportunity', 'opportunity employer', 'affirmative action', 'reasonable accommodation',
+    'reasonable accommodations', 'race color', 'religion sex', 'sexual orientation', 'gender identity',
+    'national origin', 'protected veteran', 'veteran status', 'disability status', 'background check',
+    'drug test', 'drug screen', 'health insurance', 'dental insurance', 'vision insurance', 'life insurance',
+    'medical insurance', 'disability insurance', 'paid time off', 'time off', '401k matching', '401k match',
+    'retirement plan', 'flexible spending account', 'health savings account', 'spending account',
+    'competitive salary', 'parental leave', 'maternity leave', 'paternity leave', 'apply now', 'click here',
+    'submit resume', 'submit your resume', 'unsolicited resumes', 'recruiting agency', 'employment agency',
+    'job description', 'job posting', 'posted today', 'hiring immediately', 'eeo statement',
+    'benefits perks', 'perks benefits', 'comprehensive benefits', 'comprehensive health insurance',
+]));
+
+export const PURE_BOILERPLATE_WORDS = Object.freeze(new Set([
+    '401k', 'eeo', 'pto', 'affirmative', 'discriminate', 'discrimination', 'unsolicited', 'commensurate',
+]));
+
+export function cleanJobPostingBoilerplate(text) {
+    if (!text || typeof text !== 'string') return '';
+    return text
+        .replace(/(?:equal opportunity employer|eeo statement|diversity\s*(?:&|and)\s*inclusion statement)[\s\S]*$/gi, ' ')
+        .replace(/(?:benefits\s*(?:&|and)\s*perks|what we offer|our benefits)[\s\S]*?(?=(?:requirements|qualifications|skills|responsibilities|what you will do|about the role|who you are|\n\n[A-Z]|$))/gi, ' ');
+}
 
 export const JD_STORAGE_KEY = 'rpai.ats.targetJd';
 
@@ -772,7 +810,7 @@ export function expandKeywordVariants(term) {
     }
     const punct = PUNCTUATION_SKILL_VARIANTS[normalized] || PUNCTUATION_SKILL_VARIANTS[compactToken(term)];
     if (punct) punct.forEach((item) => variants.add(item));
-    return [...variants].filter((item) => item && item.length >= 2);
+    return [...variants].filter((item) => item && (item.length >= 2 || item === 'c' || item === 'r'));
 }
 
 const WEAK_PHRASE_HEADS = new Set([
@@ -793,7 +831,7 @@ function isSpecialToken(token) {
 }
 
 export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
-    const source = stripHtml(jobDescription);
+    const source = cleanJobPostingBoilerplate(stripHtml(jobDescription));
     if (!source.trim()) return [];
 
     const phrases = [];
@@ -802,7 +840,11 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
         const display = String(raw || '').replace(/[.,;:()]+$/g, '').trim();
         const key = compactToken(display);
         const normalized = normalizeToken(display);
+        const lower = display.toLowerCase();
         if (!key || key.length < 2 || ENGLISH_STOPWORDS.has(normalized)) return;
+        if (PURE_BOILERPLATE_WORDS.has(lower) || PURE_BOILERPLATE_WORDS.has(normalized)) return;
+        if (BOILERPLATE_JD_TERMS.has(lower) || BOILERPLATE_JD_TERMS.has(normalized)) return;
+        if ([...BOILERPLATE_JD_TERMS].some((b) => lower.includes(b))) return;
         if (seen.has(key)) return;
         seen.add(key);
         phrases.push({ term: display, key, weight, category: classifyKeyword(display) });
@@ -811,7 +853,7 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
     const punctuationSkills = source.match(/\.NET\b|(?:^|[^A-Za-z0-9])C#(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])C\+\+(?=[^A-Za-z0-9]|$)|(?:^|[^A-Za-z0-9])F#(?=[^A-Za-z0-9]|$)|(?<![A-Za-z])SQL(?![A-Za-z])|Power\s+BI|BLS\b|ACLS\b|PMP\b|CPA\b|CFA\b|SHRM\b|LEED\b/gi) || [];
     punctuationSkills.forEach((item) => remember(item, 5));
 
-    const specials = source.match(/\b[A-Za-z][\w+#]*(?:\.[\w+#]+)+\b|\b[A-Za-z]+(?:\/[A-Za-z+]+)+\b|\b[A-Za-z][\w]*-[\w-]+\b|\b[A-Z]{2,5}\b/g) || [];
+    const specials = source.match(/\b[A-Za-z][\w+#]*(?:\.[\w+#]+)+\b|\b[A-Za-z]+(?:\/[A-Za-z+]+)+\b|\b[A-Za-z][\w]*-[\w-]+\b|\b[A-Za-z0-9]*[A-Z]+[0-9]+[A-Za-z0-9]*\b|\b[A-Z]{2,5}\b/g) || [];
     specials.forEach((item) => remember(item, 5));
 
     const properPhrases = source.match(/\b[A-Z][A-Za-z0-9+#]+(?:\s+[A-Z][A-Za-z0-9+#]+){1,2}\b/g) || [];
@@ -837,13 +879,14 @@ export function extractJdKeywords(jobDescription, { limit = 16 } = {}) {
 
     const freq = new Map();
     tokenize(source).forEach((token) => {
-        if (token.length < 4 || ENGLISH_STOPWORDS.has(token)) return;
+        if (token.length < 3 || ENGLISH_STOPWORDS.has(token)) return;
         if (GENERIC_PHRASE_TAILS.has(token)) return;
+        if (PURE_BOILERPLATE_WORDS.has(token)) return;
         freq.set(token, (freq.get(token) || 0) + 1);
     });
     [...freq.entries()]
         .sort((left, right) => right[1] - left[1] || right[0].length - left[0].length)
-        .slice(0, 8)
+        .slice(0, 25)
         .forEach(([token, count]) => remember(token, count));
 
     const ranked = phrases.sort((left, right) => right.weight - left.weight || right.term.length - left.term.length);
@@ -882,6 +925,12 @@ function boundedMatch(haystack, term) {
     if (variant === 'c') {
         return /(?<![\p{L}\p{N}+#])c(?![\p{L}\p{N}+#]|\+\+|sharp)/u.test(haystack);
     }
+    if (variant === 'r') {
+        return /(?<![\p{L}\p{N}])r(?![\p{L}\p{N}])/u.test(haystack) || /\brstudio\b|\br-studio\b|\br\s+(?:programming|language|stats|analytics)\b/i.test(haystack);
+    }
+    if (variant === 'go') {
+        return /(?<![\p{L}\p{N}])go(?!ogle|lang|[\p{L}\p{N}])/u.test(haystack);
+    }
     try {
         return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(variant)}(?![\\p{L}\\p{N}])`, 'u').test(haystack);
     } catch {
@@ -892,7 +941,7 @@ function boundedMatch(haystack, term) {
 export function keywordOccursInText(resumeText, term) {
     const haystack = normalizeToken(resumeText);
     return expandKeywordVariants(term).some((variant) => {
-        if (!variant || variant.length < 2) return false;
+        if (!variant || (variant.length < 2 && variant !== 'c' && variant !== 'r')) return false;
         if (boundedMatch(haystack, variant)) return true;
         const spaced = variant.replace(/[./_+#-]+/g, ' ').trim();
         if (spaced && spaced !== variant && boundedMatch(haystack, spaced)) return true;

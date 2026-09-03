@@ -169,7 +169,15 @@ function buildEvidencePayload(operation, rawPayload = {}) {
                 : (payload.achievement || payload.achievements ? [sectionText(payload.achievement || payload.achievements, 1000)] : []),
             summary: sectionText(facts.summary || payload.existingText || payload.sourceFacts || payload.summary, 2000),
         },
-        targetRole: clamp(payload.jobTitle || payload.position || payload.role || payload.occupation || context.target?.role || '', 200),
+        targetRole: clamp(
+            payload.targetRole
+            || payload.targetTitle
+            || context.target?.role
+            || (operation !== 'generate-work-description' && operation !== 'generate-education-description' ? (payload.jobTitle || payload.position || payload.role) : '')
+            || payload.occupation
+            || '',
+            200
+        ),
         ...(payload.targetJd ? { targetJobDescription: sectionText(payload.targetJd, 10000) } : {}),
         ...(context.vocabulary && Array.isArray(context.vocabulary) ? { candidateVocabulary: context.vocabulary.slice(0, 120) } : {}),
     };

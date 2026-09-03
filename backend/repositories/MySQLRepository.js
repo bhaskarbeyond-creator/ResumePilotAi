@@ -262,6 +262,7 @@ class MySQLRepository {
                 email: data.email || '',
                 phone: data.phone || '',
                 occupation: data.occupation || '',
+                targetRole: data.targetRole || null,
                 country: data.country || '',
                 city: data.city || '',
                 address: data.address || '',
@@ -272,6 +273,7 @@ class MySQLRepository {
                 photo: data.photo || null,
                 showPhoto: data.showPhoto === false ? 0 : 1,
                 summary: data.summary || '',
+                targetJobDescription: data.targetJobDescription || null,
             };
 
             for (const f of this.jsonResumeFields) {

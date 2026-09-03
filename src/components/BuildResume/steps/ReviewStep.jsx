@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     MdCheckCircle,
@@ -8,8 +8,10 @@ import {
     MdFileDownload,
     MdSearch,
     MdCheck,
+    MdAutoAwesome,
 } from 'react-icons/md';
 import { calculateAtsScore } from '../../../utils/atsScore';
+import { generateUserAiContent } from '../../../services/aiService';
 
 const personalFields = ['firstname', 'lastname'];
 
@@ -36,6 +38,53 @@ export default function ReviewStep({
     const { t } = useTranslation('common');
     const [targetJd, setTargetJd] = useState(resumeData.targetJobDescription || '');
     const [isJdInputOpen, setIsJdInputOpen] = useState(false);
+    const [isGeneratingJd, setIsGeneratingJd] = useState(false);
+
+    const handleAutofillJd = async () => {
+        const effectiveRole = String(resumeData.targetRole || resumeData.occupation || '').trim();
+        if (!effectiveRole) {
+            alert('Please specify a target role or occupation in Step 1 (Heading) first.');
+            return;
+        }
+        if (targetJd && targetJd.trim().length >= 30) {
+            const confirmed = window.confirm(
+                `Your target requirements already contain text. Do you want to replace it with AI-generated requirements for "${effectiveRole}"?`
+            );
+            if (!confirmed) return;
+        }
+        setIsGeneratingJd(true);
+        try {
+            const res = await generateUserAiContent('generate-content', {
+                operation: 'generate-job-description',
+                payload: {
+                    targetRole: effectiveRole,
+                    occupation: resumeData.occupation || '',
+                },
+            });
+            const generatedText = typeof res?.jobDescription === 'string'
+                ? res.jobDescription
+                : (typeof res?.text === 'string' ? res.text : '');
+            if (generatedText) {
+                setTargetJd(generatedText);
+                targetJdRef.current = generatedText;
+                if (typeof updateResumeData === 'function') {
+                    updateResumeData({ targetJobDescription: generatedText });
+                }
+            }
+        } catch (err) {
+            console.error('[ReviewStep] Failed to generate requirements:', err);
+        } finally {
+            setIsGeneratingJd(false);
+        }
+    };
+
+    // Sync targetJd if resumeData is updated externally (e.g. via top ATS gauge)
+    useEffect(() => {
+        if (resumeData.targetJobDescription !== undefined && resumeData.targetJobDescription !== targetJd) {
+            setTargetJd(resumeData.targetJobDescription || '');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resumeData.targetJobDescription]);
 
     // Persist the JD into the resume document so other steps (summary,
     // skills) see the same target. Debounced; additive field only.
@@ -47,6 +96,18 @@ export default function ReviewStep({
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [targetJd]);
+
+    // Unmount flush: immediately commit pending targetJd when leaving the step
+    const targetJdRef = useRef(targetJd);
+    const updateResumeDataRef = useRef(updateResumeData);
+    useEffect(() => { targetJdRef.current = targetJd; }, [targetJd]);
+    useEffect(() => { updateResumeDataRef.current = updateResumeData; }, [updateResumeData]);
+    useEffect(() => () => {
+        if (typeof updateResumeDataRef.current === 'function') {
+            updateResumeDataRef.current({ targetJobDescription: targetJdRef.current });
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const atsResult = useMemo(() => {
         return calculateAtsScore(resumeData, { jobDescription: targetJd }) || {
@@ -127,15 +188,36 @@ export default function ReviewStep({
             {/* Target Job Description Matcher */}
             {isJdInputOpen && (
                 <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h3 className="text-sm font-bold text-slate-900">Target job description</h3>
-                        <button
-                            type="button"
-                            onClick={() => setIsJdInputOpen(false)}
-                            className="text-xs font-semibold text-slate-500 hover:text-slate-800"
-                        >
-                            Close
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleAutofillJd}
+                                disabled={isGeneratingJd}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 rounded-lg px-2.5 py-1 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+                                title="Auto-fill realistic requirements using AI"
+                            >
+                                {isGeneratingJd ? (
+                                    <>
+                                        <span className="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                                        <span>Generating requirements…</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-600" />
+                                        <span>Autofill Requirements</span>
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsJdInputOpen(false)}
+                                className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                     <p className="text-xs text-slate-500">
                         Paste the job description you are applying for. Matching checks which of its distinctive terms
