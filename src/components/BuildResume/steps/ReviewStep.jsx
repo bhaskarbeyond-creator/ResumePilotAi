@@ -12,6 +12,7 @@ import {
 } from 'react-icons/md';
 import { calculateAtsScore } from '../../../utils/atsScore';
 import { generateUserAiContent } from '../../../services/aiService';
+import ConfirmRegenerateModal from './components/ConfirmRegenerateModal';
 
 const personalFields = ['firstname', 'lastname'];
 
@@ -39,19 +40,13 @@ export default function ReviewStep({
     const [targetJd, setTargetJd] = useState(resumeData.targetJobDescription || '');
     const [isJdInputOpen, setIsJdInputOpen] = useState(false);
     const [isGeneratingJd, setIsGeneratingJd] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-    const handleAutofillJd = async () => {
+    const executeAutofillJd = async () => {
         const effectiveRole = String(resumeData.targetRole || resumeData.occupation || '').trim();
-        if (!effectiveRole) {
-            alert('Please specify a target role or occupation in Step 1 (Heading) first.');
-            return;
-        }
-        if (targetJd && targetJd.trim().length >= 30) {
-            const confirmed = window.confirm(
-                `Your target requirements already contain text. Do you want to replace it with AI-generated requirements for "${effectiveRole}"?`
-            );
-            if (!confirmed) return;
-        }
+        if (!effectiveRole) return;
+
+        setShowConfirmModal(false);
         setIsGeneratingJd(true);
         try {
             const res = await generateUserAiContent('generate-job-description', {
@@ -73,6 +68,19 @@ export default function ReviewStep({
         } finally {
             setIsGeneratingJd(false);
         }
+    };
+
+    const handleAutofillJd = () => {
+        const effectiveRole = String(resumeData.targetRole || resumeData.occupation || '').trim();
+        if (!effectiveRole) {
+            alert('Please specify a target role or occupation in Step 1 (Heading) first.');
+            return;
+        }
+        if (targetJd && targetJd.trim().length >= 30) {
+            setShowConfirmModal(true);
+            return;
+        }
+        executeAutofillJd();
     };
 
     // Sync targetJd if resumeData is updated externally (e.g. via top ATS gauge)
@@ -460,6 +468,14 @@ export default function ReviewStep({
                     </div>
                 </aside>
             </div>
+            <ConfirmRegenerateModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={executeAutofillJd}
+                targetRole={String(resumeData.targetRole || resumeData.occupation || '').trim()}
+                existingTextSnippet={targetJd}
+                isGenerating={isGeneratingJd}
+            />
         </div>
     );
 }

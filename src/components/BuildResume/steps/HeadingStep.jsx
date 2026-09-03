@@ -5,6 +5,7 @@ import StepShell from '../components/StepShell.jsx';
 import Field from '../components/Field.jsx';
 import AutocompleteInputField from './components/AutocompleteInputField';
 import PhotoUpload from './components/PhotoUpload';
+import ConfirmRegenerateModal from './components/ConfirmRegenerateModal';
 import { getCandidateContext, extractTargetRoleFromJd } from '../../../utils/candidateContext';
 import { extractJdKeywords } from '../../../utils/atsScore';
 import { generateUserAiContent } from '../../../services/aiService';
@@ -108,6 +109,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const [isGeneratingJd, setIsGeneratingJd] = useState(false);
     const [jdAutofillMessage, setJdAutofillMessage] = useState('');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
     const [aiRoleSuggestions, setAiRoleSuggestions] = useState([]);
     const [isFetchingAiRoles, setIsFetchingAiRoles] = useState(false);
@@ -396,21 +398,11 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
     };
 
-    const handleAutofillJd = async () => {
+    const executeAutofillJd = async () => {
         const effectiveRole = String(targetRole || formData.occupation || '').trim();
-        if (!effectiveRole) {
-            setJdAutofillMessage('Please enter or select a Target Job Title first.');
-            setTimeout(() => setJdAutofillMessage(''), 4000);
-            return;
-        }
+        if (!effectiveRole) return;
 
-        if (targetJd && targetJd.trim().length >= 30) {
-            const confirmed = window.confirm(
-                `Your target requirements already contain text. Do you want to replace it with AI-generated requirements for "${effectiveRole}"?`
-            );
-            if (!confirmed) return;
-        }
-
+        setShowConfirmModal(false);
         setIsGeneratingJd(true);
         setJdAutofillMessage('');
         try {
@@ -441,6 +433,22 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         } finally {
             setIsGeneratingJd(false);
         }
+    };
+
+    const handleAutofillJd = () => {
+        const effectiveRole = String(targetRole || formData.occupation || '').trim();
+        if (!effectiveRole) {
+            setJdAutofillMessage('Please enter or select a Target Job Title first.');
+            setTimeout(() => setJdAutofillMessage(''), 4000);
+            return;
+        }
+
+        if (targetJd && targetJd.trim().length >= 30) {
+            setShowConfirmModal(true);
+            return;
+        }
+
+        executeAutofillJd();
     };
 
     const completedRequiredFields = requiredFields.filter((field) => String(formData[field] || '').trim() !== '').length;
@@ -849,6 +857,14 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     </div>
                 </div>
             </form>
+            <ConfirmRegenerateModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={executeAutofillJd}
+                targetRole={String(targetRole || formData.occupation || '').trim()}
+                existingTextSnippet={targetJd}
+                isGenerating={isGeneratingJd}
+            />
         </StepShell>
     );
 };
