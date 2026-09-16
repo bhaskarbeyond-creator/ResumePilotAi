@@ -5,6 +5,7 @@ import StepShell from '../components/StepShell.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import EntryList from '../components/EntryList.jsx';
 import Field from '../components/Field.jsx';
+import AutocompleteInputField from './components/AutocompleteInputField';
 import AiPromptCard from '../components/AiPromptCard.jsx';
 import { useAiAssist } from '../ai/useAiAssist.js';
 import { canRunAssistOperation } from '../ai/aiContract.js';
@@ -166,20 +167,24 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Field
+                    <AutocompleteInputField
                         label={t('CertificationsStep.fields.title.label', 'Credential name')}
                         name={`certification-title-${certification.id}`}
-                        placeholder={getDynamicPlaceholder('certifications', 'title', candidateContext) || 'Enter the credential exactly as shown on your certificate'}
+                        placeholder={getDynamicPlaceholder('certifications', 'title', candidateContext) || 'Enter the credential (e.g. PMP, AWS Solutions Architect)'}
                         value={certTitle}
                         onChange={(e) => updateCertification(certification.id, 'title', e.target.value)}
                         required
+                        suggestionType="certification"
+                        context={candidateContext}
                     />
-                    <Field
+                    <AutocompleteInputField
                         label={t('CertificationsStep.fields.issuer.label', 'Issuing organization')}
                         name={`certification-issuer-${certification.id}`}
-                        placeholder={getDynamicPlaceholder('certifications', 'issuer', candidateContext) || 'Enter the organization that issued it'}
+                        placeholder={getDynamicPlaceholder('certifications', 'issuer', candidateContext) || 'Enter the issuing organization (e.g. PMI, AWS, Google)'}
                         value={certification.issuer || ''}
                         onChange={(e) => updateCertification(certification.id, 'issuer', e.target.value)}
+                        suggestionType="issuer"
+                        context={candidateContext}
                     />
                 </div>
 

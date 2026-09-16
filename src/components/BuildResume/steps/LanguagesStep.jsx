@@ -167,12 +167,15 @@ const LanguagesStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         const langLevel = lang.level || 'Full Professional (Fluent)';
                         return (
                             <div key={itemKey} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                                <Field
+                                <AutocompleteInputField
                                     label={index === 0 ? 'Language' : undefined}
-                                    placeholder="e.g. English, Hindi, German"
+                                    hideLabel={index !== 0}
+                                    placeholder="e.g. English, Spanish, German, Hindi"
                                     value={langName}
                                     onChange={(e) => updateLanguage(itemKey, 'name', e.target.value)}
                                     name={`lang-name-${itemKey}`}
+                                    suggestionType="language"
+                                    context={candidateContext}
                                 />
                                 <div>
                                     <label htmlFor={`lang-level-${itemKey}`} className={index === 0 ? 'mb-1.5 block text-[13px] font-semibold text-slate-700' : 'sr-only'}>

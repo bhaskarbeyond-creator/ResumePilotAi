@@ -1409,10 +1409,29 @@ const BuildResume = () => {
                         return;
                     }
                 } catch (error) {
-                    console.warn('[BuildResume] Selected resume could not be loaded:', error.message);
+                    console.warn('[BuildResume] Selected resume could not be loaded from server:', error.message);
+                    // Fallback to local recovery envelope if available
+                    const recovery = readResumeRecovery(userId, selectedId);
+                    if (recovery?.data) {
+                        console.info('[BuildResume] Using local recovery draft for:', selectedId);
+                        applyLoaded(recovery.data, selectedId, recovery.revision || 1, true);
+                        setSaveState({ status: 'pending', message: 'Loaded from local recovery. Offline mode — changes will save when connected.' });
+                        return;
+                    }
+                    // Only discard resume ID if server definitively returned 404 (not found / deleted)
+                    if (error.status === 404) {
+                        localStorage.removeItem('currentResumeId');
+                        selectedId = null;
+                    }
                 }
-                localStorage.removeItem('currentResumeId');
-                selectedId = null;
+                // If not 404 and selectedId still exists (e.g. server outage/network error),
+                // do not discard the user's resume ID; fall back to local editing session for this ID.
+                if (selectedId) {
+                    const fallbackData = normalizeResumeData(EMPTY_RESUME);
+                    applyLoaded(fallbackData, selectedId, 0, false);
+                    setSaveState({ status: 'error', message: 'Server unreachable. Working offline — changes will save when connected.' });
+                    return;
+                }
             }
 
             let initial = normalizeResumeData(EMPTY_RESUME);
@@ -1434,14 +1453,23 @@ const BuildResume = () => {
             } catch (error) {
                 console.warn('[BuildResume] Profile prefill unavailable:', error.message);
             }
-            const created = await createResumeDraft(userId, initial);
-            applyLoaded(created.data, created.id, created.revision, false);
+            try {
+                const created = await createResumeDraft(userId, initial);
+                applyLoaded(created.data, created.id, created.revision, false);
+            } catch (createErr) {
+                console.warn('[BuildResume] Draft creation on server failed, starting offline draft:', createErr.message);
+                const localDraftId = `res_${Date.now()}`;
+                applyLoaded(initial, localDraftId, 0, false);
+                setSaveState({ status: 'error', message: 'Server unreachable. Working offline — changes will save when connected.' });
+            }
         };
 
         initialize().catch(error => {
             if (!active) return;
             console.error('[BuildResume] Resume initialization failed:', error);
-            setSaveState({ status: 'error', message: 'Resume could not be loaded. Try refreshing.' });
+            const fallbackData = normalizeResumeData(EMPTY_RESUME);
+            applyLoaded(fallbackData, `res_${Date.now()}`, 0, false);
+            setSaveState({ status: 'error', message: 'Unable to reach server. Offline draft active.' });
             setIsLoading(false);
         });
         return () => { active = false; };
@@ -1506,7 +1534,37 @@ const BuildResume = () => {
         );
     }
     if (!hasLoadedRef.current && saveState.status === 'error') {
-        return <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4"><div role="alert" className="max-w-md text-center"><h1 className="text-lg font-semibold text-slate-900">Resume unavailable</h1><p className="mt-2 text-sm text-slate-600">{saveState.message}</p><button type="button" onClick={() => { setSaveState({ status: 'idle', message: '' }); setLoadRetry(value => value + 1); }} className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Try again</button></div></main>;
+        return (
+            <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+                <div role="alert" className="max-w-md w-full text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h1 className="text-lg font-semibold text-slate-900">Resume unavailable</h1>
+                    <p className="mt-2 text-sm text-slate-600">{saveState.message}</p>
+                    <div className="mt-5 flex items-center justify-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSaveState({ status: 'idle', message: '' });
+                                setLoadRetry(value => value + 1);
+                            }}
+                            className="rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition-colors cursor-pointer"
+                        >
+                            Try again
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                localStorage.removeItem('currentResumeId');
+                                setSaveState({ status: 'idle', message: '' });
+                                setLoadRetry(value => value + 1);
+                            }}
+                            className="rounded-xl border border-slate-300 hover:bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
+                        >
+                            Start fresh draft
+                        </button>
+                    </div>
+                </div>
+            </main>
+        );
     }
 
     return (
