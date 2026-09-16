@@ -23,7 +23,7 @@ const YEARS = Array.from({ length: 60 }, (_, i) => String(currentYear - i));
  * Premium Modern Resume Month & Year Picker Component
  * Sleek unified glass control + custom dropdowns + native HTML5 calendar picker + Present toggle
  */
-export function MonthYearPicker({ label, value, onChange, disabled, showPresentCheck, isCurrent, onCurrentChange }) {
+export function MonthYearPicker({ label, value, onChange, disabled, showPresentCheck, isCurrent, onCurrentChange, headerRight }) {
     // Parse value (e.g. "Jan 2024", "2024-03", "2024", "Present")
     const parseValue = (val) => {
         if (!val || typeof val !== 'string') return { month: '', year: '' };
@@ -84,42 +84,51 @@ export function MonthYearPicker({ label, value, onChange, disabled, showPresentC
     // Calculate YYYY-MM for native picker default
     const nativeIso = (year && month && month !== 'Present') ? `${year}-${month}` : '';
 
+    const isPresentActive = Boolean(isCurrent || month === 'Present' || year === 'Present' || String(value || '').toLowerCase() === 'present');
+
     return (
         <div className="space-y-1.5 font-sans">
-            {/* Header row: Label + Integrated "I currently work here" toggle */}
-            <div className="flex items-center justify-between gap-2">
-                {label && <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">{label}</label>}
-                {showPresentCheck && (
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-                        <input
-                            type="checkbox"
-                            disabled={disabled}
-                            checked={Boolean(isCurrent)}
-                            onChange={(e) => {
-                                const checked = e.target.checked;
-                                if (onCurrentChange) onCurrentChange(checked);
-                                if (checked) onChange('Present');
-                                else onChange('');
-                            }}
-                            className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
-                        />
-                        <span className={`text-[11px] font-bold transition-colors ${isCurrent ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
-                            I currently work here
-                        </span>
-                    </label>
-                )}
-            </div>
+            {/* Header row: Render only if label, showPresentCheck, or headerRight is present */}
+            {(label || showPresentCheck || headerRight) && (
+                <div className="flex items-center justify-between gap-2 min-h-[18px]">
+                    {label ? (
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">{label}</label>
+                    ) : <span />}
+                    {headerRight}
+                    {showPresentCheck && (
+                        <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                disabled={disabled}
+                                checked={isPresentActive}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    if (onCurrentChange) onCurrentChange(checked);
+                                    if (checked) onChange('Present');
+                                    else onChange('');
+                                }}
+                                className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                            />
+                            <span className={`text-[11px] font-bold transition-colors ${isPresentActive ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                                I currently work here
+                            </span>
+                        </label>
+                    )}
+                </div>
+            )}
             
             {/* Sleek Input Control Container */}
-            <div className={`relative flex items-center bg-white border rounded-xl shadow-2xs transition-all ${
-                isCurrent 
-                    ? 'border-indigo-300 bg-indigo-50/50 text-indigo-900 ring-2 ring-indigo-500/10' 
-                    : 'border-slate-300 hover:border-indigo-400 focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500/20'
+            <div className={`relative h-10 flex items-center bg-white border rounded-xl shadow-2xs transition-all ${
+                isPresentActive 
+                    ? 'border-indigo-300 bg-indigo-50/60 text-indigo-900 ring-2 ring-indigo-500/10' 
+                    : disabled
+                    ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                    : 'border-slate-200 hover:border-slate-300 focus-within:border-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500/15'
             }`}>
                 {/* Calendar Icon Button */}
-                <div className="relative flex items-center justify-center pl-3 pr-2 py-2.5 text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors" title="Click to open interactive calendar picker">
-                    <FaCalendarAlt className={`w-3.5 h-3.5 ${isCurrent ? 'text-indigo-600' : 'text-slate-400'}`} />
-                    {!isCurrent && (
+                <div className="relative flex items-center justify-center pl-3 pr-2 h-full text-slate-400 hover:text-indigo-600 cursor-pointer transition-colors shrink-0" title="Click to open calendar picker">
+                    <FaCalendarAlt className={`w-3.5 h-3.5 ${isPresentActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                    {!isPresentActive && !disabled && (
                         <input
                             type="month"
                             disabled={disabled}
@@ -130,48 +139,62 @@ export function MonthYearPicker({ label, value, onChange, disabled, showPresentC
                     )}
                 </div>
 
-                {isCurrent ? (
-                    <div className="flex-1 py-2 px-3 text-xs font-semibold text-indigo-700 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 font-bold">
-                            <FaCheck className="w-3 h-3 text-indigo-600" />
-                            <span>Present (Active Position)</span>
+                <div className="w-px h-5 bg-slate-200/80 shrink-0" />
+
+                {isPresentActive ? (
+                    <div className="flex-1 py-1 px-2.5 text-xs font-bold text-indigo-700 flex items-center justify-between select-none whitespace-nowrap min-w-0 h-full overflow-hidden">
+                        <div className="flex items-center gap-1.5 truncate">
+                            <FaCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            <span className="truncate">Present (Current)</span>
                         </div>
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 uppercase tracking-wider">
+                        <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-indigo-100/90 text-indigo-700 uppercase tracking-wider shrink-0 ml-1">
                             Active
                         </span>
                     </div>
                 ) : (
-                    <div className="flex-1 flex items-center pr-1">
-                        {/* Month Select */}
-                        <div className="relative flex-1">
+                    <div className="flex-1 flex items-center h-full">
+                        {/* Month Select (with explicit appearance reset to prevent double chevrons) */}
+                        <div className="relative flex-1 h-full flex items-center">
                             <select
                                 disabled={disabled}
                                 value={month}
                                 onChange={(e) => handleMonthChange(e.target.value)}
-                                className="w-full text-xs py-2 pl-1.5 pr-5 bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer appearance-none">
+                                style={{
+                                    WebkitAppearance: 'none',
+                                    MozAppearance: 'none',
+                                    appearance: 'none',
+                                    backgroundImage: 'none',
+                                }}
+                                className="w-full h-full text-xs pl-2.5 pr-6 bg-transparent font-medium text-slate-800 focus:outline-none cursor-pointer select-none">
                                 <option value="">Month</option>
                                 {MONTHS.map((m) => (
                                     <option key={m.value} value={m.value}>{m.label}</option>
                                 ))}
                             </select>
-                            <FaChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400 pointer-events-none" />
+                            <FaChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400 pointer-events-none" />
                         </div>
 
-                        <span className="text-slate-300 font-light select-none px-0.5">/</span>
+                        <div className="w-px h-5 bg-slate-200/80 shrink-0" />
 
-                        {/* Year Select */}
-                        <div className="relative flex-1">
+                        {/* Year Select (with explicit appearance reset to prevent double chevrons) */}
+                        <div className="relative flex-1 h-full flex items-center">
                             <select
                                 disabled={disabled}
                                 value={year}
                                 onChange={(e) => handleYearChange(e.target.value)}
-                                className="w-full text-xs py-2 pl-1.5 pr-5 bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer appearance-none">
+                                style={{
+                                    WebkitAppearance: 'none',
+                                    MozAppearance: 'none',
+                                    appearance: 'none',
+                                    backgroundImage: 'none',
+                                }}
+                                className="w-full h-full text-xs pl-2.5 pr-6 bg-transparent font-medium text-slate-800 focus:outline-none cursor-pointer select-none">
                                 <option value="">Year</option>
                                 {YEARS.map((y) => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
                             </select>
-                            <FaChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400 pointer-events-none" />
+                            <FaChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-slate-400 pointer-events-none" />
                         </div>
                     </div>
                 )}
