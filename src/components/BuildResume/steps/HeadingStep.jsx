@@ -9,6 +9,7 @@ import ConfirmRegenerateModal from './components/ConfirmRegenerateModal';
 import { getCandidateContext, extractTargetRoleFromJd } from '../../../utils/candidateContext';
 import { extractJdKeywords } from '../../../utils/atsScore';
 import { generateUserAiContent } from '../../../services/aiService';
+import { matchUniversalDirectory } from '../../../utils/autocompleteDirectories.js';
 
 const aiRoleCache = {};
 
@@ -25,56 +26,6 @@ function getOrganicRoleProgressions(baseRole) {
         `${clean} Specialist`,
     ];
 }
-
-const UNIVERSAL_ROLE_DIRECTORY = [
-    // Tech & Engineering
-    'Software Engineer', 'Full Stack Developer', 'Frontend Developer', 'Backend Engineer',
-    'Mobile Application Developer', 'DevOps Engineer', 'Cloud Solutions Architect',
-    'Cybersecurity Analyst', 'Systems Administrator', 'Site Reliability Engineer (SRE)',
-    'QA Automation Engineer', 'Embedded Systems Engineer', 'Network Engineer',
-    // Data & AI
-    'Data Analyst', 'Data Scientist', 'Data Engineer', 'Machine Learning Engineer',
-    'Business Intelligence Analyst', 'Database Administrator', 'Analytics Engineer',
-    // Product & Management
-    'Product Manager', 'Technical Project Manager', 'Scrum Master', 'Program Manager',
-    'Operations Manager', 'General Manager', 'Chief Operating Officer (COO)',
-    // Design & Creative
-    'UI/UX Designer', 'Product Designer', 'Graphic Designer', 'Creative Director',
-    'Art Director', 'Content Strategist', 'Technical Writer', 'Video Producer',
-    // Marketing & Growth
-    'Digital Marketing Specialist', 'Growth Marketing Lead', 'SEO & Content Specialist',
-    'Social Media Manager', 'Brand Manager', 'Public Relations Specialist',
-    // Finance & Accounting
-    'Senior Accountant', 'Financial Analyst', 'Accounting Manager', 'Controller',
-    'Auditor', 'Bookkeeper', 'Tax Consultant', 'Investment Banking Analyst',
-    // Healthcare & Medicine
-    'Registered Nurse', 'Nurse Practitioner', 'Clinical Research Coordinator',
-    'Healthcare Administrator', 'Physical Therapist', 'Medical Technologist',
-    'Occupational Therapist', 'Pharmacist', 'Physician Assistant',
-    // Education & Academia
-    'High School Teacher', 'Elementary School Teacher', 'Instructional Designer',
-    'Curriculum Specialist', 'Academic Advisor', 'Corporate Trainer',
-    // Legal & Compliance
-    'Corporate Counsel', 'Paralegal', 'Compliance Officer', 'Legal Assistant', 'Contract Manager',
-    // Sales & Customer Success
-    'Account Executive', 'Sales Development Representative', 'Customer Success Manager',
-    'Business Development Manager', 'Account Manager', 'Client Relations Specialist',
-    // Architecture & Construction
-    'Architectural Designer', 'Civil Engineer', 'Structural Engineer', 'Construction Project Manager',
-    'Estimator', 'Site Superintendent',
-    // Culinary & Hospitality
-    'Executive Chef', 'Sous Chef', 'Restaurant General Manager', 'Hotel Operations Manager',
-    'Event Coordinator', 'Hospitality Director',
-    // Human Resources & People
-    'HR Business Partner', 'Talent Acquisition Specialist', 'People Operations Lead',
-    'Recruiter', 'Compensation & Benefits Specialist',
-    // Trades & Logistics
-    'Supply Chain Specialist', 'Logistics Coordinator', 'Procurement Specialist',
-    'Master Electrician', 'HVAC Technician', 'Fleet Maintenance Supervisor',
-    // Sciences & Research
-    'Research Scientist', 'Biochemist', 'Laboratory Technician', 'Environmental Specialist',
-    'Quality Control Analyst'
-];
 
 /**
  * Heading — one form card: name, contact, target title, location.
@@ -295,12 +246,12 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         // 3. Dynamic AI-generated suggestions
         const aiList = aiRoleSuggestions || [];
 
-        // If user is actively typing, filter instantly from all available sources
+        // If user is actively typing, filter and dynamically synthesize across all industries
         if (query) {
             const matchedAi = aiList.filter((r) => r.toLowerCase().includes(query));
             const matchedProg = organicProgressions.filter((r) => r.toLowerCase().includes(query));
             const matchedPast = pastRoles.filter((r) => r.toLowerCase().includes(query));
-            const matchedDirectory = UNIVERSAL_ROLE_DIRECTORY.filter((r) => r.toLowerCase().includes(query));
+            const matchedDirectory = matchUniversalDirectory('jobTitle', query, 12);
 
             const combined = [...matchedAi, ...matchedProg, ...matchedPast, ...matchedDirectory];
             const seen = new Set();
@@ -316,14 +267,34 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
 
         // When query is empty (focused or cleared):
-        const initialCombined = [
-            ...organicProgressions,
-            ...pastRoles,
-            ...UNIVERSAL_ROLE_DIRECTORY.slice(0, 10),
-        ];
+        // Dynamically derive recommendations from candidate context or diverse modern careers
+        let initialSources = [...organicProgressions, ...pastRoles];
+
+        if (initialSources.length === 0 && resumeData?.educations?.length) {
+            const eduField = resumeData.educations[0]?.degree || resumeData.educations[0]?.fieldOfStudy || '';
+            if (eduField) {
+                const eduMatches = matchUniversalDirectory('jobTitle', eduField.split(/\s+/)[0] || '', 6);
+                initialSources = [...initialSources, ...eduMatches];
+            }
+        }
+
+        if (initialSources.length === 0) {
+            // Balanced, cross-industry modern careers across Healthcare, Finance, Engineering, Management, Creative, and Tech
+            initialSources = [
+                'Registered Nurse (RN)',
+                'Senior Financial Analyst',
+                'Software Engineer',
+                'Product Manager',
+                'Civil Project Engineer',
+                'UI/UX Product Designer',
+                'Operations Manager',
+                'Cybersecurity Specialist',
+            ];
+        }
+
         const seen = new Set();
         const unique = [];
-        for (const item of initialCombined) {
+        for (const item of initialSources) {
             const norm = String(item || '').trim().toLowerCase();
             if (norm && !seen.has(norm)) {
                 seen.add(norm);
@@ -331,7 +302,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             }
         }
         return unique.slice(0, 8);
-    }, [targetRole, formData.occupation, aiRoleSuggestions, resumeData?.employments]);
+    }, [targetRole, formData.occupation, aiRoleSuggestions, resumeData?.employments, resumeData?.educations]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

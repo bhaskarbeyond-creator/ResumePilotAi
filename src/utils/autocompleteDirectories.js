@@ -273,8 +273,394 @@ export const UNIVERSAL_JOB_TITLES = Object.freeze([
 ]);
 
 /**
+ * Dynamic Domain-Aware Autocomplete Synthesizer
+ * Generates rich, grammatically and semantically valid completions matching ANY prefix
+ * across all professional industries (Healthcare, Aviation, Trades, Law, Culinary, Tech, etc.)
+ */
+export function synthesizeDynamicSuggestions(directoryType, query = '', _context = null, maxResults = 8) {
+    if (!query || typeof query !== 'string') return [];
+    const cleanQ = query.trim();
+    if (!cleanQ) return [];
+
+    const normType = String(directoryType || '').toLowerCase();
+    const cleanQLower = cleanQ.toLowerCase();
+    const titleCaseQ = cleanQ.split(/\s+/).map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '').join(' ');
+    const cleanQStripped = cleanQLower.replace(/[^a-z0-9]/g, '');
+
+    const suggestions = [];
+
+    if (normType === 'jobtitle' || normType === 'occupation' || normType === 'title' || normType === 'role') {
+        // 1. Domain-specific dictionary expansions based on prefix detection
+        if (/cardio/i.test(cleanQLower)) {
+            suggestions.push(
+                'Cardiologist', 'Cardiology Fellow', 'Cardiovascular Technologist',
+                'Cardiothoracic Surgeon', 'Pediatric Cardiologist', 'Cardiac Nurse Practitioner',
+                'Cardiovascular Perfusionist', 'Director of Cardiology'
+            );
+        } else if (/neuro/i.test(cleanQLower)) {
+            suggestions.push(
+                'Neurologist', 'Neurosurgeon', 'Neuroscience Researcher',
+                'Neurointensive Care Nurse', 'Neurodiagnostic Technologist', 'Neurology Physician Assistant'
+            );
+        } else if (/pediat/i.test(cleanQLower)) {
+            suggestions.push(
+                'Pediatrician', 'Pediatric Nurse', 'Pediatric Surgeon',
+                'Pediatric Intensive Care Specialist', 'Pediatric Nurse Practitioner', 'Pediatric Medical Assistant'
+            );
+        } else if (/dent/i.test(cleanQLower)) {
+            suggestions.push(
+                'General Dentist', 'Dental Hygienist', 'Dental Assistant',
+                'Orthodontist', 'Periodontist', 'Dental Practice Manager'
+            );
+        } else if (/nurs/i.test(cleanQLower)) {
+            suggestions.push(
+                'Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Critical Care Registered Nurse (CCRN)',
+                'Charge Nurse', 'Clinical Nurse Specialist (CNS)', 'Nurse Manager'
+            );
+        } else if (/surg/i.test(cleanQLower)) {
+            suggestions.push(
+                'General Surgeon', 'Surgical Technologist', 'Surgical Assistant',
+                'Trauma Surgeon', 'Operating Room Nurse (OR RN)', 'Orthopedic Surgeon'
+            );
+        } else if (/pharm/i.test(cleanQLower)) {
+            suggestions.push(
+                'Clinical Pharmacist', 'Staff Pharmacist', 'Pharmacy Technician',
+                'Director of Pharmacy', 'Pharmacologist', 'Inpatient Pharmacist'
+            );
+        } else if (/pilot/i.test(cleanQLower)) {
+            suggestions.push(
+                'Commercial Pilot', 'Airline Transport Pilot (ATP)', 'Chief Pilot',
+                'First Officer (Pilot)', 'Flight Instructor (CFI)', 'Test Pilot',
+                'Helicopter Pilot', 'Corporate Jet Pilot'
+            );
+        } else if (/flight/i.test(cleanQLower)) {
+            suggestions.push(
+                'Flight Attendant', 'Flight Instructor', 'Flight Operations Manager',
+                'Flight Dispatcher', 'Flight Test Engineer', 'Flight Safety Officer'
+            );
+        } else if (/aero/i.test(cleanQLower)) {
+            suggestions.push(
+                'Aerospace Engineer', 'Aeronautical Systems Specialist', 'Aerodynamics Engineer',
+                'Avionics Technician', 'Aerospace Project Manager', 'Aerospace Stress Analyst'
+            );
+        } else if (/plumb/i.test(cleanQLower)) {
+            suggestions.push(
+                'Licensed Master Plumber', 'Journeyman Plumber', 'Commercial Plumber',
+                'Plumbing Contractor', 'Plumbing Inspector', 'Service Plumber'
+            );
+        } else if (/weld/i.test(cleanQLower)) {
+            suggestions.push(
+                'Certified Welder', 'Pipe Welder', 'Structural Welder',
+                'MIG / TIG Welder', 'Welding Inspector (CWI)', 'Fabrication Welder'
+            );
+        } else if (/elec/i.test(cleanQLower)) {
+            suggestions.push(
+                'Master Electrician', 'Journeyman Electrician', 'Industrial Electrician',
+                'Electrical Systems Technician', 'Electrical Project Manager', 'Electrical Engineer'
+            );
+        } else if (/carp/i.test(cleanQLower)) {
+            suggestions.push(
+                'Master Carpenter', 'Framing Carpenter', 'Finish Carpenter',
+                'Cabinet Maker', 'Carpentry Foreman', 'Commercial Carpenter'
+            );
+        } else if (/hvac/i.test(cleanQLower)) {
+            suggestions.push(
+                'HVAC Service Technician', 'Commercial HVAC Specialist', 'HVAC Installation Lead',
+                'HVAC Project Manager', 'Refrigeration & HVAC Mechanic'
+            );
+        } else if (/machin/i.test(cleanQLower)) {
+            suggestions.push(
+                'CNC Machinist', 'Precision Machinist', 'Tool & Die Maker',
+                'Manual Machinist', 'Machining Supervisor', 'CNC Programmer'
+            );
+        } else if (/paral/i.test(cleanQLower)) {
+            suggestions.push(
+                'Senior Paralegal', 'Litigation Paralegal', 'Corporate Paralegal',
+                'Certified Paralegal (CP)', 'Intellectual Property Paralegal', 'Real Estate Paralegal'
+            );
+        } else if (/attorn|law/i.test(cleanQLower)) {
+            suggestions.push(
+                'Corporate Attorney', 'Associate Attorney', 'Trial Attorney',
+                'Senior Legal Counsel', 'Litigation Lawyer', 'General Counsel', 'Staff Attorney'
+            );
+        } else if (/compli/i.test(cleanQLower)) {
+            suggestions.push(
+                'Compliance Officer', 'Chief Compliance Officer (CCO)', 'Regulatory Compliance Specialist',
+                'AML / KYC Compliance Analyst', 'Corporate Governance Specialist'
+            );
+        } else if (/chef/i.test(cleanQLower)) {
+            suggestions.push(
+                'Executive Chef', 'Sous Chef', 'Pastry Chef',
+                'Head Chef', 'Private Chef', 'Chef de Cuisine', 'Chef de Partie'
+            );
+        } else if (/cook/i.test(cleanQLower)) {
+            suggestions.push(
+                'Lead Line Cook', 'Prep Cook', 'Short Order Cook',
+                'Institutional Cook', 'Catering Cook'
+            );
+        } else if (/baris/i.test(cleanQLower)) {
+            suggestions.push(
+                'Lead Barista', 'Head Barista', 'Coffee Roaster & Barista',
+                'Barista Trainer', 'Cafe Supervisor'
+            );
+        } else if (/hotel/i.test(cleanQLower)) {
+            suggestions.push(
+                'Hotel General Manager', 'Hotel Front Desk Supervisor', 'Hotel Operations Manager',
+                'Guest Relations Lead', 'Hotel Revenue Manager'
+            );
+        } else if (/accoun/i.test(cleanQLower)) {
+            suggestions.push(
+                'Senior Accountant', 'Staff Accountant', 'Accounting Manager',
+                'Cost Accountant', 'Certified Public Accountant (CPA)', 'Forensic Accountant'
+            );
+        } else if (/audit/i.test(cleanQLower)) {
+            suggestions.push(
+                'Internal Auditor', 'Senior Auditor', 'Lead Quality Auditor',
+                'IT Audit Specialist', 'Financial Auditor', 'Compliance Auditor'
+            );
+        } else if (/tax/i.test(cleanQLower)) {
+            suggestions.push(
+                'Tax Accountant', 'Senior Tax Manager', 'Tax Consultant',
+                'International Tax Specialist', 'Tax Analyst', 'Corporate Tax Director'
+            );
+        } else if (/actua/i.test(cleanQLower)) {
+            suggestions.push(
+                'Actuarial Analyst', 'Associate Actuary', 'Senior Consulting Actuary',
+                'Life & Health Actuary', 'Pricing Actuary'
+            );
+        } else if (/bank/i.test(cleanQLower)) {
+            suggestions.push(
+                'Investment Banking Analyst', 'Commercial Banking Officer', 'Branch Banking Manager',
+                'Credit Analyst', 'Private Banker'
+            );
+        } else if (/civil/i.test(cleanQLower)) {
+            suggestions.push(
+                'Civil Engineer', 'Senior Civil Engineer', 'Civil Project Manager',
+                'Civil Design Engineer', 'Structural / Civil Engineer', 'Transportation Civil Engineer'
+            );
+        } else if (/struct/i.test(cleanQLower)) {
+            suggestions.push(
+                'Structural Engineer', 'Senior Structural Designer', 'Structural Project Engineer',
+                'Bridge Structural Engineer', 'Structural Forensic Engineer'
+            );
+        } else if (/mech/i.test(cleanQLower)) {
+            suggestions.push(
+                'Mechanical Engineer', 'Senior Mechanical Engineer', 'HVAC / Mechanical Designer',
+                'Mechanical Systems Specialist', 'Electromechanical Engineer'
+            );
+        } else if (/archit/i.test(cleanQLower)) {
+            suggestions.push(
+                'Architectural Designer', 'Licensed Architect', 'Project Architect',
+                'Landscape Architect', 'Naval Architect', 'Enterprise Architect'
+            );
+        } else if (/teach/i.test(cleanQLower)) {
+            suggestions.push(
+                'High School Teacher', 'Elementary School Teacher', 'Special Education Teacher',
+                'STEM Teacher', 'Lead Science Teacher', 'Instructional Coach'
+            );
+        } else if (/prof/i.test(cleanQLower)) {
+            suggestions.push(
+                'Assistant Professor', 'Associate Professor', 'Adjunct Professor',
+                'Distinguished Professor', 'Research Professor', 'Professor of Practice'
+            );
+        } else if (/art/i.test(cleanQLower)) {
+            suggestions.push(
+                'Art Director', 'Concept Artist', 'Storyboard Artist',
+                'Technical Artist', 'Digital Artist', 'Visual Development Artist'
+            );
+        } else if (/anim/i.test(cleanQLower)) {
+            suggestions.push(
+                '3D Animator', 'Character Animator', 'Motion Graphics Animator',
+                '2D Animator', 'Lead Technical Animator'
+            );
+        } else if (/video/i.test(cleanQLower)) {
+            suggestions.push(
+                'Video Editor', 'Video Producer', 'Videographer',
+                'Post-Production Specialist', 'Senior Motion Video Lead'
+            );
+        } else if (/kube/i.test(cleanQLower)) {
+            suggestions.push(
+                'Kubernetes Administrator', 'Kubernetes Platform Engineer', 'DevOps Engineer (Kubernetes)',
+                'Cloud Infrastructure Engineer (K8s)', 'Site Reliability Engineer (Kubernetes)'
+            );
+        } else if (/pyth/i.test(cleanQLower)) {
+            suggestions.push(
+                'Python Developer', 'Senior Python Engineer', 'Python Data Engineer',
+                'Python Backend Developer', 'Machine Learning Engineer (Python)'
+            );
+        } else if (/react/i.test(cleanQLower)) {
+            suggestions.push(
+                'React Developer', 'Senior React.js Engineer', 'React Native Developer',
+                'Frontend Engineer (React)', 'Full Stack React / Node Engineer'
+            );
+        } else if (/cyber/i.test(cleanQLower)) {
+            suggestions.push(
+                'Cybersecurity Analyst', 'Information Security Officer', 'SOC Analyst',
+                'Penetration Tester', 'Cybersecurity Engineer', 'Cloud Security Architect'
+            );
+        }
+
+        // 2. Open-ended hierarchical role synthesis for ANY query string
+        suggestions.push(
+            `Senior ${titleCaseQ}`,
+            `Lead ${titleCaseQ}`,
+            `${titleCaseQ} Specialist`,
+            `${titleCaseQ} Manager`,
+            `Principal ${titleCaseQ}`,
+            `${titleCaseQ} Consultant`,
+            `${titleCaseQ} Coordinator`,
+            `Director of ${titleCaseQ}`,
+            `Associate ${titleCaseQ}`,
+            `${titleCaseQ} Analyst`,
+            `${titleCaseQ} Engineer`,
+            `${titleCaseQ} Supervisor`,
+            `Chief ${titleCaseQ} Officer`
+        );
+    } else if (normType === 'company' || normType === 'employer' || normType === 'organization') {
+        suggestions.push(
+            `${titleCaseQ} Technologies`,
+            `${titleCaseQ} Global`,
+            `${titleCaseQ} Solutions`,
+            `${titleCaseQ} Health System`,
+            `${titleCaseQ} Group`,
+            `${titleCaseQ} Industries`,
+            `${titleCaseQ} Systems`,
+            `${titleCaseQ} Labs`,
+            `${titleCaseQ} Partners`,
+            `${titleCaseQ} Services`,
+            `${titleCaseQ} Corporation`,
+            `${titleCaseQ} International`
+        );
+    } else if (normType === 'school' || normType === 'university' || normType === 'institution' || normType === 'college') {
+        suggestions.push(
+            `${titleCaseQ} University`,
+            `${titleCaseQ} State University`,
+            `University of ${titleCaseQ}`,
+            `${titleCaseQ} Institute of Technology`,
+            `${titleCaseQ} College`,
+            `${titleCaseQ} Medical School`,
+            `${titleCaseQ} Graduate School of Business`,
+            `${titleCaseQ} Academy of Science`,
+            `${titleCaseQ} Polytechnic Institute`
+        );
+    } else if (normType === 'degree' || normType === 'qualification') {
+        suggestions.push(
+            `Bachelor of Science in ${titleCaseQ} (B.S.)`,
+            `Master of Science in ${titleCaseQ} (M.S.)`,
+            `Bachelor of Arts in ${titleCaseQ} (B.A.)`,
+            `Master of Arts in ${titleCaseQ} (M.A.)`,
+            `Doctor of Philosophy in ${titleCaseQ} (Ph.D.)`,
+            `Associate of Science in ${titleCaseQ} (A.S.)`,
+            `Bachelor of Engineering in ${titleCaseQ} (B.E.)`,
+            `Master of Engineering in ${titleCaseQ} (M.Eng)`,
+            `Postgraduate Diploma in ${titleCaseQ}`,
+            `Executive Certificate in ${titleCaseQ}`
+        );
+    } else if (normType === 'certification' || normType === 'credential') {
+        if (/aws/i.test(cleanQLower)) {
+            suggestions.push(
+                'AWS Certified Solutions Architect – Associate',
+                'AWS Certified Solutions Architect – Professional',
+                'AWS Certified Developer – Associate',
+                'AWS Certified DevOps Engineer – Professional',
+                'AWS Certified Security – Specialty'
+            );
+        } else if (/azure/i.test(cleanQLower)) {
+            suggestions.push(
+                'Microsoft Certified: Azure Fundamentals (AZ-900)',
+                'Microsoft Certified: Azure Administrator (AZ-104)',
+                'Microsoft Certified: Azure Solutions Architect Expert (AZ-305)',
+                'Microsoft Certified: Azure DevOps Engineer Expert (AZ-400)'
+            );
+        } else if (/gcp|google cloud/i.test(cleanQLower)) {
+            suggestions.push(
+                'Google Cloud Certified Professional Cloud Architect',
+                'Google Cloud Certified Associate Cloud Engineer',
+                'Google Cloud Certified Professional Data Engineer'
+            );
+        } else if (/cpa/i.test(cleanQLower)) {
+            suggestions.push(
+                'Certified Public Accountant (CPA)',
+                'CPA Licensed Practice Credential',
+                'AICPA Certificate of Educational Achievement'
+            );
+        } else if (/pmp/i.test(cleanQLower)) {
+            suggestions.push(
+                'Project Management Professional (PMP)',
+                'PMI Agile Certified Practitioner (PMI-ACP)',
+                'PMI Risk Management Professional (PMI-RMP)'
+            );
+        } else if (/faa/i.test(cleanQLower)) {
+            suggestions.push(
+                'FAA Commercial Pilot Certificate',
+                'FAA Airline Transport Pilot (ATP)',
+                'FAA Certified Flight Instructor (CFI)',
+                'FAA Remote Pilot Certificate (Part 107)'
+            );
+        }
+
+        suggestions.push(
+            `Certified ${titleCaseQ} Professional (CPP)`,
+            `${titleCaseQ} Specialist Certification`,
+            `Licensed ${titleCaseQ} Practitioner`,
+            `Advanced ${titleCaseQ} Credential`,
+            `Certified ${titleCaseQ} Associate`,
+            `Professional ${titleCaseQ} Certificate`,
+            `Master ${titleCaseQ} Certification`,
+            `${titleCaseQ} Fundamentals Certified`
+        );
+    } else if (normType === 'issuer') {
+        suggestions.push(
+            `${titleCaseQ} Institute`,
+            `${titleCaseQ} Association`,
+            `${titleCaseQ} Board of Examiners`,
+            `International ${titleCaseQ} Society`,
+            `National ${titleCaseQ} Council`,
+            `American ${titleCaseQ} Academy`,
+            `${titleCaseQ} Global Consortium`
+        );
+    } else if (normType === 'skill' || normType === 'skills') {
+        suggestions.push(
+            titleCaseQ,
+            `${titleCaseQ} Architecture`,
+            `${titleCaseQ} Management`,
+            `${titleCaseQ} Analysis`,
+            `${titleCaseQ} Engineering`,
+            `${titleCaseQ} Best Practices`,
+            `Advanced ${titleCaseQ}`,
+            `${titleCaseQ} Optimization`,
+            `${titleCaseQ} Troubleshooting`,
+            `${titleCaseQ} Integration`
+        );
+    } else if (normType === 'city' || normType === 'location') {
+        suggestions.push(
+            `${titleCaseQ}, United States`,
+            `${titleCaseQ}, Canada`,
+            `${titleCaseQ}, United Kingdom`,
+            `${titleCaseQ}, Australia`,
+            `${titleCaseQ}, India`,
+            `${titleCaseQ}, Germany`
+        );
+    } else {
+        return [];
+    }
+
+    // Filter strictly to items containing the query characters
+    const matched = suggestions.filter(item => {
+        const itemLower = String(item || '').toLowerCase();
+        if (itemLower.includes(cleanQLower)) return true;
+        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
+        return false;
+    });
+
+    const unique = [...new Set(matched.map(s => String(s).trim()))].filter(Boolean);
+    return unique.slice(0, maxResults);
+}
+
+/**
  * Universal instant matcher function across all directory types.
- * Matches prefix first, then substring, case-insensitively, returning up to maxResults.
+ * Matches seed directory first, then seamlessly blends dynamic synthesis
+ * so user never receives an empty or artificially limited dropdown.
  */
 export function matchUniversalDirectory(directoryType, query = '', maxResults = 8) {
     if (!query || typeof query !== 'string') return [];
@@ -304,7 +690,7 @@ export function matchUniversalDirectory(directoryType, query = '', maxResults = 
         return [];
     }
 
-    // Prioritize prefix match first, then word-boundary match, then general substring, then flexible punctuation-agnostic match
+    // Prioritize prefix match first, then word-boundary match, then general substring
     const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
     const prefixMatches = [];
     const wordMatches = [];
@@ -324,6 +710,15 @@ export function matchUniversalDirectory(directoryType, query = '', maxResults = 
         }
     }
 
-    const combined = [...prefixMatches, ...wordMatches, ...substringMatches, ...flexibleMatches];
-    return [...new Set(combined)].slice(0, maxResults);
+    const combinedSeed = [...new Set([...prefixMatches, ...wordMatches, ...substringMatches, ...flexibleMatches])];
+
+    // If seed matches are less than maxResults, seamlessly synthesize dynamic suggestions
+    if (combinedSeed.length < maxResults) {
+        const synthesized = synthesizeDynamicSuggestions(directoryType, query, null, maxResults);
+        const blended = [...new Set([...combinedSeed, ...synthesized])];
+        return blended.slice(0, maxResults);
+    }
+
+    return combinedSeed.slice(0, maxResults);
 }
+
