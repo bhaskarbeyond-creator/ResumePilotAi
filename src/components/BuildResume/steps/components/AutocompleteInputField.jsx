@@ -1,53 +1,106 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateUserAiContent } from '../../../../services/aiService';
+import { matchUniversalDirectory } from '../../../../utils/autocompleteDirectories.js';
 
 /**
- * AutocompleteInputField — profile-grounded input suggestions.
+ * AutocompleteInputField — profile-grounded and universal directory suggestions.
  *
- * Decoupled from the removed profession taxonomy: local suggestions come ONLY
- * from the candidate's own data (their titles, their skills), and remote
- * suggestions come from the evidence-grounded `autocomplete` AI operation.
- * Identity fields (employers, schools, cities, credentials) intentionally get
- * no suggestions — they require the candidate's own entries.
+ * Provides instant 0ms keystroke matching for:
+ * - Companies / Employers / Organizations
+ * - Schools / Colleges / Universities / Institutions
+ * - Degrees / Qualifications
+ * - Job Titles / Occupations
+ * - Skills
+ * - Languages
+ * - Certifications & Issuing Organizations
+ *
+ * Backed by background AI enrichment on debounce.
  */
 
 const suggestionCache = {};
 
-// The subset of fields the backend autocomplete contract supports.
+// All fields supported for typing suggestions and AI enrichment
 const AI_AUTOCOMPLETE_TYPES = new Set([
-    'jobTitle', 'occupation', 'degree', 'skill', 'language',
-    'hobby', 'hobbies', 'interest', 'interests',
+    'jobTitle', 'occupation', 'degree', 'qualification', 'skill', 'skills',
+    'language', 'hobby', 'hobbies', 'interest', 'interests',
+    'company', 'employer', 'organization',
+    'school', 'university', 'institution', 'college',
+    'certification', 'credential', 'issuer',
 ]);
 
 /**
- * Local candidates derived from the candidate's OWN data only.
- * `context` = getCandidateContext() output (facts, target, …).
+ * Extract candidate verified profile facts for this field type.
  */
-function getLocalProfileSuggestions(suggestionType, query = '', context = null) {
-    if (!context) return [];
+function getProfileCandidates(suggestionType, context) {
     const normField = String(suggestionType || '').toLowerCase();
     let candidates = [];
 
-    if (normField === 'jobtitle' || normField === 'occupation') {
-        candidates = [
-            context.target?.role,
-            context.facts?.headline,
-            ...((context.facts?.roles || []).map(r => r.title)),
-        ];
-    } else if (normField === 'skill') {
-        candidates = [...((context.facts?.skills || []))];
-    } else if (normField === 'language') {
-        candidates = [...((context.facts?.languages || []).map(l => l.name))];
-    } else {
-        // identity/credential fields: no local candidates by design
-        candidates = [];
+    if (context && context.facts) {
+        if (normField === 'jobtitle' || normField === 'occupation' || normField === 'title' || normField === 'role') {
+            candidates = [
+                context.target?.role,
+                context.facts?.headline,
+                ...((context.facts?.roles || []).map(r => r.title)),
+            ];
+        } else if (normField === 'company' || normField === 'employer' || normField === 'organization') {
+            candidates = [
+                ...((context.facts?.roles || []).map(r => r.company)),
+            ];
+        } else if (normField === 'school' || normField === 'university' || normField === 'institution' || normField === 'college') {
+            candidates = [
+                ...((context.facts?.education || []).map(e => e.school)),
+            ];
+        } else if (normField === 'degree' || normField === 'qualification') {
+            candidates = [
+                ...((context.facts?.education || []).map(e => e.degree)),
+            ];
+        } else if (normField === 'skill' || normField === 'skills') {
+            candidates = [...((context.facts?.skills || []))];
+        } else if (normField === 'language') {
+            candidates = [...((context.facts?.languages || []).map(l => l.name))];
+        } else if (normField === 'certification' || normField === 'credential') {
+            candidates = [
+                ...((context.facts?.certifications || []).map(c => c.title || c.name)),
+            ];
+        } else if (normField === 'issuer') {
+            candidates = [
+                ...((context.facts?.certifications || []).map(c => c.issuer)),
+            ];
+        }
     }
 
+    return [...new Set(candidates.map(v => String(v || '').trim()).filter(Boolean))];
+}
+
+/**
+ * Local suggestions derived from the candidate's verified profile data AND
+ * the universal global directory (companies, universities, degrees, skills).
+ * Strictly filtered by the user's typed query to prevent irrelevant suggestions.
+ */
+function getLocalProfileSuggestions(suggestionType, query = '', context = null) {
     const cleanQ = String(query || '').trim().toLowerCase();
-    const unique = [...new Set(candidates.map(v => String(v || '').trim()).filter(Boolean))];
-    if (!cleanQ) return unique.slice(0, 6);
-    return unique.filter(item => item.toLowerCase().includes(cleanQ)).slice(0, 6);
+    const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
+    const profileCandidates = getProfileCandidates(suggestionType, context);
+
+    if (!cleanQ) {
+        // When query is empty, show ONLY actual verified profile entries if any exist
+        return profileCandidates.slice(0, 8);
+    }
+
+    // Blend profile data with universal directory for instant 0ms matching
+    const directoryMatches = matchUniversalDirectory(suggestionType, query, 12);
+    const combinedCandidates = [...profileCandidates, ...directoryMatches];
+
+    // Filter strictly by query
+    const matched = combinedCandidates.filter(item => {
+        const itemLower = String(item || '').toLowerCase();
+        if (itemLower.includes(cleanQ)) return true;
+        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
+        return false;
+    });
+
+    return [...new Set(matched.map(v => String(v || '').trim()).filter(Boolean))].slice(0, 8);
 }
 
 const AutocompleteInputField = ({
@@ -81,10 +134,13 @@ const AutocompleteInputField = ({
     const requestControllerRef = useRef(null);
     const isUserTypingRef = useRef(false);
 
-    // Fetch AI suggestions (evidence-grounded; identity fields never call it).
+    // Fetch AI suggestions (strictly query-constrained; never returns irrelevant items).
     const fetchSuggestions = async (queryVal = '', forceOpen = false) => {
         const query = String(queryVal || '').trim();
+        const cleanQ = query.toLowerCase();
+        const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
         const localList = getLocalProfileSuggestions(suggestionType, query, context);
+
         if (!AI_AUTOCOMPLETE_TYPES.has(suggestionType)) {
             setSuggestions(localList);
             setShowDropdown(forceOpen || isUserTypingRef.current ? localList.length > 0 : showDropdown);
@@ -96,10 +152,16 @@ const AutocompleteInputField = ({
             if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
         }
 
-        const cacheKey = `${suggestionType}_${context?.profileHash || ''}_${query.toLowerCase()}`;
+        // Only call AI if user typed at least 2 characters to prevent unnecessary requests
+        if (cleanQ.length > 0 && cleanQ.length < 2) {
+            return;
+        }
+
+        const cacheKey = `${suggestionType}_${context?.profileHash || ''}_${cleanQ}`;
         if (suggestionCache[cacheKey]) {
-            setSuggestions(suggestionCache[cacheKey]);
-            if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
+            const cached = suggestionCache[cacheKey];
+            setSuggestions(cached);
+            if (forceOpen || isUserTypingRef.current) setShowDropdown(cached.length > 0);
             return;
         }
 
@@ -121,12 +183,42 @@ const AutocompleteInputField = ({
             }, { signal: requestController.signal });
 
             if (res && Array.isArray(res.suggestions) && res.suggestions.length > 0) {
-                const combined = [...new Set([...res.suggestions, ...localList].map(s => String(s).trim()))].filter(Boolean);
-                suggestionCache[cacheKey] = combined;
-                setSuggestions(combined);
-                if (forceOpen || isUserTypingRef.current) setShowDropdown(combined.length > 0);
+                // STRICT INVARIANT: Suggestions must contain the user's typed query
+                const matchingAi = cleanQ
+                    ? res.suggestions.filter(item => {
+                        const itemLower = String(item || '').toLowerCase();
+                        if (itemLower.includes(cleanQ)) return true;
+                        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
+                        return false;
+                    })
+                    : res.suggestions;
+
+                const combined = [...new Set([...localList, ...matchingAi].map(s => String(s).trim()))].filter(Boolean);
+                const finalSuggestions = cleanQ
+                    ? combined.filter(item => {
+                        const itemLower = String(item || '').toLowerCase();
+                        if (itemLower.includes(cleanQ)) return true;
+                        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
+                        return false;
+                    }).slice(0, 8)
+                    : combined.slice(0, 8);
+
+                if (finalSuggestions.length > 0) {
+                    suggestionCache[cacheKey] = finalSuggestions;
+                    setSuggestions(finalSuggestions);
+                    if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
+                } else if (localList.length > 0) {
+                    setSuggestions(localList);
+                    if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
+                } else {
+                    setSuggestions([]);
+                    setShowDropdown(false);
+                }
             } else if (localList.length > 0) {
                 setSuggestions(localList);
+            } else {
+                setSuggestions([]);
+                setShowDropdown(false);
             }
         } catch (err) {
             if (err?.name !== 'AbortError' && localList.length > 0) {
@@ -152,15 +244,22 @@ const AutocompleteInputField = ({
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
         if (!isUserTypingRef.current || disabled) return undefined;
 
-        if (!safeValue || String(safeValue).trim().length < 1) {
-            const localList = getLocalProfileSuggestions(suggestionType, '', context);
+        // Instant (0ms) local directory & profile matching on every keystroke
+        const localList = getLocalProfileSuggestions(suggestionType, safeValue, context);
+        if (localList.length > 0) {
             setSuggestions(localList);
-            setShowDropdown(localList.length > 0);
-            return undefined;
+            setShowDropdown(true);
+        } else {
+            setSuggestions([]);
+            setShowDropdown(false);
         }
-        debounceTimer.current = setTimeout(() => {
-            if (isUserTypingRef.current) fetchSuggestions(safeValue);
-        }, 350);
+
+        // Background AI enrichment on 350ms debounce
+        if (safeValue && String(safeValue).trim().length >= 2) {
+            debounceTimer.current = setTimeout(() => {
+                if (isUserTypingRef.current) fetchSuggestions(safeValue);
+            }, 350);
+        }
         return () => {
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
         };
@@ -194,6 +293,18 @@ const AutocompleteInputField = ({
             isUserTypingRef.current = false;
         } else {
             isUserTypingRef.current = true;
+            const cleanVal = String(safeValue || '').trim();
+            if (!cleanVal) {
+                // If input is empty, load profile entries or top directory suggestions for browsing
+                const profileCandidates = getProfileCandidates(suggestionType, context);
+                const directoryMatches = matchUniversalDirectory(suggestionType, '', 8);
+                const combined = [...new Set([...profileCandidates, ...directoryMatches])].slice(0, 8);
+                if (combined.length > 0) {
+                    setSuggestions(combined);
+                    setShowDropdown(true);
+                    return;
+                }
+            }
             fetchSuggestions(safeValue, true);
         }
     };
@@ -224,6 +335,61 @@ const AutocompleteInputField = ({
         if (typeof onKeyDown === 'function') onKeyDown(e);
     };
 
+    // Dynamically compute accurate title based on field type and source
+    const getDropdownTitle = () => {
+        const cleanQ = String(safeValue || '').trim();
+        const profileCandidates = getProfileCandidates(suggestionType, context);
+        const isPureProfile = !cleanQ && suggestions.length > 0 && suggestions.every(s => profileCandidates.includes(s));
+        if (isPureProfile) {
+            return t('Autocomplete.fromYourProfile', 'From your profile');
+        }
+        const norm = String(suggestionType || '').toLowerCase();
+        if (norm.includes('school') || norm.includes('university') || norm.includes('college') || norm.includes('institution')) {
+            return t('Autocomplete.suggestedSchools', 'Suggested Institutions');
+        }
+        if (norm.includes('degree') || norm.includes('qualification')) {
+            return t('Autocomplete.suggestedDegrees', 'Suggested Qualifications');
+        }
+        if (norm.includes('company') || norm.includes('employer') || norm.includes('organization')) {
+            return t('Autocomplete.suggestedCompanies', 'Suggested Companies');
+        }
+        if (norm.includes('jobtitle') || norm.includes('occupation') || norm.includes('title') || norm.includes('role')) {
+            return t('Autocomplete.suggestedJobTitles', 'Suggested Job Titles');
+        }
+        if (norm.includes('skill')) {
+            return t('Autocomplete.suggestedSkills', 'Suggested Skills');
+        }
+        if (norm.includes('cert') || norm.includes('credential') || norm.includes('issuer')) {
+            return t('Autocomplete.suggestedCertifications', 'Suggested Certifications');
+        }
+        if (norm.includes('lang')) {
+            return t('Autocomplete.suggestedLanguages', 'Suggested Languages');
+        }
+        if (norm.includes('city') || norm.includes('location')) {
+            return t('Autocomplete.suggestedLocations', 'Suggested Locations');
+        }
+        return t('Autocomplete.suggestions', 'Suggestions');
+    };
+
+    // Subtly highlight matching letters in suggestion
+    const renderHighlightedOption = (text, query) => {
+        if (!query || typeof text !== 'string') return text;
+        const cleanQ = query.trim();
+        if (!cleanQ) return text;
+        const idx = text.toLowerCase().indexOf(cleanQ.toLowerCase());
+        if (idx === -1) return text;
+        const before = text.substring(0, idx);
+        const match = text.substring(idx, idx + cleanQ.length);
+        const after = text.substring(idx + cleanQ.length);
+        return (
+            <span className="truncate">
+                {before}
+                <span className="font-semibold text-indigo-600 bg-indigo-50/60 px-0.5 rounded">{match}</span>
+                {after}
+            </span>
+        );
+    };
+
     return (
         <div className="relative w-full" ref={containerRef}>
             {!hideLabel && label && (
@@ -242,10 +408,18 @@ const AutocompleteInputField = ({
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
                     onFocus={() => {
+                        const cleanVal = String(safeValue || '').trim();
                         const localList = getLocalProfileSuggestions(suggestionType, safeValue, context);
-                        if (localList.length > 0) {
+                        if (cleanVal.length > 0 && localList.length > 0) {
                             setSuggestions(localList);
                             setShowDropdown(true);
+                        } else if (!cleanVal) {
+                            // Only open on empty focus if candidate has verified profile entries
+                            const profileCandidates = getProfileCandidates(suggestionType, context);
+                            if (profileCandidates.length > 0) {
+                                setSuggestions(profileCandidates.slice(0, 8));
+                                setShowDropdown(true);
+                            }
                         }
                     }}
                     disabled={disabled}
@@ -270,8 +444,8 @@ const AutocompleteInputField = ({
                         )}
                         <button
                             type="button"
-                            aria-label={showDropdown ? "Close suggestions" : "Show suggestions based on your profile"}
-                            title="Suggestions based on your profile"
+                            aria-label={showDropdown ? "Close suggestions" : "Show suggestions"}
+                            title="Show suggestions"
                             onClick={handleToggleDropdown}
                             className={`p-1 rounded-md transition-colors ${
                                 showDropdown
@@ -300,8 +474,9 @@ const AutocompleteInputField = ({
                     aria-label={label || name}
                     className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto py-1"
                 >
-                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50">
-                        <span>{t('Autocomplete.suggestionsTitle', 'From your profile')}</span>
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                        <span>{getDropdownTitle()}</span>
+                        <span className="text-[9px] text-slate-400 font-normal">{suggestions.length} match{suggestions.length === 1 ? '' : 'es'}</span>
                     </div>
                     <ul className="divide-y divide-slate-50/50">
                         {suggestions.map((option, idx) => (
@@ -321,7 +496,7 @@ const AutocompleteInputField = ({
                                 <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
-                                <span className="truncate">{option}</span>
+                                {renderHighlightedOption(option, safeValue)}
                             </li>
                         ))}
                     </ul>

@@ -217,11 +217,16 @@ export function calculateYearsOfExperience(experiences) {
         let startMonth = 1;
         let endMonth = 12;
 
-        const startLower = startStr.toLowerCase();
-        for (const [key, val] of Object.entries(monthMap)) {
-            if (startLower.includes(key)) {
-                startMonth = val;
-                break;
+        const startIso = startStr.match(/\b(?:19\d\d|20\d\d)-(0?[1-9]|1[0-2])\b/) || startStr.match(/\b(0?[1-9]|1[0-2])\/(?:19\d\d|20\d\d)\b/);
+        if (startIso) {
+            startMonth = parseInt(startIso[1], 10);
+        } else {
+            const startLower = startStr.toLowerCase();
+            for (const [key, val] of Object.entries(monthMap)) {
+                if (startLower.includes(key)) {
+                    startMonth = val;
+                    break;
+                }
             }
         }
 
@@ -229,10 +234,15 @@ export function calculateYearsOfExperience(experiences) {
         if (explicitlyCurrent) {
             endMonth = currentMonth;
         } else {
-            for (const [key, val] of Object.entries(monthMap)) {
-                if (endLower.includes(key)) {
-                    endMonth = val;
-                    break;
+            const endIso = endStr.match(/\b(?:19\d\d|20\d\d)-(0?[1-9]|1[0-2])\b/) || endStr.match(/\b(0?[1-9]|1[0-2])\/(?:19\d\d|20\d\d)\b/);
+            if (endIso) {
+                endMonth = parseInt(endIso[1], 10);
+            } else {
+                for (const [key, val] of Object.entries(monthMap)) {
+                    if (endLower.includes(key)) {
+                        endMonth = val;
+                        break;
+                    }
                 }
             }
         }
