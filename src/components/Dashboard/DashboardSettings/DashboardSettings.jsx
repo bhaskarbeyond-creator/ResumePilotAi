@@ -449,14 +449,6 @@ function DashboardSettings(_props) {
                     if (!mountedRef.current) throw Object.assign(new Error('Profile save cancelled.'), { code: 'PROFILE_SAVE_CANCELLED' });
                     if (!result.success) throw Object.assign(new Error(result.error || 'Profile save failed.'), { code: result.code, remoteRevision: result.remoteRevision });
 
-                    skipNextAutosaveRef.current = true;
-                    profileRef.current = { ...profileRef.current, revision: result.revision };
-                    setProfile(current => ({ ...current, revision: result.revision }));
-                    setProfileSaveState('saved');
-                    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
-                    if (notify) triggerNotification('Master Profile saved successfully.');
-                    waiter = profileSavingRef.current;
-
                     const stripRev = p => {
                         const n = normalizeProfileForSave(p);
                         delete n.revision;
@@ -465,6 +457,14 @@ function DashboardSettings(_props) {
                     const latestProfile = profileRef.current;
                     const needsFollowUp = latestProfile.revision === snapshot.revision
                         && JSON.stringify(stripRev(latestProfile)) !== JSON.stringify(stripRev(result.profile));
+
+                    skipNextAutosaveRef.current = true;
+                    profileRef.current = { ...profileRef.current, revision: result.revision };
+                    setProfile(current => ({ ...current, revision: result.revision }));
+                    setProfileSaveState('saved');
+                    window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
+                    if (notify) triggerNotification('Master Profile saved successfully.');
+                    waiter = profileSavingRef.current;
 
                     if (pendingProfileSaveRef.current || needsFollowUp) {
                         const pending = pendingProfileSaveRef.current;
@@ -496,6 +496,7 @@ function DashboardSettings(_props) {
 
     const handleSubmit = async (e) => {
         e?.preventDefault?.();
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
         setIsSubmitting(true);
         try { await persistProfile({ notify: true }); return true; }
         catch (error) { triggerNotification(error.message || 'Failed to save profile.', 'error'); return false; }
@@ -722,7 +723,6 @@ function DashboardSettings(_props) {
         if (isFirstProfileLoadRef.current) { isFirstProfileLoadRef.current = false; return undefined; }
         if (skipNextAutosaveRef.current) { skipNextAutosaveRef.current = false; return undefined; }
         if (profileConflict) return undefined;
-        if (profileSaveState === 'loading') return undefined;
         if (profileSavingRef.current) { setProfileSaveState('pending'); return undefined; }
         setProfileSaveState('pending');
         if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
@@ -733,7 +733,7 @@ function DashboardSettings(_props) {
         return () => {
             if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
         };
-    }, [profile, profileConflict, profileSaveState]);
+    }, [profile, profileConflict]);
 
     useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
 
@@ -3236,7 +3236,7 @@ function DashboardSettings(_props) {
                                     <input
                                         type="tel"
                                         value={profile?.phone || ''}
-                                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                                        onChange={(e) => setProfile(prev => ({ ...prev, phone: e.target.value }))}
                                         placeholder="+1 415 555 2671 / +91 9876543210"
                                         className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                                     />
