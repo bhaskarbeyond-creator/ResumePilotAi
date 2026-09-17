@@ -27,7 +27,7 @@ function DashboardSettings(_props) {
     // State management
     const [selectedSettings, setSelectedSettings] = useState('Profile');
     const [profileSubTab, setProfileSubTab] = useState('basic');
-    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'summary'];
+    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'summary', 'achievements', 'references', 'customSections'];
 
     // Reactive URL query parameter listener for ?tab=Account or ?tab=Profile
     useEffect(() => {
@@ -135,6 +135,9 @@ function DashboardSettings(_props) {
         hobbies: [],
         certifications: [],
         projects: [],
+        achievements: [],
+        references: [],
+        customSections: [],
         revision: 0,
     });
 
@@ -246,6 +249,55 @@ function DashboardSettings(_props) {
         });
     };
 
+    const normalizeAchievements = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((item, idx) => {
+            if (!item || typeof item !== 'object') return { id: `ach_${idx}`, title: '', issuer: '', date: '', description: '' };
+            return {
+                id: item.id || `ach_${idx}`,
+                title: String(item.title || item.name || ''),
+                issuer: String(item.issuer || item.awarder || item.organization || ''),
+                date: String(item.date || item.year || ''),
+                description: String(item.description || item.summary || '')
+            };
+        });
+    };
+
+    const normalizeReferences = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((item, idx) => {
+            if (!item || typeof item !== 'object') return { id: `ref_${idx}`, name: '', position: '', company: '', email: '', phone: '', reference: '' };
+            return {
+                id: item.id || `ref_${idx}`,
+                name: String(item.name || item.title || ''),
+                position: String(item.position || ''),
+                company: String(item.company || item.organization || ''),
+                email: String(item.email || ''),
+                phone: String(item.phone || ''),
+                reference: String(item.reference || item.description || '')
+            };
+        });
+    };
+
+    const normalizeCustomSections = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((item, idx) => {
+            if (!item || typeof item !== 'object') return { id: `custom_${idx}`, title: '', content: '', items: [] };
+            const rawItems = Array.isArray(item.items) ? item.items : [];
+            const items = rawItems.map((sub, sIdx) => {
+                if (typeof sub === 'string') return { id: `custom_${idx}_item_${sIdx}`, title: sub, description: '' };
+                if (sub && typeof sub === 'object') return { id: sub.id || `custom_${idx}_item_${sIdx}`, title: sub.title || sub.name || '', description: sub.description || sub.content || '' };
+                return null;
+            }).filter(Boolean);
+            return {
+                id: item.id || `custom_${idx}`,
+                title: String(item.title || item.heading || ''),
+                content: String(item.content || ''),
+                items
+            };
+        });
+    };
+
     // Load User Profile Data
     const getProfileOfUserFront = async () => {
         const currentUser = fire.auth().currentUser;
@@ -279,6 +331,9 @@ function DashboardSettings(_props) {
                     hobbies: normalizeHobbies(userProfile.hobbies || userProfile.interests),
                     certifications: normalizeCertifications(userProfile.certifications),
                     projects: normalizeProjects(userProfile.projects),
+                    achievements: normalizeAchievements(userProfile.achievements || userProfile.awards),
+                    references: normalizeReferences(userProfile.references),
+                    customSections: normalizeCustomSections(userProfile.customSections),
                     revision: Number(userProfile.revision) || 0,
                 });
                 setProfileSaveState('saved');
@@ -323,7 +378,7 @@ function DashboardSettings(_props) {
         const unsubscribe = fire.auth().onAuthStateChanged(async currentUser => {
             if (!currentUser) { loadedProfileUidRef.current = null; navigate('/'); return; }
             if (loadedProfileUidRef.current && loadedProfileUidRef.current !== currentUser.uid) {
-                setProfile(current => ({ ...current, firstname: '', lastname: '', name: '', email: '', phone: '', address: '', city: '', postalCode: '', country: '', occupation: '', linkedinUrl: '', githubUrl: '', websiteUrl: '', summary: '', selectedImage: null, workExperiences: [], education: [], skills: [], languages: [], hobbies: [], certifications: [], projects: [], revision: 0 }));
+                setProfile(current => ({ ...current, firstname: '', lastname: '', name: '', email: '', phone: '', address: '', city: '', postalCode: '', country: '', occupation: '', linkedinUrl: '', githubUrl: '', websiteUrl: '', summary: '', selectedImage: null, workExperiences: [], education: [], skills: [], languages: [], hobbies: [], certifications: [], projects: [], achievements: [], references: [], customSections: [], revision: 0 }));
                 setUserTransactions([]); setLoginHistory([]); setPreferences({ language: 'en', emailNotifications: true, securityNotifications: true, productUpdates: false, profileDiscoverable: false, revision: 0 }); setProfileConflict(null); setProfileSaveState('loading');
             }
             loadedProfileUidRef.current = currentUser.uid;
@@ -1093,6 +1148,143 @@ function DashboardSettings(_props) {
         setProfile(prev => ({ ...prev, hobbies: (prev.hobbies || []).filter((_, i) => i !== index) }));
     };
 
+    // Work Experience Duplication
+    const duplicateWorkExperience = (index) => {
+        const source = (profile.workExperiences || [])[index];
+        if (!source) return;
+        const copy = { ...source, id: `work_${Date.now()}`, jobTitle: `${source.jobTitle || 'Position'} (Copy)` };
+        setProfile(prev => ({
+            ...prev,
+            workExperiences: [...prev.workExperiences.slice(0, index + 1), copy, ...prev.workExperiences.slice(index + 1)]
+        }));
+        triggerNotification('Work Experience position duplicated!');
+    };
+
+    // Multi-Skill Bulk Paste Ingestion
+    const [bulkSkillsInput, setBulkSkillsInput] = useState('');
+    const handleBulkSkillAdd = () => {
+        if (!bulkSkillsInput || !bulkSkillsInput.trim()) return;
+        const tokens = bulkSkillsInput.split(/[,;\n]+/).map(t => cleanSkillName(t)).filter(Boolean);
+        if (tokens.length > 0) {
+            setProfile(prev => {
+                const existingNames = new Set((prev.skills || []).map(s => String(typeof s === 'string' ? s : s?.name || s?.skillName || '').trim().toLowerCase()));
+                const toAdd = [];
+                for (const token of tokens) {
+                    const norm = token.trim().toLowerCase();
+                    if (norm && !existingNames.has(norm)) {
+                        existingNames.add(norm);
+                        toAdd.push({ id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name: token, level: 'Advanced' });
+                    }
+                }
+                if (toAdd.length > 0) {
+                    triggerNotification(`Added ${toAdd.length} skill(s) to Master Profile!`);
+                    return { ...prev, skills: [...prev.skills, ...toAdd] };
+                } else {
+                    triggerNotification('All entered skills already exist in profile.', 'info');
+                    return prev;
+                }
+            });
+            setBulkSkillsInput('');
+        }
+    };
+
+    // Achievements Handlers
+    const addAchievement = () => {
+        setProfile((prev) => ({
+            ...prev,
+            achievements: [...(prev.achievements || []), { id: `ach_${Date.now()}`, title: '', issuer: '', date: '', description: '' }]
+        }));
+    };
+    const updateAchievement = (index, field, value) => {
+        const rawVal = (value && typeof value === 'object' && value.target !== undefined) ? value.target.value : value;
+        setProfile((prev) => {
+            const updated = [...(prev.achievements || [])];
+            updated[index] = { ...updated[index], [field]: rawVal };
+            return { ...prev, achievements: updated };
+        });
+    };
+    const removeAchievement = (index) => {
+        setProfile((prev) => ({
+            ...prev,
+            achievements: (prev.achievements || []).filter((_, i) => i !== index)
+        }));
+    };
+
+    // References Handlers
+    const addReference = () => {
+        setProfile((prev) => ({
+            ...prev,
+            references: [...(prev.references || []), { id: `ref_${Date.now()}`, name: '', position: '', company: '', email: '', phone: '', reference: '' }]
+        }));
+    };
+    const updateReference = (index, field, value) => {
+        const rawVal = (value && typeof value === 'object' && value.target !== undefined) ? value.target.value : value;
+        setProfile((prev) => {
+            const updated = [...(prev.references || [])];
+            updated[index] = { ...updated[index], [field]: rawVal };
+            return { ...prev, references: updated };
+        });
+    };
+    const removeReference = (index) => {
+        setProfile((prev) => ({
+            ...prev,
+            references: (prev.references || []).filter((_, i) => i !== index)
+        }));
+    };
+
+    // Custom Sections Handlers
+    const addCustomSection = () => {
+        setProfile((prev) => ({
+            ...prev,
+            customSections: [...(prev.customSections || []), { id: `custom_${Date.now()}`, title: 'Custom Section', content: '', items: [] }]
+        }));
+    };
+    const updateCustomSection = (index, field, value) => {
+        const rawVal = (value && typeof value === 'object' && value.target !== undefined) ? value.target.value : value;
+        setProfile((prev) => {
+            const updated = [...(prev.customSections || [])];
+            updated[index] = { ...updated[index], [field]: rawVal };
+            return { ...prev, customSections: updated };
+        });
+    };
+    const removeCustomSection = (index) => {
+        setProfile((prev) => ({
+            ...prev,
+            customSections: (prev.customSections || []).filter((_, i) => i !== index)
+        }));
+    };
+    const addCustomSectionItem = (sectionIndex) => {
+        setProfile((prev) => {
+            const updated = [...(prev.customSections || [])];
+            const section = updated[sectionIndex] || { items: [] };
+            const nextItems = [...(section.items || []), { id: `item_${Date.now()}`, title: '', description: '' }];
+            updated[sectionIndex] = { ...section, items: nextItems };
+            return { ...prev, customSections: updated };
+        });
+    };
+    const updateCustomSectionItem = (sectionIndex, itemIndex, field, value) => {
+        const rawVal = (value && typeof value === 'object' && value.target !== undefined) ? value.target.value : value;
+        setProfile((prev) => {
+            const updated = [...(prev.customSections || [])];
+            const section = updated[sectionIndex];
+            if (!section) return prev;
+            const items = [...(section.items || [])];
+            items[itemIndex] = { ...items[itemIndex], [field]: rawVal };
+            updated[sectionIndex] = { ...section, items };
+            return { ...prev, customSections: updated };
+        });
+    };
+    const removeCustomSectionItem = (sectionIndex, itemIndex) => {
+        setProfile((prev) => {
+            const updated = [...(prev.customSections || [])];
+            const section = updated[sectionIndex];
+            if (!section) return prev;
+            const items = (section.items || []).filter((_, i) => i !== itemIndex);
+            updated[sectionIndex] = { ...section, items };
+            return { ...prev, customSections: updated };
+        });
+    };
+
     // Drag & Drop Avatar
     const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
     const handleDragLeave = () => setIsDragging(false);
@@ -1269,15 +1461,20 @@ function DashboardSettings(_props) {
                         {/* Master Profile Completeness Progress Meter */}
                         {(() => {
                             let score = 0;
-                            if (profile.firstname || profile.lastname) score += 15;
-                            if (profile.email) score += 10;
-                            if (profile.phone) score += 10;
-                            if (profile.occupation) score += 15;
-                            if (profile.city || profile.country) score += 10;
+                            if (profile.firstname || profile.lastname) score += 10;
+                            if (profile.email && profile.phone) score += 10;
+                            else if (profile.email || profile.phone) score += 5;
+                            if (profile.occupation) score += 10;
+                            if (profile.city || profile.country) score += 5;
                             if (profile.summary && profile.summary.trim().length > 20) score += 15;
-                            if (profile.workExperiences && profile.workExperiences.length > 0) score += 10;
-                            if (profile.education && profile.education.length > 0) score += 5;
+                            if (profile.workExperiences && profile.workExperiences.length > 0) score += 15;
+                            if (profile.education && profile.education.length > 0) score += 10;
                             if (profile.skills && profile.skills.length >= 3) score += 10;
+                            else if (profile.skills && profile.skills.length > 0) score += 5;
+                            if (profile.certifications && profile.certifications.length > 0) score += 5;
+                            if (profile.projects && profile.projects.length > 0) score += 5;
+                            if ((profile.languages && profile.languages.length > 0) || (profile.hobbies && profile.hobbies.length > 0)) score += 5;
+                            if ((profile.achievements && profile.achievements.length > 0) || (profile.references && profile.references.length > 0) || (profile.customSections && profile.customSections.length > 0)) score += 10;
                             const compScore = Math.min(100, score);
                             return (
                                 <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -1334,6 +1531,15 @@ function DashboardSettings(_props) {
                             </button>
                             <button onClick={() => setProfileSubTab('summary')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'summary' ? 'bg-indigo-600 text-white font-bold' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'}`}>
                                 ✨ Executive Bio (AI)
+                            </button>
+                            <button onClick={() => setProfileSubTab('achievements')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'achievements' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                🏆 Honors &amp; Awards ({(profile.achievements || []).length})
+                            </button>
+                            <button onClick={() => setProfileSubTab('references')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'references' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                👥 References ({(profile.references || []).length})
+                            </button>
+                            <button onClick={() => setProfileSubTab('customSections')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'customSections' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                🧩 Custom Modules ({(profile.customSections || []).length})
                             </button>
                         </div>
 
@@ -1526,6 +1732,13 @@ function DashboardSettings(_props) {
                                                         className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-slate-500 rounded-lg hover:bg-slate-200/70 transition-all cursor-pointer text-xs font-bold"
                                                         title="Move position down">
                                                         ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); duplicateWorkExperience(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 cursor-pointer ml-1"
+                                                        title="Duplicate position">
+                                                        <FaCopy className="w-3.5 h-3.5" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1776,6 +1989,38 @@ function DashboardSettings(_props) {
                                 </div>
                                 </div>
 
+                                {/* Bulk Skills Ingestion Box */}
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                            ⚡ Quick Bulk Paste Ingestion
+                                        </label>
+                                        <span className="text-[10px] text-slate-500">Comma, semicolon, or newline separated</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <textarea
+                                            value={bulkSkillsInput}
+                                            onChange={(e) => setBulkSkillsInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                                    e.preventDefault();
+                                                    handleBulkSkillAdd();
+                                                }
+                                            }}
+                                            placeholder="Paste multiple skills at once (e.g. React.js, TypeScript, Node.js, Docker, Kubernetes)..."
+                                            className="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-14"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleBulkSkillAdd}
+                                            disabled={!bulkSkillsInput.trim()}
+                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer h-14"
+                                        >
+                                            <FaPlus className="w-3.5 h-3.5" /> Add All
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {profile.skills.length === 0 ? (
                                     <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
                                         <p className="text-xs font-semibold text-slate-700">No skills saved in Master Profile</p>
@@ -1789,49 +2034,68 @@ function DashboardSettings(_props) {
                                                 <span>Auto-Recommend Top Skills (AI)</span>
                                             </button>
                                             <button type="button" onClick={addSkill} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
-                                                Add Certification
+                                                Add Skill
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                         {profile.skills.map((skill, idx) => (
-                                            <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <AutocompleteInputField
-                                                        hideLabel
-                                                        name={`skill_${idx}`}
-                                                        value={skill.name}
-                                                        onChange={(e) => updateSkill(idx, 'name', e.target.value)}
-                                                        placeholder="Skill name"
-                                                        suggestionType="skill"
-                                                        inputClassName="w-full text-xs p-2 pr-7 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                    />
+                                            <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <AutocompleteInputField
+                                                            hideLabel
+                                                            name={`skill_${idx}`}
+                                                            value={skill.name}
+                                                            onChange={(e) => updateSkill(idx, 'name', e.target.value)}
+                                                            placeholder="Skill name"
+                                                            suggestionType="skill"
+                                                            inputClassName="w-full text-xs p-2 pr-7 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        <button
+                                                            type="button"
+                                                            disabled={idx === 0}
+                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, -1); }}
+                                                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
+                                                            title="Move skill up">
+                                                            ▲
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            disabled={idx === profile.skills.length - 1}
+                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, 1); }}
+                                                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
+                                                            title="Move skill down">
+                                                            ▼
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
+                                                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors cursor-pointer flex-shrink-0"
+                                                            title="Delete skill">
+                                                            <FaTrash className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        disabled={idx === 0}
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, -1); }}
-                                                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
-                                                        title="Move skill up">
-                                                        ▲
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        disabled={idx === profile.skills.length - 1}
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, 1); }}
-                                                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
-                                                        title="Move skill down">
-                                                        ▼
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors cursor-pointer flex-shrink-0"
-                                                        title="Delete skill">
-                                                        <FaTrash className="w-3 h-3" />
-                                                    </button>
+                                                {/* Proficiency Level Pills */}
+                                                <div className="flex items-center gap-1 pt-1">
+                                                    {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map((lvl) => (
+                                                        <button
+                                                            key={lvl}
+                                                            type="button"
+                                                            onClick={() => updateSkill(idx, 'level', lvl)}
+                                                            className={`flex-1 py-1 text-[10px] font-semibold rounded-md transition-all ${
+                                                                (skill.level || '').toLowerCase() === lvl.toLowerCase()
+                                                                    ? 'bg-indigo-600 text-white shadow-2xs'
+                                                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                                                            }`}
+                                                        >
+                                                            {lvl}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
                                         ))}
@@ -2234,6 +2498,379 @@ function DashboardSettings(_props) {
                                     <div className="pt-2">
                                         <button type="button" onClick={addProject} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Project
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Sub-Tab 10: Honors & Awards */}
+                        {profileSubTab === 'achievements' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Honors, Awards &amp; Key Achievements</h3>
+                                        <p className="text-xs text-slate-500">Record industry accolades, hackathon wins, academic honors, or notable career milestones.</p>
+                                    </div>
+                                    <button type="button" onClick={addAchievement} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                                        <FaPlus className="w-3 h-3" /> Add Award / Achievement
+                                    </button>
+                                </div>
+
+                                {(!profile.achievements || profile.achievements.length === 0) ? (
+                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                        <p className="text-2xl mb-2">🏆</p>
+                                        <p className="text-xs font-semibold text-slate-700 mb-1">No achievements saved in Master Profile</p>
+                                        <p className="text-[11px] text-slate-500 mb-3">Add awards, competitive honors, or leadership recognitions to stand out to recruiters.</p>
+                                        <button type="button" onClick={addAchievement} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                            <FaPlus className="w-3 h-3" /> Add First Achievement
+                                        </button>
+                                    </div>
+                                ) : (
+                                    (profile.achievements || []).map((ach, idx) => (
+                                        <div key={ach.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                                                    🏆 Honor #{idx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', idx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        title="Move up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.achievements.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', idx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        title="Move down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeAchievement(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                        title="Delete achievement">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                <div className="sm:col-span-2">
+                                                    <input
+                                                        type="text"
+                                                        value={ach.title || ''}
+                                                        onChange={(e) => updateAchievement(idx, 'title', e.target.value)}
+                                                        placeholder="Award or Honor Title (e.g. Employee of the Year, Hackathon 1st Place)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        value={ach.date || ''}
+                                                        onChange={(e) => updateAchievement(idx, 'date', e.target.value)}
+                                                        placeholder="Date Received (e.g. Nov 2024)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    value={ach.issuer || ''}
+                                                    onChange={(e) => updateAchievement(idx, 'issuer', e.target.value)}
+                                                    placeholder="Awarding Organization or Issuer (e.g. IEEE, Google Cloud, University)"
+                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <textarea
+                                                    value={ach.description || ''}
+                                                    onChange={(e) => updateAchievement(idx, 'description', e.target.value)}
+                                                    placeholder="Brief description of the accomplishment and its significance..."
+                                                    className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+
+                                {(profile.achievements || []).length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addAchievement} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Another Achievement
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Sub-Tab 11: References */}
+                        {profileSubTab === 'references' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional &amp; Academic References</h3>
+                                        <p className="text-xs text-slate-500">Store references securely. Choose whether to show them on resumes or provide upon request.</p>
+                                    </div>
+                                    <button type="button" onClick={addReference} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                                        <FaPlus className="w-3 h-3" /> Add Reference
+                                    </button>
+                                </div>
+
+                                {(!profile.references || profile.references.length === 0) ? (
+                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                        <p className="text-2xl mb-2">👥</p>
+                                        <p className="text-xs font-semibold text-slate-700 mb-1">No references saved in Master Profile</p>
+                                        <p className="text-[11px] text-slate-500 mb-3">Add managers, mentors, or colleagues who can vouch for your work.</p>
+                                        <button type="button" onClick={addReference} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                            <FaPlus className="w-3 h-3" /> Add First Reference
+                                        </button>
+                                    </div>
+                                ) : (
+                                    (profile.references || []).map((ref, idx) => (
+                                        <div key={ref.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                                                    👥 Reference #{idx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('references', idx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        title="Move up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={idx === profile.references.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('references', idx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        title="Move down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeReference(idx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                        title="Delete reference">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        value={ref.name || ''}
+                                                        onChange={(e) => updateReference(idx, 'name', e.target.value)}
+                                                        placeholder="Referee Full Name (e.g. Dr. Jane Smith)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        value={ref.position || ''}
+                                                        onChange={(e) => updateReference(idx, 'position', e.target.value)}
+                                                        placeholder="Job Title / Position (e.g. VP of Engineering)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        value={ref.company || ''}
+                                                        onChange={(e) => updateReference(idx, 'company', e.target.value)}
+                                                        placeholder="Company / Institution (e.g. Acme Corp)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <input
+                                                        type="email"
+                                                        value={ref.email || ''}
+                                                        onChange={(e) => updateReference(idx, 'email', e.target.value)}
+                                                        placeholder="Email Address (e.g. jane.smith@acme.com)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="tel"
+                                                        value={ref.phone || ''}
+                                                        onChange={(e) => updateReference(idx, 'phone', e.target.value)}
+                                                        placeholder="Phone Number (e.g. +1 555-0199)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <textarea
+                                                    value={ref.reference || ''}
+                                                    onChange={(e) => updateReference(idx, 'reference', e.target.value)}
+                                                    placeholder="Relationship notes or reference quote (e.g. 'Direct manager at Acme Corp for 3 years')..."
+                                                    className="w-full h-14 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+
+                                {(profile.references || []).length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addReference} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Another Reference
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Sub-Tab 12: Custom Sections */}
+                        {profileSubTab === 'customSections' && (
+                            <div className="space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Custom Profile Modules &amp; Bespoke Sections</h3>
+                                        <p className="text-xs text-slate-500">Create bespoke sections (e.g. Publications, Patents, Speaking Engagements, Volunteering, Military Service).</p>
+                                    </div>
+                                    <button type="button" onClick={addCustomSection} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                                        <FaPlus className="w-3 h-3" /> Add Custom Module
+                                    </button>
+                                </div>
+
+                                {(!profile.customSections || profile.customSections.length === 0) ? (
+                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                        <p className="text-2xl mb-2">🧩</p>
+                                        <p className="text-xs font-semibold text-slate-700 mb-1">No custom modules created in Master Profile</p>
+                                        <p className="text-[11px] text-slate-500 mb-3">Add any specialized section required for your unique career or industry background.</p>
+                                        <button type="button" onClick={addCustomSection} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                            <FaPlus className="w-3 h-3" /> Add First Custom Section
+                                        </button>
+                                    </div>
+                                ) : (
+                                    (profile.customSections || []).map((sec, sIdx) => (
+                                        <div key={sec.id || sIdx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                                                    🧩 Custom Section #{sIdx + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        disabled={sIdx === 0}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('customSections', sIdx, -1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        title="Move up">
+                                                        ▲
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={sIdx === profile.customSections.length - 1}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('customSections', sIdx, 1); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
+                                                        title="Move down">
+                                                        ▼
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCustomSection(sIdx); }}
+                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                        title="Delete custom section">
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Section Title</label>
+                                                    <input
+                                                        type="text"
+                                                        value={sec.title || ''}
+                                                        onChange={(e) => updateCustomSection(sIdx, 'title', e.target.value)}
+                                                        placeholder="Section Title (e.g. Publications, Patents, Keynote Talks, Volunteer Experience)"
+                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Section Overview (Optional)</label>
+                                                    <textarea
+                                                        value={sec.content || ''}
+                                                        onChange={(e) => updateCustomSection(sIdx, 'content', e.target.value)}
+                                                        placeholder="Optional summary or introductory text for this entire section..."
+                                                        className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
+                                                    />
+                                                </div>
+
+                                                {/* Nested Items in Custom Section */}
+                                                <div className="pt-2 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                                            Section Entries ({((sec.items || []).length)})
+                                                        </label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => addCustomSectionItem(sIdx)}
+                                                            className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                            <FaPlus className="w-2.5 h-2.5" /> Add Entry
+                                                        </button>
+                                                    </div>
+
+                                                    {(!sec.items || sec.items.length === 0) ? (
+                                                        <p className="text-[11px] text-slate-400 italic bg-white p-3 rounded-lg border border-dashed border-slate-200">
+                                                            No item entries added. Click "Add Entry" to add bullet entries, publications, or events.
+                                                        </p>
+                                                    ) : (
+                                                        sec.items.map((item, iIdx) => (
+                                                            <div key={item.id || iIdx} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.title || ''}
+                                                                        onChange={(e) => updateCustomSectionItem(sIdx, iIdx, 'title', e.target.value)}
+                                                                        placeholder="Entry Title (e.g. 'Neural Attention Mechanisms Paper', 'Patent US102938')"
+                                                                        className="flex-1 text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 outline-none"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeCustomSectionItem(sIdx, iIdx)}
+                                                                        className="text-slate-400 hover:text-red-600 p-1.5 rounded transition-colors cursor-pointer"
+                                                                        title="Delete entry"
+                                                                    >
+                                                                        <FaTrash className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                                <textarea
+                                                                    value={item.description || ''}
+                                                                    onChange={(e) => updateCustomSectionItem(sIdx, iIdx, 'description', e.target.value)}
+                                                                    placeholder="Entry details, citations, or metrics..."
+                                                                    className="w-full h-14 text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:border-indigo-500 outline-none resize-none"
+                                                                />
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+
+                                {(profile.customSections || []).length > 0 && (
+                                    <div className="pt-2">
+                                        <button type="button" onClick={addCustomSection} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
+                                            <FaPlus className="w-3.5 h-3.5" /> Add Another Custom Section
                                         </button>
                                     </div>
                                 )}

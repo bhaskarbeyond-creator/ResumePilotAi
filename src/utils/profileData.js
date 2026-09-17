@@ -12,8 +12,30 @@ export function normalizeProfileData(input = {}) {
   result.skills = list(profile.skills, 100).map(item => normalizeEntry(item, ['name','level']));
   result.languages = list(profile.languages, 30).map(item => normalizeEntry(item, ['name','level']));
   result.hobbies = list(profile.hobbies || profile.interests, 50).map(item => typeof item === 'string' ? clean(item, 200) : (item && typeof item === 'object' ? clean(item.name || item.hobby || item.title || '', 200) : '')).filter(Boolean);
-  result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date']));
-  result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','description','link']));
+  result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date','url','link']));
+  result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','description','link','url']));
+  result.achievements = list(profile.achievements || profile.awards, 50).map(item => normalizeEntry(item, ['title','name','issuer','awarder','date','description']));
+  result.references = list(profile.references, 30).map(item => normalizeEntry(item, ['name','position','company','email','phone','reference','description']));
+  result.customSections = list(profile.customSections, 20).map((section, sIdx) => {
+    if (!section || typeof section !== 'object') return null;
+    const id = clean(section.id || `custom-${sIdx}`, 128);
+    const title = clean(section.title || section.heading, 500);
+    const content = clean(section.content, 5000);
+    const rawItems = Array.isArray(section.items) ? section.items.slice(0, 50) : [];
+    const items = rawItems.map((item, iIdx) => {
+      if (typeof item === 'string') {
+        const itemTitle = clean(item, 500);
+        return itemTitle ? { id: `custom-${sIdx}-item-${iIdx}`, title: itemTitle, description: '' } : null;
+      }
+      if (!item || typeof item !== 'object') return null;
+      return {
+        id: clean(item.id || `custom-${sIdx}-item-${iIdx}`, 128),
+        title: clean(item.title || item.name, 500),
+        description: clean(item.description || item.content, 5000),
+      };
+    }).filter(Boolean);
+    return { id, title, content, items };
+  }).filter(Boolean);
   result.revision = Math.max(0, Number(profile.revision) || 0);
   return result;
 }

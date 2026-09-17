@@ -26,13 +26,15 @@ const LIST_FIELDS = Object.freeze({
   education: { max: 50, fields: { id: 128, degree: 500, school: 500, city: 500, startDate: 500, endDate: 500, description: 5000 } },
   skills: { max: 100, fields: { id: 128, name: 500, level: 500 } },
   languages: { max: 30, fields: { id: 128, name: 500, level: 500 } },
-  certifications: { max: 50, fields: { id: 128, title: 500, issuer: 500, date: 500 } },
-  projects: { max: 50, fields: { id: 128, title: 500, description: 5000, link: 1024 } },
+  certifications: { max: 50, fields: { id: 128, title: 500, issuer: 500, date: 500, url: 1024, link: 1024 } },
+  projects: { max: 50, fields: { id: 128, title: 500, description: 5000, link: 1024, url: 1024 } },
+  achievements: { max: 50, fields: { id: 128, title: 500, name: 500, issuer: 500, awarder: 500, date: 500, description: 5000 } },
+  references: { max: 30, fields: { id: 128, name: 500, position: 500, company: 500, email: 255, phone: 50, reference: 5000, description: 5000 } },
 });
 
 const ALLOWED_INPUT_FIELDS = new Set([
   ...Object.keys(SIMPLE_LIMITS), ...Object.keys(LIST_FIELDS),
-  'hobbies', 'interests', 'selectedImage', 'photoURL', 'photoUrl',
+  'awards', 'customSections', 'hobbies', 'interests', 'selectedImage', 'photoURL', 'photoUrl',
   'preferences', 'revision', 'email',
 ]);
 
@@ -75,6 +77,30 @@ function sanitizeHobbies(value) {
   return value.slice(0, 50).map(item => clean(typeof item === 'string' ? item : item?.name || item?.title, 200)).filter(Boolean);
 }
 
+function sanitizeCustomSections(value) {
+  if (!Array.isArray(value)) throw httpError('customSections must be an array.', 'INVALID_PROFILE_FIELD');
+  return value.slice(0, 20).map((section, sIdx) => {
+    if (!section || typeof section !== 'object') return null;
+    const id = clean(section.id || `custom-${sIdx}`, 128);
+    const title = clean(section.title || section.heading, 500);
+    const content = clean(section.content, 5000);
+    const rawItems = Array.isArray(section.items) ? section.items.slice(0, 50) : [];
+    const items = rawItems.map((item, iIdx) => {
+      if (typeof item === 'string') {
+        const itemTitle = clean(item, 500);
+        return itemTitle ? { id: `custom-${sIdx}-item-${iIdx}`, title: itemTitle, description: '' } : null;
+      }
+      if (!item || typeof item !== 'object') return null;
+      return {
+        id: clean(item.id || `custom-${sIdx}-item-${iIdx}`, 128),
+        title: clean(item.title || item.name, 500),
+        description: clean(item.description || item.content, 5000),
+      };
+    }).filter(Boolean);
+    return { id, title, content, items };
+  }).filter(Boolean);
+}
+
 function sanitizePreferences(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw httpError('preferences must be an object.', 'INVALID_PREFERENCES');
   const language = String(value.language || 'en').toLowerCase();
@@ -108,6 +134,10 @@ function sanitizeProfilePatch(input, { identityEmail = null } = {}) {
   for (const [key, definition] of Object.entries(LIST_FIELDS)) {
     if (Object.hasOwn(input, key)) output[key] = sanitizeList(input[key], definition, key);
   }
+  if (Object.hasOwn(input, 'awards') && !Object.hasOwn(input, 'achievements')) {
+    output.achievements = sanitizeList(input.awards, LIST_FIELDS.achievements, 'achievements');
+  }
+  if (Object.hasOwn(input, 'customSections')) output.customSections = sanitizeCustomSections(input.customSections);
   if (Object.hasOwn(input, 'hobbies') || Object.hasOwn(input, 'interests')) output.hobbies = sanitizeHobbies(input.hobbies || input.interests);
   if (Object.hasOwn(input, 'selectedImage')) output.selectedImage = safeImage(input.selectedImage);
   if (Object.hasOwn(input, 'photoURL') || Object.hasOwn(input, 'photoUrl')) output.photoURL = safeImage(input.photoURL || input.photoUrl);
@@ -123,6 +153,10 @@ function projectEditableProfile(user = {}) {
   for (const [key, definition] of Object.entries(LIST_FIELDS)) {
     if (Array.isArray(user[key])) projected[key] = sanitizeList(user[key], definition, key);
   }
+  if (Array.isArray(user.awards) && !Array.isArray(user.achievements)) {
+    projected.achievements = sanitizeList(user.awards, LIST_FIELDS.achievements, 'achievements');
+  }
+  if (Array.isArray(user.customSections)) projected.customSections = sanitizeCustomSections(user.customSections);
   if (Array.isArray(user.hobbies)) projected.hobbies = sanitizeHobbies(user.hobbies);
   if (user.selectedImage) projected.selectedImage = safeImage(user.selectedImage);
   if (user.photoURL || user.photoUrl) projected.photoURL = safeImage(user.photoURL || user.photoUrl);

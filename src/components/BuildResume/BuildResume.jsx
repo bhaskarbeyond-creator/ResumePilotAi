@@ -25,6 +25,7 @@ import PreviewModal from './PreviewModal';
 import TemplateSelectionModal from './TemplateSelectionModal';
 import AtsScoreMeter from './AtsScoreMeter';
 import ResumeImportModal from './ResumeImportModal';
+import SyncProfileModal from './SyncProfileModal';
 import { calculateAtsScore } from '../../utils/atsScore';
 
 // Import necessary modules for PDF export
@@ -65,6 +66,7 @@ const BuildResume = () => {
     const [showPreview, setShowPreview] = useState(false);
     const [showTemplateSelection, setShowTemplateSelection] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [showSyncProfileModal, setShowSyncProfileModal] = useState(false);
     const [isImportEnabled, setIsImportEnabled] = useState(false);
     const [isAtsEnabled, setIsAtsEnabled] = useState(null);
     const [isPublicSharingEnabled, setIsPublicSharingEnabled] = useState(true);
@@ -1783,6 +1785,21 @@ const BuildResume = () => {
                         </button>
                     )}
 
+                    {/* Sync with Master Profile */}
+                    {userData.user && (
+                        <button
+                            type="button"
+                            onClick={() => setShowSyncProfileModal(true)}
+                            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                            title="Sync sections with your Master Profile"
+                        >
+                            <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Sync Profile</span>
+                        </button>
+                    )}
+
 
                     {/* Full Preview Modal Button */}
                     <button
@@ -2163,6 +2180,25 @@ const BuildResume = () => {
                                     })}
                                 </nav>
 
+                                {/* Mobile Sync Profile Button */}
+                                {userData.user && (
+                                    <div className="mt-4 pt-3 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsMobileMenuOpen(false);
+                                                setShowSyncProfileModal(true);
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                                        >
+                                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                            <span>Sync with Master Profile</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Mobile ATS Section */}
                                 {isAtsEnabled === true && (
                                     <div className="mt-4">
@@ -2359,6 +2395,15 @@ const BuildResume = () => {
                     updateResumeData(data);
                     showToast('Success');
                 }}
+            />
+
+            {/* Master Profile Sync Modal */}
+            <SyncProfileModal
+                isOpen={showSyncProfileModal}
+                onClose={() => setShowSyncProfileModal(false)}
+                userId={userData.user}
+                resumeData={resumeData}
+                updateResumeData={updateResumeData}
             />
 
             {/* Premium Upgrade Modal for Free candidate upsell flow */}

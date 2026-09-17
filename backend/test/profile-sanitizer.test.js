@@ -50,3 +50,31 @@ test('profile projection excludes legacy role and billing data and exposes the a
   assert.equal(Object.hasOwn(projected, 'membership'), false);
   assert.equal(Object.hasOwn(projected, 'paymentStatus'), false);
 });
+
+test('profile sanitizer supports 100% parity sections: achievements, references, customSections, and credential URLs', () => {
+  const result = sanitizeProfilePatch({
+    certifications: [{ id: 'c1', title: 'AWS Architect', issuer: 'AWS', date: '2025', url: 'https://aws.cert/123' }],
+    achievements: [{ id: 'a1', title: 'Best Innovator', issuer: 'Google', date: '2024', description: 'Won 1st place' }],
+    references: [{ id: 'r1', name: 'Dr. Jane Smith', position: 'CTO', company: 'TechCorp', email: 'jane@techcorp.com', phone: '+1234567890', reference: 'Outstanding lead engineer' }],
+    customSections: [{ id: 'cs1', title: 'Patents', content: 'Patent pending', items: [{ id: 'p1', title: 'AI Pipeline', description: 'US Patent #12345' }] }],
+  }, { identityEmail: 'owner@example.com' });
+
+  assert.equal(result.certifications[0].url, 'https://aws.cert/123');
+  assert.equal(result.achievements[0].title, 'Best Innovator');
+  assert.equal(result.references[0].name, 'Dr. Jane Smith');
+  assert.equal(result.references[0].email, 'jane@techcorp.com');
+  assert.equal(result.customSections[0].title, 'Patents');
+  assert.equal(result.customSections[0].items[0].title, 'AI Pipeline');
+
+  const projected = projectEditableProfile({
+    certifications: result.certifications,
+    achievements: result.achievements,
+    references: result.references,
+    customSections: result.customSections,
+  });
+  assert.equal(projected.certifications[0].url, 'https://aws.cert/123');
+  assert.equal(projected.achievements[0].title, 'Best Innovator');
+  assert.equal(projected.references[0].name, 'Dr. Jane Smith');
+  assert.equal(projected.customSections[0].title, 'Patents');
+});
+
