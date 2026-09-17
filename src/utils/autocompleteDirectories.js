@@ -323,6 +323,7 @@ export const UNIVERSAL_JOB_TITLES = Object.freeze([
     'Medical Doctor (MD)', 'Physician', 'General Practitioner (GP)', 'Family Medicine Physician',
     'Internal Medicine Physician', 'Attending Physician', 'Emergency Medicine Physician', 'Resident Physician',
     'Pediatrician', 'Cardiologist', 'Dermatologist', 'Neurologist', 'Psychiatrist', 'Radiologist', 'Anesthesiologist',
+    'Oncologist', 'Medical Oncologist', 'Surgical Oncologist', 'Radiation Oncologist', 'Pediatric Oncologist', 'Hematologist-Oncologist', 'Clinical Oncologist',
     'General Surgeon', 'Orthopedic Surgeon', 'Cardiothoracic Surgeon', 'Neurosurgeon',
     'Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Critical Care Registered Nurse (CCRN)',
     'Emergency Room Nurse (ER RN)', 'Charge Nurse', 'Pediatric Nurse', 'Operating Room Nurse (OR RN)',
@@ -386,7 +387,7 @@ const DOMAIN_ROLE_EXPANSIONS = Object.freeze([
     { regex: /back|backend/i, roles: ['Backend Engineer', 'Senior Backend Engineer', 'Backend Developer', 'Senior Backend Developer', 'Lead Backend Engineer', 'Staff Backend Engineer', 'Cloud Backend Architect', 'Node.js Backend Developer'] },
     { regex: /full|fullstack/i, roles: ['Full Stack Developer', 'Senior Full Stack Developer', 'Full Stack Engineer', 'Senior Full Stack Engineer', 'Lead Full Stack Engineer', 'Staff Full Stack Engineer', 'Full Stack Web Developer'] },
     { regex: /data/i, roles: ['Data Analyst', 'Senior Data Analyst', 'Data Scientist', 'Senior Data Scientist', 'Data Engineer', 'Senior Data Engineer', 'Big Data Architect', 'Business Intelligence Analyst', 'Database Administrator (DBA)'] },
-    { regex: /doc|doctor|physic/i, roles: ['Doctor (General Practitioner)', 'Medical Doctor (MD)', 'Family Medicine Doctor', 'Doctor of Dental Surgery (DDS)', 'Doctor of Pharmacy (PharmD)', 'Doctor of Veterinary Medicine', 'Doctor of Optometry', 'Doctor of Physical Therapy', 'Resident Doctor', 'Clinic Doctor', 'Physician', 'Internal Medicine Physician', 'Physician Assistant (PA)'] },
+    { regex: /\bdoc\b|\bdoctor|\bphysic/i, roles: ['Doctor (General Practitioner)', 'Medical Doctor (MD)', 'Family Medicine Doctor', 'Doctor of Dental Surgery (DDS)', 'Doctor of Pharmacy (PharmD)', 'Doctor of Veterinary Medicine', 'Doctor of Optometry', 'Doctor of Physical Therapy', 'Resident Doctor', 'Clinic Doctor', 'Physician', 'Internal Medicine Physician', 'Physician Assistant (PA)'] },
     { regex: /nurs/i, roles: ['Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Critical Care Registered Nurse (CCRN)', 'Emergency Room Nurse (ER RN)', 'Charge Nurse', 'Pediatric Nurse', 'Clinical Nurse Specialist (CNS)', 'Nurse Manager', 'Surgical Nurse', 'Staff Nurse'] },
     { regex: /teach/i, roles: ['Teacher', 'High School Teacher', 'Elementary School Teacher', 'Middle School Teacher', 'Special Education Teacher', 'STEM Teacher', 'Lead Science Teacher', 'ESL Teacher', 'Instructional Coach', 'Substitute Teacher'] },
     { regex: /plumb/i, roles: ['Licensed Master Plumber', 'Journeyman Plumber', 'Commercial Plumber', 'Residential Service Plumber', 'Plumbing Contractor', 'Plumbing Inspector', 'Pipefitter', 'Service Plumber'] },
@@ -395,27 +396,27 @@ const DOMAIN_ROLE_EXPANSIONS = Object.freeze([
     { regex: /aero|aviat/i, roles: ['Aerospace Engineer', 'Aeronautical Systems Specialist', 'Aerodynamics Engineer', 'Avionics Technician', 'Flight Test Engineer', 'Aerospace Project Manager', 'Aviation Safety Specialist'] },
     { regex: /elec/i, roles: ['Master Electrician', 'Journeyman Electrician', 'Industrial Electrician', 'Commercial Electrician', 'Electrical Systems Technician', 'Electrical Engineer', 'Electrical Project Manager', 'Residential Electrician'] },
     { regex: /chef|culin/i, roles: ['Executive Chef', 'Sous Chef', 'Pastry Chef', 'Head Chef', 'Chef de Cuisine', 'Private Chef', 'Line Cook', 'Catering Chef', 'Chef de Partie'] },
-    { regex: /acc|account/i, roles: ['Senior Accountant', 'Staff Accountant', 'Certified Public Accountant (CPA)', 'Accounting Manager', 'Cost Accountant', 'Forensic Accountant', 'Tax Accountant', 'Corporate Controller', 'Account Executive (AE)'] },
+    { regex: /\bacc\b|\baccount/i, roles: ['Senior Accountant', 'Staff Accountant', 'Certified Public Accountant (CPA)', 'Accounting Manager', 'Cost Accountant', 'Forensic Accountant', 'Tax Accountant', 'Corporate Controller', 'Account Executive (AE)'] },
     { regex: /civil/i, roles: ['Civil Engineer', 'Senior Civil Engineer', 'Civil Project Manager', 'Civil Design Engineer', 'Structural Civil Engineer', 'Transportation Civil Engineer', 'Water Resources Civil Engineer'] },
     { regex: /mech/i, roles: ['Mechanical Engineer', 'Senior Mechanical Engineer', 'Mechanical Design Engineer', 'Electromechanical Engineer', 'HVAC Mechanical Engineer', 'Robotics Mechanical Engineer', 'Master Automotive Mechanic'] },
     { regex: /product/i, roles: ['Product Manager', 'Senior Product Manager', 'Lead Product Manager', 'Principal Product Manager', 'Director of Product Management', 'Technical Product Manager', 'Product Marketing Manager (PMM)', 'Associate Product Manager (APM)'] },
     { regex: /project/i, roles: ['Project Manager', 'Senior Project Manager', 'Technical Project Manager', 'IT Project Manager', 'PMP Certified Project Manager', 'Agile Project Manager', 'Construction Project Manager', 'Project Coordinator'] },
     { regex: /sales/i, roles: ['Sales Representative', 'Sales Development Representative (SDR)', 'Business Development Representative (BDR)', 'Account Executive (AE)', 'Senior Account Executive', 'Enterprise Sales Director', 'Sales Manager', 'Inside Sales Representative'] },
     { regex: /market/i, roles: ['Marketing Specialist', 'Digital Marketing Specialist', 'Digital Marketing Manager', 'Growth Marketing Lead', 'Performance Marketing Specialist', 'SEO & Content Specialist', 'Brand Marketing Manager', 'Product Marketing Manager (PMM)'] },
-    { regex: /qa|test/i, roles: ['QA Automation Engineer', 'Senior QA Automation Engineer', 'QA Engineer', 'Software Test Engineer', 'Quality Assurance Specialist', 'Lead QA Automation Engineer', 'SDET (Software Development Engineer in Test)', 'Software QA Tester'] },
-    { regex: /dev/i, roles: ['DevOps Engineer', 'Developer (Software)', 'Full Stack Developer', 'Frontend Developer', 'Backend Developer', 'Mobile App Developer', 'Cloud Developer', 'Software Developer'] },
+    { regex: /\bqa\b|\btest/i, roles: ['QA Automation Engineer', 'Senior QA Automation Engineer', 'QA Engineer', 'Software Test Engineer', 'Quality Assurance Specialist', 'Lead QA Automation Engineer', 'SDET (Software Development Engineer in Test)', 'Software QA Tester'] },
+    { regex: /\bdev\b|\bdeveloper|\bdevops/i, roles: ['DevOps Engineer', 'Developer (Software)', 'Full Stack Developer', 'Frontend Developer', 'Backend Developer', 'Mobile App Developer', 'Cloud Developer', 'Software Developer'] },
     { regex: /cloud/i, roles: ['Cloud Solutions Architect', 'Senior Cloud Solutions Architect', 'Cloud Infrastructure Engineer', 'Cloud Security Architect', 'Cloud DevOps Engineer', 'AWS Cloud Architect', 'Azure Cloud Engineer'] },
     { regex: /cyber|secur/i, roles: ['Cybersecurity Analyst', 'Senior Cybersecurity Analyst', 'Cybersecurity Engineer', 'Information Security Officer (CISO)', 'Penetration Tester', 'SOC Analyst', 'Cloud Security Architect', 'Application Security Engineer'] },
     { regex: /robot/i, roles: ['Robotics Engineer', 'Senior Robotics Engineer', 'Robotics Software Developer', 'Robotics Systems Specialist', 'Automation & Robotics Technician', 'Lead Robotics Architect'] },
     { regex: /solar/i, roles: ['Solar Installation Technician', 'Solar Energy Engineer', 'Solar Project Manager', 'Commercial Solar Specialist', 'Renewable Energy Consultant', 'Solar Systems Designer'] },
-    { regex: /ai|machine/i, roles: ['Machine Learning Engineer', 'AI Engineer', 'AI Research Scientist', 'Senior Machine Learning Engineer', 'MLOps Engineer', 'Deep Learning Specialist', 'Generative AI Specialist', 'NLP Engineer'] },
+    { regex: /\bai\b|\bmachine/i, roles: ['Machine Learning Engineer', 'AI Engineer', 'AI Research Scientist', 'Senior Machine Learning Engineer', 'MLOps Engineer', 'Deep Learning Specialist', 'Generative AI Specialist', 'NLP Engineer'] },
     { regex: /dent/i, roles: ['General Dentist', 'Doctor of Dental Surgery (DDS)', 'Dental Hygienist', 'Dental Assistant', 'Orthodontist', 'Periodontist', 'Dental Practice Manager'] },
     { regex: /pharma/i, roles: ['Clinical Pharmacist', 'Staff Pharmacist', 'Pharmacy Technician', 'Director of Pharmacy', 'Hospital Pharmacist', 'Retail Pharmacist', 'Pharmacologist'] },
     { regex: /surg/i, roles: ['General Surgeon', 'Orthopedic Surgeon', 'Cardiothoracic Surgeon', 'Neurosurgeon', 'Trauma Surgeon', 'Surgical Technologist', 'Operating Room Nurse'] },
     { regex: /anim/i, roles: ['3D Animator', 'Character Animator', 'Motion Graphics Animator', '2D Animator', 'Lead Technical Animator'] },
     { regex: /video/i, roles: ['Video Editor', 'Video Producer', 'Videographer', 'Post-Production Specialist', 'Senior Motion Video Lead'] },
-    { regex: /hr|talent/i, roles: ['Human Resources Manager', 'HR Generalist', 'HR Business Partner (HRBP)', 'Director of Human Resources', 'Talent Acquisition Specialist', 'Senior Technical Recruiter'] },
-    { regex: /logist|supply/i, roles: ['Logistics Coordinator', 'Logistics Manager', 'Supply Chain Analyst', 'Supply Chain Manager', 'Warehouse Operations Manager', 'Fleet Manager'] },
+    { regex: /\bhr\b|\btalent/i, roles: ['Human Resources Manager', 'HR Generalist', 'HR Business Partner (HRBP)', 'Director of Human Resources', 'Talent Acquisition Specialist', 'Senior Technical Recruiter'] },
+    { regex: /\blogist|\bsupply/i, roles: ['Logistics Coordinator', 'Logistics Manager', 'Supply Chain Analyst', 'Supply Chain Manager', 'Warehouse Operations Manager', 'Fleet Manager'] },
     { regex: /strat|consult/i, roles: ['Management Consultant', 'Strategy Consultant', 'Business Analyst', 'Senior Business Analyst', 'Strategic Operations Manager'] },
     { regex: /cardio/i, roles: ['Cardiologist', 'Cardiology Fellow', 'Cardiovascular Technologist', 'Cardiothoracic Surgeon', 'Cardiac Nurse Practitioner', 'Director of Cardiology'] },
     { regex: /neuro/i, roles: ['Neurologist', 'Neurosurgeon', 'Neuroscience Researcher', 'Neurointensive Care Nurse', 'Neurology Physician Assistant'] },
@@ -433,10 +434,11 @@ const DOMAIN_ROLE_EXPANSIONS = Object.freeze([
     { regex: /struct/i, roles: ['Structural Engineer', 'Senior Structural Designer', 'Structural Project Engineer', 'Bridge Structural Engineer'] },
     { regex: /archit/i, roles: ['Architectural Designer', 'Licensed Architect', 'Project Architect', 'Enterprise Architect', 'Landscape Architect'] },
     { regex: /prof/i, roles: ['Assistant Professor', 'Associate Professor', 'Adjunct Professor', 'Distinguished Professor', 'Research Professor'] },
-    { regex: /art/i, roles: ['Art Director', 'Concept Artist', 'Storyboard Artist', 'Technical Artist', 'Digital Artist', 'Visual Development Artist'] },
+    { regex: /\bart\b|\bartist/i, roles: ['Art Director', 'Concept Artist', 'Storyboard Artist', 'Technical Artist', 'Digital Artist', 'Visual Development Artist'] },
     { regex: /kube/i, roles: ['Kubernetes Administrator', 'Kubernetes Platform Engineer', 'DevOps Engineer (Kubernetes)', 'Cloud Infrastructure Engineer (K8s)'] },
     { regex: /pyth/i, roles: ['Python Developer', 'Senior Python Engineer', 'Python Data Engineer', 'Python Backend Developer', 'Machine Learning Engineer (Python)'] },
-    { regex: /react/i, roles: ['React Developer', 'Senior React.js Engineer', 'React Native Developer', 'Frontend Engineer (React)', 'Full Stack React / Node Engineer'] }
+    { regex: /react/i, roles: ['React Developer', 'Senior React.js Engineer', 'React Native Developer', 'Frontend Engineer (React)', 'Full Stack React / Node Engineer'] },
+    { regex: /onco/i, roles: ['Medical Oncologist', 'Radiation Oncologist', 'Surgical Oncologist', 'Hematologist-Oncologist', 'Pediatric Oncologist', 'Clinical Oncologist', 'Gynecologic Oncologist', 'Consultant Oncologist'] }
 ]);
 
 /**
@@ -466,20 +468,54 @@ export function synthesizeDynamicSuggestions(directoryType, query = '', _context
             }
         }
 
-        // 2. Only for unclassified / emerging / niche professions: synthesize clean professional titles
+        // 2. Only for unclassified / emerging / niche professions: synthesize clean professional titles with morpheme awareness
         if (!matchedAnyDomain) {
-            suggestions.push(
-                `${titleCaseQ} Specialist`,
-                `${titleCaseQ} Consultant`,
-                `${titleCaseQ} Engineer`,
-                `${titleCaseQ} Analyst`,
-                `${titleCaseQ} Developer`,
-                `${titleCaseQ} Researcher`,
-                `${titleCaseQ} Project Manager`,
-                `${titleCaseQ} Coordinator`,
-                `Senior ${titleCaseQ} Specialist`,
-                `Lead ${titleCaseQ} Consultant`
-            );
+            if (/olog(?:ist|y)$/i.test(cleanQLower) || /dermat|pathol|gastro|pulmon|endocrin|nephrol|immunol|rheumat/i.test(cleanQLower)) {
+                const base = titleCaseQ.replace(/y$/, 'ist');
+                suggestions.push(
+                    base,
+                    `Medical ${base}`,
+                    `Surgical ${base}`,
+                    `Clinical ${base}`,
+                    `Senior ${base}`,
+                    `Consultant ${base}`,
+                    `Pediatric ${base}`,
+                    `Chief ${base}`
+                );
+            } else if (/iatr(?:ist|ic|ian)$/i.test(cleanQLower)) {
+                suggestions.push(
+                    titleCaseQ,
+                    `Clinical ${titleCaseQ}`,
+                    `Consultant ${titleCaseQ}`,
+                    `Senior ${titleCaseQ}`,
+                    `Adult & Pediatric ${titleCaseQ}`,
+                    `Chief ${titleCaseQ}`
+                );
+            } else if (/engineer|develop|programm|softw|cloud|devops|data|full\s*stack|front\s*end|back\s*end/i.test(cleanQLower)) {
+                suggestions.push(
+                    titleCaseQ,
+                    `Senior ${titleCaseQ}`,
+                    `Lead ${titleCaseQ}`,
+                    `Principal ${titleCaseQ}`,
+                    `Staff ${titleCaseQ}`,
+                    `${titleCaseQ} Lead`,
+                    `${titleCaseQ} Manager`,
+                    `Associate ${titleCaseQ}`
+                );
+            } else {
+                suggestions.push(
+                    titleCaseQ,
+                    `Senior ${titleCaseQ}`,
+                    `Lead ${titleCaseQ}`,
+                    `Associate ${titleCaseQ}`,
+                    `Principal ${titleCaseQ}`,
+                    `${titleCaseQ} Specialist`,
+                    `${titleCaseQ} Consultant`,
+                    `${titleCaseQ} Manager`,
+                    `${titleCaseQ} Coordinator`,
+                    `${titleCaseQ} Director`
+                );
+            }
         }
     } else if (normType === 'company' || normType === 'employer' || normType === 'organization') {
         suggestions.push(

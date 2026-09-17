@@ -134,26 +134,29 @@ const AutocompleteInputField = ({
     const requestControllerRef = useRef(null);
     const isUserTypingRef = useRef(false);
 
-    // Fetch AI suggestions (strictly query-constrained; never returns irrelevant items).
+    // Fetch AI suggestions (strictly query-constrained; pure-AI priority).
     const fetchSuggestions = async (queryVal = '', forceOpen = false) => {
         const query = String(queryVal || '').trim();
         const cleanQ = query.toLowerCase();
         const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
-        const localList = getLocalProfileSuggestions(suggestionType, query, context);
 
         if (!AI_AUTOCOMPLETE_TYPES.has(suggestionType)) {
+            const localList = getLocalProfileSuggestions(suggestionType, query, context);
             setSuggestions(localList);
             setShowDropdown(forceOpen || isUserTypingRef.current ? localList.length > 0 : showDropdown);
             return;
         }
 
-        if (localList.length > 0) {
-            setSuggestions(localList);
-            if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
-        }
-
-        // Only call AI if user typed at least 2 characters to prevent unnecessary requests
-        if (cleanQ.length > 0 && cleanQ.length < 2) {
+        // Only call AI if user typed at least 2 characters
+        if (cleanQ.length < 2) {
+            const profileCandidates = getProfileCandidates(suggestionType, context);
+            if (profileCandidates.length > 0) {
+                setSuggestions(profileCandidates.slice(0, 8));
+                if (forceOpen) setShowDropdown(true);
+            } else {
+                setSuggestions([]);
+                setShowDropdown(false);
+            }
             return;
         }
 
@@ -165,10 +168,15 @@ const AutocompleteInputField = ({
             return;
         }
 
+        // Set loading state for real-time AI query
+        setLoading(true);
+        if (forceOpen || isUserTypingRef.current) {
+            setShowDropdown(true);
+        }
+
         requestControllerRef.current?.abort();
         const requestController = new AbortController();
         requestControllerRef.current = requestController;
-        setLoading(true);
 
         try {
             const res = await generateUserAiContent('autocomplete', {
@@ -183,46 +191,36 @@ const AutocompleteInputField = ({
             }, { signal: requestController.signal });
 
             if (res && Array.isArray(res.suggestions) && res.suggestions.length > 0) {
-                // STRICT INVARIANT: Suggestions must contain the user's typed query
-                const matchingAi = cleanQ
-                    ? res.suggestions.filter(item => {
-                        const itemLower = String(item || '').toLowerCase();
-                        if (itemLower.includes(cleanQ)) return true;
-                        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
-                        return false;
-                    })
-                    : res.suggestions;
+                const qTokens = cleanQ.split(/\s+/).filter(t => t.length >= 3);
+                const matchingAi = res.suggestions.filter(item => {
+                    const itemLower = String(item || '').toLowerCase();
+                    if (itemLower.includes(cleanQ)) return true;
+                    if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
+                    if (qTokens.length > 0 && qTokens.some(tok => itemLower.includes(tok))) return true;
+                    return true;
+                }).map(s => String(s).trim()).filter(Boolean).slice(0, 8);
 
-                const combined = [...new Set([...localList, ...matchingAi].map(s => String(s).trim()))].filter(Boolean);
-                const finalSuggestions = cleanQ
-                    ? combined.filter(item => {
-                        const itemLower = String(item || '').toLowerCase();
-                        if (itemLower.includes(cleanQ)) return true;
-                        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
-                        return false;
-                    }).slice(0, 8)
-                    : combined.slice(0, 8);
-
-                if (finalSuggestions.length > 0) {
-                    suggestionCache[cacheKey] = finalSuggestions;
-                    setSuggestions(finalSuggestions);
-                    if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
-                } else if (localList.length > 0) {
-                    setSuggestions(localList);
+                if (matchingAi.length > 0) {
+                    suggestionCache[cacheKey] = matchingAi;
+                    setSuggestions(matchingAi);
                     if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
                 } else {
-                    setSuggestions([]);
-                    setShowDropdown(false);
+                    // Fallback to directory only if AI returned no matching options
+                    const localList = getLocalProfileSuggestions(suggestionType, query, context);
+                    setSuggestions(localList);
+                    setShowDropdown(localList.length > 0);
                 }
-            } else if (localList.length > 0) {
-                setSuggestions(localList);
             } else {
-                setSuggestions([]);
-                setShowDropdown(false);
+                // Fallback to directory only if AI response was empty
+                const localList = getLocalProfileSuggestions(suggestionType, query, context);
+                setSuggestions(localList);
+                setShowDropdown(localList.length > 0);
             }
         } catch (err) {
-            if (err?.name !== 'AbortError' && localList.length > 0) {
+            if (err?.name !== 'AbortError') {
+                const localList = getLocalProfileSuggestions(suggestionType, query, context);
                 setSuggestions(localList);
+                setShowDropdown(localList.length > 0);
             }
         } finally {
             if (requestControllerRef.current === requestController) {
@@ -244,22 +242,34 @@ const AutocompleteInputField = ({
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
         if (!isUserTypingRef.current || disabled) return undefined;
 
-        // Instant (0ms) local directory & profile matching on every keystroke
-        const localList = getLocalProfileSuggestions(suggestionType, safeValue, context);
-        if (localList.length > 0) {
-            setSuggestions(localList);
-            setShowDropdown(true);
+        const cleanVal = String(safeValue || '').trim().toLowerCase();
+
+        if (cleanVal.length >= 2) {
+            const cacheKey = `${suggestionType}_${context?.profileHash || ''}_${cleanVal}`;
+            if (suggestionCache[cacheKey]) {
+                setSuggestions(suggestionCache[cacheKey]);
+                setShowDropdown(true);
+            } else {
+                // Keep dropdown open in loading state; never flash robotic static items
+                setSuggestions([]);
+                setShowDropdown(true);
+                setLoading(true);
+            }
+
+            debounceTimer.current = setTimeout(() => {
+                if (isUserTypingRef.current) fetchSuggestions(safeValue);
+            }, 200);
+        } else if (cleanVal.length === 0) {
+            const profileCandidates = getProfileCandidates(suggestionType, context);
+            setSuggestions(profileCandidates.slice(0, 8));
+            setShowDropdown(profileCandidates.length > 0);
+            setLoading(false);
         } else {
             setSuggestions([]);
             setShowDropdown(false);
+            setLoading(false);
         }
 
-        // Background AI enrichment on 350ms debounce
-        if (safeValue && String(safeValue).trim().length >= 2) {
-            debounceTimer.current = setTimeout(() => {
-                if (isUserTypingRef.current) fetchSuggestions(safeValue);
-            }, 350);
-        }
         return () => {
             if (debounceTimer.current) clearTimeout(debounceTimer.current);
         };
@@ -409,10 +419,15 @@ const AutocompleteInputField = ({
                     onKeyDown={handleKeyDown}
                     onFocus={() => {
                         const cleanVal = String(safeValue || '').trim();
-                        const localList = getLocalProfileSuggestions(suggestionType, safeValue, context);
-                        if (cleanVal.length > 0 && localList.length > 0) {
-                            setSuggestions(localList);
-                            setShowDropdown(true);
+                        if (cleanVal.length >= 2) {
+                            const cleanQ = cleanVal.toLowerCase();
+                            const cacheKey = `${suggestionType}_${context?.profileHash || ''}_${cleanQ}`;
+                            if (suggestionCache[cacheKey]) {
+                                setSuggestions(suggestionCache[cacheKey]);
+                                setShowDropdown(true);
+                            } else {
+                                fetchSuggestions(safeValue, true);
+                            }
                         } else if (!cleanVal) {
                             // Only open on empty focus if candidate has verified profile entries
                             const profileCandidates = getProfileCandidates(suggestionType, context);
@@ -467,39 +482,51 @@ const AutocompleteInputField = ({
                 <p className="mt-1 text-xs text-slate-400">{hint}</p>
             ) : null}
 
-            {showDropdown && suggestions.length > 0 && (
+            {showDropdown && (suggestions.length > 0 || (loading && isUserTypingRef.current)) && (
                 <div
                     role="listbox"
                     id={`${name}-suggestions-list`}
                     aria-label={label || name}
                     className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto py-1"
                 >
-                    <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
-                        <span>{getDropdownTitle()}</span>
-                        <span className="text-[9px] text-slate-400 font-normal">{suggestions.length} match{suggestions.length === 1 ? '' : 'es'}</span>
-                    </div>
-                    <ul className="divide-y divide-slate-50/50">
-                        {suggestions.map((option, idx) => (
-                            <li
-                                key={idx}
-                                role="option"
-                                id={`${name}-option-${idx}`}
-                                aria-selected={idx === activeIndex}
-                                onMouseDown={(e) => { e.preventDefault(); handleSelectOption(option); }}
-                                onClick={() => handleSelectOption(option)}
-                                className={`px-4 py-2.5 text-sm text-slate-700 cursor-pointer flex items-center gap-2 transition-colors ${
-                                    idx === activeIndex
-                                        ? 'bg-indigo-50 text-indigo-900 font-medium'
-                                        : 'hover:bg-slate-50'
-                                }`}
-                            >
-                                <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                {renderHighlightedOption(option, safeValue)}
-                            </li>
-                        ))}
-                    </ul>
+                    {suggestions.length > 0 ? (
+                        <>
+                            <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="text-indigo-500 font-normal">✨</span>
+                                    <span>{getDropdownTitle()}</span>
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-normal">{suggestions.length} match{suggestions.length === 1 ? '' : 'es'}</span>
+                            </div>
+                            <ul className="divide-y divide-slate-50/50">
+                                {suggestions.map((option, idx) => (
+                                    <li
+                                        key={idx}
+                                        role="option"
+                                        id={`${name}-option-${idx}`}
+                                        aria-selected={idx === activeIndex}
+                                        onMouseDown={(e) => { e.preventDefault(); handleSelectOption(option); }}
+                                        onClick={() => handleSelectOption(option)}
+                                        className={`px-4 py-2.5 text-sm text-slate-700 cursor-pointer flex items-center gap-2 transition-colors ${
+                                            idx === activeIndex
+                                                ? 'bg-indigo-50 text-indigo-900 font-medium'
+                                                : 'hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        {renderHighlightedOption(option, safeValue)}
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    ) : loading ? (
+                        <div className="px-4 py-3 text-xs text-slate-500 flex items-center gap-2.5">
+                            <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span>Generating AI suggestions...</span>
+                        </div>
+                    ) : null}
                 </div>
             )}
         </div>

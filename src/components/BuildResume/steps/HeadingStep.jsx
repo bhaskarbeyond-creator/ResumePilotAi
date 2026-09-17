@@ -246,14 +246,29 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         // 3. Dynamic AI-generated suggestions
         const aiList = aiRoleSuggestions || [];
 
-        // If user is actively typing, filter and dynamically synthesize across all industries
+        // If user is actively typing, prioritize pure AI suggestions
         if (query) {
-            const matchedAi = aiList.filter((r) => r.toLowerCase().includes(query));
+            const qTokens = query.split(/\s+/).filter((t) => t.length >= 3);
+            const matchedAi = aiList.filter((r) => {
+                const rLower = String(r || '').toLowerCase();
+                return rLower.includes(query) || (qTokens.length > 0 && qTokens.some((tok) => rLower.includes(tok)));
+            });
+
+            // Pure AI suggestions take top priority
+            if (matchedAi.length > 0) {
+                return [...new Set(matchedAi)].slice(0, 8);
+            }
+
+            // If AI is currently fetching, keep list clean or show candidate's past roles
+            if (isFetchingAiRoles) {
+                return [];
+            }
+
             const matchedProg = organicProgressions.filter((r) => r.toLowerCase().includes(query));
             const matchedPast = pastRoles.filter((r) => r.toLowerCase().includes(query));
-            const matchedDirectory = matchUniversalDirectory('jobTitle', query, 12);
+            const matchedDirectory = matchUniversalDirectory('jobTitle', query, 8);
 
-            const combined = [...matchedAi, ...matchedProg, ...matchedPast, ...matchedDirectory];
+            const combined = [...matchedProg, ...matchedPast, ...matchedDirectory];
             const seen = new Set();
             const unique = [];
             for (const item of combined) {
