@@ -243,33 +243,200 @@ export const UNIVERSAL_CITIES = Object.freeze([
 ]);
 
 export const UNIVERSAL_JOB_TITLES = Object.freeze([
-    // Tech & Engineering
-    'Software Engineer', 'Senior Software Engineer', 'Lead Software Engineer', 'Full Stack Developer',
-    'Frontend Developer', 'Backend Engineer', 'Mobile Application Developer', 'iOS Developer', 'Android Developer',
-    'DevOps Engineer', 'Cloud Solutions Architect', 'Site Reliability Engineer (SRE)', 'Cybersecurity Analyst',
-    'Systems Administrator', 'Network Engineer', 'QA Automation Engineer', 'Embedded Systems Engineer',
-    // Data & AI
-    'Data Analyst', 'Senior Data Analyst', 'Data Scientist', 'Senior Data Scientist', 'Data Engineer',
-    'Machine Learning Engineer', 'AI Research Scientist', 'Business Intelligence Analyst', 'Analytics Engineer', 'Database Administrator',
-    // Product & Management
-    'Product Manager', 'Senior Product Manager', 'Technical Project Manager', 'Scrum Master', 'Agile Coach',
-    'Program Manager', 'Director of Product', 'Operations Manager', 'General Manager', 'Chief Technology Officer (CTO)',
-    // Design & Creative
-    'UI/UX Designer', 'Senior Product Designer', 'Graphic Designer', 'Creative Director', 'Art Director',
-    'Content Strategist', 'Technical Writer', 'Motion Designer',
-    // Marketing & Growth
-    'Digital Marketing Specialist', 'Growth Marketing Lead', 'SEO & Content Specialist', 'Performance Marketer',
-    'Social Media Manager', 'Brand Marketing Manager', 'Product Marketing Manager (PMM)',
-    // Finance, Accounting & Consulting
-    'Senior Accountant', 'Staff Accountant', 'Financial Analyst', 'Senior Financial Analyst', 'Accounting Manager',
-    'Finance Director', 'Controller', 'Auditor', 'Tax Consultant', 'Management Consultant', 'Strategy Consultant',
-    // Healthcare & Clinical
-    'Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Clinical Research Coordinator', 'Healthcare Administrator',
-    'Physical Therapist', 'Medical Technologist', 'Pharmacist', 'Physician Assistant (PA)',
-    // Education, Sales & Legal
-    'High School Teacher', 'Elementary School Teacher', 'Instructional Designer', 'Corporate Trainer',
-    'Account Executive', 'Sales Development Representative (SDR)', 'Business Development Manager', 'Customer Success Manager',
-    'Corporate Counsel', 'Paralegal', 'Legal Assistant', 'Compliance Officer', 'Contract Specialist'
+    // Software & Systems Engineering
+    'Software Engineer', 'Senior Software Engineer', 'Lead Software Engineer', 'Principal Software Engineer', 'Staff Software Engineer',
+    'Software Developer', 'Senior Software Developer', 'Lead Software Developer',
+    'Software Architect', 'Senior Software Architect', 'Principal Software Architect',
+    'Solutions Architect', 'Cloud Solutions Architect', 'Enterprise Architect',
+    'Software Engineering Manager', 'Director of Software Engineering', 'VP of Engineering',
+    'Embedded Software Engineer', 'Systems Software Engineer', 'Firmware Engineer', 'Platform Engineer',
+    // Web, Frontend & Full Stack
+    'Frontend Developer', 'Senior Frontend Developer', 'Lead Frontend Developer',
+    'Frontend Engineer', 'Senior Frontend Engineer', 'Lead Frontend Engineer', 'Staff Frontend Engineer',
+    'Backend Engineer', 'Senior Backend Engineer', 'Lead Backend Engineer', 'Staff Backend Engineer',
+    'Backend Developer', 'Senior Backend Developer', 'Lead Backend Developer',
+    'Full Stack Developer', 'Senior Full Stack Developer', 'Lead Full Stack Developer',
+    'Full Stack Engineer', 'Senior Full Stack Engineer', 'Lead Full Stack Engineer', 'Staff Full Stack Engineer',
+    'Web Developer', 'Senior Web Developer', 'Web Application Architect', 'WordPress Developer',
+    // Mobile Development
+    'Mobile Application Developer', 'Senior Mobile Developer', 'Lead Mobile Engineer',
+    'iOS Developer', 'Senior iOS Developer', 'Lead iOS Engineer',
+    'Android Developer', 'Senior Android Developer', 'Lead Android Engineer',
+    'React Native Developer', 'Flutter Developer',
+    // Cloud, DevOps, Infrastructure & SRE
+    'DevOps Engineer', 'Senior DevOps Engineer', 'Lead DevOps Engineer', 'Principal DevOps Engineer',
+    'Site Reliability Engineer (SRE)', 'Senior Site Reliability Engineer', 'Lead SRE',
+    'Cloud Engineer', 'Senior Cloud Engineer', 'Cloud Infrastructure Engineer', 'Cloud Security Architect',
+    'Kubernetes Platform Engineer', 'Infrastructure Engineer', 'Systems Administrator', 'Senior Systems Administrator',
+    'Network Engineer', 'Senior Network Engineer', 'Network Security Engineer', 'Linux Systems Administrator',
+    // QA & Test Engineering
+    'QA Automation Engineer', 'Senior QA Automation Engineer', 'Lead QA Automation Engineer',
+    'QA Engineer', 'Software Test Engineer', 'Quality Assurance Specialist', 'Quality Assurance Lead',
+    'SDET (Software Development Engineer in Test)', 'Performance Test Engineer', 'Manual QA Tester',
+    // Cybersecurity & Information Security
+    'Cybersecurity Analyst', 'Senior Cybersecurity Analyst', 'Lead Cybersecurity Specialist',
+    'Cybersecurity Engineer', 'Senior Cybersecurity Engineer', 'Information Security Officer (CISO)',
+    'Security Operations Center (SOC) Analyst', 'Penetration Tester (Ethical Hacker)', 'Application Security Engineer',
+    'Cloud Security Engineer', 'Incident Response Specialist', 'Security Architect',
+    // Data Science, AI & Machine Learning
+    'Data Analyst', 'Senior Data Analyst', 'Lead Data Analyst', 'Principal Data Analyst',
+    'Data Scientist', 'Senior Data Scientist', 'Lead Data Scientist', 'Principal Data Scientist',
+    'Data Engineer', 'Senior Data Engineer', 'Lead Data Engineer', 'Big Data Architect',
+    'Machine Learning Engineer', 'Senior Machine Learning Engineer', 'Lead ML Engineer',
+    'AI Research Scientist', 'AI Engineer', 'Deep Learning Specialist', 'MLOps Engineer',
+    'Computer Vision Engineer', 'Natural Language Processing (NLP) Engineer', 'Generative AI Specialist',
+    'Business Intelligence Analyst', 'Senior BI Developer', 'Analytics Engineer', 'Database Administrator (DBA)',
+    // Product Management & Agile Leadership
+    'Product Manager', 'Senior Product Manager', 'Lead Product Manager', 'Principal Product Manager',
+    'Director of Product Management', 'Group Product Manager', 'Associate Product Manager (APM)',
+    'Technical Product Manager', 'Product Marketing Manager (PMM)', 'Head of Product',
+    'Project Manager', 'Senior Project Manager', 'Technical Project Manager', 'IT Project Manager',
+    'PMP Certified Project Manager', 'Agile Project Manager', 'Scrum Master', 'Senior Scrum Master',
+    'Agile Coach', 'Program Manager', 'Senior Program Manager', 'Director of Program Management',
+    // UI/UX, Graphic Design & Creative Arts
+    'UI/UX Designer', 'Senior UI/UX Designer', 'Lead UI/UX Designer', 'Product Designer',
+    'Senior Product Designer', 'Lead Product Designer', 'UX Researcher', 'Interaction Designer',
+    'Visual Designer', 'Design Systems Lead', 'Graphic Designer', 'Senior Graphic Designer',
+    'Creative Director', 'Art Director', 'Motion Graphics Designer', '3D Animator', '3D Artist',
+    'Video Producer', 'Video Editor', 'Videographer', 'Content Strategist', 'Technical Writer', 'Copywriter',
+    // Marketing, Growth, SEO & Social Media
+    'Marketing Specialist', 'Senior Marketing Specialist', 'Digital Marketing Specialist', 'Digital Marketing Manager',
+    'Growth Marketing Lead', 'Growth Marketer', 'Performance Marketing Specialist',
+    'SEO & Content Specialist', 'Content Marketing Manager', 'Brand Marketing Manager',
+    'Social Media Manager', 'Public Relations (PR) Specialist', 'Communications Manager', 'Email Marketing Specialist',
+    // Sales, Business Development & Customer Success
+    'Sales Representative', 'Inside Sales Representative', 'Outside Sales Representative',
+    'Sales Development Representative (SDR)', 'Business Development Representative (BDR)',
+    'Account Executive (AE)', 'Senior Account Executive', 'Enterprise Account Executive',
+    'Account Manager', 'Key Account Manager', 'Sales Manager', 'Regional Sales Director',
+    'Vice President of Sales', 'Customer Success Manager (CSM)', 'Senior Customer Success Manager',
+    'Customer Support Specialist', 'Client Relations Specialist',
+    // Accounting, Finance, Banking & Investment
+    'Senior Accountant', 'Staff Accountant', 'Junior Accountant', 'Cost Accountant',
+    'Certified Public Accountant (CPA)', 'Forensic Accountant', 'Accounting Manager', 'Corporate Controller',
+    'Financial Analyst', 'Senior Financial Analyst', 'Lead Financial Analyst',
+    'Finance Director', 'Vice President of Finance', 'Chief Financial Officer (CFO)',
+    'Internal Auditor', 'Senior Auditor', 'Tax Accountant', 'Tax Consultant', 'Tax Preparer',
+    'Investment Banking Analyst', 'Commercial Banking Officer', 'Portfolio Manager',
+    'Wealth Management Advisor', 'Credit Analyst', 'Actuary', 'Actuarial Analyst',
+    // Healthcare, Medicine, Nursing & Clinical
+    'Medical Doctor (MD)', 'Physician', 'General Practitioner (GP)', 'Family Medicine Physician',
+    'Internal Medicine Physician', 'Attending Physician', 'Emergency Medicine Physician', 'Resident Physician',
+    'Pediatrician', 'Cardiologist', 'Dermatologist', 'Neurologist', 'Psychiatrist', 'Radiologist', 'Anesthesiologist',
+    'General Surgeon', 'Orthopedic Surgeon', 'Cardiothoracic Surgeon', 'Neurosurgeon',
+    'Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Critical Care Registered Nurse (CCRN)',
+    'Emergency Room Nurse (ER RN)', 'Charge Nurse', 'Pediatric Nurse', 'Operating Room Nurse (OR RN)',
+    'Clinical Nurse Specialist (CNS)', 'Nurse Manager', 'Licensed Practical Nurse (LPN)',
+    'Physician Assistant (PA)', 'Clinical Pharmacist', 'Staff Pharmacist', 'Pharmacy Technician',
+    'Physical Therapist (PT)', 'Occupational Therapist (OT)', 'Speech Language Pathologist (SLP)',
+    'Medical Laboratory Technologist', 'Phlebotomist', 'Clinical Research Coordinator',
+    'Healthcare Administrator', 'Dentist (DDS)', 'Dental Hygienist', 'Dental Assistant', 'Orthodontist',
+    // Skilled Trades, Construction & Maintenance
+    'Licensed Electrician', 'Master Electrician', 'Journeyman Electrician', 'Industrial Electrician', 'Commercial Electrician',
+    'Licensed Plumber', 'Master Plumber', 'Journeyman Plumber', 'Commercial Plumber', 'Pipefitter',
+    'HVAC Service Technician', 'Commercial HVAC Specialist', 'HVAC Installation Lead', 'Refrigeration Technician',
+    'Certified Welder', 'Pipe Welder', 'Structural Welder', 'MIG / TIG Welder',
+    'Master Carpenter', 'Finish Carpenter', 'Framing Carpenter', 'Cabinetmaker',
+    'Construction Project Manager', 'General Contractor', 'Construction Superintendent', 'Heavy Equipment Operator',
+    'Automotive Technician', 'Master Automotive Mechanic', 'Diesel Mechanic', 'Maintenance Technician',
+    // Engineering (Multi-Discipline)
+    'Mechanical Engineer', 'Senior Mechanical Engineer', 'Lead Mechanical Engineer', 'Mechanical Design Engineer',
+    'Electrical Engineer', 'Senior Electrical Engineer', 'Electrical Project Manager',
+    'Civil Engineer', 'Senior Civil Engineer', 'Civil Project Manager', 'Civil Design Engineer', 'Structural Civil Engineer',
+    'Structural Engineer', 'Senior Structural Designer', 'Environmental Engineer', 'Transportation Civil Engineer',
+    'Aerospace Engineer', 'Aeronautical Systems Specialist', 'Aerodynamics Engineer', 'Avionics Technician',
+    'Chemical Engineer', 'Biomedical Engineer', 'Industrial Engineer', 'Manufacturing Engineer', 'Robotics Engineer',
+    // Aviation, Transportation & Logistics
+    'Commercial Airline Pilot', 'Airline Transport Pilot (ATP)', 'First Officer Pilot', 'Airline Captain',
+    'Flight Instructor (CFI)', 'Corporate Jet Pilot', 'Helicopter Pilot', 'Air Traffic Controller', 'Flight Attendant',
+    'Aircraft Maintenance Technician (A&P)', 'Flight Operations Manager', 'Flight Dispatcher',
+    'Logistics Coordinator', 'Logistics Manager', 'Supply Chain Analyst', 'Supply Chain Manager',
+    'Warehouse Operations Manager', 'Fleet Manager', 'Transportation Dispatcher', 'Freight Broker',
+    // Legal, Compliance, Governance & Risk
+    'Attorney at Law', 'Corporate Lawyer', 'Litigation Attorney', 'Associate Attorney', 'Partner Attorney',
+    'Criminal Defense Lawyer', 'Trial Lawyer', 'General Counsel', 'Senior Legal Counsel', 'Corporate Counsel',
+    'Paralegal', 'Senior Paralegal', 'Litigation Paralegal', 'Certified Paralegal (CP)', 'Legal Assistant', 'Law Clerk',
+    'Compliance Officer', 'Chief Compliance Officer (CCO)', 'Regulatory Compliance Specialist',
+    'AML / KYC Compliance Analyst', 'Risk Management Analyst', 'Contract Administrator',
+    // Education, Academia, Teaching & Training
+    'Teacher', 'Elementary School Teacher', 'High School Teacher', 'Middle School Teacher',
+    'Special Education Teacher', 'STEM Teacher', 'Lead Science Teacher', 'ESL Teacher',
+    'School Principal', 'Vice Principal', 'Academic Counselor', 'Instructional Designer', 'Instructional Coach',
+    'College Professor', 'Assistant Professor', 'Associate Professor', 'Adjunct Professor', 'Corporate Trainer',
+    // Hospitality, Culinary Arts & Event Management
+    'Executive Chef', 'Sous Chef', 'Pastry Chef', 'Head Chef', 'Chef de Cuisine', 'Private Chef',
+    'Lead Line Cook', 'Prep Cook', 'Head Barista', 'Coffee Roaster & Barista', 'Master Baker',
+    'Restaurant General Manager', 'Food & Beverage Director', 'Sommelier', 'Lead Bartender',
+    'Hotel General Manager', 'Front Desk Supervisor', 'Event Planner', 'Catering Director',
+    // Human Resources & Talent Acquisition
+    'Human Resources Manager', 'HR Generalist', 'HR Business Partner (HRBP)', 'Director of Human Resources',
+    'Talent Acquisition Specialist', 'Senior Technical Recruiter', 'Recruiting Coordinator',
+    'People Operations Manager', 'Compensation and Benefits Specialist',
+    // Executive, Management & Operations
+    'Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Chief Technology Officer (CTO)',
+    'Chief Financial Officer (CFO)', 'Chief Information Officer (CIO)', 'Chief Marketing Officer (CMO)',
+    'Operations Manager', 'Director of Operations', 'General Manager', 'Business Operations Analyst',
+    'Management Consultant', 'Strategy Consultant', 'Business Analyst', 'Senior Business Analyst',
+    'Executive Assistant', 'Office Manager'
+]);
+
+const DOMAIN_ROLE_EXPANSIONS = Object.freeze([
+    { regex: /soft|software/i, roles: ['Software Engineer', 'Senior Software Engineer', 'Lead Software Engineer', 'Principal Software Engineer', 'Software Developer', 'Senior Software Developer', 'Software Architect', 'Software Engineering Manager', 'Embedded Software Engineer', 'Software QA Engineer'] },
+    { regex: /front|frontend/i, roles: ['Frontend Developer', 'Senior Frontend Developer', 'Frontend Engineer', 'Senior Frontend Engineer', 'Lead Frontend Developer', 'Staff Frontend Engineer', 'UI Frontend Specialist', 'React Frontend Developer'] },
+    { regex: /back|backend/i, roles: ['Backend Engineer', 'Senior Backend Engineer', 'Backend Developer', 'Senior Backend Developer', 'Lead Backend Engineer', 'Staff Backend Engineer', 'Cloud Backend Architect', 'Node.js Backend Developer'] },
+    { regex: /full|fullstack/i, roles: ['Full Stack Developer', 'Senior Full Stack Developer', 'Full Stack Engineer', 'Senior Full Stack Engineer', 'Lead Full Stack Engineer', 'Staff Full Stack Engineer', 'Full Stack Web Developer'] },
+    { regex: /data/i, roles: ['Data Analyst', 'Senior Data Analyst', 'Data Scientist', 'Senior Data Scientist', 'Data Engineer', 'Senior Data Engineer', 'Big Data Architect', 'Business Intelligence Analyst', 'Database Administrator (DBA)'] },
+    { regex: /doc|doctor|physic/i, roles: ['Doctor (General Practitioner)', 'Medical Doctor (MD)', 'Family Medicine Doctor', 'Doctor of Dental Surgery (DDS)', 'Doctor of Pharmacy (PharmD)', 'Doctor of Veterinary Medicine', 'Doctor of Optometry', 'Doctor of Physical Therapy', 'Resident Doctor', 'Clinic Doctor', 'Physician', 'Internal Medicine Physician', 'Physician Assistant (PA)'] },
+    { regex: /nurs/i, roles: ['Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Critical Care Registered Nurse (CCRN)', 'Emergency Room Nurse (ER RN)', 'Charge Nurse', 'Pediatric Nurse', 'Clinical Nurse Specialist (CNS)', 'Nurse Manager', 'Surgical Nurse', 'Staff Nurse'] },
+    { regex: /teach/i, roles: ['Teacher', 'High School Teacher', 'Elementary School Teacher', 'Middle School Teacher', 'Special Education Teacher', 'STEM Teacher', 'Lead Science Teacher', 'ESL Teacher', 'Instructional Coach', 'Substitute Teacher'] },
+    { regex: /plumb/i, roles: ['Licensed Master Plumber', 'Journeyman Plumber', 'Commercial Plumber', 'Residential Service Plumber', 'Plumbing Contractor', 'Plumbing Inspector', 'Pipefitter', 'Service Plumber'] },
+    { regex: /law|lawyer|attorn/i, roles: ['Corporate Lawyer', 'Litigation Lawyer', 'Associate Lawyer', 'Criminal Defense Lawyer', 'Trial Lawyer', 'Family Lawyer', 'Immigration Lawyer', 'Intellectual Property Lawyer', 'Staff Lawyer', 'General Counsel', 'Attorney at Law', 'Staff Attorney', 'Law Clerk'] },
+    { regex: /pilot/i, roles: ['Commercial Airline Pilot', 'Airline Transport Pilot (ATP)', 'First Officer Pilot', 'Airline Captain', 'Flight Instructor (CFI)', 'Corporate Jet Pilot', 'Helicopter Pilot', 'Cargo Pilot'] },
+    { regex: /aero|aviat/i, roles: ['Aerospace Engineer', 'Aeronautical Systems Specialist', 'Aerodynamics Engineer', 'Avionics Technician', 'Flight Test Engineer', 'Aerospace Project Manager', 'Aviation Safety Specialist'] },
+    { regex: /elec/i, roles: ['Master Electrician', 'Journeyman Electrician', 'Industrial Electrician', 'Commercial Electrician', 'Electrical Systems Technician', 'Electrical Engineer', 'Electrical Project Manager', 'Residential Electrician'] },
+    { regex: /chef|culin/i, roles: ['Executive Chef', 'Sous Chef', 'Pastry Chef', 'Head Chef', 'Chef de Cuisine', 'Private Chef', 'Line Cook', 'Catering Chef', 'Chef de Partie'] },
+    { regex: /acc|account/i, roles: ['Senior Accountant', 'Staff Accountant', 'Certified Public Accountant (CPA)', 'Accounting Manager', 'Cost Accountant', 'Forensic Accountant', 'Tax Accountant', 'Corporate Controller', 'Account Executive (AE)'] },
+    { regex: /civil/i, roles: ['Civil Engineer', 'Senior Civil Engineer', 'Civil Project Manager', 'Civil Design Engineer', 'Structural Civil Engineer', 'Transportation Civil Engineer', 'Water Resources Civil Engineer'] },
+    { regex: /mech/i, roles: ['Mechanical Engineer', 'Senior Mechanical Engineer', 'Mechanical Design Engineer', 'Electromechanical Engineer', 'HVAC Mechanical Engineer', 'Robotics Mechanical Engineer', 'Master Automotive Mechanic'] },
+    { regex: /product/i, roles: ['Product Manager', 'Senior Product Manager', 'Lead Product Manager', 'Principal Product Manager', 'Director of Product Management', 'Technical Product Manager', 'Product Marketing Manager (PMM)', 'Associate Product Manager (APM)'] },
+    { regex: /project/i, roles: ['Project Manager', 'Senior Project Manager', 'Technical Project Manager', 'IT Project Manager', 'PMP Certified Project Manager', 'Agile Project Manager', 'Construction Project Manager', 'Project Coordinator'] },
+    { regex: /sales/i, roles: ['Sales Representative', 'Sales Development Representative (SDR)', 'Business Development Representative (BDR)', 'Account Executive (AE)', 'Senior Account Executive', 'Enterprise Sales Director', 'Sales Manager', 'Inside Sales Representative'] },
+    { regex: /market/i, roles: ['Marketing Specialist', 'Digital Marketing Specialist', 'Digital Marketing Manager', 'Growth Marketing Lead', 'Performance Marketing Specialist', 'SEO & Content Specialist', 'Brand Marketing Manager', 'Product Marketing Manager (PMM)'] },
+    { regex: /qa|test/i, roles: ['QA Automation Engineer', 'Senior QA Automation Engineer', 'QA Engineer', 'Software Test Engineer', 'Quality Assurance Specialist', 'Lead QA Automation Engineer', 'SDET (Software Development Engineer in Test)', 'Software QA Tester'] },
+    { regex: /dev/i, roles: ['DevOps Engineer', 'Developer (Software)', 'Full Stack Developer', 'Frontend Developer', 'Backend Developer', 'Mobile App Developer', 'Cloud Developer', 'Software Developer'] },
+    { regex: /cloud/i, roles: ['Cloud Solutions Architect', 'Senior Cloud Solutions Architect', 'Cloud Infrastructure Engineer', 'Cloud Security Architect', 'Cloud DevOps Engineer', 'AWS Cloud Architect', 'Azure Cloud Engineer'] },
+    { regex: /cyber|secur/i, roles: ['Cybersecurity Analyst', 'Senior Cybersecurity Analyst', 'Cybersecurity Engineer', 'Information Security Officer (CISO)', 'Penetration Tester', 'SOC Analyst', 'Cloud Security Architect', 'Application Security Engineer'] },
+    { regex: /robot/i, roles: ['Robotics Engineer', 'Senior Robotics Engineer', 'Robotics Software Developer', 'Robotics Systems Specialist', 'Automation & Robotics Technician', 'Lead Robotics Architect'] },
+    { regex: /solar/i, roles: ['Solar Installation Technician', 'Solar Energy Engineer', 'Solar Project Manager', 'Commercial Solar Specialist', 'Renewable Energy Consultant', 'Solar Systems Designer'] },
+    { regex: /ai|machine/i, roles: ['Machine Learning Engineer', 'AI Engineer', 'AI Research Scientist', 'Senior Machine Learning Engineer', 'MLOps Engineer', 'Deep Learning Specialist', 'Generative AI Specialist', 'NLP Engineer'] },
+    { regex: /dent/i, roles: ['General Dentist', 'Doctor of Dental Surgery (DDS)', 'Dental Hygienist', 'Dental Assistant', 'Orthodontist', 'Periodontist', 'Dental Practice Manager'] },
+    { regex: /pharma/i, roles: ['Clinical Pharmacist', 'Staff Pharmacist', 'Pharmacy Technician', 'Director of Pharmacy', 'Hospital Pharmacist', 'Retail Pharmacist', 'Pharmacologist'] },
+    { regex: /surg/i, roles: ['General Surgeon', 'Orthopedic Surgeon', 'Cardiothoracic Surgeon', 'Neurosurgeon', 'Trauma Surgeon', 'Surgical Technologist', 'Operating Room Nurse'] },
+    { regex: /anim/i, roles: ['3D Animator', 'Character Animator', 'Motion Graphics Animator', '2D Animator', 'Lead Technical Animator'] },
+    { regex: /video/i, roles: ['Video Editor', 'Video Producer', 'Videographer', 'Post-Production Specialist', 'Senior Motion Video Lead'] },
+    { regex: /hr|talent/i, roles: ['Human Resources Manager', 'HR Generalist', 'HR Business Partner (HRBP)', 'Director of Human Resources', 'Talent Acquisition Specialist', 'Senior Technical Recruiter'] },
+    { regex: /logist|supply/i, roles: ['Logistics Coordinator', 'Logistics Manager', 'Supply Chain Analyst', 'Supply Chain Manager', 'Warehouse Operations Manager', 'Fleet Manager'] },
+    { regex: /strat|consult/i, roles: ['Management Consultant', 'Strategy Consultant', 'Business Analyst', 'Senior Business Analyst', 'Strategic Operations Manager'] },
+    { regex: /cardio/i, roles: ['Cardiologist', 'Cardiology Fellow', 'Cardiovascular Technologist', 'Cardiothoracic Surgeon', 'Cardiac Nurse Practitioner', 'Director of Cardiology'] },
+    { regex: /neuro/i, roles: ['Neurologist', 'Neurosurgeon', 'Neuroscience Researcher', 'Neurointensive Care Nurse', 'Neurology Physician Assistant'] },
+    { regex: /pediat/i, roles: ['Pediatrician', 'Pediatric Nurse', 'Pediatric Surgeon', 'Pediatric Intensive Care Specialist', 'Pediatric Nurse Practitioner'] },
+    { regex: /flight/i, roles: ['Flight Attendant', 'Flight Instructor (CFI)', 'Flight Operations Manager', 'Flight Dispatcher', 'Flight Test Engineer'] },
+    { regex: /weld/i, roles: ['Certified Welder', 'Pipe Welder', 'Structural Welder', 'MIG / TIG Welder', 'Welding Inspector (CWI)'] },
+    { regex: /hvac/i, roles: ['HVAC Service Technician', 'Commercial HVAC Specialist', 'HVAC Installation Lead', 'Refrigeration & HVAC Mechanic'] },
+    { regex: /carp/i, roles: ['Master Carpenter', 'Framing Carpenter', 'Finish Carpenter', 'Cabinet Maker', 'Carpentry Foreman'] },
+    { regex: /machin/i, roles: ['CNC Machinist', 'Precision Machinist', 'Tool & Die Maker', 'Manual Machinist', 'CNC Programmer'] },
+    { regex: /paral/i, roles: ['Senior Paralegal', 'Litigation Paralegal', 'Corporate Paralegal', 'Certified Paralegal (CP)', 'Intellectual Property Paralegal'] },
+    { regex: /audit/i, roles: ['Internal Auditor', 'Senior Auditor', 'Lead Quality Auditor', 'IT Audit Specialist', 'Financial Auditor'] },
+    { regex: /tax/i, roles: ['Tax Accountant', 'Senior Tax Manager', 'Tax Consultant', 'International Tax Specialist', 'Tax Analyst'] },
+    { regex: /actua/i, roles: ['Actuarial Analyst', 'Associate Actuary', 'Senior Consulting Actuary', 'Life & Health Actuary', 'Pricing Actuary'] },
+    { regex: /bank/i, roles: ['Investment Banking Analyst', 'Commercial Banking Officer', 'Branch Banking Manager', 'Credit Analyst', 'Private Banker'] },
+    { regex: /struct/i, roles: ['Structural Engineer', 'Senior Structural Designer', 'Structural Project Engineer', 'Bridge Structural Engineer'] },
+    { regex: /archit/i, roles: ['Architectural Designer', 'Licensed Architect', 'Project Architect', 'Enterprise Architect', 'Landscape Architect'] },
+    { regex: /prof/i, roles: ['Assistant Professor', 'Associate Professor', 'Adjunct Professor', 'Distinguished Professor', 'Research Professor'] },
+    { regex: /art/i, roles: ['Art Director', 'Concept Artist', 'Storyboard Artist', 'Technical Artist', 'Digital Artist', 'Visual Development Artist'] },
+    { regex: /kube/i, roles: ['Kubernetes Administrator', 'Kubernetes Platform Engineer', 'DevOps Engineer (Kubernetes)', 'Cloud Infrastructure Engineer (K8s)'] },
+    { regex: /pyth/i, roles: ['Python Developer', 'Senior Python Engineer', 'Python Data Engineer', 'Python Backend Developer', 'Machine Learning Engineer (Python)'] },
+    { regex: /react/i, roles: ['React Developer', 'Senior React.js Engineer', 'React Native Developer', 'Frontend Engineer (React)', 'Full Stack React / Node Engineer'] }
 ]);
 
 /**
@@ -290,232 +457,30 @@ export function synthesizeDynamicSuggestions(directoryType, query = '', _context
     const suggestions = [];
 
     if (normType === 'jobtitle' || normType === 'occupation' || normType === 'title' || normType === 'role') {
-        // 1. Domain-specific dictionary expansions based on prefix detection
-        if (/cardio/i.test(cleanQLower)) {
-            suggestions.push(
-                'Cardiologist', 'Cardiology Fellow', 'Cardiovascular Technologist',
-                'Cardiothoracic Surgeon', 'Pediatric Cardiologist', 'Cardiac Nurse Practitioner',
-                'Cardiovascular Perfusionist', 'Director of Cardiology'
-            );
-        } else if (/neuro/i.test(cleanQLower)) {
-            suggestions.push(
-                'Neurologist', 'Neurosurgeon', 'Neuroscience Researcher',
-                'Neurointensive Care Nurse', 'Neurodiagnostic Technologist', 'Neurology Physician Assistant'
-            );
-        } else if (/pediat/i.test(cleanQLower)) {
-            suggestions.push(
-                'Pediatrician', 'Pediatric Nurse', 'Pediatric Surgeon',
-                'Pediatric Intensive Care Specialist', 'Pediatric Nurse Practitioner', 'Pediatric Medical Assistant'
-            );
-        } else if (/dent/i.test(cleanQLower)) {
-            suggestions.push(
-                'General Dentist', 'Dental Hygienist', 'Dental Assistant',
-                'Orthodontist', 'Periodontist', 'Dental Practice Manager'
-            );
-        } else if (/nurs/i.test(cleanQLower)) {
-            suggestions.push(
-                'Registered Nurse (RN)', 'Nurse Practitioner (NP)', 'Critical Care Registered Nurse (CCRN)',
-                'Charge Nurse', 'Clinical Nurse Specialist (CNS)', 'Nurse Manager'
-            );
-        } else if (/surg/i.test(cleanQLower)) {
-            suggestions.push(
-                'General Surgeon', 'Surgical Technologist', 'Surgical Assistant',
-                'Trauma Surgeon', 'Operating Room Nurse (OR RN)', 'Orthopedic Surgeon'
-            );
-        } else if (/pharm/i.test(cleanQLower)) {
-            suggestions.push(
-                'Clinical Pharmacist', 'Staff Pharmacist', 'Pharmacy Technician',
-                'Director of Pharmacy', 'Pharmacologist', 'Inpatient Pharmacist'
-            );
-        } else if (/pilot/i.test(cleanQLower)) {
-            suggestions.push(
-                'Commercial Pilot', 'Airline Transport Pilot (ATP)', 'Chief Pilot',
-                'First Officer (Pilot)', 'Flight Instructor (CFI)', 'Test Pilot',
-                'Helicopter Pilot', 'Corporate Jet Pilot'
-            );
-        } else if (/flight/i.test(cleanQLower)) {
-            suggestions.push(
-                'Flight Attendant', 'Flight Instructor', 'Flight Operations Manager',
-                'Flight Dispatcher', 'Flight Test Engineer', 'Flight Safety Officer'
-            );
-        } else if (/aero/i.test(cleanQLower)) {
-            suggestions.push(
-                'Aerospace Engineer', 'Aeronautical Systems Specialist', 'Aerodynamics Engineer',
-                'Avionics Technician', 'Aerospace Project Manager', 'Aerospace Stress Analyst'
-            );
-        } else if (/plumb/i.test(cleanQLower)) {
-            suggestions.push(
-                'Licensed Master Plumber', 'Journeyman Plumber', 'Commercial Plumber',
-                'Plumbing Contractor', 'Plumbing Inspector', 'Service Plumber'
-            );
-        } else if (/weld/i.test(cleanQLower)) {
-            suggestions.push(
-                'Certified Welder', 'Pipe Welder', 'Structural Welder',
-                'MIG / TIG Welder', 'Welding Inspector (CWI)', 'Fabrication Welder'
-            );
-        } else if (/elec/i.test(cleanQLower)) {
-            suggestions.push(
-                'Master Electrician', 'Journeyman Electrician', 'Industrial Electrician',
-                'Electrical Systems Technician', 'Electrical Project Manager', 'Electrical Engineer'
-            );
-        } else if (/carp/i.test(cleanQLower)) {
-            suggestions.push(
-                'Master Carpenter', 'Framing Carpenter', 'Finish Carpenter',
-                'Cabinet Maker', 'Carpentry Foreman', 'Commercial Carpenter'
-            );
-        } else if (/hvac/i.test(cleanQLower)) {
-            suggestions.push(
-                'HVAC Service Technician', 'Commercial HVAC Specialist', 'HVAC Installation Lead',
-                'HVAC Project Manager', 'Refrigeration & HVAC Mechanic'
-            );
-        } else if (/machin/i.test(cleanQLower)) {
-            suggestions.push(
-                'CNC Machinist', 'Precision Machinist', 'Tool & Die Maker',
-                'Manual Machinist', 'Machining Supervisor', 'CNC Programmer'
-            );
-        } else if (/paral/i.test(cleanQLower)) {
-            suggestions.push(
-                'Senior Paralegal', 'Litigation Paralegal', 'Corporate Paralegal',
-                'Certified Paralegal (CP)', 'Intellectual Property Paralegal', 'Real Estate Paralegal'
-            );
-        } else if (/attorn|law/i.test(cleanQLower)) {
-            suggestions.push(
-                'Corporate Attorney', 'Associate Attorney', 'Trial Attorney',
-                'Senior Legal Counsel', 'Litigation Lawyer', 'General Counsel', 'Staff Attorney'
-            );
-        } else if (/compli/i.test(cleanQLower)) {
-            suggestions.push(
-                'Compliance Officer', 'Chief Compliance Officer (CCO)', 'Regulatory Compliance Specialist',
-                'AML / KYC Compliance Analyst', 'Corporate Governance Specialist'
-            );
-        } else if (/chef/i.test(cleanQLower)) {
-            suggestions.push(
-                'Executive Chef', 'Sous Chef', 'Pastry Chef',
-                'Head Chef', 'Private Chef', 'Chef de Cuisine', 'Chef de Partie'
-            );
-        } else if (/cook/i.test(cleanQLower)) {
-            suggestions.push(
-                'Lead Line Cook', 'Prep Cook', 'Short Order Cook',
-                'Institutional Cook', 'Catering Cook'
-            );
-        } else if (/baris/i.test(cleanQLower)) {
-            suggestions.push(
-                'Lead Barista', 'Head Barista', 'Coffee Roaster & Barista',
-                'Barista Trainer', 'Cafe Supervisor'
-            );
-        } else if (/hotel/i.test(cleanQLower)) {
-            suggestions.push(
-                'Hotel General Manager', 'Hotel Front Desk Supervisor', 'Hotel Operations Manager',
-                'Guest Relations Lead', 'Hotel Revenue Manager'
-            );
-        } else if (/accoun/i.test(cleanQLower)) {
-            suggestions.push(
-                'Senior Accountant', 'Staff Accountant', 'Accounting Manager',
-                'Cost Accountant', 'Certified Public Accountant (CPA)', 'Forensic Accountant'
-            );
-        } else if (/audit/i.test(cleanQLower)) {
-            suggestions.push(
-                'Internal Auditor', 'Senior Auditor', 'Lead Quality Auditor',
-                'IT Audit Specialist', 'Financial Auditor', 'Compliance Auditor'
-            );
-        } else if (/tax/i.test(cleanQLower)) {
-            suggestions.push(
-                'Tax Accountant', 'Senior Tax Manager', 'Tax Consultant',
-                'International Tax Specialist', 'Tax Analyst', 'Corporate Tax Director'
-            );
-        } else if (/actua/i.test(cleanQLower)) {
-            suggestions.push(
-                'Actuarial Analyst', 'Associate Actuary', 'Senior Consulting Actuary',
-                'Life & Health Actuary', 'Pricing Actuary'
-            );
-        } else if (/bank/i.test(cleanQLower)) {
-            suggestions.push(
-                'Investment Banking Analyst', 'Commercial Banking Officer', 'Branch Banking Manager',
-                'Credit Analyst', 'Private Banker'
-            );
-        } else if (/civil/i.test(cleanQLower)) {
-            suggestions.push(
-                'Civil Engineer', 'Senior Civil Engineer', 'Civil Project Manager',
-                'Civil Design Engineer', 'Structural / Civil Engineer', 'Transportation Civil Engineer'
-            );
-        } else if (/struct/i.test(cleanQLower)) {
-            suggestions.push(
-                'Structural Engineer', 'Senior Structural Designer', 'Structural Project Engineer',
-                'Bridge Structural Engineer', 'Structural Forensic Engineer'
-            );
-        } else if (/mech/i.test(cleanQLower)) {
-            suggestions.push(
-                'Mechanical Engineer', 'Senior Mechanical Engineer', 'HVAC / Mechanical Designer',
-                'Mechanical Systems Specialist', 'Electromechanical Engineer'
-            );
-        } else if (/archit/i.test(cleanQLower)) {
-            suggestions.push(
-                'Architectural Designer', 'Licensed Architect', 'Project Architect',
-                'Landscape Architect', 'Naval Architect', 'Enterprise Architect'
-            );
-        } else if (/teach/i.test(cleanQLower)) {
-            suggestions.push(
-                'High School Teacher', 'Elementary School Teacher', 'Special Education Teacher',
-                'STEM Teacher', 'Lead Science Teacher', 'Instructional Coach'
-            );
-        } else if (/prof/i.test(cleanQLower)) {
-            suggestions.push(
-                'Assistant Professor', 'Associate Professor', 'Adjunct Professor',
-                'Distinguished Professor', 'Research Professor', 'Professor of Practice'
-            );
-        } else if (/art/i.test(cleanQLower)) {
-            suggestions.push(
-                'Art Director', 'Concept Artist', 'Storyboard Artist',
-                'Technical Artist', 'Digital Artist', 'Visual Development Artist'
-            );
-        } else if (/anim/i.test(cleanQLower)) {
-            suggestions.push(
-                '3D Animator', 'Character Animator', 'Motion Graphics Animator',
-                '2D Animator', 'Lead Technical Animator'
-            );
-        } else if (/video/i.test(cleanQLower)) {
-            suggestions.push(
-                'Video Editor', 'Video Producer', 'Videographer',
-                'Post-Production Specialist', 'Senior Motion Video Lead'
-            );
-        } else if (/kube/i.test(cleanQLower)) {
-            suggestions.push(
-                'Kubernetes Administrator', 'Kubernetes Platform Engineer', 'DevOps Engineer (Kubernetes)',
-                'Cloud Infrastructure Engineer (K8s)', 'Site Reliability Engineer (Kubernetes)'
-            );
-        } else if (/pyth/i.test(cleanQLower)) {
-            suggestions.push(
-                'Python Developer', 'Senior Python Engineer', 'Python Data Engineer',
-                'Python Backend Developer', 'Machine Learning Engineer (Python)'
-            );
-        } else if (/react/i.test(cleanQLower)) {
-            suggestions.push(
-                'React Developer', 'Senior React.js Engineer', 'React Native Developer',
-                'Frontend Engineer (React)', 'Full Stack React / Node Engineer'
-            );
-        } else if (/cyber/i.test(cleanQLower)) {
-            suggestions.push(
-                'Cybersecurity Analyst', 'Information Security Officer', 'SOC Analyst',
-                'Penetration Tester', 'Cybersecurity Engineer', 'Cloud Security Architect'
-            );
+        let matchedAnyDomain = false;
+        // 1. High-precision semantic expansions for recognized professional domains
+        for (const domain of DOMAIN_ROLE_EXPANSIONS) {
+            if (domain.regex.test(cleanQLower)) {
+                suggestions.push(...domain.roles);
+                matchedAnyDomain = true;
+            }
         }
 
-        // 2. Open-ended hierarchical role synthesis for ANY query string
-        suggestions.push(
-            `Senior ${titleCaseQ}`,
-            `Lead ${titleCaseQ}`,
-            `${titleCaseQ} Specialist`,
-            `${titleCaseQ} Manager`,
-            `Principal ${titleCaseQ}`,
-            `${titleCaseQ} Consultant`,
-            `${titleCaseQ} Coordinator`,
-            `Director of ${titleCaseQ}`,
-            `Associate ${titleCaseQ}`,
-            `${titleCaseQ} Analyst`,
-            `${titleCaseQ} Engineer`,
-            `${titleCaseQ} Supervisor`,
-            `Chief ${titleCaseQ} Officer`
-        );
+        // 2. Only for unclassified / emerging / niche professions: synthesize clean professional titles
+        if (!matchedAnyDomain) {
+            suggestions.push(
+                `${titleCaseQ} Specialist`,
+                `${titleCaseQ} Consultant`,
+                `${titleCaseQ} Engineer`,
+                `${titleCaseQ} Analyst`,
+                `${titleCaseQ} Developer`,
+                `${titleCaseQ} Researcher`,
+                `${titleCaseQ} Project Manager`,
+                `${titleCaseQ} Coordinator`,
+                `Senior ${titleCaseQ} Specialist`,
+                `Lead ${titleCaseQ} Consultant`
+            );
+        }
     } else if (normType === 'company' || normType === 'employer' || normType === 'organization') {
         suggestions.push(
             `${titleCaseQ} Technologies`,
@@ -696,6 +661,7 @@ export function matchUniversalDirectory(directoryType, query = '', maxResults = 
     const wordMatches = [];
     const substringMatches = [];
     const flexibleMatches = [];
+    const isShort = cleanQ.length <= 2;
 
     for (const item of dataset) {
         const itemLower = item.toLowerCase();
@@ -703,9 +669,9 @@ export function matchUniversalDirectory(directoryType, query = '', maxResults = 
             prefixMatches.push(item);
         } else if (new RegExp(`(?:^|[\\s(/,-])${cleanQ}`, 'i').test(item)) {
             wordMatches.push(item);
-        } else if (itemLower.includes(cleanQ)) {
+        } else if (!isShort && itemLower.includes(cleanQ)) {
             substringMatches.push(item);
-        } else if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) {
+        } else if (!isShort && cleanQStripped.length >= 3 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) {
             flexibleMatches.push(item);
         }
     }

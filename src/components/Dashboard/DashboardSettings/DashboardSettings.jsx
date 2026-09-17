@@ -351,11 +351,6 @@ function DashboardSettings(_props) {
         });
     };
 
-    (e) => {;
-        const field = e.target.name;
-        const value = e.target.value;
-        setAccountSettings((prev) => ({ ...prev, [field]: value }));
-    };
 
     useEffect(() => { profileRef.current = profile; }, [profile]);
     useEffect(() => { profileConflictRef.current = profileConflict; }, [profileConflict]);
