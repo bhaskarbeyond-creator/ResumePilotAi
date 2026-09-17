@@ -250,7 +250,10 @@ export default function SyncProfileModal({
             }
 
             const saved = await saveProfile(userId, updated, profile.revision || 0);
-            setProfile(prev => ({ ...prev, revision: saved.revision || prev.revision + 1 }));
+            if (!saved || !saved.success) {
+                throw new Error(saved?.error || 'Failed to update Master Profile.');
+            }
+            setProfile(prev => ({ ...prev, ...(saved.profile || {}), revision: saved.revision || (prev?.revision || 0) + 1 }));
             setStatusMessage({ type: 'success', text: `✓ Successfully saved ${totalAdded} new items to Master Profile!` });
             if (onShowToast) onShowToast('Success');
             setTimeout(() => {

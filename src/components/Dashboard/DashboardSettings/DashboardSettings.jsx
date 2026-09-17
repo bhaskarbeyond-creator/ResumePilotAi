@@ -17,7 +17,15 @@ import { normalizeProfileData, normalizeProfileImage } from '../../../utils/prof
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
 
-const normalizeProfileForSave = value => normalizeProfileData({ ...value, postalcode: value.postalCode || '', website: value.websiteUrl || '' });
+const normalizeProfileForSave = value => {
+    const authEmail = fire.auth().currentUser?.email;
+    return normalizeProfileData({
+        ...value,
+        email: (authEmail || value?.email || '').trim().toLowerCase(),
+        postalcode: value?.postalCode || '',
+        website: value?.websiteUrl || ''
+    });
+};
 
 function DashboardSettings(_props) {
     const { i18n } = useTranslation('common');
@@ -302,40 +310,44 @@ function DashboardSettings(_props) {
     const getProfileOfUserFront = async () => {
         const currentUser = fire.auth().currentUser;
         if (currentUser) {
-            const userProfile = await getProfileOfUser(currentUser.uid);
-            if (userProfile) {
-                const parts = (userProfile.name || currentUser.displayName || '').split(' ');
+            try {
+                const userProfile = await getProfileOfUser(currentUser.uid);
+                const profileData = userProfile || {};
+                const parts = (profileData.name || currentUser.displayName || '').split(' ');
                 skipNextAutosaveRef.current = true;
                 setProfile({
-                    firstname: userProfile.firstname || parts[0] || '',
-                    lastname: userProfile.lastname || parts.slice(1).join(' ') || '',
-                    name: userProfile.name || currentUser.displayName || '',
-                    email: currentUser.email || userProfile.email || '',
-                    phone: userProfile.phone || '',
-                    address: userProfile.address || '',
-                    city: userProfile.city || '',
-                    postalCode: userProfile.postalCode || userProfile.postalcode || '',
-                    country: userProfile.country || '',
-                    occupation: userProfile.occupation || '',
-                    linkedinUrl: userProfile.linkedinUrl || '',
-                    githubUrl: userProfile.githubUrl || '',
-                    websiteUrl: userProfile.websiteUrl || '',
-                    summary: userProfile.summary || '',
-                    selectedImage: userProfile.selectedImage || userProfile.image || null,
-                    isLinkedinConnected: !!(userProfile.isLinkedinConnected || userProfile.linkedinUrl),
-                    linkedinConnectedName: userProfile.linkedinConnectedName || userProfile.name || '',
-                    workExperiences: normalizeWorkExperiences(userProfile.workExperiences),
-                    education: normalizeEducation(userProfile.education),
-                    skills: normalizeSkills(userProfile.skills),
-                    languages: normalizeLanguages(userProfile.languages),
-                    hobbies: normalizeHobbies(userProfile.hobbies || userProfile.interests),
-                    certifications: normalizeCertifications(userProfile.certifications),
-                    projects: normalizeProjects(userProfile.projects),
-                    achievements: normalizeAchievements(userProfile.achievements || userProfile.awards),
-                    references: normalizeReferences(userProfile.references),
-                    customSections: normalizeCustomSections(userProfile.customSections),
-                    revision: Number(userProfile.revision) || 0,
+                    firstname: profileData.firstname || parts[0] || '',
+                    lastname: profileData.lastname || parts.slice(1).join(' ') || '',
+                    name: profileData.name || currentUser.displayName || '',
+                    email: currentUser.email || profileData.email || '',
+                    phone: profileData.phone || '',
+                    address: profileData.address || '',
+                    city: profileData.city || '',
+                    postalCode: profileData.postalCode || profileData.postalcode || '',
+                    country: profileData.country || '',
+                    occupation: profileData.occupation || '',
+                    linkedinUrl: profileData.linkedinUrl || '',
+                    githubUrl: profileData.githubUrl || '',
+                    websiteUrl: profileData.websiteUrl || '',
+                    summary: profileData.summary || '',
+                    selectedImage: profileData.selectedImage || profileData.image || null,
+                    isLinkedinConnected: !!(profileData.isLinkedinConnected || profileData.linkedinUrl),
+                    linkedinConnectedName: profileData.linkedinConnectedName || profileData.name || '',
+                    workExperiences: normalizeWorkExperiences(profileData.workExperiences),
+                    education: normalizeEducation(profileData.education),
+                    skills: normalizeSkills(profileData.skills),
+                    languages: normalizeLanguages(profileData.languages),
+                    hobbies: normalizeHobbies(profileData.hobbies || profileData.interests),
+                    certifications: normalizeCertifications(profileData.certifications),
+                    projects: normalizeProjects(profileData.projects),
+                    achievements: normalizeAchievements(profileData.achievements || profileData.awards),
+                    references: normalizeReferences(profileData.references),
+                    customSections: normalizeCustomSections(profileData.customSections),
+                    revision: Number(profileData.revision) || 0,
                 });
+                setProfileSaveState('saved');
+            } catch (err) {
+                console.error('[ProfileLoadError]', err);
                 setProfileSaveState('saved');
             }
         }
@@ -438,15 +450,21 @@ function DashboardSettings(_props) {
                     if (!result.success) throw Object.assign(new Error(result.error || 'Profile save failed.'), { code: result.code, remoteRevision: result.remoteRevision });
 
                     skipNextAutosaveRef.current = true;
+                    profileRef.current = { ...profileRef.current, revision: result.revision };
                     setProfile(current => ({ ...current, revision: result.revision }));
                     setProfileSaveState('saved');
                     window.dispatchEvent(new CustomEvent('profileUpdated', { detail: result.profile }));
                     if (notify) triggerNotification('Master Profile saved successfully.');
                     waiter = profileSavingRef.current;
 
+                    const stripRev = p => {
+                        const n = normalizeProfileForSave(p);
+                        delete n.revision;
+                        return n;
+                    };
                     const latestProfile = profileRef.current;
                     const needsFollowUp = latestProfile.revision === snapshot.revision
-                        && JSON.stringify(normalizeProfileForSave(latestProfile)) !== JSON.stringify(normalizeProfileForSave(result.profile));
+                        && JSON.stringify(stripRev(latestProfile)) !== JSON.stringify(stripRev(result.profile));
 
                     if (pendingProfileSaveRef.current || needsFollowUp) {
                         const pending = pendingProfileSaveRef.current;
@@ -704,6 +722,7 @@ function DashboardSettings(_props) {
         if (isFirstProfileLoadRef.current) { isFirstProfileLoadRef.current = false; return undefined; }
         if (skipNextAutosaveRef.current) { skipNextAutosaveRef.current = false; return undefined; }
         if (profileConflict) return undefined;
+        if (profileSaveState === 'loading') return undefined;
         if (profileSavingRef.current) { setProfileSaveState('pending'); return undefined; }
         setProfileSaveState('pending');
         if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
@@ -714,7 +733,7 @@ function DashboardSettings(_props) {
         return () => {
             if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
         };
-    }, [profile, profileConflict]);
+    }, [profile, profileConflict, profileSaveState]);
 
     useEffect(() => () => { const controller = aiRequestControllerRef.current; aiRequestControllerRef.current = null; controller?.abort(); }, []);
 
@@ -836,7 +855,11 @@ function DashboardSettings(_props) {
 
     // DYNAMIC AI RECOMMENDATIONS FOR SKILLS
     const handleRecommendAiSkills = async () => {
-        const effectiveRole = String(profile.occupation || profile.workExperiences?.[0]?.jobTitle || '').trim() || 'Software Engineer / Professional';
+        const effectiveRole = String(profile.occupation || profile.workExperiences?.[0]?.jobTitle || '').trim();
+        if (!effectiveRole) {
+            triggerNotification('Please enter your Occupation or at least one Job Title in Basic Details before requesting AI recommendations.', 'error');
+            return;
+        }
         setIsAiGenerating(true);
         try {
             const expDetails = (profile.workExperiences || []).map(w => `${w.jobTitle || 'Role'} at ${w.company || ''}`).filter(Boolean).join('; ');
@@ -847,29 +870,67 @@ function DashboardSettings(_props) {
             ).filter(Boolean);
 
             const data = await runProfileAi('generate-skills', {
+                targetRole: effectiveRole,
                 jobTitle: effectiveRole,
                 occupation: effectiveRole,
                 workHistory: expDetails,
                 education: eduDetails,
                 projects: projDetails,
                 existingSkills: existing,
+                context: {
+                    target: { role: effectiveRole },
+                    facts: {
+                        roles: (profile.workExperiences || []).map(w => ({
+                            title: w.jobTitle || '',
+                            employer: w.company || '',
+                            description: w.description || ''
+                        })),
+                        skills: existing,
+                        education: (profile.education || []).map(e => ({
+                            degree: e.degree || '',
+                            school: e.school || '',
+                            description: e.description || ''
+                        })),
+                        certifications: (profile.certifications || []).map(c => ({
+                            title: typeof c === 'string' ? c : c?.title || c?.name || '',
+                            issuer: typeof c === 'object' ? c?.issuer || '' : ''
+                        })),
+                        projects: (profile.projects || []).map(p => ({
+                            title: p?.title || p?.name || '',
+                            description: p?.description || ''
+                        }))
+                    }
+                }
             });
 
-            const rawSkills = Array.isArray(data?.skills) ? data.skills : [];
+            const rawSkills = Array.isArray(data?.skills)
+                ? data.skills
+                : (Array.isArray(data?.data?.skills)
+                    ? data.data.skills
+                    : (Array.isArray(data?.suggestions)
+                        ? data.suggestions
+                        : (Array.isArray(data) ? data : [])));
+
+            if (!rawSkills.length) {
+                const note = data?.note || 'AI skill suggestions are currently unavailable. Please verify your role and try again.';
+                triggerNotification(note, 'info');
+                return;
+            }
+
             const unadded = rawSkills.filter(s => {
                 const name = typeof s === 'string' ? s : s?.name || s?.skill || s?.title;
                 return name && !existing.some(e => e.toLowerCase() === name.toLowerCase());
             });
 
-            const itemsToReview = (unadded.length > 0 ? unadded : rawSkills).map((s, idx) => {
+            const itemsToReview = unadded.map((s, idx) => {
                 const raw = typeof s === 'string' ? s : s?.name || s?.skill || s?.title;
                 const cleaned = cleanSkillName(raw);
-                const category = (typeof s === 'object' && s?.category) ? s.category : (idx < 5 ? 'mandatory' : 'recommended');
+                const category = (typeof s === 'object' && s?.category && ['mandatory', 'recommended'].includes(s.category)) ? s.category : (idx < 5 ? 'mandatory' : 'recommended');
                 return { name: cleaned, category };
             }).filter(s => s.name);
 
             if (!itemsToReview.length) {
-                triggerNotification('Your skills list already covers all top recommended skills for this role!', 'info');
+                triggerNotification('All recommended skills for this role are already in your profile!', 'info');
                 return;
             }
 
@@ -880,6 +941,7 @@ function DashboardSettings(_props) {
                 items: itemsToReview,
                 onApply: (approvedItems) => {
                     const newSkills = approvedItems.map(item => ({
+                        id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                         name: cleanSkillName(item.name || item.title),
                         level: 'Expert',
                     })).filter(item => item.name);
@@ -904,7 +966,11 @@ function DashboardSettings(_props) {
 
     // DYNAMIC AI RECOMMENDATIONS FOR CERTIFICATIONS
     const handleRecommendAiCertifications = async () => {
-        const effectiveRole = String(profile.occupation || profile.workExperiences?.[0]?.jobTitle || '').trim() || 'Software Engineer / Professional';
+        const effectiveRole = String(profile.occupation || profile.workExperiences?.[0]?.jobTitle || '').trim();
+        if (!effectiveRole) {
+            triggerNotification('Please enter your Occupation or at least one Job Title in Basic Details before requesting AI recommendations.', 'error');
+            return;
+        }
         setIsAiGenerating(true);
         try {
             const expDetails = (profile.workExperiences || []).map(w => `${w.jobTitle || 'Role'} at ${w.company || ''}`).filter(Boolean).join('; ');
@@ -913,29 +979,65 @@ function DashboardSettings(_props) {
             const existingCerts = (profile.certifications || []).map(c => typeof c === 'string' ? c : c?.title || c?.name).filter(Boolean);
 
             const data = await runProfileAi('generate-certifications', {
+                targetRole: effectiveRole,
                 jobTitle: effectiveRole,
                 occupation: effectiveRole,
                 workHistory: expDetails,
                 education: eduDetails,
                 skills: skillsDetails,
                 existingCertifications: existingCerts,
+                context: {
+                    target: { role: effectiveRole },
+                    facts: {
+                        roles: (profile.workExperiences || []).map(w => ({
+                            title: w.jobTitle || '',
+                            employer: w.company || '',
+                            description: w.description || ''
+                        })),
+                        skills: (profile.skills || []).map(s => typeof s === 'string' ? s : s?.name || s?.skillName || '').filter(Boolean),
+                        education: (profile.education || []).map(e => ({
+                            degree: e.degree || '',
+                            school: e.school || '',
+                            description: e.description || ''
+                        })),
+                        certifications: (profile.certifications || []).map(c => ({
+                            title: typeof c === 'string' ? c : c?.title || c?.name || '',
+                            issuer: typeof c === 'object' ? c?.issuer || '' : ''
+                        }))
+                    }
+                }
             });
 
-            const certsList = data?.certifications || data?.certs || (Array.isArray(data) ? data : []);
+            const certsList = Array.isArray(data?.certifications)
+                ? data.certifications
+                : (Array.isArray(data?.data?.certifications)
+                    ? data.data.certifications
+                    : (Array.isArray(data?.certs)
+                        ? data.certs
+                        : (Array.isArray(data?.suggestions)
+                            ? data.suggestions
+                            : (Array.isArray(data) ? data : []))));
+
+            if (!certsList.length) {
+                const note = data?.note || 'AI credential suggestions are currently unavailable. Please verify your role and try again.';
+                triggerNotification(note, 'info');
+                return;
+            }
+
             const unadded = certsList.filter(c => {
                 const title = typeof c === 'string' ? c : c?.title || c?.name;
                 return title && !existingCerts.some(e => e.toLowerCase() === title.toLowerCase());
             });
 
-            const itemsToReview = (unadded.length > 0 ? unadded : certsList).map((c, idx) => {
+            const itemsToReview = unadded.map((c, idx) => {
                 const title = typeof c === 'string' ? c : (c?.title || c?.name || '');
                 const issuer = typeof c === 'object' ? (c?.issuer || 'Accredited Organization') : 'Accredited Organization';
-                const category = (typeof c === 'object' && c?.category) ? c.category : (idx < 3 ? 'mandatory' : 'recommended');
+                const category = (typeof c === 'object' && c?.category && ['mandatory', 'recommended'].includes(c.category)) ? c.category : (idx < 3 ? 'mandatory' : 'recommended');
                 return { title, issuer, category, name: title };
             }).filter(c => c.title);
 
             if (!itemsToReview.length) {
-                triggerNotification('Your profile already covers all top recommended credentials!', 'info');
+                triggerNotification('All recommended credentials for this role are already in your Master Profile!', 'info');
                 return;
             }
 
@@ -1587,8 +1689,18 @@ function DashboardSettings(_props) {
                                         <input type="text" name="lastname" value={profile.lastname} onChange={handleInputChange} placeholder="Last Name" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl font-semibold text-slate-900" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
-                                        <input type="email" name="email" value={profile.email} onChange={handleInputChange} placeholder="Email" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="block text-xs font-bold text-slate-700">Email Address (Identity)</label>
+                                            <span className="text-[10px] text-slate-400 font-medium">Managed in Account</span>
+                                        </div>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={fire.auth().currentUser?.email || profile.email || ''}
+                                            readOnly
+                                            disabled
+                                            className="w-full text-xs p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed select-none"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number *</label>
@@ -3406,20 +3518,10 @@ function DashboardSettings(_props) {
                                     <FaTrash className="w-3.5 h-3.5" />
                                     <span>Delete Account</span>
                                 </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
                 )}
-
-                {/* AI Recommendation Review Modal */}
-                <AiRecommendationModal
-                    isOpen={aiModalState.isOpen}
-                    onClose={() => setAiModalState((prev) => ({ ...prev, isOpen: false }))}
-                    title={aiModalState.title}
-                    type={aiModalState.type}
-                    items={aiModalState.items}
-                    onApply={aiModalState.onApply || (() => {})}
-                />
             </div>
         </div>
 
