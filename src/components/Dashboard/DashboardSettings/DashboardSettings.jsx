@@ -443,7 +443,9 @@ function DashboardSettings(_props) {
                     if (profileConflictRef.current) throw new Error('Resolve the newer profile revision before saving.');
 
                     const snapshot = profileSnapshot || profileRef.current;
-                    const baseRevision = Number.isInteger(expectedRevision) ? expectedRevision : snapshot.revision;
+                    const baseRevision = Number.isSafeInteger(Number(expectedRevision))
+                        ? Number(expectedRevision)
+                        : (Number.isSafeInteger(Number(snapshot?.revision)) ? Number(snapshot.revision) : 0);
                     const profileToSave = normalizeProfileForSave(snapshot);
                     const result = await saveProfile(currentUser.uid, profileToSave, baseRevision);
                     if (!mountedRef.current) throw Object.assign(new Error('Profile save cancelled.'), { code: 'PROFILE_SAVE_CANCELLED' });
@@ -1415,7 +1417,7 @@ function DashboardSettings(_props) {
         if (profileConflictRef.current) { triggerNotification('Resolve the newer profile revision before replacing the avatar.', 'error'); return; }
         setProfileSaveState('saving');
         const avatarOnly = { ...profileRef.current, selectedImage: croppedDataUrl };
-        const result = await saveProfile(currentUser.uid, avatarOnly, profileRef.current.revision);
+        const result = await saveProfile(currentUser.uid, avatarOnly, Number.isSafeInteger(Number(profileRef.current?.revision)) ? Number(profileRef.current.revision) : 0);
         if (!result.success) {
             setProfileSaveState(result.code === 'PROFILE_CONFLICT' ? 'conflict' : 'failed');
             if (result.code === 'PROFILE_CONFLICT') setProfileConflict({ remoteRevision: result.remoteRevision });
@@ -1541,7 +1543,30 @@ function DashboardSettings(_props) {
                     </div>
                 </div>
 
-                {selectedSettings === 'Profile' && <div className={`rounded-xl border p-3 text-sm ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600'}`} aria-live="polite"><strong>Profile save:</strong> {profileSaveState === 'saving' ? 'Saving…' : profileSaveState === 'pending' ? 'Pending autosave' : profileSaveState === 'saved' ? 'Saved' : profileSaveState === 'conflict' ? 'Conflict—action required' : profileSaveState === 'failed' ? 'Failed—retry with Save' : 'Loading…'}{profileConflict && <div className="mt-2 flex flex-wrap gap-2"><button type="button" onClick={reloadProfileConflict} className="rounded border border-amber-400 bg-white px-3 py-1">Discard local changes and load latest</button><button type="button" onClick={overwriteProfileConflict} className="rounded bg-amber-800 px-3 py-1 text-white">Overwrite latest with local profile</button></div>}</div>}
+                {selectedSettings === 'Profile' && (
+                    <div className={`rounded-xl border p-3 text-sm ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600'}`} aria-live="polite">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <strong>Profile save:</strong> {profileSaveState === 'saving' ? 'Saving…' : profileSaveState === 'pending' ? 'Pending autosave' : profileSaveState === 'saved' ? 'Saved' : profileSaveState === 'conflict' ? 'Conflict—action required' : profileSaveState === 'failed' ? 'Failed—retry with Save' : 'Loading…'}
+                            </div>
+                            {profileSaveState === 'failed' && (
+                                <button
+                                    type="button"
+                                    onClick={() => persistProfileRef.current?.({ notify: true })}
+                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-lg bg-amber-800 hover:bg-amber-900 text-white shadow-xs transition"
+                                >
+                                    Retry Save
+                                </button>
+                            )}
+                        </div>
+                        {profileConflict && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                <button type="button" onClick={reloadProfileConflict} className="rounded border border-amber-400 bg-white px-3 py-1">Discard local changes and load latest</button>
+                                <button type="button" onClick={overwriteProfileConflict} className="rounded bg-amber-800 px-3 py-1 text-white">Overwrite latest with local profile</button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Inline Toast Banner */}
                 {toastState && (
