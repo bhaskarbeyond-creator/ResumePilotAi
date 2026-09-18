@@ -53,7 +53,7 @@ function httpError(message, code, status = 400) {
 }
 
 function clean(value, max) {
-  return String(value ?? '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);
+  return String(value ?? '').replace(/[^\P{Cc}\r\n\t]/gu, ' ').trim().slice(0, max);
 }
 
 function safeImage(value) {

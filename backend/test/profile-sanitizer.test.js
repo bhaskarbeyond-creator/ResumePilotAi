@@ -78,3 +78,27 @@ test('profile sanitizer supports 100% parity sections: achievements, references,
   assert.equal(projected.customSections[0].title, 'Patents');
 });
 
+test('profile sanitizer preserves newlines, tabs, and multiline bullet points in descriptions and summaries', () => {
+  const multilineBullets = '• Engineered real-time microservices\n• Reduced API latency by 45%\n• Mentored 6 engineers';
+  const multilineSummary = 'Senior Engineering Leader.\nProven track record.\nPassionate about scale.';
+  const result = sanitizeProfilePatch({
+    summary: multilineSummary,
+    workExperiences: [{
+      id: 'w1',
+      jobTitle: 'Lead Architect',
+      company: 'Acme Corp',
+      description: multilineBullets,
+    }],
+  }, { identityEmail: 'owner@example.com' });
+
+  assert.equal(result.summary, multilineSummary);
+  assert.equal(result.workExperiences[0].description, multilineBullets);
+
+  const projected = projectEditableProfile({
+    summary: result.summary,
+    workExperiences: result.workExperiences,
+  });
+  assert.equal(projected.summary, multilineSummary);
+  assert.equal(projected.workExperiences[0].description, multilineBullets);
+});
+

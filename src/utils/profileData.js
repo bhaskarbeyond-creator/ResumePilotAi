@@ -1,4 +1,4 @@
-const clean = (value, max) => String(value || '').replace(/\p{Cc}/gu, ' ').trim().slice(0, max);
+const clean = (value, max) => String(value || '').replace(/[^\P{Cc}\r\n\t]/gu, ' ').trim().slice(0, max);
 const list = (value, max) => Array.isArray(value) ? value.slice(0, max) : [];
 
 export function normalizeProfileData(input = {}) {

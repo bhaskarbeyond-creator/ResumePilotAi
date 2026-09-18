@@ -115,10 +115,21 @@ function parseBullets(val) {
 
     // 2. Plain text - strip HTML tags if any left
     const cleanStr = str.replace(/<[^>]*>/g, '');
-    const lines = cleanStr
+    let lines = cleanStr
         .split(/\r?\n/)
         .map((line) => line.replace(BULLET_PREFIX_REGEX, '').trim())
         .filter(Boolean);
+
+    // 3. Fallback for inline bullets: handles records where newlines were flattened into spaces
+    if (lines.length <= 1 && /(?:^|\s+)[•▪▫‣⁃*]\s+/.test(cleanStr)) {
+        const bulletParts = cleanStr
+            .split(/(?:^|\s+)[•▪▫‣⁃*]\s+/)
+            .map((b) => b.trim())
+            .filter(Boolean);
+        if (bulletParts.length > 1) {
+            lines = bulletParts;
+        }
+    }
 
     return lines.length > 0 ? lines : [''];
 }
