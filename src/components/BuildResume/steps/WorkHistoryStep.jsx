@@ -231,55 +231,77 @@ const WorkHistoryStep = ({ resumeData, updateResumeData, onNavigate: _onNavigate
 
                 {/* Description & Unified AI Copilot Section */}
                 <div className="space-y-2.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-0.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-0.5">
                         <div>
                             <label className="block text-[13px] font-bold text-slate-800">
                                 Responsibilities & Achievements
                             </label>
                             <p className="text-xs text-slate-500">
-                                Lead each bullet with an active verb and anchor with measurable outcomes (%, $, scale).
+                                Highlight your achievements and impact — or let AI craft high-impact, metric-backed bullets for you.
                             </p>
                         </div>
 
-                        {/* Unified AI Copilot Action Strip */}
-                        <div className="flex items-center gap-1.5 flex-wrap shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => handleOpenCopilot(employment, 'polish')}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs hover:shadow-xs transition-all active:scale-[0.98]"
-                                title="Open AI Role Copilot to polish and enhance"
-                            >
-                                <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-200" />
-                                <span>AI Copilot</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleOpenCopilot(employment, 'quantify')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-amber-50/90 text-amber-800 border border-amber-200/80 hover:bg-amber-100 transition-colors"
-                                title="Add measurable metrics, scale, or business outcomes"
-                            >
-                                <MdTrendingUp className="w-3.5 h-3.5 text-amber-600" />
-                                <span>+ Metrics</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleOpenCopilot(employment, 'tailor')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-purple-50/90 text-purple-800 border border-purple-200/80 hover:bg-purple-100 transition-colors"
-                                title="Align bullet terminology with Target Role & JD"
-                            >
-                                <MdTrackChanges className="w-3.5 h-3.5 text-purple-600" />
-                                <span>🎯 Tailor</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleOpenCopilot(employment, 'interview')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200/70 transition-colors"
-                                title="Answer 3 guided questions to generate bullets"
-                            >
-                                <MdHelpOutline className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Guided Write</span>
-                            </button>
-                        </div>
+                        {/* Streamlined AI Action Center */}
+                        {(() => {
+                            const hasExistingBullets = Boolean(employment.description && employment.description.trim());
+                            return (
+                                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                                    {/* Primary Standout AI Action */}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenCopilot(employment, hasExistingBullets ? 'polish' : 'interview')}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-2xs hover:shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                                        title={hasExistingBullets ? "Open AI Role Copilot to polish writing and enhance bullets" : "Generate tailored bullet points using guided AI questions"}
+                                    >
+                                        <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-200" />
+                                        <span>{hasExistingBullets ? 'AI Copilot' : '✨ Write with AI'}</span>
+                                    </button>
+
+                                    {/* Harmonized Quick-Tools Segmented Pill Bar */}
+                                    {hasExistingBullets ? (
+                                        <div className="inline-flex items-center bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenCopilot(employment, 'quantify')}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-700 hover:text-amber-800 hover:bg-white transition-all cursor-pointer"
+                                                title="Add measurable numbers, revenue, %, or scale"
+                                            >
+                                                <MdTrendingUp className="w-3.5 h-3.5 text-amber-600" />
+                                                <span>+ Metrics</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenCopilot(employment, 'tailor')}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-700 hover:text-purple-800 hover:bg-white transition-all cursor-pointer"
+                                                title="Match terminology from your Target Role and Job Description"
+                                            >
+                                                <MdTrackChanges className="w-3.5 h-3.5 text-purple-600" />
+                                                <span>Tailor to Job</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenCopilot(employment, 'interview')}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-700 hover:text-indigo-800 hover:bg-white transition-all cursor-pointer"
+                                                title="Answer 3 simple guided questions to craft bullets"
+                                            >
+                                                <MdHelpOutline className="w-3.5 h-3.5 text-indigo-500" />
+                                                <span>Guided Q&A</span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenCopilot(employment, 'interview')}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-600 hover:text-slate-800 transition-colors border border-slate-200/80 cursor-pointer"
+                                            title="Answer 3 simple guided questions to draft factual bullets"
+                                        >
+                                            <MdHelpOutline className="w-3.5 h-3.5 text-slate-500" />
+                                            <span>Guided Q&A</span>
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     <BulletPointsEditor

@@ -56,7 +56,8 @@ export default function RoleAiCopilotModal({
         if (isOpen) {
             returnFocusRef.current = document.activeElement;
             document.body.style.overflow = 'hidden';
-            setActiveMode(initialMode);
+            const effectiveInitialMode = (initialMode === 'polish' && bullets.length === 0) ? 'interview' : initialMode;
+            setActiveMode(effectiveInitialMode);
             setError('');
             setGeneratedBullets([]);
 
@@ -332,7 +333,7 @@ export default function RoleAiCopilotModal({
                             }`}
                         >
                             <MdAutoAwesome className={`w-3.5 h-3.5 ${activeMode === 'polish' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                            <span>Polish</span>
+                            <span>Polish Writing</span>
                         </button>
                         <button
                             type="button"
@@ -361,7 +362,7 @@ export default function RoleAiCopilotModal({
                             }`}
                         >
                             <MdTrackChanges className={`w-3.5 h-3.5 ${activeMode === 'tailor' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                            <span>Tailor to JD</span>
+                            <span>Tailor to Job</span>
                         </button>
                         <button
                             type="button"
@@ -377,7 +378,7 @@ export default function RoleAiCopilotModal({
                             }`}
                         >
                             <MdHelpOutline className={`w-3.5 h-3.5 ${activeMode === 'interview' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                            <span>Help Me Write</span>
+                            <span>Guided Write</span>
                         </button>
                     </div>
                 </div>
@@ -445,15 +446,15 @@ export default function RoleAiCopilotModal({
                                     ) : (
                                         <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-center space-y-3">
                                             <p className="text-xs text-slate-600 font-medium">
-                                                No bullet points found yet for <strong>{roleTitle}</strong>. Switch to <strong>Help Me Write</strong> to build them from guided questions.
+                                                No bullet points found yet for <strong>{roleTitle}</strong>. Switch to <strong>Guided Write</strong> to build them from guided questions.
                                             </p>
                                             <button
                                                 type="button"
-                                                onClick={() => { setActiveMode('interview'); loadInterviewQuestions(); }}
-                                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all"
+                                                onClick={() => { setActiveMode('interview'); setError(''); if (interviewQuestions.length === 0) loadInterviewQuestions(); }}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                                             >
                                                 <MdHelpOutline className="w-4 h-4" />
-                                                <span>Go to Help Me Write</span>
+                                                <span>Switch to Guided Write</span>
                                             </button>
                                         </div>
                                     )}

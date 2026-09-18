@@ -498,9 +498,20 @@ const BulletPointsEditor = ({
                     </div>
                 </div>
 
-                {/* Right: Batch AI Optimization Action - Highlighted only when more bullets are added (>1) */}
+                {/* Right: Batch AI Optimization Action or Empty State Generator */}
                 <div className="flex items-center gap-2">
-                    {localBullets.length >= 1 && (
+                    {stats.total === 0 && onOpenCopilot ? (
+                        <button
+                            type="button"
+                            onClick={() => onOpenCopilot('interview')}
+                            disabled={disabled || isEnhancingAll}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold shadow-2xs hover:shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
+                            title="Answer 3 guided questions to generate bullets with AI"
+                        >
+                            <FaMagic className="w-3 h-3 text-indigo-200" />
+                            <span>✨ Generate with AI</span>
+                        </button>
+                    ) : localBullets.length >= 1 ? (
                         <button
                             type="button"
                             onClick={handleEnhanceAll}
@@ -520,7 +531,7 @@ const BulletPointsEditor = ({
                             <FaMagic className={`w-3 h-3 ${isEnhancingAll ? 'animate-spin text-white' : localBullets.length > 1 ? 'text-white' : 'text-slate-400'}`} />
                             <span>{isEnhancingAll ? 'Enhancing All...' : '✨ Enhance All'}</span>
                         </button>
-                    )}
+                    ) : null}
                 </div>
             </div>
 
@@ -584,6 +595,23 @@ const BulletPointsEditor = ({
                                 placeholder={placeholder}
                                 className="w-full text-xs text-slate-800 bg-transparent border-0 outline-none p-0 min-h-[52px] font-normal leading-relaxed resize-y focus:ring-0"
                             />
+
+                            {/* Empty Bullet Guidance Hint */}
+                            {!bulletText.trim() && localBullets.length === 1 && onOpenCopilot && (
+                                <div className="mt-2 p-2 rounded-lg bg-indigo-50/60 border border-dashed border-indigo-200/90 flex items-center justify-between gap-2 flex-wrap text-xs">
+                                    <span className="text-indigo-900 font-medium text-[11px] flex items-center gap-1.5">
+                                        <FaMagic className="w-3 h-3 text-indigo-600 shrink-0" />
+                                        <span>Need help writing? Answer 3 quick questions and AI will draft factual bullets for you.</span>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => onOpenCopilot('interview')}
+                                        className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-white px-2.5 py-1 rounded-md border border-indigo-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer shrink-0"
+                                    >
+                                        ✨ Guided Write
+                                    </button>
+                                </div>
+                            )}
 
                             {/* Card Footer Bar — Quality Badge & Tip (Left) + Undo & AI Enhance (Right) */}
                             <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-1.5">
