@@ -159,7 +159,6 @@ const BulletPointsEditor = ({
     const [isEnhancingAll, setIsEnhancingAll] = useState(false);
     const [draggedIdx, setDraggedIdx] = useState(null);
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
-    const [showFormulaGuide, setShowFormulaGuide] = useState(false);
     const aiRequestControllerRef = useRef(null);
 
     // Sync from external value changes (e.g. AI suggestion modal, reset, switching entries)
@@ -512,40 +511,6 @@ const BulletPointsEditor = ({
                         </button>
                     )}
                 </div>
-            </div>
-
-            {/* ATS Guidance Formula Strip with Interactive Toggle */}
-            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-2.5 space-y-1.5">
-                <div className="flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-indigo-800">💡 Google X-Y-Z Formula:</span>
-                        <span className="text-slate-600">Accomplished <strong>[X]</strong> as measured by <strong>[Y]</strong> by doing <strong>[Z]</strong></span>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => setShowFormulaGuide(!showFormulaGuide)}
-                        className="text-[10px] font-bold text-indigo-700 hover:text-indigo-900 underline decoration-indigo-300 cursor-pointer shrink-0"
-                    >
-                        {showFormulaGuide ? 'Hide Guide ▲' : 'View Examples ▼'}
-                    </button>
-                </div>
-
-                {showFormulaGuide && (
-                    <div className="pt-2 border-t border-indigo-200/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px]">
-                        <div className="p-2 rounded-lg bg-white border border-indigo-100 space-y-0.5">
-                            <span className="font-bold text-indigo-700 uppercase">1. Strong Action Verb</span>
-                            <p className="text-slate-600">Lead with past-tense action: <em>Architected, Spearheaded, Engineered, Optimized, Automated</em>.</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-white border border-indigo-100 space-y-0.5">
-                            <span className="font-bold text-indigo-700 uppercase">2. Tool / Technology</span>
-                            <p className="text-slate-600">Name specific platforms & stacks: <em>React, Node.js, AWS, Kubernetes, SQL, Docker</em>.</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-white border border-indigo-100 space-y-0.5">
-                            <span className="font-bold text-emerald-700 uppercase">3. Measurable Outcome</span>
-                            <p className="text-slate-600">Ground with numbers: <em>cutting latency by 45%, $25k saved, 10k+ users, team of 6</em>.</p>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Bullet Points List */}
