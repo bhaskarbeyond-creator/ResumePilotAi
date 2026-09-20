@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../services/api/platform';
 import { saveProfile } from '../../../services/profilePersistence';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
-import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp, FaRocket, FaBuilding, FaCode } from 'react-icons/fa';
+import { MdAutoAwesome, MdLaunch, MdSearch, MdClose } from 'react-icons/md';
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
@@ -16,6 +17,7 @@ import { inferCountryFromCity } from '../../../utils/locationHelper';
 import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
+import { PROJECT_TYPES, GET_CURATED_PROJECT_IDEAS } from '../../BuildResume/steps/ProjectsStep';
 
 const normalizeProfileForSave = value => {
     const authEmail = fire.auth().currentUser?.email;
@@ -313,6 +315,8 @@ function DashboardSettings(_props) {
         items: [],
         onApply: null
     });
+    const [projectSearchQuery, setProjectSearchQuery] = useState('');
+    const [projectTypeFilter, setProjectTypeFilter] = useState('all');
 
     const [accountSettings, setAccountSettings] = useState({
         email: '',
@@ -486,12 +490,17 @@ function DashboardSettings(_props) {
     const normalizeProjects = (arr) => {
         if (!Array.isArray(arr)) return [];
         return arr.map((item, idx) => {
-            if (!item || typeof item !== 'object') return { id: `proj_${idx}`, title: '', description: '', link: '' };
+            if (!item || typeof item !== 'object') return { id: `proj_${idx}`, title: '', role: '', technologies: '', link: '', url: '', projectType: 'personal', description: '' };
+            const linkUrl = String(item.url || item.link || '');
             return {
                 id: item.id || `proj_${idx}`,
                 title: String(item.title || item.name || ''),
-                description: String(item.description || item.summary || ''),
-                link: String(item.link || item.url || '')
+                role: String(item.role || ''),
+                technologies: String(item.technologies || item.techStack || item.tools || ''),
+                link: linkUrl,
+                url: linkUrl,
+                projectType: item.projectType || 'personal',
+                description: String(item.description || item.summary || '')
             };
         });
     };
@@ -1427,11 +1436,135 @@ function DashboardSettings(_props) {
         }));
     };
 
+    // DYNAMIC AI RECOMMENDATIONS FOR PROJECTS
+    const handleRecommendAiProjects = async () => {
+        const effectiveRole = String(
+            profile.occupation ||
+            profile.workExperiences?.[0]?.jobTitle ||
+            profile.education?.[0]?.degree ||
+            ''
+        ).trim();
+
+        if (!effectiveRole) {
+            triggerNotification('Please enter your Occupation or at least one Job Title in Basic Details before requesting AI recommendations.', 'error');
+            return;
+        }
+
+        setIsAiGenerating(true);
+        try {
+            const existingTitles = new Set((profile.projects || []).map(p => String(p.title || p.name || '').trim().toLowerCase()).filter(Boolean));
+            let curatedList = GET_CURATED_PROJECT_IDEAS(effectiveRole, {
+                occupation: effectiveRole,
+                workExperiences: profile.workExperiences || [],
+                skills: profile.skills || [],
+                education: profile.education || [],
+            });
+
+            try {
+                const aiResult = await runProfileAi('generate-projects', {
+                    targetRole: effectiveRole || 'Professional',
+                    occupation: effectiveRole || 'Professional',
+                    candidateFacts: {
+                        roles: (profile.workExperiences || []).map(w => ({
+                            title: w.jobTitle || '',
+                            employer: w.company || '',
+                            description: w.description || ''
+                        })),
+                        skills: (profile.skills || []).map(s => typeof s === 'string' ? s : s?.name || s?.skillName || '').filter(Boolean),
+                        education: profile.education || [],
+                        summary: profile.summary || '',
+                    },
+                    context: {
+                        target: { role: effectiveRole },
+                    },
+                    existingTitles: Array.from(existingTitles),
+                    language: 'en',
+                });
+
+                const candidateProjects = Array.isArray(aiResult?.projects)
+                    ? aiResult.projects
+                    : (Array.isArray(aiResult?.items) ? aiResult.items : (Array.isArray(aiResult) ? aiResult : null));
+
+                if (candidateProjects && candidateProjects.length > 0) {
+                    curatedList = candidateProjects.map(cp => ({
+                        name: cp.name || cp.title,
+                        role: cp.role || 'Project Lead',
+                        issuer: cp.technologies ? (cp.technologies.startsWith('Stack: ') || cp.technologies.startsWith('Tools: ') ? cp.technologies : `Tools: ${cp.technologies}`) : (cp.issuer || ''),
+                        category: cp.category === 'mandatory' ? 'mandatory' : 'recommended',
+                        projectType: cp.projectType || 'enterprise',
+                    })).filter(p => Boolean(p.name));
+                }
+            } catch {
+                // Seamlessly fallback to profile-matched curated list
+            }
+
+            const unadded = curatedList.filter(item => !existingTitles.has(String(item.name || item.title || '').trim().toLowerCase()));
+
+            if (!unadded.length) {
+                triggerNotification('All recommended project ideas for this role are already in your Master Profile!', 'info');
+                return;
+            }
+
+            setAiModalState({
+                isOpen: true,
+                title: `Review AI Recommended Projects for ${effectiveRole}`,
+                type: 'projects',
+                items: unadded,
+                onApply: (approvedItems) => {
+                    const toAdd = approvedItems.map((item, idx) => {
+                        const rawIssuer = String(item.issuer || item.technologies || '');
+                        const stack = rawIssuer.startsWith('Stack: ') || rawIssuer.startsWith('Tools: ')
+                            ? rawIssuer.replace(/^(?:Stack|Tools):\s*/, '')
+                            : rawIssuer;
+
+                        return {
+                            id: `proj_ai_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 4)}`,
+                            title: item.name || item.title,
+                            role: item.role || '',
+                            technologies: stack,
+                            projectType: item.projectType || 'enterprise',
+                            link: '',
+                            url: '',
+                            description: '',
+                        };
+                    });
+
+                    setProfile(prev => ({
+                        ...prev,
+                        projects: [...(prev.projects || []), ...toAdd]
+                    }));
+                    triggerNotification(`Added ${toAdd.length} project(s) to your Master Profile!`);
+                }
+            });
+        } catch (err) {
+            if (err?.name === 'AbortError') return;
+            console.error('AI Project Recommendation Error:', err);
+            const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
+                ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
+                : (err?.message || 'Unable to fetch project ideas. Please try again.');
+            triggerNotification(msg, 'error');
+        } finally {
+            setIsAiGenerating(false);
+        }
+    };
+
     // Projects Handlers
     const addProject = () => {
         setProfile((prev) => ({
             ...prev,
-            projects: [...prev.projects, { id: `proj_${Date.now()}`, title: '', description: '', link: '' }]
+            projects: [
+                ...prev.projects,
+                {
+                    id: `proj_${Date.now()}`,
+                    title: '',
+                    role: '',
+                    technologies: '',
+                    url: '',
+                    link: '',
+                    projectType: 'personal',
+                    description: ''
+                }
+            ]
         }));
     };
 
@@ -1440,6 +1573,8 @@ function DashboardSettings(_props) {
         setProfile((prev) => {
             const updated = [...prev.projects];
             updated[index] = { ...updated[index], [field]: rawVal };
+            if (field === 'url') updated[index].link = rawVal;
+            if (field === 'link') updated[index].url = rawVal;
             return { ...prev, projects: updated };
         });
     };
@@ -3310,73 +3445,317 @@ function DashboardSettings(_props) {
                         {/* Sub-Tab 7: Personal Projects */}
                         {profileSubTab === 'projects' && (
                             <div className="space-y-6">
+                                {/* Header / Action Toolbar */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
                                         <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Portfolio & Personal Projects</h3>
-                                        <p className="text-xs text-slate-500">Add key open-source or commercial projects.</p>
+                                        <p className="text-xs text-slate-500">Highlight key technical or personal projects that demonstrate your practical skills and impact.</p>
                                     </div>
-                                    <button type="button" onClick={addProject} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
-                                        <FaPlus className="w-3 h-3" /> Add Project
-                                    </button>
-                                </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleRecommendAiProjects}
+                                            disabled={isAiGenerating}
+                                            className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all hover:shadow-md disabled:opacity-50"
+                                        >
+                                            <MdAutoAwesome className="w-4 h-4" />
+                                            <span>{isAiGenerating ? 'Analyzing...' : '🪄 Auto-Recommend (AI)'}</span>
+                                        </button>
 
-                                {profile.projects.length === 0 ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No portfolio projects saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500">Click "Add Project" to record your technical projects.</p>
-                                    </div>
-                                ) : (
-                                    profile.projects.map((proj, idx) => (
-                                        <div key={proj.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                                    Project #{idx + 1}
-                                                </span>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        disabled={idx === 0}
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
-                                                        title="Move project up">
-                                                        ▲
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        disabled={idx === profile.projects.length - 1}
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
-                                                        title="Move project down">
-                                                        ▼
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeProject(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
-                                                        title="Delete project">
-                                                        <FaTrash className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div>
-                                                    <input type="text" value={proj.title} onChange={(e) => updateProject(idx, 'title', e.target.value)} placeholder="Project Title" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold" />
-                                                </div>
-                                                <div>
-                                                    <input type="url" value={proj.link} onChange={(e) => updateProject(idx, 'link', e.target.value)} placeholder="Live Demo / Repository URL" className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
-                                                </div>
-                                            </div>
-                                            <textarea value={proj.description} onChange={(e) => updateProject(idx, 'description', e.target.value)} placeholder="Short project summary or key tech stack used..." className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg" />
-                                        </div>
-                                    ))
-                                )}
-
-                                {profile.projects.length > 0 && (
-                                    <div className="pt-2">
-                                        <button type="button" onClick={addProject} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs">
-                                            <FaPlus className="w-3.5 h-3.5" /> Add Project
+                                        <button
+                                            type="button"
+                                            onClick={addProject}
+                                            className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-300 hover:border-indigo-300 text-slate-800 hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all"
+                                        >
+                                            <FaPlus className="w-3 h-3 text-indigo-600" />
+                                            <span>Add Project</span>
                                         </button>
                                     </div>
+                                </div>
+
+                                {/* Toolbar Row 2: Live Search & Category Filter Pills (when > 1 project) */}
+                                {(profile.projects || []).length > 1 && (
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                                        {/* Live Search */}
+                                        <div className="relative flex-1 max-w-sm">
+                                            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                value={projectSearchQuery}
+                                                onChange={(e) => setProjectSearchQuery(e.target.value)}
+                                                placeholder="Search projects, roles, or tools..."
+                                                className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                            />
+                                            {projectSearchQuery && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProjectSearchQuery('')}
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                >
+                                                    <MdClose className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Category Filter Pills */}
+                                        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setProjectTypeFilter('all')}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
+                                                    projectTypeFilter === 'all'
+                                                        ? 'bg-slate-800 text-white'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                All ({(profile.projects || []).length})
+                                            </button>
+                                            {PROJECT_TYPES.map(t => {
+                                                const count = (profile.projects || []).filter(p => (p.projectType || 'personal') === t.id).length;
+                                                if (count === 0 && projectTypeFilter !== t.id) return null;
+                                                return (
+                                                    <button
+                                                        key={t.id}
+                                                        type="button"
+                                                        onClick={() => setProjectTypeFilter(t.id)}
+                                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
+                                                            projectTypeFilter === t.id
+                                                                ? 'bg-indigo-600 text-white'
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {t.label} ({count})
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Projects List */}
+                                {(profile.projects || []).length === 0 ? (
+                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
+                                        <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                            <FaRocket className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800 mb-0.5">No portfolio projects saved in Master Profile</p>
+                                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                                                Add prominent projects, open-source work, or applications showcasing hands-on experience.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-2 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={handleRecommendAiProjects}
+                                                disabled={isAiGenerating}
+                                                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                                            >
+                                                <MdAutoAwesome className="w-3.5 h-3.5" />
+                                                <span>Auto-Recommend (AI)</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={addProject}
+                                                className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs"
+                                            >
+                                                <FaPlus className="w-3 h-3 text-indigo-600" />
+                                                <span>Add Project</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    (profile.projects || [])
+                                        .map((proj, originalIdx) => ({ ...proj, originalIdx }))
+                                        .filter(p => {
+                                            const query = projectSearchQuery.trim().toLowerCase();
+                                            const matchesSearch = !query || [
+                                                p.title,
+                                                p.role,
+                                                p.technologies,
+                                                p.url || p.link,
+                                            ].some(val => String(val || '').toLowerCase().includes(query));
+
+                                            const matchesType = projectTypeFilter === 'all' || (p.projectType || 'personal') === projectTypeFilter;
+                                            return matchesSearch && matchesType;
+                                        })
+                                        .map((proj) => {
+                                            const idx = proj.originalIdx;
+                                            const typeConfig = PROJECT_TYPES.find(t => t.id === (proj.projectType || 'personal')) || PROJECT_TYPES[0];
+                                            const subtitleParts = [
+                                                proj.role,
+                                                proj.technologies,
+                                            ].filter(Boolean);
+
+                                            const subtitle = subtitleParts.length > 0
+                                                ? subtitleParts.join(' • ')
+                                                : ((proj.url || proj.link) ? String(proj.url || proj.link).replace(/^https?:\/\//, '').slice(0, 45) : 'Add role, tools & details');
+
+                                            return (
+                                                <div key={proj.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 hover:border-slate-300 transition-colors">
+                                                    {/* Card Header */}
+                                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                                                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">
+                                                                #{idx + 1}
+                                                            </span>
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                                                    {proj.title || 'Untitled Project'}
+                                                                </h4>
+                                                                <p className="text-[11px] text-slate-500 truncate">
+                                                                    {subtitle}
+                                                                </p>
+                                                            </div>
+                                                            <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${typeConfig.badgeClass}`}>
+                                                                {typeConfig.label}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={idx === 0}
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, -1); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                                title="Move project up"
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={idx === (profile.projects || []).length - 1}
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('projects', idx, 1); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
+                                                                title="Move project down"
+                                                            >
+                                                                ▼
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeProject(idx); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
+                                                                title="Delete project"
+                                                            >
+                                                                <FaTrash className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Card Body */}
+                                                    <div className="space-y-3.5">
+                                                        {/* Row 1: Project Name & Role */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                            <div className="space-y-1">
+                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                    Project Name <span className="text-red-500">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={proj.title || ''}
+                                                                    onChange={(e) => updateProject(idx, 'title', e.target.value)}
+                                                                    placeholder="e.g. Distributed E-Commerce Backend, Real-Time Chat App"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                    Your Role in Project
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={proj.role || ''}
+                                                                    onChange={(e) => updateProject(idx, 'role', e.target.value)}
+                                                                    placeholder="e.g. Lead Architect, Full Stack Developer, Creator"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Row 2: Technologies & URL */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                            <div className="space-y-1">
+                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                    Technologies / Tools Used
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={proj.technologies || ''}
+                                                                    onChange={(e) => updateProject(idx, 'technologies', e.target.value)}
+                                                                    placeholder="e.g. React, Node.js, PostgreSQL, Docker, AWS, TailwindCSS"
+                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="block text-xs font-bold text-slate-700">
+                                                                    Project / Portfolio URL
+                                                                </label>
+                                                                <input
+                                                                    type="url"
+                                                                    value={proj.url || proj.link || ''}
+                                                                    onChange={(e) => updateProject(idx, 'url', e.target.value)}
+                                                                    placeholder="https://github.com/... or https://..."
+                                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                                                />
+                                                                {(proj.url || proj.link) && /^https?:\/\//i.test(String(proj.url || proj.link)) && (
+                                                                    <div className="mt-1 flex items-center justify-end">
+                                                                        <a
+                                                                            href={proj.url || proj.link}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                                        >
+                                                                            <span>Test live URL</span>
+                                                                            <MdLaunch className="w-3.5 h-3.5" />
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Row 3: Project Type / Category Selector */}
+                                                        <div className="space-y-1.5 pt-1">
+                                                            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                                                                Project Type / Category
+                                                            </label>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                {PROJECT_TYPES.map(type => {
+                                                                    const Icon = type.icon;
+                                                                    const isSelected = (proj.projectType || 'personal') === type.id;
+                                                                    return (
+                                                                        <button
+                                                                            key={type.id}
+                                                                            type="button"
+                                                                            onClick={() => updateProject(idx, 'projectType', type.id)}
+                                                                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                                                                                isSelected
+                                                                                    ? `${type.badgeClass} ring-2 ring-indigo-500/20 shadow-xs`
+                                                                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                                            }`}
+                                                                        >
+                                                                            <Icon className="w-3.5 h-3.5" />
+                                                                            <span>{type.label}</span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                )}
+
+                                {/* Add Another Project secondary button */}
+                                {(profile.projects || []).length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={addProject}
+                                        className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs"
+                                    >
+                                        <FaPlus className="w-3.5 h-3.5 text-indigo-600" />
+                                        <span>Add Another Project</span>
+                                    </button>
                                 )}
                             </div>
                         )}

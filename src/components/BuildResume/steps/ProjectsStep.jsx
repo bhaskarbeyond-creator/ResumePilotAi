@@ -24,7 +24,7 @@ import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
 import { generateUserAiContent } from '../../../services/aiService';
 
-const PROJECT_TYPES = [
+export const PROJECT_TYPES = [
     { id: 'personal', label: 'Personal Build', icon: FaRocket, badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
     { id: 'enterprise', label: 'Work / Enterprise', icon: FaBuilding, badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     { id: 'opensource', label: 'Open Source', icon: FaCode, badgeClass: 'bg-purple-50 text-purple-700 border-purple-200' },
@@ -35,7 +35,7 @@ const PROJECT_TYPES = [
  * Curated Archetype Project Starters by Role Domain (Profile-Aware Instant Fallbacks)
  * Strictly decoupled across 12 distinct industries to guarantee ZERO unwanted IT leakage.
  */
-const GET_CURATED_PROJECT_IDEAS = (role = '', resumeData = {}, candidateContext = {}) => {
+export const GET_CURATED_PROJECT_IDEAS = (role = '', resumeData = {}, candidateContext = {}) => {
     const target = String(role || candidateContext?.target?.role || resumeData?.targetRole || resumeData?.occupation || '').toLowerCase();
     const workTitles = (resumeData?.employments || resumeData?.workExperience || resumeData?.workExperiences || []).map(e => String(e?.jobTitle || '').toLowerCase()).join(' ');
     const skills = (resumeData?.skills || []).map(s => String(typeof s === 'object' ? (s?.skillName || s?.name) : s).toLowerCase()).join(' ');
