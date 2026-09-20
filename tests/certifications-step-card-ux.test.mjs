@@ -32,7 +32,7 @@ test('CertificationsStep Modern Card-Style UX Verification Suite', () => {
 
     // 5. Modern Command Toolbar & Real-Time Search / Type Filtering
     assert.match(fileContent, /Professional Credentials/, 'Must display Professional Credentials toolbar title');
-    assert.match(fileContent, /Suggest Credentials \(AI\)/, 'Must provide 1-click AI recommendation trigger in toolbar');
+    assert.match(fileContent, /Auto-Recommend.*\(AI\)/, 'Must provide 1-click AI recommendation trigger in toolbar');
     assert.match(fileContent, /searchQuery/, 'Must support live search query');
     assert.match(fileContent, /selectedTypeFilter/, 'Must support category filter pills');
     assert.match(fileContent, /filteredCertifications/, 'Must compute filteredCertifications via useMemo');
@@ -40,4 +40,13 @@ test('CertificationsStep Modern Card-Style UX Verification Suite', () => {
     // 6. Zero-Fabrication Invariants Preserved
     assert.match(fileContent, /date:\s*initialData\.date\s*\|\|\s*''/, 'Must never fabricate year in new certification objects');
     assert.match(fileContent, /AiPromptCard/, 'Must route suggestions through AiPromptCard');
+
+    // 7. AI Recommendation Review Popup Modal (Matching DashboardSettings subtab=certifications)
+    assert.match(fileContent, /<AiRecommendationModal/, 'Must render AiRecommendationModal popup component');
+    assert.match(fileContent, /handleRecommendAiCertifications/, 'Must provide handleRecommendAiCertifications handler');
+    assert.match(fileContent, /setAiModalState/, 'Must manage aiModalState for recommendation popup');
+    assert.match(fileContent, /generateUserAiContent\('generate-certifications'/, 'Must query AI backend for certifications');
+
+    // 8. Domain-Aware Curated Archetypes
+    assert.match(fileContent, /GET_CURATED_CERTIFICATION_IDEAS/, 'Must export GET_CURATED_CERTIFICATION_IDEAS');
 });
