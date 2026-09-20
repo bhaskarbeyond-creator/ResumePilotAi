@@ -275,18 +275,75 @@ function DashboardSettings(_props) {
         }
     }, [profileSubTab]);
 
-    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'summary', 'achievements', 'references', 'customSections'];
+    const SUB_TAB_ORDER = ['basic', 'summary', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'achievements', 'references', 'customSections'];
 
-    // Reactive URL query parameter listener for ?tab=Account or ?tab=Profile
+    // Seamless Subtab Switching with URL Deep-Linking
+    const switchProfileSubTab = (tabKey) => {
+        if (!SUB_TAB_ORDER.includes(tabKey)) return;
+        setProfileSubTab(tabKey);
+        navigate(`?tab=Profile&subtab=${tabKey}`, { replace: true });
+    };
+
+    // Stepper Keyboard Navigation (ArrowLeft / ArrowRight)
+    const handleStepperKeyDown = (e) => {
+        const currentIdx = SUB_TAB_ORDER.indexOf(profileSubTab);
+        if (e.key === 'ArrowRight' && currentIdx < SUB_TAB_ORDER.length - 1) {
+            e.preventDefault();
+            switchProfileSubTab(SUB_TAB_ORDER[currentIdx + 1]);
+        } else if (e.key === 'ArrowLeft' && currentIdx > 0) {
+            e.preventDefault();
+            switchProfileSubTab(SUB_TAB_ORDER[currentIdx - 1]);
+        }
+    };
+
+    // Interactive Copilot Gap Focusing Helper
+    const handleFocusGap = (gapText) => {
+        const lower = String(gapText || '').toLowerCase();
+        let targetSelector = null;
+
+        if (lower.includes('name')) targetSelector = 'input[name="firstname"], input[name="lastname"]';
+        else if (lower.includes('job title') || lower.includes('headline')) targetSelector = 'input[name="occupation"]';
+        else if (lower.includes('phone')) targetSelector = 'input[name="phone"]';
+        else if (lower.includes('location') || lower.includes('city') || lower.includes('country')) targetSelector = 'input[name="city"], input[name="country"]';
+        else if (lower.includes('summary') || lower.includes('bio')) targetSelector = 'textarea[name="summary"]';
+        else if (lower.includes('work position') || lower.includes('role')) targetSelector = 'button:has-text("Add Position"), input[name="jobTitle"]';
+        else if (lower.includes('education') || lower.includes('degree')) targetSelector = 'input[name="school"], input[name="degree"]';
+        else if (lower.includes('skill')) targetSelector = 'input[placeholder*="skill" i], input[placeholder*="Search" i]';
+        else if (lower.includes('project')) targetSelector = 'input[name="title"], input[placeholder*="Project" i]';
+        else if (lower.includes('language')) targetSelector = 'input[placeholder*="Language" i], input[name="language"]';
+
+        if (targetSelector) {
+            try {
+                const el = document.querySelector(targetSelector);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.focus();
+                    el.classList.add('ring-2', 'ring-indigo-400');
+                    setTimeout(() => el.classList.remove('ring-2', 'ring-indigo-400'), 2000);
+                }
+            } catch {
+                // Ignore selector parsing nuances
+            }
+        }
+    };
+
+    // Reactive URL query parameter listener for ?tab=Account, ?tab=Profile, and ?subtab=...
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const tabParam = searchParams.get('tab');
+        const subTabParam = searchParams.get('subtab') || searchParams.get('section') || searchParams.get('step');
         if (tabParam) {
             const lower = tabParam.toLowerCase();
             if (lower.includes('account') || lower.includes('security') || lower === '2fa') {
                 setSelectedSettings('Account');
             } else if (lower.includes('profile')) {
                 setSelectedSettings('Profile');
+            }
+        }
+        if (subTabParam) {
+            const matched = SUB_TAB_ORDER.find(k => k.toLowerCase() === subTabParam.toLowerCase());
+            if (matched) {
+                setProfileSubTab(matched);
             }
         }
     }, [location.search]);
@@ -759,7 +816,7 @@ function DashboardSettings(_props) {
         const currentIdx = SUB_TAB_ORDER.indexOf(profileSubTab);
         const nextTab = SUB_TAB_ORDER[currentIdx + 1];
         if (nextTab) {
-            setProfileSubTab(nextTab);
+            switchProfileSubTab(nextTab);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
@@ -1988,7 +2045,7 @@ function DashboardSettings(_props) {
                     <div className="space-y-5">
 
                         {/* Horizontal Step Navigation Ribbon (Sticky with Backdrop Blur & Autosave) */}
-                        <nav aria-label="Master Profile Steps Stepper" className="step-nav-ribbon step-nav sticky top-0 sm:top-2 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl pl-14 sm:pl-4 pr-3 sm:pr-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 shadow-xs transition-all">
+                        <nav aria-label="Master Profile Steps Stepper" className="step-nav-ribbon step-nav sticky top-0 sm:top-2 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl pl-14 sm:pl-4 pr-3 sm:pr-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 shadow-xs transition-all overflow-hidden relative">
                             {/* Scroll Left Button */}
                             <button
                                 type="button"
@@ -2002,8 +2059,14 @@ function DashboardSettings(_props) {
                                 </svg>
                             </button>
 
-                            {/* Horizontal Steps Container */}
-                            <div ref={subTabsRef} className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar py-0.5 min-w-0 flex-1">
+                            {/* Horizontal Steps Container with Tablist ARIA & Keyboard Navigation */}
+                            <div
+                                ref={subTabsRef}
+                                role="tablist"
+                                aria-label="Profile Sections"
+                                onKeyDown={handleStepperKeyDown}
+                                className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar py-0.5 min-w-0 flex-1 focus:outline-none"
+                            >
                                 {SUB_TAB_ORDER.map((tabKey, index) => {
                                     const conf = SUBTAB_CONFIG[tabKey] || SUBTAB_CONFIG.basic;
                                     const isActive = profileSubTab === tabKey;
@@ -2014,7 +2077,9 @@ function DashboardSettings(_props) {
                                         <button
                                             key={tabKey}
                                             type="button"
-                                            onClick={() => setProfileSubTab(tabKey)}
+                                            role="tab"
+                                            aria-selected={isActive}
+                                            onClick={() => switchProfileSubTab(tabKey)}
                                             className={`step-nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                                                 isActive
                                                     ? 'bg-indigo-600 text-white shadow-2xs ring-2 ring-indigo-500/25 font-bold'
@@ -2023,7 +2088,7 @@ function DashboardSettings(_props) {
                                                     : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                                             }`}
                                             aria-current={isActive ? 'step' : undefined}
-                                            title={`${conf.name} (${isCompleted ? 'Completed' : 'Pending'})`}
+                                            title={`${conf.name} (${isCompleted ? 'Completed' : 'Pending'}) — Use Left/Right keys to navigate`}
                                         >
                                             <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
                                                 isActive
@@ -2113,6 +2178,14 @@ function DashboardSettings(_props) {
                                 <span className="hidden lg:inline font-bold text-indigo-600">
                                     {Math.min(100, Math.round((SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length / SUB_TAB_ORDER.length) * 100))}%
                                 </span>
+                            </div>
+
+                            {/* Sleek Gradient Stepper Completion Bar */}
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100/80 overflow-hidden" aria-hidden="true">
+                                <div
+                                    className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 transition-all duration-500 ease-out"
+                                    style={{ width: `${Math.min(100, Math.round((SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length / SUB_TAB_ORDER.length) * 100))}%` }}
+                                />
                             </div>
                         </nav>
 
@@ -4145,7 +4218,7 @@ function DashboardSettings(_props) {
                                         <button
                                             key={tab}
                                             type="button"
-                                            onClick={() => setProfileSubTab(tab)}
+                                            onClick={() => switchProfileSubTab(tab)}
                                             className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
                                                 tab === profileSubTab ? 'bg-indigo-600 w-5' : 'bg-slate-300'
                                             }`}
@@ -4159,7 +4232,7 @@ function DashboardSettings(_props) {
                                     {SUB_TAB_ORDER.indexOf(profileSubTab) > 0 && (
                                         <button
                                             type="button"
-                                            onClick={() => setProfileSubTab(SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) - 1])}
+                                            onClick={() => switchProfileSubTab(SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) - 1])}
                                             className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                         >
                                             <span>← Back</span>
@@ -4224,9 +4297,19 @@ function DashboardSettings(_props) {
                                         {gaps.length > 0 && (
                                             <ul className="mt-3 space-y-1.5" aria-label="What is missing in this section">
                                                 {gaps.map((gap, index) => (
-                                                    <li key={`${gap}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
-                                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-xs shrink-0 bg-amber-400" />
-                                                        <span>{gap}</span>
+                                                    <li key={`${gap}-${index}`}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleFocusGap(gap)}
+                                                            className="w-full text-left flex items-start gap-2 text-[13px] leading-snug text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/60 p-1.5 -mx-1.5 rounded-lg transition-colors cursor-pointer group"
+                                                            title="Click to jump to this field"
+                                                        >
+                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-xs shrink-0 bg-amber-400 group-hover:bg-indigo-500 transition-colors" />
+                                                            <span className="flex-1">{gap}</span>
+                                                            <span className="opacity-0 group-hover:opacity-100 text-indigo-500 text-[11px] transition-opacity font-bold shrink-0">
+                                                                Jump →
+                                                            </span>
+                                                        </button>
                                                     </li>
                                                 ))}
                                             </ul>
