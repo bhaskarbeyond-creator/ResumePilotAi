@@ -43,4 +43,16 @@ test('DashboardSettings Profile UX 10/10 Verification Suite', () => {
     // 6. Navigation Buttons Continuity
     assert.match(fileContent, /handleSaveAndNext/, 'Must provide handleSaveAndNext handler');
     assert.match(fileContent, /switchProfileSubTab\(nextTab\)/, 'Save & Next must navigate via switchProfileSubTab');
+
+    // 7. BuildResume Header End Dropdown Trigger & Zero Horizontal Scrolling Overview
+    assert.match(fileContent, /setShowStepsDropdown\(prev => !prev\)/, 'Must provide toggle for steps dropdown modal');
+    assert.match(fileContent, /Profile Sections Overview \(12 Sections\)/, 'Must render portaled overview modal with 12 sections');
+    assert.match(fileContent, /completedProfileStepCount.*of.*SUB_TAB_ORDER\.length.*complete/, 'Must render completed count and total in dropdown button');
+
+    // 8. Clean Header Layout — Redundant Banner Gated
+    assert.match(
+        fileContent,
+        /selectedSettings === 'Profile' && \(profileSaveState === 'failed' \|\| profileSaveState === 'conflict' \|\| profileConflict\)/,
+        'Must suppress redundant top save banner during normal saved state'
+    );
 });

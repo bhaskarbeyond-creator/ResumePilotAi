@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../services/api/platform';
@@ -258,6 +260,28 @@ function DashboardSettings(_props) {
     const [profileSubTab, setProfileSubTab] = useState('basic');
     const [showProfileGuidanceRail, setShowProfileGuidanceRail] = useState(true);
     const subTabsRef = useRef(null);
+    const [showStepsDropdown, setShowStepsDropdown] = useState(false);
+    const stepsDropdownRef = useRef(null);
+
+    // Close steps dropdown when clicking outside or pressing Escape
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (stepsDropdownRef.current && !stepsDropdownRef.current.contains(e.target)) {
+                setShowStepsDropdown(false);
+            }
+        };
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') setShowStepsDropdown(false);
+        };
+        if (showStepsDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [showStepsDropdown]);
 
     const scrollSubTabs = (direction) => {
         if (subTabsRef.current) {
@@ -1887,6 +1911,8 @@ function DashboardSettings(_props) {
     getPasswordStrength(accountSettings.password);
     const candidateFullName = `${profile.firstname} ${profile.lastname}`.trim() || profile.name;
     const effectiveMembership = databaseAccountSettings.membership || 'Basic';
+    const completedProfileStepCount = SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length;
+    const profileProgressPercentage = Math.min(100, Math.round((completedProfileStepCount / SUB_TAB_ORDER.length) * 100));
 
     return (
         <>
@@ -2002,7 +2028,7 @@ function DashboardSettings(_props) {
                     </div>
                 </div>
 
-                {selectedSettings === 'Profile' && (
+                {selectedSettings === 'Profile' && (profileSaveState === 'failed' || profileSaveState === 'conflict' || profileConflict) && (
                     <div className={`rounded-xl border px-3.5 py-2.5 text-xs ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600 shadow-2xs'}`} aria-live="polite">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
@@ -2129,10 +2155,10 @@ function DashboardSettings(_props) {
                                 </svg>
                             </button>
 
-                            {/* Consolidated Sticky Status & Progress Pill */}
-                            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0 text-xs">
+                            {/* Stepper Overview Dropdown Trigger & Consolidated Progress Summary (Exact BuildResume Header Matching) */}
+                            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0 text-xs" ref={stepsDropdownRef}>
                                 {/* Live Autosave Status Indicator */}
-                                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600" title={`Profile Save: ${profileSaveState}`}>
+                                <span className="hidden xl:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600" title={`Profile Save: ${profileSaveState}`}>
                                     <span className={`w-2 h-2 rounded-full shrink-0 ${
                                         profileSaveState === 'saved'
                                             ? 'bg-emerald-500'
@@ -2142,7 +2168,7 @@ function DashboardSettings(_props) {
                                             ? 'bg-amber-500'
                                             : 'bg-slate-400'
                                     }`}></span>
-                                    <span className="hidden sm:inline font-semibold">
+                                    <span className="font-semibold">
                                         {profileSaveState === 'saving'
                                             ? 'Saving…'
                                             : profileSaveState === 'pending'
@@ -2168,26 +2194,173 @@ function DashboardSettings(_props) {
                                     </button>
                                 )}
 
-                                {/* Completion Counter */}
-                                <span className="hidden md:inline text-slate-300">·</span>
-                                <div className="hidden md:flex items-center gap-1.5 font-semibold text-slate-600">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                                    <span>{SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length} of 12</span>
-                                </div>
-                                <span className="hidden lg:inline text-slate-300">·</span>
-                                <span className="hidden lg:inline font-bold text-indigo-600">
-                                    {Math.min(100, Math.round((SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length / SUB_TAB_ORDER.length) * 100))}%
-                                </span>
+                                {/* BuildResume Style Stepper Overview Dropdown Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStepsDropdown(prev => !prev)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-200/90 transition-all cursor-pointer shadow-2xs"
+                                    aria-expanded={showStepsDropdown}
+                                    aria-haspopup="dialog"
+                                    title="View all profile sections in detail and jump directly without scrolling"
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    <span>{completedProfileStepCount} of {SUB_TAB_ORDER.length} complete</span>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="text-indigo-600 font-bold">{profileProgressPercentage}%</span>
+                                    <svg className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${showStepsDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
                             </div>
 
                             {/* Sleek Gradient Stepper Completion Bar */}
                             <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100/80 overflow-hidden" aria-hidden="true">
                                 <div
                                     className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 transition-all duration-500 ease-out"
-                                    style={{ width: `${Math.min(100, Math.round((SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length / SUB_TAB_ORDER.length) * 100))}%` }}
+                                    style={{ width: `${profileProgressPercentage}%` }}
                                 />
                             </div>
                         </nav>
+
+                        {/* All 12 Sections Stepper Overview Modal — portaled to <body> for smooth layering without horizontal scrollbar clipping */}
+                        {typeof document !== 'undefined' && createPortal(
+                            <AnimatePresence>
+                                {showStepsDropdown && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
+                                        onClick={() => setShowStepsDropdown(false)}
+                                    >
+                                        <motion.div
+                                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                            className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[90vh]"
+                                            onClick={(e) => e.stopPropagation()}
+                                            role="dialog"
+                                            aria-modal="true"
+                                            aria-label="Profile Sections & Step Overview"
+                                        >
+                                            {/* Modal Header */}
+                                            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 font-bold">
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Profile Sections Overview (12 Sections)</h3>
+                                                        <p className="text-xs text-slate-500 font-medium">Jump instantly to any section or inspect overall completion</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowStepsDropdown(false)}
+                                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-colors cursor-pointer"
+                                                    aria-label="Close overview modal"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            {/* Overall Progress Gauge Bar */}
+                                            <div className="px-6 py-3 bg-indigo-50/60 border-b border-indigo-100/60 flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
+                                                    <span>Overall Completion:</span>
+                                                    <span className="text-indigo-600 font-extrabold">{completedProfileStepCount} of {SUB_TAB_ORDER.length} Sections Finished</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 flex-1 max-w-xs">
+                                                    <div className="flex-1 h-2 bg-indigo-200/80 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+                                                            style={{ width: `${profileProgressPercentage}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-xs font-black text-indigo-700">{profileProgressPercentage}%</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Steps Grid */}
+                                            <div className="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50/40">
+                                                {SUB_TAB_ORDER.map((tabKey, index) => {
+                                                    const conf = SUBTAB_CONFIG[tabKey] || SUBTAB_CONFIG.basic;
+                                                    const isActive = profileSubTab === tabKey;
+                                                    const isCompleted = conf.isComplete(profile);
+                                                    const count = conf.getCount ? conf.getCount(profile) : undefined;
+
+                                                    return (
+                                                        <button
+                                                            key={tabKey}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                switchProfileSubTab(tabKey);
+                                                                setShowStepsDropdown(false);
+                                                            }}
+                                                            className={`p-3.5 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between gap-2.5 cursor-pointer shadow-2xs hover:shadow-md ${
+                                                                isActive
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-500/25 shadow-md'
+                                                                    : isCompleted
+                                                                    ? 'bg-white text-slate-900 border-emerald-200/90 hover:border-emerald-400'
+                                                                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between w-full">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                                                        isActive
+                                                                            ? 'bg-white/20 text-white'
+                                                                            : isCompleted
+                                                                            ? 'bg-emerald-600 text-white'
+                                                                            : 'bg-slate-100 text-slate-500'
+                                                                    }`}>
+                                                                        {isCompleted ? '✓' : index + 1}
+                                                                    </span>
+                                                                    <span className={`text-xs font-bold truncate ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                                                                        {conf.name}
+                                                                    </span>
+                                                                </div>
+                                                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                                                    isActive
+                                                                        ? 'bg-white text-indigo-700'
+                                                                        : isCompleted
+                                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                                        : 'bg-slate-100 text-slate-500'
+                                                                }`}>
+                                                                    {isActive ? 'Current' : isCompleted ? 'Completed' : 'Pending'}
+                                                                </span>
+                                                            </div>
+
+                                                            <p className={`text-[11px] line-clamp-1 ${isActive ? 'text-indigo-100' : 'text-slate-500'}`}>
+                                                                {count !== undefined && count > 0 ? `${count} ${count === 1 ? 'entry' : 'entries'} saved` : conf.description || (isCompleted ? 'Finished & verified' : 'Needs information')}
+                                                            </p>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Modal Footer */}
+                                            <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                                                <span className="text-xs text-slate-500 font-medium">Click any section to jump directly</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowStepsDropdown(false)}
+                                                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
+                                                >
+                                                    Close Overview
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>,
+                            document.body
+                        )}
 
                         {/* 2-Column Responsive Workspace Grid */}
                         <div className={`grid grid-cols-1 ${showProfileGuidanceRail ? 'lg:grid-cols-12' : ''} gap-5 items-start`}>
