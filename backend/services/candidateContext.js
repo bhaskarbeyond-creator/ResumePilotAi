@@ -331,7 +331,13 @@ function buildEvidencePayload(operation, rawPayload = {}) {
             candidateNotes: candNotes,
         };
     } else if (operation === 'enhance-single-bullet') {
-        evidence.entry = { candidateBullet: sectionText(payload.bullet || payload.text || entry.bullet || '', 2000) };
+        evidence.entry = {
+            candidateBullet: sectionText(payload.bullet || payload.text || entry.bullet || '', 2000),
+            jobTitle: clamp(payload.jobTitle || payload.role || payload.position || entry.jobTitle || entry.role || '', 200),
+            employer: clamp(payload.company || payload.employer || entry.company || entry.employer || '', 200),
+            city: clamp(payload.city || payload.location || entry.city || entry.location || '', 120),
+            existingBullets: Array.isArray(payload.existingBullets) ? payload.existingBullets.map(b => clamp(String(b || ''), 300)).filter(Boolean) : [],
+        };
     }
 
     // Answers the candidate gave to follow-up questions (conversation context).
@@ -353,7 +359,10 @@ function entryNoteLength(operation, rawPayload = {}) {
     const payload = rawPayload && typeof rawPayload === 'object' ? rawPayload : {};
     if (operation === 'enhance-single-bullet') {
         const entry = (payload.entry && typeof payload.entry === 'object') ? payload.entry : {};
-        return String(payload.bullet || payload.text || entry.bullet || entry.text || '').replace(/\s+/g, ' ').trim().length;
+        const bulletLen = String(payload.bullet || payload.text || entry.bullet || entry.text || '').replace(/\s+/g, ' ').trim().length;
+        if (bulletLen > 0) return bulletLen;
+        const roleLen = String(payload.jobTitle || payload.role || payload.position || entry.jobTitle || entry.role || '').replace(/\s+/g, ' ').trim().length;
+        return roleLen >= 2 ? Math.max(roleLen, EVIDENCE_THRESHOLD) : 0;
     }
     const combined = extractCandidateNotes(payload);
     return combined.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().length;

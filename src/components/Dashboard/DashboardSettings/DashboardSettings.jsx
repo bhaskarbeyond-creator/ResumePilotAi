@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, updateUserEmail, getUserTransactions, deleteUserAccountPermanently, exportUserDataJSON, beginUserTotp2FA, saveUserTotp2FA, disableUserTotp2FA, getUserTotpStatus, reauthenticateUser, recordUserLoginEvent, getUserLoginHistory, sendSmsNotification } from '../../../services/api/platform';
 import { saveProfile } from '../../../services/profilePersistence';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
-import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory } from 'react-icons/fa';
+import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
-import BulletPointsEditor from '../../Form/BulletPointsEditor';
+import BulletPointsEditor, { getRolePlaceholder } from '../../Form/BulletPointsEditor';
 import AutocompleteInputField from '../../BuildResume/steps/components/AutocompleteInputField';
 import ImageCropModal from './ImageCropModal';
 import SubscriptionModal from './SubscriptionModal';
@@ -27,6 +27,225 @@ const normalizeProfileForSave = value => {
     });
 };
 
+const SUBTAB_CONFIG = {
+    basic: {
+        id: 'basic',
+        name: 'Basic & Contact',
+        title: 'Personal Details & Contact',
+        subtitle: 'Your core identity, headline, and direct contact channels used across all resume templates.',
+        statusBadge: 'Core Identity',
+        isComplete: (p) => Boolean((p.firstname || p.lastname) && p.occupation && p.phone && (p.city || p.country)),
+        computeGaps: (p) => {
+            const gaps = [];
+            if (!p.firstname && !p.lastname) gaps.push('Add your full name');
+            if (!p.occupation) gaps.push('Add target job title / headline');
+            if (!p.phone) gaps.push('Add phone number');
+            if (!p.city && !p.country) gaps.push('Add location (city or country)');
+            return gaps;
+        },
+        atsTips: [
+            'Include target role in your headline / title',
+            'Use standard international phone format (+1 / +44 etc.)',
+            'Ensure contact email matches your professional profile'
+        ]
+    },
+    experience: {
+        id: 'experience',
+        name: 'Work History',
+        title: 'Work History & Experience',
+        subtitle: 'Your career trajectory, key roles, responsibilities, and quantified achievements.',
+        statusBadge: (p) => `${p.workExperiences?.length || 0} Roles`,
+        getCount: (p) => p.workExperiences?.length || 0,
+        isComplete: (p) => Boolean(p.workExperiences?.length > 0),
+        computeGaps: (p) => {
+            if (!p.workExperiences?.length) return ['Add at least one relevant work position', 'Include job title and company name'];
+            const gaps = [];
+            if (p.workExperiences.some(w => !w.responsibilities?.length && !w.summary)) {
+                gaps.push('Add bullet points or description for all roles');
+            }
+            return gaps;
+        },
+        atsTips: [
+            'Lead bullet points with active verbs like Spearheaded, Engineered, Directed',
+            'Quantify impact with metrics (revenue, % gains, team size)',
+            'Keep roles ordered in reverse chronological order'
+        ]
+    },
+    education: {
+        id: 'education',
+        name: 'Education',
+        title: 'Education & Academic History',
+        subtitle: 'Degrees, diplomas, educational institutions, graduation years, and honors.',
+        statusBadge: (p) => `${p.education?.length || 0} Degrees`,
+        getCount: (p) => p.education?.length || 0,
+        isComplete: (p) => Boolean(p.education?.length > 0),
+        computeGaps: (p) => {
+            if (!p.education?.length) return ['Add at least one educational qualification', 'Specify school name and degree'];
+            return [];
+        },
+        atsTips: [
+            'Spell out degree names e.g. Bachelor of Science',
+            'Include graduation year or expected completion date',
+            'Highlight academic honors or GPA if 3.5+'
+        ]
+    },
+    skills: {
+        id: 'skills',
+        name: 'Skills',
+        title: 'Core Competencies & Skills',
+        subtitle: 'Hard skills, frameworks, tools, and soft competencies parsed by ATS screening engines.',
+        statusBadge: (p) => `${p.skills?.length || 0} Skills`,
+        getCount: (p) => p.skills?.length || 0,
+        isComplete: (p) => Boolean(p.skills?.length >= 3),
+        computeGaps: (p) => {
+            if (!p.skills?.length) return ['Add at least 3-5 technical or core skills'];
+            if (p.skills.length < 3) return ['Add at least 3 skills for keyword matching'];
+            return [];
+        },
+        atsTips: [
+            'Match skill keywords directly to target job descriptions',
+            'Include both industry tools and foundational methodologies',
+            'Keep skills specific (e.g. React.js rather than just Web)'
+        ]
+    },
+    certifications: {
+        id: 'certifications',
+        name: 'Certifications',
+        title: 'Certifications & Licenses',
+        subtitle: 'Industry credentials, verified licenses, and professional certifications.',
+        statusBadge: (p) => `${p.certifications?.length || 0} Credentials`,
+        getCount: (p) => p.certifications?.length || 0,
+        isComplete: (p) => Boolean(p.certifications?.length > 0),
+        computeGaps: (p) => {
+            if (!p.certifications?.length) return ['Add accredited licenses or certifications (optional)'];
+            return [];
+        },
+        atsTips: [
+            'Include the issuing authority (e.g. AWS, Microsoft, PMI)',
+            'Specify credential ID or verification link if available',
+            'Ensure active certifications have accurate renewal years'
+        ]
+    },
+    projects: {
+        id: 'projects',
+        name: 'Projects',
+        title: 'Key Projects & Portfolio',
+        subtitle: 'Standout initiatives, open-source work, client deliveries, and measurable outcomes.',
+        statusBadge: (p) => `${p.projects?.length || 0} Projects`,
+        getCount: (p) => p.projects?.length || 0,
+        isComplete: (p) => Boolean(p.projects?.length > 0),
+        computeGaps: (p) => {
+            if (!p.projects?.length) return ['Add prominent projects showcasing hands-on experience'];
+            return [];
+        },
+        atsTips: [
+            'State the objective, your role, and key technologies used',
+            'Link to live deployment or source repository',
+            'Demonstrate problem-solving and measurable results'
+        ]
+    },
+    languages: {
+        id: 'languages',
+        name: 'Languages',
+        title: 'Languages & Proficiency',
+        subtitle: 'Spoken, written, and working languages with standardized proficiency levels.',
+        statusBadge: (p) => `${p.languages?.length || 0} Languages`,
+        getCount: (p) => p.languages?.length || 0,
+        isComplete: (p) => Boolean(p.languages?.length > 0),
+        computeGaps: (p) => {
+            if (!p.languages?.length) return ['Specify at least your primary working language'];
+            return [];
+        },
+        atsTips: [
+            'Specify proficiency accurately (Native, Fluent, Professional)',
+            'List multilingual proficiencies beneficial for global roles'
+        ]
+    },
+    hobbies: {
+        id: 'hobbies',
+        name: 'Hobbies',
+        title: 'Interests & Activities',
+        subtitle: 'Extracurricular pursuits, community engagement, and personal interests.',
+        statusBadge: (p) => `${(p.hobbies || []).length} Hobbies`,
+        getCount: (p) => (p.hobbies || []).length,
+        isComplete: (p) => Boolean((p.hobbies || []).length > 0),
+        computeGaps: (p) => {
+            if (!(p.hobbies || []).length) return ['Add interests that reflect leadership or teamwork'];
+            return [];
+        },
+        atsTips: [
+            'Highlight community initiatives or athletic pursuits',
+            'Demonstrate well-rounded character and cultural fit'
+        ]
+    },
+    summary: {
+        id: 'summary',
+        name: 'Executive Bio',
+        title: 'Executive Bio & Professional Summary',
+        subtitle: 'Your 3-4 sentence elevator pitch positioning your expertise, value, and career level.',
+        statusBadge: (p) => p.summary?.trim()?.length > 20 ? 'Active' : 'Missing',
+        getCount: (p) => (p.summary?.trim()?.length > 20 ? '✓' : undefined),
+        isComplete: (p) => Boolean(p.summary && p.summary.trim().length > 20),
+        computeGaps: (p) => {
+            if (!p.summary || p.summary.trim().length <= 20) return ['Write a 2-4 sentence summary of your career focus and unique strengths'];
+            return [];
+        },
+        atsTips: [
+            'Open with target job title and total years of experience',
+            'Highlight top 2-3 core strengths and greatest career win',
+            'Avoid generic filler like hardworking or fast learner'
+        ]
+    },
+    achievements: {
+        id: 'achievements',
+        name: 'Honors & Awards',
+        title: 'Honors, Awards & Key Achievements',
+        subtitle: 'Competitive awards, hackathons, academic distinctions, and recognitions.',
+        statusBadge: (p) => `${(p.achievements || []).length} Awards`,
+        getCount: (p) => (p.achievements || []).length,
+        isComplete: (p) => Boolean((p.achievements || []).length > 0),
+        computeGaps: (p) => {
+            if (!(p.achievements || []).length) return ['Add notable awards or competitive distinctions (optional)'];
+            return [];
+        },
+        atsTips: [
+            'Include conferring organization and award year',
+            'Explain competition scope or percentage selection rate'
+        ]
+    },
+    references: {
+        id: 'references',
+        name: 'References',
+        title: 'Professional References',
+        subtitle: 'Endorsements and reference contacts from former managers, mentors, or colleagues.',
+        statusBadge: (p) => `${(p.references || []).length} References`,
+        getCount: (p) => (p.references || []).length,
+        isComplete: (p) => Boolean((p.references || []).length > 0),
+        computeGaps: (p) => {
+            if (!(p.references || []).length) return ['Add reference contacts or indicate "Available upon request"'];
+            return [];
+        },
+        atsTips: [
+            'Confirm referee contact permission in advance',
+            'Provide professional title and company association'
+        ]
+    },
+    customSections: {
+        id: 'customSections',
+        name: 'Custom Modules',
+        title: 'Custom Modules & Additional Sections',
+        subtitle: 'Tailored sections such as publications, patents, security clearances, or speaking.',
+        statusBadge: (p) => `${(p.customSections || []).length} Custom`,
+        getCount: (p) => (p.customSections || []).length,
+        isComplete: (p) => Boolean((p.customSections || []).length > 0),
+        computeGaps: () => [],
+        atsTips: [
+            'Use standard, widely understood category titles',
+            'Format entries consistently with work experience'
+        ]
+    }
+};
+
 function DashboardSettings(_props) {
     const { i18n } = useTranslation('common');
     const location = useLocation();
@@ -35,6 +254,25 @@ function DashboardSettings(_props) {
     // State management
     const [selectedSettings, setSelectedSettings] = useState('Profile');
     const [profileSubTab, setProfileSubTab] = useState('basic');
+    const [showProfileGuidanceRail, setShowProfileGuidanceRail] = useState(true);
+    const subTabsRef = useRef(null);
+
+    const scrollSubTabs = (direction) => {
+        if (subTabsRef.current) {
+            const offset = direction === 'left' ? -220 : 220;
+            subTabsRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+        }
+    };
+
+    useEffect(() => {
+        if (subTabsRef.current) {
+            const activeBtn = subTabsRef.current.querySelector('.step-nav-btn[aria-current="step"]');
+            if (activeBtn) {
+                activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    }, [profileSubTab]);
+
     const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'summary', 'achievements', 'references', 'customSections'];
 
     // Reactive URL query parameter listener for ?tab=Account or ?tab=Profile
@@ -116,7 +354,8 @@ function DashboardSettings(_props) {
     const [loginHistory, setLoginHistory] = useState([]);
     const userAuthProviders = (fire.auth().currentUser?.providerData || []).map(provider => provider?.providerId).filter(Boolean);
     const usesPasswordProvider = userAuthProviders.includes('password');
-    userAuthProviders.length > 0 && !usesPasswordProvider;
+    const isOAuthOnly = userAuthProviders.length > 0 && !usesPasswordProvider;
+    void isOAuthOnly;
     const primaryOAuthProvider = userAuthProviders.find(p => p !== 'password') === 'google.com' ? 'Google' : (userAuthProviders.find(p => p !== 'password') || 'OAuth');
 
     // Master Profile State matching ALL Resume & Cover Letter fields
@@ -1264,8 +1503,23 @@ function DashboardSettings(_props) {
         triggerNotification('Work Experience position duplicated!');
     };
 
-    // Multi-Skill Bulk Paste Ingestion
+    // Multi-Skill Bulk Paste Ingestion & View Mode
     const [bulkSkillsInput, setBulkSkillsInput] = useState('');
+    const [skillsViewMode, setSkillsViewMode] = useState('grid'); // 'grid' | 'compact'
+    const [showBulkSkills, setShowBulkSkills] = useState(false);
+    const [skillsSearchQuery, setSkillsSearchQuery] = useState('');
+
+    const cycleSkillLevel = (index) => {
+        const levels = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+        setProfile((prev) => {
+            const current = (prev.skills[index]?.level || 'Intermediate');
+            const currentIndex = levels.findIndex(l => l.toLowerCase() === current.toLowerCase());
+            const nextLevel = levels[(currentIndex + 1) % levels.length];
+            const updated = [...prev.skills];
+            updated[index] = { ...updated[index], level: nextLevel };
+            return { ...prev, skills: updated };
+        });
+    };
     const handleBulkSkillAdd = () => {
         if (!bulkSkillsInput || !bulkSkillsInput.trim()) return;
         const tokens = bulkSkillsInput.split(/[,;\n]+/).map(t => cleanSkillName(t)).filter(Boolean);
@@ -1445,53 +1699,43 @@ function DashboardSettings(_props) {
     return (
         <>
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-8 sm:pb-12">
+            <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-8 sm:pb-12">
 
-                {/* Hero Master Profile Overview Card — 10/10 Modern Design */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-xs relative overflow-hidden">
+                {/* Hero Master Profile Overview Card — Styled after StepShell Header */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-2xs relative overflow-hidden">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         {/* Left Avatar & Right Details Container */}
-                        <div className="flex items-center gap-4 min-w-0">
+                        <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
                             {/* Left Column: Avatar Image + Badge Underneath */}
                             <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                                 <div className="relative">
-                                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-100 shadow-xs flex items-center justify-center">
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border border-slate-200 shadow-2xs flex items-center justify-center">
                                         {normalizeProfileImage(profile.selectedImage) ? (
                                             <img src={normalizeProfileImage(profile.selectedImage)} alt="Profile avatar" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-extrabold text-xl">
+                                            <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-bold text-lg">
                                                 {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : 'U'}
                                             </div>
                                         )}
                                     </div>
-                                    {fire.auth().currentUser?.emailVerified && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Email verified" aria-label="Email verified">
-                                        <FaCheck className="w-2.5 h-2.5 text-white" />
+                                    {fire.auth().currentUser?.emailVerified && <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-2xs" title="Email verified" aria-label="Email verified">
+                                        <FaCheck className="w-2 h-2 text-white" />
                                     </div>}
                                 </div>
 
                                 {/* Membership Badge — directly UNDER avatar image */}
-                                <span className="px-2 py-0.5 text-[10px] font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-full flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 rounded-md flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     {effectiveMembership}
                                 </span>
                             </div>
 
                             {/* Right Column: Name, Occupation, Email & Profile Strength Badge */}
                             <div className="flex-1 min-w-0">
-                                <h1 className="font-bold text-slate-900 tracking-tight break-words" style={{ fontSize: '19px', lineHeight: '1.2' }}>
-                                    {candidateFullName || 'Master User Profile'}
-                                </h1>
-                                {profile.occupation && (
-                                    <p className="text-xs font-semibold text-indigo-600 mt-0.5 truncate">
-                                        {profile.occupation}
-                                    </p>
-                                )}
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                    {profile.email && (
-                                        <p className="text-[11px] text-slate-500 truncate">
-                                            {profile.email}
-                                        </p>
-                                    )}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 break-words">
+                                        {candidateFullName || 'Master User Profile'}
+                                    </h1>
                                     {(() => {
                                         let score = 0;
                                         if (profile.firstname || profile.lastname) score += 15;
@@ -1505,49 +1749,73 @@ function DashboardSettings(_props) {
                                         if (profile.skills && profile.skills.length >= 3) score += 10;
                                         const compScore = Math.min(100, score);
                                         return (
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-extrabold text-emerald-700">
+                                            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-700">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                 <span>{compScore}% Profile Strength</span>
                                             </span>
                                         );
                                     })()}
                                 </div>
+                                {profile.occupation && (
+                                    <p className="text-xs font-semibold text-indigo-600 mt-0.5 truncate">
+                                        {profile.occupation}
+                                    </p>
+                                )}
+                                {profile.email && (
+                                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                                        {profile.email}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
-                        {/* Segmented Control Switcher */}
-                        <div className="bg-slate-100 p-1 sm:p-1.5 rounded-2xl flex items-center gap-1 self-stretch md:self-center flex-shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => { setSelectedSettings('Profile'); navigate('?tab=Profile', { replace: true }); }}
-                                className={`flex-1 md:flex-initial px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                                    selectedSettings === 'Profile'
-                                        ? 'bg-white text-indigo-600 shadow-xs border border-slate-200/60'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}>
-                                <FaUser className="w-3 h-3 flex-shrink-0" />
-                                <span>Master Profile</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => { setSelectedSettings('Account'); navigate('?tab=Account', { replace: true }); }}
-                                className={`flex-1 md:flex-initial px-2.5 sm:px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
-                                    selectedSettings === 'Account'
-                                        ? 'bg-white text-indigo-600 shadow-xs border border-slate-200/60'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}>
-                                <FaCog className="w-3 h-3 flex-shrink-0" />
-                                <span>Account &amp; Security</span>
-                            </button>
+                        {/* Right Action Cluster: Segmented Switcher + Expand View Toggle */}
+                        <div className="flex items-center gap-2 self-stretch md:self-center flex-shrink-0">
+                            <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 flex-1 md:flex-initial">
+                                <button
+                                    type="button"
+                                    onClick={() => { setSelectedSettings('Profile'); navigate('?tab=Profile', { replace: true }); }}
+                                    className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                        selectedSettings === 'Profile'
+                                            ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                                    }`}>
+                                    <FaUser className="w-3 h-3 flex-shrink-0" />
+                                    <span>Master Profile</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setSelectedSettings('Account'); navigate('?tab=Account', { replace: true }); }}
+                                    className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                                        selectedSettings === 'Account'
+                                            ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/80'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                                    }`}>
+                                    <FaCog className="w-3 h-3 flex-shrink-0" />
+                                    <span>Account &amp; Security</span>
+                                </button>
+                            </div>
+
+                            {selectedSettings === 'Profile' && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProfileGuidanceRail(prev => !prev)}
+                                    className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                                    title={showProfileGuidanceRail ? 'Expand view (hide copilot rail)' : 'Show copilot guidance rail'}
+                                >
+                                    <span>{showProfileGuidanceRail ? 'Expand View' : 'Show Guidance'}</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {selectedSettings === 'Profile' && (
-                    <div className={`rounded-xl border p-3 text-sm ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600'}`} aria-live="polite">
+                    <div className={`rounded-xl border px-3.5 py-2.5 text-xs ${profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-white text-slate-600 shadow-2xs'}`} aria-live="polite">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <strong>Profile save:</strong> {profileSaveState === 'saving' ? 'Saving…' : profileSaveState === 'pending' ? 'Pending autosave' : profileSaveState === 'saved' ? 'Saved' : profileSaveState === 'conflict' ? 'Conflict—action required' : profileSaveState === 'failed' ? 'Failed—retry with Save' : 'Loading…'}
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${profileSaveState === 'saved' ? 'bg-emerald-500' : profileSaveState === 'saving' || profileSaveState === 'pending' ? 'bg-indigo-500 animate-pulse' : profileSaveState === 'failed' || profileSaveState === 'conflict' ? 'bg-amber-500' : 'bg-slate-400'}`}></span>
+                                <span><strong>Profile save:</strong> {profileSaveState === 'saving' ? 'Saving…' : profileSaveState === 'pending' ? 'Pending autosave' : profileSaveState === 'saved' ? 'Saved' : profileSaveState === 'conflict' ? 'Conflict—action required' : profileSaveState === 'failed' ? 'Failed—retry with Save' : 'Loading…'}</span>
                             </div>
                             {profileSaveState === 'failed' && (
                                 <button
@@ -1561,8 +1829,8 @@ function DashboardSettings(_props) {
                         </div>
                         {profileConflict && (
                             <div className="mt-2 flex flex-wrap gap-2">
-                                <button type="button" onClick={reloadProfileConflict} className="rounded border border-amber-400 bg-white px-3 py-1">Discard local changes and load latest</button>
-                                <button type="button" onClick={overwriteProfileConflict} className="rounded bg-amber-800 px-3 py-1 text-white">Overwrite latest with local profile</button>
+                                <button type="button" onClick={reloadProfileConflict} className="rounded border border-amber-400 bg-white px-3 py-1 text-xs font-semibold">Discard local changes and load latest</button>
+                                <button type="button" onClick={overwriteProfileConflict} className="rounded bg-amber-800 px-3 py-1 text-xs font-semibold text-white">Overwrite latest with local profile</button>
                             </div>
                         )}
                     </div>
@@ -1577,213 +1845,458 @@ function DashboardSettings(_props) {
                             {toastState.type === 'error' ? <FaExclamationTriangle className="w-4 h-4 text-red-600" /> : <FaCheckCircle className="w-4 h-4 text-emerald-600" />}
                             <span>{toastState.msg}</span>
                         </div>
-                        <button onClick={() => setToastState(null)} className="font-bold ml-4 hover:opacity-75">✕</button>
                     </div>
                 )}
 
                 {/* Main Content Area */}
                 {selectedSettings === 'Profile' ? (
-                    <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+                    <div className="space-y-5">
 
-                        {/* Master Profile Completeness Progress Meter */}
-                        {(() => {
-                            let score = 0;
-                            if (profile.firstname || profile.lastname) score += 10;
-                            if (profile.email && profile.phone) score += 10;
-                            else if (profile.email || profile.phone) score += 5;
-                            if (profile.occupation) score += 10;
-                            if (profile.city || profile.country) score += 5;
-                            if (profile.summary && profile.summary.trim().length > 20) score += 15;
-                            if (profile.workExperiences && profile.workExperiences.length > 0) score += 15;
-                            if (profile.education && profile.education.length > 0) score += 10;
-                            if (profile.skills && profile.skills.length >= 3) score += 10;
-                            else if (profile.skills && profile.skills.length > 0) score += 5;
-                            if (profile.certifications && profile.certifications.length > 0) score += 5;
-                            if (profile.projects && profile.projects.length > 0) score += 5;
-                            if ((profile.languages && profile.languages.length > 0) || (profile.hobbies && profile.hobbies.length > 0)) score += 5;
-                            if ((profile.achievements && profile.achievements.length > 0) || (profile.references && profile.references.length > 0) || (profile.customSections && profile.customSections.length > 0)) score += 10;
-                            const compScore = Math.min(100, score);
-                            return (
-                                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
-                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-extrabold text-xs shrink-0">
-                                            {compScore}%
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                <span className="text-xs font-bold text-white uppercase tracking-wider">Master Profile Strength</span>
-                                                <span className="text-[11px] font-bold text-indigo-300">{compScore === 100 ? '🎉 100% Complete' : `${compScore}% Ready for AI Resumes`}</span>
-                                            </div>
-                                            <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 rounded-full" style={{ width: `${compScore}%` }}></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="text-[11px] text-slate-400">All data automatically syncs to your AI Resumes</p>
-                                    </div>
+                        {/* Horizontal Step Navigation Ribbon (Sticky with Backdrop Blur & Autosave) */}
+                        <nav aria-label="Master Profile Steps Stepper" className="step-nav-ribbon step-nav sticky top-0 sm:top-2 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl pl-14 sm:pl-4 pr-3 sm:pr-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 shadow-xs transition-all">
+                            {/* Scroll Left Button */}
+                            <button
+                                type="button"
+                                onClick={() => scrollSubTabs('left')}
+                                className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                                aria-label="Scroll steps left"
+                                title="Scroll left"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+
+                            {/* Horizontal Steps Container */}
+                            <div ref={subTabsRef} className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar py-0.5 min-w-0 flex-1">
+                                {SUB_TAB_ORDER.map((tabKey, index) => {
+                                    const conf = SUBTAB_CONFIG[tabKey] || SUBTAB_CONFIG.basic;
+                                    const isActive = profileSubTab === tabKey;
+                                    const isCompleted = conf.isComplete(profile);
+                                    const count = conf.getCount ? conf.getCount(profile) : undefined;
+
+                                    return (
+                                        <button
+                                            key={tabKey}
+                                            type="button"
+                                            onClick={() => setProfileSubTab(tabKey)}
+                                            className={`step-nav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                                                isActive
+                                                    ? 'bg-indigo-600 text-white shadow-2xs ring-2 ring-indigo-500/25 font-bold'
+                                                    : isCompleted
+                                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100 font-semibold'
+                                                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                                            }`}
+                                            aria-current={isActive ? 'step' : undefined}
+                                            title={`${conf.name} (${isCompleted ? 'Completed' : 'Pending'})`}
+                                        >
+                                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                                isActive
+                                                    ? 'bg-white text-indigo-700'
+                                                    : isCompleted
+                                                    ? 'bg-emerald-600 text-white'
+                                                    : 'bg-slate-200 text-slate-600'
+                                            }`}>
+                                                {isCompleted ? '✓' : index + 1}
+                                            </span>
+                                            <span>{conf.name}</span>
+                                            {count !== undefined && count !== 0 && (
+                                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                                    isActive
+                                                        ? 'bg-indigo-700 text-white'
+                                                        : isCompleted
+                                                        ? 'bg-emerald-200/80 text-emerald-900'
+                                                        : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                    {count}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Scroll Right Button */}
+                            <button
+                                type="button"
+                                onClick={() => scrollSubTabs('right')}
+                                className="hidden sm:flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                                aria-label="Scroll steps right"
+                                title="Scroll right"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+
+                            {/* Consolidated Sticky Status & Progress Pill */}
+                            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0 text-xs">
+                                {/* Live Autosave Status Indicator */}
+                                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600" title={`Profile Save: ${profileSaveState}`}>
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                        profileSaveState === 'saved'
+                                            ? 'bg-emerald-500'
+                                            : profileSaveState === 'saving' || profileSaveState === 'pending'
+                                            ? 'bg-indigo-500 animate-pulse'
+                                            : profileSaveState === 'failed' || profileSaveState === 'conflict'
+                                            ? 'bg-amber-500'
+                                            : 'bg-slate-400'
+                                    }`}></span>
+                                    <span className="hidden sm:inline font-semibold">
+                                        {profileSaveState === 'saving'
+                                            ? 'Saving…'
+                                            : profileSaveState === 'pending'
+                                            ? 'Pending…'
+                                            : profileSaveState === 'saved'
+                                            ? 'Saved'
+                                            : profileSaveState === 'conflict'
+                                            ? 'Conflict'
+                                            : profileSaveState === 'failed'
+                                            ? 'Failed'
+                                            : 'Loading…'}
+                                    </span>
+                                </span>
+
+                                {profileSaveState === 'failed' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => persistProfileRef.current?.({ notify: true })}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold rounded-md bg-amber-800 hover:bg-amber-900 text-white shadow-xs transition cursor-pointer shrink-0"
+                                        title="Retry saving profile"
+                                    >
+                                        Retry
+                                    </button>
+                                )}
+
+                                {/* Completion Counter */}
+                                <span className="hidden md:inline text-slate-300">·</span>
+                                <div className="hidden md:flex items-center gap-1.5 font-semibold text-slate-600">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                    <span>{SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length} of 12</span>
                                 </div>
-                            );
-                        })()}
+                                <span className="hidden lg:inline text-slate-300">·</span>
+                                <span className="hidden lg:inline font-bold text-indigo-600">
+                                    {Math.min(100, Math.round((SUB_TAB_ORDER.filter(k => SUBTAB_CONFIG[k]?.isComplete(profile)).length / SUB_TAB_ORDER.length) * 100))}%
+                                </span>
+                            </div>
+                        </nav>
 
-                        {/* Profile Sub-Section Tabs — horizontally scrollable on mobile */}
-                        <div
-                            className="flex items-center gap-2 border-b border-slate-200 pb-3 text-xs font-semibold"
-                            style={{ overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
-                        >
-                            <style>{`.settings-tabs-scroll::-webkit-scrollbar { display: none; }`}</style>
-                            <button onClick={() => setProfileSubTab('basic')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'basic' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                👤 Basic &amp; Contact
-                            </button>
-                            <button onClick={() => setProfileSubTab('experience')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'experience' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                💼 Work History ({profile.workExperiences.length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('education')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'education' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                🎓 Education ({profile.education.length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('skills')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'skills' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                🛠️ Skills ({profile.skills.length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('certifications')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'certifications' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                📜 Certifications ({profile.certifications.length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('projects')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'projects' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                🚀 Projects ({profile.projects.length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('languages')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'languages' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                🌐 Languages ({profile.languages.length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('hobbies')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'hobbies' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                ⚽ Hobbies ({(profile.hobbies || []).length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('summary')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'summary' ? 'bg-indigo-600 text-white font-bold' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'}`}>
-                                ✨ Executive Bio (AI)
-                            </button>
-                            <button onClick={() => setProfileSubTab('achievements')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'achievements' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                🏆 Honors &amp; Awards ({(profile.achievements || []).length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('references')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'references' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                👥 References ({(profile.references || []).length})
-                            </button>
-                            <button onClick={() => setProfileSubTab('customSections')} className={`flex-shrink-0 whitespace-nowrap px-3.5 py-2 rounded-xl transition-all ${profileSubTab === 'customSections' ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                🧩 Custom Modules ({(profile.customSections || []).length})
-                            </button>
-                        </div>
+                        {/* 2-Column Responsive Workspace Grid */}
+                        <div className={`grid grid-cols-1 ${showProfileGuidanceRail ? 'lg:grid-cols-12' : ''} gap-5 items-start`}>
+                            {/* Left Column: Form & StepShell */}
+                            <div className={`${showProfileGuidanceRail ? 'lg:col-span-8 xl:col-span-9' : 'w-full'} min-w-0 space-y-4`}>
+                                
+                                {/* StepShell Header Card (Identical to Build Resume) */}
+                                {(() => {
+                                    const activeConf = SUBTAB_CONFIG[profileSubTab] || SUBTAB_CONFIG.basic;
+                                    const stepIdx = SUB_TAB_ORDER.indexOf(profileSubTab);
+                                    const isComp = activeConf.isComplete(profile);
+                                    const badgeText = typeof activeConf.statusBadge === 'function' ? activeConf.statusBadge(profile) : activeConf.statusBadge;
 
-                        {/* Sub-Tab 1: Basic Details & Social Links */}
-                        {profileSubTab === 'basic' && (
-                            <div className="space-y-6">
-                                {/* Avatar Upload */}
-                                <div
-                                    className={`p-6 border-2 border-dashed rounded-2xl transition-all ${
-                                        isDragging ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100/60'
-                                    }`}
-                                    onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-sm flex-shrink-0">
-                                                {profile.selectedImage ? (
-                                                    <img src={profile.selectedImage} alt="Avatar" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center bg-indigo-600 text-white font-bold">
-                                                        {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : 'U'}
+                                    return (
+                                        <header className="rounded-xl border border-slate-200 bg-white px-4 py-3.5 sm:px-5 shadow-2xs">
+                                            <div className="flex items-center justify-between gap-3 min-w-0">
+                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <div
+                                                        className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-xs sm:text-sm font-bold ${
+                                                            isComp ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'
+                                                        }`}
+                                                        aria-label={`Step ${stepIdx + 1} of 12`}
+                                                    >
+                                                        {isComp ? <FaCheck className="w-3.5 h-3.5" /> : stepIdx + 1}
                                                     </div>
-                                                )}
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h1 className="text-sm sm:text-base font-bold tracking-tight text-slate-900">{activeConf.title}</h1>
+                                                            {badgeText ? (
+                                                                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                                                                    {badgeText}
+                                                                </span>
+                                                            ) : null}
+                                                            <span
+                                                                className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                                                                    isComp
+                                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                                        : 'border-amber-200 bg-amber-50 text-amber-700'
+                                                                }`}
+                                                            >
+                                                                {isComp ? 'Complete' : 'In progress'}
+                                                            </span>
+                                                        </div>
+                                                        {activeConf.subtitle ? (
+                                                            <p className="mt-0.5 text-xs leading-relaxed text-slate-500 max-w-2xl">{activeConf.subtitle}</p>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowProfileGuidanceRail(prev => !prev)}
+                                                        className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                                                        title={showProfileGuidanceRail ? 'Collapse Guide' : 'Expand Guide'}
+                                                    >
+                                                        <span>{showProfileGuidanceRail ? 'Hide Guide' : 'Show Guide'}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </header>
+                                    );
+                                })()}
+
+                                {/* Subtab Form Card */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-2xs space-y-5">
+
+                        {/* Sub-Tab 1: Basic Details & Social Links — Styled after HeadingStep */}
+                        {profileSubTab === 'basic' && (
+                            <div className="space-y-5">
+                                {/* Identity: Photo Upload + Name & Title */}
+                                <div className="space-y-3">
+                                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start">
+                                        {/* Photo Upload Area - Compact, matching HeadingStep */}
+                                        <div className="shrink-0 pt-0.5 self-center sm:self-start">
+                                            <div className="space-y-1.5">
+                                                <label className="block text-[13px] font-semibold text-slate-700">
+                                                    Profile Photo
+                                                </label>
+                                                <div
+                                                    className={`w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 overflow-hidden relative group transition-all duration-200 flex items-center justify-center ${
+                                                        isDragging ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-200 bg-slate-50 shadow-2xs hover:border-slate-300'
+                                                    }`}
+                                                    onDragOver={handleDragOver}
+                                                    onDragLeave={handleDragLeave}
+                                                    onDrop={handleDrop}>
+                                                    {profile.selectedImage ? (
+                                                        <>
+                                                            <img src={profile.selectedImage} alt="Avatar" className="w-full h-full object-cover" />
+                                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl flex items-center justify-center gap-1.5">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCropModalSrc(profile.selectedImage)}
+                                                                    className="p-1.5 bg-white rounded-full hover:bg-slate-100 transition-all text-indigo-600 shadow-xs"
+                                                                    title="Crop & Adjust Photo">
+                                                                    <FaCrop className="w-3 h-3" />
+                                                                </button>
+                                                                <label className="p-1.5 bg-white rounded-full hover:bg-slate-100 transition-all text-slate-700 shadow-xs cursor-pointer" title="Change photo">
+                                                                    <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/png,image/jpeg,image/webp" />
+                                                                    <FaUpload className="w-3 h-3" />
+                                                                </label>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <label className="w-full h-full flex flex-col items-center justify-center p-2 text-center cursor-pointer hover:bg-indigo-50/50 transition-colors">
+                                                            <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/png,image/jpeg,image/webp" />
+                                                            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm mb-1">
+                                                                {candidateFullName ? candidateFullName.charAt(0).toUpperCase() : <FaUpload className="w-3.5 h-3.5 text-slate-400" />}
+                                                            </div>
+                                                            <span className="text-[10px] font-bold text-indigo-600">Upload</span>
+                                                            <span className="text-[9px] text-slate-400">{isDragging ? 'Drop here' : 'PNG, JPG'}</span>
+                                                        </label>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Name & Target Occupation */}
+                                        <div className="flex-1 min-w-0 w-full space-y-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                        <span>First Name</span>
+                                                        <span aria-hidden="true" className="text-rose-500 font-medium">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="firstname"
+                                                        value={profile.firstname}
+                                                        onChange={handleInputChange}
+                                                        placeholder="Your first name"
+                                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                        <span>Last Name</span>
+                                                        <span aria-hidden="true" className="text-rose-500 font-medium">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="lastname"
+                                                        value={profile.lastname}
+                                                        onChange={handleInputChange}
+                                                        placeholder="Your last name"
+                                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                    />
+                                                </div>
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-slate-900">Profile Photo</p>
-                                                <p className="text-[11px] text-slate-500">Drag and drop or browse photo for resume headers</p>
+                                                <AutocompleteInputField
+                                                    label="Target Professional Title / Occupation"
+                                                    name="occupation"
+                                                    value={profile.occupation}
+                                                    onChange={handleInputChange}
+                                                    placeholder="e.g. Senior Full Stack Engineer"
+                                                    suggestionType="jobTitle"
+                                                    inputClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                    labelClassName="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700"
+                                                />
                                             </div>
                                         </div>
-                                        <label className="cursor-pointer">
-                                            <input type="file" onChange={handleImageUpload} className="sr-only" accept="image/png,image/jpeg,image/webp" />
-                                            <span className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all">
-                                                <FaUpload className="w-3 h-3 mr-2" /> Upload Photo
-                                            </span>
-                                        </label>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">First Name *</label>
-                                        <input type="text" name="firstname" value={profile.firstname} onChange={handleInputChange} placeholder="First Name" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl font-semibold text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Last Name *</label>
-                                        <input type="text" name="lastname" value={profile.lastname} onChange={handleInputChange} placeholder="Last Name" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl font-semibold text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <label className="block text-xs font-bold text-slate-700">Email Address (Identity)</label>
-                                            <span className="text-[10px] text-slate-400 font-medium">Managed in Account</span>
+                                {/* Contact & Location */}
+                                <div className="space-y-3 border-t border-slate-100 pt-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <div className="mb-1.5 flex items-baseline justify-between gap-1.5">
+                                                <label className="text-[13px] font-semibold text-slate-700">
+                                                    <span>Email Address (Identity)</span>
+                                                    <span aria-hidden="true" className="text-rose-500 font-medium ml-1">*</span>
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setSelectedSettings('Account'); navigate('?tab=Account', { replace: true }); }}
+                                                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer flex items-center gap-1"
+                                                    title="Switch to Account & Security to update primary email"
+                                                >
+                                                    <span>Managed in Account</span>
+                                                    <span aria-hidden="true">→</span>
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={fire.auth().currentUser?.email || profile.email || ''}
+                                                readOnly
+                                                disabled
+                                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-2xs cursor-not-allowed select-none"
+                                            />
                                         </div>
+                                        <div>
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                <span>Phone Number</span>
+                                                <span aria-hidden="true" className="text-rose-500 font-medium">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="phone"
+                                                value={profile.phone}
+                                                onChange={handleInputChange}
+                                                placeholder="With country code, e.g. +91 98765 43210"
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <AutocompleteInputField
+                                                label="City & State"
+                                                name="city"
+                                                value={profile.city}
+                                                onChange={(e) => handleInputChange({ target: { name: 'city', value: e.target.value } })}
+                                                onSelect={(val) => handleInputChange({ target: { name: 'city', value: val } })}
+                                                placeholder="City, State"
+                                                suggestionType="city"
+                                                inputClassName="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                                labelClassName="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                <span>Country</span>
+                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="country"
+                                                value={profile.country}
+                                                onChange={handleInputChange}
+                                                placeholder="Country (e.g. India)"
+                                                spellCheck="false"
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Online Presence & Address */}
+                                <div className="space-y-3 border-t border-slate-100 pt-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                <span>Street Address</span>
+                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="address"
+                                                value={profile.address}
+                                                onChange={handleInputChange}
+                                                placeholder="Street address"
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 flex items-baseline gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                <span>Postal Code</span>
+                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="postalCode"
+                                                value={profile.postalCode}
+                                                onChange={handleInputChange}
+                                                placeholder="PIN / postal code"
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                <FaLinkedin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                                <span>LinkedIn Profile URL</span>
+                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="linkedinUrl"
+                                                value={profile.linkedinUrl}
+                                                onChange={handleInputChange}
+                                                placeholder="https://linkedin.com/in/username"
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
+                                                <FaGithub className="w-3.5 h-3.5 text-slate-800 shrink-0" />
+                                                <span>GitHub / Portfolio URL</span>
+                                                <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="githubUrl"
+                                                value={profile.githubUrl}
+                                                onChange={handleInputChange}
+                                                placeholder="https://github.com/username"
+                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
+                                            <FaGlobe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                            <span>Personal Website / Portfolio URL</span>
+                                            <span className="text-[11px] font-medium text-slate-400">optional</span>
+                                        </label>
                                         <input
-                                            type="email"
-                                            name="email"
-                                            value={fire.auth().currentUser?.email || profile.email || ''}
-                                            readOnly
-                                            disabled
-                                            className="w-full text-xs p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed select-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number *</label>
-                                        <input type="text" name="phone" value={profile.phone} onChange={handleInputChange} placeholder="Phone" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <AutocompleteInputField
-                                            label="Target Professional Title / Occupation"
-                                            name="occupation"
-                                            value={profile.occupation}
+                                            type="url"
+                                            name="websiteUrl"
+                                            value={profile.websiteUrl}
                                             onChange={handleInputChange}
-                                            placeholder="e.g. Senior Full Stack Engineer"
-                                            suggestionType="jobTitle"
-                                            inputClassName="w-full text-xs p-3 pr-10 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                            labelClassName="block text-xs font-bold text-slate-700 mb-1"
+                                            placeholder="https://yourwebsite.com"
+                                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs transition-colors placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 font-normal"
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Street Address</label>
-                                        <input type="text" name="address" value={profile.address} onChange={handleInputChange} placeholder="Street Address" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <AutocompleteInputField
-                                            label="City & State"
-                                            name="city"
-                                            value={profile.city}
-                                            onChange={(e) => handleInputChange({ target: { name: 'city', value: e.target.value } })}
-                                            placeholder="City, State"
-                                            suggestionType="city"
-                                            inputClassName="w-full text-xs p-3 pr-9 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                            labelClassName="block text-xs font-bold text-slate-700 mb-1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Postal Code</label>
-                                        <input type="text" name="postalCode" value={profile.postalCode} onChange={handleInputChange} placeholder="Postal Code" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                                            <FaLinkedin className="w-3.5 h-3.5 text-blue-600" /> LinkedIn Profile URL
-                                        </label>
-                                        <input type="url" name="linkedinUrl" value={profile.linkedinUrl} onChange={handleInputChange} placeholder="https://linkedin.com/in/username" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                                            <FaGithub className="w-3.5 h-3.5 text-slate-800" /> GitHub / Portfolio URL
-                                        </label>
-                                        <input type="url" name="githubUrl" value={profile.githubUrl} onChange={handleInputChange} placeholder="https://github.com/username" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1">Country</label>
-                                        <input type="text" name="country" value={profile.country} onChange={handleInputChange} placeholder="Country (e.g. India)" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" spellCheck="false" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
-                                            <FaGlobe className="w-3.5 h-3.5 text-indigo-600" /> Personal Website / Portfolio URL
-                                        </label>
-                                        <input type="url" name="websiteUrl" value={profile.websiteUrl} onChange={handleInputChange} placeholder="https://yourwebsite.com" className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900" />
                                     </div>
                                 </div>
                             </div>
@@ -1794,10 +2307,10 @@ function DashboardSettings(_props) {
                             <div className="space-y-4">
                                 <div className="flex flex-col gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Executive Bio &amp; Professional Summary</h3>
+                                        <h3 className="text-sm font-bold text-slate-900 tracking-tight">Executive Bio &amp; Professional Summary</h3>
                                         <p className="text-xs text-slate-500">Auto-loaded into all new resumes and AI cover letters.</p>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
                                         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0">Tone:</span>
                                             {['balanced', 'concise', 'technical', 'executive'].map((toneKey) => (
@@ -1805,7 +2318,7 @@ function DashboardSettings(_props) {
                                                     key={toneKey}
                                                     type="button"
                                                     onClick={() => setSummaryTone(toneKey)}
-                                                    className={`px-2.5 py-1 rounded-xl text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 ${
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 ${
                                                         summaryTone === toneKey
                                                             ? 'bg-indigo-600 text-white shadow-2xs'
                                                             : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -1818,13 +2331,20 @@ function DashboardSettings(_props) {
                                             type="button"
                                             onClick={handleWriteAiSummary}
                                             disabled={isAiGenerating}
-                                            className="w-full sm:w-auto whitespace-nowrap px-4 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 shrink-0">
+                                            className="w-full sm:w-auto whitespace-nowrap px-4 py-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2 shrink-0">
                                             <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
                                             <span>{isAiGenerating ? 'Generating Bio...' : 'Generate Executive Bio (AI)'}</span>
                                         </button>
                                     </div>
                                 </div>
-                                <textarea name="summary" value={profile.summary} onChange={handleInputChange} spellCheck="true" placeholder="Enter factual profile details, then optionally ask AI to rewrite them without adding claims." className="w-full h-52 text-xs p-4 bg-white border border-slate-300 rounded-xl font-sans leading-relaxed text-slate-900 focus:border-indigo-600 focus:outline-hidden" />
+                                <textarea
+                                    name="summary"
+                                    value={profile.summary}
+                                    onChange={handleInputChange}
+                                    spellCheck="true"
+                                    placeholder="Enter factual profile details, then optionally ask AI to rewrite them without adding claims."
+                                    className="w-full h-52 text-sm p-3.5 bg-white border border-slate-200 rounded-lg font-sans leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 focus:outline-none"
+                                />
                             </div>
                         )}
 
@@ -1918,6 +2438,7 @@ function DashboardSettings(_props) {
                                                         name="city"
                                                         value={job.city || ''}
                                                         onChange={(e) => updateWorkExperience(idx, 'city', e.target.value)}
+                                                        onSelect={(val) => updateWorkExperience(idx, 'city', val)}
                                                         placeholder="e.g. Visakhapatnam, India"
                                                         suggestionType="city"
                                                         inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 font-semibold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
@@ -1964,7 +2485,10 @@ function DashboardSettings(_props) {
                                                 <BulletPointsEditor
                                                     value={job.description}
                                                     onChange={(val) => updateWorkExperience(idx, 'description', val)}
-                                                    placeholder="e.g. Implemented new technologies, resulting in a 30% decrease in system downtime..."
+                                                    jobTitle={job.jobTitle}
+                                                    company={job.company}
+                                                    location={job.location}
+                                                    placeholder={getRolePlaceholder(job.jobTitle)}
                                                 />
                                             </div>
                                         </div>
@@ -2072,6 +2596,7 @@ function DashboardSettings(_props) {
                                                         name={`edu_city_${idx}`}
                                                         value={edu.city || ''}
                                                         onChange={(e) => updateEducation(idx, 'city', e.target.value)}
+                                                        onSelect={(val) => updateEducation(idx, 'city', val)}
                                                         placeholder="e.g. Cambridge, MA"
                                                         suggestionType="city"
                                                         inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
@@ -2105,59 +2630,158 @@ function DashboardSettings(_props) {
 
                         {/* Sub-Tab 5: Skills */}
                         {profileSubTab === 'skills' && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Skills & Technical Competencies</h3>
-                                        <p className="text-xs text-slate-500">Save core technical skills for auto-filling skills lists.</p>
+                            <div className="space-y-5">
+                                {/* Header & Actions Toolbar (Row 1: Title & Primary Actions | Row 2: Search & View Utilities) */}
+                                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3.5">
+                                    {/* Row 1: Title, Counter Badge & Primary Creation Actions */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2.5 flex-wrap">
+                                                <h3 className="text-sm font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                                                    Skills & Technical Competencies
+                                                </h3>
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/80 whitespace-nowrap shrink-0">
+                                                    {profile.skills.length} {profile.skills.length === 1 ? 'Skill' : 'Skills'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Save core technical competencies and soft skills parsed by ATS screening engines.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                                            {/* Auto-Recommend Skills */}
+                                            <button
+                                                type="button"
+                                                onClick={handleRecommendAiSkills}
+                                                disabled={isAiGenerating}
+                                                className="whitespace-nowrap px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer shrink-0">
+                                                <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                                <span>Auto-Recommend (AI)</span>
+                                            </button>
+
+                                            {/* Add Single Skill */}
+                                            <button
+                                                type="button"
+                                                onClick={addSkill}
+                                                className="whitespace-nowrap px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer shrink-0">
+                                                <FaPlus className="w-3 h-3" /> Add Skill
+                                            </button>
+                                        </div>
                                     </div>
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                                    <button
-                                        type="button"
-                                        onClick={handleRecommendAiSkills}
-                                        disabled={isAiGenerating}
-                                        className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
-                                        <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                        <span>Auto-Recommend Skills (AI)</span>
-                                    </button>
-                                    <button type="button" onClick={addSkill} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
-                                        <FaPlus className="w-3 h-3" /> Add Skill
-                                    </button>
-                                </div>
+
+                                    {/* Row 2: Search Filter + View & Utility Controls */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                        {/* Search / Filter Input */}
+                                        <div className="relative flex-1 max-w-md">
+                                            <FaSearch className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                            <input
+                                                type="text"
+                                                value={skillsSearchQuery}
+                                                onChange={(e) => setSkillsSearchQuery(e.target.value)}
+                                                placeholder={profile.skills.length > 0 ? `Search across ${profile.skills.length} skills...` : "Filter skills..."}
+                                                className="w-full text-xs pl-9 pr-8 py-2 bg-slate-50/80 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                            />
+                                            {skillsSearchQuery && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSkillsSearchQuery('')}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                                                    title="Clear search">
+                                                    <FaTimes className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* View & Utility Controls */}
+                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                            {/* Quick Bulk Paste Toggle */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowBulkSkills(prev => !prev)}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                                                    showBulkSkills || bulkSkillsInput.trim()
+                                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-2xs font-bold'
+                                                        : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                                title="Toggle quick bulk paste ingestion">
+                                                <FaBolt className={`w-3 h-3 ${showBulkSkills || bulkSkillsInput.trim() ? 'text-indigo-600' : 'text-amber-500'}`} />
+                                                <span>Bulk Paste</span>
+                                                {showBulkSkills ? <FaChevronUp className="w-2.5 h-2.5 opacity-60" /> : <FaChevronDown className="w-2.5 h-2.5 opacity-60" />}
+                                            </button>
+
+                                            {/* View Mode Switcher */}
+                                            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSkillsViewMode('grid')}
+                                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                                        skillsViewMode === 'grid'
+                                                            ? 'bg-white text-indigo-700 shadow-2xs'
+                                                            : 'text-slate-600 hover:text-slate-900'
+                                                    }`}
+                                                    title="Cards View (Detailed view with proficiency controls)">
+                                                    <FaThLarge className="w-3 h-3" />
+                                                    <span>Cards</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSkillsViewMode('compact')}
+                                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                                        skillsViewMode === 'compact'
+                                                            ? 'bg-white text-indigo-700 shadow-2xs'
+                                                            : 'text-slate-600 hover:text-slate-900'
+                                                    }`}
+                                                    title="Compact Tags View (High-density overview of all skills)">
+                                                    <FaTags className="w-3 h-3" />
+                                                    <span>Tags</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Bulk Skills Ingestion Box */}
-                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                                            ⚡ Quick Bulk Paste Ingestion
-                                        </label>
-                                        <span className="text-[10px] text-slate-500">Comma, semicolon, or newline separated</span>
+                                {/* Collapsible Bulk Skills Ingestion Drawer */}
+                                {(showBulkSkills || bulkSkillsInput.trim()) && (
+                                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5 transition-all">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                                <span>⚡ Quick Bulk Paste Ingestion</span>
+                                                <span className="text-[10px] text-slate-500 font-normal lowercase">(comma, semicolon, or newline separated)</span>
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowBulkSkills(false)}
+                                                className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 cursor-pointer">
+                                                Hide
+                                            </button>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <textarea
+                                                value={bulkSkillsInput}
+                                                onChange={(e) => setBulkSkillsInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                                        e.preventDefault();
+                                                        handleBulkSkillAdd();
+                                                    }
+                                                }}
+                                                placeholder="Paste multiple skills at once (e.g. React.js, TypeScript, Node.js, Docker, Kubernetes, Clinical Leadership)..."
+                                                className="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-14"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleBulkSkillAdd}
+                                                disabled={!bulkSkillsInput.trim()}
+                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer h-14"
+                                            >
+                                                <FaPlus className="w-3.5 h-3.5" /> Add All
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <textarea
-                                            value={bulkSkillsInput}
-                                            onChange={(e) => setBulkSkillsInput(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                                    e.preventDefault();
-                                                    handleBulkSkillAdd();
-                                                }
-                                            }}
-                                            placeholder="Paste multiple skills at once (e.g. React.js, TypeScript, Node.js, Docker, Kubernetes)..."
-                                            className="flex-1 text-xs p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none h-14"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleBulkSkillAdd}
-                                            disabled={!bulkSkillsInput.trim()}
-                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer h-14"
-                                        >
-                                            <FaPlus className="w-3.5 h-3.5" /> Add All
-                                        </button>
-                                    </div>
-                                </div>
+                                )}
 
+
+                                {/* Skills Presentation: Empty State vs Cards vs Compact Tags */}
                                 {profile.skills.length === 0 ? (
                                     <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
                                         <p className="text-xs font-semibold text-slate-700">No skills saved in Master Profile</p>
@@ -2166,96 +2790,212 @@ function DashboardSettings(_props) {
                                                 type="button"
                                                 onClick={handleRecommendAiSkills}
                                                 disabled={isAiGenerating}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
                                                 <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
                                                 <span>Auto-Recommend Top Skills (AI)</span>
                                             </button>
-                                            <button type="button" onClick={addSkill} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
+                                            <button type="button" onClick={addSkill} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold cursor-pointer">
                                                 Add Skill
                                             </button>
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                        {profile.skills.map((skill, idx) => (
-                                            <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex-1 min-w-0">
-                                                        <AutocompleteInputField
-                                                            hideLabel
-                                                            name={`skill_${idx}`}
-                                                            value={skill.name}
-                                                            onChange={(e) => updateSkill(idx, 'name', e.target.value)}
-                                                            placeholder="Skill name"
-                                                            suggestionType="skill"
-                                                            inputClassName="w-full text-xs p-2 pr-7 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center gap-1 shrink-0">
-                                                        <button
-                                                            type="button"
-                                                            disabled={idx === 0}
-                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, -1); }}
-                                                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
-                                                            title="Move skill up">
-                                                            ▲
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            disabled={idx === profile.skills.length - 1}
-                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, 1); }}
-                                                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded hover:bg-slate-200 text-[10px] font-bold"
-                                                            title="Move skill down">
-                                                            ▼
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
-                                                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-colors cursor-pointer flex-shrink-0"
-                                                            title="Delete skill">
-                                                            <FaTrash className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                {/* Proficiency Level Pills */}
-                                                <div className="flex items-center gap-1 pt-1">
-                                                    {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map((lvl) => (
-                                                        <button
-                                                            key={lvl}
-                                                            type="button"
-                                                            onClick={() => updateSkill(idx, 'level', lvl)}
-                                                            className={`flex-1 py-1 text-[10px] font-semibold rounded-md transition-all ${
-                                                                (skill.level || '').toLowerCase() === lvl.toLowerCase()
-                                                                    ? 'bg-indigo-600 text-white shadow-2xs'
-                                                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                                                            }`}
+                                ) : skillsViewMode === 'compact' ? (
+                                    /* High-Density Compact Tags / Quick View */
+                                    <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                                Quick Skill Matrix ({profile.skills.length})
+                                            </span>
+                                            <span className="text-[11px] text-slate-500">
+                                                Click badge to cycle level • Reorder with arrows • Click × to delete
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pt-1">
+                                            {profile.skills
+                                                .map((skill, originalIndex) => ({ ...skill, originalIndex }))
+                                                .filter(skill => {
+                                                    if (!skillsSearchQuery.trim()) return true;
+                                                    const q = skillsSearchQuery.toLowerCase().trim();
+                                                    return (skill.name || '').toLowerCase().includes(q) || (skill.level || '').toLowerCase().includes(q);
+                                                })
+                                                .map((skill) => {
+                                                    const idx = skill.originalIndex;
+                                                    const currentLvl = skill.level || 'Intermediate';
+                                                    const lvlColors = {
+                                                        expert: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+                                                        advanced: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                                                        intermediate: 'bg-sky-100 text-sky-800 border-sky-200',
+                                                        beginner: 'bg-slate-200 text-slate-700 border-slate-300'
+                                                    }[currentLvl.toLowerCase()] || 'bg-indigo-100 text-indigo-800 border-indigo-200';
+
+                                                    return (
+                                                        <div
+                                                            key={skill.id || idx}
+                                                            className="group inline-flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl shadow-2xs transition-all"
                                                         >
-                                                            {lvl}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
+                                                            <span className="text-xs font-semibold text-slate-900">
+                                                                {skill.name || <span className="text-slate-400 italic">Untitled Skill</span>}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => cycleSkillLevel(idx)}
+                                                                className={`text-[10px] px-2 py-0.5 rounded-lg font-bold border transition-all cursor-pointer ${lvlColors}`}
+                                                                title="Click to cycle: Beginner → Intermediate → Advanced → Expert"
+                                                            >
+                                                                {currentLvl}
+                                                            </button>
+                                                            <div className="flex items-center gap-0.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={idx === 0}
+                                                                    onClick={() => moveItem('skills', idx, -1)}
+                                                                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
+                                                                    title="Move up"
+                                                                >
+                                                                    ▲
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={idx === profile.skills.length - 1}
+                                                                    onClick={() => moveItem('skills', idx, 1)}
+                                                                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 text-[9px] cursor-pointer"
+                                                                    title="Move down"
+                                                                >
+                                                                    ▼
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeSkill(idx)}
+                                                                    className="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-red-600 ml-0.5 cursor-pointer"
+                                                                    title="Delete skill"
+                                                                >
+                                                                    <FaTimes className="w-2.5 h-2.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            <button
+                                                type="button"
+                                                onClick={addSkill}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-dashed border-indigo-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                            >
+                                                <FaPlus className="w-2.5 h-2.5" /> Add Skill
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Spacious 2-Column Cards View with Segmented Controls */
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        {profile.skills
+                                            .map((skill, originalIndex) => ({ ...skill, originalIndex }))
+                                            .filter(skill => {
+                                                if (!skillsSearchQuery.trim()) return true;
+                                                const q = skillsSearchQuery.toLowerCase().trim();
+                                                return (skill.name || '').toLowerCase().includes(q) || (skill.level || '').toLowerCase().includes(q);
+                                            })
+                                            .map((skill) => {
+                                                const idx = skill.originalIndex;
+                                                const currentLvl = skill.level || 'Intermediate';
+                                                return (
+                                                    <div
+                                                        key={skill.id || idx}
+                                                        className="group relative p-3.5 bg-white hover:bg-slate-50/50 border border-slate-200/90 hover:border-indigo-200 rounded-2xl transition-all shadow-2xs hover:shadow-xs space-y-2.5"
+                                                    >
+                                                        {/* Header: Skill Name Input with Autocomplete + Compact Action Pod */}
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="flex-1 min-w-0">
+                                                                <AutocompleteInputField
+                                                                    hideLabel
+                                                                    name={`skill_${idx}`}
+                                                                    value={skill.name}
+                                                                    onChange={(e) => updateSkill(idx, 'name', e.target.value)}
+                                                                    placeholder="Skill name (e.g. React.js, Python, Medical Leadership)"
+                                                                    suggestionType="skill"
+                                                                    inputClassName="w-full text-xs p-2.5 pr-8 bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-center gap-0.5 shrink-0 bg-slate-100/90 p-0.5 rounded-xl border border-slate-200/70">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={idx === 0}
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, -1); }}
+                                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
+                                                                    title="Move skill up">
+                                                                    ▲
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={idx === profile.skills.length - 1}
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('skills', idx, 1); }}
+                                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 disabled:opacity-20 rounded-lg hover:bg-white text-[10px] font-bold transition-all cursor-pointer"
+                                                                    title="Move skill down">
+                                                                    ▼
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSkill(idx); }}
+                                                                    className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                                                    title="Delete skill">
+                                                                    <FaTrash className="w-2.5 h-2.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Proficiency Level Segmented Control */}
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between text-[11px] px-1">
+                                                                <span className="font-semibold text-slate-400 text-[10px] uppercase tracking-wider">Proficiency</span>
+                                                                <span className="text-[10px] font-bold text-indigo-600 flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
+                                                                    {currentLvl}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-100/80 rounded-xl border border-slate-200/60">
+                                                                {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map((lvl) => {
+                                                                    const isSelected = currentLvl.toLowerCase() === lvl.toLowerCase();
+                                                                    return (
+                                                                        <button
+                                                                            key={lvl}
+                                                                            type="button"
+                                                                            onClick={() => updateSkill(idx, 'level', lvl)}
+                                                                            className={`py-1 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                                                                                isSelected
+                                                                                    ? 'bg-indigo-600 text-white shadow-2xs'
+                                                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                                                            }`}
+                                                                        >
+                                                                            {lvl}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                     </div>
                                 )}
 
+                                {/* Bottom Quick Actions */}
                                 {profile.skills.length > 0 && (
                                     <div className="pt-2 flex flex-col sm:flex-row gap-2">
                                         <button
                                             type="button"
                                             onClick={handleRecommendAiSkills}
                                             disabled={isAiGenerating}
-                                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
+                                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
                                             <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
                                             <span>Auto-Recommend Skills (AI)</span>
                                         </button>
-                                        <button type="button" onClick={addSkill} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs">
+                                        <button type="button" onClick={addSkill} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
                                             <FaPlus className="w-3.5 h-3.5" /> Add Skill
                                         </button>
                                     </div>
                                 )}
                             </div>
                         )}
+
 
                         {/* Sub-Tab 6: Certifications & Licenses */}
                         {profileSubTab === 'certifications' && (
@@ -3014,7 +3754,7 @@ function DashboardSettings(_props) {
                             </div>
                         )}
 
-                        {/* Save Master Profile Button — Save + Save & Next */}
+                        {/* Save Master Profile Button — Back + Save + Save & Next */}
                         <div className="pt-6 border-t border-slate-100">
                             {/* Mobile progress indicator */}
                             <div className="flex items-center justify-between mb-4 sm:hidden">
@@ -3025,8 +3765,9 @@ function DashboardSettings(_props) {
                                     {SUB_TAB_ORDER.map((tab, _i) => (
                                         <button
                                             key={tab}
+                                            type="button"
                                             onClick={() => setProfileSubTab(tab)}
-                                            className={`w-2 h-2 rounded-full transition-all ${
+                                            className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
                                                 tab === profileSubTab ? 'bg-indigo-600 w-5' : 'bg-slate-300'
                                             }`}
                                         />
@@ -3034,35 +3775,157 @@ function DashboardSettings(_props) {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row sm:justify-end items-stretch gap-3">
-                                {/* Save & Next — visible on mobile, hidden on last tab */}
-                                {SUB_TAB_ORDER.indexOf(profileSubTab) < SUB_TAB_ORDER.length - 1 && (
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                <div>
+                                    {SUB_TAB_ORDER.indexOf(profileSubTab) > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setProfileSubTab(SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) - 1])}
+                                            className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                            <span>← Back</span>
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                                     <button
                                         type="button"
-                                        onClick={handleSaveAndNext}
+                                        onClick={handleSubmit}
                                         disabled={isSubmitting}
-                                        className="order-1 sm:order-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                                        <FaCheckCircle className="w-4 h-4" />
-                                        <span>{isSubmitting ? 'Saving...' : `Save & Next → ${SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) + 1].charAt(0).toUpperCase() + SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) + 1].slice(1)}`}</span>
+                                        className={`px-5 py-2.5 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                            SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1
+                                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs'
+                                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80'
+                                        }`}>
+                                        <FaCheckCircle className="w-3.5 h-3.5" />
+                                        <span>{isSubmitting ? 'Saving...' : SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1 ? 'Save Master Profile ✓' : 'Save'}</span>
                                     </button>
-                                )}
-                                {/* Save only — visible always, secondary on mobile */}
-                                <button
-                                    type="button"
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    className={`order-2 sm:order-1 px-6 py-3.5 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 ${
-                                        SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1
-                                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
-                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                                    }`}>
-                                    <FaCheckCircle className="w-3.5 h-3.5" />
-                                    <span>{isSubmitting ? 'Saving...' : SUB_TAB_ORDER.indexOf(profileSubTab) === SUB_TAB_ORDER.length - 1 ? 'Save Master Profile ✓' : 'Save'}</span>
-                                </button>
+                                    {SUB_TAB_ORDER.indexOf(profileSubTab) < SUB_TAB_ORDER.length - 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={handleSaveAndNext}
+                                            disabled={isSubmitting}
+                                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                            <FaCheckCircle className="w-3.5 h-3.5" />
+                                            <span>{isSubmitting ? 'Saving...' : `Save & Next → ${SUBTAB_CONFIG[SUB_TAB_ORDER[SUB_TAB_ORDER.indexOf(profileSubTab) + 1]]?.name || 'Next'}`}</span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                ) : (
+                </div>
+
+                {/* Right Column: StepGuide Rail (Identical to Build Resume design) */}
+                {showProfileGuidanceRail && (
+                    <aside aria-label="Master Profile Guide" className="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-6 space-y-4">
+                        {(() => {
+                            const conf = SUBTAB_CONFIG[profileSubTab] || SUBTAB_CONFIG.basic;
+                            const gaps = conf.computeGaps(profile);
+                            const isReady = gaps.length === 0;
+
+                            return (
+                                <>
+                                    {/* StepGuide Card */}
+                                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">GUIDE</h2>
+                                            <span
+                                                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                                                    isReady
+                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                }`}
+                                            >
+                                                <FaCheckCircle className="w-3 h-3" />
+                                                {isReady ? 'Ready' : 'Needs attention'}
+                                            </span>
+                                        </div>
+
+                                        {gaps.length > 0 && (
+                                            <ul className="mt-3 space-y-1.5" aria-label="What is missing in this section">
+                                                {gaps.map((gap, index) => (
+                                                    <li key={`${gap}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
+                                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-xs shrink-0 bg-amber-400" />
+                                                        <span>{gap}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+
+                                        {conf.atsTips && conf.atsTips.length > 0 && (
+                                            <div className="mt-4 border-t border-slate-100 pt-3">
+                                                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                                    What the ATS check says
+                                                </h3>
+                                                <ul className="mt-2 space-y-1.5">
+                                                    {conf.atsTips.map((tip, index) => (
+                                                        <li key={`${tip}-${index}`} className="flex items-start gap-2 text-[13px] leading-snug text-slate-600">
+                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-slate-300" />
+                                                            <span>{tip}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {isReady && (
+                                            <div className="mt-3 space-y-1.5 rounded-lg border border-emerald-200/90 bg-emerald-50/70 p-3">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                                                    <FaCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                                    <span>Optimized for screening ✓</span>
+                                                </div>
+                                                <p className="text-[12px] leading-relaxed text-emerald-700/90">
+                                                    All essential fields and formatting checks for this section are satisfied.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Live AI Sync / Master Source card — Clean Light */}
+                                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                <span className="text-xs font-bold text-slate-900">Master Sync Active</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+                                                Single Source
+                                            </span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-slate-600">
+                                            Data saved here automatically synchronizes across all <strong>51 AI Resume Templates</strong>, Cover Letters, and Portfolio.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/build-resume/heading')}
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+                                        >
+                                            <span>Build / Edit Resumes</span>
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    {/* Sovereign MariaDB Data Protection Trust Badge — Clean Light */}
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs text-slate-600 space-y-1.5 shadow-2xs">
+                                        <div className="flex items-center gap-2 font-bold text-slate-800">
+                                            <FaShieldAlt className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                            <span>Sovereign Storage</span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-slate-500">
+                                            Protected with AES-256 GCM encryption at rest and in transit. Private, isolated by account, and GDPR compliant.
+                                        </p>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </aside>
+                )}
+            </div>
+        </div>
+    ) : (
                     /* Account & Security Settings — 10/10 World Class Security Center */
                     <div className="space-y-6">
                         {/* Card 1: Subscription Tier Overview & Billing CTA */}

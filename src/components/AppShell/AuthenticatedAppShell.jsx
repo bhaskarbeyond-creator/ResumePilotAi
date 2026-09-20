@@ -40,7 +40,7 @@ const AuthenticatedAppShell = ({ children }) => {
     if (!decision.mountShell) return children || <Outlet />;
 
     return (
-        <div className="dashboardWrapper" data-testid="application-shell" style={{ overflow: 'hidden' }}>
+        <div className="dashboardWrapper" data-testid="application-shell" style={{ overflowX: 'clip' }}>
             <ProfileDisplay
                 user={decision.userId}
                 profile={profile}

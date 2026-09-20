@@ -1,90 +1,24 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { FaPlus, FaTrash, FaArrowUp, FaCheckCircle, FaExclamationCircle, FaMagic, FaUndo, FaGripVertical } from 'react-icons/fa';
 import { generateUserAiContent } from '../../services/aiService';
-import { ACTION_VERBS, getBulletAnalysis, hasStrongActionVerb, detectLegitimateMetric, BULLET_PREFIX_REGEX } from '../../utils/bulletQuality.js';
+import {
+    ACTION_VERBS,
+    getBulletAnalysis,
+    hasStrongActionVerb,
+    detectLegitimateMetric,
+    BULLET_PREFIX_REGEX,
+    ensureAtsOptimizedBullet,
+    getRolePlaceholder,
+    getRolePillars,
+    generateClientRoleBullet,
+} from '../../utils/bulletQuality.js';
 
-export function ensureAtsOptimizedBullet(rawText, originalDraft = '') {
-    let text = String(rawText || '')
-        .replace(BULLET_PREFIX_REGEX, '')
-        .replace(/["'\s]+$/g, '')
-        .replace(/\\"/g, '"')
-        .trim();
-    if (!text) return text;
-
-    // 1. Fix weak passive openers
-    text = text.replace(/^(?:responsible for|worked on|helped with|assisted in|tasks included|duties included|doing daily|handled tasks|was involved in|participated in|contributed to|was tasked with|responsible to|helped out)\s*/i, 'Spearheaded ');
-
-    // 2. Ensure leading strong action verb
-    if (!hasStrongActionVerb(text)) {
-        const lower = text.toLowerCase();
-        let verb = 'Spearheaded';
-        // Healthcare, Clinical & Nursing
-        if (/patient|clinical|nurs|triage|medical|health|therapy|treatment|hospital|care|physician|doctor/i.test(lower)) verb = 'Administered';
-        // Education & Academia
-        else if (/student|teach|classroom|curriculum|course|lecture|academic|school|pupil|grade|faculty/i.test(lower)) verb = 'Instructed';
-        // Legal & Regulatory
-        else if (/contract|legal|compliance|regulation|litigation|policy|audit|clause|statute|counsel/i.test(lower)) verb = 'Negotiated';
-        // Hospitality, Culinary & Events
-        else if (/guest|culinary|food|menu|kitchen|dining|event|catering|recipe|chef|hospitality/i.test(lower)) verb = 'Curated';
-        // Creative, Content & Design
-        else if (/brand|content|campaign|creative|copy|visual|editorial|art|media|storyboard/i.test(lower)) verb = 'Authored';
-        // Sales, Revenue & Business Development
-        else if (/portfolio|revenue|sales|growth|client|market|business|customer|account|pipeline|retention/i.test(lower)) verb = 'Scaled';
-        // Tech, Cloud & Infrastructure
-        else if (/platform|infrastructure|api|service|pipeline|cluster|backend|database|cloud|aws|docker|kubernetes|software|code/i.test(lower)) verb = 'Engineered';
-        // Performance & Optimization
-        else if (/performance|latency|speed|cost|efficiency|workflow|process|load time|query/i.test(lower)) verb = 'Optimized';
-        // Quality & Automation
-        else if (/test|qa|quality|security|compliance|ci\/cd|deployment/i.test(lower)) verb = 'Automated';
-        // UI / Front-end
-        else if (/ui|frontend|design|ux|interface|component|react|vue|angular/i.test(lower)) verb = 'Architected';
-        // Operations & Projects
-        else if (/project|deliverable|feature|product|app|program|logistics|operations|facility/i.test(lower)) verb = 'Delivered';
-
-        let body = text;
-        if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+[A-Z]{2,}/.test(text) && !/^(?:in|at|for|with|across|on)\b/i.test(text)) {
-            body = text.replace(/^([A-Za-z\s]+?)\s+([A-Z]{2,}[\w\s]*)/, (_, p1, p2) => {
-                return `${p1.toLowerCase()} across ${p2}`;
-            });
-        } else {
-            const firstChar = body.charAt(0).toLowerCase();
-            const rest = body.slice(1);
-            body = `${firstChar}${rest}`;
-        }
-
-        body = body.replace(/\s*([+]\d+%\s+[A-Za-z\s]+)/i, ', driving $1');
-        text = `${verb} ${body}`;
-    }
-
-    // 3. Ensure metric anchor
-    if (!detectLegitimateMetric(text)) {
-        if (originalDraft && detectLegitimateMetric(originalDraft)) {
-            const metricMatch = originalDraft.match(/([+$€£₹¥]?[\d,.]+(?:\s*(?:%|x|k|m|b|\+))?)/i);
-            if (metricMatch) {
-                text = text.replace(/[.,;:]+$/, '') + `, driving ${metricMatch[0]} performance improvement`;
-            }
-        } else {
-            const lower = text.toLowerCase();
-            if (/patient|clinical|nurs|medical|hospital/i.test(lower)) {
-                text = text.replace(/[.,;:]+$/, '') + ', improving patient care turnaround by 20%';
-            } else if (/student|teach|curriculum|school|academic/i.test(lower)) {
-                text = text.replace(/[.,;:]+$/, '') + ', lifting student engagement scores by 15%';
-            } else if (/guest|dining|food|kitchen|event/i.test(lower)) {
-                text = text.replace(/[.,;:]+$/, '') + ', maintaining a 98% positive guest rating';
-            } else if (/contract|legal|compliance/i.test(lower)) {
-                text = text.replace(/[.,;:]+$/, '') + ', achieving 100% compliance standards';
-            } else {
-                text = text.replace(/[.,;:]+$/, '') + ', improving operational turnaround by 25%';
-            }
-        }
-    }
-
-    // 4. Clean spacing and terminal punctuation
-    text = text.replace(/\s{2,}/g, ' ').trim();
-    if (!/[.!?]$/.test(text)) text += '.';
-
-    return text;
-}
+export {
+    ensureAtsOptimizedBullet,
+    getRolePlaceholder,
+    getRolePillars,
+    generateClientRoleBullet,
+};
 
 /**
  * Parses any incoming string (HTML list, paragraphs, bullet characters, or plain text)
@@ -142,6 +76,76 @@ function serializeBullets(bullets) {
     return cleaned.join('\n');
 }
 
+function getDomainAtsMetrics(role = '', context = null, projectName = '', tech = '') {
+    const combined = `${role} ${projectName} ${tech} ${context?.target?.role || ''} ${context?.profession || ''}`.toLowerCase();
+
+    // Healthcare, Medical, Clinical, Nursing, Dental
+    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical|clinician|nurse|nursing|rn|clinical|hospital|patient|triage|health|pharma)\b/.test(combined)) {
+        return [
+            { label: '+25% Accuracy', text: ', improving diagnostic accuracy and protocol adherence by 25%' },
+            { label: '30+ Patients/Day', text: ' while managing a high-volume caseload of 30+ patients daily' },
+            { label: '98% Quality', text: ', achieving a 98% clinical quality and patient satisfaction rating' },
+            { label: '-35% Wait Time', text: ', reducing patient wait and triage turnaround times by 35%' },
+            { label: 'Zero Deficiencies', text: ' with zero compliance deficiencies across clinical audits' },
+            { label: 'Team of 8+', text: ' coordinating care across an interdisciplinary team of 8' },
+        ];
+    }
+
+    // Legal, Compliance, Regulatory
+    if (/\b(?:lawyer|attorney|counsel|legal|paralegal|compliance|solicitor|advocate|contract|litigation|audit)\b/.test(combined)) {
+        return [
+            { label: '100% Compliance', text: ', achieving 100% compliance across all statutory filings' },
+            { label: '50+ Contracts', text: ' overseeing review and negotiation for 50+ commercial contracts' },
+            { label: '-30% Cycle Time', text: ', reducing contract review cycle time by 30%' },
+            { label: '+$250k Saved', text: ', mitigating legal risks and generating $250,000 in cost avoidance' },
+            { label: 'Zero Deficiencies', text: ' with zero regulatory deficiencies on compliance audits' },
+        ];
+    }
+
+    // Finance, Accounting, Banking, Audit
+    if (/\b(?:finance|financial|accountant|accounting|auditor|audit|tax|controller|treasurer|banker|banking|cpa)\b/.test(combined)) {
+        return [
+            { label: '+$150k Saved', text: ', identifying and recovering $150,000+ in operational savings' },
+            { label: '100% Audit Pass', text: ', completing statutory audit with zero discrepancies' },
+            { label: '+24% Accuracy', text: ', improving financial forecasting precision by 24%' },
+            { label: '-40% Cycle Time', text: ', accelerating monthly financial close cycles by 40%' },
+            { label: '$2M+ Portfolio', text: ' overseeing asset allocations across a $2M+ portfolio' },
+        ];
+    }
+
+    // Marketing, Growth, Sales
+    if (/\b(?:marketing|growth|seo|brand|content|campaign|sales|revenue|account executive|bdr|sdr)\b/.test(combined)) {
+        return [
+            { label: '+35% Leads', text: ', driving a 35% increase in qualified inbound pipeline' },
+            { label: '-28% CAC', text: ', reducing customer acquisition cost by 28%' },
+            { label: '+24% Conversion', text: ', boosting landing page conversion rates by 24%' },
+            { label: '+140% Traffic', text: ', scaling organic web traffic by 140% year-over-year' },
+            { label: '+$500k Pipeline', text: ', generating $500,000 in attributed pipeline revenue' },
+        ];
+    }
+
+    // Tech, Software, Cloud, DevOps, Engineering
+    if (/\b(?:software|developer|engineer|frontend|backend|full\s*stack|devops|cloud|aws|python|react|node|api|database|system|architect)\b/.test(combined)) {
+        return [
+            { label: '+25% Speed', text: ', improving delivery turnaround and build times by 25%' },
+            { label: '-40% Latency', text: ', reducing API response latency by 40%' },
+            { label: 'Team of 5+', text: ' across a cross-functional engineering team of 5' },
+            { label: '+$20k Saved', text: ', generating $20,000 in cloud infrastructure cost savings' },
+            { label: '99.9% Uptime', text: ', maintaining 99.9% service SLA availability' },
+            { label: '10k+ Users', text: ' scaling to support 10,000+ daily active users' },
+        ];
+    }
+
+    // Default / Operations / Management
+    return [
+        { label: '+25% Efficiency', text: ', improving operational throughput by 25%' },
+        { label: '-30% Turnaround', text: ', reducing process turnaround time by 30%' },
+        { label: 'Team of 6+', text: ' collaborating across an agile team of 6+' },
+        { label: '+$20k Saved', text: ', delivering $20,000 in direct cost reductions' },
+        { label: '98% Satisfaction', text: ', maintaining a 98% stakeholder satisfaction score' },
+    ];
+}
+
 /**
  * 10/10 World-Class BulletPointsEditor with Live Green/Amber/Red Bullet Scoring
  * - 🟢 Green: Strong Action Verb + Quantifiable Metrics/Scale (ATS Ready)
@@ -156,15 +160,35 @@ function serializeBullets(bullets) {
 const BulletPointsEditor = ({
     value = '',
     onChange,
-    placeholder = 'e.g. Architected high-throughput microservices in Go, cutting API latency by 40%...',
-    maxLength = 220,
+    placeholder = '',
+    maxLength = 260,
     disabled = false,
     onOpenCopilot = null,
+    jobTitle = '',
+    company = '',
+    location = '',
+    context = null,
+    projectName = '',
+    technologies = '',
+    projectRole = '',
+    entry = null,
 }) => {
     // Internal local state holds the array of bullets (including any blank draft bullet)
     const [localBullets, setLocalBullets] = useState(() => parseBullets(value));
     const lastEmittedValueRef = useRef(serializeBullets(localBullets));
     const textareaRefs = useRef([]);
+
+    const effectiveRole = jobTitle || context?.target?.role || context?.profession || '';
+    const dynamicPlaceholder = useMemo(() => {
+        if (placeholder && !placeholder.includes('decrease in system downtime') && !placeholder.includes('Architected high-throughput')) {
+            return placeholder;
+        }
+        return getRolePlaceholder(effectiveRole);
+    }, [placeholder, effectiveRole]);
+
+    const dynamicAtsMetrics = useMemo(() => {
+        return getDomainAtsMetrics(effectiveRole, context, projectName, technologies);
+    }, [effectiveRole, context, projectName, technologies]);
 
     const [enhancingIndex, setEnhancingIndex] = useState(null);
     const [isEnhancingAll, setIsEnhancingAll] = useState(false);
@@ -313,26 +337,56 @@ const BulletPointsEditor = ({
         setDraggedIdx(null);
     };
 
-    const handleEnhanceSingleBullet = async (index) => {
-        const currentText = localBullets[index];
-        if (!currentText || !currentText.trim() || enhancingIndex !== null || isEnhancingAll) return;
+    const handleEnhanceSingleBullet = async (index, specificPillar = '', forceFresh = false) => {
+        const currentText = localBullets[index] || '';
+        if (enhancingIndex !== null || isEnhancingAll) return;
 
-        // Record history before enhancement
+        const isFreshGeneration = !currentText.trim() || forceFresh;
+
+        // Record history before enhancement/generation
         setHistoryMap((prev) => ({ ...prev, [index]: currentText }));
         setEnhancingIndex(index);
         aiRequestControllerRef.current?.abort();
         const requestController = new AbortController();
         aiRequestControllerRef.current = requestController;
 
+        const otherBullets = localBullets.filter((_, i) => i !== index && Boolean(_ && _.trim()));
+
+        const resolvedProjectName = String(projectName || entry?.title || entry?.name || '').trim();
+        const resolvedTechnologies = String(technologies || entry?.technologies || '').trim();
+        const resolvedRole = String(projectRole || entry?.role || effectiveRole || (resolvedProjectName ? 'Project Contributor' : '')).trim();
+
         try {
-            const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentText }, { signal: requestController.signal });
+            const payload = {
+                bullet: isFreshGeneration ? '' : currentText,
+                jobTitle: resolvedRole,
+                company: company || resolvedTechnologies,
+                location: location,
+                existingBullets: otherBullets,
+                pillar: specificPillar,
+                projectName: resolvedProjectName,
+                technologies: resolvedTechnologies,
+                entry: {
+                    ...(entry || {}),
+                    title: resolvedProjectName,
+                    projectName: resolvedProjectName,
+                    technologies: resolvedTechnologies,
+                    candidateBullet: isFreshGeneration ? '' : currentText,
+                },
+            };
+            const res = await generateUserAiContent('enhance-single-bullet', payload, { signal: requestController.signal });
             const candidateEnhanced = res?.enhancedBullet || res?.data?.enhancedBullet;
-            const finalBullet = ensureAtsOptimizedBullet(candidateEnhanced || currentText, currentText);
+            const finalBullet = ensureAtsOptimizedBullet(
+                candidateEnhanced || (isFreshGeneration ? generateClientRoleBullet(resolvedRole, company, otherBullets, specificPillar, resolvedProjectName, resolvedTechnologies) : currentText),
+                isFreshGeneration ? '' : currentText
+            );
             handleBulletChange(index, finalBullet, false);
         } catch (err) {
             if (err?.name !== 'AbortError') {
-                console.error('Failed to enhance single bullet point:', err);
-                const fallbackBullet = ensureAtsOptimizedBullet(currentText, currentText);
+                console.error('Failed to enhance/generate bullet point:', err);
+                const fallbackBullet = isFreshGeneration
+                    ? generateClientRoleBullet(resolvedRole, company, otherBullets, specificPillar, resolvedProjectName, resolvedTechnologies)
+                    : ensureAtsOptimizedBullet(currentText, currentText);
                 handleBulletChange(index, fallbackBullet, false);
             }
         } finally {
@@ -362,11 +416,30 @@ const BulletPointsEditor = ({
         });
         setHistoryMap(newHistory);
 
+        const resolvedProjectName = String(projectName || entry?.title || entry?.name || '').trim();
+        const resolvedTechnologies = String(technologies || entry?.technologies || '').trim();
+        const resolvedRole = String(projectRole || entry?.role || effectiveRole || (resolvedProjectName ? 'Project Contributor' : '')).trim();
+
         const currentBullets = [...localBullets];
         for (const idx of validIndices) {
             setEnhancingIndex(idx);
             try {
-                const res = await generateUserAiContent('enhance-single-bullet', { bullet: currentBullets[idx] }, { signal: requestController.signal });
+                const res = await generateUserAiContent('enhance-single-bullet', {
+                    bullet: currentBullets[idx],
+                    jobTitle: resolvedRole,
+                    company: company || resolvedTechnologies,
+                    location: location,
+                    existingBullets: currentBullets.filter((_, i) => i !== idx),
+                    projectName: resolvedProjectName,
+                    technologies: resolvedTechnologies,
+                    entry: {
+                        ...(entry || {}),
+                        title: resolvedProjectName,
+                        projectName: resolvedProjectName,
+                        technologies: resolvedTechnologies,
+                        candidateBullet: currentBullets[idx],
+                    },
+                }, { signal: requestController.signal });
                 const candidateEnhanced = res?.enhancedBullet || res?.data?.enhancedBullet;
                 currentBullets[idx] = ensureAtsOptimizedBullet(candidateEnhanced || currentBullets[idx], currentBullets[idx]);
             } catch (err) {
@@ -570,7 +643,13 @@ const BulletPointsEditor = ({
 
                                 {/* Right: Counter & Delete */}
                                 <div className="flex items-center gap-2.5">
-                                    <span className={`text-[10px] sm:text-[11px] font-medium ${isOverLimit ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                                    <span className={`text-[10px] sm:text-[11px] font-medium ${
+                                        isOverLimit
+                                            ? 'text-red-500 font-bold'
+                                            : charCount > 220
+                                            ? 'text-amber-600 font-semibold'
+                                            : 'text-slate-400'
+                                    }`}>
                                         {charCount}/{maxLength}
                                     </span>
                                     <button
@@ -592,11 +671,13 @@ const BulletPointsEditor = ({
                                 onKeyDown={(e) => handleKeyDown(e, index)}
                                 disabled={disabled || isEnhancing || isEnhancingAll}
                                 rows={2}
-                                placeholder={placeholder}
+                                placeholder={dynamicPlaceholder}
                                 className="w-full text-xs text-slate-800 bg-transparent border-0 outline-none p-0 min-h-[52px] font-normal leading-relaxed resize-y focus:ring-0"
                             />
 
-                            {/* Empty Bullet Guidance Hint */}
+
+
+                            {/* Empty Bullet Guidance Hint for Copilot */}
                             {!bulletText.trim() && localBullets.length === 1 && onOpenCopilot && (
                                 <div className="mt-2 p-2 rounded-lg bg-indigo-50/60 border border-dashed border-indigo-200/90 flex items-center justify-between gap-2 flex-wrap text-xs">
                                     <span className="text-indigo-900 font-medium text-[11px] flex items-center gap-1.5">
@@ -613,51 +694,72 @@ const BulletPointsEditor = ({
                                 </div>
                             )}
 
-                            {/* Card Footer Bar — Quality Badge & Tip (Left) + Undo & AI Enhance (Right) */}
+                            {/* Card Footer Bar — Quality Badge & Tip (Left) + Undo & AI Enhance / Generate (Right) */}
                             <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-1.5">
                                 {/* Left: Quality Badge with Tooltip Tip */}
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     <div className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ${quality.color}`}>
                                         {quality.icon}
-                                        <span>{quality.badgeText}</span>
+                                        <span>{!bulletText.trim() ? 'Empty Bullet' : quality.badgeText}</span>
                                     </div>
-                                    <span className="text-[10px] text-slate-400 hidden sm:inline truncate max-w-[280px]" title={quality.tip}>
-                                        {quality.tip}
+                                    <span className="text-[10px] text-slate-400 hidden sm:inline truncate max-w-[280px]" title={!bulletText.trim() ? 'Click Generate AI Bullet to create an authentic, ATS-optimized achievement tailored for your position' : quality.tip}>
+                                        {!bulletText.trim() ? 'Click Generate AI Bullet to create tailored achievement' : quality.tip}
                                     </span>
                                 </div>
 
-                                {/* Right: Undo & AI Enhance */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                {/* Right: Undo, Fresh & AI Enhance / Generate */}
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
                                     {/* Undo Button */}
                                     {canUndo && (
                                         <button
                                             type="button"
                                             onClick={() => handleUndo(index)}
                                             disabled={disabled || isEnhancing || isEnhancingAll}
-                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 rounded-lg transition-all shadow-2xs whitespace-nowrap"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 rounded-lg transition-all shadow-2xs whitespace-nowrap cursor-pointer"
                                             title="Undo AI enhancement or edit">
                                             <FaUndo className="w-2.5 h-2.5 text-amber-600" />
                                             <span>Undo</span>
                                         </button>
                                     )}
 
-                                    {/* Individual AI Enhance Button */}
+                                    {/* Fresh Alternative Generator when bullet already has text */}
+                                    {bulletText.trim() && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleEnhanceSingleBullet(index, '', true)}
+                                            disabled={disabled || isEnhancing || isEnhancingAll}
+                                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-slate-600 hover:text-indigo-700 bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/90 hover:border-indigo-200 rounded-lg transition-all shadow-2xs whitespace-nowrap cursor-pointer active:scale-95 disabled:opacity-60"
+                                            title="Generate alternative fresh bullet tailored to this position">
+                                            <FaMagic className="w-2.5 h-2.5 text-slate-400" />
+                                            <span>🔄 Fresh</span>
+                                        </button>
+                                    )}
+
+                                    {/* Individual AI Enhance / Generate Button */}
                                     <button
                                         type="button"
                                         onClick={() => handleEnhanceSingleBullet(index)}
-                                        disabled={disabled || isEnhancing || isEnhancingAll || !bulletText.trim()}
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all border shadow-2xs whitespace-nowrap ${
+                                        disabled={disabled || isEnhancing || isEnhancingAll}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all border shadow-2xs whitespace-nowrap cursor-pointer active:scale-95 disabled:opacity-60 ${
                                             isEnhancing
                                                 ? 'bg-indigo-100 text-indigo-700 border-indigo-300 animate-pulse'
                                                 : !bulletText.trim()
-                                                ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+                                                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-transparent shadow-xs font-bold'
                                                 : quality.status === 'green'
                                                 ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
                                                 : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200/80 hover:border-indigo-300'
                                         }`}
-                                        title="Enhance this single bullet point to 10/10 with AI">
-                                        <FaMagic className={`w-2.5 h-2.5 ${isEnhancing ? 'animate-spin text-indigo-600' : 'text-indigo-600'}`} />
-                                        <span>{isEnhancing ? 'Enhancing...' : quality.status === 'green' ? '✓ AI Optimized' : '✨ AI Enhance'}</span>
+                                        title={!bulletText.trim() ? "Generate an ATS-optimized, tailored bullet for this position" : "Enhance this single bullet point to 10/10 with AI"}>
+                                        <FaMagic className={`w-2.5 h-2.5 ${isEnhancing ? 'animate-spin text-white' : !bulletText.trim() ? 'text-indigo-200' : 'text-indigo-600'}`} />
+                                        <span>
+                                            {isEnhancing
+                                                ? 'Generating...'
+                                                : !bulletText.trim()
+                                                ? '✨ Generate AI Bullet'
+                                                : quality.status === 'green'
+                                                ? '✓ AI Optimized'
+                                                : '✨ AI Enhance'}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -689,14 +791,7 @@ const BulletPointsEditor = ({
                                             <span className="text-[10px] font-bold text-amber-800 flex items-center gap-1">
                                                 ⚡ 1-Click ATS Metric:
                                             </span>
-                                            {[
-                                                { label: '+25% Speed', text: ', improving delivery turnaround by 25%' },
-                                                { label: '-40% Latency', text: ', reducing query latency by 40%' },
-                                                { label: 'Team of 5+', text: ' across a cross-functional team of 5' },
-                                                { label: '+$20k Saved', text: ', generating $20,000 in operational cost savings' },
-                                                { label: '99.9% Uptime', text: ', maintaining 99.9% SLA uptime' },
-                                                { label: '10k+ Users', text: ' supporting 10,000+ daily active users' },
-                                            ].map((m, mIdx) => (
+                                            {dynamicAtsMetrics.map((m, mIdx) => (
                                                 <button
                                                     key={mIdx}
                                                     type="button"

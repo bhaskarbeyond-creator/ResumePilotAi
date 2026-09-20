@@ -13,7 +13,16 @@ export default function EducationHealthCard({ education = {}, targetJd = '' }) {
     }, [education, targetJd]);
 
     if (!education.school && !education.degree) {
-        return null;
+        return (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-center space-y-1">
+                <p className="text-[11px] font-semibold text-slate-600">
+                    Academic ATS Signals
+                </p>
+                <p className="text-[10px] text-slate-400 leading-snug">
+                    Enter institution and degree to evaluate credential strength and JD alignment.
+                </p>
+            </div>
+        );
     }
 
     const getScoreBadge = (score) => {

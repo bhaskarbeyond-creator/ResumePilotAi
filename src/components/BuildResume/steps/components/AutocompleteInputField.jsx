@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateUserAiContent } from '../../../../services/aiService';
-import { matchUniversalDirectory } from '../../../../utils/autocompleteDirectories.js';
+import { matchUniversalDirectory, isTypoMatch, autocorrectQuery, isDomainCompatible } from '../../../../utils/autocompleteDirectories.js';
 
 /**
  * AutocompleteInputField — profile-grounded and universal directory suggestions.
@@ -26,7 +26,8 @@ const AI_AUTOCOMPLETE_TYPES = new Set([
     'language', 'hobby', 'hobbies', 'interest', 'interests',
     'company', 'employer', 'organization',
     'school', 'university', 'institution', 'college',
-    'certification', 'credential', 'issuer',
+    'certification', 'credential', 'issuer', 'certificationIssuer',
+    'city', 'location',
 ]);
 
 /**
@@ -57,13 +58,22 @@ function getProfileCandidates(suggestionType, context) {
             ];
         } else if (normField === 'skill' || normField === 'skills') {
             candidates = [...((context.facts?.skills || []))];
+        } else if (normField === 'hobby' || normField === 'hobbies' || normField === 'interest' || normField === 'interests') {
+            candidates = [
+                ...((context.facts?.hobbies || []).map(h => typeof h === 'string' ? h : h.name || h.hobby || '')),
+            ];
+        } else if (normField === 'city' || normField === 'location') {
+            candidates = [
+                context.facts?.city,
+                context.facts?.location,
+            ];
         } else if (normField === 'language') {
             candidates = [...((context.facts?.languages || []).map(l => l.name))];
         } else if (normField === 'certification' || normField === 'credential') {
             candidates = [
                 ...((context.facts?.certifications || []).map(c => c.title || c.name)),
             ];
-        } else if (normField === 'issuer') {
+        } else if (normField === 'issuer' || normField === 'certificationissuer') {
             candidates = [
                 ...((context.facts?.certifications || []).map(c => c.issuer)),
             ];
@@ -73,6 +83,34 @@ function getProfileCandidates(suggestionType, context) {
     return [...new Set(candidates.map(v => String(v || '').trim()).filter(Boolean))];
 }
 
+const RECENT_STORAGE_KEY_PREFIX = 'rp_recent_';
+
+export function getRecentSelections(type) {
+    if (typeof window === 'undefined' || !window.localStorage) return [];
+    try {
+        const raw = localStorage.getItem(`${RECENT_STORAGE_KEY_PREFIX}${type}`);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter(s => typeof s === 'string' && s.trim()) : [];
+    } catch {
+        return [];
+    }
+}
+
+export function saveRecentSelection(type, value) {
+    if (typeof window === 'undefined' || !window.localStorage || !value || typeof value !== 'string') return;
+    try {
+        const key = `${RECENT_STORAGE_KEY_PREFIX}${type}`;
+        const existing = getRecentSelections(type);
+        const val = value.trim();
+        if (!val) return;
+        const updated = [val, ...existing.filter(item => item.toLowerCase() !== val.toLowerCase())].slice(0, 5);
+        localStorage.setItem(key, JSON.stringify(updated));
+    } catch {
+        // Safe fail-through for incognito / quota limits
+    }
+}
+
 /**
  * Local suggestions derived from the candidate's verified profile data AND
  * the universal global directory (companies, universities, degrees, skills).
@@ -80,24 +118,22 @@ function getProfileCandidates(suggestionType, context) {
  */
 function getLocalProfileSuggestions(suggestionType, query = '', context = null) {
     const cleanQ = String(query || '').trim().toLowerCase();
-    const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
     const profileCandidates = getProfileCandidates(suggestionType, context);
+    const recents = getRecentSelections(suggestionType);
 
     if (!cleanQ) {
-        // When query is empty, show ONLY actual verified profile entries if any exist
-        return profileCandidates.slice(0, 8);
+        // When query is empty, show recent selections first, then actual verified profile entries
+        return [...new Set([...recents, ...profileCandidates])].slice(0, 8);
     }
 
-    // Blend profile data with universal directory for instant 0ms matching
+    // Blend recent selections + profile data + universal directory for instant 0ms matching
     const directoryMatches = matchUniversalDirectory(suggestionType, query, 12);
-    const combinedCandidates = [...profileCandidates, ...directoryMatches];
+    const combinedCandidates = [...recents, ...profileCandidates, ...directoryMatches];
 
-    // Filter strictly by query
+    // Filter by query with typo tolerance & spell check
+    const correctedQ = autocorrectQuery(cleanQ);
     const matched = combinedCandidates.filter(item => {
-        const itemLower = String(item || '').toLowerCase();
-        if (itemLower.includes(cleanQ)) return true;
-        if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
-        return false;
+        return isDomainCompatible(suggestionType, item) && (isTypoMatch(item, cleanQ) || (correctedQ && isTypoMatch(item, correctedQ)));
     });
 
     return [...new Set(matched.map(v => String(v || '').trim()).filter(Boolean))].slice(0, 8);
@@ -149,14 +185,9 @@ const AutocompleteInputField = ({
 
         // Only call AI if user typed at least 2 characters
         if (cleanQ.length < 2) {
-            const profileCandidates = getProfileCandidates(suggestionType, context);
-            if (profileCandidates.length > 0) {
-                setSuggestions(profileCandidates.slice(0, 8));
-                if (forceOpen) setShowDropdown(true);
-            } else {
-                setSuggestions([]);
-                setShowDropdown(false);
-            }
+            const localList = getLocalProfileSuggestions(suggestionType, queryVal, context);
+            setSuggestions(localList);
+            if (forceOpen || isUserTypingRef.current) setShowDropdown(localList.length > 0);
             return;
         }
 
@@ -191,34 +222,35 @@ const AutocompleteInputField = ({
             }, { signal: requestController.signal });
 
             if (res && Array.isArray(res.suggestions) && res.suggestions.length > 0) {
-                const qTokens = cleanQ.split(/\s+/).filter(t => t.length >= 3);
+                const correctedQ = autocorrectQuery(cleanQ);
                 const matchingAi = res.suggestions.filter(item => {
-                    const itemLower = String(item || '').toLowerCase();
-                    if (itemLower.includes(cleanQ)) return true;
-                    if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
-                    if (qTokens.length > 0 && qTokens.some(tok => itemLower.includes(tok))) return true;
-                    return true;
-                }).map(s => String(s).trim()).filter(Boolean).slice(0, 8);
+                    return isDomainCompatible(suggestionType, item) && (isTypoMatch(item, cleanQ) || (correctedQ && isTypoMatch(item, correctedQ)));
+                }).map(s => String(s).trim()).filter(Boolean);
 
-                if (matchingAi.length > 0) {
-                    suggestionCache[cacheKey] = matchingAi;
-                    setSuggestions(matchingAi);
+                let combined = matchingAi;
+                if (matchingAi.length < 4) {
+                    const localList = getLocalProfileSuggestions(suggestionType, queryVal, context);
+                    combined = [...new Set([...matchingAi, ...localList])];
+                }
+                combined = combined.slice(0, 8);
+
+                if (combined.length > 0) {
+                    suggestionCache[cacheKey] = combined;
+                    setSuggestions(combined);
                     if (forceOpen || isUserTypingRef.current) setShowDropdown(true);
                 } else {
-                    // Fallback to directory only if AI returned no matching options
-                    const localList = getLocalProfileSuggestions(suggestionType, query, context);
-                    setSuggestions(localList);
-                    setShowDropdown(localList.length > 0);
+                    setSuggestions([]);
+                    setShowDropdown(false);
                 }
             } else {
-                // Fallback to directory only if AI response was empty
-                const localList = getLocalProfileSuggestions(suggestionType, query, context);
+                // Fallback to directory if AI response was empty
+                const localList = getLocalProfileSuggestions(suggestionType, queryVal, context);
                 setSuggestions(localList);
                 setShowDropdown(localList.length > 0);
             }
         } catch (err) {
             if (err?.name !== 'AbortError') {
-                const localList = getLocalProfileSuggestions(suggestionType, query, context);
+                const localList = getLocalProfileSuggestions(suggestionType, queryVal, context);
                 setSuggestions(localList);
                 setShowDropdown(localList.length > 0);
             }
@@ -250,19 +282,27 @@ const AutocompleteInputField = ({
                 setSuggestions(suggestionCache[cacheKey]);
                 setShowDropdown(true);
             } else {
-                // Keep dropdown open in loading state; never flash robotic static items
-                setSuggestions([]);
-                setShowDropdown(true);
+                // Show immediate local suggestions without waiting for debounce
+                const localList = getLocalProfileSuggestions(suggestionType, safeValue, context);
+                setSuggestions(localList);
+                setShowDropdown(localList.length > 0);
                 setLoading(true);
             }
 
             debounceTimer.current = setTimeout(() => {
                 if (isUserTypingRef.current) fetchSuggestions(safeValue);
             }, 200);
+        } else if (cleanVal.length === 1) {
+            const localList = getLocalProfileSuggestions(suggestionType, safeValue, context);
+            setSuggestions(localList);
+            setShowDropdown(localList.length > 0);
+            setLoading(false);
         } else if (cleanVal.length === 0) {
             const profileCandidates = getProfileCandidates(suggestionType, context);
-            setSuggestions(profileCandidates.slice(0, 8));
-            setShowDropdown(profileCandidates.length > 0);
+            const directoryMatches = matchUniversalDirectory(suggestionType, '', 8);
+            const combined = [...new Set([...profileCandidates, ...directoryMatches])].filter(item => isDomainCompatible(suggestionType, item)).slice(0, 8);
+            setSuggestions(combined);
+            setShowDropdown(combined.length > 0);
             setLoading(false);
         } else {
             setSuggestions([]);
@@ -275,6 +315,7 @@ const AutocompleteInputField = ({
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [safeValue]);
+
 
     useEffect(() => () => { const controller = requestControllerRef.current; requestControllerRef.current = null; controller?.abort(); }, []);
 
@@ -291,6 +332,7 @@ const AutocompleteInputField = ({
 
     const handleSelectOption = (option) => {
         isUserTypingRef.current = false;
+        saveRecentSelection(suggestionType, option);
         onChange({ target: { name, value: option } });
         if (typeof onSelect === 'function') onSelect(option);
         setShowDropdown(false);
@@ -305,10 +347,11 @@ const AutocompleteInputField = ({
             isUserTypingRef.current = true;
             const cleanVal = String(safeValue || '').trim();
             if (!cleanVal) {
-                // If input is empty, load profile entries or top directory suggestions for browsing
+                // If input is empty, load recents, profile entries or top directory suggestions for browsing
+                const recents = getRecentSelections(suggestionType);
                 const profileCandidates = getProfileCandidates(suggestionType, context);
                 const directoryMatches = matchUniversalDirectory(suggestionType, '', 8);
-                const combined = [...new Set([...profileCandidates, ...directoryMatches])].slice(0, 8);
+                const combined = [...new Set([...recents, ...profileCandidates, ...directoryMatches])].slice(0, 8);
                 if (combined.length > 0) {
                     setSuggestions(combined);
                     setShowDropdown(true);
@@ -348,6 +391,10 @@ const AutocompleteInputField = ({
     // Dynamically compute accurate title based on field type and source
     const getDropdownTitle = () => {
         const cleanQ = String(safeValue || '').trim();
+        const recents = getRecentSelections(suggestionType);
+        if (!cleanQ && suggestions.length > 0 && suggestions.some(s => recents.includes(s))) {
+            return t('Autocomplete.recentAndSuggested', 'Recent & Suggested');
+        }
         const profileCandidates = getProfileCandidates(suggestionType, context);
         const isPureProfile = !cleanQ && suggestions.length > 0 && suggestions.every(s => profileCandidates.includes(s));
         if (isPureProfile) {
@@ -386,11 +433,19 @@ const AutocompleteInputField = ({
         if (!query || typeof text !== 'string') return text;
         const cleanQ = query.trim();
         if (!cleanQ) return text;
-        const idx = text.toLowerCase().indexOf(cleanQ.toLowerCase());
+        let idx = text.toLowerCase().indexOf(cleanQ.toLowerCase());
+        let matchLen = cleanQ.length;
+        if (idx === -1) {
+            const correctedQ = autocorrectQuery(cleanQ);
+            if (correctedQ && correctedQ.toLowerCase() !== cleanQ.toLowerCase()) {
+                idx = text.toLowerCase().indexOf(correctedQ.toLowerCase());
+                matchLen = correctedQ.length;
+            }
+        }
         if (idx === -1) return text;
         const before = text.substring(0, idx);
-        const match = text.substring(idx, idx + cleanQ.length);
-        const after = text.substring(idx + cleanQ.length);
+        const match = text.substring(idx, idx + matchLen);
+        const after = text.substring(idx + matchLen);
         return (
             <span className="truncate">
                 {before}
@@ -429,10 +484,12 @@ const AutocompleteInputField = ({
                                 fetchSuggestions(safeValue, true);
                             }
                         } else if (!cleanVal) {
-                            // Only open on empty focus if candidate has verified profile entries
+                            // On empty focus, show recent selections and verified profile entries
+                            const recents = getRecentSelections(suggestionType);
                             const profileCandidates = getProfileCandidates(suggestionType, context);
-                            if (profileCandidates.length > 0) {
-                                setSuggestions(profileCandidates.slice(0, 8));
+                            const combined = [...new Set([...recents, ...profileCandidates])].filter(item => isDomainCompatible(suggestionType, item)).slice(0, 8);
+                            if (combined.length > 0) {
+                                setSuggestions(combined);
                                 setShowDropdown(true);
                             }
                         }
@@ -494,31 +551,54 @@ const AutocompleteInputField = ({
                             <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
                                 <span className="flex items-center gap-1.5">
                                     <span className="text-indigo-500 font-normal">✨</span>
-                                    <span>{getDropdownTitle()}</span>
+                                    <span>
+                                        {getDropdownTitle()}
+                                        {safeValue && autocorrectQuery(safeValue).toLowerCase() !== safeValue.trim().toLowerCase() ? (
+                                            <span className="ml-1.5 normal-case font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.5 rounded text-[9px]">
+                                                Auto-corrected: &ldquo;{autocorrectQuery(safeValue)}&rdquo;
+                                            </span>
+                                        ) : null}
+                                    </span>
                                 </span>
                                 <span className="text-[9px] text-slate-400 font-normal">{suggestions.length} match{suggestions.length === 1 ? '' : 'es'}</span>
                             </div>
                             <ul className="divide-y divide-slate-50/50">
-                                {suggestions.map((option, idx) => (
-                                    <li
-                                        key={idx}
-                                        role="option"
-                                        id={`${name}-option-${idx}`}
-                                        aria-selected={idx === activeIndex}
-                                        onMouseDown={(e) => { e.preventDefault(); handleSelectOption(option); }}
-                                        onClick={() => handleSelectOption(option)}
-                                        className={`px-4 py-2.5 text-sm text-slate-700 cursor-pointer flex items-center gap-2 transition-colors ${
-                                            idx === activeIndex
-                                                ? 'bg-indigo-50 text-indigo-900 font-medium'
-                                                : 'hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                        {renderHighlightedOption(option, safeValue)}
-                                    </li>
-                                ))}
+                                {suggestions.map((option, idx) => {
+                                    const isRecent = getRecentSelections(suggestionType).includes(option);
+                                    return (
+                                        <li
+                                            key={idx}
+                                            role="option"
+                                            id={`${name}-option-${idx}`}
+                                            aria-selected={idx === activeIndex}
+                                            onMouseDown={(e) => { e.preventDefault(); handleSelectOption(option); }}
+                                            onClick={() => handleSelectOption(option)}
+                                            className={`px-4 py-2.5 text-sm text-slate-700 cursor-pointer flex items-center justify-between gap-2 transition-colors ${
+                                                idx === activeIndex
+                                                    ? 'bg-indigo-50 text-indigo-900 font-medium'
+                                                    : 'hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 truncate">
+                                                {isRecent ? (
+                                                    <svg className="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                    </svg>
+                                                )}
+                                                {renderHighlightedOption(option, safeValue)}
+                                            </div>
+                                            {isRecent && (
+                                                <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded shrink-0">
+                                                    Recent
+                                                </span>
+                                            )}
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </>
                     ) : loading ? (

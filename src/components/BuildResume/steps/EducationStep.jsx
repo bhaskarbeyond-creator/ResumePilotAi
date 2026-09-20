@@ -31,6 +31,7 @@ import { generateUserAiContent } from '../../../services/aiService';
 const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const { t } = useTranslation('common');
     const [educations, setEducations] = useState(resumeData.educations || []);
+    const [activeEducationId, setActiveEducationId] = useState(null);
     const [enhancingId, setEnhancingId] = useState(null);
     const [previousDescriptions, setPreviousDescriptions] = useState({});
     const [feedbackMsg, setFeedbackMsg] = useState(null);
@@ -59,10 +60,17 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const addEducation = () => {
         const newEducation = createNewEducation();
         setEducations(prev => [...prev, newEducation]);
+        setActiveEducationId(newEducation.id);
     };
 
     const removeEducation = (id) => {
-        setEducations(current => current.filter(edu => edu.id !== id));
+        setEducations(current => {
+            const next = current.filter(edu => edu.id !== id);
+            if (activeEducationId === id) {
+                setActiveEducationId(next[0]?.id || null);
+            }
+            return next;
+        });
     };
 
     const moveEducation = (id, direction) => setEducations(current => moveResumeItem(current, id, direction));
@@ -250,7 +258,11 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const renderEntryBody = (education) => {
         return (
-            <div className="space-y-4 pt-1">
+            <div
+                className="space-y-4 pt-1"
+                onFocus={() => setActiveEducationId(education.id)}
+                onClick={() => setActiveEducationId(education.id)}
+            >
                 {/* Row 1: School & Degree */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <AutocompleteInputField
@@ -336,12 +348,6 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         onChange={(e) => updateEducation(education.id, 'grade', e.target.value)}
                     />
                 </div>
-
-                {/* Academic ATS Health Card */}
-                <EducationHealthCard
-                    education={education}
-                    targetJd={resumeData.targetJobDescription || ''}
-                />
 
                 {/* Clean Coursework & Notes with AI Enhancement (No clumsy bullets) */}
                 <div className="space-y-2 pt-1">
@@ -448,6 +454,46 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
         );
     };
 
+    const renderGuideContent = () => {
+        if (!educations || educations.length === 0) return null;
+        const targetEdu = educations.find(e => e.id === activeEducationId) || educations[0];
+        if (!targetEdu) return null;
+
+        return (
+            <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2.5">
+                {educations.length > 1 && (
+                    <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                            Active Qualification
+                        </span>
+                        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none max-w-[190px]">
+                            {educations.map((edu, idx) => (
+                                <button
+                                    key={edu.id}
+                                    type="button"
+                                    onClick={() => setActiveEducationId(edu.id)}
+                                    className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition-all whitespace-nowrap cursor-pointer ${
+                                        (targetEdu?.id === edu.id)
+                                            ? 'bg-indigo-600 text-white shadow-2xs font-bold'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                    title={edu.degree || edu.school || `Qualification #${idx + 1}`}
+                                >
+                                    #{idx + 1}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <EducationHealthCard
+                    education={targetEdu}
+                    targetJd={resumeData.targetJobDescription || ''}
+                />
+            </div>
+        );
+    };
+
     return (
         <StepShell
             stepNumber={3}
@@ -458,6 +504,7 @@ const EducationStep = ({ resumeData, updateResumeData, onNavigate }) => {
             statusBadge={educations.length > 0 ? `${educations.length} ${educations.length === 1 ? 'qualification' : 'qualifications'}` : ''}
             resumeData={resumeData}
             targetJd={resumeData.targetJobDescription || ''}
+            guideChildren={renderGuideContent()}
         >
             {educations.length === 0 ? (
                 <EmptyState

@@ -58,8 +58,12 @@ export function canRunAssistOperation(operation, { resumeData = {}, targetJd = '
             if (!targetRole && !hasProfile) return { ok: false, reason: 'Add a target role or some profile content first.' };
             return { ok: true };
         }
-        case 'enhance-single-bullet':
-            return plainLength(extra?.bullet) >= 3 ? { ok: true } : { ok: false, reason: 'Write a bullet first — AI can only improve what you have.' };
+        case 'enhance-single-bullet': {
+            const hasBullet = plainLength(extra?.bullet) >= 3;
+            const hasRole = plainLength(extra?.jobTitle || extra?.role || extra?.position || targetRole) >= 2;
+            if (hasBullet || hasRole) return { ok: true };
+            return { ok: false, reason: 'Add a job title or write bullet notes first — AI will tailor it to your role.' };
+        }
         case 'autocomplete':
             return { ok: true };
         default:
@@ -145,7 +149,18 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
                 profileHash: context.profileHash,
             };
         case 'enhance-single-bullet':
-            return { payload: { ...base, bullet: extra?.bullet || '' }, profileHash: context.profileHash };
+            return {
+                payload: {
+                    ...base,
+                    bullet: extra?.bullet || '',
+                    jobTitle: extra?.jobTitle || extra?.role || extra?.position || targetRole || '',
+                    company: extra?.company || extra?.employer || '',
+                    location: extra?.location || extra?.city || '',
+                    existingBullets: Array.isArray(extra?.existingBullets) ? extra.existingBullets : [],
+                    pillar: extra?.pillar || '',
+                },
+                profileHash: context.profileHash,
+            };
         case 'autocomplete':
             return { payload: { type: extra?.type || 'skill', query: stripHtml(extra?.query).slice(0, 100) }, profileHash: context.profileHash };
         case 'generate-job-description':

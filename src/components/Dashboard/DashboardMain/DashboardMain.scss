@@ -5,8 +5,7 @@
     width: 100%;
     position: relative;
     font-family: $font;
-    overflow-y: auto;
-    overflow-x: hidden; /* Prevent horizontal scrollbar */
+    overflow-x: clip; /* Prevent horizontal scrollbar while preserving window position: sticky */
 
     .navbar {
         height: 70px;
@@ -128,7 +127,7 @@
         transition: all 0.3s ease;
         box-sizing: border-box; /* Include padding in width calculation */
         padding: 0; /* Remove any default padding */
-        overflow-x: hidden; /* Prevent horizontal scrollbar */
+        overflow-x: clip; /* Prevent horizontal scrollbar while preserving window position: sticky */
 
         &.sidebar-collapsed {
             // margin-left: 60px; /* Match the exact collapsed sidebar width */
@@ -162,7 +161,7 @@
         padding: 0;
         transition: all 0.3s ease;
         max-width: 100%;
-        overflow-x: hidden; /* Prevent horizontal scrolling */
+        overflow-x: clip; /* Prevent horizontal scrolling while preserving window position: sticky */
         box-sizing: border-box; /* Include padding in width calculation */
 
         /* Sidebar collapsed state width is handled by parent container */

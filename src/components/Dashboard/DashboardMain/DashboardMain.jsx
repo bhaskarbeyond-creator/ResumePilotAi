@@ -365,7 +365,7 @@ class DashboardMain extends Component {
             );
         }
         return (
-            <div className="dashboardWrapper" style={{ overflow: 'hidden' }}>
+            <div className="dashboardWrapper" style={{ overflowX: 'clip' }}>
                 {roleViewBanner}
                 {/* Floating Mobile Sidebar Toggle */}
                 <button

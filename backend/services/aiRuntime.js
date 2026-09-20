@@ -59,7 +59,7 @@ const CONFIGURATION_CACHE_MS = 15_000;
 const CONTENT_OPERATIONS = new Set([
     'generate-summary', 'generate-work-description', 'generate-education-description',
     'generate-skills', 'generate-certifications', 'enhance-single-bullet', 'autocomplete',
-    'generate-job-description',
+    'generate-job-description', 'generate-projects',
 ]);
 
 const GRAMMAR_TYPES = new Set(['grammar', 'spelling', 'punctuation', 'style']);
@@ -175,7 +175,12 @@ function sourceNotesForOperation(operation, payload = {}) {
     if (operation === 'generate-education-description') {
         return compact(firstSourceValue(payload, FACTUAL_SOURCE_FIELDS[operation]), 4000);
     }
-    if (operation === 'enhance-single-bullet') return compact(payload.bullet || payload.text || payload.entry?.bullet, 2000);
+    if (operation === 'enhance-single-bullet') {
+        return compact(
+            payload.bullet || payload.text || payload.entry?.bullet || payload.jobTitle || payload.role || payload.position || payload.entry?.jobTitle || '',
+            2000
+        );
+    }
     return factualSourceText(operation, payload);
 }
 
@@ -204,19 +209,24 @@ function validateOperation(operation, rawPayload) {
         // candidate's verified facts. A completely empty profile is handled by
         // the deterministic ASK gate, not by a 400.
     }
-    if ((operation === 'generate-skills' || operation === 'generate-certifications')) {
-        const hasRole = payload.jobTitle || payload.occupation || rawPayload.context?.target?.role;
-        const facts = rawPayload.context?.facts;
+    if ((operation === 'generate-skills' || operation === 'generate-certifications' || operation === 'generate-projects')) {
+        const hasRole = payload.jobTitle || payload.occupation || payload.targetRole || rawPayload.context?.target?.role;
+        const facts = rawPayload.context?.facts || rawPayload.candidateFacts;
         const hasProfile = Array.isArray(facts?.skills) && facts.skills.length > 0
             || Array.isArray(facts?.roles) && facts.roles.length > 0
             || Array.isArray(facts?.education) && facts.education.length > 0
-            || Array.isArray(facts?.certifications) && facts.certifications.length > 0;
+            || Array.isArray(facts?.certifications) && facts.certifications.length > 0
+            || Boolean(payload.targetRole || payload.occupation);
         if (!hasRole && !hasProfile) {
             throw invalidAiInput('Add a target role or some profile content first');
         }
     }
-    if (operation === 'enhance-single-bullet' && !sourceNotesForOperation(operation, payload)) {
-        throw invalidAiInput('Bullet is required');
+    if (operation === 'enhance-single-bullet') {
+        const hasBullet = Boolean(payload.bullet || payload.text || payload.entry?.bullet);
+        const hasRole = Boolean(payload.jobTitle || payload.role || payload.position || payload.entry?.jobTitle || payload.entry?.role || payload.context?.target?.role || payload.projectName || payload.projectTitle || payload.entry?.title || payload.entry?.projectName);
+        if (!hasBullet && !hasRole) {
+            throw invalidAiInput('Bullet or Job Title is required');
+        }
     }
     if (operation === 'autocomplete') {
         if (!AUTOCOMPLETE_TYPES.has(payload.type)) throw invalidAiInput('Unsupported autocomplete field');
@@ -257,7 +267,7 @@ function buildGroundedPrompt(endpointName, rawPayload = {}, _options = {}) {
     const region = typeof context.region === 'string' && context.region ? context.region : '';
 
     const system = endpointName === 'autocomplete'
-        ? `You are an ultra-fast, professional autocomplete engine.${region ? ` Candidate's geographic market: ${region}.` : ''}`
+        ? `You are an ultra-fast, professional autocomplete and spell-correcting engine.${region ? ` Candidate's geographic market: ${region}.` : ''}`
         : `You are an expert resume writer and a strictly factual resume copy editor.
 ${evidenceContract()}
 ${region ? `Candidate's geographic market: ${region}.` : ''}`;
@@ -313,20 +323,91 @@ Return only valid JSON in this exact structure:
 {"summary":"2-3 sentence professional summary built only from the facts","sourceExcerpts":["facts used, quoted from EVIDENCE"]}`;
     } else if (endpointName === 'enhance-single-bullet') {
         const entry = evidence.entry || {};
-        user = `Elevate this single resume bullet into a natural, high-impact, ATS-optimized achievement in ${language}.
-1. ACTION VERB: Begin with a strong, natural past-tense action verb (e.g. Scaled, Architected, Engineered, Spearheaded, Accelerated, Optimized, Automated, Delivered, Built, Executed, Designed).
-2. GOOGLE X-Y-Z FRAMEWORK: Structure as: Accomplished [X] as measured by [Y] by doing [Z].
-3. NATURAL HUMAN VOICE (NO AI FLUFF): Write like an experienced human executive resume writer, NOT an AI bot.
-   - BANNED CLICHÉS: Strictly avoid robotic AI jargon like "leveraging", "utilizing", "pivotal role", "testament to", "delve", "seamlessly", "cross-functional synergy", or artificial filler like "through strategic campaign management".
-   - Use crisp, authentic phrasing with natural rhythm. Connect action to outcome with punchy verbs like "delivering", "cutting", "driving", "lifting", "saving", "unlocking".
-4. PRESERVE CANDIDATE FACTS: Keep all tools, platforms, numbers, and technical context from the bullet. If the bullet contains a metric (e.g. +25%), KEEP and highlight it in the outcome.
-5. SHORTHAND CONVERSION: Transform shorthand notes (e.g. "Client Portfolio DSP Platforms +25% Revenue Growth") into an organic, professional human statement (e.g. "Scaled client portfolio across DSP platforms, delivering 25% revenue growth by optimizing programmatic campaign performance.").
+        const isDraftProvided = Boolean(entry.candidateBullet && entry.candidateBullet.trim());
+        const projectName = String(payload.projectName || payload.projectTitle || entry.projectName || entry.title || (entry.type === 'project' ? entry.name : '') || '').trim();
+        const technologies = Array.isArray(payload.technologies || entry.technologies)
+            ? (payload.technologies || entry.technologies).filter(Boolean).join(', ')
+            : String(payload.technologies || entry.technologies || '').trim();
+        const role = String(entry.jobTitle || payload.jobTitle || payload.role || payload.position || (projectName ? 'Project Contributor' : '')).trim();
+        const company = String(entry.employer || payload.company || payload.employer || '').trim();
+        const location = String(entry.city || payload.city || payload.location || '').trim();
+        const existingBullets = Array.isArray(payload.existingBullets)
+            ? payload.existingBullets.map(b => String(b || '').trim()).filter(Boolean)
+            : [];
+        const pillar = String(payload.pillar || payload.focusArea || '').trim();
+
+        if (!isDraftProvided && projectName) {
+            user = `Generate a single, highly ATS-optimized, humanized, high-impact resume achievement bullet in ${language} for the project: "${projectName}"${technologies ? ` (technologies used: ${technologies})` : ''}${role && role.toLowerCase() !== 'project contributor' && role.toLowerCase() !== 'project' ? ` in the role of "${role}"` : ''}.
+${pillar ? `Focus specifically on this functional pillar: "${pillar}".` : ''}
+
+CRITICAL REQUIREMENTS:
+1. STRICT PROJECT-SPECIFIC RELEVANCE & CONCISE LENGTH:
+   - CONCISE LENGTH (STRICT): Target 120 to 190 characters (hard ceiling 210 characters). Must comfortably fit within 2 lines on standard ATS resume layouts.
+   - DO NOT REPEAT PROJECT TITLE: The project title "${projectName}" is ALREADY displayed in the card header above! Do NOT repeat the full project title verbatim inside the bullet point. Instead, describe the specific clinical, engineering, or research initiative directly.
+   - The bullet MUST specifically describe what was accomplished, engineered, designed, or delivered for the project "${projectName}"${technologies ? ` utilizing ${technologies}` : ''}.
+   - Detail the objective, technical/functional implementation, and the measurable outcome, scale, performance gain, or user impact.
+2. GOOGLE X-Y-Z FORMULA: Accomplished [X] as measured by [Y] by doing [Z].
+   - Begin with an active, decisive past-tense action verb tailored to project engineering and delivery (e.g. Architected, Engineered, Developed, Deployed, Automated, Formulated, Implemented, Benchmarked, Scaled, Designed).
+   - Include realistic metrics (e.g. latency reduction, % throughput, user engagement, processing time, efficiency).
+3. NATURAL HUMAN VOICE (ANTI-AI CLICHÉ & NO FILLER):
+   - Must sound like an authentic high-performing project creator/contributor, NOT an AI bot.
+   - Strictly banned: "leveraging", "utilizing", "pivotal role", "testament to", "delve", "seamlessly", "cross-functional synergy", "fostered an environment", "through optimized use of".
+${existingBullets.length > 0 ? `4. STRICT ANTI-DUPLICATION:
+   - The candidate already has the following bullets for this project:
+${existingBullets.map(b => `     * "${b}"`).join('\n')}
+   - You MUST generate a completely distinct achievement. Do NOT reuse the same opening action verb or overlap with any topic/metric above.` : ''}
 
 EVIDENCE:
-${JSON.stringify({ entry }, null, 1)}
+${JSON.stringify({ targetProject: { projectName, technologies, role }, ...(pillar ? { pillar } : {}), existingBullets }, null, 1)}
+
+Return only valid JSON in this exact structure:
+{"enhancedBullet":"natural, punchy ATS-certified sentence tailored strictly to ${projectName}","sourceExcerpt":"Project: ${projectName}"}`;
+        } else if (isDraftProvided) {
+            const contextSubject = projectName
+                ? ` for the project "${projectName}"${technologies ? ` (built using ${technologies})` : ''}${role && role.toLowerCase() !== 'project contributor' && role.toLowerCase() !== 'project' ? ` in the role of "${role}"` : ''}`
+                : `${role ? ` for a "${role}"` : ''}${company ? ` at "${company}"` : ''}`;
+            user = `Elevate this single resume bullet into a natural, high-impact, ATS-optimized achievement in ${language}${contextSubject}.
+1. CONCISE LENGTH (STRICT): Target 120 to 190 characters (hard ceiling 210 characters). Must fit cleanly in 2 lines on standard resume templates. If enhancing a project bullet, do NOT repeat the full project title verbatim (it is already the section heading).
+2. ACTION VERB: Begin with a strong, natural past-tense action verb (e.g. Scaled, Architected, Engineered, Spearheaded, Accelerated, Optimized, Automated, Delivered, Built, Executed, Designed).
+3. GOOGLE X-Y-Z FRAMEWORK: Structure as: Accomplished [X] as measured by [Y] by doing [Z].
+4. NATURAL HUMAN VOICE (NO AI FLUFF): Write like an experienced human executive resume writer, NOT an AI bot.
+   - BANNED CLICHÉS: Strictly avoid robotic AI jargon like "leveraging", "utilizing", "pivotal role", "testament to", "delve", "seamlessly", "cross-functional synergy", or artificial filler like "through strategic campaign management" or "through optimized use of".
+   - Use crisp, authentic phrasing with natural rhythm. Connect action to outcome with punchy verbs like "delivering", "cutting", "driving", "lifting", "saving", "unlocking".
+5. PRESERVE CANDIDATE FACTS: Keep all tools, platforms, numbers, and technical context from the bullet${technologies ? `, incorporating ${technologies} naturally if relevant` : ''}. If the bullet contains a metric (e.g. +25%), KEEP and highlight it in the outcome.
+6. SHORTHAND CONVERSION: Transform shorthand notes (e.g. "Client Portfolio DSP Platforms +25% Revenue Growth") into an organic, professional human statement (e.g. "Scaled client portfolio across DSP platforms, delivering 25% revenue growth by optimizing programmatic campaign performance.").
+${existingBullets.length > 0 ? `7. STRICT ANTI-DUPLICATION: Do not repeat action verbs or duplicate achievements already covered in these existing bullets for this position:\n${existingBullets.map(b => `- "${b}"`).join('\n')}` : ''}
+
+EVIDENCE:
+${JSON.stringify({ entry, role, company, ...(projectName ? { projectName, technologies } : {}), ...(pillar ? { requestedPillar: pillar } : {}) }, null, 1)}
 
 Return only valid JSON in this exact structure:
 {"enhancedBullet":"natural, punchy ATS-certified sentence","sourceExcerpt":"words quoted from the bullet"}`;
+        } else {
+            user = `Generate a single, highly ATS-optimized, humanized, high-impact resume achievement bullet in ${language} for the position: "${role || 'Professional'}"${company ? ` at "${company}"` : ''}${location ? ` in "${location}"` : ''}.
+${pillar ? `Focus specifically on this functional pillar: "${pillar}".` : ''}
+
+CRITICAL REQUIREMENTS:
+1. STRICT ROLE TAILORING & CONCISE LENGTH:
+   - CONCISE LENGTH (STRICT): Target 120 to 190 characters (hard ceiling 210 characters). Must fit comfortably in 2 lines.
+   - The bullet MUST authentically represent the daily responsibilities, standard clinical/industry protocols, tools, and legitimate outcomes of a "${role || 'Professional'}".
+   - NEVER inject out-of-domain tech/software buzzwords (e.g., if healthcare/medical/physician, write about clinical diagnostics, patient care, triage protocols, morbidity reduction, HIPAA, EHR—NEVER software downtime, microservices, cloud, or APIs).
+2. GOOGLE X-Y-Z FORMULA: Accomplished [X] as measured by [Y] by doing [Z].
+   - Begin with an active, decisive past-tense action verb tailored to the profession (e.g., Diagnosed, Administered, Formulated, Championed, Negotiated, Spearheaded, Architected).
+   - Include a realistic, field-appropriate metric (e.g., %, scale, patient volume, turnaround time).
+3. NATURAL HUMAN VOICE (ANTI-AI CLICHÉ):
+   - Must sound like an authentic high-performing professional wrote it, NOT an AI.
+   - Strictly banned: "leveraging", "utilizing", "pivotal role", "testament to", "delve", "seamlessly", "cross-functional synergy", "fostered an environment", "through optimized use of".
+${existingBullets.length > 0 ? `4. STRICT ANTI-DUPLICATION:
+   - The candidate already has the following bullets for this position:
+${existingBullets.map(b => `     * "${b}"`).join('\n')}
+   - You MUST generate a completely distinct achievement. Do NOT reuse the same opening action verb or overlap with any topic/metric above.` : ''}
+
+EVIDENCE:
+${JSON.stringify({ targetPosition: { role, company, location }, ...(pillar ? { pillar } : {}), existingBullets }, null, 1)}
+
+Return only valid JSON in this exact structure:
+{"enhancedBullet":"natural, punchy ATS-certified sentence tailored strictly to ${role || 'the role'}","sourceExcerpt":"${role || 'Role context'}"}`;
+        }
     } else if (endpointName === 'generate-skills') {
         const facts = evidence.candidateFacts;
         user = `Suggest up to 12 skills the candidate should CONSIDER adding to their resume for the target role "${evidence.targetRole || 'their field'}" in ${language}.
@@ -351,17 +432,94 @@ ${JSON.stringify({ candidateFacts: facts, targetRole: evidence.targetRole, ...(e
 Return only valid JSON:
 {"certifications":[{"title":"Credential Name","issuer":"Issuing Organization","basis":"quoted evidence","category":"recommended"}]}
 Use category "mandatory" only for credentials the target role explicitly requires; otherwise "recommended".`;
+    } else if (endpointName === 'generate-projects') {
+        const facts = evidence.candidateFacts || {};
+        const targetRole = String(evidence.targetRole || payload.targetRole || payload.occupation || 'Professional').trim();
+        const roleSummaries = Array.isArray(facts.workRoles) ? facts.workRoles.map(r => `${r.title}${r.employer ? ` at ${r.employer}` : ''}`).filter(Boolean).join('; ') : '';
+        const skillsList = Array.isArray(facts.skills) ? facts.skills.filter(Boolean).join(', ') : '';
+
+        user = `Suggest up to 6 realistic, high-impact resume project, key initiative, or case study archetypes for a candidate in the field "${targetRole}" in ${language}.
+These are project ideas for the candidate to review, personalize, and add to their resume if they have executed similar work.
+
+CRITICAL PROFILE & INDUSTRY ALIGNMENT:
+1. STRICT RELEVANCE TO CANDIDATE FIELD:
+   - Base all suggestions strictly on the candidate's actual field ("${targetRole}"), their work experience (${roleSummaries || 'their profession'}), and skills (${skillsList || 'their domain'}).
+   - DO NOT recommend software apps, web development, cloud, or coding projects unless the candidate's actual work history or skills explicitly involve software engineering!
+   - For Healthcare, Doctors, Surgeons, Nurses, Dentists: Suggest clinical protocol audits, patient flow/triage optimization, care unit quality initiatives, or infection control programs.
+   - For Accounting, Audit, Finance, Banking: Suggest statutory audit readiness, financial forecasting/DCF valuation models, operational expenditure cost-reduction reviews, or IFRS compliance transitions.
+   - For Legal, Attorneys, Compliance: Suggest contract lifecycle management (CLM) overhauls, regulatory compliance audits, case discovery indexing, or corporate governance frameworks.
+   - For Sales, Account Executives, Business Development: Suggest enterprise account penetration campaigns, territory sales growth, CRM pipeline velocity redesigns, or strategic partnership development.
+   - For Marketing, Brand Strategists, Growth: Suggest omnichannel brand relaunch campaigns, customer acquisition funnel optimization, multi-touch attribution models, or product launch playbooks.
+   - For Product Managers, Project Managers, Scrum Masters: Suggest cross-functional agile release cadence overhauls, onboarding UX activation funnels, OKR alignment frameworks, or feature lifecycle management.
+   - For HR, Talent Acquisition: Suggest structured behavioral interviewing rollouts, employee onboarding/retention initiatives, HRIS migrations, or compensation benchmarking audits.
+   - For Civil, Mechanical, Electrical Engineers: Suggest structural load calculations, HVAC energy efficiency optimizations, substation power coordination, or municipal infrastructure improvements.
+   - For Teachers, Educators, Professors: Suggest curriculum redesigns, student literacy/numeracy interventions, STEM laboratory initiatives, or hybrid learning technology integrations.
+   - For Software Developers, DevOps, Cloud: Suggest scalable microservices architectures, cloud migrations, CI/CD automation, API gateways, or responsive web platforms.
+   - For any other field: Suggest realistic, professional initiatives standard in that specific industry.
+
+2. STRUCTURE:
+   - Provide "name" (clear, professional project title).
+   - Provide "role" (typical role e.g. "Project Lead", "Lead Auditor", "Clinical Investigator", "Principal Architect").
+   - Provide "technologies" (tools, software, methodologies, standards, or frameworks used, e.g. "Figma, Mixpanel, Jira" or "GAAP, Excel, NetSuite" or "Python, Docker, AWS").
+   - Provide "category": "mandatory" for 3 foundational/core initiatives in this field; "recommended" for 3 advanced/specialized initiatives.
+   - Provide "projectType": "personal", "enterprise", "opensource", or "academic".
+
+EVIDENCE:
+${JSON.stringify({ targetRole, candidateFacts: facts, ...(evidence.targetJobDescription ? { targetJobDescription: evidence.targetJobDescription } : {}) }, null, 1)}
+
+Return only valid JSON in this exact structure:
+{"projects":[{"name":"Project Title","role":"Your Role","technologies":"Tools & Methods Used","category":"mandatory","projectType":"enterprise"}]}`;
     } else if (endpointName === 'autocomplete') {
         const candidateRole = String(context.target?.role || context.profession || payload.jobTitle || payload.occupation || '');
         const queryStr = String(payload.query || '').trim();
-        user = `Complete the supplied ${payload.type} with up to eight concise, authentic, professional options in ${language}${candidateRole ? ` that fit this candidate's profile (target role: "${candidateRole}")` : ''}.
-Options must relate to the candidate's actual field. Treat the query as prefix/keyword filter data.${queryStr ? `\nMANDATORY REQUIREMENT: Every suggestion MUST match, start with, or be directly relevant to the search query "${queryStr}". For occupations or titles, return authentic specializations and seniorities (e.g. for "oncologist": "Medical Oncologist", "Radiation Oncologist", "Surgical Oncologist", "Pediatric Oncologist", "Hematologist-Oncologist"). Never return generic robotic combinations like "Oncologist Engineer".` : ''}
+        const typeStr = String(payload.type || '').toLowerCase();
 
-QUERY:
-${JSON.stringify(payload.query || '')}
+        if (typeStr === 'city' || typeStr === 'location') {
+            user = `Complete the supplied city with up to eight concise, authentic, real-world cities in "City, State" (or Province) format (e.g. "San Francisco, CA", "Hyderabad, Telangana", "New York, NY", "Bangalore, Karnataka", "Austin, TX", "London, England", "Toronto, ON") in ${language}.
+MANDATORY REQUIREMENT: Suggestions MUST strictly follow "City, State" format WITHOUT adding Country (never append USA, India, UK, Canada, etc.). Suggestions MUST NEVER be job titles, companies, or universities.
+ALIASES & METRO CODES: Accurately resolve city aliases and metro airport codes (e.g. "vizag" -> "Visakhapatnam, Andhra Pradesh", "bombay" -> "Mumbai, Maharashtra", "calcutta" -> "Kolkata, West Bengal", "madras" -> "Chennai, Tamil Nadu", "baroda" -> "Vadodara, Gujarat", "trivandrum" -> "Thiruvananthapuram, Kerala", "cochin" -> "Kochi (Cochin), Kerala", "nyc" -> "New York, NY", "sf" -> "San Francisco, CA", "la" -> "Los Angeles, CA", "dc" -> "Washington, DC", "blr" -> "Bangalore (Bengaluru), Karnataka", "hyd" -> "Hyderabad, Telangana", "del" -> "Delhi / New Delhi, Delhi", "bom" -> "Mumbai, Maharashtra", "maa" -> "Chennai, Tamil Nadu").
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct typos, transposition errors, or phonetic misspellings in the query (e.g. "gaziabad" -> "Ghaziabad, Uttar Pradesh", "hyderbad" -> "Hyderabad, Telangana", "mumbay" -> "Mumbai, Maharashtra", "banglore" -> "Bangalore (Bengaluru), Karnataka", "san fransisco" -> "San Francisco, CA"). Every suggestion MUST be a real, recognized geographical city or metropolitan area. Never fabricate fictional locations.`;
+        } else if (typeStr === 'hobby' || typeStr === 'hobbies' || typeStr === 'interest' || typeStr === 'interests') {
+            user = `Complete the supplied hobby with up to eight concise, authentic, engaging recreational hobbies, sports, creative pursuits, volunteering, or personal interests in ${language}.
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos or misspellings in the query (e.g. "readng" -> "Reading", "photograhy" -> "Photography", "swimmin" -> "Swimming").
+MANDATORY REQUIREMENT: Suggestions MUST be genuine personal hobbies or extracurricular interests (e.g. Photography, Marathon Running, Chess, Rock Climbing, Astronomy, Creative Writing, Gardening, Culinary Arts) matching or correcting "${queryStr}". Never return professional job titles, work responsibilities, or technical engineering tasks.`;
+        } else if (typeStr === 'company' || typeStr === 'employer' || typeStr === 'organization' || typeStr === 'organisation') {
+            user = `Complete the supplied company or employer name with up to eight concise, authentic, recognized companies, corporations, healthcare systems, or organizations in ${language} matching "${queryStr}".
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos or misspellings in the query (e.g. "histitals" -> "Hospitals", "apolo" -> "Apollo Hospitals", "hospitl" -> "Hospital", "microsft" -> "Microsoft").
+MANDATORY REQUIREMENT: Suggestions must be authentic real-world organizations matching "${queryStr}". Suggestions MUST NEVER be individual person job titles or occupations (e.g. never return "Software Engineer", "Consultant", "Accountant"). If the query refers to a hospital, clinic, or healthcare provider (e.g. "MOM hospital"), suggest authentic hospital, health system, or medical center names. Never append irrelevant generic corporate words like "Technologies" or "Solutions" to non-tech institutions.`;
+        } else if (typeStr === 'school' || typeStr === 'university' || typeStr === 'college' || typeStr === 'institution') {
+            user = `Complete the supplied educational institution name with up to eight concise, authentic, recognized universities, colleges, medical institutes, business schools, or polytechnics in ${language} matching "${queryStr}".
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos, acronyms, or misspellings in the query (e.g. "aimms" or "AIMMS" -> "AIIMS (All India Institute of Medical Sciences)", "standford" -> "Stanford University", "harvad" -> "Harvard University", "caltec" -> "Caltech", "iit" -> "Indian Institute of Technology", "nit" -> "National Institute of Technology", "bits" -> "BITS Pilani", "mit" -> "Massachusetts Institute of Technology (MIT)").
+MANDATORY REQUIREMENT: Suggestions must be real-world accredited universities, colleges, medical institutes, or educational institutions matching "${queryStr}". Never repeat words like "University University".
+CRITICAL NEGATIVE CONSTRAINT: Suggestions MUST NEVER be job titles, career roles, software titles, consultants, developers, modelers, or analysts (e.g. NEVER return "AIMMS Consultant", "AIMMS Developer", "AIMMS Modeler", "AIMMS Analyst"). They must strictly be educational learning institutions.`;
+        } else if (typeStr === 'degree' || typeStr === 'qualification') {
+            user = `Complete the supplied academic degree or qualification with up to eight concise, authentic, accredited academic degrees or diplomas in ${language} matching "${queryStr}".
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos or abbreviations in the query (e.g. "bachlor" -> "Bachelor of Science", "mastr" -> "Master of Arts", "phd" -> "Doctor of Philosophy (Ph.D.)", "enginerng" -> "Bachelor of Engineering").
+MANDATORY REQUIREMENT: Suggestions MUST be recognized academic degrees, diplomas, or qualifications (e.g. "Bachelor of Science (B.S.)", "Master of Science (M.S.)", "Doctor of Philosophy (Ph.D.)", "Bachelor of Technology (B.Tech)", "Master of Business Administration (MBA)", "Bachelor of Arts (B.A.)", "Associate of Science (A.S.)", "Postgraduate Diploma").
+CRITICAL NEGATIVE CONSTRAINT: Suggestions MUST NEVER be job titles (e.g. never return "Software Engineer", "Consultant", "Data Analyst"), company names, or standalone university names.`;
+        } else if (typeStr === 'skill' || typeStr === 'skills') {
+            user = `Complete the supplied skill with up to eight concise, authentic, industry-standard professional, technical, or domain skills in ${language} matching "${queryStr}".
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos or abbreviations in the query (e.g. "recat" -> "React.js", "pyhon" -> "Python", "kubernets" -> "Kubernetes", "typscript" -> "TypeScript").
+MANDATORY REQUIREMENT: Suggestions MUST be technical skills, software tools, frameworks, programming languages, or domain proficiencies (e.g. "React.js", "Python", "Kubernetes", "Financial Modeling", "Data Analysis", "Project Management").
+CRITICAL NEGATIVE CONSTRAINT: Suggestions MUST NEVER be job titles ("Software Engineer"), educational institutions ("Harvard University"), academic degrees ("Bachelor of Science"), or cities.`;
+        } else if (typeStr === 'certification' || typeStr === 'credential') {
+            user = `Complete the supplied professional certification or credential with up to eight concise, authentic, recognized professional certifications, licenses, or credentials in ${language} matching "${queryStr}".
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos in the query (e.g. "aws cert" -> "AWS Certified Solutions Architect – Associate", "pmp" -> "Project Management Professional (PMP)", "cpa" -> "Certified Public Accountant (CPA)", "cissp" -> "Certified Information Systems Security Professional (CISSP)").
+MANDATORY REQUIREMENT: Suggestions MUST be recognized professional credentials or licenses. Suggestions MUST NEVER be plain job titles or company names alone.`;
+        } else if (typeStr === 'issuer' || typeStr === 'certificationissuer') {
+            user = `Complete the supplied credential issuing organization with up to eight concise, authentic, recognized credential-issuing bodies, boards, institutes, or certification vendors in ${language} matching "${queryStr}".
+MANDATORY REQUIREMENT: Suggestions MUST be recognized issuing organizations (e.g. "Amazon Web Services (AWS)", "Project Management Institute (PMI)", "Microsoft", "CompTIA", "Cisco Systems", "Scrum Alliance"). Suggestions MUST NEVER be job titles or degrees.`;
+        } else if (typeStr === 'language' || typeStr === 'languages') {
+            user = `Complete the supplied language with up to eight concise, authentic, recognized human natural spoken or written languages in ${language} matching "${queryStr}".
+MANDATORY REQUIREMENT: Suggestions MUST be natural human languages (e.g. "English", "Spanish", "French", "German", "Hindi", "Mandarin Chinese", "Japanese", "Arabic", "Portuguese", "Telugu", "Tamil").
+CRITICAL NEGATIVE CONSTRAINT: Suggestions MUST NEVER be programming languages (never return "Python", "JavaScript", "Java", "C++", "SQL") and MUST NEVER be job titles or cities.`;
+        } else {
+            user = `Complete the supplied ${payload.type} with up to eight concise, authentic, professional options in ${language}${candidateRole ? ` that fit this candidate's profile (target role: "${candidateRole}")` : ''}.
+SPELL CHECK & AUTOCORRECT: Automatically detect and correct any typos, transposition errors, or misspellings in the query (e.g. "oncolgist" -> "Medical Oncologist", "enginer" -> "Software Engineer", "acountant" -> "Accountant", "managr" -> "Project Manager"). Always return correctly spelled, polished professional terms.
+Options must relate to the candidate's actual field. Treat the query as prefix/keyword filter data.${queryStr ? `\nMANDATORY REQUIREMENT: Every suggestion MUST match, start with, or be a corrected spelling of the search query "${queryStr}". For occupations or titles, return authentic specializations and seniorities (e.g. for "oncologist": "Medical Oncologist", "Radiation Oncologist", "Surgical Oncologist", "Pediatric Oncologist", "Hematologist-Oncologist"). Suggestions MUST NEVER be educational institutions ("Stanford University"), degrees ("Bachelor of Science"), or cities. Never return generic robotic combinations like "Oncologist Engineer".` : ''}`;
+        }
 
-Return strictly valid JSON in this exact structure with zero conversational filler:
-{"suggestions":["Option 1", "Option 2"]}`;
+        user += `\n\nQUERY:\n${JSON.stringify(payload.query || '')}\n\nReturn strictly valid JSON in this exact structure with zero conversational filler:\n{"suggestions":["Option 1", "Option 2"]}`;
     } else if (endpointName === 'generate-job-description') {
         const role = String(payload.targetRole || evidence.targetRole || 'Professional').trim();
         user = `Create a realistic, high-standard job description and key requirements for the role "${role}" in ${language}.
@@ -696,6 +854,11 @@ function assertSourceCitations(operation, parsed, payload) {
         throw Object.assign(new Error('AI summary did not include valid source evidence'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
     }
     if (operation === 'enhance-single-bullet') {
+        const hasOriginalDraft = Boolean(payload.bullet || payload.text || payload.entry?.bullet);
+        if (!hasOriginalDraft) {
+            // Generating fresh bullet from verified role context
+            return;
+        }
         if (!exactExcerptIsPresent(parsed?.sourceExcerpt, source)) {
             throw Object.assign(new Error('AI bullet rewrite did not include valid source evidence'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
         }
@@ -867,6 +1030,34 @@ function parseAiResponse(operation, rawContent, context = {}) {
             };
         }
     }
+    if (operation === 'generate-projects') {
+        let values = [];
+        if (parsed) {
+            if (Array.isArray(parsed)) values = parsed;
+            else if (Array.isArray(parsed.projects)) values = parsed.projects;
+            else if (Array.isArray(parsed.items)) values = parsed.items;
+            else if (Array.isArray(parsed.initiatives)) values = parsed.initiatives;
+        }
+
+        const projects = (Array.isArray(values) ? values : []).slice(0, 10).map(item => {
+            const name = typeof item === 'string' ? item : (item?.name || item?.title || '');
+            const role = typeof item === 'object' && item ? (item.role || item.projectRole || '') : '';
+            const technologies = typeof item === 'object' && item ? (item.technologies || item.tools || item.issuer || item.stack || '') : '';
+            const category = typeof item === 'object' && item?.category === 'mandatory' ? 'mandatory' : 'recommended';
+            const projectType = typeof item === 'object' && item?.projectType && ['personal', 'enterprise', 'opensource', 'academic'].includes(item.projectType)
+                ? item.projectType
+                : 'enterprise';
+            return {
+                name: sanitizeGeneratedText(name),
+                role: sanitizeGeneratedText(role),
+                technologies: sanitizeGeneratedText(technologies),
+                category,
+                projectType,
+            };
+        }).filter(p => p.name && p.name.length >= 2);
+
+        if (projects.length) return { projects, requiresUserConfirmation: true };
+    }
     if (operation === 'enhance-single-bullet') {
         const enhancedBullet = sanitizeGeneratedText(parsed?.enhancedBullet || parsed?.suggestion || parsed?.bullet || parsed?.suggestions?.[0] || (!parsed ? raw : ''));
         if (enhancedBullet) return finalize({ enhancedBullet });
@@ -896,14 +1087,147 @@ function parseAiResponse(operation, rawContent, context = {}) {
         if (operation === 'autocomplete' && context.payload?.query) {
             const cleanQ = String(context.payload.query).trim().toLowerCase();
             const cleanQStripped = cleanQ.replace(/[^a-z0-9]/g, '');
-            const qTokens = cleanQ.split(/\s+/).filter(t => t.length >= 3);
+            const qTokens = cleanQ.split(/[\s,./()\-]+/).filter(Boolean);
             if (cleanQ.length > 0) {
+                const calcLevenshtein = (a, b) => {
+                    if (a === b) return 0;
+                    const la = a.length, lb = b.length;
+                    if (!la) return lb;
+                    if (!lb) return la;
+                    if (Math.abs(la - lb) > 2) return 999;
+                    const v0 = new Array(lb + 1);
+                    const v1 = new Array(lb + 1);
+                    for (let i = 0; i <= lb; i++) v0[i] = i;
+                    for (let i = 0; i < la; i++) {
+                        v1[0] = i + 1;
+                        for (let j = 0; j < lb; j++) {
+                            const cost = a[i] === b[j] ? 0 : 1;
+                            v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+                        }
+                        for (let j = 0; j <= lb; j++) v0[j] = v1[j];
+                    }
+                    return v1[lb];
+                };
+
+                const stripAccents = str => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                const cleanQNorm = stripAccents(cleanQ);
+
+                const CITY_ALIAS_LOOKUP = {
+                    'vizag': 'visakhapatnam', 'vzg': 'visakhapatnam', 'bombay': 'mumbai', 'bom': 'mumbai',
+                    'calcutta': 'kolkata', 'ccu': 'kolkata', 'madras': 'chennai', 'maa': 'chennai',
+                    'baroda': 'vadodara', 'trivandrum': 'thiruvananthapuram', 'cochin': 'kochi',
+                    'gurgaon': 'gurugram', 'bangalore': 'bengaluru', 'blr': 'bangalore', 'mysore': 'mysuru',
+                    'poona': 'pune', 'banaras': 'varanasi', 'kashi': 'varanasi', 'allahabad': 'prayagraj',
+                    'pondicherry': 'puducherry', 'nyc': 'new york', 'sf': 'san francisco', 'sfo': 'san francisco',
+                    'la': 'los angeles', 'lax': 'los angeles', 'dc': 'washington', 'dfw': 'dallas',
+                    'gta': 'toronto', 'hyd': 'hyderabad', 'del': 'delhi'
+                };
+                const ACRONYM_ALIAS_LOOKUP = {
+                    'aimms': 'aiims', 'aaiims': 'aiims', 'standford': 'stanford', 'harvad': 'harvard',
+                    'caltec': 'caltech', 'oxfrd': 'oxford', 'cambrdge': 'cambridge'
+                };
+                const aliasTarget = CITY_ALIAS_LOOKUP[cleanQNorm];
+                const acronymTarget = ACRONYM_ALIAS_LOOKUP[cleanQNorm];
+
+                const autocompleteType = String(context.payload?.type || '').trim().toLowerCase().replace(/[\s_-]/g, '');
+
+                const isDomainCompliant = (type, item) => {
+                    if (!item || typeof item !== 'string') return false;
+                    const clean = item.trim();
+                    if (!clean) return false;
+                    const cleanLower = clean.toLowerCase();
+
+                    // 1. SCHOOL / UNIVERSITY / COLLEGE / INSTITUTION
+                    if (type === 'school' || type === 'university' || type === 'college' || type === 'institution') {
+                        const hasRoleTitle = /\b(?:consultant|developer|modeler|analyst|engineer|manager|director|officer|specialist|assistant|associate|lead|architect|administrator|programmer|technician|operator|designer|intern|representative|salesperson|recruiter|coordinator|nurse|physician|surgeon|doctor|therapist|chef|pilot|driver)\b/i.test(cleanLower);
+                        const hasAcademicQualifier = /\b(?:university|universities|college|colleges|school|schools|institute|institutes|institution|institutions|academy|academies|polytechnic|polytechnics|conservatory|campus|faculty|seminary|sciences?|studies|centre|center|hospital|health system)\b/i.test(cleanLower);
+                        if (hasRoleTitle && !hasAcademicQualifier) return false;
+                        if (/^(?:bachelor|master|doctor of philosophy|ph\.?d|associate of|diploma in|b\.?s\.|m\.?s\.|b\.?a\.|m\.?a\.|b\.?tech|m\.?tech)\b/i.test(cleanLower)) return false;
+                        if (/^[a-z\s.'-]+,\s*[a-z]{2}(?:\s*\(.*?\))?$/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 2. DEGREE / QUALIFICATION
+                    if (type === 'degree' || type === 'qualification') {
+                        const hasDegreeIndicator = /\b(?:bachelor|master|doctor|ph\.?d|doctorate|associate|diploma|certificate|credential|degree|b\.?s|m\.?s|b\.?a|m\.?a|b\.?tech|m\.?tech|b\.?e|m\.?eng|mba|emba|bba|bca|mca|b\.?com|m\.?com|ll\.?b|ll\.?m|m\.?d|d\.?d\.?s|pharm\.?d|ed\.?d|dba|bsn|msn|pgd|hnd|ged|matriculation|secondary|undergraduate|postgraduate|graduate)\b/i.test(cleanLower);
+                        const isBareJobRole = /^(?:senior|lead|principal|staff|junior|associate)?\s*(?:software engineer|developer|programmer|consultant|analyst|project manager|accountant|nurse|surgeon|doctor|sales representative|recruiter)$/i.test(cleanLower);
+                        if (isBareJobRole) return false;
+                        if (/\b(?:university|college|polytechnic institute)\b/i.test(cleanLower) && !hasDegreeIndicator) return false;
+                        return hasDegreeIndicator || cleanLower.length <= 10;
+                    }
+
+                    // 3. COMPANY / EMPLOYER / ORGANIZATION
+                    if (type === 'company' || type === 'employer' || type === 'organization' || type === 'organisation') {
+                        const isJobTitle = /^(?:senior|lead|principal|staff|junior|associate|chief)?\s*(?:software engineer|software developer|frontend developer|backend developer|full stack engineer|data scientist|cybersecurity analyst|project manager|product manager|scrum master|account executive|sales representative|registered nurse|attending physician|general surgeon)$/i.test(cleanLower);
+                        if (isJobTitle) return false;
+                        if (/^(?:bachelor|master|doctor of philosophy|ph\.?d)\b/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 4. JOB TITLE / OCCUPATION / ROLE
+                    if (type === 'jobtitle' || type === 'jobtitles' || type === 'occupation' || type === 'title' || type === 'role') {
+                        if (/\b(?:university|college|polytechnic)\b/i.test(cleanLower) && !/\b(?:professor|lecturer|instructor|dean|researcher|fellow|chancellor|counselor)\b/i.test(cleanLower)) return false;
+                        if (/^(?:bachelor of|master of|doctor of philosophy|associate of|diploma in)\b/i.test(cleanLower)) return false;
+                        if (/^[a-z\s.'-]+,\s*[a-z]{2}$/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 5. CITY / LOCATION
+                    if (type === 'city' || type === 'location') {
+                        if (/\b(?:engineer|developer|manager|consultant|technologies|solutions|corporation|inc|llc|ltd|university|hospital)\b/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 6. LANGUAGE / LANGUAGES
+                    if (type === 'language' || type === 'languages') {
+                        const isProgrammingLang = /\b(?:python|javascript|typescript|java|golang|rust|ruby|php|swift|kotlin|html5?|css3?|sql|r\b|perl|bash|powershell|react|angular|vue|node\.?js)\b|c\+\+|c#/i.test(cleanLower);
+                        if (isProgrammingLang) return false;
+                        if (/\b(?:engineer|developer|manager|specialist|consultant)\b/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 7. HOBBY / HOBBIES / INTEREST / INTERESTS
+                    if (type === 'hobby' || type === 'hobbies' || type === 'interest' || type === 'interests') {
+                        if (/\b(?:software engineering|code reviews?|deploying|devops consulting|sales outreach|sprint planning|jira management|bug fixing|database optimization)\b/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 8. SKILL / SKILLS
+                    if (type === 'skill' || type === 'skills') {
+                        if (/\b(?:university|college of|polytechnic)\b/i.test(cleanLower)) return false;
+                        if (/^(?:bachelor of|master of|ph\.?d in)\b/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    // 9. ISSUER / CERTIFICATIONISSUER
+                    if (type === 'issuer' || type === 'certificationissuer') {
+                        if (/^(?:software developer|engineer|consultant|analyst)$/i.test(cleanLower)) return false;
+                        return true;
+                    }
+
+                    return true;
+                };
+
                 suggestions = suggestions.filter(item => {
-                    const itemLower = String(item || '').toLowerCase();
-                    if (itemLower.includes(cleanQ)) return true;
+                    if (!isDomainCompliant(autocompleteType, item)) return false;
+                    const itemLower = stripAccents(item);
+                    if (aliasTarget && itemLower.includes(aliasTarget)) return true;
+                    if (acronymTarget && itemLower.includes(acronymTarget)) return true;
+                    if (itemLower.includes(cleanQNorm)) return true;
                     if (cleanQStripped.length >= 2 && itemLower.replace(/[^a-z0-9]/g, '').includes(cleanQStripped)) return true;
-                    if (qTokens.length > 0 && qTokens.some(tok => itemLower.includes(tok))) return true;
-                    return false;
+                    if (qTokens.length > 0 && qTokens.some(tok => itemLower.includes(stripAccents(tok)))) return true;
+
+                    // Spell check & typo tolerance (e.g. "oncolgist" matches "Medical Oncologist")
+                    const itemTokens = itemLower.split(/[\s,./()\-]+/).filter(Boolean);
+                    return qTokens.every(rawQTok => {
+                        const qTok = stripAccents(rawQTok);
+                        if (qTok.length < 3) return itemTokens.some(iTok => iTok.startsWith(qTok));
+                        return itemTokens.some(iTok => {
+                            if (iTok.includes(qTok) || iTok.startsWith(qTok)) return true;
+                            const maxDist = qTok.length <= 4 ? 1 : 2;
+                            return Math.abs(qTok.length - iTok.length) <= maxDist && calcLevenshtein(qTok, iTok) <= maxDist;
+                        });
+                    });
                 });
             }
         }
@@ -1222,8 +1546,20 @@ function getContentOperationFallback(operation, rawPayload = {}) {
     }
 
     if (operation === 'enhance-single-bullet') {
-        const original = sanitizeSourceText(sourceNotesForOperation(operation, payload), 2000);
-        return original ? { enhancedBullet: original, _source: 'source-preserving-fallback' } : null;
+        const original = sanitizeSourceText(payload.bullet || payload.text || payload.entry?.bullet, 2000);
+        if (original) {
+            return { enhancedBullet: original, _source: 'source-preserving-fallback' };
+        }
+        const role = String(payload.jobTitle || payload.role || payload.position || payload.entry?.jobTitle || payload.context?.target?.role || 'Professional').trim();
+        const company = String(payload.company || payload.employer || payload.entry?.company || '').trim();
+        const existing = Array.isArray(payload.existingBullets) ? payload.existingBullets : [];
+        const pillar = String(payload.pillar || payload.focusArea || '').trim();
+        const projectName = String(payload.projectName || payload.projectTitle || payload.entry?.projectName || payload.entry?.title || '').trim();
+        const technologies = Array.isArray(payload.technologies || payload.entry?.technologies)
+            ? (payload.technologies || payload.entry?.technologies).filter(Boolean).join(', ')
+            : String(payload.technologies || payload.entry?.technologies || '').trim();
+        const fallbackBullet = generateDeterministicBullet(role, company, existing, pillar, projectName, technologies);
+        return { enhancedBullet: fallbackBullet, _source: 'tailored-role-fallback' };
     }
 
     if (operation === 'generate-skills') {
@@ -1254,7 +1590,645 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         const role = String(payload.targetRole || payload.jobTitle || payload.occupation || 'Professional').trim();
         return generateDeterministicJobDescription(role, payload);
     }
+    if (operation === 'generate-projects') {
+        const role = String(payload.targetRole || payload.jobTitle || payload.occupation || payload.context?.target?.role || 'Professional').trim();
+        return {
+            projects: generateDeterministicProjects(role, payload),
+            requiresUserConfirmation: true,
+            _source: 'tailored-role-fallback',
+        };
+    }
     return null;
+}
+
+function generateDeterministicProjects(roleTitle = '', payload = {}) {
+    const role = String(roleTitle || payload.targetRole || payload.occupation || 'Professional').trim();
+    const roleLower = role.toLowerCase();
+
+    // 1. Healthcare, Medical, Clinical, Nursing, Dental
+    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician|nurse|rn|lpn|charge nurse|dentist|prosthodontist|orthodontist)\b/.test(roleLower)) {
+        return [
+            { name: 'Clinical Quality & Patient Safety Protocol Audit', role: 'Clinical Lead', technologies: 'EHR, Clinical Audit, JCAHO/NABH Guidelines', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Emergency Triage & Inpatient Flow Optimization', role: 'Care Coordinator', technologies: 'Triage Rubrics, Epic Systems, Patient Census', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Infection Control & Post-Operative Safety Review', role: 'Quality Officer', technologies: 'CDC Guidelines, Sterile Protocols, Surveillance', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Multidisciplinary Telehealth Transition Initiative', role: 'Medical Investigator', technologies: 'Telemedicine, HIPAA/GDPR, Remote Monitoring', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Clinical Pathway & Length-of-Stay (LOS) Reduction', role: 'Department Contributor', technologies: 'Clinical Pathways, Outcome Metrics, Cerner', category: 'recommended', projectType: 'academic' },
+        ];
+    }
+
+    // 2. Legal, Law, Attorneys, Judges, Paralegals, Compliance
+    if (/\b(?:lawyer|attorney|counsel|solicitor|barrister|paralegal|litigation|judge|magistrate|compliance officer)\b/.test(roleLower)) {
+        return [
+            { name: 'Contract Lifecycle Management & Risk Assessment Overhaul', role: 'Lead Counsel', technologies: 'CLM Systems, Due Diligence, Risk Matrix', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Corporate Regulatory Compliance & Data Privacy Audit', role: 'Compliance Lead', technologies: 'GDPR, CCPA, ISO 27001, Audit Trail', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Complex Commercial Litigation Evidence & Discovery Index', role: 'Trial Attorney', technologies: 'eDiscovery, Case Law Research, LexisNexis', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Cross-Border M&A Due Diligence & Transactional Review', role: 'Corporate Counsel', technologies: 'Virtual Data Rooms, Disclosure Schedules', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Enterprise Intellectual Property & Trademark Protection Review', role: 'IP Specialist', technologies: 'USPTO Database, Trademark Filings', category: 'recommended', projectType: 'academic' },
+        ];
+    }
+
+    // 3. Accounting, Audit, Finance, Banking, Investment
+    if (/\b(?:accountant|auditor|chartered accountant|cpa|finance|financial analyst|controller|bookkeeper|tax|banking|investment)\b/.test(roleLower)) {
+        return [
+            { name: 'Annual Statutory Audit Readiness & Financial Close Optimization', role: 'Lead Auditor', technologies: 'GAAP, IFRS, ERP Reconciliation, NetSuite', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Multi-Year DCF Valuation & Financial Forecasting Model', role: 'Financial Analyst', technologies: 'Advanced Excel, DCF Modeling, Bloomberg Terminal', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Operational Expenditure (OpEx) Variance & Cost Reduction Audit', role: 'Financial Controller', technologies: 'Variance Analysis, SAP ERP, Power BI', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Enterprise Treasury & Working Capital Liquidity Model', role: 'Treasury Analyst', technologies: 'Cash Flow Forecasting, Liquidity Ratios', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Corporate Tax Compliance & Transfer Pricing Review', role: 'Tax Specialist', technologies: 'Tax Provisioning, Statutory Filings', category: 'recommended', projectType: 'enterprise' },
+        ];
+    }
+
+    // 4. Human Resources, Talent Acquisition, Recruiting
+    if (/\b(?:hr|human resources|recruiter|talent acquisition|people operations|headhunter)\b/.test(roleLower)) {
+        return [
+            { name: 'Structured Behavioral Interviewing & Rubric Standardization', role: 'Talent Acquisition Director', technologies: 'Greenhouse ATS, Structured Rubrics, KPI Tracking', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Employee Onboarding & 90-Day Retention Acceleration Program', role: 'People Operations Lead', technologies: 'LMS, Culture Surveys, Workday HRIS', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Global HRIS Migration & Employee Self-Service Rollout', role: 'HR Project Manager', technologies: 'Workday, BambooHR, Data Mapping, Change Management', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Total Rewards & Compensation Band Benchmarking Review', role: 'Compensation Analyst', technologies: 'Radford Surveys, Mercer Data, Pay Equity', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Hybrid Workforce Engagement & Pulse Survey Framework', role: 'HR Generalist', technologies: 'Culture Amp, Qualtrics, Action Planning', category: 'recommended', projectType: 'enterprise' },
+        ];
+    }
+
+    // 5. Sales, Business Development, Account Executives
+    if (/\b(?:sales|account executive|business development|bdr|sdr|account manager|territory manager)\b/.test(roleLower)) {
+        return [
+            { name: 'Enterprise Outbound Account Penetration & Territory Expansion', role: 'Enterprise AE', technologies: 'Salesforce, ZoomInfo, Outreach, MEDDPICC', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'CRM Pipeline Velocity & Lead Scoring Model Optimization', role: 'Sales Operations Lead', technologies: 'HubSpot CRM, Lead Scoring, Conversion Analytics', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Strategic Channel Partner & Reseller Distribution Program', role: 'Business Development Manager', technologies: 'Partner Agreements, Co-Selling Playbooks', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Key Account Retention & Expansion Cross-Sell Campaign', role: 'Senior Account Manager', technologies: 'Account Plans, Executive QBRs, Gainsight', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Sales Enablement Playbook & Objections Handling Overhaul', role: 'Sales Enablement Lead', technologies: 'Gong.io, Playbook Development, Pitch Decks', category: 'recommended', projectType: 'personal' },
+        ];
+    }
+
+    // 6. Marketing, Brand, Content, Growth
+    if (/\b(?:marketing|brand|growth|seo|content writer|copywriter|social media|digital marketing)\b/.test(roleLower)) {
+        return [
+            { name: 'Omnichannel Brand Repositioning & Go-To-Market Campaign', role: 'Brand Strategist', technologies: 'Brand Identity, Customer Research, Multi-Channel GTM', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Inbound Customer Acquisition & Conversion Funnel Optimization', role: 'Growth Marketer', technologies: 'Google Analytics 4, Unbounce, Optimizely, SEMrush', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'High-Intent SEO Content Architecture & Organic Traffic Growth', role: 'Content Marketing Lead', technologies: 'Ahrefs, Clearscope, Technical SEO, WordPress', category: 'mandatory', projectType: 'personal' },
+            { name: 'Multi-Touch Attribution Model & Paid Performance Audit', role: 'Marketing Operations', technologies: 'Attribution Modeling, Looker, Meta & Google Ads', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Customer Lifecycle Email Nurture & Retention Automation', role: 'Lifecycle Marketer', technologies: 'Klaviyo, Segment, A/B Testing, Lifecycle Cohorts', category: 'recommended', projectType: 'enterprise' },
+        ];
+    }
+
+    // 7. Product, Program, Project Management, Scrum, Agile
+    if (/\b(?:product manager|product owner|project manager|program manager|scrum master|agile coach)\b/.test(roleLower)) {
+        return [
+            { name: 'Omnichannel Customer Onboarding & User Activation Redesign', role: 'Lead Product Manager', technologies: 'Figma, Mixpanel, User Interviews, Amplitude', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Cross-Functional Agile Release Cadence & Velocity Transformation', role: 'Scrum Master / Agile Coach', technologies: 'Jira, Confluence, Kanban, Miro, OKRs', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'B2B Self-Serve Subscription Billing & Tier Upgrade Engine', role: 'Technical PM', technologies: 'Stripe Billing, Customer Journey Mapping, SQL', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Enterprise Product Roadmap Prioritization & Feature Matrix', role: 'Principal Product Manager', technologies: 'RICE Scoring, Aha!, Stakeholder Trade-offs', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Voice-of-Customer Multi-Channel Feedback Portal', role: 'Product Operations Lead', technologies: 'Qualtrics, Productboard, Customer Advisory Boards', category: 'recommended', projectType: 'personal' },
+        ];
+    }
+
+    // 8. Civil, Mechanical, Electrical, Structural Engineering, Architecture
+    if (/\b(?:civil engineer|mechanical engineer|electrical engineer|structural engineer|architect|urban designer|hvac)\b/.test(roleLower)) {
+        return [
+            { name: 'Structural Load Rating & Seismic Resilience Assessment', role: 'Lead Structural Engineer', technologies: 'AutoCAD, SAP2000, ETABS, Building Codes', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Commercial Facility HVAC & Thermal Efficiency Modernization', role: 'Mechanical Systems Lead', technologies: 'Revit MEP, CFD Airflow Modeling, Psychrometric Charts', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Medium-Voltage Substation Protection & Relay Coordination', role: 'Electrical Engineer', technologies: 'ETAP, Short-Circuit Analysis, Single-Line Diagrams', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Urban Master Plan Schematic & Sustainable Site Development', role: 'Project Architect', technologies: 'BIM, Rhino, GIS Mapping, Zoning Compliance', category: 'recommended', projectType: 'academic' },
+            { name: 'Municipal Water Distribution & Drainage Network Analysis', role: 'Civil Infrastructure Engineer', technologies: 'EPANET, Stormwater Modeling, GIS', category: 'recommended', projectType: 'enterprise' },
+        ];
+    }
+
+    // 9. Education, Teaching, Academia, Professors, Researchers
+    if (/\b(?:teacher|professor|educator|instructor|lecturer|pedagogy|principal|tutor)\b/.test(roleLower)) {
+        return [
+            { name: 'Differentiated Active-Learning Curriculum Redesign', role: 'Curriculum Developer', technologies: 'Standards-Based Grading, Bloom\'s Taxonomy, Canvas LMS', category: 'mandatory', projectType: 'academic' },
+            { name: 'Student Competency & Formative Assessment Tracking Suite', role: 'Lead Educator', technologies: 'Google Classroom, Formative Rubrics, Performance Data', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Interactive STEM Laboratory & Experimental Learning Program', role: 'Science Instructor', technologies: 'Inquiry-Based Learning, Lab Safety, Vernier Sensors', category: 'mandatory', projectType: 'academic' },
+            { name: 'Peer-Reviewed Empirical Research Study & Manuscript Publication', role: 'Principal Investigator', technologies: 'Statistical Analysis, SPSS/R, Peer Review Guidelines', category: 'recommended', projectType: 'academic' },
+            { name: 'Hybrid Course Delivery & Digital Learning Integration Initiative', role: 'Instructional Designer', technologies: 'LMS Integration, EdTech Tools, Asynchronous Content', category: 'recommended', projectType: 'personal' },
+        ];
+    }
+
+    // 10. Data, Data Science, Analytics, BI, Machine Learning
+    if (/\b(?:data scientist|data analyst|data engineer|machine learning|ml engineer|analytics|bi developer|statistician)\b/.test(roleLower)) {
+        return [
+            { name: 'Customer Churn Prediction & ML Feature Pipeline', role: 'Lead Data Scientist', technologies: 'Python, Scikit-learn, XGBoost, Streamlit, Docker', category: 'mandatory', projectType: 'personal' },
+            { name: 'Real-Time Streaming Telemetry & Anomaly Detection Pipeline', role: 'Data / ML Engineer', technologies: 'Apache Kafka, Spark Streaming, Redis, FastAPI', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Automated Cloud Data Lakehouse & ETL Orchestration', role: 'Data Engineer', technologies: 'Snowflake, dbt, Apache Airflow, AWS S3, SQL', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Executive Financial & Operational BI Intelligence Dashboard', role: 'BI Developer', technologies: 'Power BI, SQL, BigQuery, Tableau', category: 'recommended', projectType: 'enterprise' },
+            { name: 'Retrieval-Augmented Semantic Search & Document Intelligence', role: 'AI Developer', technologies: 'LangChain, Vector Databases, Python, FastAPI', category: 'recommended', projectType: 'personal' },
+        ];
+    }
+
+    // 11. Software, Web, Mobile, Cloud, DevOps
+    if (/\b(?:software|developer|frontend|backend|full stack|web|devops|cloud|mobile|ios|android|qa|sre)\b/.test(roleLower)) {
+        return [
+            { name: 'Scalable Microservices Cloud Architecture & API Gateway', role: 'Backend Engineer', technologies: 'Go / Node.js, Docker, Kubernetes, PostgreSQL, Redis', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Accessible Design System & High-Performance Web Application', role: 'Frontend Lead', technologies: 'React, TypeScript, Tailwind CSS, Vite, Storybook', category: 'mandatory', projectType: 'opensource' },
+            { name: 'Automated CI/CD Observability & Zero-Downtime Deployment Pipeline', role: 'DevOps / SRE', technologies: 'GitHub Actions, Terraform, Prometheus, Grafana, AWS', category: 'mandatory', projectType: 'enterprise' },
+            { name: 'Cross-Platform Mobile Application (iOS & Android)', role: 'Mobile Developer', technologies: 'React Native / Flutter, SQLite, WebSockets', category: 'recommended', projectType: 'personal' },
+            { name: 'Zero-Trust Authentication & Distributed Session Engine', role: 'Systems Engineer', technologies: 'OAuth2, JWT, Redis, Rate Limiting, Node.js', category: 'recommended', projectType: 'personal' },
+        ];
+    }
+
+    // 12. Universal Professional Operations / Business Management Fallback
+    return [
+        { name: 'Cross-Functional Operational Workflow & Process Optimization', role: 'Operations Lead', technologies: 'Standard Operating Procedures (SOP), Lean Workflow, Asana', category: 'mandatory', projectType: 'enterprise' },
+        { name: 'Client Service Delivery & Response Turnaround Acceleration', role: 'Service Delivery Manager', technologies: 'CRM Ticketing, SLA Tracking, Quality Standards', category: 'mandatory', projectType: 'enterprise' },
+        { name: 'Strategic Vendor Evaluation & Contract Renegotiation Initiative', role: 'Project Coordinator', technologies: 'Vendor Scorecards, RFP Process, Cost Optimization', category: 'mandatory', projectType: 'enterprise' },
+        { name: 'Departmental Resource Planning & Capacity Utilization Review', role: 'Business Operations Specialist', technologies: 'Resource Scheduling, KPI Dashboards, MS Excel', category: 'recommended', projectType: 'enterprise' },
+        { name: 'Cross-Department Communication & Team Knowledge Base System', role: 'Program Lead', technologies: 'Notion / Confluence, Documentation Standards', category: 'recommended', projectType: 'personal' },
+    ];
+}
+
+function generateDeterministicBullet(roleTitle, companyName = '', existingBullets = [], pillar = '', projectName = '', technologies = '') {
+    const role = String(roleTitle || 'Professional').trim();
+    const roleLower = role.toLowerCase();
+    const pName = String(projectName || '').trim();
+    const techStr = String(technologies || (pName ? '' : companyName) || '').trim();
+    const techPhrase = techStr ? ` utilizing ${techStr}` : '';
+    const company = String(companyName || '').trim();
+    const atCompany = (!pName && company) ? ` at ${company}` : '';
+
+    let templates = [];
+
+    if (pName) {
+        // 1. Healthcare, Medical, Clinical, Nursing, Dental
+        if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician|nurse|nursing|rn|clinical)\b/.test(roleLower)) {
+            templates = [
+                {
+                    pillar: 'Clinical Protocols',
+                    verb: 'Spearheaded',
+                    text: `Spearheaded clinical protocol standardization for ${pName}${techPhrase}, improving diagnostic accuracy by 25%.`
+                },
+                {
+                    pillar: 'Quality & Compliance',
+                    verb: 'Audited',
+                    text: `Audited clinical safety adherence for ${pName}${techPhrase}, ensuring 100% compliance with care guidelines.`
+                },
+                {
+                    pillar: 'Inpatient Optimization',
+                    verb: 'Standardized',
+                    text: `Standardized multidisciplinary clinical workflows for ${pName}${techPhrase}, shortening turnaround by 30%.`
+                },
+                {
+                    pillar: 'Care Delivery',
+                    verb: 'Administered',
+                    text: `Administered patient triage and specialized care pathways for ${pName}${techPhrase}, achieving a 98% quality rating.`
+                }
+            ];
+        }
+        // 2. Legal, Compliance, Attorneys
+        else if (/\b(?:lawyer|attorney|counsel|legal|paralegal|compliance officer|solicitor|advocate|jurist)\b/.test(roleLower)) {
+            templates = [
+                {
+                    pillar: 'Case Strategy',
+                    verb: 'Directed',
+                    text: `Directed case discovery, evidence analysis, and brief preparation for ${pName}${techPhrase}, securing favorable outcomes across all litigated matters.`
+                },
+                {
+                    pillar: 'Compliance Frameworks',
+                    verb: 'Formulated',
+                    text: `Formulated legal compliance framework and risk assessment guidelines for ${pName}${techPhrase}, eliminating statutory exposure across commercial contracts.`
+                },
+                {
+                    pillar: 'Dispute Resolution',
+                    verb: 'Negotiated',
+                    text: `Negotiated dispute settlements and commercial contract terms for ${pName}${techPhrase}, accelerating turnaround by 35%.`
+                },
+                {
+                    pillar: 'Regulatory Audits',
+                    verb: 'Audited',
+                    text: `Audited statutory compliance documentation and trial evidence for ${pName}${techPhrase}, achieving zero regulatory deficiencies.`
+                }
+            ];
+        }
+        // 3. Accounting, Audit, Finance, Banking
+        else if (/\b(?:accountant|cpa|accounting|auditor|audit|finance|financial analyst|controller|treasurer|banker)\b/.test(roleLower)) {
+            templates = [
+                {
+                    pillar: 'Financial Modeling',
+                    verb: 'Formulated',
+                    text: `Formulated financial models, audit schedules, and variance reporting for ${pName}${techPhrase}, uncovering $150K+ in operational savings.`
+                },
+                {
+                    pillar: 'Internal Controls',
+                    verb: 'Standardized',
+                    text: `Standardized internal accounting controls and reconciliation procedures for ${pName}${techPhrase}, completing filings with zero audit findings.`
+                },
+                {
+                    pillar: 'Budget Optimization',
+                    verb: 'Conducted',
+                    text: `Conducted corporate valuation and budget allocation forecasts for ${pName}${techPhrase}, improving forecasting precision by 24%.`
+                },
+                {
+                    pillar: 'Ledger Automation',
+                    verb: 'Automated',
+                    text: `Automated month-end ledger reconciliation routines for ${pName}${techPhrase}, reducing reporting cycle time by 40%.`
+                }
+            ];
+        }
+        // 4. Marketing, Brand, Content, Growth
+        else if (/\b(?:marketing|growth|seo|brand|content|campaign|digital marketer)\b/.test(roleLower)) {
+            templates = [
+                {
+                    pillar: 'Campaign Strategy',
+                    verb: 'Orchestrated',
+                    text: `Orchestrated multi-channel marketing campaign and brand launch for ${pName}${techPhrase}, driving a 35% increase in qualified inbound leads.`
+                },
+                {
+                    pillar: 'Acquisition & CAC',
+                    verb: 'Conducted',
+                    text: `Conducted market segmentation and campaign performance analysis for ${pName}${techPhrase}, reducing customer acquisition costs (CAC) by 24%.`
+                },
+                {
+                    pillar: 'Funnel Optimization',
+                    verb: 'Optimized',
+                    text: `Optimized digital marketing funnels and conversion touchpoints for ${pName}${techPhrase}, lifting checkout conversion by 28%.`
+                },
+                {
+                    pillar: 'Organic Distribution',
+                    verb: 'Expanded',
+                    text: `Expanded organic search footprint and content distribution for ${pName}${techPhrase}, boosting organic search traffic by 45%.`
+                }
+            ];
+        }
+        // 5. Software, Data, Cloud, Web, DevOps
+        else if (/\b(?:software|developer|frontend|backend|full\s*stack|engineer|devops|sre|cloud|architect|data|machine learning|ml|ai)\b/.test(roleLower)) {
+            templates = [
+                {
+                    pillar: 'Architecture',
+                    verb: 'Architected',
+                    text: `Architected and deployed ${pName}${techPhrase}, establishing high-availability system architecture and robust performance benchmarks.`
+                },
+                {
+                    pillar: 'Engineering',
+                    verb: 'Engineered',
+                    text: `Engineered core full-stack features and API integrations for ${pName}${techPhrase}, reducing response latency by 35%.`
+                },
+                {
+                    pillar: 'Optimization',
+                    verb: 'Optimized',
+                    text: `Optimized pipeline workflows and database query efficiency for ${pName}${techPhrase}, scaling throughput by 40% under peak load.`
+                },
+                {
+                    pillar: 'Deployment',
+                    verb: 'Automated',
+                    text: `Automated testing and CI/CD deployment routines for ${pName}${techPhrase}, accelerating release velocity while maintaining zero production regressions.`
+                }
+            ];
+        }
+        // 6. Universal Project Fallback
+        else {
+            templates = [
+                {
+                    pillar: 'Project Delivery',
+                    verb: 'Delivered',
+                    text: `Delivered ${pName}${techPhrase} on schedule, improving operational efficiency by 25% across core deliverables.`
+                },
+                {
+                    pillar: 'Process Streamlining',
+                    verb: 'Streamlined',
+                    text: `Streamlined project coordination and stakeholder communication for ${pName}${techPhrase}, accelerating turnaround by 30%.`
+                },
+                {
+                    pillar: 'Quality Standards',
+                    verb: 'Audited',
+                    text: `Audited deliverables and quality benchmarks for ${pName}${techPhrase}, achieving 100% compliance with established standards.`
+                },
+                {
+                    pillar: 'Workflow Optimization',
+                    verb: 'Formulated',
+                    text: `Formulated process improvements and workflow automation for ${pName}${techPhrase}, reducing administrative overhead by 35%.`
+                }
+            ];
+        }
+    } else if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Clinical Care',
+                verb: 'Diagnosed',
+                text: `Diagnosed and treated 25+ daily acute and complex patient cases${atCompany}, maintaining a 98% patient satisfaction and clinical quality rating.`
+            },
+            {
+                pillar: 'Quality & Protocols',
+                verb: 'Audited',
+                text: `Audited and standardized hospital clinical protocols and documentation${atCompany}, reducing treatment variance by 30% across clinical units.`
+            },
+            {
+                pillar: 'Inpatient Rounds',
+                verb: 'Spearheaded',
+                text: `Spearheaded multidisciplinary inpatient care rounds and diagnostic reviews${atCompany}, shortening average patient recovery time by 18%.`
+            },
+            {
+                pillar: 'Emergency Triage',
+                verb: 'Administered',
+                text: `Administered rapid triage interventions and emergency assessments${atCompany}, accelerating diagnostic-to-treatment turnaround by 25%.`
+            },
+        ];
+    } else if (/\b(?:nurse|nursing|rn|lpn|np|practitioner|clinical care)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Bedside Care',
+                verb: 'Administered',
+                text: `Administered acute bedside care and vital monitoring for 15+ patients per shift${atCompany}, achieving 99% medication administration accuracy.`
+            },
+            {
+                pillar: 'Triage Efficiency',
+                verb: 'Streamlined',
+                text: `Streamlined patient triage intake and EHR charting${atCompany}, cutting average emergency waiting time by 22%.`
+            },
+            {
+                pillar: 'Patient Education',
+                verb: 'Coordinated',
+                text: `Coordinated individualized patient discharge education and care plans${atCompany}, reducing 30-day readmissions by 14%.`
+            },
+            {
+                pillar: 'Clinical Safety',
+                verb: 'Enforced',
+                text: `Enforced strict patient safety and infection control protocols${atCompany}, maintaining zero catheter-associated infections over 12 months.`
+            },
+        ];
+    } else if (/\b(?:software|developer|frontend|backend|full\s*stack|engineer|devops|sre|cloud|architect)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'System Architecture',
+                verb: 'Architected',
+                text: `Architected distributed backend services and APIs${atCompany}, scaling system throughput by 35% to support 5M+ daily requests.`
+            },
+            {
+                pillar: 'Performance Optimization',
+                verb: 'Optimized',
+                text: `Optimized database query performance and server caching layers${atCompany}, cutting p99 response latency by 45%.`
+            },
+            {
+                pillar: 'Reliability & CI/CD',
+                verb: 'Automated',
+                text: `Automated end-to-end CI/CD deployment pipelines${atCompany}, reducing release rollback rates by 60% with 99.9% uptime.`
+            },
+            {
+                pillar: 'Code Quality',
+                verb: 'Refactored',
+                text: `Refactored critical service modules and expanded automated test coverage to 85%${atCompany}, eliminating 40% of production regressions.`
+            },
+        ];
+    } else if (/\b(?:data|analyst|analytics|machine learning|ml|ai|scientist|bi)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Machine Learning & AI',
+                verb: 'Engineered',
+                text: `Engineered predictive machine learning models in Python${atCompany}, lifting operational forecasting accuracy by 22%.`
+            },
+            {
+                pillar: 'Data Pipelines',
+                verb: 'Built',
+                text: `Built automated ETL pipelines processing 10GB+ of daily telemetry data${atCompany}, reducing reporting latency by 50%.`
+            },
+            {
+                pillar: 'Business Insights',
+                verb: 'Designed',
+                text: `Designed executive BI dashboards and statistical models${atCompany}, uncovering insights that drove $1.2M in annual cost efficiencies.`
+            },
+            {
+                pillar: 'Data Integrity',
+                verb: 'Standardized',
+                text: `Standardized data validation schemas across warehouse databases${atCompany}, eliminating 95% of data ingestion anomalies.`
+            },
+        ];
+    } else if (/\b(?:product|pm|owner)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Product Roadmap',
+                verb: 'Directed',
+                text: `Directed core product roadmap and agile sprint execution${atCompany}, lifting 90-day user retention by 22% within two quarters.`
+            },
+            {
+                pillar: 'User Discovery',
+                verb: 'Conducted',
+                text: `Conducted customer discovery across 45+ enterprise accounts${atCompany}, prioritizing features that generated $350K in new ARR.`
+            },
+            {
+                pillar: 'Funnel Optimization',
+                verb: 'Spearheaded',
+                text: `Spearheaded onboarding funnel experimentation and self-serve improvements${atCompany}, driving a 28% increase in free-to-paid activation.`
+            },
+            {
+                pillar: 'Stakeholder Alignment',
+                verb: 'Aligned',
+                text: `Aligned engineering, design, and GTM teams on release milestones${atCompany}, achieving 100% on-time feature delivery across 6 releases.`
+            },
+        ];
+    } else if (/\b(?:sales|account executive|ae|bdr|sdr|business development|revenue)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Quota Attainment',
+                verb: 'Exceeded',
+                text: `Exceeded annual sales quota by 125%${atCompany}, generating $1.4M in new enterprise contract value through consultative selling.`
+            },
+            {
+                pillar: 'Pipeline Generation',
+                verb: 'Built',
+                text: `Built and converted a $3.2M qualified sales pipeline across target accounts${atCompany}, shortening the deal cycle by 18 days.`
+            },
+            {
+                pillar: 'Client Retention',
+                verb: 'Negotiated',
+                text: `Negotiated multi-year renewals and expansion deals across 30+ enterprise clients${atCompany}, maintaining a 96% net revenue retention rate.`
+            },
+            {
+                pillar: 'Sales Execution',
+                verb: 'Delivered',
+                text: `Delivered high-converting executive product demonstrations${atCompany}, lifting discovery-to-proposal conversion by 32%.`
+            },
+        ];
+    } else if (/\b(?:marketing|growth|seo|brand|content|campaign)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Paid Acquisition',
+                verb: 'Orchestrated',
+                text: `Orchestrated multi-channel digital acquisition campaigns${atCompany}, decreasing customer acquisition cost (CAC) by 28% while doubling MQLs.`
+            },
+            {
+                pillar: 'Organic Growth & SEO',
+                verb: 'Engineered',
+                text: `Engineered organic search and content marketing strategies${atCompany}, growing inbound web traffic by 140% in 9 months.`
+            },
+            {
+                pillar: 'Conversion Lift',
+                verb: 'Executed',
+                text: `Executed iterative A/B testing on landing pages${atCompany}, lifting visit-to-lead conversion rate from 2.4% to 4.8%.`
+            },
+            {
+                pillar: 'Brand Awareness',
+                verb: 'Spearheaded',
+                text: `Spearheaded brand partnership and social media campaigns${atCompany}, expanding total audience reach to 250K+ targeted prospects.`
+            },
+        ];
+    } else if (/\b(?:finance|financial|accountant|accounting|audit|controller)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Financial Reporting',
+                verb: 'Managed',
+                text: `Managed month-end and year-end financial closings${atCompany}, completing annual statutory audits with zero compliance deficiencies.`
+            },
+            {
+                pillar: 'Cost Reduction',
+                verb: 'Analyzed',
+                text: `Analyzed operational cost structures and vendor contracts${atCompany}, unlocking $220K in annual overhead expense reductions.`
+            },
+            {
+                pillar: 'Forecasting & Budgeting',
+                verb: 'Developed',
+                text: `Developed rolling financial forecasts and cash flow variance models${atCompany}, improving budget accuracy to within 2.5% of actuals.`
+            },
+            {
+                pillar: 'Internal Controls',
+                verb: 'Instituted',
+                text: `Instituted automated reconciliation controls${atCompany}, reducing billing discrepancies by 85% and saving 15 staff hours weekly.`
+            },
+        ];
+    } else if (/\b(?:operations|supply chain|logistics|procurement|warehouse)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Fulfillment Turnaround',
+                verb: 'Optimized',
+                text: `Optimized warehouse fulfillment and order dispatch workflows${atCompany}, accelerating order turnaround time by 32%.`
+            },
+            {
+                pillar: 'Vendor Negotiation',
+                verb: 'Negotiated',
+                text: `Negotiated procurement contracts with 15+ strategic suppliers${atCompany}, capturing 18% cost savings with 99.2% on-time delivery.`
+            },
+            {
+                pillar: 'Process Improvement',
+                verb: 'Implemented',
+                text: `Implemented lean operational workflows and QA checkpoints${atCompany}, reducing operational defect rates by 40%.`
+            },
+            {
+                pillar: 'Inventory Accuracy',
+                verb: 'Standardized',
+                text: `Standardized inventory tracking and automated restocking thresholds${atCompany}, boosting stock accuracy to 99.8%.`
+            },
+        ];
+    } else if (/\b(?:hr|human resources|recruiter|recruiting|talent)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Full-Cycle Hiring',
+                verb: 'Spearheaded',
+                text: `Spearheaded full-lifecycle talent acquisition for 45+ roles${atCompany}, reducing average time-to-hire from 52 to 31 days.`
+            },
+            {
+                pillar: 'Retention & Onboarding',
+                verb: 'Designed',
+                text: `Designed structured employee onboarding and mentorship programs${atCompany}, lifting first-year team retention by 24%.`
+            },
+            {
+                pillar: 'HR Operations',
+                verb: 'Standardized',
+                text: `Standardized performance management and compliance workflows${atCompany}, maintaining 100% compliance across 300+ employees.`
+            },
+            {
+                pillar: 'Employer Branding',
+                verb: 'Launched',
+                text: `Launched university recruiting and technical outreach initiatives${atCompany}, increasing diverse talent pipeline volume by 35%.`
+            },
+        ];
+    } else if (/\b(?:teacher|teaching|professor|instructor|tutor|educator)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'Student Achievement',
+                verb: 'Delivered',
+                text: `Delivered differentiated classroom instruction for 75+ students${atCompany}, raising standardized assessment pass rates by 18%.`
+            },
+            {
+                pillar: 'Curriculum Innovation',
+                verb: 'Designed',
+                text: `Designed project-based learning curriculum integrating digital tools${atCompany}, lifting student engagement and homework completion to 94%.`
+            },
+            {
+                pillar: 'Mentorship & Support',
+                verb: 'Mentored',
+                text: `Mentored 30+ at-risk students through personalized academic plans${atCompany}, improving semester grade averages by 1.2 letter grades.`
+            },
+            {
+                pillar: 'Academic Standards',
+                verb: 'Coordinated',
+                text: `Coordinated departmental curriculum alignment and benchmarking${atCompany}, achieving 100% compliance with educational standards.`
+            },
+        ];
+    } else if (/\b(?:customer success|customer service|support|csm|client success)\b/.test(roleLower)) {
+        templates = [
+            {
+                pillar: 'CSAT & NPS Lift',
+                verb: 'Managed',
+                text: `Managed enterprise customer onboarding and relationship health${atCompany}, achieving a 98% CSAT score across 500+ client accounts.`
+            },
+            {
+                pillar: 'Ticket Resolution',
+                verb: 'Streamlined',
+                text: `Streamlined support escalation workflows and knowledge base articles${atCompany}, cutting average ticket resolution time by 35%.`
+            },
+            {
+                pillar: 'Churn Reduction',
+                verb: 'Identified',
+                text: `Identified early customer risk signals and proactive health interventions${atCompany}, reducing gross account churn by 20%.`
+            },
+            {
+                pillar: 'Account Expansion',
+                verb: 'Partnered',
+                text: `Partnered with sales on quarterly business reviews${atCompany}, contributing to $280K in expansion revenue.`
+            },
+        ];
+    } else {
+        templates = [
+            {
+                pillar: 'Operational Execution',
+                verb: 'Delivered',
+                text: `Delivered key project deliverables and operational workflows${atCompany}, improving team efficiency by 25% with 100% on-time milestone delivery.`
+            },
+            {
+                pillar: 'Process Optimization',
+                verb: 'Optimized',
+                text: `Optimized cross-functional processes and operating procedures${atCompany}, eliminating recurring bottlenecks and saving 8 staff hours weekly.`
+            },
+            {
+                pillar: 'Strategic Initiatives',
+                verb: 'Spearheaded',
+                text: `Spearheaded department priority initiatives${atCompany}, driving a 20% performance improvement across core business benchmarks.`
+            },
+            {
+                pillar: 'Quality & Governance',
+                verb: 'Standardized',
+                text: `Standardized reporting frameworks and documentation${atCompany}, maintaining 100% accuracy and compliance standards.`
+            },
+        ];
+    }
+
+    if (pillar) {
+        const pillarLower = pillar.toLowerCase();
+        const matched = templates.find(t => t.pillar.toLowerCase().includes(pillarLower) || pillarLower.includes(t.pillar.toLowerCase()));
+        if (matched) return matched.text;
+    }
+
+    const normalizedExisting = existingBullets.map(b => String(b || '').toLowerCase().trim()).filter(Boolean);
+
+    for (const item of templates) {
+        const verbLower = item.verb.toLowerCase();
+        const isVerbUsed = normalizedExisting.some(ex => ex.startsWith(verbLower) || ex.includes(` ${verbLower} `));
+        const isTopicUsed = normalizedExisting.some(ex => {
+            const pillarWords = item.pillar.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+            return pillarWords.some(pw => ex.includes(pw));
+        });
+        if (!isVerbUsed && !isTopicUsed) {
+            return item.text;
+        }
+    }
+
+    for (const item of templates) {
+        const verbLower = item.verb.toLowerCase();
+        const isVerbUsed = normalizedExisting.some(ex => ex.startsWith(verbLower));
+        if (!isVerbUsed) {
+            return item.text;
+        }
+    }
+
+    const fallbackIdx = normalizedExisting.length % templates.length;
+    return templates[fallbackIdx].text;
 }
 
 function generateDeterministicJobDescription(roleTitle, payload = {}) {

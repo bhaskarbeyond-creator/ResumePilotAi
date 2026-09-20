@@ -49,12 +49,13 @@ const ALLOWED_ENDPOINTS = new Set([
     'generate-summary', 'generate-interview',
     'generate-work-description', 'generate-education-description',
     'generate-skills', 'generate-certifications', 'check-grammar', 'enhance-single-bullet',
-    'autocomplete', 'generate-ai-cover-letter', 'generate-job-description', 'generate-content'
+    'autocomplete', 'generate-ai-cover-letter', 'generate-job-description', 'generate-content',
+    'generate-projects',
 ]);
 const CONSOLIDATED_CONTENT_OPERATIONS = new Set([
     'generate-summary', 'generate-work-description', 'generate-education-description',
     'generate-skills', 'generate-certifications', 'enhance-single-bullet', 'autocomplete',
-    'generate-job-description',
+    'generate-job-description', 'generate-projects',
 ]);
 
 export function buildAiRequest(endpointName, payload = {}) {

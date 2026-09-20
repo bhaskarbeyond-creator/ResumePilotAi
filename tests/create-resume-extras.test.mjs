@@ -130,7 +130,7 @@ test('Projects and Certifications editors remain the certified field contract', 
   const certs = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
   assert.match(projects, /updateProject\(project\.id, 'title'/);
   assert.match(projects, /updateProject\(project\.id, 'url'/);
-  assert.match(projects, /updateProject\(project\.id, 'description'/);
+  assert.match(projects, /updateProject\(project\.id, 'technologies'/);
   assert.match(certs, /updateCertification\(certification\.id, 'title'/);
   assert.match(certs, /updateCertification\(certification\.id, 'issuer'/);
   assert.match(certs, /updateCertification\(certification\.id, 'date'/);
