@@ -44,6 +44,11 @@ test('10/10 Projects Step UX Contract & Component Verification', () => {
     assert.match(fileContent, /updateResumeData\(\{\s*projects/m, 'Must sync projects to resumeData');
     assert.match(fileContent, /duplicateResumeItem/, 'Must support duplicating project');
     assert.match(fileContent, /moveResumeItem/, 'Must support reordering project');
+
+    // 6. Cards View and ViewMode Toggle
+    assert.match(fileContent, /viewMode === 'cards'/, 'Must support Cards view');
+    assert.match(fileContent, /setViewMode\('cards'\)/, 'Must allow switching to Cards view');
+    assert.match(fileContent, /setViewMode\('compact'\)/, 'Must allow switching to Compact view');
 });
 
 test('Backend AI Runtime Prompt Builder: Project-Specific Context Integration', () => {
