@@ -184,7 +184,7 @@ const SUBTAB_CONFIG = {
         id: 'summary',
         name: 'Executive Bio',
         title: 'Executive Bio & Professional Summary',
-        subtitle: 'Your 3-4 sentence elevator pitch positioning your expertise, value, and career level.',
+        subtitle: 'Your synthesized 3-4 sentence elevator pitch, generated from your complete work history, education, skills, and projects above.',
         statusBadge: (p) => p.summary?.trim()?.length > 20 ? 'Active' : 'Missing',
         getCount: (p) => (p.summary?.trim()?.length > 20 ? '✓' : undefined),
         isComplete: (p) => Boolean(p.summary && p.summary.trim().length > 20),
@@ -275,7 +275,7 @@ function DashboardSettings(_props) {
         }
     }, [profileSubTab]);
 
-    const SUB_TAB_ORDER = ['basic', 'summary', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'achievements', 'references', 'customSections'];
+    const SUB_TAB_ORDER = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'achievements', 'references', 'customSections', 'summary'];
 
     // Seamless Subtab Switching with URL Deep-Linking
     const switchProfileSubTab = (tabKey) => {
@@ -2516,7 +2516,7 @@ function DashboardSettings(_props) {
                                 <div className="flex flex-col gap-3">
                                     <div>
                                         <h3 className="text-sm font-bold text-slate-900 tracking-tight">Executive Bio &amp; Professional Summary</h3>
-                                        <p className="text-xs text-slate-500">Auto-loaded into all new resumes and AI cover letters.</p>
+                                        <p className="text-xs text-slate-500">Synthesizes your full career history, education, skills, and projects entered above into an authoritative executive overview.</p>
                                     </div>
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
                                         <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>

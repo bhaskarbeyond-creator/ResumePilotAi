@@ -28,11 +28,17 @@ test('DashboardSettings Profile UX 10/10 Verification Suite', () => {
     assert.match(fileContent, /el\.classList\.add\('ring-2',\s*'ring-indigo-400'\)/, 'Must highlight focused field with glowing ring');
     assert.match(fileContent, /onClick=\{\(\) => handleFocusGap\(gap\)\}/, 'Must wire gap item clicks to handleFocusGap');
 
-    // 5. 12 Canonical Subtabs Alignment
-    const expectedSubTabs = ['basic', 'summary', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'achievements', 'references', 'customSections'];
+    // 5. 12 Canonical Subtabs Alignment & Synthesis Capstone Position
+    const expectedSubTabs = ['basic', 'experience', 'education', 'skills', 'certifications', 'projects', 'languages', 'hobbies', 'achievements', 'references', 'customSections', 'summary'];
     for (const subTab of expectedSubTabs) {
         assert.match(fileContent, new RegExp(`['"]${subTab}['"]`), `Must include subtab ${subTab} in configuration`);
     }
+    // Executive Bio must be at the very end to take all previously entered data as input
+    assert.match(
+        fileContent,
+        /const\s+SUB_TAB_ORDER\s*=\s*\[[^\]]*'summary'\s*\];/,
+        'Executive Bio must be placed at the very end of SUB_TAB_ORDER to synthesize all prior data'
+    );
 
     // 6. Navigation Buttons Continuity
     assert.match(fileContent, /handleSaveAndNext/, 'Must provide handleSaveAndNext handler');
