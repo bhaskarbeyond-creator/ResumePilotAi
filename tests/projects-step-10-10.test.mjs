@@ -45,10 +45,10 @@ test('10/10 Projects Step UX Contract & Component Verification', () => {
     assert.match(fileContent, /duplicateResumeItem/, 'Must support duplicating project');
     assert.match(fileContent, /moveResumeItem/, 'Must support reordering project');
 
-    // 6. Cards View and ViewMode Toggle
-    assert.match(fileContent, /viewMode === 'cards'/, 'Must support Cards view');
-    assert.match(fileContent, /setViewMode\('cards'\)/, 'Must allow switching to Cards view');
-    assert.match(fileContent, /setViewMode\('compact'\)/, 'Must allow switching to Compact view');
+    // 6. Dedicated Elevated Cards View (Compact view not required)
+    assert.match(fileContent, /PROJECT_TYPES\.find/, 'Must render elevated project cards with category styling');
+    assert.match(fileContent, /subtitleParts/, 'Must compute dynamic project subtitle');
+    assert.doesNotMatch(fileContent, /viewMode === 'compact'/, 'Compact view must not be required');
 });
 
 test('Backend AI Runtime Prompt Builder: Project-Specific Context Integration', () => {
