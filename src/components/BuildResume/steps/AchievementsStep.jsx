@@ -41,6 +41,44 @@ export const SUGGESTION_CHIPS = [
     { label: '🎓 Dean\'s Honor Roll', text: 'Maintained top academic standing on Dean’s Honor List across consecutive semesters.' }
 ];
 
+const TYPE_STYLE_MAP = {
+    Award: {
+        cardBorder: 'border-amber-200/90 hover:border-amber-300 focus-within:border-amber-400',
+        headerGradient: 'from-amber-50/60 via-amber-50/20 to-transparent',
+        badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+        indexBadge: 'bg-amber-500 text-white',
+        iconColor: 'text-amber-600',
+    },
+    Honor: {
+        cardBorder: 'border-indigo-200/90 hover:border-indigo-300 focus-within:border-indigo-400',
+        headerGradient: 'from-indigo-50/60 via-indigo-50/20 to-transparent',
+        badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+        indexBadge: 'bg-indigo-600 text-white',
+        iconColor: 'text-indigo-600',
+    },
+    Competition: {
+        cardBorder: 'border-purple-200/90 hover:border-purple-300 focus-within:border-purple-400',
+        headerGradient: 'from-purple-50/60 via-purple-50/20 to-transparent',
+        badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
+        indexBadge: 'bg-purple-600 text-white',
+        iconColor: 'text-purple-600',
+    },
+    Academic: {
+        cardBorder: 'border-emerald-200/90 hover:border-emerald-300 focus-within:border-emerald-400',
+        headerGradient: 'from-emerald-50/60 via-emerald-50/20 to-transparent',
+        badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        indexBadge: 'bg-emerald-600 text-white',
+        iconColor: 'text-emerald-600',
+    },
+    Milestone: {
+        cardBorder: 'border-rose-200/90 hover:border-rose-300 focus-within:border-rose-400',
+        headerGradient: 'from-rose-50/60 via-rose-50/20 to-transparent',
+        badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
+        indexBadge: 'bg-rose-600 text-white',
+        iconColor: 'text-rose-600',
+    },
+};
+
 const RECOGNITION_SIGNAL = /\b(?:award(?:ed|s)?|honou?r(?:s|ed)?|dean'?s\s+list|won|winner|winning|first\s+place|top\s+performer|employee\s+of\s+|certificate\s+of\s+(?:excellence|appreciation)|recognition|recognised|recognized|commendation|promoted|published|publication|patent(?:ed)?|scholarship|distinction|outstanding)\b/iu;
 
 function findAchievementSignals(resumeData = {}) {
@@ -489,6 +527,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             const originalIndex = achievements.findIndex(a => a.id === achievement.id);
                             const activeType = achievement.achievementType || 'Award';
                             const typeConfig = ACHIEVEMENT_TYPES.find(t => t.id === activeType) || ACHIEVEMENT_TYPES[0];
+                            const theme = TYPE_STYLE_MAP[activeType] || TYPE_STYLE_MAP.Award;
                             const TypeIcon = typeConfig.icon;
                             const achTitle = achievement.title || achievement.name || '';
 
@@ -504,34 +543,37 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             return (
                                 <div
                                     key={achievement.id}
-                                    className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 hover:border-slate-300 shadow-2xs hover:shadow-xs transition-all"
+                                    className={`bg-white border ${theme.cardBorder} rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden`}
                                 >
                                     {/* Card Header */}
-                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                                    <div className={`p-3.5 sm:p-4 border-b border-slate-100 bg-gradient-to-r ${theme.headerGradient} flex items-center justify-between gap-3`}>
                                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                            <span className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 font-extrabold flex items-center justify-center text-xs shrink-0 border border-amber-200/80">
+                                            <span className={`w-6 h-6 rounded-md ${theme.indexBadge} font-extrabold flex items-center justify-center text-[11px] shrink-0 shadow-2xs`}>
                                                 #{originalIndex + 1}
                                             </span>
                                             <div className="min-w-0">
-                                                <h4 className="text-xs font-bold text-slate-900 truncate">
-                                                    {achTitle || 'Untitled Honor / Award'}
-                                                </h4>
-                                                <p className="text-[11px] text-slate-500 truncate">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                                        {achTitle || 'Untitled Honor / Award'}
+                                                    </h4>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 flex items-center gap-1 ${theme.badgeClass}`}>
+                                                        <TypeIcon className="w-3 h-3" />
+                                                        <span>{typeConfig.label}</span>
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 truncate mt-0.5">
                                                     {subtitle}
                                                 </p>
                                             </div>
-                                            <span className={`ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 flex items-center gap-1 ${typeConfig.badgeClass}`}>
-                                                <TypeIcon className="w-3 h-3" />
-                                                <span>{typeConfig.label}</span>
-                                            </span>
                                         </div>
 
-                                        <div className="flex items-center gap-1 shrink-0">
+                                        {/* Action Button Group */}
+                                        <div className="flex items-center gap-0.5 bg-white/95 backdrop-blur-xs p-1 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
                                             <button
                                                 type="button"
                                                 disabled={originalIndex === 0}
                                                 onClick={(e) => { e.stopPropagation(); moveAchievement(achievement.id, -1); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
                                                 title="Move award up"
                                             >
                                                 ▲
@@ -540,15 +582,16 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 type="button"
                                                 disabled={originalIndex === achievements.length - 1}
                                                 onClick={(e) => { e.stopPropagation(); moveAchievement(achievement.id, 1); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
                                                 title="Move award down"
                                             >
                                                 ▼
                                             </button>
+                                            <div className="w-[1px] h-3.5 bg-slate-200 mx-0.5" />
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); duplicateAchievement(achievement.id); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50/70 transition-all cursor-pointer"
                                                 title="Duplicate award"
                                             >
                                                 <MdContentCopy className="w-3.5 h-3.5" />
@@ -556,7 +599,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); removeAchievement(achievement.id); }}
-                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-0.5"
+                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50/70 transition-all cursor-pointer ml-0.5"
                                                 title="Delete award"
                                             >
                                                 <MdDeleteOutline className="w-4 h-4" />
@@ -565,13 +608,13 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                     </div>
 
                                     {/* Card Body */}
-                                    <div className="space-y-3.5 pt-1">
-                                        {/* Row 1: Achievement Classification Pills */}
-                                        <div className="space-y-1.5">
-                                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                                                Category / Recognition Type
+                                    <div className="p-4 sm:p-5 space-y-4">
+                                        {/* Category Selector Segmented Bar */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                                Category &amp; Recognition Type
                                             </label>
-                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/70 border border-slate-200/80 rounded-xl">
                                                 {ACHIEVEMENT_TYPES.map(type => {
                                                     const Icon = type.icon;
                                                     const isSelected = activeType === type.id;
@@ -580,13 +623,13 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                             key={type.id}
                                                             type="button"
                                                             onClick={() => updateAchievement(achievement.id, 'achievementType', type.id)}
-                                                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                                                 isSelected
-                                                                    ? `${type.badgeClass} ring-2 ring-indigo-500/20 shadow-xs`
-                                                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200/90 font-bold'
+                                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
                                                             }`}
                                                         >
-                                                            <Icon className="w-3.5 h-3.5" />
+                                                            <Icon className={`w-3.5 h-3.5 ${isSelected ? theme.iconColor : 'text-slate-400'}`} />
                                                             <span>{type.label}</span>
                                                         </button>
                                                     );
@@ -594,7 +637,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             </div>
                                         </div>
 
-                                        {/* Row 2: Award Title & Date Received */}
+                                        {/* Row 1: Award Title & Date Received */}
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                             <div className="sm:col-span-2">
                                                 <Field
@@ -618,7 +661,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             </div>
                                         </div>
 
-                                        {/* Row 3: Awarding Organization / Issuer */}
+                                        {/* Row 2: Awarding Organization / Issuer */}
                                         <div>
                                             <Field
                                                 label="Awarding Organization or Issuer"
@@ -630,25 +673,25 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                             />
                                         </div>
 
-                                        {/* Row 4: Description of Accomplishment & Significance with AI Polish */}
+                                        {/* Row 3: Description of Accomplishment & Significance with AI Polish */}
                                         <div className="space-y-2">
-                                            <div className="flex items-center justify-between gap-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                                                 <div>
-                                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                                                        Brief Description of Accomplishment &amp; Significance
+                                                    <label className="text-[13px] font-semibold text-slate-700">
+                                                        Accomplishment &amp; Significance
                                                     </label>
-                                                    <p className="text-[11px] text-slate-500">
-                                                        Explain competition scope (e.g. 1st of 120 teams), measurable outcome, or why this honor was awarded.
-                                                    </p>
+                                                    <span className="block sm:inline sm:ml-1.5 text-[11px] text-slate-400 font-normal">
+                                                        — scope, measurable impact, or why this honor was awarded
+                                                    </span>
                                                 </div>
                                                 <button
                                                     type="button"
                                                     disabled={isPolishingId === achievement.id}
                                                     onClick={() => polishAchievementDescription(achievement)}
-                                                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer shrink-0"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50 self-start sm:self-auto shrink-0"
                                                     title="Auto-enhance phrasing with impact metrics and action verbs"
                                                 >
-                                                    <MdAutoAwesome className="w-3.5 h-3.5 text-indigo-600" />
+                                                    <MdAutoAwesome className={`w-3.5 h-3.5 text-indigo-600 ${isPolishingId === achievement.id ? 'animate-spin' : ''}`} />
                                                     <span>{isPolishingId === achievement.id ? 'Polishing...' : '🪄 Enhance with AI'}</span>
                                                 </button>
                                             </div>
@@ -657,12 +700,12 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                 value={achievement.description || ''}
                                                 onChange={(e) => updateAchievement(achievement.id, 'description', e.target.value)}
                                                 placeholder={getDynamicPlaceholder('achievements', 'description', candidateContext) || 'Brief description of the accomplishment and its significance...'}
-                                                className="w-full min-h-[74px] text-xs p-3 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-y transition-all"
+                                                className="w-full min-h-[78px] text-xs p-3.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none resize-y transition-all shadow-2xs leading-relaxed"
                                             />
 
                                             {/* Quick Starter Chips */}
                                             <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick starters:</span>
+                                                <span className="text-[11px] font-semibold text-slate-400">Quick starters:</span>
                                                 {SUGGESTION_CHIPS.map((chip, cIdx) => (
                                                     <button
                                                         key={cIdx}
@@ -672,7 +715,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                                             const separator = current ? (current.endsWith('.') ? ' ' : '. ') : '';
                                                             updateAchievement(achievement.id, 'description', `${current}${separator}${chip.text}`);
                                                         }}
-                                                        className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 border border-slate-200/80 transition-colors cursor-pointer"
+                                                        className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-indigo-50/80 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
                                                     >
                                                         {chip.label}
                                                     </button>
