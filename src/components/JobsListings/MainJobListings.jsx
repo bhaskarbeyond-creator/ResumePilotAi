@@ -1035,7 +1035,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
             {/* Top Navigation Bar with active public-site styling and auth modal hook */}
             {!isInsideDashboard && <HomepageNavbar onOpenAuthModal={authBtnHandler} />}
 
-            <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 ${isInsideDashboard ? 'py-6 sm:py-8 max-lg:pt-16' : 'pt-[110px] pb-12'}`}>
+            <main className={`flex-1 w-full ${isInsideDashboard ? 'max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} ${isInsideDashboard ? 'py-6 sm:py-8 max-lg:pt-16' : 'pt-[110px] pb-12'}`}>
                 <JobSearchBar
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
@@ -1051,6 +1051,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                     onSearch={() => loadJobs(1)}
                     currency={currencyConfig.currency}
                     currencySymbol={currencyConfig.currencySymbol}
+                    selectedFilters={selectedFilters}
                 />
 
                 {/* Main Content Layout */}
@@ -1071,7 +1072,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                     {/* Right Content - Results & Listings */}
                     <div className="flex-1 min-w-0">
                         {/* Results Toolbar */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 py-3.5 px-5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 py-3.5 px-5 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-sm transition-all duration-200">
                             <div className="flex items-center gap-2.5">
                                 <span className="relative flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -1081,7 +1082,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                     {pagination.totalItems} {pagination.totalItems === 1 ? t('JobsUpdate.MainJobListings.jobSingular', 'job') : t('JobsUpdate.MainJobListings.jobPlural', 'jobs')} {t('JobsUpdate.MainJobListings.found', 'found')}
                                 </span>
                                 {pagination.totalPages > 1 && (
-                                    <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                    <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200/60">
                                         {t('JobsUpdate.MainJobListings.page', 'Page')} {currentPage} {t('JobsUpdate.MainJobListings.of', 'of')} {pagination.totalPages}
                                     </span>
                                 )}

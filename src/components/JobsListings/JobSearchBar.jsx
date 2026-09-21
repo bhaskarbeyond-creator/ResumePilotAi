@@ -18,8 +18,25 @@ const JobSearchBar = ({
     onSearch,
     currency = 'USD',
     currencySymbol = '$',
+    selectedFilters = {},
     t,
 }) => {
+    // Check if quick filter is currently active in state
+    const isQuickFilterActive = (qf) => {
+        if (qf.id === 'all') {
+            const hasActive = Boolean(
+                searchTerm ||
+                locationFilter ||
+                (selectedFilters && Object.values(selectedFilters).some((arr) => Array.isArray(arr) && arr.length > 0))
+            );
+            return !hasActive;
+        }
+        if (qf.category && selectedFilters && selectedFilters[qf.category]) {
+            return selectedFilters[qf.category].includes(qf.value);
+        }
+        return false;
+    };
+
     // Quick filter presets for instant discovery
     const quickFilters = [
         { id: 'all', label: 'All Jobs', icon: FaFire, category: null, value: null },
@@ -170,13 +187,18 @@ const JobSearchBar = ({
                     <div className="flex items-center gap-1.5 flex-nowrap">
                         {quickFilters.map((qf) => {
                             const Icon = qf.icon;
+                            const isActive = isQuickFilterActive(qf);
                             return (
                                 <button
                                     key={qf.id}
                                     type="button"
                                     onClick={() => handleQuickFilterClick(qf)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent transition-all duration-150 whitespace-nowrap active:scale-95">
-                                    <Icon className="w-3 h-3 text-slate-400 group-hover:text-blue-600" />
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap active:scale-95 ${
+                                        isActive
+                                            ? 'bg-blue-600 text-white shadow-xs border border-blue-600'
+                                            : 'text-slate-600 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent'
+                                    }`}>
+                                    <Icon className={`w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600'}`} />
                                     <span>{qf.label}</span>
                                 </button>
                             );

@@ -146,8 +146,8 @@ const JobFilters = ({
     };
 
     return (
-        <aside className={`lg:w-72 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sticky top-24 shadow-sm hover:shadow-md transition-all duration-200 max-h-[calc(100vh-7rem)] flex flex-col">
+        <aside className={`lg:w-72 xl:w-80 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 sticky top-24 shadow-sm hover:shadow-md transition-all duration-200 max-h-[calc(100vh-7rem)] flex flex-col">
                 {/* Filter Card Header */}
                 <div className="flex-shrink-0 flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">

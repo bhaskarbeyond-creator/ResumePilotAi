@@ -138,6 +138,28 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, t
         };
     };
 
+    // Deterministic palette generator for company monogram avatars
+    const getCompanyPalette = (companyName) => {
+        const palettes = [
+            { bg: 'from-violet-600 to-indigo-700', text: 'text-white', ring: 'ring-violet-200' },
+            { bg: 'from-blue-600 to-cyan-600', text: 'text-white', ring: 'ring-blue-200' },
+            { bg: 'from-emerald-600 to-teal-700', text: 'text-white', ring: 'ring-emerald-200' },
+            { bg: 'from-rose-500 to-pink-600', text: 'text-white', ring: 'ring-rose-200' },
+            { bg: 'from-amber-500 to-orange-600', text: 'text-white', ring: 'ring-amber-200' },
+            { bg: 'from-indigo-600 to-purple-700', text: 'text-white', ring: 'ring-indigo-200' },
+            { bg: 'from-teal-600 to-emerald-700', text: 'text-white', ring: 'ring-teal-200' },
+            { bg: 'from-slate-700 to-slate-900', text: 'text-white', ring: 'ring-slate-300' },
+        ];
+        if (!companyName) return palettes[0];
+        let hash = 0;
+        for (let i = 0; i < companyName.length; i++) {
+            hash = (hash << 5) - hash + companyName.charCodeAt(i);
+            hash |= 0;
+        }
+        const index = Math.abs(hash) % palettes.length;
+        return palettes[index];
+    };
+
     // Style helper for work mode
     const getWorkModeBadgeStyle = (mode) => {
         const lower = String(mode || '').toLowerCase();
@@ -165,15 +187,17 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, t
               .slice(0, 2)
         : 'CO';
 
+    const companyPalette = getCompanyPalette(job.company);
+
     return (
-        <article className="group relative bg-white border border-slate-200/80 hover:border-blue-300/90 rounded-2xl p-5 sm:p-6 shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        <article className="group relative bg-white border border-slate-200/80 hover:border-blue-400 rounded-2xl p-5 sm:p-6 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
             {/* Top Micro Gradient Bar on Hover */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
             <div className="flex items-start justify-between gap-4 mb-3.5">
                 <div className="flex items-start gap-4 flex-1 min-w-0">
                     {/* Company Logo or Monogram */}
-                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/90 shadow-2xs flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:border-blue-200 transition-colors">
+                    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/90 shadow-2xs flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:border-blue-300 transition-colors">
                         {sanitizeImageUrl(job.companyImage) && !imageError ? (
                             <img
                                 src={sanitizeImageUrl(job.companyImage)}
@@ -183,8 +207,8 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, t
                                 onLoad={() => setImageError(false)}
                             />
                         ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 font-extrabold text-base flex items-center justify-center tracking-wider">
-                                {companyMonogram || <FaBuilding className="w-5 h-5 text-blue-600" />}
+                            <div className={`w-full h-full bg-gradient-to-br ${companyPalette.bg} ${companyPalette.text} font-extrabold text-base flex items-center justify-center tracking-wider shadow-inner`}>
+                                {companyMonogram || <FaBuilding className="w-5 h-5 text-white" />}
                             </div>
                         )}
                     </div>
@@ -251,7 +275,10 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, t
                 {/* Badges Strip */}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                     {job.workMode && (
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${getWorkModeBadgeStyle(job.workMode)}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${getWorkModeBadgeStyle(job.workMode)}`}>
+                            {String(job.workMode).toLowerCase().includes('remote') && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            )}
                             {job.workMode}
                         </span>
                     )}
@@ -318,13 +345,13 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, t
                     <button
                         onClick={() => onViewDetails(job)}
                         type="button"
-                        className="border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-50 px-3.5 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center space-x-1.5 text-sm">
-                        <FaEye className="w-3.5 h-3.5 text-slate-400" />
+                        className="border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-50 px-4 py-2 rounded-xl font-semibold transition-all duration-200 flex items-center space-x-1.5 text-sm active:scale-95 group/btn">
+                        <FaEye className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-blue-600 transition-colors" />
                         <span>{t('JobsUpdate.JobCard2.buttons.viewDetails', 'View Details')}</span>
                     </button>
                 </div>
 
-                <div className="text-[11px] text-slate-600 font-medium bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 self-start sm:self-auto">
+                <div className="text-[11px] text-slate-500 font-medium bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/60 self-start sm:self-auto">
                     {t('JobsUpdate.JobCard2.jobInfo.posted', 'Posted {{postedDate}}', { postedDate: job.postedDate })}
                 </div>
             </div>
