@@ -11,12 +11,12 @@ test('1. AchievementsStep Card UX — Component Structure & Safety Invariants', 
     assert.ok(fileContent.includes('onNavigate'), 'Must accept onNavigate prop');
     assert.ok(fileContent.includes('Honors, Awards & Key Achievements'), 'Must declare Honors, Awards & Key Achievements title');
 
-    // 2. Must mount AiRecommendationModal and trigger button
-    assert.ok(fileContent.includes('AiRecommendationModal'), 'Must mount AiRecommendationModal');
-    assert.ok(fileContent.includes('handleRecommendAiAchievements'), 'Must wire handleRecommendAiAchievements');
-    assert.ok(fileContent.includes('🪄 Auto-Recommend (AI)'), 'Must render Auto-Recommend (AI) button');
+    // 2. Zero-Clutter Invariant: Auto-Recommend (AI) modal removed per user requirement
+    assert.doesNotMatch(fileContent, /AiRecommendationModal/, 'Must not mount AiRecommendationModal');
+    assert.doesNotMatch(fileContent, /handleRecommendAiAchievements/, 'Must not have handleRecommendAiAchievements');
+    assert.doesNotMatch(fileContent, /🪄 Auto-Recommend/, 'Must not render Auto-Recommend (AI) button');
 
-    // 3. Must have recognition signals scanning
+    // 3. Must have recognition signals scanning from candidate experience
     assert.ok(fileContent.includes('findAchievementSignals'), 'Must compute recognition signals');
     assert.ok(fileContent.includes('Scan Experience'), 'Must offer Scan Experience trigger');
 
@@ -39,7 +39,7 @@ test('1. AchievementsStep Card UX — Component Structure & Safety Invariants', 
     assert.ok(fileContent.includes('Date Received'), 'Must contain Date Received label');
     assert.ok(fileContent.includes('Awarding Organization or Issuer'), 'Must contain Awarding Organization or Issuer');
 
-    // 7. Must contain AI Polish & Quick Starter Chips
+    // 7. Must contain in-card AI Polish & Quick Starter Chips
     assert.ok(fileContent.includes('polishAchievementDescription'), 'Must wire polishAchievementDescription');
     assert.ok(fileContent.includes('🪄 Enhance with AI'), 'Must render Enhance with AI button');
     assert.ok(fileContent.includes('SUGGESTION_CHIPS'), 'Must provide SUGGESTION_CHIPS');
@@ -54,13 +54,12 @@ test('1. AchievementsStep Card UX — Component Structure & Safety Invariants', 
     assert.ok(fileContent.includes('selectedTypeFilter'), 'Must support category filtering');
 });
 
-test('2. AchievementsStep Card UX — Role-Based Curated Ideas Engine', () => {
+test('2. AchievementsStep Card UX — Recognition Signals & Category Types Integrity', () => {
     const fileContent = fs.readFileSync(path.resolve('src/components/BuildResume/steps/AchievementsStep.jsx'), 'utf-8');
 
-    // Must define curated ideas covering diverse domains
-    assert.ok(fileContent.includes('GET_CURATED_ACHIEVEMENT_IDEAS'), 'Must define GET_CURATED_ACHIEVEMENT_IDEAS');
-    assert.ok(fileContent.includes('DAISY Award'), 'Must include DAISY Award for nursing');
-    assert.ok(fileContent.includes("President's Club"), 'Must include Presidents Club for sales');
-    assert.ok(fileContent.includes('Hackathon'), 'Must include Hackathon for engineering');
-    assert.ok(fileContent.includes('Employee of the Year'), 'Must include Employee of the Year for universal fallback');
+    // Must define 5 distinct recognition types and quick starters
+    assert.ok(fileContent.includes('ACHIEVEMENT_TYPES'), 'Must define ACHIEVEMENT_TYPES');
+    assert.ok(fileContent.includes('SUGGESTION_CHIPS'), 'Must define SUGGESTION_CHIPS');
+    assert.ok(fileContent.includes('RECOGNITION_SIGNAL'), 'Must define RECOGNITION_SIGNAL regex');
+    assert.ok(fileContent.includes('findAchievementSignals'), 'Must define findAchievementSignals');
 });

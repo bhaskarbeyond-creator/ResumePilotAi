@@ -21,7 +21,6 @@ import {
 import StepShell from '../components/StepShell.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import Field from '../components/Field.jsx';
-import { AiRecommendationModal } from '../../Form/AiRecommendationModal.jsx';
 import { duplicateResumeItem, moveResumeItem } from '../../../utils/resumeData';
 import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
@@ -41,87 +40,6 @@ export const SUGGESTION_CHIPS = [
     { label: '💡 Innovation & Patent', text: 'Honored with company-wide Innovation Award for conceiving and deploying automated workflow.' },
     { label: '🎓 Dean\'s Honor Roll', text: 'Maintained top academic standing on Dean’s Honor List across consecutive semesters.' }
 ];
-
-/**
- * Curated Archetype Achievement Recommendations by Role Domain
- * Guarantees instantaneous, domain-relevant recommendations even offline.
- */
-export const GET_CURATED_ACHIEVEMENT_IDEAS = (role = '', resumeData = {}, candidateContext = {}) => {
-    const target = String(role || candidateContext?.target?.role || resumeData?.targetRole || resumeData?.occupation || '').toLowerCase();
-    const workTitles = (resumeData?.employments || resumeData?.workExperience || resumeData?.workExperiences || []).map(e => String(e?.jobTitle || '').toLowerCase()).join(' ');
-    const skills = (resumeData?.skills || []).map(s => String(typeof s === 'object' ? (s?.skillName || s?.name) : s).toLowerCase()).join(' ');
-    const combinedSignals = `${target} ${workTitles} ${skills}`;
-
-    // 1. Healthcare, Medical, Clinical, Nursing
-    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|clinician|nurse|rn|lpn|charge nurse|dentist|hospital|clinic|patient care)\b/.test(combinedSignals)) {
-        return [
-            { name: 'The DAISY Award for Extraordinary Nurses / Clinicians', awarder: 'The DAISY Foundation / Healthcare System', category: 'mandatory', achievementType: 'Award', description: 'Honored for exceptional clinical skill, compassionate patient care, and leadership under pressure.' },
-            { name: 'Chief Resident Distinction & Leadership Honor', awarder: 'Department of Medicine / Hospital Board', category: 'mandatory', achievementType: 'Honor', description: 'Selected by department chairs to lead clinical rotations and oversee junior resident mentoring.' },
-            { name: 'Clinical Excellence & Patient Safety Commendation', awarder: 'Hospital Quality & Safety Committee', category: 'recommended', achievementType: 'Award', description: 'Recognized for achieving zero protocol violations and highest patient satisfaction ratings.' },
-            { name: 'Outstanding Medical Research Presentation', awarder: 'Medical Association Annual Conference', category: 'recommended', achievementType: 'Academic', description: 'Presented peer-reviewed clinical research findings selected as top presentation in specialty.' },
-            { name: 'Hospital Healthcare Hero / Service Milestone', awarder: 'Regional Health Network', category: 'recommended', achievementType: 'Milestone', description: 'Awarded for extraordinary dedication during critical unit capacity and emergency response.' }
-        ];
-    }
-
-    // 2. Legal, Compliance, Regulatory
-    if (/\b(?:lawyer|attorney|counsel|solicitor|barrister|paralegal|litigation|judge|compliance officer|legal)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Outstanding Pro Bono Service Award', awarder: 'State Bar Association', category: 'mandatory', achievementType: 'Award', description: 'Honored for contributing 100+ hours of dedicated pro bono legal representation to underserved communities.' },
-            { name: 'Excellence in Legal Briefing & Trial Preparation', awarder: 'Corporate Legal Department / Law Firm', category: 'mandatory', achievementType: 'Honor', description: 'Recognized for crafting persuasive appellate briefs leading to successful summary judgment.' },
-            { name: 'National Moot Court Competition Finalist', awarder: 'National Law School Association', category: 'recommended', achievementType: 'Competition', description: 'Selected as top finalist among 64 competing teams for oral advocacy and legal argumentation.' },
-            { name: 'Compliance & Governance Leadership Commendation', awarder: 'Ethics & Compliance Board', category: 'recommended', achievementType: 'Milestone', description: 'Led successful enterprise compliance audit with 100% adherence to regulatory standards.' }
-        ];
-    }
-
-    // 3. Finance, Banking, Accounting, Audit
-    if (/\b(?:accountant|auditor|chartered accountant|cpa|finance|financial analyst|controller|bookkeeper|tax|banking|investment|equity)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Financial Excellence & Cost Optimization Honor', awarder: 'Chief Financial Officer / Executive Committee', category: 'mandatory', achievementType: 'Award', description: 'Identified $1.8M in operational cost savings through automated financial variance modeling.' },
-            { name: 'Audit Leadership & Quality Commendation', awarder: 'Internal Audit Oversight Committee', category: 'mandatory', achievementType: 'Honor', description: 'Delivered comprehensive SOX compliance audit with zero audit findings across 4 regional branches.' },
-            { name: 'Corporate Deal of the Year Recognition', awarder: 'Investment Banking Group', category: 'recommended', achievementType: 'Milestone', description: 'Played pivotal quantitative modeling role in executing $45M cross-border M&A transaction.' },
-            { name: 'CFA Institute University Research Challenge Winner', awarder: 'CFA Institute Regional Society', category: 'recommended', achievementType: 'Academic', description: 'Awarded 1st place for equity research valuation and investment recommendation thesis.' }
-        ];
-    }
-
-    // 4. Sales, Business Development, Account Management
-    if (/\b(?:sales|account executive|business development|bdr|sdr|account manager|territory manager|quota)\b/.test(combinedSignals)) {
-        return [
-            { name: "President's Club / Circle of Excellence", awarder: 'Executive Leadership / Corporate Sales', category: 'mandatory', achievementType: 'Award', description: 'Attained 142% of annual sales quota; ranked in top 3% of global sales representatives.' },
-            { name: 'Top Sales Revenue Producer of the Year', awarder: 'Commercial Sales Division', category: 'mandatory', achievementType: 'Award', description: 'Generated $3.2M in Net New ARR; closed largest enterprise software contract in company history.' },
-            { name: 'Quarterly Sales MVP & Pipeline Accelerator', awarder: 'Sales Leadership Council', category: 'recommended', achievementType: 'Honor', description: 'Achieved fastest deal velocity from qualification to closed-won status across Q3.' },
-            { name: 'Enterprise Client Retention Milestone', awarder: 'Customer Success & Account Team', category: 'recommended', achievementType: 'Milestone', description: 'Maintained 98% gross revenue retention across 25 strategic enterprise accounts.' }
-        ];
-    }
-
-    // 5. Marketing, Brand, Growth, Creative
-    if (/\b(?:marketing|brand|growth|seo|content writer|copywriter|social media|digital marketing|campaign)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Campaign of the Year / Brand Excellence Award', awarder: 'Industry Marketing Association', category: 'mandatory', achievementType: 'Award', description: 'Conceived omnichannel product launch generating 250K impressions and 34% increase in inbound leads.' },
-            { name: 'Growth Acceleration Milestone (10x Traffic)', awarder: 'Growth Marketing Leadership', category: 'mandatory', achievementType: 'Milestone', description: 'Scaled monthly organic search traffic from 50K to 500K unique visitors in 12 months.' },
-            { name: 'Best B2B Content Marketing Initiative', awarder: 'Digital Marketing Summit', category: 'recommended', achievementType: 'Honor', description: 'Author of flagship industry benchmark report downloaded by 15,000+ enterprise decision makers.' },
-            { name: 'Creative Design & Visual Showcase Winner', awarder: 'Regional Design Council', category: 'recommended', achievementType: 'Competition', description: 'Awarded gold distinction for comprehensive brand redesign and interactive digital experience.' }
-        ];
-    }
-
-    // 6. Technology, Software, Web, Mobile, Cloud, DevOps, AI
-    if (/\b(?:software|developer|frontend|backend|full stack|web|devops|cloud|mobile|ios|android|qa|sre|ai|machine learning|data)\b/.test(combinedSignals)) {
-        return [
-            { name: '1st Place Winner — Global AI Hackathon', awarder: 'Tech Community / Google Cloud / AWS', category: 'mandatory', achievementType: 'Competition', description: 'Built an autonomous multi-agent pipeline in 48 hours, winning 1st place out of 120 global teams.' },
-            { name: 'Spot Award / Engineering Excellence Distinction', awarder: 'VP of Engineering / Corporate Leadership', category: 'mandatory', achievementType: 'Award', description: 'Honored for leading zero-downtime database migration of 40M records with 99.99% availability.' },
-            { name: 'Patent Granted / Invention Disclosure Recognition', awarder: 'US Patent & Trademark Office / Enterprise IP Team', category: 'recommended', achievementType: 'Honor', description: 'Co-inventor on distributed real-time data synchronization system patent.' },
-            { name: 'Open Source Community Contributor Distinction', awarder: 'Open Source Foundation / GitHub Organization', category: 'recommended', achievementType: 'Milestone', description: 'Authored core performance optimization PR merged into leading open-source framework with 20K+ stars.' },
-            { name: 'Employee of the Quarter / System Resilience Honor', awarder: 'Engineering Leadership Council', category: 'recommended', achievementType: 'Award', description: 'Architected disaster recovery failover reducing mean-time-to-recovery (MTTR) from 45m to 2m.' }
-        ];
-    }
-
-    // 7. Universal Professional Fallback
-    return [
-        { name: 'Employee of the Year / Annual Performance Award', awarder: 'Corporate Leadership / Board of Directors', category: 'mandatory', achievementType: 'Award', description: 'Awarded highest organizational accolade for outstanding dedication, cross-functional impact, and team leadership.' },
-        { name: 'Dean’s Honor List / Academic Summa Cum Laude', awarder: 'University Academic Senate', category: 'mandatory', achievementType: 'Academic', description: 'Maintained top 2% academic standing across all semesters with cumulative 3.9+ GPA.' },
-        { name: 'Process Efficiency & Operational Excellence Milestone', awarder: 'Operations Leadership Committee', category: 'recommended', achievementType: 'Milestone', description: 'Redesigned core business workflow, reducing delivery turnaround time by 35% across department.' },
-        { name: 'Leadership & Mentorship Commendation', awarder: 'People & Culture Committee', category: 'recommended', achievementType: 'Honor', description: 'Recognized for successfully onboarding and mentoring 12 junior team members with 100% retention.' }
-    ];
-};
 
 const RECOGNITION_SIGNAL = /\b(?:award(?:ed|s)?|honou?r(?:s|ed)?|dean'?s\s+list|won|winner|winning|first\s+place|top\s+performer|employee\s+of\s+|certificate\s+of\s+(?:excellence|appreciation)|recognition|recognised|recognized|commendation|promoted|published|publication|patent(?:ed)?|scholarship|distinction|outstanding)\b/iu;
 
@@ -175,17 +93,9 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTypeFilter, setSelectedTypeFilter] = useState('all');
 
-    // AI Modal and Feedback States
-    const [isAiGenerating, setIsAiGenerating] = useState(false);
+    // AI Polishing and Feedback States
     const [isPolishingId, setIsPolishingId] = useState(null);
     const [toastState, setToastState] = useState(null);
-    const [aiModalState, setAiModalState] = useState({
-        isOpen: false,
-        title: '',
-        type: 'achievements',
-        items: [],
-        onApply: () => {},
-    });
 
     const signals = useMemo(() => findAchievementSignals(resumeData), [resumeData]);
 
@@ -340,100 +250,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
     };
 
-    /**
-     * AI Recommendations Popup Handler
-     * Opens AiRecommendationModal with curated, role-tailored awards & honors.
-     */
-    const handleRecommendAiAchievements = async () => {
-        const effectiveRole = String(
-            candidateContext?.target?.role ||
-            resumeData.targetRole ||
-            resumeData.occupation ||
-            resumeData.workExperience?.[0]?.jobTitle ||
-            resumeData.employments?.[0]?.jobTitle ||
-            ''
-        ).trim();
 
-        setIsAiGenerating(true);
-        try {
-            const existingTitles = new Set(achievements.map(a => String(a.title || a.name || '').trim().toLowerCase()));
-            let curatedList = GET_CURATED_ACHIEVEMENT_IDEAS(effectiveRole, resumeData, candidateContext);
-
-            try {
-                const expDetails = (resumeData.workExperience || resumeData.employments || [])
-                    .map(w => `${w.jobTitle || 'Role'} at ${w.company || w.employer || ''}`)
-                    .filter(Boolean)
-                    .join('; ');
-                const data = await generateUserAiContent('generate-achievements', {
-                    targetRole: effectiveRole,
-                    workHistory: expDetails,
-                    language: resumeData.language || 'en',
-                    targetJobDescription: resumeData.targetJobDescription || ''
-                });
-
-                const candidates = Array.isArray(data?.achievements)
-                    ? data.achievements
-                    : (Array.isArray(data?.data?.achievements)
-                        ? data.data.achievements
-                        : (Array.isArray(data?.awards)
-                            ? data.awards
-                            : (Array.isArray(data?.suggestions) ? data.suggestions : null)));
-
-                if (candidates && candidates.length > 0) {
-                    curatedList = candidates.map((c, idx) => ({
-                        name: typeof c === 'string' ? c : c?.title || c?.name,
-                        awarder: typeof c === 'object' ? (c?.awarder || c?.issuer || 'Recognized Organization') : 'Recognized Organization',
-                        category: (typeof c === 'object' && c?.category) ? c.category : (idx < 2 ? 'mandatory' : 'recommended'),
-                        achievementType: typeof c === 'object' ? (c?.achievementType || 'Award') : 'Award',
-                        description: typeof c === 'object' ? (c?.description || '') : ''
-                    })).filter(c => Boolean(c.name));
-                }
-            } catch {
-                // Curated fallback
-            }
-
-            const unadded = curatedList.filter(item => !existingTitles.has(String(item.name || item.title || '').trim().toLowerCase()));
-
-            if (!unadded.length) {
-                triggerToast('All recommended honors for this role are already in your resume!', 'info');
-                return;
-            }
-
-            const itemsToReview = unadded.map((a, idx) => ({
-                title: a.name || a.title,
-                name: a.name || a.title,
-                issuer: a.awarder || a.issuer || 'Awarding Organization',
-                awarder: a.awarder || a.issuer || 'Awarding Organization',
-                category: a.category || (idx < 2 ? 'mandatory' : 'recommended'),
-                achievementType: a.achievementType || 'Award',
-                description: a.description || ''
-            }));
-
-            setAiModalState({
-                isOpen: true,
-                title: `Recommended Honors & Awards for ${effectiveRole || 'Your Role'}`,
-                type: 'achievements',
-                items: itemsToReview,
-                onApply: (selectedItems) => {
-                    if (selectedItems && selectedItems.length > 0) {
-                        const newEntries = selectedItems.map(item => createNewAchievement({
-                            title: item.title || item.name,
-                            awarder: item.awarder || item.issuer,
-                            issuer: item.awarder || item.issuer,
-                            achievementType: item.achievementType || 'Award',
-                            description: item.description || ''
-                        }));
-                        setAchievements(prev => [...prev, ...newEntries]);
-                        triggerToast(`Added ${selectedItems.length} achievement(s)!`);
-                    }
-                }
-            });
-        } catch {
-            triggerToast('Could not load suggestions right now.', 'error');
-        } finally {
-            setIsAiGenerating(false);
-        }
-    };
 
     const hasAchievements = achievements.some(a => String(a?.title || a?.name || '').trim() !== '');
 
@@ -485,16 +302,6 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 </div>
             )}
 
-            {/* AI Recommendations Review Popup Modal */}
-            <AiRecommendationModal
-                isOpen={aiModalState.isOpen}
-                onClose={() => setAiModalState(prev => ({ ...prev, isOpen: false }))}
-                title={aiModalState.title}
-                type={aiModalState.type}
-                items={aiModalState.items}
-                onApply={aiModalState.onApply}
-            />
-
             {achievements.length === 0 ? (
                 <div className="space-y-4">
                     <EmptyState
@@ -504,12 +311,6 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                             label: 'Add Award / Achievement',
                             icon: <MdAdd className="w-4 h-4" />,
                             onClick: () => addAchievement(),
-                        }}
-                        secondaryAction={{
-                            label: isAiGenerating ? 'Generating Suggestions...' : '🪄 Auto-Recommend Achievements (AI)',
-                            icon: <MdAutoAwesome className="w-4 h-4 text-indigo-500" />,
-                            onClick: handleRecommendAiAchievements,
-                            disabled: isAiGenerating,
                         }}
                     />
 
@@ -579,21 +380,10 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                             <button
                                 type="button"
-                                onClick={handleRecommendAiAchievements}
-                                disabled={isAiGenerating}
-                                className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600 hover:from-amber-600 hover:via-indigo-700 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all hover:shadow-md disabled:opacity-50 cursor-pointer"
-                                title="Auto-recommend awards & honors for your target role"
-                            >
-                                <MdAutoAwesome className="w-4 h-4" />
-                                <span>{isAiGenerating ? 'Analyzing...' : '🪄 Auto-Recommend (AI)'}</span>
-                            </button>
-
-                            <button
-                                type="button"
                                 onClick={() => addAchievement()}
-                                className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-300 hover:border-indigo-300 text-slate-800 hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                                className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                             >
-                                <MdAdd className="w-4 h-4 text-indigo-600" />
+                                <MdAdd className="w-4 h-4 text-white" />
                                 <span>Add Award / Achievement</span>
                             </button>
                         </div>
