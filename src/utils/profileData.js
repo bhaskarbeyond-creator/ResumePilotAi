@@ -1,4 +1,4 @@
-const clean = (value, max) => String(value || '').replace(/[^\P{Cc}\r\n\t]/gu, ' ').trim().slice(0, max);
+const clean = (value, max) => String(value ?? '').replace(/[^\P{Cc}\r\n\t]/gu, ' ').trim().slice(0, max);
 const list = (value, max) => Array.isArray(value) ? value.slice(0, max) : [];
 
 export function normalizeProfileData(input = {}) {
@@ -12,7 +12,7 @@ export function normalizeProfileData(input = {}) {
   result.skills = list(profile.skills, 100).map(item => normalizeEntry(item, ['name','level']));
   result.languages = list(profile.languages, 30).map(item => normalizeEntry(item, ['name','level']));
   result.hobbies = list(profile.hobbies || profile.interests, 50).map(item => typeof item === 'string' ? clean(item, 200) : (item && typeof item === 'object' ? clean(item.name || item.hobby || item.title || '', 200) : '')).filter(Boolean);
-  result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date','url','link']));
+  result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date','url','link','endDate','credentialId','certType','isLicense']));
   result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','role','technologies','projectType','link','url','description']));
   result.achievements = list(profile.achievements || profile.awards, 50).map(item => normalizeEntry(item, ['title','name','issuer','awarder','date','description']));
   result.references = list(profile.references, 30).map(item => normalizeEntry(item, ['name','position','company','email','phone','reference','description']));

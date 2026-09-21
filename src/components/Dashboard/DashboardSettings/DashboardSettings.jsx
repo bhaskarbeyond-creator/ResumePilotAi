@@ -7,12 +7,13 @@ import { getProfileOfUser, getAccountInfo, saveUserPreferences, changePassword, 
 import { saveProfile } from '../../../services/profilePersistence';
 import { generateUserAiContent, cleanSkillName } from '../../../services/aiService';
 import { FaUser, FaCog, FaCamera, FaTrash, FaUserCircle, FaKey, FaCalendarAlt, FaEnvelope, FaCreditCard, FaUpload, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaGraduationCap, FaTools, FaGlobe, FaPlus, FaCheck, FaShieldAlt, FaDesktop, FaDownload, FaCertificate, FaProjectDiagram, FaMagic, FaLinkedin, FaGithub, FaLink, FaSyncAlt, FaExternalLinkAlt, FaUnlink, FaLock, FaEye, FaEyeSlash, FaCrown, FaMobileAlt, FaQrcode, FaCopy, FaPrint, FaHistory, FaCrop, FaThLarge, FaTags, FaTimes, FaSearch, FaBolt, FaChevronDown, FaChevronUp, FaRocket, FaBuilding, FaCode } from 'react-icons/fa';
-import { MdAutoAwesome, MdLaunch, MdSearch, MdClose } from 'react-icons/md';
+import { MdAutoAwesome, MdLaunch, MdSearch, MdClose, MdContentCopy, MdDeleteOutline, MdAdd } from 'react-icons/md';
 import fire from '../../../conf/fire';
 import MonthYearPicker from '../../Form/MonthYearPicker';
 import AiRecommendationModal from '../../Form/AiRecommendationModal';
 import BulletPointsEditor, { getRolePlaceholder } from '../../Form/BulletPointsEditor';
 import AutocompleteInputField from '../../BuildResume/steps/components/AutocompleteInputField';
+import Field from '../../BuildResume/components/Field';
 import ImageCropModal from './ImageCropModal';
 import SubscriptionModal from './SubscriptionModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
@@ -20,6 +21,7 @@ import { normalizeProfileData, normalizeProfileImage } from '../../../utils/prof
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
 import { PROJECT_TYPES, GET_CURATED_PROJECT_IDEAS } from '../../BuildResume/steps/ProjectsStep';
+import { CERT_TYPES, GET_CURATED_CERTIFICATION_IDEAS } from '../../BuildResume/steps/CertificationsStep';
 
 const normalizeProfileForSave = value => {
     const authEmail = fire.auth().currentUser?.email;
@@ -398,6 +400,8 @@ function DashboardSettings(_props) {
     });
     const [projectSearchQuery, setProjectSearchQuery] = useState('');
     const [projectTypeFilter, setProjectTypeFilter] = useState('all');
+    const [certSearchQuery, setCertSearchQuery] = useState('');
+    const [certTypeFilter, setCertTypeFilter] = useState('all');
 
     const [accountSettings, setAccountSettings] = useState({
         email: '',
@@ -473,6 +477,17 @@ function DashboardSettings(_props) {
         revision: 0,
     });
 
+    const candidateContext = React.useMemo(() => ({
+        target: { role: profile.occupation || profile.workExperiences?.[0]?.jobTitle || '' },
+        facts: {
+            headline: profile.occupation || '',
+            roles: profile.workExperiences || [],
+            education: profile.education || [],
+            skills: (profile.skills || []).map(s => typeof s === 'string' ? s : s?.name || s?.skillName || ''),
+            certifications: profile.certifications || []
+        }
+    }), [profile.occupation, profile.workExperiences, profile.education, profile.skills, profile.certifications]);
+
     const [isDragging, setIsDragging] = useState(false);
 
     // Toast Notification helper
@@ -530,9 +545,19 @@ function DashboardSettings(_props) {
     const normalizeCertifications = (arr) => {
         if (!Array.isArray(arr)) return [];
         return arr.map((item, idx) => {
-            if (typeof item === 'string') return { id: `cert_${idx}_${Date.now()}`, title: item, issuer: '', date: '' };
-            if (item && typeof item === 'object') return { id: item.id || `cert_${idx}`, title: item.title || item.name || '', issuer: item.issuer || item.authority || '', date: item.date || item.year || '' };
-            return { id: `cert_${idx}`, title: String(item || ''), issuer: '', date: '' };
+            if (typeof item === 'string') return { id: `cert_${idx}_${Date.now()}`, title: item, issuer: '', date: '', endDate: '', credentialId: '', url: '', certType: 'Certification', isLicense: false };
+            if (item && typeof item === 'object') return {
+                id: item.id || `cert_${idx}`,
+                title: item.title || item.name || '',
+                issuer: item.issuer || item.authority || '',
+                date: item.date || item.year || '',
+                endDate: item.endDate || item.expirationDate || '',
+                credentialId: item.credentialId || item.idNumber || item.licenseNumber || '',
+                url: item.url || item.verificationUrl || item.link || '',
+                certType: item.certType || (item.isLicense ? 'License' : 'Certification'),
+                isLicense: Boolean(item.isLicense || item.certType === 'License'),
+            };
+            return { id: `cert_${idx}`, title: String(item || ''), issuer: '', date: '', endDate: '', credentialId: '', url: '', certType: 'Certification', isLicense: false };
         });
     };
 
@@ -1339,7 +1364,7 @@ function DashboardSettings(_props) {
                 }
             });
 
-            const certsList = Array.isArray(data?.certifications)
+            let certsList = Array.isArray(data?.certifications)
                 ? data.certifications
                 : (Array.isArray(data?.data?.certifications)
                     ? data.data.certifications
@@ -1348,6 +1373,18 @@ function DashboardSettings(_props) {
                         : (Array.isArray(data?.suggestions)
                             ? data.suggestions
                             : (Array.isArray(data) ? data : []))));
+
+            if (!certsList.length) {
+                const fallbackIdeas = GET_CURATED_CERTIFICATION_IDEAS(effectiveRole, {
+                    occupation: profile.occupation,
+                    targetRole: effectiveRole,
+                    employments: profile.workExperiences,
+                    skills: profile.skills,
+                });
+                if (fallbackIdeas && fallbackIdeas.length > 0) {
+                    certsList = fallbackIdeas;
+                }
+            }
 
             if (!certsList.length) {
                 const note = data?.note || 'AI credential suggestions are currently unavailable. Please verify your role and try again.';
@@ -1364,7 +1401,9 @@ function DashboardSettings(_props) {
                 const title = typeof c === 'string' ? c : (c?.title || c?.name || '');
                 const issuer = typeof c === 'object' ? (c?.issuer || 'Accredited Organization') : 'Accredited Organization';
                 const category = (typeof c === 'object' && c?.category && ['mandatory', 'recommended'].includes(c.category)) ? c.category : (idx < 3 ? 'mandatory' : 'recommended');
-                return { title, issuer, category, name: title };
+                const certType = typeof c === 'object' ? (c?.certType || (c?.isLicense ? 'License' : 'Certification')) : 'Certification';
+                const isLicense = typeof c === 'object' ? Boolean(c?.isLicense || c?.certType === 'License') : false;
+                return { title, issuer, category, name: title, certType, isLicense };
             }).filter(c => c.title);
 
             if (!itemsToReview.length) {
@@ -1382,7 +1421,12 @@ function DashboardSettings(_props) {
                         id: `cert_ai_${Date.now()}_${i}`,
                         title: c.title || c.name,
                         issuer: c.issuer || 'Accredited Organization',
-                        date: ''
+                        date: '',
+                        endDate: '',
+                        credentialId: '',
+                        url: '',
+                        certType: c.certType || (c.isLicense ? 'License' : 'Certification'),
+                        isLicense: Boolean(c.isLicense || c.certType === 'License'),
                     }));
                     setProfile(prev => ({
                         ...prev,
@@ -1394,6 +1438,55 @@ function DashboardSettings(_props) {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI Certifications Recommendation Error:', err);
+
+            // Gracefully fall back to curated ideas if offline or API error
+            const fallbackIdeas = GET_CURATED_CERTIFICATION_IDEAS(effectiveRole, {
+                occupation: profile.occupation,
+                targetRole: effectiveRole,
+                employments: profile.workExperiences,
+                skills: profile.skills,
+            });
+            const unadded = (fallbackIdeas || []).filter(c => {
+                const title = c.name || c.title;
+                return title && !existingCerts.some(e => e.toLowerCase() === title.toLowerCase());
+            });
+
+            if (unadded.length > 0) {
+                const itemsToReview = unadded.map((c, idx) => ({
+                    title: c.name || c.title,
+                    name: c.name || c.title,
+                    issuer: c.issuer || 'Accredited Organization',
+                    category: c.category || (idx < 3 ? 'mandatory' : 'recommended'),
+                    certType: c.certType || (c.isLicense ? 'License' : 'Certification'),
+                    isLicense: Boolean(c.isLicense),
+                }));
+                setAiModalState({
+                    isOpen: true,
+                    title: `Review Industry Certifications for ${effectiveRole}`,
+                    type: 'certifications',
+                    items: itemsToReview,
+                    onApply: (approvedItems) => {
+                        const newCerts = approvedItems.map((c, i) => ({
+                            id: `cert_ai_${Date.now()}_${i}`,
+                            title: c.title || c.name,
+                            issuer: c.issuer || 'Accredited Organization',
+                            date: '',
+                            endDate: '',
+                            credentialId: '',
+                            url: '',
+                            certType: c.certType || (c.isLicense ? 'License' : 'Certification'),
+                            isLicense: Boolean(c.isLicense || c.certType === 'License'),
+                        }));
+                        setProfile(prev => ({
+                            ...prev,
+                            certifications: [...(prev.certifications || []), ...newCerts]
+                        }));
+                        triggerNotification(`Added ${approvedItems.length} credentials to your Master Profile!`);
+                    }
+                });
+                return;
+            }
+
             const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
                 ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
                 : (err?.message || 'Unable to generate certification recommendations.');
@@ -1497,14 +1590,43 @@ function DashboardSettings(_props) {
     const addCertification = () => {
         setProfile((prev) => ({
             ...prev,
-            certifications: [...prev.certifications, { id: `cert_${Date.now()}`, title: '', issuer: '', date: '' }]
+            certifications: [
+                ...(prev.certifications || []),
+                {
+                    id: `cert_${Date.now()}`,
+                    title: '',
+                    issuer: '',
+                    date: '',
+                    endDate: '',
+                    credentialId: '',
+                    url: '',
+                    certType: 'Certification',
+                    isLicense: false,
+                }
+            ]
         }));
+    };
+
+    const duplicateCertification = (index) => {
+        setProfile((prev) => {
+            const list = [...(prev.certifications || [])];
+            const item = list[index];
+            if (!item) return prev;
+            const duplicated = {
+                ...item,
+                id: `cert_${Date.now()}`,
+                title: item.title ? `${item.title} (Copy)` : '',
+            };
+            list.splice(index + 1, 0, duplicated);
+            return { ...prev, certifications: list };
+        });
     };
 
     const updateCertification = (index, field, value) => {
         const rawVal = (value && typeof value === 'object' && value.target !== undefined) ? value.target.value : value;
         setProfile((prev) => {
-            const updated = [...prev.certifications];
+            const updated = [...(prev.certifications || [])];
+            if (!updated[index]) return prev;
             updated[index] = { ...updated[index], [field]: rawVal };
             return { ...prev, certifications: updated };
         });
@@ -1513,7 +1635,7 @@ function DashboardSettings(_props) {
     const removeCertification = (index) => {
         setProfile((prev) => ({
             ...prev,
-            certifications: prev.certifications.filter((_, i) => i !== index)
+            certifications: (prev.certifications || []).filter((_, i) => i !== index)
         }));
     };
 
@@ -3381,111 +3503,369 @@ function DashboardSettings(_props) {
                         {/* Sub-Tab 6: Certifications & Licenses */}
                         {profileSubTab === 'certifications' && (
                             <div className="space-y-6">
+                                {/* Header / Action Toolbar */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional Certifications & Credentials</h3>
-                                        <p className="text-xs text-slate-500">Add only credentials you have earned, using the issuer, issue date, and credential link from your record.</p>
+                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Professional Certifications &amp; Credentials</h3>
+                                        <p className="text-xs text-slate-500">Industry credentials, verified licenses, and professional certifications you hold.</p>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                                    <div className="flex items-center gap-2">
                                         <button
                                             type="button"
                                             onClick={handleRecommendAiCertifications}
                                             disabled={isAiGenerating}
-                                            className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm">
-                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>Auto-Recommend Certifications (AI)</span>
+                                            className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all hover:shadow-md disabled:opacity-50 cursor-pointer"
+                                            title="Open AI Recommendations Popup for your target role"
+                                        >
+                                            <MdAutoAwesome className="w-4 h-4" />
+                                            <span>{isAiGenerating ? 'Analyzing...' : '🪄 Auto-Recommend (AI)'}</span>
                                         </button>
-                                        <button type="button" onClick={addCertification} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
-                                            <FaPlus className="w-3 h-3" /> Add Certification
+
+                                        <button
+                                            type="button"
+                                            onClick={addCertification}
+                                            className="h-9 px-3.5 rounded-xl bg-white hover:bg-indigo-50/50 border border-slate-300 hover:border-indigo-300 text-slate-800 hover:text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                                        >
+                                            <MdAdd className="w-4 h-4 text-indigo-600" />
+                                            <span>Add Credential</span>
                                         </button>
                                     </div>
                                 </div>
 
-                                {profile.certifications.length === 0 ? (
+                                {/* Toolbar Row 2: Live Search & Category Filter Pills (when > 1 credential) */}
+                                {(profile.certifications || []).length > 1 && (
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                                        {/* Live Search */}
+                                        <div className="relative flex-1 max-w-sm">
+                                            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                value={certSearchQuery}
+                                                onChange={(e) => setCertSearchQuery(e.target.value)}
+                                                placeholder="Search credentials, issuers, or IDs..."
+                                                className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                            />
+                                            {certSearchQuery && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCertSearchQuery('')}
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                                >
+                                                    <MdClose className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Category Filter Pills */}
+                                        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCertTypeFilter('all')}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                                                    certTypeFilter === 'all'
+                                                        ? 'bg-slate-800 text-white'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                All ({(profile.certifications || []).length})
+                                            </button>
+                                            {CERT_TYPES.map(t => {
+                                                const count = (profile.certifications || []).filter(c => (c.certType || (c.isLicense ? 'License' : 'Certification')) === t.id).length;
+                                                if (count === 0 && certTypeFilter !== t.id) return null;
+                                                return (
+                                                    <button
+                                                        key={t.id}
+                                                        type="button"
+                                                        onClick={() => setCertTypeFilter(t.id)}
+                                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                                                            certTypeFilter === t.id
+                                                                ? 'bg-indigo-600 text-white'
+                                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                        }`}
+                                                    >
+                                                        {t.label} ({count})
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Credentials Cards List */}
+                                {(profile.certifications || []).length === 0 ? (
                                     <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-3">
-                                        <p className="text-xs font-semibold text-slate-700">No certifications saved in Master Profile</p>
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                            <FaCertificate className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800 mb-0.5">No certifications saved in Master Profile</p>
+                                            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                                                Add accredited certifications, state/national licenses, registrations, or completed courses.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-2 pt-1">
                                             <button
                                                 type="button"
                                                 onClick={handleRecommendAiCertifications}
                                                 disabled={isAiGenerating}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
-                                                <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                                            >
+                                                <MdAutoAwesome className="w-3.5 h-3.5" />
                                                 <span>Auto-Recommend Certifications (AI)</span>
                                             </button>
-                                            <button type="button" onClick={addCertification} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold">
-                                                Add Certification
+                                            <button
+                                                type="button"
+                                                onClick={addCertification}
+                                                className="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                                            >
+                                                <MdAdd className="w-3.5 h-3.5 text-indigo-600" />
+                                                <span>Add Credential</span>
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
-                                    profile.certifications.map((cert, idx) => (
-                                         <div key={cert.id || idx} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                                             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 flex-1">
-                                                 <AutocompleteInputField
-                                                     hideLabel
-                                                     name={`cert_title_${idx}`}
-                                                     value={cert.title}
-                                                     onChange={(e) => updateCertification(idx, 'title', e.target.value)}
-                                                     placeholder="Certification Title (e.g. AWS Solutions Architect)"
-                                                     suggestionType="certification"
-                                                     inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                 />
-                                                 <AutocompleteInputField
-                                                     hideLabel
-                                                     name={`cert_issuer_${idx}`}
-                                                     value={cert.issuer}
-                                                     onChange={(e) => updateCertification(idx, 'issuer', e.target.value)}
-                                                     placeholder="Issuing Organization (e.g. Amazon Web Services)"
-                                                     suggestionType="certificationIssuer"
-                                                     inputClassName="w-full text-xs p-2.5 pr-8 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                 />
-                                                 <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, 'date', e.target.value)} placeholder="Date Issued (e.g. 2024)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" spellCheck="false" />
-                                                 <input type="url" value={cert.url || cert.link || ''} onChange={(e) => updateCertification(idx, 'url', e.target.value)} placeholder="Credential Link (URL)" className="text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none" />
-                                             </div>
-                                             <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
-                                                 <button
-                                                     type="button"
-                                                     disabled={idx === 0}
-                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, -1); }}
-                                                     className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
-                                                     title="Move certification up">
-                                                     ▲
-                                                 </button>
-                                                 <button
-                                                     type="button"
-                                                     disabled={idx === profile.certifications.length - 1}
-                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, 1); }}
-                                                     className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold"
-                                                     title="Move certification down">
-                                                     ▼
-                                                 </button>
-                                                 <button
-                                                     type="button"
-                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
-                                                     className="w-8 h-8 flex items-center justify-center bg-white hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 rounded-xl transition-all cursor-pointer flex-shrink-0"
-                                                     title="Delete certification">
-                                                     <FaTrash className="w-3.5 h-3.5" />
-                                                 </button>
-                                             </div>
-                                         </div>
-                                    ))
+                                    (() => {
+                                        const certList = (profile.certifications || [])
+                                            .map((cert, originalIdx) => ({ ...cert, originalIdx }))
+                                            .filter(c => {
+                                                const activeType = c.certType || (c.isLicense ? 'License' : 'Certification');
+                                                const matchesType = certTypeFilter === 'all' || activeType === certTypeFilter;
+                                                if (!matchesType) return false;
+
+                                                const q = certSearchQuery.trim().toLowerCase();
+                                                if (!q) return true;
+
+                                                const title = String(c.title || c.name || '').toLowerCase();
+                                                const issuer = String(c.issuer || '').toLowerCase();
+                                                const date = String(c.date || '').toLowerCase();
+                                                const endDate = String(c.endDate || '').toLowerCase();
+                                                const id = String(c.credentialId || '').toLowerCase();
+                                                const type = String(activeType).toLowerCase();
+                                                return title.includes(q) || issuer.includes(q) || date.includes(q) || endDate.includes(q) || id.includes(q) || type.includes(q);
+                                            });
+
+                                        if (certList.length === 0 && (profile.certifications || []).length > 0) {
+                                            return (
+                                                <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                                                    <p className="text-xs font-bold text-slate-700">No credentials match your filter criteria.</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setCertSearchQuery(''); setCertTypeFilter('all'); }}
+                                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                                                    >
+                                                        Reset filters
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+
+                                        return certList.map((cert) => {
+                                            const idx = cert.originalIdx;
+                                            const activeType = cert.certType || (cert.isLicense ? 'License' : 'Certification');
+                                            const typeConfig = CERT_TYPES.find(t => t.id === activeType) || CERT_TYPES[0];
+                                            const TypeIcon = typeConfig.icon;
+                                            const certTitle = cert.title || cert.name || '';
+
+                                            const subtitleParts = [
+                                                cert.issuer,
+                                                cert.date ? `Earned ${cert.date}` : '',
+                                                cert.credentialId ? `ID: ${cert.credentialId}` : '',
+                                            ].filter(Boolean);
+
+                                            const subtitle = subtitleParts.length > 0
+                                                ? subtitleParts.join(' • ')
+                                                : 'Add issuer, dates, and credential details';
+
+                                            return (
+                                                <div
+                                                    key={cert.id || idx}
+                                                    className="p-5 bg-white border border-slate-200/90 rounded-2xl space-y-4 hover:border-slate-300 shadow-2xs hover:shadow-xs transition-all"
+                                                >
+                                                    {/* Card Header */}
+                                                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                                                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                                            <span className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 font-extrabold flex items-center justify-center text-xs shrink-0 border border-indigo-100/80">
+                                                                #{idx + 1}
+                                                            </span>
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-xs font-bold text-slate-900 truncate">
+                                                                    {certTitle || 'Untitled Credential'}
+                                                                </h4>
+                                                                <p className="text-[11px] text-slate-500 truncate">
+                                                                    {subtitle}
+                                                                </p>
+                                                            </div>
+                                                            <span className={`ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 flex items-center gap-1 ${typeConfig.badgeClass}`}>
+                                                                <TypeIcon className="w-3 h-3" />
+                                                                <span>{typeConfig.label}</span>
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <button
+                                                                type="button"
+                                                                disabled={idx === 0}
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, -1); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                                                                title="Move credential up"
+                                                            >
+                                                                ▲
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                disabled={idx === (profile.certifications || []).length - 1}
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('certifications', idx, 1); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                                                                title="Move credential down"
+                                                            >
+                                                                ▼
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); duplicateCertification(idx); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                                                                title="Duplicate credential"
+                                                            >
+                                                                <MdContentCopy className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeCertification(idx); }}
+                                                                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-0.5"
+                                                                title="Delete credential"
+                                                            >
+                                                                <MdDeleteOutline className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Card Body */}
+                                                    <div className="space-y-4 pt-1">
+                                                        {/* Row 1: Credential Type Selector Pills */}
+                                                        <div className="space-y-1.5">
+                                                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                                                                Credential Classification
+                                                            </label>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                                                {CERT_TYPES.map(type => {
+                                                                    const Icon = type.icon;
+                                                                    const isSelected = activeType === type.id;
+                                                                    return (
+                                                                        <button
+                                                                            key={type.id}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                updateCertification(idx, 'certType', type.id);
+                                                                                updateCertification(idx, 'isLicense', type.id === 'License');
+                                                                            }}
+                                                                            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                                                                isSelected
+                                                                                    ? `${type.badgeClass} ring-2 ring-indigo-500/20 shadow-xs`
+                                                                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                                            }`}
+                                                                        >
+                                                                            <Icon className="w-3.5 h-3.5" />
+                                                                            <span>{type.label}</span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Row 2: Credential Name & Issuing Organization */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                            <AutocompleteInputField
+                                                                label="Credential name"
+                                                                name={`certification-title-${cert.id || idx}`}
+                                                                placeholder="e.g. AWS Solutions Architect, PMP, RN License"
+                                                                value={certTitle}
+                                                                onChange={(e) => updateCertification(idx, 'title', e.target.value)}
+                                                                required
+                                                                suggestionType="certification"
+                                                                context={candidateContext}
+                                                            />
+                                                            <AutocompleteInputField
+                                                                label="Issuing organization"
+                                                                name={`certification-issuer-${cert.id || idx}`}
+                                                                placeholder="e.g. Amazon Web Services, PMI, State Board"
+                                                                value={cert.issuer || ''}
+                                                                onChange={(e) => updateCertification(idx, 'issuer', e.target.value)}
+                                                                suggestionType="certificationIssuer"
+                                                                context={candidateContext}
+                                                            />
+                                                        </div>
+
+                                                        {/* Row 3: Date Earned & Expiration Date */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                            <Field
+                                                                label="Date earned"
+                                                                name={`certification-date-${cert.id || idx}`}
+                                                                placeholder="e.g. 2024 or Nov 2023"
+                                                                value={cert.date || ''}
+                                                                onChange={(e) => updateCertification(idx, 'date', e.target.value)}
+                                                            />
+                                                            <Field
+                                                                label="Expiration / Renewal Date"
+                                                                name={`certification-end-date-${cert.id || idx}`}
+                                                                placeholder="e.g. 2027 or Ongoing / No Expiry"
+                                                                value={cert.endDate || ''}
+                                                                onChange={(e) => updateCertification(idx, 'endDate', e.target.value)}
+                                                                optional
+                                                            />
+                                                        </div>
+
+                                                        {/* Row 4: Credential ID & Verification URL */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                            <Field
+                                                                label="Credential ID / License #"
+                                                                name={`certification-id-${cert.id || idx}`}
+                                                                placeholder="e.g. AWS-12345, RN-987654"
+                                                                value={cert.credentialId || ''}
+                                                                onChange={(e) => updateCertification(idx, 'credentialId', e.target.value)}
+                                                                optional
+                                                            />
+                                                            <div>
+                                                                <Field
+                                                                    label="Verification URL"
+                                                                    name={`certification-url-${cert.id || idx}`}
+                                                                    type="url"
+                                                                    placeholder="https://www.credly.com/badges/..."
+                                                                    value={cert.url || cert.link || ''}
+                                                                    onChange={(e) => updateCertification(idx, 'url', e.target.value)}
+                                                                    optional
+                                                                />
+                                                                {(cert.url || cert.link) && /^https?:\/\//i.test(String(cert.url || cert.link)) && (
+                                                                    <div className="mt-1.5 flex items-center justify-end">
+                                                                        <a
+                                                                            href={cert.url || cert.link}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                                        >
+                                                                            <span>Test live URL</span>
+                                                                            <MdLaunch className="w-3.5 h-3.5" />
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()
                                 )}
 
-                                {profile.certifications.length > 0 && (
-                                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={handleRecommendAiCertifications}
-                                            disabled={isAiGenerating}
-                                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs">
-                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>Auto-Recommend Certifications (AI)</span>
-                                        </button>
-                                        <button type="button" onClick={addCertification} className="flex-1 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs">
-                                            <FaPlus className="w-3.5 h-3.5" /> Add Certification
-                                        </button>
-                                    </div>
+                                {/* Add Another Credential Secondary Button */}
+                                {(profile.certifications || []).length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={addCertification}
+                                        className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                                    >
+                                        <MdAdd className="w-4 h-4 text-indigo-600" />
+                                        <span>Add Another Credential</span>
+                                    </button>
                                 )}
                             </div>
                         )}

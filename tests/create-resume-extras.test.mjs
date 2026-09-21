@@ -134,7 +134,7 @@ test('Projects and Certifications editors remain the certified field contract', 
   assert.match(certs, /updateCertification\(certification\.id, 'title'/);
   assert.match(certs, /updateCertification\(certification\.id, 'issuer'/);
   assert.match(certs, /updateCertification\(certification\.id, 'date'/);
-  assert.doesNotMatch(certs, /updateCertification\([^)]+'url'/);
+  assert.match(certs, /updateCertification\(certification\.id, 'url'/);
 });
 
 test('reorder and duplicate helpers stay immutable for the new section types', () => {
