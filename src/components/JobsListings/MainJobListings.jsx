@@ -14,7 +14,7 @@ import FavoritesModal from './FavoritesModal';
 import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
-import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById, getSubscriptionStatus } from '../../services/api/platform';
+import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById, getSubscriptionStatus, checkIsEmployer } from '../../services/api/platform';
 
 // High-quality showcase dataset displayed when database has 0 active postings
 export const DEFAULT_SHOWCASE_JOBS = [
@@ -521,7 +521,7 @@ export const DEFAULT_SHOWCASE_JOBS = [
 ];
 
 // Helper to normalize database rows to uniform JobCard schema with dynamic currency support
-export function normalizeJobRecord(job, currency = 'USD', currencySymbol = '$') {
+export function normalizeJobRecord(job, currency = 'INR', currencySymbol = '₹') {
     if (!job) return job;
     const minSal = job.salary_min || job.minSalary;
     const maxSal = job.salary_max || job.maxSalary;
@@ -623,8 +623,8 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     const [isCreateJobModalOpen, setIsCreateJobModalOpen] = useState(false);
     const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
 
-    // Dynamic system currency state (sourced from authoritative MariaDB configuration)
-    const [currencyConfig, setCurrencyConfig] = useState({ currency: 'USD', currencySymbol: '$' });
+    // Dynamic system currency state (sourced from authoritative MariaDB configuration, base default: INR / ₹)
+    const [currencyConfig, setCurrencyConfig] = useState({ currency: 'INR', currencySymbol: '₹' });
 
     // Synchronize system default currency from authoritative platform settings
     useEffect(() => {
@@ -635,15 +635,50 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                 if (isMounted && status?.currency) {
                     setCurrencyConfig({
                         currency: status.currency,
-                        currencySymbol: status.currencySymbol || (status.currency === 'INR' ? '₹' : '$'),
+                        currencySymbol: status.currencySymbol || (status.currency === 'USD' ? '$' : '₹'),
                     });
                 }
             } catch {
-                // Keep default USD / $
+                // Keep default INR / ₹
             }
         })();
         return () => { isMounted = false; };
     }, []);
+
+    // Recruiter / Employer check: Only employers and admins may post jobs; hidden for candidates
+    const [canPostJob, setCanPostJob] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        if (!user?.uid) {
+            setCanPostJob(false);
+            return;
+        }
+
+        (async () => {
+            try {
+                const employerStatus = await checkIsEmployer(user.uid);
+                if (!active) return;
+                if (employerStatus) {
+                    setCanPostJob(true);
+                    return;
+                }
+                if (user?.getIdTokenResult) {
+                    const tokenResult = await user.getIdTokenResult();
+                    const role = String(tokenResult?.claims?.role || '').toUpperCase();
+                    if (['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+                        if (active) setCanPostJob(true);
+                        return;
+                    }
+                }
+                if (active) setCanPostJob(false);
+            } catch {
+                if (active) setCanPostJob(false);
+            }
+        })();
+
+        return () => { active = false; };
+    }, [user]);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -1047,6 +1082,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                     onOpenFavorites={handleOpenFavorites}
                     savedJobsCount={savedJobs.size}
                     user={user}
+                    canPostJob={canPostJob}
                     onQuickFilter={handleQuickFilter}
                     onSearch={() => loadJobs(1)}
                     currency={currencyConfig.currency}

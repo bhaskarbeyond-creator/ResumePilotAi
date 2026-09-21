@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaSearch, FaFilter, FaPlus, FaBriefcase, FaHeart, FaTimes, FaFire, FaLaptop, FaBolt, FaStar, FaDollarSign, FaHandshake } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaPlus, FaBriefcase, FaHeart, FaTimes, FaFire, FaLaptop, FaBolt, FaStar, FaDollarSign, FaHandshake, FaCoins, FaRupeeSign } from 'react-icons/fa';
 import CustomLocationAutocomplete from './CustomLocationAutocomplete';
 import { withTranslation } from 'react-i18next';
 
@@ -14,10 +14,11 @@ const JobSearchBar = ({
     onOpenFavorites,
     savedJobsCount,
     user,
+    canPostJob = false,
     onQuickFilter,
     onSearch,
-    currency = 'USD',
-    currencySymbol = '$',
+    currency = 'INR',
+    currencySymbol = '₹',
     selectedFilters = {},
     t,
 }) => {
@@ -43,7 +44,7 @@ const JobSearchBar = ({
         { id: 'remote', label: 'Remote', icon: FaLaptop, category: 'workMode', value: 'remote' },
         { id: 'full-time', label: 'Full-time', icon: FaBolt, category: 'jobType', value: 'full-time' },
         { id: 'senior', label: 'Senior Level', icon: FaStar, category: 'experienceLevel', value: 'senior' },
-        { id: 'salary100k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}120k+` : '$120k+', icon: FaDollarSign, category: 'salaryRange', value: '$120k+' },
+        { id: 'salary100k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}120k+` : '$120k+', icon: FaCoins, category: 'salaryRange', value: '$120k+' },
         { id: 'contract', label: 'Contract', icon: FaHandshake, category: 'jobType', value: 'contract' },
     ];
 
@@ -107,8 +108,8 @@ const JobSearchBar = ({
                         )}
                     </button>
 
-                    {/* Post Job Button - Visible for Authenticated Users */}
-                    {user && (
+                    {/* Post Job Button - Visible exclusively for Recruiters / Employers & Admins, hidden for Candidates */}
+                    {canPostJob && (
                         <button
                             onClick={onSubmitJob}
                             type="button"
