@@ -20,7 +20,7 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getSelection, $isRangeSelection } from 'lexical';
+import { $getSelection, $isRangeSelection, $getRoot, $createParagraphNode, $createTextNode } from 'lexical';
 import { FORMAT_TEXT_COMMAND } from 'lexical';
 import { $generateHtmlFromNodes } from '@lexical/html';
 
@@ -61,8 +61,8 @@ function CoverLetterOnChangePlugin({ onChange }) {
     return null;
 }
 
-// Simple toolbar for cover letter
-function CoverLetterToolbar() {
+// Simple toolbar for cover letter with 1-click quick pitch
+function CoverLetterToolbar({ job, applicantName }) {
     const [editor] = useLexicalComposerContext();
     const [isBold, setIsBold] = useState(false);
     const [isItalic, setIsItalic] = useState(false);
@@ -85,32 +85,62 @@ function CoverLetterToolbar() {
         });
     }, [editor, updateToolbar]);
 
+    const handleQuickPitch = () => {
+        const role = job?.title || 'this role';
+        const company = job?.company || 'your team';
+        const candidate = applicantName ? `\n\nSincerely,\n${applicantName}` : '';
+        const pitchText = `Dear Hiring Team at ${company},\n\nI am excited to submit my application for the ${role} position. With my hands-on background in modern engineering and a track record of driving scalable, user-centric results, I am eager to bring immediate value to ${company}. Thank you for your consideration, and I look forward to speaking with you.${candidate}`;
+
+        editor.update(() => {
+            const root = $getRoot();
+            root.clear();
+            const paragraphs = pitchText.split('\n\n');
+            paragraphs.forEach((pText) => {
+                const p = $createParagraphNode();
+                p.append($createTextNode(pText));
+                root.append(p);
+            });
+        });
+    };
+
     return (
-        <div className="flex items-center space-x-1 mb-2 p-2 bg-gray-50 rounded-t border-b border-gray-200">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-2 p-2 bg-slate-50/90 rounded-t-lg border-b border-slate-200">
+            <div className="flex items-center space-x-1">
+                <button
+                    type="button"
+                    onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
+                    title="Bold"
+                    className={`p-1.5 rounded hover:bg-slate-200/80 transition-colors ${isBold ? 'bg-blue-100 text-blue-600' : 'text-slate-600'}`}>
+                    <FiBold className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
+                    title="Italic"
+                    className={`p-1.5 rounded hover:bg-slate-200/80 transition-colors ${isItalic ? 'bg-blue-100 text-blue-600' : 'text-slate-600'}`}>
+                    <FiItalic className="w-3.5 h-3.5" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
+                    title="Underline"
+                    className={`p-1.5 rounded hover:bg-slate-200/80 transition-colors ${isUnderline ? 'bg-blue-100 text-blue-600' : 'text-slate-600'}`}>
+                    <FiUnderline className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                <button type="button" onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} title="Bullet List" className="p-1.5 rounded hover:bg-slate-200/80 transition-colors text-slate-600">
+                    <FiList className="w-3.5 h-3.5" />
+                </button>
+                <button type="button" onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} title="Numbered List" className="p-1.5 rounded hover:bg-slate-200/80 transition-colors text-slate-600">
+                    <FiHash className="w-3.5 h-3.5" />
+                </button>
+            </div>
+
             <button
                 type="button"
-                onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
-                className={`p-1.5 rounded hover:bg-gray-200 transition-colors ${isBold ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}>
-                <FiBold className="w-3 h-3" />
-            </button>
-            <button
-                type="button"
-                onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
-                className={`p-1.5 rounded hover:bg-gray-200 transition-colors ${isItalic ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}>
-                <FiItalic className="w-3 h-3" />
-            </button>
-            <button
-                type="button"
-                onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
-                className={`p-1.5 rounded hover:bg-gray-200 transition-colors ${isUnderline ? 'bg-blue-100 text-blue-600' : 'text-gray-600'}`}>
-                <FiUnderline className="w-3 h-3" />
-            </button>
-            <div className="w-px h-4 bg-gray-300 mx-1"></div>
-            <button type="button" onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} className="p-1.5 rounded hover:bg-gray-200 transition-colors text-gray-600">
-                <FiList className="w-3 h-3" />
-            </button>
-            <button type="button" onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} className="p-1.5 rounded hover:bg-gray-200 transition-colors text-gray-600">
-                <FiHash className="w-3 h-3" />
+                onClick={handleQuickPitch}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 rounded-md transition-all active:scale-95 shadow-2xs cursor-pointer">
+                <span>⚡ 1-Click Quick Pitch</span>
             </button>
         </div>
     );
@@ -203,7 +233,11 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applicationData.email)) {
             newErrors.email = 'Invalid email';
         }
-        if (!applicationData.phone.trim()) newErrors.phone = 'Required';
+        if (!applicationData.phone.trim()) {
+            newErrors.phone = 'Required';
+        } else if (!/^\+?[0-9 ()-]{7,30}$/.test(applicationData.phone.trim())) {
+            newErrors.phone = 'Valid phone required (min 7 digits)';
+        }
 
         // Validate cover letter (strip HTML tags for character count)
         const coverLetterText = applicationData.coverLetter.replace(/<[^>]*>/g, '').trim();
@@ -220,7 +254,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
 
     const isFormValid = Object.keys(validateForm).length === 0;
 
-    // Reset form when modal opens
+    // Reset form and auto-prefill when modal opens
     useEffect(() => {
         submissionGeneration.current += 1;
         if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -252,12 +286,35 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                 hasNextPage: false,
                 hasPreviousPage: false,
             });
+
+            // Automatically pre-load candidate resumes and select primary/latest
+            if (user?.uid) {
+                getResumes(user.uid, 1, perPage)
+                    .then((response) => {
+                        if (response && response.resumes && response.resumes.length > 0) {
+                            setUserResumes(response.resumes);
+                            if (response.pagination) setPagination(response.pagination);
+                            const firstResume = response.resumes[0];
+                            const displayTitle = resolveResumeDisplayTitle(firstResume, response.resumes);
+                            setApplicationData((prev) => ({
+                                ...prev,
+                                selectedResume: prev.selectedResume || {
+                                    id: firstResume.id,
+                                    name: displayTitle,
+                                    shareableLink: `${window.location.origin}/shared/${firstResume.id}`,
+                                    data: firstResume,
+                                },
+                            }));
+                        }
+                    })
+                    .catch(() => {});
+            }
         }
         return () => {
             submissionGeneration.current += 1;
             if (closeTimer.current) clearTimeout(closeTimer.current);
         };
-    }, [isOpen, job?.id, user?.displayName, user?.email]);
+    }, [isOpen, job?.id, user?.uid, user?.displayName, user?.email]);
 
     // Prevent background scrolling
     useEffect(() => {
@@ -650,156 +707,215 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                     onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) onClose(); }}
                     onClick={(e) => e.target === e.currentTarget && !isSubmitting && onClose()}>
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[98vh] overflow-hidden" variants={modalVariants} onClick={(e) => e.stopPropagation()}>
+                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[94vh] overflow-hidden flex flex-col border border-slate-100" variants={modalVariants} onClick={(e) => e.stopPropagation()}>
                         <AnimatePresence mode="wait">
                             {isSubmitted ? (
-                                <motion.div key="success" className="p-6 text-center" variants={successVariants} initial="hidden" animate="visible">
+                                <motion.div key="success" className="p-8 text-center my-auto" variants={successVariants} initial="hidden" animate="visible">
                                     <motion.div
-                                        className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"
+                                        className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm"
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ delay: 0.1, type: 'spring' }}>
-                                        <FaCheckCircle className="w-6 h-6 text-green-600" />
+                                        <FaCheckCircle className="w-7 h-7 text-emerald-600" />
                                     </motion.div>
-                                    <h3 id="job-application-success-title" className="text-lg font-bold text-slate-900 mb-2">{t('JobsUpdate.JobApplicationModal.success.title', 'Application Submitted!')}</h3>
-                                    <p className="text-slate-600 text-sm">
+                                    <h3 id="job-application-success-title" className="text-xl font-bold text-slate-900 mb-2">{t('JobsUpdate.JobApplicationModal.success.title', 'Application Submitted!')}</h3>
+                                    <p className="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">
                                         {t('JobsUpdate.JobApplicationModal.success.message', "Your application has been successfully submitted. We'll be in touch soon.")}
                                     </p>
                                 </motion.div>
                             ) : (
                                 <motion.div key="form" className="h-full flex flex-col">
-                                    {/* Compact Header */}
-                                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-md flex items-center justify-center">
-                                                <FaBriefcase className="w-3 h-3 text-white" />
+                                    {/* Executive Modal Header */}
+                                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/90 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white">
+                                        <div className="flex items-center space-x-3 min-w-0">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-sm shadow-sm flex-shrink-0">
+                                                {job?.company ? job.company.charAt(0).toUpperCase() : <FaBriefcase className="w-4 h-4 text-white" />}
                                             </div>
-                                            <div>
-                                                <h2 id="job-application-title" className="text-base font-bold text-slate-900">{t('JobsUpdate.JobApplicationModal.title', 'Apply for {{jobTitle}}', { jobTitle: '' })}</h2>
-                                                <p className="text-xs text-slate-600 truncate max-w-48">{job?.title}</p>
+                                            <div className="min-w-0">
+                                                <h2 id="job-application-title" className="text-base sm:text-lg font-bold text-slate-900 truncate">
+                                                    {t('JobsUpdate.JobApplicationModal.title', 'Apply for {{jobTitle}}', { jobTitle: job?.title || 'Role' })}
+                                                </h2>
+                                                <div className="flex items-center gap-2 text-xs text-slate-600 font-medium truncate mt-0.5">
+                                                    <span className="font-semibold text-slate-800">{job?.company}</span>
+                                                    {job?.location && <span>• {job.location}</span>}
+                                                    {job?.type && (
+                                                        <span className="capitalize px-1.5 py-0.5 rounded bg-blue-100/60 text-blue-700 font-semibold text-[10px]">
+                                                            {job.type}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        <button type="button" onClick={onClose} aria-label="Close job application" className="p-1.5 hover:bg-white/50 rounded-md transition-colors" disabled={isSubmitting}>
-                                            <FaTimes className="w-3.5 h-3.5 text-slate-500" />
+                                        <button
+                                            type="button"
+                                            onClick={onClose}
+                                            aria-label="Close job application"
+                                            className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0 cursor-pointer"
+                                            disabled={isSubmitting}>
+                                            <FaTimes className="w-4 h-4" />
                                         </button>
                                     </div>
 
-                                    {/* Compact Form */}
+                                    {/* Modal Form */}
                                     <div className="flex-1 overflow-y-auto">
-                                        <form onSubmit={handleSubmit} className="p-4 space-y-3">
-                                            {/* Essential Info Only */}
-                                            <div className="space-y-2">
-                                                <div className="grid grid-cols-2 gap-2">
+                                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                                            {/* Candidate Contact Info */}
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <div>
+                                                        <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
                                                         <input
                                                             type="text"
                                                             name="fullName"
                                                             value={applicationData.fullName}
                                                             onChange={handleInputChange}
-                                                            className={`w-full px-2.5 py-2 text-sm border rounded-md focus:outline-none ${
+                                                            className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none transition-all ${
                                                                 errors.fullName ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
                                                             }`}
-                                                             placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.fullName', 'Full Name') + ' *'}
+                                                            placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.fullName', 'Full Name') + ' *'}
                                                         />
-                                                        {errors.fullName && <p className="text-xs text-red-600 mt-0.5">{errors.fullName}</p>}
+                                                        {errors.fullName && <p className="text-xs text-red-600 mt-1 font-medium">{errors.fullName}</p>}
                                                     </div>
                                                     <div>
+                                                        <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
                                                         <input
                                                             type="email"
                                                             name="email"
                                                             value={applicationData.email}
-                                                            readOnly
-                                                            title="Applications use your verified account email"
-                                                            className={`w-full px-2.5 py-2 text-sm border rounded-md focus:outline-none ${
+                                                            onChange={handleInputChange}
+                                                            readOnly={Boolean(user?.email)}
+                                                            title={user?.email ? "Applications use your verified account email" : "Enter your email address"}
+                                                            className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none transition-all ${
                                                                 errors.email ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
-                                                            }`}
-                                                             placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.email', 'Email Address') + ' *'}
+                                                            } ${user?.email ? 'bg-slate-50 text-slate-600 cursor-not-allowed' : 'bg-white text-slate-900'}`}
+                                                            placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.email', 'Email Address') + ' *'}
                                                         />
-                                                        {errors.email && <p className="text-xs text-red-600 mt-0.5">{errors.email}</p>}
+                                                        {errors.email && <p className="text-xs text-red-600 mt-1 font-medium">{errors.email}</p>}
                                                     </div>
                                                 </div>
-                                                <input
-                                                    type="tel"
-                                                    name="phone"
-                                                    value={applicationData.phone}
-                                                    onChange={handleInputChange}
-                                                    className={`w-full px-2.5 py-2 text-sm border rounded-md focus:outline-none ${
-                                                        errors.phone ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
-                                                    }`}
-                                                     placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.phone', 'Phone Number') + ' *'}
-                                                />
-                                                {errors.phone && <p className="text-xs text-red-600 mt-0.5">{errors.phone}</p>}
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number *</label>
+                                                    <input
+                                                        type="tel"
+                                                        name="phone"
+                                                        value={applicationData.phone}
+                                                        onChange={handleInputChange}
+                                                        className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none transition-all ${
+                                                            errors.phone ? 'border-red-300 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                                                        }`}
+                                                        placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.phone', 'Phone Number') + ' *'}
+                                                    />
+                                                    {errors.phone && <p className="text-xs text-red-600 mt-1 font-medium">{errors.phone}</p>}
+                                                </div>
                                             </div>
 
-                                            {/* Professional Links - Compact */}
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input
-                                                    type="url"
-                                                    name="linkedinUrl"
-                                                    value={applicationData.linkedinUrl}
-                                                    onChange={handleInputChange}
-                                                    className="w-full px-2.5 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-blue-500"
-                                                     placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.linkedin', 'LinkedIn Profile URL') + ' (' + t('common:optional', 'optional') + ')'}
-                                                />
-                                                <input
-                                                    type="url"
-                                                    name="githubUrl"
-                                                    value={applicationData.githubUrl}
-                                                    onChange={handleInputChange}
-                                                    className="w-full px-2.5 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:border-blue-500"
-                                                     placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.github', 'GitHub/Portfolio URL') + ' (' + t('common:optional', 'optional') + ')'}
-                                                />
+                                            {/* Professional Profiles */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1">LinkedIn Profile</label>
+                                                    <input
+                                                        type="url"
+                                                        name="linkedinUrl"
+                                                        value={applicationData.linkedinUrl}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 transition-all"
+                                                        placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.linkedin', 'LinkedIn Profile URL') + ' (' + t('common:optional', 'optional') + ')'}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1">GitHub / Portfolio</label>
+                                                    <input
+                                                        type="url"
+                                                        name="githubUrl"
+                                                        value={applicationData.githubUrl}
+                                                        onChange={handleInputChange}
+                                                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 transition-all"
+                                                        placeholder={t('JobsUpdate.JobApplicationModal.personalInfo.github', 'GitHub/Portfolio URL') + ' (' + t('common:optional', 'optional') + ')'}
+                                                    />
+                                                </div>
                                             </div>
 
-                                            {/* Resume Selection */}
-                                            <div className={`border-2 border-dashed rounded-md p-3 text-center transition-colors ${errors.resume ? 'border-red-300' : 'border-slate-300'}`}>
-                                                {applicationData.selectedResume ? (
-                                                    <div className="space-y-2">
-                                                        <div className="flex items-center justify-center space-x-2">
-                                                            <FaFile className="w-3 h-3 text-green-600 flex-shrink-0" />
-                                                            <span className="text-xs font-medium text-green-600 truncate">{applicationData.selectedResume.name}</span>
+                                            {/* Resume Selection Card */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 mb-1">Resume Document</label>
+                                                <div className={`rounded-xl p-3.5 transition-all ${
+                                                    applicationData.selectedResume
+                                                        ? 'border border-emerald-300 bg-emerald-50/40 shadow-2xs'
+                                                        : errors.resume
+                                                        ? 'border-2 border-dashed border-red-300 bg-red-50/20'
+                                                        : 'border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50/50'
+                                                }`}>
+                                                    {applicationData.selectedResume ? (
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <div className="flex items-center space-x-3 min-w-0">
+                                                                <div className="w-9 h-9 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                                                                    <FaFile className="w-4 h-4" />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-sm font-bold text-slate-900 truncate">
+                                                                            {applicationData.selectedResume.name}
+                                                                        </span>
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded">
+                                                                            <FaCheck className="w-2 h-2" /> Selected
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2 mt-0.5 text-xs">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={handleShowResumeSelector}
+                                                                            className="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer">
+                                                                            {t('JobsUpdate.JobApplicationModal.resume.browseResumes', 'Browse Resumes')}
+                                                                        </button>
+                                                                        <span className="text-slate-300">•</span>
+                                                                        <a
+                                                                            href={sanitizeUrl(applicationData.selectedResume.shareableLink)}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-slate-600 hover:text-blue-600 font-medium flex items-center space-x-1">
+                                                                            <FaEye className="w-3 h-3 text-slate-400" />
+                                                                            <span>{t('JobsUpdate.JobApplicationModal.resume.preview', 'Preview Resume')}</span>
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setApplicationData((prev) => ({ ...prev, selectedResume: null }))}
-                                                                className="text-red-500 hover:text-red-700 flex-shrink-0">
-                                                                <FaTimes className="w-3 h-3" />
+                                                                title="Remove selection"
+                                                                className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-white transition-colors cursor-pointer flex-shrink-0">
+                                                                <FaTimes className="w-3.5 h-3.5" />
                                                             </button>
                                                         </div>
-                                                        <div className="flex items-center justify-center space-x-2">
-                                                            <button type="button" onClick={handleShowResumeSelector} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                                                    ) : (
+                                                        <div className="text-center py-2">
+                                                            <FaFileUpload className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
+                                                            <p className="text-xs sm:text-sm text-slate-700 font-medium">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleShowResumeSelector}
+                                                                    className="text-blue-600 hover:text-blue-700 font-bold underline cursor-pointer">
+                                                                    {t('JobsUpdate.JobApplicationModal.resume.selectResume', 'Select Resume')}
+                                                                </button>{' '}
+                                                                {t('common:fromYourProfile', 'from your profile')}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 mt-0.5">
                                                                 {t('JobsUpdate.JobApplicationModal.resume.browseResumes', 'Browse Resumes')}
-                                                            </button>
-                                                            <span className="text-xs text-slate-400">•</span>
-                                                            <a
-                                                                href={sanitizeUrl(applicationData.selectedResume.shareableLink)}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1">
-                                                                <FaEye className="w-2 h-2" />
-                                                                <span>{t('JobsUpdate.JobApplicationModal.resume.preview', 'Preview Resume')}</span>
-                                                            </a>
+                                                            </p>
                                                         </div>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <FaFile className="w-4 h-4 text-slate-400 mx-auto mb-1" />
-                                                        <p className="text-xs text-slate-600">
-                                                            <button type="button" onClick={handleShowResumeSelector} className="text-blue-600 hover:text-blue-700 font-medium">
-                                                                {t('JobsUpdate.JobApplicationModal.resume.selectResume', 'Select Resume')}
-                                                            </button>{' '}
-                                                            {t('common:fromYourProfile', 'from your profile')}
-                                                        </p>
-                                                        <p className="text-xs text-slate-500 mt-0.5">{t('JobsUpdate.JobApplicationModal.resume.browseResumes', 'Browse Resumes')}</p>
-                                                    </div>
-                                                )}
+                                                    )}
+                                                </div>
+                                                {errors.resume && <p className="text-xs text-red-600 mt-1 font-medium">{errors.resume}</p>}
                                             </div>
-                                            {errors.resume && <p className="text-xs text-red-600 -mt-1">{errors.resume}</p>}
 
-                                            {/* Rich Text Cover Letter */}
+                                            {/* Rich Text Cover Letter with 1-Click Pitch */}
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-1">Cover Letter *</label>
-                                                <div className={`border rounded-md ${errors.coverLetter ? 'border-red-300' : 'border-slate-300'}`}>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <label className="block text-xs font-bold text-slate-700">Cover Letter *</label>
+                                                    <span className="text-[11px] text-slate-500 font-medium">50–1,000 characters</span>
+                                                </div>
+                                                <div className={`border rounded-xl ${errors.coverLetter ? 'border-red-300' : 'border-slate-300'} overflow-hidden transition-all focus-within:border-blue-500`}>
                                                     <LexicalComposer
                                                         initialConfig={{
                                                             namespace: 'CoverLetterEditor',
@@ -807,12 +923,12 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                             onError: (error) => console.error('Lexical error:', error),
                                                             nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, AutoLinkNode, LinkNode],
                                                         }}>
-                                                        <CoverLetterToolbar />
+                                                        <CoverLetterToolbar job={job} applicantName={applicationData.fullName} />
                                                         <div className="relative">
                                                             <RichTextPlugin
-                                                                contentEditable={<ContentEditable className="min-h-[80px] max-h-[200px] overflow-y-auto px-3 py-2 text-sm focus:outline-none" />}
+                                                                contentEditable={<ContentEditable className="min-h-[85px] max-h-[180px] overflow-y-auto px-3.5 py-2.5 text-sm focus:outline-none leading-relaxed" />}
                                                                 placeholder={
-                                                                    <div className="absolute top-2 left-3 text-slate-400 text-sm pointer-events-none">
+                                                                    <div className="absolute top-2.5 left-3.5 text-slate-400 text-sm pointer-events-none">
                                                                         {t('JobsUpdate.JobApplicationModal.coverLetter.placeholder', "Write a brief cover letter explaining why you're a good fit for this role...")}
                                                                     </div>
                                                                 }
@@ -825,46 +941,73 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                         </div>
                                                     </LexicalComposer>
                                                 </div>
-                                                <div className="flex justify-between items-center mt-1">
-                                                    {errors.coverLetter && <p className="text-xs text-red-600">{errors.coverLetter}</p>}
-                                                    <span className="text-xs text-slate-500 ml-auto">{applicationData.coverLetter.replace(/<[^>]*>/g, '').length}/1000 {t('common:characters', 'characters')}</span>
+                                                <div className="flex justify-between items-center mt-1 text-xs">
+                                                    {errors.coverLetter ? (
+                                                        <p className="text-red-600 font-medium">{errors.coverLetter}</p>
+                                                    ) : (
+                                                        <p className="text-slate-500 text-[11px]">Click "⚡ 1-Click Quick Pitch" to generate a tailored note.</p>
+                                                    )}
+                                                    <span className={`ml-auto font-medium ${
+                                                        applicationData.coverLetter.replace(/<[^>]*>/g, '').trim().length >= 50
+                                                            ? 'text-emerald-600 font-bold'
+                                                            : 'text-slate-500'
+                                                    }`}>
+                                                        {applicationData.coverLetter.replace(/<[^>]*>/g, '').length}/1000 {t('common:characters', 'characters')}
+                                                        {applicationData.coverLetter.replace(/<[^>]*>/g, '').trim().length >= 50 && ' ✓'}
+                                                    </span>
                                                 </div>
                                             </div>
 
                                             {errors.submit && (
-                                                <div className="flex items-center space-x-2 p-2 bg-red-50 border border-red-200 rounded-md">
-                                                    <FaExclamationTriangle className="w-3 h-3 text-red-600 flex-shrink-0" />
-                                                    <p className="text-xs text-red-600">{errors.submit}</p>
+                                                <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                                                    <FaExclamationTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                                    <p className="text-xs text-red-600 font-medium">{errors.submit}</p>
                                                 </div>
                                             )}
                                         </form>
                                     </div>
 
-                                    {/* Compact Footer */}
-                                    <div className="flex items-center justify-end space-x-2 px-4 py-3 border-t border-slate-200 bg-slate-50">
-                                        <button
-                                            type="button"
-                                            onClick={onClose}
-                                            className="px-3 py-1.5 text-sm border border-slate-300 text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
-                                            disabled={isSubmitting}>
-                                            {t('JobsUpdate.JobApplicationModal.buttons.cancel', 'Cancel')}
-                                        </button>
-                                        <button
-                                            onClick={handleSubmit}
-                                            disabled={!isFormValid || isSubmitting}
-                                            className="px-3 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-1.5">
-                                            {isSubmitting ? (
-                                                <>
-                                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                    <span>{t('JobsUpdate.JobApplicationModal.buttons.submitting', 'Submitting...')}</span>
-                                                </>
+                                    {/* Executive Footer */}
+                                    <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-200 bg-slate-50">
+                                        <div className="text-xs text-slate-500 font-medium hidden sm:block">
+                                            {isFormValid ? (
+                                                <span className="text-emerald-700 flex items-center gap-1 font-semibold">
+                                                    <FaCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                                    Application details complete
+                                                </span>
                                             ) : (
-                                                <>
-                                                    <FaPaperPlane className="w-3 h-3" />
-                                                    <span>{t('JobsUpdate.JobApplicationModal.buttons.submit', 'Submit Application')}</span>
-                                                </>
+                                                <span className="text-amber-700 flex items-center gap-1">
+                                                    <FaExclamationTriangle className="w-3.5 h-3.5 text-amber-600" />
+                                                    Required: name, valid phone, 50+ char note
+                                                </span>
                                             )}
-                                        </button>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2.5 ml-auto">
+                                            <button
+                                                type="button"
+                                                onClick={onClose}
+                                                className="px-4 py-2 text-sm font-semibold border border-slate-300 text-slate-700 rounded-xl hover:bg-white hover:border-slate-400 transition-all cursor-pointer"
+                                                disabled={isSubmitting}>
+                                                {t('JobsUpdate.JobApplicationModal.buttons.cancel', 'Cancel')}
+                                            </button>
+                                            <button
+                                                onClick={handleSubmit}
+                                                disabled={!isFormValid || isSubmitting}
+                                                className="px-5 py-2 text-sm font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-indigo-800 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed shadow-sm hover:shadow-md hover:shadow-blue-500/25 transition-all duration-200 flex items-center space-x-2 active:scale-95 cursor-pointer">
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                        <span>{t('JobsUpdate.JobApplicationModal.buttons.submitting', 'Submitting...')}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FaPaperPlane className="w-3.5 h-3.5" />
+                                                        <span>{t('JobsUpdate.JobApplicationModal.buttons.submit', 'Submit Application')}</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}

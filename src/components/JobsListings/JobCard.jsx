@@ -100,15 +100,6 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
             return;
         }
 
-        if (!user?.uid) {
-            if (onAuthRequired) {
-                onAuthRequired();
-            } else {
-                alert(t('JobsUpdate.JobCard2.alerts.signInRequired', 'Please sign in to apply for jobs.'));
-            }
-            return;
-        }
-
         if (applicationStatus.hasApplied) {
             return;
         }
@@ -240,12 +231,12 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
     const companyPalette = getCompanyPalette(job.company);
 
     return (
-        <article className="group relative bg-white border border-slate-200/80 hover:border-blue-400 rounded-2xl p-5 sm:p-6 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+        <article className="group relative bg-white border border-slate-200/90 hover:border-blue-400 rounded-2xl p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_16px_36px_rgba(15,23,42,0.08)] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
             {/* Top Micro Gradient Bar on Hover */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
             <div className="flex items-start justify-between gap-4 mb-3.5">
-                <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0">
                     {/* Company Logo or Monogram with Premium Depth */}
                     <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/80 border border-slate-200/90 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:border-blue-300/80 group-hover:shadow-md transition-all duration-300 p-0.5">
                         {sanitizeImageUrl(job.companyImage) && !imageError ? (
@@ -268,7 +259,7 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                         <div className="flex items-center gap-2 mb-1">
                             <h3
                                 onClick={() => onViewDetails && onViewDetails(job)}
-                                className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer truncate leading-snug">
+                                className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors cursor-pointer truncate leading-snug tracking-tight">
                                 {job.title}
                             </h3>
                         </div>
@@ -331,7 +322,13 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                 )}
 
                 {/* Harmonious Badges Strip */}
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="flex flex-wrap items-center gap-2 mb-3.5">
+                    {job.salary && (
+                        <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 border border-emerald-200/90 px-3 py-1 rounded-lg text-xs font-bold shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            {job.salary}
+                        </span>
+                    )}
                     {job.workMode && (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${getWorkModeBadgeStyle(job.workMode)}`}>
                             {String(job.workMode).toLowerCase().includes('remote') ? (
@@ -351,12 +348,6 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                     {job.experienceLevel && (
                         <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-semibold">
                             {job.experienceLevel}
-                        </span>
-                    )}
-                    {job.salary && (
-                        <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 border border-emerald-200/90 px-3 py-1 rounded-lg text-xs font-bold shadow-2xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            {job.salary}
                         </span>
                     )}
                 </div>
@@ -420,6 +411,7 @@ const JobCard = ({ job, isSaved, onToggleSaved, onViewDetails, onAuthRequired, o
                     <span>{t('JobsUpdate.JobCard2.jobInfo.posted', 'Posted {{postedDate}}', { postedDate: formatPostedDate(job.postedDate) })}</span>
                 </div>
             </div>
+
 
             {/* Job Application Modal */}
             <JobApplicationModal isOpen={showApplicationModal} onClose={handleCloseModal} job={job} />

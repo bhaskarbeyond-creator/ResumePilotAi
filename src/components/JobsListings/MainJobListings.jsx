@@ -1244,6 +1244,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                             isSaved={savedJobs.has(job.id)} 
                                             onToggleSaved={toggleSavedJob} 
                                             onViewDetails={handleViewDetails} 
+                                            onApply={handleOpenJobApplication}
                                             onAuthRequired={authBtnHandler}
                                         />
                                     ))}
