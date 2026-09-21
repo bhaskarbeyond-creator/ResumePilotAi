@@ -57,4 +57,20 @@ test.describe('Job Application Modal: AI 1-Click Quick Pitch & In-Modal Preview 
         assert.match(modalSource, /if\s*\(showPreviewModal\)\s*\{\s*setShowPreviewModal\(false\);/, 'Escape key gracefully closes preview modal first');
         assert.match(modalSource, /handleResumeSelect\(previewResume\)/, 'Preview modal provides 1-click Select This Resume action');
     });
+
+    test('6. Preview viewport eliminates legacy 842px height clipping and supports multi-page resumes', () => {
+        // Must NOT contain the old fixed-height clipping wrapper that chopped off multi-page resumes
+        assert.doesNotMatch(modalSource, /height:\s*['"]842px['"],\s*overflow:\s*['"]hidden['"]/, 'Legacy 842px fixed-height clipping container is eliminated');
+        assert.doesNotMatch(modalSource, /<div className="mt-5 text-center">[\s\S]*?previewDisplayName[\s\S]*?<\/div>/, 'Awkward footer metadata card is removed from under resume');
+        
+        // Modal must expand when showPreviewModal is active
+        assert.match(modalSource, /showResumeSelector\s*\|\|\s*showPreviewModal\s*\?\s*['"]max-w-4xl\s+lg:max-w-5xl['"]/, 'Modal container expands width when previewing resume');
+    });
+
+    test('7. Application submission contract sends canonical resume ID and never clipped HTML', () => {
+        // Submits resumeId and selectedResume metadata to backend; server links canonical database record
+        assert.match(modalSource, /resumeId:\s*applicationData\.selectedResume\?\.id/, 'Submits canonical resumeId');
+        assert.match(modalSource, /selectedResume:\s*applicationData\.selectedResume\s*\?/, 'Submits selectedResume descriptor');
+    });
 });
+

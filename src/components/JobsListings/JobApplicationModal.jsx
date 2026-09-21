@@ -699,7 +699,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                     onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) onClose(); }}
                     onClick={(e) => e.target === e.currentTarget && !isSubmitting && onClose()}>
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className={`relative bg-white rounded-2xl shadow-2xl w-full ${showResumeSelector ? 'max-w-4xl lg:max-w-5xl' : 'max-w-2xl'} max-h-[94vh] overflow-hidden flex flex-col border border-slate-100 transition-all duration-300`} variants={modalVariants} onClick={(e) => e.stopPropagation()}>
+                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className={`relative bg-white rounded-2xl shadow-2xl w-full ${showResumeSelector || showPreviewModal ? 'max-w-4xl lg:max-w-5xl' : 'max-w-2xl'} max-h-[94vh] overflow-hidden flex flex-col border border-slate-100 transition-all duration-300`} variants={modalVariants} onClick={(e) => e.stopPropagation()}>
                         <AnimatePresence mode="wait">
                             {isSubmitted ? (
                                 <motion.div key="success" className="p-8 text-center my-auto" variants={successVariants} initial="hidden" animate="visible">
@@ -1492,27 +1492,34 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.25 }}>
                                 {/* Preview Header - Fixed */}
-                                <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50/80 via-slate-50 to-indigo-50/50">
+                                <div className="flex-shrink-0 flex items-center justify-between px-5 sm:px-6 py-3.5 border-b border-slate-200 bg-white shadow-2xs">
                                     <div className="flex items-center space-x-3 min-w-0">
                                         <button
                                             type="button"
                                             onClick={() => setShowPreviewModal(false)}
-                                            className="p-2 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer text-slate-600"
-                                            title="Back">
+                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer text-slate-500 hover:text-slate-800"
+                                            title="Back to application">
                                             <FaArrowLeft className="w-4 h-4" />
                                         </button>
                                         <div className="min-w-0">
-                                            <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">Resume Preview</h2>
-                                            <p className="text-xs text-slate-500 truncate">
-                                                {previewDisplayName}
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-base font-bold text-slate-900 truncate">Resume Preview</h2>
+                                                {previewTitle && (
+                                                    <span className="hidden sm:inline-flex text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                                                        {previewTitle}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-slate-500 truncate mt-0.5">
+                                                {previewDisplayName} • {t('JobsUpdate.JobApplicationModal.resume.createdAt', 'Created {{date}}', { date: previewDateFormatted })}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center space-x-2 sm:space-x-3">
+                                    <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
                                         <button
                                             type="button"
                                             onClick={() => setShowPreviewModal(false)}
-                                            className="px-3.5 py-2 text-xs sm:text-sm font-semibold border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+                                            className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
                                             Close
                                         </button>
                                         <button
@@ -1521,53 +1528,25 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                 handleResumeSelect(previewResume);
                                                 setShowPreviewModal(false);
                                             }}
-                                            className="px-4 py-2 text-xs sm:text-sm font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
+                                            className="px-4 py-1.5 text-xs sm:text-sm font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
                                             <FaCheck className="w-3 h-3" />
                                             <span>{t('JobsUpdate.JobApplicationModal.resume.selectThis', 'Select This Resume')}</span>
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Preview Content - Scrollable */}
-                                <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-100/80 p-4 sm:p-6" style={{ maxHeight: 'calc(94vh - 120px)' }}>
-                                    <div className="flex justify-center">
-                                        <div className="bg-white shadow-xl rounded-xl p-4 sm:p-6 max-w-full">
-                                            {/* Resume container with proper scaling */}
-                                            <div className="flex justify-center overflow-auto">
-                                                <div
-                                                    className="bg-white shadow-md border border-gray-200 rounded-sm"
-                                                    style={{
-                                                        width: '595px',
-                                                        height: '842px',
-                                                        overflow: 'hidden',
-                                                    }}>
-                                                    <div
-                                                        className="w-[794px] h-[1123px]"
-                                                        style={{
-                                                            transform: 'scale(0.75)',
-                                                            transformOrigin: 'top left',
-                                                        }}>
-                                                        {renderTemplatePreview(previewResume)}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Resume info below preview */}
-                                            <div className="mt-5 text-center">
-                                                <h3 className="text-base font-bold text-slate-900">
-                                                    {previewDisplayName}
-                                                </h3>
-                                                <p className="text-xs text-slate-500 mt-0.5">
-                                                    {t('JobsUpdate.JobApplicationModal.resume.createdAt', 'Created {{date}}', {
-                                                        date: previewDateFormatted,
-                                                    })}
-                                                </p>
-                                                {previewTitle && (
-                                                    <p className="text-xs font-medium text-slate-700 mt-1">
-                                                        {previewTitle}
-                                                    </p>
-                                                )}
-                                            </div>
+                                {/* Preview Content - Full Multi-Page Scrollable Viewport */}
+                                <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-900/90 p-4 sm:p-8" style={{ maxHeight: 'calc(94vh - 80px)' }}>
+                                    <div className="flex justify-center items-start min-h-full pb-16">
+                                        <div
+                                            className="bg-white shadow-2xl rounded-sm transition-transform duration-200"
+                                            style={{
+                                                width: '794px',
+                                                transform: 'scale(0.85)',
+                                                transformOrigin: 'top center',
+                                                minHeight: '1123px',
+                                            }}>
+                                            {renderTemplatePreview(previewResume)}
                                         </div>
                                     </div>
                                 </div>
