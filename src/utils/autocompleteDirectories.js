@@ -216,14 +216,15 @@ export const UNIVERSAL_CERTIFICATIONS = Object.freeze([
 ]);
 
 export const UNIVERSAL_LANGUAGES = Object.freeze([
-    'English', 'Spanish (Español)', 'French (Français)', 'German (Deutsch)', 'Mandarin Chinese (中文)',
-    'Hindi (हिन्दी)', 'Arabic (العربية)', 'Portuguese (Português)', 'Russian (Русский)', 'Japanese (日本語)',
-    'Italian (Italiano)', 'Korean (한국어)', 'Dutch (Nederlands)', 'Turkish (Türkçe)', 'Polish (Polski)',
-    'Swedish (Svenska)', 'Danish (Dansk)', 'Norwegian (Norsk)', 'Finnish (Suomi)', 'Greek (Ελληνικά)',
-    'Hebrew (עברית)', 'Vietnamese (Tiếng Việt)', 'Thai (ไทย)', 'Indonesian (Bahasa Indonesia)',
-    'Malay (Bahasa Melayu)', 'Tagalog (Filipino)', 'Bengali (বাংলা)', 'Tamil (தமிழ்)', 'Telugu (తెలుగు)',
-    'Urdu (اردو)', 'Persian / Farsi (فارسی)', 'Ukrainian (Українська)', 'Czech (Čeština)',
-    'Hungarian (Magyar)', 'Romanian (Română)', 'Slovak', 'Bulgarian', 'Croatian', 'Serbian'
+    'English', 'Spanish', 'French', 'German', 'Mandarin Chinese',
+    'Hindi', 'Arabic', 'Portuguese', 'Russian', 'Japanese',
+    'Italian', 'Korean', 'Dutch', 'Turkish', 'Polish',
+    'Swedish', 'Danish', 'Norwegian', 'Finnish', 'Greek',
+    'Hebrew', 'Vietnamese', 'Thai', 'Indonesian',
+    'Malay', 'Tagalog', 'Bengali', 'Tamil', 'Telugu',
+    'Kannada', 'Malayalam', 'Marathi', 'Gujarati', 'Punjabi',
+    'Urdu', 'Persian / Farsi', 'Ukrainian', 'Czech',
+    'Hungarian', 'Romanian', 'Slovak', 'Bulgarian', 'Croatian', 'Serbian'
 ]);
 
 export const UNIVERSAL_SKILLS = Object.freeze([
@@ -707,6 +708,82 @@ export const CITY_ALIASES = Object.freeze({
     'eze': 'Buenos Aires, Buenos Aires'
 });
 
+/** Common vernacular, native script, and colloquial language name mappings. */
+export const LANGUAGE_ALIASES = Object.freeze({
+    'espanol': 'Spanish',
+    'español': 'Spanish',
+    'castellano': 'Spanish',
+    'francais': 'French',
+    'français': 'French',
+    'deutsch': 'German',
+    'german': 'German',
+    'portugues': 'Portuguese',
+    'português': 'Portuguese',
+    'cestina': 'Czech',
+    'čeština': 'Czech',
+    'nihongo': 'Japanese',
+    '日本語': 'Japanese',
+    'hangul': 'Korean',
+    'hangugeo': 'Korean',
+    '한국어': 'Korean',
+    'zhongwen': 'Mandarin Chinese',
+    '中文': 'Mandarin Chinese',
+    'mandarin': 'Mandarin Chinese',
+    'chinese': 'Mandarin Chinese',
+    'russkiy': 'Russian',
+    'русский': 'Russian',
+    'italiano': 'Italian',
+    'nederlands': 'Dutch',
+    'turkce': 'Turkish',
+    'türkçe': 'Turkish',
+    'polski': 'Polish',
+    'svenska': 'Swedish',
+    'dansk': 'Danish',
+    'norsk': 'Norwegian',
+    'suomi': 'Finnish',
+    'ellinika': 'Greek',
+    'ελληνικά': 'Greek',
+    'ivrit': 'Hebrew',
+    'עברית': 'Hebrew',
+    'tieng viet': 'Vietnamese',
+    'tiếng việt': 'Vietnamese',
+    'thai': 'Thai',
+    'ไทย': 'Thai',
+    'bahasa': 'Indonesian',
+    'bahasa indonesia': 'Indonesian',
+    'bahasa melayu': 'Malay',
+    'filipino': 'Tagalog',
+    'tagalog': 'Tagalog',
+    'bangla': 'Bengali',
+    'বাংলা': 'Bengali',
+    'tamil': 'Tamil',
+    'தமிழ்': 'Tamil',
+    'telugu': 'Telugu',
+    'తెలుగు': 'Telugu',
+    'hindi': 'Hindi',
+    'हिन्दी': 'Hindi',
+    'urdu': 'Urdu',
+    'اردو': 'Urdu',
+    'farsi': 'Persian / Farsi',
+    'persian': 'Persian / Farsi',
+    'فارسی': 'Persian / Farsi',
+    'magyar': 'Hungarian',
+    'romana': 'Romanian',
+    'română': 'Romanian',
+    'ukrayinska': 'Ukrainian',
+    'українська': 'Ukrainian',
+    'kannada': 'Kannada',
+    'ಕನ್ನಡ': 'Kannada',
+    'malayalam': 'Malayalam',
+    'മലയാളം': 'Malayalam',
+    'marathi': 'Marathi',
+    'मराठी': 'Marathi',
+    'gujarati': 'Gujarati',
+    'ગુજરાતી': 'Gujarati',
+    'punjabi': 'Punjabi',
+    'ਪੰਜਾਬੀ': 'Punjabi'
+});
+
 /** State and province abbreviation mappings for ranking tier-1 cities. */
 export const STATE_ABBREVIATIONS = Object.freeze({
     'california': 'ca',
@@ -982,6 +1059,12 @@ export function isTypoMatch(candidateStr, queryStr) {
     // Check state abbreviation expansion (e.g. query="california" matches "San Francisco, CA")
     const stateAbbr = STATE_ABBREVIATIONS[cleanQ];
     if (stateAbbr && (itemLower.endsWith(`, ${stateAbbr}`) || itemLower.includes(`, ${stateAbbr}`))) {
+        return true;
+    }
+
+    // Check language alias target match (e.g. candidate="Spanish", query="espanol")
+    const langAliasTarget = LANGUAGE_ALIASES[cleanQ] || LANGUAGE_ALIASES[stripDiacritics(cleanQ)];
+    if (langAliasTarget && itemLower.includes(langAliasTarget.toLowerCase())) {
         return true;
     }
 
@@ -1584,8 +1667,19 @@ export function matchUniversalDirectory(directoryType, query = '', maxResults = 
     const cleanQ = query.trim();
     const cleanQLower = stripDiacritics(cleanQ.toLowerCase());
     const isCity = normalizeKey(directoryType) === 'city' || normalizeKey(directoryType) === 'location';
+    const isLang = normalizeKey(directoryType) === 'language' || normalizeKey(directoryType) === 'languages';
 
-    // 0. Instant City Alias & State Abbreviation check
+    // 0a. Instant Language Alias check (e.g. "espanol" -> "Spanish", "telugu" / "తెలుగు" -> "Telugu")
+    if (isLang) {
+        const langAlias = LANGUAGE_ALIASES[cleanQLower] || LANGUAGE_ALIASES[cleanQ.toLowerCase()] || LANGUAGE_ALIASES[cleanQ];
+        if (langAlias) {
+            const exactTarget = dataset.find(l => l.toLowerCase() === langAlias.toLowerCase()) || langAlias;
+            const otherMatches = findMatches(dataset, langAlias, maxResults);
+            return dedupe([exactTarget, ...otherMatches]).slice(0, maxResults);
+        }
+    }
+
+    // 0b. Instant City Alias & State Abbreviation check
     if (isCity) {
         const aliasTarget = CITY_ALIASES[cleanQLower];
         if (aliasTarget) {

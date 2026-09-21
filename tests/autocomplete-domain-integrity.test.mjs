@@ -112,10 +112,11 @@ test('3.1 Company domain accepts real employers and rejects person job titles', 
 test('4.1 Language domain accepts natural human languages and rejects programming languages', () => {
     // Valid natural languages
     assert.ok(isDomainCompatible('language', 'English'));
-    assert.ok(isDomainCompatible('language', 'Spanish (Español)'));
-    assert.ok(isDomainCompatible('language', 'Hindi (हिन्दी)'));
-    assert.ok(isDomainCompatible('language', 'German (Deutsch)'));
-    assert.ok(isDomainCompatible('language', 'Mandarin Chinese (中文)'));
+    assert.ok(isDomainCompatible('language', 'Spanish'));
+    assert.ok(isDomainCompatible('language', 'Hindi'));
+    assert.ok(isDomainCompatible('language', 'Telugu'));
+    assert.ok(isDomainCompatible('language', 'German'));
+    assert.ok(isDomainCompatible('language', 'Mandarin Chinese'));
 
     // Strictly forbidden programming languages in spoken language field
     assert.equal(isDomainCompatible('language', 'Python'), false);

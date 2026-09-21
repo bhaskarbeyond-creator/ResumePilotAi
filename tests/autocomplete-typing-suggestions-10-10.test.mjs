@@ -49,7 +49,7 @@ test('1.4 Certification directory contains top industry credentials', () => {
 
 test('1.5 Language directory contains major world languages', () => {
     assert.ok(UNIVERSAL_LANGUAGES.length >= 30, `Expected at least 30 languages, got ${UNIVERSAL_LANGUAGES.length}`);
-    const expected = ['English', 'German (Deutsch)', 'Mandarin Chinese (中文)', 'Hindi (हिन्दी)', 'Spanish (Español)'];
+    const expected = ['English', 'German', 'Mandarin Chinese', 'Hindi', 'Spanish', 'Telugu'];
     for (const lang of expected) {
         assert.ok(UNIVERSAL_LANGUAGES.includes(lang), `Language directory must contain ${lang}`);
     }
