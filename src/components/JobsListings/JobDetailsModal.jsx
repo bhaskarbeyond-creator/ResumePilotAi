@@ -34,6 +34,8 @@ const JobDetailsModal = ({
     _onToggleSaved,
     onApplyNow,
     t,
+    currency = 'INR',
+    currencySymbol = '₹',
 }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [isExpanded, setIsExpanded] = useState(false);
@@ -73,7 +75,7 @@ const JobDetailsModal = ({
         salaryRange: {
             min: job?.minSalary || 0,
             max: job?.maxSalary || 0,
-            currency: 'USD',
+            currency: job?.salary_currency || job?.currency || currency || 'INR',
         },
         benefits:
             job?.benefits && job.benefits.length > 0

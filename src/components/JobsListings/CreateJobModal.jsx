@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaImage, FaExclamationTriangle } from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaMapMarkerAlt, FaDollarSign, FaCoins, FaClock, FaUsers, FaGraduationCap, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaCheck, FaChevronDown, FaArrowRight, FaSpinner, FaUser, FaImage, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../context/AuthContext';
 import { checkIsEmployer, submitEmployerApplication, createJobPosting, getApprovedEmployerCompanies } from '../../services/api/platform';
 import EmployerApplicationForm from './EmployerApplicationForm';
@@ -204,6 +204,7 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
                 experienceLevel: formData.experience,
                 minSalary: formData.minSalary ? parseInt(formData.minSalary) : null,
                 maxSalary: formData.maxSalary ? parseInt(formData.maxSalary) : null,
+                salary_currency: 'INR',
                 description: formData.description.trim(),
                 requirements: formData.requirements.filter((req) => req.trim() !== ''),
                 benefits: formData.benefits.filter((benefit) => benefit.trim() !== ''),
@@ -551,7 +552,7 @@ const CreateJobModal = ({ isOpen, onClose, onJobCreated, t }) => {
                                             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                                                     <div className="flex items-center gap-2">
-                                                        <FaDollarSign className="w-4 h-4 text-blue-600" />
+                                                        <FaCoins className="w-4 h-4 text-emerald-600" />
                                                         <h3 className="font-semibold text-gray-900 text-base">{t('JobsUpdate.CreateJobModal.sections.compensation', 'Compensation & Deadline')}</h3>
                                                     </div>
                                                 </div>

@@ -14,6 +14,8 @@ const FavoritesModal = ({
     _user,
     t
 }) => {
+    const safeSavedJobs = savedJobs instanceof Set ? savedJobs : new Set(Array.isArray(savedJobs) ? savedJobs : []);
+
     // Prevent background scrolling when modal is open
     React.useEffect(() => {
         if (isOpen) {
@@ -98,7 +100,7 @@ const FavoritesModal = ({
                                         <div>
                                             <h1 className="text-lg font-semibold">{t('JobsUpdate.FavoritesModal.title', 'Favorite Jobs')}</h1>
                                             <p className="text-blue-100 text-sm">
-                                                {savedJobs.size} {savedJobs.size === 1 ? t('JobsUpdate.FavoritesModal.job', 'job') : t('JobsUpdate.FavoritesModal.jobs', 'jobs')} {t('JobsUpdate.FavoritesModal.saved', 'saved')}
+                                                {safeSavedJobs.size} {safeSavedJobs.size === 1 ? t('JobsUpdate.FavoritesModal.job', 'job') : t('JobsUpdate.FavoritesModal.jobs', 'jobs')} {t('JobsUpdate.FavoritesModal.saved', 'saved')}
                                             </p>
                                         </div>
                                     </div>
@@ -113,7 +115,7 @@ const FavoritesModal = ({
 
                             {/* Content */}
                             <div className="flex-1 overflow-y-auto p-6">
-                                {savedJobs.size === 0 ? (
+                                {safeSavedJobs.size === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-full text-center">
                                         <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center mb-4">
                                             <FaHeart className="w-6 h-6 text-slate-400" />
@@ -134,14 +136,14 @@ const FavoritesModal = ({
                                         <div className="flex items-center justify-between mb-4">
                                             <h2 className="text-lg font-semibold text-slate-900">{t('JobsUpdate.FavoritesModal.yourSavedJobs', 'Your Saved Jobs')}</h2>
                                             <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                                                {savedJobs.size} {savedJobs.size === 1 ? t('JobsUpdate.FavoritesModal.job', 'job') : t('JobsUpdate.FavoritesModal.jobs', 'jobs')}
+                                                {safeSavedJobs.size} {safeSavedJobs.size === 1 ? t('JobsUpdate.FavoritesModal.job', 'job') : t('JobsUpdate.FavoritesModal.jobs', 'jobs')}
                                             </span>
                                         </div>
 
                                         {/* Check for missing jobs */}
                                         {(() => {
-                                            const availableJobs = jobs.filter((job) => savedJobs.has(job.id));
-                                            const missingJobsCount = savedJobs.size - availableJobs.length;
+                                            const availableJobs = (jobs || []).filter((job) => safeSavedJobs.has(job?.id));
+                                            const missingJobsCount = Math.max(0, safeSavedJobs.size - availableJobs.length);
                                             
                                             return (
                                                 <div className="space-y-3">
@@ -187,13 +189,18 @@ const FavoritesModal = ({
                                                                     <div className="flex-1">
                                                                         <h3 className="font-semibold text-slate-900 text-sm mb-1">{job.title}</h3>
                                                                         <p className="text-slate-600 text-sm mb-2">{job.company}</p>
-                                                                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                                                                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
                                                                             <span className="flex items-center gap-1">
-                                                                                <FaMapMarkerAlt className="w-3 h-3" />
+                                                                                <FaMapMarkerAlt className="w-3 h-3 text-slate-400" />
                                                                                 {job.location}
                                                                             </span>
+                                                                            {job.salary && (
+                                                                                <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                                                    {job.salary}
+                                                                                </span>
+                                                                            )}
                                                                             <span className="flex items-center gap-1">
-                                                                                <FaClock className="w-3 h-3" />
+                                                                                <FaClock className="w-3 h-3 text-slate-400" />
                                                                                 {job.postedDate}
                                                                             </span>
                                                                         </div>

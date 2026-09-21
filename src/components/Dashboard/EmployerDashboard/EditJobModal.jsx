@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { withTranslation } from 'react-i18next';
-import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { FaBriefcase, FaMapMarkerAlt, FaDollarSign, FaCoins, FaFileAlt, FaSave, FaTimes, FaPlus, FaTrash, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import { AuthContext } from '../../../context/AuthContext';
 import { updateJobPosting, getApprovedEmployerCompanies } from '../../../services/api/platform';
 import CustomLocationAutocomplete from '../../JobsListings/CustomLocationAutocomplete';
@@ -192,6 +192,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                 experienceLevel: formData.experience,
                 minSalary: formData.minSalary ? parseInt(formData.minSalary) : null,
                 maxSalary: formData.maxSalary ? parseInt(formData.maxSalary) : null,
+                salary_currency: job?.salary_currency || job?.currency || 'INR',
                 description: formData.description.trim(),
                 requirements: formData.requirements.filter((req) => req.trim() !== ''),
                 benefits: formData.benefits.filter((benefit) => benefit.trim() !== ''),
@@ -501,7 +502,7 @@ const EditJobModal = ({ isOpen, onClose, job, onJobUpdated, showToast, t }) => {
                                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                                         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                                             <div className="flex items-center gap-2">
-                                                <FaDollarSign className="w-4 h-4 text-blue-600" />
+                                                <FaCoins className="w-4 h-4 text-emerald-600" />
                                                 <h3 className="font-semibold text-gray-900 text-base">{t('JobsUpdate.EditJobModal.sections.compensationDeadline', 'Compensation & Deadline')}</h3>
                                             </div>
                                         </div>

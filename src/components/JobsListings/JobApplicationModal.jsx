@@ -557,11 +557,13 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
             // Build the bounded application payload; identity and resume data are resolved by the backend.
             const sanitizedApplicationData = {
                 fullName: applicationData.fullName || '',
+                email: applicationData.email || '',
                 phone: applicationData.phone || '',
                 linkedinUrl: applicationData.linkedinUrl || '',
                 githubUrl: applicationData.githubUrl || '',
                 coverLetter: applicationData.coverLetter || '',
-                selectedResume: applicationData.selectedResume ? { id: applicationData.selectedResume.id || '' } : null,
+                resumeId: applicationData.selectedResume?.id || '',
+                selectedResume: applicationData.selectedResume ? { id: applicationData.selectedResume.id || '', name: applicationData.selectedResume.name || '' } : null,
             };
 
             const result = await submitJobApplication(accountUid, targetJobId, sanitizedApplicationData);

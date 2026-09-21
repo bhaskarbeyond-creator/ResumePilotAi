@@ -284,7 +284,7 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
         );
     };
 
-    (status) => {;
+    const getApplicationStatusBadge = (status) => {
         const statusConfig = {
             pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: FaClock, label: 'Pending' },
             interview: { bg: 'bg-blue-100', text: 'text-blue-700', icon: FaUsers, label: 'Interview' },
@@ -303,14 +303,15 @@ const EmployerDashboard = ({ showToast, _sidebarCollapsed, t }) => {
         );
     };
 
-    // Helper function to format salary display
-    const formatSalaryDisplay = (minSalary, maxSalary) => {
+    // Helper function to format salary display with default Rupee symbol
+    const formatSalaryDisplay = (minSalary, maxSalary, currencySymbol = '₹') => {
         if (!minSalary && !maxSalary) return 'Salary not specified';
+        const sym = currencySymbol || '₹';
         if (minSalary && maxSalary) {
-            return `$${(minSalary / 1000).toFixed(0)}k - $${(maxSalary / 1000).toFixed(0)}k`;
+            return `${sym}${(minSalary / 1000).toFixed(0)}k - ${sym}${(maxSalary / 1000).toFixed(0)}k`;
         }
-        if (minSalary) return `$${(minSalary / 1000).toFixed(0)}k+`;
-        if (maxSalary) return `Up to $${(maxSalary / 1000).toFixed(0)}k`;
+        if (minSalary) return `${sym}${(minSalary / 1000).toFixed(0)}k+`;
+        if (maxSalary) return `Up to ${sym}${(maxSalary / 1000).toFixed(0)}k`;
         return 'Salary not specified';
     };
 

@@ -1312,6 +1312,8 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                 isSaved={selectedJob ? savedJobs.has(selectedJob.id) : false} 
                 onToggleSaved={toggleSavedJob}
                 onApplyNow={handleOpenJobApplication}
+                currency={currencyConfig.currency}
+                currencySymbol={currencyConfig.currencySymbol}
             />
 
             {/* Job Application Modal */}
