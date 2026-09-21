@@ -67,7 +67,7 @@ try {
   const clean = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-verifier' });
   const discovered = discoverMigrations();
   const latestMigrationVersion = discovered.at(-1)?.version;
-  if (!clean.current || latestMigrationVersion !== '015') throw new Error(`Clean-state migration application did not reach version 015 (observed ${latestMigrationVersion || 'none'})`);
+  if (!clean.current || latestMigrationVersion !== '017') throw new Error(`Clean-state migration application did not reach version 017 (observed ${latestMigrationVersion || 'none'})`);
 
   const invitationTableCount = await scalar(pool,
     `SELECT COUNT(*) AS count FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'enterprise_membership_invitations'`,
@@ -178,6 +178,35 @@ try {
     `SELECT COUNT(*) AS count FROM information_schema.TABLES
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ('support_tickets', 'support_ticket_messages')`,
     [databaseName]);
+  const resumeTargetColumnCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'resumes'
+       AND COLUMN_NAME IN ('targetJobDescription', 'targetRole')`,
+    [databaseName]);
+  const liveInterviewTableCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'`,
+    [databaseName]);
+  const liveInterviewColumnCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'
+       AND COLUMN_NAME IN ('id', 'user_id', 'status', 'revision', 'state_json', 'expires_at', 'completed_at', 'created_at', 'updated_at')`,
+    [databaseName]);
+  const liveInterviewIndexCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'
+       AND INDEX_NAME IN ('idx_live_interview_owner_active', 'idx_live_interview_expiry')`,
+    [databaseName]);
+  const liveInterviewConstraintCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.TABLE_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'
+       AND CONSTRAINT_NAME = 'chk_live_interview_status' AND CONSTRAINT_TYPE = 'CHECK'`,
+    [databaseName]);
+  const liveInterviewForeignKeyCount = await scalar(pool,
+    `SELECT COUNT(*) AS count FROM information_schema.REFERENTIAL_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'
+       AND CONSTRAINT_NAME = 'fk_live_interview_sessions_user'`,
+    [databaseName]);
   if (invitationTableCount !== 1 || membershipIndexCount !== 2
       || aiMetadataColumnCount !== 6 || aiIdempotencyIndexCount !== 2 || aiForeignKeyCount !== 2
       || trackerColumnCount !== 2 || trackerIndexCount !== 2 || notificationStateConstraintCount !== 1
@@ -187,9 +216,12 @@ try {
       || billingEvidenceConstraintCount !== 3 || configurationCategoryCount !== 4
       || cmsRelationalColumnCount !== 5 || customPageStatusConstraintCount !== 1
       || failClosedDefaultsCount !== 1 || unevidencedRatingCount !== 0
-      || supportTicketTableCount !== 2) {
-    // information_schema.STATISTICS has one row per indexed column.
-    throw new Error('Migration 005-015 tables, columns, indexes, constraints, bootstrap rows, or fail-closed defaults are missing');
+      || supportTicketTableCount !== 2 || resumeTargetColumnCount !== 2
+      || liveInterviewTableCount !== 1 || liveInterviewColumnCount !== 9
+      || liveInterviewIndexCount !== 4 || liveInterviewConstraintCount !== 1 || liveInterviewForeignKeyCount !== 1) {
+    // information_schema.STATISTICS has one row per indexed column. The owner
+    // index has three indexed columns and the expiry index has one.
+    throw new Error('Migration 005-017 tables, columns, indexes, constraints, bootstrap rows, or fail-closed defaults are missing');
   }
 
   const paymentProbeSql = `INSERT INTO payment_orders
@@ -267,8 +299,31 @@ try {
   if (!invalidNotificationStateRejected) throw new Error('Migration 008 CHECK did not reject an invalid notification state');
   await pool.query("DELETE FROM notification_outbox WHERE id = 'migration-008-probe'");
 
+  await pool.query("INSERT INTO users (id, email, revision) VALUES ('migration-017-owner', 'migration-017@example.test', 1)");
+  await expectDatabaseRejection(
+    pool,
+    `INSERT INTO live_interview_sessions
+       (id, user_id, status, revision, state_json, expires_at)
+     VALUES ('migration-017-invalid-status', 'migration-017-owner', 'INVALID', 1, '{}', DATE_ADD(NOW(3), INTERVAL 30 MINUTE))`,
+    [],
+    checkErrors,
+    'Invalid live interview status'
+  );
+  await pool.query("DELETE FROM users WHERE id = 'migration-017-owner'");
+
   const connection = await pool.getConnection();
   try {
+    await executeFile(connection, path.join(ROOT, 'backend/database/migrations/017_live_interview_sessions.down.sql'));
+    if (await scalar(connection,
+      `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'live_interview_sessions'`, [databaseName])) {
+      throw new Error('Migration 017 rollback did not remove live interview sessions');
+    }
+    await executeFile(connection, path.join(ROOT, 'backend/database/migrations/016_resume_target_role_and_job_description.down.sql'));
+    if (await scalar(connection,
+      `SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'resumes'
+       AND COLUMN_NAME IN ('targetJobDescription', 'targetRole')`, [databaseName])) {
+      throw new Error('Migration 016 rollback did not remove resume target metadata');
+    }
     await executeFile(connection, path.join(ROOT, 'backend/database/migrations/015_support_tickets.down.sql'));
     if (await scalar(connection,
       `SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN ('support_tickets', 'support_ticket_messages')`, [databaseName])) {
@@ -325,14 +380,14 @@ try {
        )`, [databaseName])) {
       throw new Error('Migration 013 rollback did not remove CMS relational metadata');
     }
-    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015')");
+    await connection.query("DELETE FROM schema_migrations WHERE version IN ('005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017')");
   } finally {
     connection.release();
   }
 
   const reapplied = await runMigrations(pool, { mode: 'apply', appliedBy: 'isolated-ci-rollback-verifier' });
-  if (!reapplied.current || !['005', '006', '007', '008', '009', '010', '011', '012', '013', '014'].every(version => reapplied.applied.some(item => item.version === version))) {
-    throw new Error('Migrations 005 through 014 did not reapply after rollback');
+  if (!reapplied.current || !['005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015', '016', '017'].every(version => reapplied.applied.some(item => item.version === version))) {
+    throw new Error('Migrations 005 through 017 did not reapply after rollback');
   }
 
   // Migration 008 must reject historical unknown states instead of silently
