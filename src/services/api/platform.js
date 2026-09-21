@@ -573,7 +573,9 @@ export async function getUserData(userId) {
 }
 
 export async function checkIsEmployer(userId) {
-    const user = await getUserData(userId);
+    const uid = typeof userId === 'string' ? userId : (userId?.uid || userId?.id || '');
+    if (!uid) return false;
+    const user = await getUserData(uid);
     return user?.isEmployer === true || String(user?.role || '').toUpperCase() === 'EMPLOYER' || user?.employerApproved === true;
 }
 

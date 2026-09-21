@@ -1082,7 +1082,8 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                     onOpenFavorites={handleOpenFavorites}
                     savedJobsCount={savedJobs.size}
                     user={user}
-                    canPostJob={canPostJob}
+                    canPostJob={!isInsideDashboard && canPostJob}
+                    isInsideDashboard={isInsideDashboard}
                     onQuickFilter={handleQuickFilter}
                     onSearch={() => loadJobs(1)}
                     currency={currencyConfig.currency}

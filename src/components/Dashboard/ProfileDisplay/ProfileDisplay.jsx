@@ -220,10 +220,11 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
     }, [sidebarCollapsed]);
 
     useEffect(() => {
-        if (user) {
-            checkIsEmployer(user)
+        const targetUid = user?.uid || authUser?.uid;
+        if (targetUid) {
+            checkIsEmployer(targetUid)
                 .then((employerStatus) => {
-                    setIsEmployer(employerStatus);
+                    setIsEmployer(Boolean(employerStatus));
                 })
                 .catch((error) => {
                     console.error('Error checking employer status:', error);
@@ -232,7 +233,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
         } else {
             setIsEmployer(false);
         }
-    }, [user]);
+    }, [user, authUser]);
 
     useEffect(() => {
         const handleNotificationsUpdated = () => {

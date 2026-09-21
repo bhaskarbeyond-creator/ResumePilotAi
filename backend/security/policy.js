@@ -21,7 +21,7 @@ const ADMIN_EXACT = new Set([
 ]);
 
 const VERIFIED_PREFIXES = [
-  '/generate-', '/check-grammar', '/ai/', '/pay', '/paypal/', '/razorpay/',
+  '/generate-', '/check-grammar', '/evaluate-', '/ai/', '/pay', '/paypal/', '/razorpay/',
   '/paytm/', '/phonepe/', '/export', '/invoice',
   '/linkedin-scraper', '/subscription/', '/account/', '/messages/', '/jobs/', '/job-applications/', '/employer/', '/notify/', '/email/', '/admin/ai', '/platform/'
 ];

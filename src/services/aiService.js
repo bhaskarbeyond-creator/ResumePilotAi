@@ -46,7 +46,7 @@ export function resolveDynamicModel(provider, aiConfig = {}) {
 }
 
 const ALLOWED_ENDPOINTS = new Set([
-    'generate-summary', 'generate-interview',
+    'generate-summary', 'generate-interview', 'evaluate-interview-answer',
     'generate-work-description', 'generate-education-description',
     'generate-skills', 'generate-certifications', 'check-grammar', 'enhance-single-bullet',
     'autocomplete', 'generate-ai-cover-letter', 'generate-job-description', 'generate-content',

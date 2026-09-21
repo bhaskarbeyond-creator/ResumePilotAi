@@ -1,5 +1,6 @@
 export const INTERVIEW_MODES = {
-    practice: { id: 'practice', label: 'Practice', timerRequired: false, allowPause: true, freeNav: true },
+    live: { id: 'live', label: 'Live AI CBT Interview', isConversational: true, timerRequired: true, allowPause: true, freeNav: false },
+    practice: { id: 'practice', label: 'Practice Quiz', timerRequired: false, allowPause: true, freeNav: true },
     mock: { id: 'mock', label: 'Mock Interview', timerRequired: true, allowPause: true, freeNav: true },
     assessment: { id: 'assessment', label: 'CBT Assessment', timerRequired: true, allowPause: false, freeNav: true },
 };

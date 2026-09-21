@@ -15,6 +15,7 @@ const JobSearchBar = ({
     savedJobsCount,
     user,
     canPostJob = false,
+    isInsideDashboard = false,
     onQuickFilter,
     onSearch,
     currency = 'INR',
@@ -108,8 +109,8 @@ const JobSearchBar = ({
                         )}
                     </button>
 
-                    {/* Post Job Button - Visible exclusively for Recruiters / Employers & Admins, hidden for Candidates */}
-                    {canPostJob && (
+                    {/* Post Job Button - Visible exclusively for Recruiters / Employers & Admins outside candidate dashboard; candidates are consumers/appliers */}
+                    {!isInsideDashboard && canPostJob && (
                         <button
                             onClick={onSubmitJob}
                             type="button"

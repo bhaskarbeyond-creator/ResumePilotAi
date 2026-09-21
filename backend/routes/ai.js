@@ -20,7 +20,7 @@ async function generateConfiguredText(req, res, prompt, operation, overrides = {
 const AI_ROUTE_PATHS = new Set([
     '/generate-resume', '/generate-summary', '/generate-interview', '/generate-work-description',
     '/generate-education-description', '/generate-skills', '/check-grammar', '/generate-content',
-    '/parse-resume',
+    '/parse-resume', '/evaluate-interview-answer',
 ]);
 router.use((req, res, next) => {
     if (!AI_ROUTE_PATHS.has(req.path)) return next();
@@ -504,6 +504,186 @@ router.post('/generate-interview', async (req, res) => {
         res.json(fallbackData);
     }
 });
+
+// POST /api/evaluate-interview-answer - Evaluate conversational candidate answer with STAR rubric
+router.post('/evaluate-interview-answer', async (req, res) => {
+    const markSource = (source) => {
+        if (res?.setHeader && !res.headersSent) res.setHeader('X-AI-Source', source);
+    };
+    try {
+        const {
+            question,
+            answer,
+            occupation = 'Professional',
+            interviewType = 'behavioral',
+            experienceLevel = 'mid',
+            turnIndex = 1,
+            totalTurns = 5,
+            candidateResumeFacts = '',
+        } = req.body || {};
+
+        if (typeof question !== 'string' || !question.trim()) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Interview question is required', requestId: res.locals.requestId } });
+        }
+        if (typeof answer !== 'string' || !answer.trim()) {
+            return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Candidate answer is required', requestId: res.locals.requestId } });
+        }
+
+        const safeQuestion = sanitizePromptFragment(question, 500);
+        const safeAnswer = sanitizePromptFragment(answer, 2500);
+        const safeRole = sanitizePromptFragment(occupation, 100);
+        const safeType = sanitizePromptFragment(interviewType, 50);
+        const safeLevel = sanitizePromptFragment(experienceLevel, 50);
+
+        const prompt = `You are an elite executive interviewer, talent evaluator, and STAR behavioral interview coach.
+Evaluate the candidate's spoken or typed answer to the following interview question with rigorous STAR rubric grading.
+
+CONTEXT:
+- Target Role: "${safeRole}"
+- Interview Discipline: "${safeType}"
+- Seniority Level: "${safeLevel}"
+- Question #${turnIndex} of ${totalTurns}: "${safeQuestion}"
+- Candidate's Stated Answer: "${safeAnswer}"
+${candidateResumeFacts ? `- Relevant Candidate Background: "${sanitizePromptFragment(candidateResumeFacts, 800)}"` : ''}
+
+EVALUATION CRITERIA (STAR Rubric):
+1. Situation (S): Did the candidate establish realistic context, problem scope, or background?
+2. Task (T): Did they clarify the target challenge, objective, or their personal role?
+3. Action (A): Did they describe specific, high-agency actions they personally executed (using active verbs, tools, methodologies, and "I" ownership rather than passive "we")?
+4. Result (R): Did they quantify impact, metric improvements, speed of delivery, uptime, cost savings, or business outcome?
+5. Relevance: How well does this address the interviewer's specific question for a ${safeRole}?
+
+GRADING CRITERIA:
+- Grade range: A+ (94-100), A (90-93), A- (86-89), B+ (82-85), B (78-81), B- (74-77), C+ (70-73), C (65-69), or Needs Work (<65).
+- "starGrade": formatted as "Grade (Score/100)", e.g. "A+ (94/100)" or "B+ (84/100)".
+- "rubricFeedback": 1 to 3 punchy, insightful sentences summarizing the evaluation. Example: "Exemplary STAR structure. Highlights speed of resolution (6 min) and clear technical ownership."
+- "starBreakdown": Brief 1-line assessment for situation, task, action, and result.
+- "strengths": 1 to 2 specific, evidence-grounded strengths in their answer.
+- "coachingTip": 1 actionable recommendation to elevate the answer further.
+- "nextQuestion": Contextual follow-up or next interview question that naturally builds on what the candidate just shared.
+
+RESPONSE FORMAT: Return ONLY valid JSON in this exact structure:
+{
+  "starGrade": "A+ (94/100)",
+  "numericScore": 94,
+  "letterGrade": "A+",
+  "rubricFeedback": "Exemplary STAR structure. Highlights speed of resolution (6 min) and clear technical ownership.",
+  "starBreakdown": {
+    "situation": "Clear peak traffic context identified.",
+    "task": "Targeted immediate service recovery and root cause isolation.",
+    "action": "Deployed blue-green failover and traced unindexed database query.",
+    "result": "100% uptime restored in 6 minutes."
+  },
+  "strengths": [
+    "Rapid blast-radius containment with quantified speed",
+    "High individual technical agency and ownership"
+  ],
+  "coachingTip": "Mention what preventative guardrail was deployed post-mortem to ensure recurring queries are caught before deployment.",
+  "nextQuestion": "Following that incident, how did your team adjust automated CI/CD database query regression tests?"
+}`;
+
+        const responseText = await generateConfiguredText(req, res, prompt, 'evaluate-interview-answer', { maxTokens: 2048, temperature: 0.2 });
+        const parsed = extractJson(responseText);
+
+        if (parsed && typeof parsed.starGrade === 'string' && typeof parsed.rubricFeedback === 'string') {
+            markSource('model');
+            return res.json({
+                success: true,
+                starGrade: parsed.starGrade,
+                numericScore: Number(parsed.numericScore) || 85,
+                letterGrade: parsed.letterGrade || 'A',
+                rubricFeedback: parsed.rubricFeedback,
+                starBreakdown: parsed.starBreakdown || {},
+                strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+                coachingTip: parsed.coachingTip || '',
+                nextQuestion: parsed.nextQuestion || '',
+            });
+        }
+        throw new Error('Invalid JSON structure from model');
+    } catch (error) {
+        if (error.code === 'INVALID_AI_INPUT') throw error;
+        console.warn('⚠️ evaluate-interview-answer falling back to deterministic STAR rubric engine:', error.message);
+        const fallback = generateFallbackStarEvaluation(req.body || {});
+        markSource('fallback');
+        return res.json({ success: true, ...fallback });
+    }
+});
+
+function generateFallbackStarEvaluation({ question = '', answer = '', occupation = 'Professional', interviewType = 'behavioral', experienceLevel = 'mid', turnIndex = 1 }) {
+    const text = String(answer || '').trim();
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    
+    // Check for metrics/numbers (e.g. 6 min, 100%, $50k, 10x, 40ms, 5 nodes)
+    const hasMetrics = /\b\d+(\.\d+)?(%|x|k|m|ms|s|min|minutes|hours|days|nodes|users|req|rps|qps|\b)/i.test(text) || /\b(100%|zero|halved|doubled|tripled)\b/i.test(text);
+    
+    // Check for high-agency action verbs
+    const hasActionVerbs = /\b(architected|engineered|built|deployed|resolved|optimized|automated|implemented|spun up|migrated|spearheaded|restored|designed|scaled|delivered)\b/i.test(text);
+    
+    // Check for first-person agency ("I", "my")
+    const hasAgency = /\b(i|my|mine)\b/i.test(text);
+    
+    let score = 78;
+    if (hasMetrics) score += 8;
+    if (hasActionVerbs) score += 6;
+    if (hasAgency) score += 4;
+    if (wordCount >= 20 && wordCount <= 120) score += 3;
+    if (wordCount < 10) score -= 15;
+    
+    score = Math.min(98, Math.max(55, score));
+    
+    let letterGrade = 'B';
+    if (score >= 94) letterGrade = 'A+';
+    else if (score >= 90) letterGrade = 'A';
+    else if (score >= 86) letterGrade = 'A-';
+    else if (score >= 82) letterGrade = 'B+';
+    else if (score >= 78) letterGrade = 'B';
+    else if (score >= 74) letterGrade = 'B-';
+    else if (score >= 70) letterGrade = 'C+';
+    else letterGrade = 'C';
+
+    const starGrade = `${letterGrade} (${score}/100)`;
+    
+    let rubricFeedback = '';
+    if (score >= 90) {
+        rubricFeedback = `Exemplary STAR structure. ${hasMetrics ? 'Highlights speed of resolution and clear quantified impact' : 'Articulates clear context and strong personal agency'} with decisive technical ownership.`;
+    } else if (score >= 80) {
+        rubricFeedback = `Strong, well-articulated response. Demonstrates solid operational ownership and clear context with good delivery.`;
+    } else {
+        rubricFeedback = `Good baseline response. Elevate your answer by specifying your personal actions and quantifying the business outcome.`;
+    }
+
+    const nextQuestions = [
+        `How do you handle disagreement with senior stakeholders when making critical architectural trade-offs?`,
+        `Describe a scenario where a project deadline was at risk. What trade-offs did you make to ship on time?`,
+        `Tell me about a time you mentored a junior engineer or improved your team's engineering velocity.`,
+        `Walk me through the most technically challenging bug or performance bottleneck you've diagnosed recently.`,
+        `If you were designing this system from scratch today, what would you do differently to improve maintainability?`
+    ];
+
+    const nextQuestion = nextQuestions[(Number(turnIndex) || 0) % nextQuestions.length];
+
+    return {
+        starGrade,
+        numericScore: score,
+        letterGrade,
+        rubricFeedback,
+        starBreakdown: {
+            situation: 'Context and core challenge established.',
+            task: `Clear personal objective aligned with ${occupation} responsibilities.`,
+            action: hasActionVerbs ? 'Decisive, high-agency actions executed.' : 'Action described; could emphasize personal execution verbs.',
+            result: hasMetrics ? 'Quantified outcome and measurable business delivery.' : 'Positive outcome noted; recommending concrete metrics for maximum ATS impact.'
+        },
+        strengths: [
+            hasAgency ? 'Clear first-person ownership and accountability' : 'Direct and relevant domain response',
+            hasMetrics ? 'Strong quantified impact and measurable results' : 'Structured communication and focused technical scope'
+        ],
+        coachingTip: hasMetrics 
+            ? 'Highlight post-mortem prevention or long-term systemic guardrails implemented to prevent recurrence.'
+            : 'Add a specific metric or benchmark (e.g. % reduction in latency, turnaround time) to make the impact memorable.',
+        nextQuestion
+    };
+}
+
 
 // Fallback function to generate interview questions when API fails. Deterministic per input
 // (seeded by role/type/difficulty/count), role- and difficulty-aware, honors the requested
