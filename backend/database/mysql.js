@@ -51,7 +51,12 @@ const poolConfig = Object.freeze({
 let pool = null;
 
 function getPool() {
-  if (!pool || pool._closed || pool.pool?._closed) pool = mysql.createPool(poolConfig);
+  if (!pool || pool._closed || pool.pool?._closed) {
+    pool = mysql.createPool(poolConfig);
+    pool.on('connection', (connection) => {
+      connection.query("SET time_zone = '+00:00'", () => {});
+    });
+  }
   return pool;
 }
 

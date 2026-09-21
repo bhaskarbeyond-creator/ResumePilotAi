@@ -173,8 +173,15 @@ function turnId() {
 }
 
 function isExpired(session, now = Date.now()) {
-    const expiry = Date.parse(String(session?.expiresAt || ''));
-    return !Number.isFinite(expiry) || expiry <= now;
+    let expiry = Date.parse(String(session?.expiresAt || ''));
+    if (!Number.isFinite(expiry)) {
+        const created = Date.parse(String(session?.createdAt || ''));
+        if (Number.isFinite(created)) {
+            const durationMinutes = Number(session?.state?.config?.durationMinutes) || 20;
+            expiry = created + Math.min(LIVE_SESSION_TTL_MS, (durationMinutes + 30) * 60 * 1000);
+        }
+    }
+    return Number.isFinite(expiry) && expiry <= now;
 }
 
 function relevantEvidence(session, ...signals) {
@@ -775,8 +782,10 @@ class LiveInterviewService {
             signal,
         });
         const output = parseTurn(generated.raw || generated, session.state.interview);
+        const durationMinutes = Number(session.state?.config?.durationMinutes) || 20;
         const mutated = {
             ...session,
+            expiresAt: new Date(this.now() + Math.min(LIVE_SESSION_TTL_MS, (durationMinutes + 30) * 60 * 1000)).toISOString(),
             state: JSON.parse(JSON.stringify(session.state)),
         };
         applyTurn(mutated, answer, output, idempotencyKey);
@@ -803,9 +812,11 @@ class LiveInterviewService {
 
         const generated = await this.generate({ prompt: buildReportPrompt(session), operation: 'live-interview-report', signal });
         const report = parseReport(generated.raw || generated);
+        const durationMinutes = Number(session.state?.config?.durationMinutes) || 20;
         const mutated = {
             ...session,
             status: 'completed',
+            expiresAt: new Date(this.now() + Math.min(LIVE_SESSION_TTL_MS, (durationMinutes + 30) * 60 * 1000)).toISOString(),
             state: JSON.parse(JSON.stringify(session.state)),
         };
         mutated.state.report = { ...report, completedAt: new Date(this.now()).toISOString() };

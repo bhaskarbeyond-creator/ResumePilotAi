@@ -156,7 +156,7 @@ tar -xzf "${webrootArchive}" -C /home/u727965524/domains/airesume.projectdemo.gu
 cp -r /home/u727965524/domains/airesume.projectdemo.guru/public_html/. /home/u727965524/public_html/ 2>/dev/null || true
 
 echo "Restoring MariaDB database..."
-gunzip -c "${dbDumpFile}" | mariadb --host="${host}" --port="${port}" --user="${user}" --password="${password}" "${database}"
+gunzip -c "${dbDumpFile}" | MYSQL_PWD="${password}" mariadb --host="${host}" --port="${port}" --user="${user}" "${database}"
 
 echo "Restoring PM2 configuration..."
 if [ -f "${pm2DumpDest}" ]; then

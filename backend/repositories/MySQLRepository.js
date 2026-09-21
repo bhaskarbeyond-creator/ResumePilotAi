@@ -259,8 +259,8 @@ class MySQLRepository {
             await connection.query('INSERT IGNORE INTO users (id, email, revision) VALUES (?, ?, 1)', [userId, '']);
             await connection.query(
                 `INSERT INTO live_interview_sessions
-                 (id, user_id, status, revision, state_json, expires_at, completed_at)
-                 VALUES (?, ?, ?, 1, ?, ?, ?)`,
+                 (id, user_id, status, revision, state_json, expires_at, completed_at, created_at, updated_at)
+                 VALUES (?, ?, ?, 1, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
                 [id, userId, status, serializedState, expiry, status === 'completed' ? new Date() : null]
             );
             const [rows] = await connection.query(
@@ -297,8 +297,8 @@ class MySQLRepository {
             const [result] = await connection.query(
                 `UPDATE live_interview_sessions
                  SET status = ?, state_json = ?, expires_at = ?,
-                     completed_at = CASE WHEN ? = 'completed' THEN COALESCE(completed_at, CURRENT_TIMESTAMP(3)) ELSE completed_at END,
-                     revision = revision + 1, updated_at = CURRENT_TIMESTAMP(3)
+                     completed_at = CASE WHEN ? = 'completed' THEN COALESCE(completed_at, UTC_TIMESTAMP(3)) ELSE completed_at END,
+                     revision = revision + 1, updated_at = UTC_TIMESTAMP(3)
                  WHERE id = ? AND user_id = ? AND revision = ?`,
                 [status, serializedState, expiry, status, sessionId, userId, expected]
             );
@@ -320,12 +320,16 @@ class MySQLRepository {
         return Number(result.affectedRows || 0) > 0;
     }
 
-    async deleteExpiredLiveInterviewSessions() {
+    async deleteExpiredLiveInterviewSessions(now = new Date()) {
         const pool = this._getPool();
+        const cutoff = now instanceof Date ? now : new Date(now);
         // Opportunistic bounded cleanup keeps active-session context and
         // transcripts from becoming an indefinite retention store.
+        // Compare against driver-formatted cutoff parameter to guarantee
+        // timezone parity with the serialized expires_at column.
         const [result] = await pool.query(
-            'DELETE FROM live_interview_sessions WHERE expires_at <= CURRENT_TIMESTAMP(3) LIMIT 500'
+            'DELETE FROM live_interview_sessions WHERE expires_at <= ? LIMIT 500',
+            [cutoff]
         );
         return Number(result.affectedRows || 0);
     }
