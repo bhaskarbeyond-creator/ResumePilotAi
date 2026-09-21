@@ -335,16 +335,35 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
         }
     };
 
+    // Helper to resolve clean, distinctive title for a resume
+    const resolveResumeDisplayTitle = (resume) => {
+        const rawTitle = (resume?.item?.title || resume?.title || '').trim();
+        const hasCustomTitle = Boolean(rawTitle && rawTitle.toLowerCase() !== 'untitled resume');
+        if (hasCustomTitle) return rawTitle;
+
+        const occupation = (resume?.item?.occupation || '').trim();
+        if (occupation) return `${occupation} Resume`;
+
+        const candidateName = [resume?.item?.firstname, resume?.item?.lastname].filter(Boolean).join(' ').trim();
+        const templateName = resume?.template || resume?.item?.template;
+
+        if (candidateName && templateName) return `${candidateName} (${templateName})`;
+        if (candidateName) return `${candidateName}'s Resume`;
+        if (templateName) return `${templateName} Resume`;
+        return 'Resume';
+    };
+
     // Handle resume selection
     const handleResumeSelect = (resume) => {
         // Generate shareable link (you can modify this based on your sharing logic)
         const shareableLink = `${window.location.origin}/shared/${resume.id}`;
+        const displayTitle = resolveResumeDisplayTitle(resume);
 
         setApplicationData((prev) => ({
             ...prev,
             selectedResume: {
                 id: resume.id,
-                name: resume.item?.firstname && resume.item?.lastname ? `${resume.item.firstname} ${resume.item.lastname}` : 'Resume',
+                name: displayTitle,
                 shareableLink: shareableLink,
                 data: resume, // Full resume data for future use
             },
@@ -856,6 +875,11 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                 {userResumes.map((resume) => {
                                                     const isSelected = applicationData.selectedResume?.id === resume.id;
+                                                    const candidateName = [resume.item?.firstname, resume.item?.lastname].filter(Boolean).join(' ').trim();
+                                                    const rawTitle = (resume.item?.title || resume.title || '').trim();
+                                                    const templateName = resume.template || resume.item?.template;
+                                                    const occupation = (resume.item?.occupation || '').trim();
+                                                    const displayTitle = resolveResumeDisplayTitle(resume);
                                                     return (
                                                         <div
                                                             key={resume.id}
@@ -911,15 +935,25 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                                         <h3
                                                                             className={`text-base font-semibold truncate transition-colors ${
                                                                                 isSelected ? 'text-blue-600' : 'text-slate-900 group-hover:text-blue-600'
-                                                                            }`}>
-                                                                            {resume.item?.firstname && resume.item?.lastname
-                                                                                ? `${resume.item.firstname} ${resume.item.lastname}`
-                                                                                : resume.item?.firstname || resume.item?.lastname || 'Untitled Resume'}
+                                                                            }`}
+                                                                            title={displayTitle}>
+                                                                            {displayTitle}
                                                                         </h3>
-                                                                        <p className="text-sm text-slate-500 mt-1">
-                                                                            Created {new Date(resume.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}
-                                                                        </p>
-                                                                        {resume.item?.title && <p className="text-sm text-slate-600 mt-1 truncate">{resume.item.title}</p>}
+                                                                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap text-xs text-slate-500">
+                                                                            <span>
+                                                                                Created {new Date(resume.createdAt?.seconds * 1000 || resume.item?.created_at?.seconds * 1000 || Date.now()).toLocaleDateString()}
+                                                                            </span>
+                                                                            {candidateName && <span className="text-slate-300">•</span>}
+                                                                            {candidateName && <span className="text-slate-600 font-medium truncate max-w-[120px]">{candidateName}</span>}
+                                                                            {templateName && (
+                                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                                                                                    {templateName}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {occupation && Boolean(rawTitle && rawTitle.toLowerCase() !== 'untitled resume') && (
+                                                                            <p className="text-xs text-slate-600 mt-1 truncate">{occupation}</p>
+                                                                        )}
                                                                     </div>
 
                                                                     {/* Selection indicator */}
