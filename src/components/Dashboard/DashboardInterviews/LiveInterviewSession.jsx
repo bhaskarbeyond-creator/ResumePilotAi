@@ -39,7 +39,7 @@ function AiAvatar({ busy = false, speaking = false, small = false }) {
     );
 }
 
-function InterviewerVideo({ session, media, busy, speaking }) {
+function InterviewerVideo({ session, busy, speaking }) {
     return (
         <section className="relative rounded-3xl overflow-hidden min-h-[220px] sm:min-h-[310px] bg-slate-950 border border-slate-800 shadow-xl shadow-slate-900/15" aria-label="AI interviewer panel">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(99,102,241,.45),transparent_42%),linear-gradient(135deg,#111827,#1e1b4b_52%,#312e81)]" />
