@@ -2,10 +2,11 @@ import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight } from 'react-icons/fa';
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight, FaGraduationCap, FaCheck, FaSearch } from 'react-icons/fa';
 import { FiBold, FiItalic, FiUnderline, FiList, FiHash } from 'react-icons/fi';
 import { AuthContext } from '../../context/AuthContext';
 import { getResumes, submitJobApplication } from '../../services/api/platform';
+import { calculateAtsScore } from '../../utils/atsScore';
 
 // Lexical imports
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
@@ -138,6 +139,20 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     const [previewResume, setPreviewResume] = useState(null);
     const submissionGeneration = useRef(0);
     const closeTimer = useRef(null);
+    const [resumeSearchQuery, setResumeSearchQuery] = useState('');
+
+    const filteredResumes = useMemo(() => {
+        if (!resumeSearchQuery.trim()) return userResumes;
+        const q = resumeSearchQuery.toLowerCase().trim();
+        return userResumes.filter((r) => {
+            const title = (r.item?.title || r.title || '').toLowerCase();
+            const occupation = (r.item?.occupation || '').toLowerCase();
+            const template = (r.template || r.item?.template || '').toLowerCase();
+            const employments = (r.employments || r.item?.employments || []);
+            const empNames = employments.map(e => `${e.employer || ''} ${e.jobTitle || ''}`).join(' ').toLowerCase();
+            return title.includes(q) || occupation.includes(q) || template.includes(q) || empNames.includes(q);
+        });
+    }, [userResumes, resumeSearchQuery]);
 
     // Pagination state
     const [_currentPage, setCurrentPage] = useState(1);
@@ -336,28 +351,50 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     };
 
     // Helper to resolve clean, distinctive title for a resume
-    const resolveResumeDisplayTitle = (resume) => {
+    const resolveResumeDisplayTitle = (resume, allResumes = []) => {
         const rawTitle = (resume?.item?.title || resume?.title || '').trim();
         const hasCustomTitle = Boolean(rawTitle && rawTitle.toLowerCase() !== 'untitled resume');
-        if (hasCustomTitle) return rawTitle;
+        let baseTitle = '';
+        if (hasCustomTitle) {
+            baseTitle = rawTitle;
+        } else {
+            const occupation = (resume?.item?.occupation || '').trim();
+            if (occupation) {
+                baseTitle = `${occupation} Resume`;
+            } else {
+                const candidateName = [resume?.item?.firstname, resume?.item?.lastname].filter(Boolean).join(' ').trim();
+                const templateName = resume?.template || resume?.item?.template;
 
-        const occupation = (resume?.item?.occupation || '').trim();
-        if (occupation) return `${occupation} Resume`;
+                if (candidateName && templateName) baseTitle = `${candidateName} (${templateName})`;
+                else if (candidateName) baseTitle = `${candidateName}'s Resume`;
+                else if (templateName) baseTitle = `${templateName} Resume`;
+                else baseTitle = 'Resume';
+            }
+        }
 
-        const candidateName = [resume?.item?.firstname, resume?.item?.lastname].filter(Boolean).join(' ').trim();
-        const templateName = resume?.template || resume?.item?.template;
+        if (Array.isArray(allResumes) && allResumes.length > 1) {
+            const matches = allResumes.filter((r) => {
+                const rRaw = (r?.item?.title || r?.title || '').trim();
+                const rCustom = Boolean(rRaw && rRaw.toLowerCase() !== 'untitled resume');
+                const rTitle = rCustom ? rRaw : (r?.item?.occupation ? `${r.item.occupation} Resume` : '');
+                return rTitle === baseTitle;
+            });
+            if (matches.length > 1) {
+                const idx = matches.findIndex((r) => r.id === resume?.id);
+                if (idx >= 0) {
+                    baseTitle = `${baseTitle} (v${idx + 1})`;
+                }
+            }
+        }
 
-        if (candidateName && templateName) return `${candidateName} (${templateName})`;
-        if (candidateName) return `${candidateName}'s Resume`;
-        if (templateName) return `${templateName} Resume`;
-        return 'Resume';
+        return baseTitle;
     };
 
     // Handle resume selection
     const handleResumeSelect = (resume) => {
         // Generate shareable link (you can modify this based on your sharing logic)
         const shareableLink = `${window.location.origin}/shared/${resume.id}`;
-        const displayTitle = resolveResumeDisplayTitle(resume);
+        const displayTitle = resolveResumeDisplayTitle(resume, userResumes);
 
         setApplicationData((prev) => ({
             ...prev,
@@ -849,9 +886,25 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                         </button>
                                         <div>
                                             <h2 className="text-xl font-bold text-slate-900">{t('JobsUpdate.JobApplicationModal.resume.selectResume', 'Select Resume')}</h2>
-                                            <p className="text-sm text-slate-600">{t('JobsUpdate.JobApplicationModal.resume.browseResumes', 'Browse Resumes')}</p>
+                                            <p className="text-sm text-slate-600">
+                                                {userResumes.length > 0
+                                                    ? `${userResumes.length} ${userResumes.length === 1 ? 'saved resume' : 'saved resumes'} • Choose the best match for this role`
+                                                    : t('JobsUpdate.JobApplicationModal.resume.browseResumes', 'Browse Resumes')}
+                                            </p>
                                         </div>
                                     </div>
+                                    {userResumes.length > 2 && (
+                                        <div className="relative w-48 sm:w-60 hidden sm:block">
+                                            <FaSearch className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                value={resumeSearchQuery}
+                                                onChange={(e) => setResumeSearchQuery(e.target.value)}
+                                                placeholder="Filter resumes..."
+                                                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 shadow-2xs"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Resume List */}
@@ -871,31 +924,53 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                     </div>
                                                 ))}
                                             </div>
-                                        ) : userResumes.length > 0 ? (
+                                        ) : filteredResumes.length > 0 ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                {userResumes.map((resume) => {
+                                                {filteredResumes.map((resume) => {
                                                     const isSelected = applicationData.selectedResume?.id === resume.id;
-                                                    const candidateName = [resume.item?.firstname, resume.item?.lastname].filter(Boolean).join(' ').trim();
-                                                    const rawTitle = (resume.item?.title || resume.title || '').trim();
                                                     const templateName = resume.template || resume.item?.template;
-                                                    const occupation = (resume.item?.occupation || '').trim();
-                                                    const displayTitle = resolveResumeDisplayTitle(resume);
+                                                    const displayTitle = resolveResumeDisplayTitle(resume, userResumes);
+
+                                                    // Differentiator data
+                                                    const employments = Array.isArray(resume.employments) ? resume.employments : (Array.isArray(resume.item?.employments) ? resume.item.employments : []);
+                                                    const educations = Array.isArray(resume.educations) ? resume.educations : (Array.isArray(resume.item?.educations) ? resume.item.educations : []);
+                                                    const skills = Array.isArray(resume.skills) ? resume.skills : (Array.isArray(resume.item?.skills) ? resume.item.skills : []);
+
+                                                    const topEmployer = employments[0]?.employer || employments[0]?.company || '';
+                                                    const topRole = employments[0]?.jobTitle || employments[0]?.position || '';
+                                                    const topEducation = educations[0]?.school || educations[0]?.institution || educations[0]?.degree || '';
+
+                                                    // ATS score
+                                                    let atsScore = 0;
+                                                    try {
+                                                        atsScore = calculateAtsScore(resume.item || resume)?.qualityScore || 0;
+                                                    } catch (_err) {
+                                                        atsScore = 0;
+                                                    }
+
+                                                    // Created / updated date
+                                                    const dateVal = resume.item?.updated_at || resume.updatedAt || resume.item?.created_at || resume.createdAt;
+                                                    const dateObj = dateVal?.seconds ? new Date(dateVal.seconds * 1000) : dateVal ? new Date(dateVal) : new Date();
+                                                    const formattedDate = dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
                                                     return (
                                                         <div
                                                             key={resume.id}
-                                                            className={`border-2 rounded-lg transition-all duration-200 group bg-white cursor-pointer ${
-                                                                isSelected ? 'border-blue-500 shadow-lg ring-2 ring-blue-200' : 'border-slate-200 hover:border-blue-300 hover:shadow-md'
+                                                            className={`border-2 rounded-xl transition-all duration-200 group bg-white cursor-pointer flex flex-col justify-between hover:shadow-lg relative ${
+                                                                isSelected
+                                                                    ? 'border-blue-600 shadow-md ring-2 ring-blue-500/20 bg-blue-50/10'
+                                                                    : 'border-slate-200 hover:border-blue-300'
                                                             }`}
                                                             onClick={() => handleResumeSelect(resume)}>
                                                             {/* Selected indicator */}
                                                             {isSelected && (
-                                                                <div className="absolute top-3 right-3 z-10 bg-blue-500 text-white rounded-full p-1">
+                                                                <div className="absolute top-3 right-3 z-10 bg-blue-600 text-white rounded-full p-1 shadow-sm">
                                                                     <FaCheckCircle className="w-4 h-4" />
                                                                 </div>
                                                             )}
 
                                                             {/* Resume Preview Thumbnail */}
-                                                            <div className="relative h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-lg overflow-hidden">
+                                                            <div className="relative h-64 sm:h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl overflow-hidden border-b border-slate-100">
                                                                 <div className="absolute inset-0 flex items-center justify-center p-2">
                                                                     <div
                                                                         className="bg-white shadow-sm border border-gray-200 rounded-sm"
@@ -916,69 +991,112 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                                 </div>
 
                                                                 {/* Preview overlay */}
-                                                                <div className="absolute inset-0 bg-transparent group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
+                                                                <div className="absolute inset-0 bg-transparent group-hover:bg-black/15 transition-all duration-300 flex items-center justify-center">
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handleShowPreview(resume);
                                                                         }}
-                                                                        className="opacity-0 group-hover:opacity-100 bg-white/90 hover:bg-white text-slate-700 p-3 rounded-full shadow-lg transition-all duration-200">
+                                                                        className="opacity-0 group-hover:opacity-100 bg-white/95 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105">
                                                                         <FaExpand className="w-4 h-4" />
                                                                     </button>
                                                                 </div>
                                                             </div>
 
                                                             {/* Resume Info */}
-                                                            <div className="p-4">
-                                                                <div className="flex items-start justify-between mb-3">
-                                                                    <div className="flex-1 min-w-0">
+                                                            <div className="p-4 flex-1 flex flex-col justify-between">
+                                                                <div>
+                                                                    <div className="flex items-start justify-between gap-2 mb-1.5">
                                                                         <h3
-                                                                            className={`text-base font-semibold truncate transition-colors ${
+                                                                            className={`text-sm sm:text-base font-semibold line-clamp-2 leading-snug transition-colors flex-1 min-h-[2.6rem] ${
                                                                                 isSelected ? 'text-blue-600' : 'text-slate-900 group-hover:text-blue-600'
                                                                             }`}
                                                                             title={displayTitle}>
                                                                             {displayTitle}
                                                                         </h3>
-                                                                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap text-xs text-slate-500">
-                                                                            <span>
-                                                                                Created {new Date(resume.createdAt?.seconds * 1000 || resume.item?.created_at?.seconds * 1000 || Date.now()).toLocaleDateString()}
-                                                                            </span>
-                                                                            {candidateName && <span className="text-slate-300">•</span>}
-                                                                            {candidateName && <span className="text-slate-600 font-medium truncate max-w-[120px]">{candidateName}</span>}
-                                                                            {templateName && (
-                                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 border border-slate-200">
-                                                                                    {templateName}
-                                                                                </span>
-                                                                            )}
+
+                                                                        {/* Selection indicator radio */}
+                                                                        <div className="flex-shrink-0 mt-0.5">
+                                                                            <div
+                                                                                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${
+                                                                                    isSelected ? 'border-blue-600 bg-blue-600 text-white shadow-xs' : 'border-slate-300 group-hover:border-blue-400 bg-white'
+                                                                                }`}>
+                                                                                {isSelected && <FaCheck className="w-2.5 h-2.5" />}
+                                                                            </div>
                                                                         </div>
-                                                                        {occupation && Boolean(rawTitle && rawTitle.toLowerCase() !== 'untitled resume') && (
-                                                                            <p className="text-xs text-slate-600 mt-1 truncate">{occupation}</p>
-                                                                        )}
                                                                     </div>
 
-                                                                    {/* Selection indicator */}
-                                                                    <div className="flex-shrink-0 ml-3">
-                                                                        <div
-                                                                            className={`w-6 h-6 border-2 rounded-full transition-all duration-200 flex items-center justify-center ${
-                                                                                isSelected ? 'border-blue-500 bg-blue-500' : 'border-slate-300 group-hover:border-blue-400'
-                                                                            }`}>
-                                                                            {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                                                    {/* Metadata Badges Row */}
+                                                                    <div className="flex items-center gap-1.5 flex-wrap text-xs mb-2.5">
+                                                                        <span
+                                                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                                                                atsScore >= 75
+                                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                                    : atsScore >= 50
+                                                                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                                                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                            }`}
+                                                                            title="ATS Readiness Score">
+                                                                            ATS: {atsScore}%
+                                                                        </span>
+
+                                                                        {templateName && (
+                                                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                                                                                {templateName}
+                                                                            </span>
+                                                                        )}
+
+                                                                        <span className="text-slate-400 text-[11px] ml-auto font-medium">
+                                                                            {formattedDate}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {/* Differentiator Snapshot Box */}
+                                                                    <div className="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100 text-xs space-y-1">
+                                                                        {topEmployer ? (
+                                                                            <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
+                                                                                <FaBriefcase className="w-3 h-3 text-slate-400 shrink-0" />
+                                                                                <span className="truncate">{topRole ? `${topRole} • ${topEmployer}` : topEmployer}</span>
+                                                                            </div>
+                                                                        ) : topEducation ? (
+                                                                            <div className="flex items-center gap-1.5 text-slate-700 truncate">
+                                                                                <FaGraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
+                                                                                <span className="truncate">{topEducation}</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="text-slate-400 italic text-[11px]">
+                                                                                No work history listed
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                                                                            <span>{employments.length} {employments.length === 1 ? 'role' : 'roles'}</span>
+                                                                            <span>•</span>
+                                                                            <span>{skills.length} {skills.length === 1 ? 'skill' : 'skills'}</span>
+                                                                            {educations.length > 0 && (
+                                                                                <>
+                                                                                    <span>•</span>
+                                                                                    <span>{educations.length} {educations.length === 1 ? 'edu' : 'edus'}</span>
+                                                                                </>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Action buttons */}
-                                                                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                                                <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handleShowPreview(resume);
                                                                         }}
-                                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1">
+                                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1 py-1 px-1.5 rounded hover:bg-blue-50 transition-colors">
                                                                         <FaEye className="w-3 h-3" />
                                                                         <span>Preview</span>
                                                                     </button>
-                                                                    <span className={`text-sm font-medium ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}>
+                                                                    <span
+                                                                        className={`text-sm font-medium ${
+                                                                            isSelected ? 'text-blue-600' : 'text-slate-400'
+                                                                        }`}>
                                                                         {isSelected ? 'Selected' : 'Click to select'}
                                                                     </span>
                                                                 </div>
@@ -986,6 +1104,17 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                         </div>
                                                     );
                                                 })}
+                                            </div>
+                                        ) : userResumes.length > 0 ? (
+                                            <div className="text-center py-16">
+                                                <FaSearch className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                                <h3 className="text-base font-semibold text-slate-800 mb-1">No resumes match "{resumeSearchQuery}"</h3>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setResumeSearchQuery('')}
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 underline mt-2">
+                                                    Clear filter
+                                                </button>
                                             </div>
                                         ) : (
                                             <div className="text-center py-16">
