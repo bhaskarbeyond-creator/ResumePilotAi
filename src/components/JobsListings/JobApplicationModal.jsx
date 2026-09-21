@@ -2,7 +2,7 @@ import { sanitizeUrl } from '../../utils/sanitizeHtml';
 import React, { useState, useRef, useEffect, useMemo, useContext, useCallback } from 'react';
 import { withTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight, FaGraduationCap, FaCheck, FaSearch } from 'react-icons/fa';
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaLinkedin, FaGithub, FaFileUpload, FaBuilding, FaPaperPlane, FaCheckCircle, FaExclamationTriangle, FaBriefcase, FaFile, FaEye, FaArrowLeft, FaExpand, FaChevronRight, FaGraduationCap, FaCheck, FaSearch, FaThLarge, FaList } from 'react-icons/fa';
 import { FiBold, FiItalic, FiUnderline, FiList, FiHash } from 'react-icons/fi';
 import { AuthContext } from '../../context/AuthContext';
 import { getResumes, submitJobApplication } from '../../services/api/platform';
@@ -170,6 +170,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
     const submissionGeneration = useRef(0);
     const closeTimer = useRef(null);
     const [resumeSearchQuery, setResumeSearchQuery] = useState('');
+    const [resumeViewMode, setResumeViewMode] = useState('grid');
 
     const filteredResumes = useMemo(() => {
         if (!resumeSearchQuery.trim()) return userResumes;
@@ -707,7 +708,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                     onKeyDown={event => { if (event.key === 'Escape' && !isSubmitting) onClose(); }}
                     onClick={(e) => e.target === e.currentTarget && !isSubmitting && onClose()}>
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[94vh] overflow-hidden flex flex-col border border-slate-100" variants={modalVariants} onClick={(e) => e.stopPropagation()}>
+                    <motion.div role="dialog" aria-modal="true" aria-labelledby={isSubmitted ? 'job-application-success-title' : 'job-application-title'} className={`relative bg-white rounded-2xl shadow-2xl w-full ${showResumeSelector ? 'max-w-4xl lg:max-w-5xl' : 'max-w-2xl'} max-h-[94vh] overflow-hidden flex flex-col border border-slate-100 transition-all duration-300`} variants={modalVariants} onClick={(e) => e.stopPropagation()}>
                         <AnimatePresence mode="wait">
                             {isSubmitted ? (
                                 <motion.div key="success" className="p-8 text-center my-auto" variants={successVariants} initial="hidden" animate="visible">
@@ -1022,53 +1023,93 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                 exit={{ opacity: 0, x: 300 }}
                                 transition={{ duration: 0.3 }}>
                                 {/* Resume Selector Header */}
-                                <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50">
-                                    <div className="flex items-center space-x-3">
-                                        <button onClick={() => setShowResumeSelector(false)} className="p-2 hover:bg-white/50 rounded-md transition-colors">
-                                            <FaArrowLeft className="w-4 h-4 text-slate-500" />
+                                <div className="flex-shrink-0 flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-slate-50">
+                                    <div className="flex items-center space-x-3 min-w-0">
+                                        <button
+                                            onClick={() => setShowResumeSelector(false)}
+                                            className="p-2 hover:bg-white/80 rounded-xl transition-all duration-200 text-slate-600 hover:text-slate-900 border border-transparent hover:border-slate-200 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                            title="Back to application">
+                                            <FaArrowLeft className="w-4 h-4" />
                                         </button>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-slate-900">{t('JobsUpdate.JobApplicationModal.resume.selectResume', 'Select Resume')}</h2>
-                                            <p className="text-sm text-slate-600">
+                                        <div className="min-w-0">
+                                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+                                                {t('JobsUpdate.JobApplicationModal.resume.selectResume', 'Select Resume')}
+                                            </h2>
+                                            <p className="text-xs sm:text-sm text-slate-600 truncate font-medium">
                                                 {userResumes.length > 0
-                                                    ? `${userResumes.length} ${userResumes.length === 1 ? 'saved resume' : 'saved resumes'} • Choose the best match for this role`
+                                                    ? `${filteredResumes.length}${filteredResumes.length !== userResumes.length ? ` of ${userResumes.length}` : ''} ${userResumes.length === 1 ? 'saved resume' : 'saved resumes'} • Choose the best match for this role`
                                                     : t('JobsUpdate.JobApplicationModal.resume.browseResumes', 'Browse Resumes')}
                                             </p>
                                         </div>
                                     </div>
-                                    {userResumes.length > 2 && (
-                                        <div className="relative w-48 sm:w-60 hidden sm:block">
-                                            <FaSearch className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                type="text"
-                                                value={resumeSearchQuery}
-                                                onChange={(e) => setResumeSearchQuery(e.target.value)}
-                                                placeholder="Filter resumes..."
-                                                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 shadow-2xs"
-                                            />
+
+                                    <div className="flex items-center space-x-2.5">
+                                        {userResumes.length > 1 && (
+                                             <div className="relative w-36 sm:w-56">
+                                                <FaSearch className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                                <input
+                                                    type="text"
+                                                    value={resumeSearchQuery}
+                                                    onChange={(e) => setResumeSearchQuery(e.target.value)}
+                                                    placeholder="Filter resumes..."
+                                                    className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 shadow-2xs transition-all"
+                                                />
+                                                {resumeSearchQuery && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setResumeSearchQuery('')}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer">
+                                                        <FaTimes className="w-3 h-3" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* View Mode Toggle: Grid vs List */}
+                                        <div className="hidden sm:flex items-center bg-slate-200/80 p-0.5 rounded-xl border border-slate-300/60">
+                                            <button
+                                                type="button"
+                                                onClick={() => setResumeViewMode('grid')}
+                                                title="Grid View"
+                                                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                                                    resumeViewMode === 'grid'
+                                                        ? 'bg-white text-blue-600 shadow-xs font-bold'
+                                                        : 'text-slate-500 hover:text-slate-800'
+                                                }`}>
+                                                <FaThLarge className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setResumeViewMode('list')}
+                                                title="List View"
+                                                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                                                    resumeViewMode === 'list'
+                                                        ? 'bg-white text-blue-600 shadow-xs font-bold'
+                                                        : 'text-slate-500 hover:text-slate-800'
+                                                }`}>
+                                                <FaList className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
                                 {/* Resume List */}
-                                <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-                                    <div className="p-6 pb-8">
+                                <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 bg-slate-50/50">
+                                    <div className="p-4 sm:p-6 pb-8">
                                         {loadingResumes || isPaginating ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                                                 {[...Array(perPage)].map((_, index) => (
-                                                    <div key={index} className="animate-pulse">
-                                                        <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                                            <div className="h-72 bg-slate-200"></div>
-                                                            <div className="p-4">
-                                                                <div className="h-5 bg-slate-200 rounded w-3/4 mb-2"></div>
-                                                                <div className="h-4 bg-slate-200 rounded w-1/2"></div>
-                                                            </div>
+                                                    <div key={index} className="animate-pulse bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                                                        <div className="h-48 bg-slate-200"></div>
+                                                        <div className="p-4 space-y-2">
+                                                            <div className="h-5 bg-slate-200 rounded w-3/4"></div>
+                                                            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         ) : filteredResumes.length > 0 ? (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className={resumeViewMode === 'list' ? 'flex flex-col space-y-3.5' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5'}>
                                                 {filteredResumes.map((resume) => {
                                                     const isSelected = applicationData.selectedResume?.id === resume.id;
                                                     const templateName = resume.template || resume.item?.template;
@@ -1096,40 +1137,181 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                     const dateObj = dateVal?.seconds ? new Date(dateVal.seconds * 1000) : dateVal ? new Date(dateVal) : new Date();
                                                     const formattedDate = dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
+                                                    if (resumeViewMode === 'list') {
+                                                        return (
+                                                            <div
+                                                                key={resume.id}
+                                                                className={`group bg-white border-2 rounded-2xl transition-all duration-200 cursor-pointer flex flex-col sm:flex-row items-stretch overflow-hidden hover:shadow-lg ${
+                                                                    isSelected
+                                                                        ? 'border-blue-600 shadow-md ring-2 ring-blue-500/20 bg-blue-50/15'
+                                                                        : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/60'
+                                                                }`}
+                                                                onClick={() => handleResumeSelect(resume)}>
+                                                                {/* List Mode Mini Thumbnail */}
+                                                                <div className="w-full sm:w-36 h-36 sm:h-auto bg-gradient-to-br from-slate-100 to-slate-200/80 border-b sm:border-b-0 sm:border-r border-slate-200 flex-shrink-0 flex items-center justify-center relative overflow-hidden p-2">
+                                                                    <div
+                                                                        className="bg-white shadow-xs border border-slate-200 rounded-sm overflow-hidden"
+                                                                        style={{ width: '100px', height: '141px' }}>
+                                                                        <div
+                                                                            className="w-[794px] h-[1123px] origin-top-left"
+                                                                            style={{ transform: 'scale(0.126)', transformOrigin: 'top left' }}>
+                                                                            {renderTemplatePreview(resume)}
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleShowPreview(resume);
+                                                                        }}
+                                                                        className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-all cursor-pointer"
+                                                                        title="Expand preview">
+                                                                        <div className="opacity-0 group-hover:opacity-100 bg-white/95 text-slate-800 p-2 rounded-full shadow-md transition-all duration-200 hover:scale-110">
+                                                                            <FaExpand className="w-3.5 h-3.5" />
+                                                                        </div>
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* List Mode Info */}
+                                                                <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between space-y-3">
+                                                                    <div>
+                                                                        <div className="flex items-start justify-between gap-3">
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <h3 className={`text-base font-bold truncate leading-snug transition-colors ${isSelected ? 'text-blue-600' : 'text-slate-900 group-hover:text-blue-600'}`} title={displayTitle}>
+                                                                                    {displayTitle}
+                                                                                </h3>
+                                                                                <div className="flex items-center gap-2 mt-1 text-xs text-slate-600">
+                                                                                    {topEmployer ? (
+                                                                                        <span className="font-semibold text-slate-800 flex items-center gap-1.5 truncate">
+                                                                                            <FaBriefcase className="w-3 h-3 text-blue-500 shrink-0" />
+                                                                                            <span className="truncate">{topRole ? `${topRole} at ${topEmployer}` : topEmployer}</span>
+                                                                                        </span>
+                                                                                    ) : topEducation ? (
+                                                                                        <span className="text-slate-700 flex items-center gap-1.5 truncate">
+                                                                                            <FaGraduationCap className="w-3 h-3 text-blue-500 shrink-0" />
+                                                                                            <span className="truncate">{topEducation}</span>
+                                                                                        </span>
+                                                                                    ) : (
+                                                                                        <span className="text-slate-400 italic">No experience listed</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${atsScore >= 75 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : atsScore >= 50 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                                                                                    ATS: {atsScore}%
+                                                                                </span>
+                                                                                {templateName && (
+                                                                                    <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+                                                                                        {templateName}
+                                                                                    </span>
+                                                                                )}
+                                                                                <span className="text-slate-400 text-xs font-medium pl-1">{formattedDate}</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Skills Pill Preview */}
+                                                                        {skills.length > 0 && (
+                                                                            <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                                                                                {skills.slice(0, 5).map((sk, skIdx) => (
+                                                                                    <span key={skIdx} className="text-[11px] font-medium bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                                                                        {sk.skillName || sk.name || sk.skill}
+                                                                                    </span>
+                                                                                ))}
+                                                                                {skills.length > 5 && (
+                                                                                    <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                                                                                        +{skills.length - 5}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* List Footer Actions */}
+                                                                    <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 gap-2">
+                                                                        <div className="text-xs text-slate-500 font-medium">
+                                                                            <span>{employments.length} {employments.length === 1 ? 'role' : 'roles'}</span>
+                                                                            <span className="mx-1.5">•</span>
+                                                                            <span>{skills.length} {skills.length === 1 ? 'skill' : 'skills'}</span>
+                                                                            {educations.length > 0 && (
+                                                                                <>
+                                                                                    <span className="mx-1.5">•</span>
+                                                                                    <span>{educations.length} {educations.length === 1 ? 'education' : 'educations'}</span>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleShowPreview(resume);
+                                                                                }}
+                                                                                type="button"
+                                                                                className="text-xs font-semibold text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 py-1.5 px-3 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                                                                                <FaEye className="w-3.5 h-3.5 text-slate-400" />
+                                                                                <span>Preview</span>
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleResumeSelect(resume)}
+                                                                                className={`text-xs font-bold px-4 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer ${
+                                                                                    isSelected
+                                                                                        ? 'bg-blue-600 text-white shadow-xs'
+                                                                                        : 'border border-slate-300 hover:border-blue-400 text-slate-700 hover:text-blue-600 bg-white hover:bg-blue-50/50'
+                                                                                }`}>
+                                                                                {isSelected ? (
+                                                                                    <>
+                                                                                        <FaCheck className="w-3 h-3" />
+                                                                                        <span>Selected</span>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <span>Select Resume</span>
+                                                                                )}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
                                                     return (
                                                         <div
                                                             key={resume.id}
-                                                            className={`border-2 rounded-xl transition-all duration-200 group bg-white cursor-pointer flex flex-col justify-between hover:shadow-lg relative ${
+                                                            className={`group relative bg-white border-2 rounded-2xl transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden hover:shadow-lg ${
                                                                 isSelected
-                                                                    ? 'border-blue-600 shadow-md ring-2 ring-blue-500/20 bg-blue-50/10'
-                                                                    : 'border-slate-200 hover:border-blue-300'
+                                                                    ? 'border-blue-600 shadow-md ring-2 ring-blue-500/20 bg-blue-50/15'
+                                                                    : 'border-slate-200 hover:border-blue-300/80 hover:-translate-y-0.5'
                                                             }`}
                                                             onClick={() => handleResumeSelect(resume)}>
-                                                            {/* Selected indicator */}
-                                                            {isSelected && (
-                                                                <div className="absolute top-3 right-3 z-10 bg-blue-600 text-white rounded-full p-1 shadow-sm">
-                                                                    <FaCheckCircle className="w-4 h-4" />
-                                                                </div>
-                                                            )}
+                                                            {/* Selection badge */}
+                                                            <div className="absolute top-3 right-3 z-10">
+                                                                {isSelected ? (
+                                                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-white bg-blue-600 px-2.5 py-1 rounded-full shadow-md">
+                                                                        <FaCheck className="w-3 h-3" /> Selected
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center text-xs font-semibold text-slate-600 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full border border-slate-200/90 shadow-2xs group-hover:border-blue-400 group-hover:text-blue-600 transition-colors">
+                                                                        Click to select
+                                                                    </span>
+                                                                )}
+                                                            </div>
 
                                                             {/* Resume Preview Thumbnail */}
-                                                            <div className="relative h-64 sm:h-72 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl overflow-hidden border-b border-slate-100">
-                                                                <div className="absolute inset-0 flex items-center justify-center p-2">
+                                                            <div className="relative h-48 sm:h-52 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200/70 overflow-hidden border-b border-slate-100 flex items-center justify-center p-2">
+                                                                <div
+                                                                    className="bg-white shadow-xs border border-slate-200 rounded-sm overflow-hidden"
+                                                                    style={{
+                                                                        width: '180px',
+                                                                        height: '254px',
+                                                                    }}>
                                                                     <div
-                                                                        className="bg-white shadow-sm border border-gray-200 rounded-sm"
+                                                                        className="w-[794px] h-[1123px] origin-top-left"
                                                                         style={{
-                                                                            width: '200px',
-                                                                            height: '283px',
-                                                                            overflow: 'hidden',
+                                                                            transform: 'scale(0.226)',
+                                                                            transformOrigin: 'top left',
                                                                         }}>
-                                                                        <div
-                                                                            className="w-[794px] h-[1123px] origin-top-left"
-                                                                            style={{
-                                                                                transform: 'scale(0.252)',
-                                                                                transformOrigin: 'top left',
-                                                                            }}>
-                                                                            {renderTemplatePreview(resume)}
-                                                                        </div>
+                                                                        {renderTemplatePreview(resume)}
                                                                     </div>
                                                                 </div>
 
@@ -1140,39 +1322,30 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                                             e.stopPropagation();
                                                                             handleShowPreview(resume);
                                                                         }}
-                                                                        className="opacity-0 group-hover:opacity-100 bg-white/95 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105">
+                                                                        className="opacity-0 group-hover:opacity-100 bg-white/95 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 cursor-pointer"
+                                                                        title="Expand preview">
                                                                         <FaExpand className="w-4 h-4" />
                                                                     </button>
                                                                 </div>
                                                             </div>
 
                                                             {/* Resume Info */}
-                                                            <div className="p-4 flex-1 flex flex-col justify-between">
+                                                            <div className="p-4 sm:p-4.5 flex-1 flex flex-col justify-between space-y-3">
                                                                 <div>
-                                                                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                                                                    <div className="flex items-start justify-between gap-2 mb-2">
                                                                         <h3
-                                                                            className={`text-sm sm:text-base font-semibold line-clamp-2 leading-snug transition-colors flex-1 min-h-[2.6rem] ${
+                                                                            className={`text-sm sm:text-base font-bold line-clamp-1 leading-snug transition-colors flex-1 ${
                                                                                 isSelected ? 'text-blue-600' : 'text-slate-900 group-hover:text-blue-600'
                                                                             }`}
                                                                             title={displayTitle}>
                                                                             {displayTitle}
                                                                         </h3>
-
-                                                                        {/* Selection indicator radio */}
-                                                                        <div className="flex-shrink-0 mt-0.5">
-                                                                            <div
-                                                                                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${
-                                                                                    isSelected ? 'border-blue-600 bg-blue-600 text-white shadow-xs' : 'border-slate-300 group-hover:border-blue-400 bg-white'
-                                                                                }`}>
-                                                                                {isSelected && <FaCheck className="w-2.5 h-2.5" />}
-                                                                            </div>
-                                                                        </div>
                                                                     </div>
 
                                                                     {/* Metadata Badges Row */}
                                                                     <div className="flex items-center gap-1.5 flex-wrap text-xs mb-2.5">
                                                                         <span
-                                                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
                                                                                 atsScore >= 75
                                                                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                                                     : atsScore >= 50
@@ -1184,7 +1357,7 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                                         </span>
 
                                                                         {templateName && (
-                                                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                                                                            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
                                                                                 {templateName}
                                                                             </span>
                                                                         )}
@@ -1195,20 +1368,20 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                                     </div>
 
                                                                     {/* Differentiator Snapshot Box */}
-                                                                    <div className="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100 text-xs space-y-1">
+                                                                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1.5">
                                                                         {topEmployer ? (
-                                                                            <div className="flex items-center gap-1.5 text-slate-700 font-medium truncate">
-                                                                                <FaBriefcase className="w-3 h-3 text-slate-400 shrink-0" />
+                                                                            <div className="flex items-center gap-1.5 text-slate-800 font-semibold truncate">
+                                                                                <FaBriefcase className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                                                                                 <span className="truncate">{topRole ? `${topRole} • ${topEmployer}` : topEmployer}</span>
                                                                             </div>
                                                                         ) : topEducation ? (
-                                                                            <div className="flex items-center gap-1.5 text-slate-700 truncate">
-                                                                                <FaGraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
+                                                                            <div className="flex items-center gap-1.5 text-slate-800 font-semibold truncate">
+                                                                                <FaGraduationCap className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                                                                                 <span className="truncate">{topEducation}</span>
                                                                             </div>
                                                                         ) : (
                                                                             <div className="text-slate-400 italic text-[11px]">
-                                                                                No work history listed
+                                                                                Ready for application
                                                                             </div>
                                                                         )}
                                                                         <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
@@ -1226,28 +1399,41 @@ const JobApplicationModal = ({ isOpen, onClose, job, t }) => {
                                                                 </div>
 
                                                                 {/* Action buttons */}
-                                                                <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+                                                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handleShowPreview(resume);
                                                                         }}
-                                                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-1 py-1 px-1.5 rounded hover:bg-blue-50 transition-colors">
-                                                                        <FaEye className="w-3 h-3" />
+                                                                        type="button"
+                                                                        className="text-xs font-semibold text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 py-1.5 px-2.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                                                                        <FaEye className="w-3.5 h-3.5 text-slate-400" />
                                                                         <span>Preview</span>
                                                                     </button>
-                                                                    <span
-                                                                        className={`text-sm font-medium ${
-                                                                            isSelected ? 'text-blue-600' : 'text-slate-400'
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleResumeSelect(resume)}
+                                                                        className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center space-x-1 cursor-pointer ${
+                                                                            isSelected
+                                                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                                                : 'border border-slate-300 hover:border-blue-400 text-slate-700 hover:text-blue-600 bg-white hover:bg-blue-50/50'
                                                                         }`}>
-                                                                        {isSelected ? 'Selected' : 'Click to select'}
-                                                                    </span>
+                                                                        {isSelected ? (
+                                                                            <>
+                                                                                <FaCheck className="w-3 h-3" />
+                                                                                <span>Selected</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <span>Select Resume</span>
+                                                                        )}
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
+
                                         ) : userResumes.length > 0 ? (
                                             <div className="text-center py-16">
                                                 <FaSearch className="w-12 h-12 text-slate-300 mx-auto mb-3" />
