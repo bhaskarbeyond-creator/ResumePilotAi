@@ -14,7 +14,7 @@ export function normalizeProfileData(input = {}) {
   result.hobbies = list(profile.hobbies || profile.interests, 50).map(item => typeof item === 'string' ? clean(item, 200) : (item && typeof item === 'object' ? clean(item.name || item.hobby || item.title || '', 200) : '')).filter(Boolean);
   result.certifications = list(profile.certifications, 50).map(item => normalizeEntry(item, ['title','issuer','date','url','link','endDate','credentialId','certType','isLicense']));
   result.projects = list(profile.projects, 50).map(item => normalizeEntry(item, ['title','role','technologies','projectType','link','url','description']));
-  result.achievements = list(profile.achievements || profile.awards, 50).map(item => normalizeEntry(item, ['title','name','issuer','awarder','date','description']));
+  result.achievements = list(profile.achievements || profile.awards, 50).map(item => normalizeEntry(item, ['title','name','issuer','awarder','date','description','achievementType']));
   result.references = list(profile.references, 30).map(item => normalizeEntry(item, ['name','position','company','email','phone','reference','description']));
   result.customSections = list(profile.customSections, 20).map((section, sIdx) => {
     if (!section || typeof section !== 'object') return null;

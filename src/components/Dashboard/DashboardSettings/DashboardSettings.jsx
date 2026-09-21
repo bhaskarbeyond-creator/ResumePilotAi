@@ -22,6 +22,7 @@ import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
 import { PROJECT_TYPES, GET_CURATED_PROJECT_IDEAS } from '../../BuildResume/steps/ProjectsStep';
 import { CERT_TYPES, GET_CURATED_CERTIFICATION_IDEAS } from '../../BuildResume/steps/CertificationsStep';
+import { ACHIEVEMENT_TYPES, SUGGESTION_CHIPS, TYPE_STYLE_MAP } from '../../BuildResume/steps/AchievementsStep';
 
 const normalizeProfileForSave = value => {
     const authEmail = fire.auth().currentUser?.email;
@@ -402,6 +403,9 @@ function DashboardSettings(_props) {
     const [projectTypeFilter, setProjectTypeFilter] = useState('all');
     const [certSearchQuery, setCertSearchQuery] = useState('');
     const [certTypeFilter, setCertTypeFilter] = useState('all');
+    const [achievementSearchQuery, setAchievementSearchQuery] = useState('');
+    const [achievementTypeFilter, setAchievementTypeFilter] = useState('all');
+    const [isPolishingAchIndex, setIsPolishingAchIndex] = useState(null);
 
     const [accountSettings, setAccountSettings] = useState({
         email: '',
@@ -614,13 +618,14 @@ function DashboardSettings(_props) {
     const normalizeAchievements = (arr) => {
         if (!Array.isArray(arr)) return [];
         return arr.map((item, idx) => {
-            if (!item || typeof item !== 'object') return { id: `ach_${idx}`, title: '', issuer: '', date: '', description: '' };
+            if (!item || typeof item !== 'object') return { id: `ach_${idx}`, title: '', issuer: '', date: '', description: '', achievementType: 'Award' };
             return {
                 id: item.id || `ach_${idx}`,
                 title: String(item.title || item.name || ''),
                 issuer: String(item.issuer || item.awarder || item.organization || ''),
                 date: String(item.date || item.year || ''),
-                description: String(item.description || item.summary || '')
+                description: String(item.description || item.summary || ''),
+                achievementType: String(item.achievementType || item.type || 'Award')
             };
         });
     };
@@ -1888,14 +1893,33 @@ function DashboardSettings(_props) {
     const addAchievement = () => {
         setProfile((prev) => ({
             ...prev,
-            achievements: [...(prev.achievements || []), { id: `ach_${Date.now()}`, title: '', issuer: '', date: '', description: '' }]
+            achievements: [...(prev.achievements || []), { id: `ach_${Date.now()}`, title: '', issuer: '', awarder: '', date: '', description: '', achievementType: 'Award' }]
         }));
+    };
+    const duplicateAchievement = (index) => {
+        setProfile((prev) => {
+            const list = [...(prev.achievements || [])];
+            const source = list[index];
+            if (!source) return prev;
+            const copy = {
+                ...source,
+                id: `ach_${Date.now()}`,
+                title: source.title ? `${source.title} (Copy)` : 'Achievement (Copy)',
+            };
+            list.splice(index + 1, 0, copy);
+            return { ...prev, achievements: list };
+        });
+        triggerNotification('Achievement duplicated!');
     };
     const updateAchievement = (index, field, value) => {
         const rawVal = (value && typeof value === 'object' && value.target !== undefined) ? value.target.value : value;
         setProfile((prev) => {
             const updated = [...(prev.achievements || [])];
-            updated[index] = { ...updated[index], [field]: rawVal };
+            const currentItem = updated[index] || {};
+            const nextItem = { ...currentItem, [field]: rawVal };
+            if (field === 'awarder') nextItem.issuer = rawVal;
+            if (field === 'issuer') nextItem.awarder = rawVal;
+            updated[index] = nextItem;
             return { ...prev, achievements: updated };
         });
     };
@@ -1904,6 +1928,47 @@ function DashboardSettings(_props) {
             ...prev,
             achievements: (prev.achievements || []).filter((_, i) => i !== index)
         }));
+        triggerNotification('Achievement removed', 'info');
+    };
+    const polishAchievementDescription = async (index) => {
+        const ach = profile.achievements?.[index];
+        if (!ach) return;
+        setIsPolishingAchIndex(index);
+        const title = ach.title || ach.name || 'Achievement';
+        const currentDesc = ach.description || '';
+        const awarder = ach.awarder || ach.issuer || '';
+
+        try {
+            const prompt = `Enhance this resume achievement into 1-2 impactful, quantified bullet points. Achievement: "${title}". Awarding Organization: "${awarder}". Draft: "${currentDesc}". Use strong action verbs, describe scope or competition size, and format cleanly for ATS screening.`;
+            const res = await runProfileAi('generate-summary', {
+                prompt,
+                targetRole: profile.occupation || 'Professional',
+                context: `${title} conferred by ${awarder}`,
+                language: 'en',
+            });
+            const text = res?.content || res?.summary || res?.data?.content;
+            if (text && typeof text === 'string') {
+                const cleaned = text.replace(/^["']|["']$/g, '').trim();
+                updateAchievement(index, 'description', cleaned);
+                triggerNotification('Achievement description polished with AI!');
+                return;
+            }
+        } catch {
+            // Heuristic fallback
+        } finally {
+            setIsPolishingAchIndex(null);
+        }
+
+        if (currentDesc) {
+            const polished = currentDesc.replace(/^[-•*]\s*/, '').trim();
+            const enhanced = polished.endsWith('.') ? polished : `${polished}.`;
+            updateAchievement(index, 'description', enhanced);
+            triggerNotification('Polished description!');
+        } else {
+            const fallback = `Recognized for outstanding technical excellence, cross-functional execution, and quantifiable impact in ${title}.`;
+            updateAchievement(index, 'description', fallback);
+            triggerNotification('Generated starter description!');
+        }
     };
 
     // References Handlers
@@ -4387,110 +4452,343 @@ function DashboardSettings(_props) {
                         )}
 
                         {/* Sub-Tab 10: Honors & Awards */}
-                        {profileSubTab === 'achievements' && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <div>
-                                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Honors, Awards &amp; Key Achievements</h3>
-                                        <p className="text-xs text-slate-500">Record industry accolades, hackathon wins, academic honors, or notable career milestones.</p>
-                                    </div>
-                                    <button type="button" onClick={addAchievement} className="w-full sm:w-auto whitespace-nowrap flex-shrink-0 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
-                                        <FaPlus className="w-3 h-3" /> Add Award / Achievement
-                                    </button>
-                                </div>
+                        {profileSubTab === 'achievements' && (() => {
+                            const filteredAchievements = (profile.achievements || []).filter(ach => {
+                                const q = achievementSearchQuery.trim().toLowerCase();
+                                const matchesSearch = !q ||
+                                    (ach.title || ach.name || '').toLowerCase().includes(q) ||
+                                    (ach.issuer || ach.awarder || '').toLowerCase().includes(q) ||
+                                    (ach.description || '').toLowerCase().includes(q);
 
-                                {(!profile.achievements || profile.achievements.length === 0) ? (
-                                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
-                                        <p className="text-2xl mb-2">🏆</p>
-                                        <p className="text-xs font-semibold text-slate-700 mb-1">No achievements saved in Master Profile</p>
-                                        <p className="text-[11px] text-slate-500 mb-3">Add awards, competitive honors, or leadership recognitions to stand out to recruiters.</p>
-                                        <button type="button" onClick={addAchievement} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
-                                            <FaPlus className="w-3 h-3" /> Add First Achievement
+                                const activeType = ach.achievementType || 'Award';
+                                const matchesType = achievementTypeFilter === 'all' || activeType === achievementTypeFilter;
+
+                                return matchesSearch && matchesType;
+                            });
+
+                            return (
+                                <div className="space-y-6">
+                                    {/* Header / Action Toolbar */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Honors, Awards &amp; Key Achievements</h3>
+                                            <p className="text-xs text-slate-500">Record industry accolades, hackathon wins, academic distinctions, or notable career milestones.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={addAchievement}
+                                            className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                                        >
+                                            <MdAdd className="w-4 h-4 text-white" />
+                                            <span>Add Award / Achievement</span>
                                         </button>
                                     </div>
-                                ) : (
-                                    (profile.achievements || []).map((ach, idx) => (
-                                        <div key={ach.id || idx} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                                            <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                                                    🏆 Honor #{idx + 1}
-                                                </span>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        disabled={idx === 0}
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', idx, -1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
-                                                        title="Move up">
-                                                        ▲
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        disabled={idx === profile.achievements.length - 1}
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', idx, 1); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600 disabled:opacity-30 rounded-lg hover:bg-slate-200/70 text-xs font-bold cursor-pointer"
-                                                        title="Move down">
-                                                        ▼
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeAchievement(idx); }}
-                                                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer ml-1"
-                                                        title="Delete achievement">
-                                                        <FaTrash className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                <div className="sm:col-span-2">
-                                                    <input
-                                                        type="text"
-                                                        value={ach.title || ''}
-                                                        onChange={(e) => updateAchievement(idx, 'title', e.target.value)}
-                                                        placeholder="Award or Honor Title (e.g. Employee of the Year, Hackathon 1st Place)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <input
-                                                        type="text"
-                                                        value={ach.date || ''}
-                                                        onChange={(e) => updateAchievement(idx, 'date', e.target.value)}
-                                                        placeholder="Date Received (e.g. Nov 2024)"
-                                                        className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
+
+                                    {/* Toolbar Row 2: Live Search & Category Filter Pills (when > 1 achievement) */}
+                                    {(profile.achievements || []).length > 1 && (
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                                            {/* Live Search */}
+                                            <div className="relative flex-1 max-w-sm">
+                                                <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                                 <input
                                                     type="text"
-                                                    value={ach.issuer || ''}
-                                                    onChange={(e) => updateAchievement(idx, 'issuer', e.target.value)}
-                                                    placeholder="Awarding Organization or Issuer (e.g. IEEE, Google Cloud, University)"
-                                                    className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+                                                    value={achievementSearchQuery}
+                                                    onChange={(e) => setAchievementSearchQuery(e.target.value)}
+                                                    placeholder="Search honors, awards, or organizations..."
+                                                    className="w-full h-9 pl-9 pr-8 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                                                 />
+                                                {achievementSearchQuery && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAchievementSearchQuery('')}
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                                    >
+                                                        <MdClose className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
                                             </div>
-                                            <div>
-                                                <textarea
-                                                    value={ach.description || ''}
-                                                    onChange={(e) => updateAchievement(idx, 'description', e.target.value)}
-                                                    placeholder="Brief description of the accomplishment and its significance..."
-                                                    className="w-full h-16 text-xs p-2.5 bg-white border border-slate-300 rounded-lg text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
-                                                />
+
+                                            {/* Category Filter Pills */}
+                                            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAchievementTypeFilter('all')}
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                                                        achievementTypeFilter === 'all'
+                                                            ? 'bg-slate-800 text-white'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    }`}
+                                                >
+                                                    All ({(profile.achievements || []).length})
+                                                </button>
+                                                {ACHIEVEMENT_TYPES.map(t => {
+                                                    const count = (profile.achievements || []).filter(a => (a.achievementType || 'Award') === t.id).length;
+                                                    if (count === 0 && achievementTypeFilter !== t.id) return null;
+                                                    return (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() => setAchievementTypeFilter(t.id)}
+                                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                                                                achievementTypeFilter === t.id
+                                                                    ? 'bg-indigo-600 text-white'
+                                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                            }`}
+                                                        >
+                                                            {t.label} ({count})
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                    ))
-                                )}
+                                    )}
 
-                                {(profile.achievements || []).length > 0 && (
-                                    <div className="pt-2">
-                                        <button type="button" onClick={addAchievement} className="w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-2xs cursor-pointer">
-                                            <FaPlus className="w-3.5 h-3.5" /> Add Another Achievement
+                                    {(!profile.achievements || profile.achievements.length === 0) ? (
+                                        <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl">
+                                            <p className="text-2xl mb-2">🏆</p>
+                                            <p className="text-xs font-semibold text-slate-700 mb-1">No achievements saved in Master Profile</p>
+                                            <p className="text-[11px] text-slate-500 mb-3">Add awards, competitive honors, or leadership recognitions to stand out to recruiters.</p>
+                                            <button
+                                                type="button"
+                                                onClick={addAchievement}
+                                                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                            >
+                                                <MdAdd className="w-4 h-4 text-white" />
+                                                <span>Add First Achievement</span>
+                                            </button>
+                                        </div>
+                                    ) : filteredAchievements.length === 0 ? (
+                                        <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2">
+                                            <p className="text-xs font-bold text-slate-700">No achievements match your filter criteria.</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setAchievementSearchQuery(''); setAchievementTypeFilter('all'); }}
+                                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                                            >
+                                                Reset filters
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {filteredAchievements.map((ach) => {
+                                                const originalIndex = (profile.achievements || []).findIndex(a => (a.id && a.id === ach.id) || a === ach);
+                                                const activeType = ach.achievementType || 'Award';
+                                                const typeConfig = ACHIEVEMENT_TYPES.find(t => t.id === activeType) || ACHIEVEMENT_TYPES[0];
+                                                const theme = TYPE_STYLE_MAP[activeType] || TYPE_STYLE_MAP.Award;
+                                                const TypeIcon = typeConfig.icon;
+                                                const achTitle = ach.title || ach.name || '';
+
+                                                const subtitleParts = [
+                                                    ach.issuer || ach.awarder,
+                                                    ach.date ? `Received ${ach.date}` : '',
+                                                ].filter(Boolean);
+
+                                                const subtitle = subtitleParts.length > 0
+                                                    ? subtitleParts.join(' • ')
+                                                    : 'Add awarding organization, dates, and significance';
+
+                                                return (
+                                                    <div
+                                                        key={ach.id || originalIndex}
+                                                        className={`bg-white border ${theme.cardBorder} rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden`}
+                                                    >
+                                                        {/* Card Header */}
+                                                        <div className={`p-3.5 sm:p-4 border-b border-slate-100 bg-gradient-to-r ${theme.headerGradient} flex items-center justify-between gap-3`}>
+                                                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                                                <span className={`w-6 h-6 rounded-md ${theme.indexBadge} font-extrabold flex items-center justify-center text-[11px] shrink-0 shadow-2xs`}>
+                                                                    #{originalIndex + 1}
+                                                                </span>
+                                                                <div className="min-w-0">
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                                                            {achTitle || 'Untitled Honor / Award'}
+                                                                        </h4>
+                                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 flex items-center gap-1 ${theme.badgeClass}`}>
+                                                                            <TypeIcon className="w-3 h-3" />
+                                                                            <span>{typeConfig.label}</span>
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                                                        {subtitle}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Action Button Group */}
+                                                            <div className="flex items-center gap-0.5 bg-white/95 backdrop-blur-xs p-1 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={originalIndex === 0}
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', originalIndex, -1); }}
+                                                                    className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
+                                                                    title="Move award up"
+                                                                >
+                                                                    ▲
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={originalIndex === (profile.achievements || []).length - 1}
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveItem('achievements', originalIndex, 1); }}
+                                                                    className="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-20 rounded-lg hover:bg-slate-100 text-[11px] font-bold transition-all cursor-pointer"
+                                                                    title="Move award down"
+                                                                >
+                                                                    ▼
+                                                                </button>
+                                                                <div className="w-[1px] h-3.5 bg-slate-200 mx-0.5" />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); duplicateAchievement(originalIndex); }}
+                                                                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50/70 transition-all cursor-pointer"
+                                                                    title="Duplicate award"
+                                                                >
+                                                                    <MdContentCopy className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeAchievement(originalIndex); }}
+                                                                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50/70 transition-all cursor-pointer ml-0.5"
+                                                                    title="Delete award"
+                                                                >
+                                                                    <MdDeleteOutline className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Card Body */}
+                                                        <div className="p-4 sm:p-5 space-y-4">
+                                                            {/* Category Selector Segmented Bar */}
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                                                    Category &amp; Recognition Type
+                                                                </label>
+                                                                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/70 border border-slate-200/80 rounded-xl">
+                                                                    {ACHIEVEMENT_TYPES.map(type => {
+                                                                        const Icon = type.icon;
+                                                                        const isSelected = activeType === type.id;
+                                                                        return (
+                                                                            <button
+                                                                                key={type.id}
+                                                                                type="button"
+                                                                                onClick={() => updateAchievement(originalIndex, 'achievementType', type.id)}
+                                                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                                                                    isSelected
+                                                                                        ? 'bg-white text-slate-900 shadow-xs border border-slate-200/90 font-bold'
+                                                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
+                                                                                }`}
+                                                                            >
+                                                                                <Icon className={`w-3.5 h-3.5 ${isSelected ? theme.iconColor : 'text-slate-400'}`} />
+                                                                                <span>{type.label}</span>
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Row 1: Award Title & Date Received */}
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                                <div className="sm:col-span-2">
+                                                                    <Field
+                                                                        label="Award or Honor Title"
+                                                                        name={`achievement-title-${originalIndex}`}
+                                                                        placeholder="Award or Honor Title (e.g. Employee of the Year, Hackathon 1st Place)"
+                                                                        value={achTitle}
+                                                                        onChange={(e) => updateAchievement(originalIndex, 'title', e.target.value)}
+                                                                        required
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <Field
+                                                                        label="Date Received"
+                                                                        name={`achievement-date-${originalIndex}`}
+                                                                        placeholder="e.g. Nov 2024"
+                                                                        value={ach.date || ''}
+                                                                        onChange={(e) => updateAchievement(originalIndex, 'date', e.target.value)}
+                                                                        optional
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Row 2: Awarding Organization / Issuer */}
+                                                            <div>
+                                                                <Field
+                                                                    label="Awarding Organization or Issuer"
+                                                                    name={`achievement-issuer-${originalIndex}`}
+                                                                    placeholder="Awarding Organization or Issuer (e.g. IEEE, Google Cloud, University)"
+                                                                    value={ach.issuer || ach.awarder || ''}
+                                                                    onChange={(e) => updateAchievement(originalIndex, 'issuer', e.target.value)}
+                                                                    optional
+                                                                />
+                                                            </div>
+
+                                                            {/* Row 3: Description with AI Polish & Quick Starter Chips */}
+                                                            <div className="space-y-2">
+                                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                                                    <div>
+                                                                        <label className="text-[13px] font-semibold text-slate-700">
+                                                                            Accomplishment &amp; Significance
+                                                                        </label>
+                                                                        <span className="block sm:inline sm:ml-1.5 text-[11px] text-slate-400 font-normal">
+                                                                            — scope, measurable impact, or why this honor was awarded
+                                                                        </span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={isPolishingAchIndex === originalIndex}
+                                                                        onClick={() => polishAchievementDescription(originalIndex)}
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-50 self-start sm:self-auto shrink-0"
+                                                                        title="Auto-enhance phrasing with impact metrics and action verbs"
+                                                                    >
+                                                                        <MdAutoAwesome className={`w-3.5 h-3.5 text-indigo-600 ${isPolishingAchIndex === originalIndex ? 'animate-spin' : ''}`} />
+                                                                        <span>{isPolishingAchIndex === originalIndex ? 'Polishing...' : '🪄 Enhance with AI'}</span>
+                                                                    </button>
+                                                                </div>
+
+                                                                <textarea
+                                                                    value={ach.description || ''}
+                                                                    onChange={(e) => updateAchievement(originalIndex, 'description', e.target.value)}
+                                                                    placeholder="Brief description of the accomplishment and its significance..."
+                                                                    className="w-full min-h-[78px] text-xs p-3.5 bg-slate-50/50 hover:bg-white focus:bg-white border border-slate-200/90 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none resize-y transition-all shadow-2xs leading-relaxed"
+                                                                />
+
+                                                                {/* Quick Starter Chips */}
+                                                                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                                                    <span className="text-[11px] font-semibold text-slate-400">Quick starters:</span>
+                                                                    {SUGGESTION_CHIPS.map((chip, cIdx) => (
+                                                                        <button
+                                                                            key={cIdx}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const current = (ach.description || '').trim();
+                                                                                const separator = current ? (current.endsWith('.') ? ' ' : '. ') : '';
+                                                                                updateAchievement(originalIndex, 'description', `${current}${separator}${chip.text}`);
+                                                                            }}
+                                                                            className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-indigo-50/80 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
+                                                                        >
+                                                                            {chip.label}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {(profile.achievements || []).length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={addAchievement}
+                                            className="w-full h-11 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 text-sm font-bold text-slate-700 hover:text-indigo-700 flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
+                                        >
+                                            <MdAdd className="w-4 h-4 text-indigo-600" />
+                                            <span>Add Another Achievement</span>
                                         </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {/* Sub-Tab 11: References */}
                         {profileSubTab === 'references' && (

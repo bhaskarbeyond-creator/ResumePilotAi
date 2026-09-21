@@ -41,7 +41,7 @@ export const SUGGESTION_CHIPS = [
     { label: '🎓 Dean\'s Honor Roll', text: 'Maintained top academic standing on Dean’s Honor List across consecutive semesters.' }
 ];
 
-const TYPE_STYLE_MAP = {
+export const TYPE_STYLE_MAP = {
     Award: {
         cardBorder: 'border-amber-200/90 hover:border-amber-300 focus-within:border-amber-400',
         headerGradient: 'from-amber-50/60 via-amber-50/20 to-transparent',

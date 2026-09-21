@@ -28,7 +28,7 @@ const LIST_FIELDS = Object.freeze({
   languages: { max: 30, fields: { id: 128, name: 500, level: 500 } },
   certifications: { max: 50, fields: { id: 128, title: 500, issuer: 500, date: 500, endDate: 500, credentialId: 500, url: 1024, link: 1024, certType: 100, isLicense: 20 } },
   projects: { max: 50, fields: { id: 128, title: 500, role: 500, technologies: 500, projectType: 100, description: 5000, link: 1024, url: 1024 } },
-  achievements: { max: 50, fields: { id: 128, title: 500, name: 500, issuer: 500, awarder: 500, date: 500, description: 5000 } },
+  achievements: { max: 50, fields: { id: 128, title: 500, name: 500, issuer: 500, awarder: 500, date: 500, description: 5000, achievementType: 100 } },
   references: { max: 30, fields: { id: 128, name: 500, position: 500, company: 500, email: 255, phone: 50, reference: 5000, description: 5000 } },
 });
 
