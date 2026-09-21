@@ -32,6 +32,7 @@ const DashboardMessages = lazy(() => import('../DashboardMessages/DashboardMessa
 const DashboardSupport = lazy(() => import('../DashboardSupport/DashboardSupport'));
 const CoverLetter = lazy(() => import('../../CoverLetter/CoverLetter'));
 const Billing = lazy(() => import('../../Billing/Plans/Plans'));
+const MainJobListings = lazy(() => import('../../JobsListings/MainJobListings'));
 class DashboardMain extends Component {
     static contextType = AuthContext;
     constructor(props) {
@@ -536,6 +537,11 @@ class DashboardMain extends Component {
                                 <Route path="portfolios" element={<DashboardPortfolios showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="applied-jobs" element={<AppliedJobs showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="job-tracker" element={<JobTracker showToast={this.showToast} />} />
+                                <Route path="jobs" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                <Route path="jobs/portal" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                <Route path="jobs/portal/:jobId" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                <Route path="jobs/browse" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
+                                <Route path="jobs/category/:catName" element={<MainJobListings isInsideDashboard={true} showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="my-employments" element={<EmployerDashboard showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} handleSidebarToggle={this.handleSidebarToggle} />} />
                                 <Route path="my-companies" element={<CompaniesManagement showToast={this.showToast} sidebarCollapsed={this.state.sidebarCollapsed} />} />
                                 <Route path="job-matching" element={<Navigate to="/dashboard/job-tracker" replace />} />

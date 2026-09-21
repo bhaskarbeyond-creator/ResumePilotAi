@@ -220,14 +220,16 @@ function normalizeJobRecord(job) {
     };
 }
 
-const MainJobListings = () => {
+const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, sidebarCollapsed, handleSidebarToggle } = {}) => {
     const { t } = useTranslation('common');
     const { pathname } = useLocation();
+    const isInsideDashboard = Boolean(propIsInsideDashboard || pathname.startsWith('/dashboard'));
     
-    // Extract job ID from URL - only if we're on /jobs/portal/:jobId route
-    const jobIdFromPath = pathname.includes('/jobs/portal/') && pathname.split('/').length === 4 
-        ? pathname.split('/').slice(-1)[0] 
-        : null;
+    // Extract job ID from URL - supports both /jobs/portal/:jobId and /dashboard/jobs/portal/:jobId
+    const jobIdFromPath = useMemo(() => {
+        const match = pathname.match(/\/(?:dashboard\/)?jobs\/portal\/([^/?#]+)/);
+        return match ? match[1] : null;
+    }, [pathname]);
 
     // Get user from AuthContext
     const user = useContext(AuthContext);
@@ -659,11 +661,11 @@ const MainJobListings = () => {
     );
 
     return (
-        <div className="rp-public-site min-h-screen flex flex-col bg-slate-50/50">
+        <div className={`${isInsideDashboard ? 'w-full' : 'rp-public-site'} min-h-screen flex flex-col bg-slate-50/50`}>
             {/* Top Navigation Bar with active public-site styling and auth modal hook */}
-            <HomepageNavbar onOpenAuthModal={authBtnHandler} />
+            {!isInsideDashboard && <HomepageNavbar onOpenAuthModal={authBtnHandler} />}
 
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-[110px] pb-12">
+            <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 ${isInsideDashboard ? 'py-6 sm:py-8 max-lg:pt-16' : 'pt-[110px] pb-12'}`}>
                 <JobSearchBar
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
@@ -884,7 +886,7 @@ const MainJobListings = () => {
                 </div>
             </main>
 
-            <HomepageFooter />
+            {!isInsideDashboard && <HomepageFooter />}
 
             {/* Job Details Drawer Modal */}
             <JobDetailsModal 
