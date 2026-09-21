@@ -16,6 +16,8 @@ const JobSearchBar = ({
     user,
     onQuickFilter,
     onSearch,
+    currency = 'USD',
+    currencySymbol = '$',
     t,
 }) => {
     // Quick filter presets for instant discovery
@@ -24,7 +26,7 @@ const JobSearchBar = ({
         { id: 'remote', label: 'Remote', icon: FaLaptop, category: 'workMode', value: 'remote' },
         { id: 'full-time', label: 'Full-time', icon: FaBolt, category: 'jobType', value: 'full-time' },
         { id: 'senior', label: 'Senior Level', icon: FaStar, category: 'experienceLevel', value: 'senior' },
-        { id: 'salary100k', label: '$120k+', icon: FaDollarSign, category: 'salaryRange', value: '$120k+' },
+        { id: 'salary100k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}120k+` : '$120k+', icon: FaDollarSign, category: 'salaryRange', value: '$120k+' },
         { id: 'contract', label: 'Contract', icon: FaHandshake, category: 'jobType', value: 'contract' },
     ];
 

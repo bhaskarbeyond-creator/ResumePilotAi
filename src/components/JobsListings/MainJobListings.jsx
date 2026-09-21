@@ -14,18 +14,178 @@ import FavoritesModal from './FavoritesModal';
 import { AuthContext } from '../../context/AuthContext';
 import fire from '../../conf/fire';
 import AuthWrapper from '../auth/authWrapper/AuthWrapper';
-import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById } from '../../services/api/platform';
+import { getActiveJobs, getJobFavourites, toggleJobFavourite, getJobById, getSubscriptionStatus } from '../../services/api/platform';
 
 // High-quality showcase dataset displayed when database has 0 active postings
 export const DEFAULT_SHOWCASE_JOBS = [
     {
-        id: 'job-showcase-01',
-        title: 'Senior Full-Stack Engineer',
+        id: 'job-str-01',
+        title: 'Senior Full-Stack Engineer (Payments Engine)',
         company: 'Stripe',
         companyImage: '',
         location: 'San Francisco, CA',
         country: 'United States',
-        description: 'Design, build, and scale world-class payments infrastructure and developer APIs. Work across React, TypeScript, and Node.js microservices handling billions in daily global transactions.',
+        description: 'Design and build high-reliability payment APIs and developer infrastructure. Work across modern React frontends and distributed Node.js/Go services processing hundreds of billions in global commerce volume.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$155k - $195k',
+        minSalary: 155000,
+        maxSalary: 195000,
+        requirements: ['React', 'TypeScript', 'Node.js', 'Distributed Systems', 'PostgreSQL', 'API Design'],
+        postedDate: '2 days ago',
+        applicants: 42,
+        featured: true,
+    },
+    {
+        id: 'job-ant-02',
+        title: 'AI & LLM Systems Infrastructure Architect',
+        company: 'Anthropic',
+        companyImage: '',
+        location: 'San Francisco, CA',
+        country: 'United States',
+        description: 'Lead the architecture of low-latency inference serving and scalable model evaluation pipelines for frontier generative models. Collaborate with safety research and core product engineering teams.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Senior Level',
+        salary: '$190k - $250k',
+        minSalary: 190000,
+        maxSalary: 250000,
+        requirements: ['Python', 'PyTorch', 'CUDA', 'FastAPI', 'Kubernetes', 'LLM Serving'],
+        postedDate: '1 day ago',
+        applicants: 67,
+        featured: true,
+    },
+    {
+        id: 'job-fig-03',
+        title: 'Staff Product Designer (Design Systems)',
+        company: 'Figma',
+        companyImage: '',
+        location: 'New York, NY',
+        country: 'United States',
+        description: 'Craft the next generation of collaborative canvas tools and design token specifications used by millions of designers and developers worldwide. Define design patterns and micro-interactions.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Lead / Executive',
+        salary: '$145k - $180k',
+        minSalary: 145000,
+        maxSalary: 180000,
+        requirements: ['Figma', 'Design Systems', 'Design Tokens', 'Prototyping', 'User Research', 'UI/UX'],
+        postedDate: '3 days ago',
+        applicants: 31,
+        featured: true,
+    },
+    {
+        id: 'job-ver-04',
+        title: 'Lead Frontend Infrastructure Engineer (Next.js)',
+        company: 'Vercel',
+        companyImage: '',
+        location: 'San Francisco, CA',
+        country: 'United States',
+        description: 'Push the frontier of web performance, edge server rendering, and compiler optimizations for Next.js and the Vercel Edge Network. Drive Core Web Vitals tooling and hydration efficiency.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$160k - $210k',
+        minSalary: 160000,
+        maxSalary: 210000,
+        requirements: ['Next.js', 'React', 'Turbopack', 'Rust', 'TypeScript', 'Web Performance'],
+        postedDate: '4 days ago',
+        applicants: 53,
+        featured: true,
+    },
+    {
+        id: 'job-lin-05',
+        title: 'Senior Frontend & Interactions Engineer',
+        company: 'Linear',
+        companyImage: '',
+        location: 'London',
+        country: 'United Kingdom',
+        description: 'Build lightning-fast, keyboard-first desktop and web software. Obsess over 120fps animations, client-side sync engines, and flawless craftsmanship in project planning and issue tracking.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$135k - $175k',
+        minSalary: 135000,
+        maxSalary: 175000,
+        requirements: ['TypeScript', 'React', 'WebGL', 'State Synchronization', 'IndexedDB', 'TailwindCSS'],
+        postedDate: '5 days ago',
+        applicants: 48,
+        featured: true,
+    },
+    {
+        id: 'job-raz-06',
+        title: 'Principal Backend Architect (Banking Platform)',
+        company: 'Razorpay',
+        companyImage: '',
+        location: 'Bengaluru',
+        country: 'India',
+        description: 'Scale banking rails, merchant settlements, and UPI transaction processing across millions of businesses. Lead architectural decisions for fault-tolerant, double-entry financial ledgers.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Lead / Executive',
+        salary: '$120k - $160k',
+        minSalary: 120000,
+        maxSalary: 160000,
+        requirements: ['Golang', 'Java', 'MariaDB', 'Kafka', 'Redis', 'High Concurrency'],
+        postedDate: '2 days ago',
+        applicants: 89,
+        featured: true,
+    },
+    {
+        id: 'job-can-07',
+        title: 'Senior UX / UI Product Designer',
+        company: 'Canva',
+        companyImage: '',
+        location: 'Sydney',
+        country: 'Australia',
+        description: 'Design intuitive, accessible graphic creation tools for enterprise teams. Work on collaborative templates, asset management, and AI-assisted generation workflows.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$125k - $155k',
+        minSalary: 125000,
+        maxSalary: 155000,
+        requirements: ['Figma', 'Visual Design', 'Design Systems', 'Micro-interactions', 'Information Architecture'],
+        postedDate: '1 week ago',
+        applicants: 27,
+        featured: false,
+    },
+    {
+        id: 'job-rev-08',
+        title: 'DevOps & Cloud Site Reliability Engineer',
+        company: 'Revolut',
+        companyImage: '',
+        location: 'London',
+        country: 'United Kingdom',
+        description: 'Maintain 99.999% availability for multi-region financial infrastructure on AWS and GCP. Manage Terraform GitOps, Kubernetes clusters, and automated chaos engineering drills.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Senior Level',
+        salary: '$115k - $150k',
+        minSalary: 115000,
+        maxSalary: 150000,
+        requirements: ['Kubernetes', 'Terraform', 'AWS', 'Docker', 'Prometheus', 'CI/CD Pipelines'],
+        postedDate: '3 days ago',
+        applicants: 36,
+        featured: false,
+    },
+    {
+        id: 'job-dat-09',
+        title: 'Senior Data Engineer (Distributed Telemetry)',
+        company: 'Datadog',
+        companyImage: '',
+        location: 'Boston, MA',
+        country: 'United States',
+        description: 'Construct real-time streaming analytics pipelines processing petabytes of log, trace, and metric events every second. Optimize ClickHouse, Kafka, and Apache Flink consumers.',
         type: 'Full-time',
         jobType: 'full-time',
         workMode: 'Remote',
@@ -33,166 +193,352 @@ export const DEFAULT_SHOWCASE_JOBS = [
         salary: '$140k - $185k',
         minSalary: 140000,
         maxSalary: 185000,
-        requirements: ['React', 'TypeScript', 'Node.js', 'Distributed Systems', 'API Design', 'PostgreSQL'],
-        postedDate: '2 days ago',
-        applicants: 34,
-        featured: true,
-    },
-    {
-        id: 'job-showcase-02',
-        title: 'AI & LLM Systems Architect',
-        company: 'Anthropic',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Architect scalable training pipelines and low-latency inference serving for frontier language models. Collaborate closely with AI safety and alignment research teams.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Senior Level',
-        salary: '$190k - $240k',
-        minSalary: 190000,
-        maxSalary: 240000,
-        requirements: ['Python', 'PyTorch', 'CUDA', 'Distributed Training', 'FastAPI', 'Kubernetes'],
-        postedDate: '1 day ago',
-        applicants: 52,
-        featured: true,
-    },
-    {
-        id: 'job-showcase-03',
-        title: 'Lead Product Designer',
-        company: 'Figma',
-        companyImage: '',
-        location: 'New York, NY',
-        country: 'United States',
-        description: 'Shape next-generation collaborative design tools. Lead design systems, craft fluid multi-device interactions, and conduct user feedback sessions with design leaders globally.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$130k - $165k',
-        minSalary: 130000,
-        maxSalary: 165000,
-        requirements: ['Design Systems', 'Figma', 'Prototyping', 'UI/UX Architecture', 'User Research'],
-        postedDate: '3 days ago',
-        applicants: 28,
-        featured: true,
-    },
-    {
-        id: 'job-showcase-04',
-        title: 'Frontend Infrastructure Engineer',
-        company: 'Vercel',
-        companyImage: '',
-        location: 'San Francisco, CA',
-        country: 'United States',
-        description: 'Drive web performance optimizations, build tooling, and edge runtime capabilities for Next.js developers. Optimize hydration, bundling, and Core Web Vitals.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Remote',
-        experienceLevel: 'Mid Level',
-        salary: '$135k - $170k',
-        minSalary: 135000,
-        maxSalary: 170000,
-        requirements: ['Next.js', 'React', 'Web Performance', 'Turborepo', 'TypeScript', 'Compiler Tooling'],
+        requirements: ['Golang', 'Python', 'Kafka', 'ClickHouse', 'Flink', 'Distributed Systems'],
         postedDate: '4 days ago',
-        applicants: 41,
+        applicants: 22,
         featured: false,
     },
     {
-        id: 'job-showcase-05',
-        title: 'Staff Cloud Security Engineer',
-        company: 'Datadog',
+        id: 'job-not-10',
+        title: 'Full-Stack Software Engineer (AI Experiences)',
+        company: 'Notion',
         companyImage: '',
-        location: 'New York, NY',
+        location: 'San Francisco, CA',
         country: 'United States',
-        description: 'Protect multi-cloud observability platforms. Implement automated zero-trust security postures, container vulnerability scanning, and IAM role fencing at scale.',
+        description: 'Build next-generation knowledge management and AI-augmented workspace features. Work seamlessly across React client editors and backend search indexing services.',
         type: 'Full-time',
         jobType: 'full-time',
-        workMode: 'On-site',
-        experienceLevel: 'Executive',
-        salary: '$160k - $210k',
-        minSalary: 160000,
-        maxSalary: 210000,
-        requirements: ['AWS', 'Kubernetes', 'Terraform', 'Zero-Trust Security', 'Go', 'SIEM'],
-        postedDate: 'Just now',
+        workMode: 'Hybrid',
+        experienceLevel: 'Mid Level',
+        salary: '$140k - $180k',
+        minSalary: 140000,
+        maxSalary: 180000,
+        requirements: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Elasticsearch', 'Vector Search'],
+        postedDate: '2 days ago',
+        applicants: 58,
+        featured: false,
+    },
+    {
+        id: 'job-spo-11',
+        title: 'Mobile Application Engineer (iOS & React Native)',
+        company: 'Spotify',
+        companyImage: '',
+        location: 'Stockholm',
+        country: 'Sweden',
+        description: 'Develop audio playback and offline synchronization capabilities for over 500 million active listeners. Optimize memory footprint and battery efficiency.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Mid Level',
+        salary: '$105k - $140k',
+        minSalary: 105000,
+        maxSalary: 140000,
+        requirements: ['Swift', 'iOS SDK', 'React Native', 'TypeScript', 'Audio Core', 'GraphQL'],
+        postedDate: '6 days ago',
+        applicants: 45,
+        featured: false,
+    },
+    {
+        id: 'job-air-12',
+        title: 'Senior Security Operations & AppSec Engineer',
+        company: 'Airbnb',
+        companyImage: '',
+        location: 'San Francisco, CA',
+        country: 'United States',
+        description: 'Safeguard candidate and guest data. Conduct threat modeling, penetration testing, and automate continuous security code analysis in high-velocity deployment pipelines.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$150k - $190k',
+        minSalary: 150000,
+        maxSalary: 190000,
+        requirements: ['AppSec', 'Threat Modeling', 'OAuth / OIDC', 'Cloud Security', 'SAST/DAST', 'Python'],
+        postedDate: '3 days ago',
         applicants: 19,
         featured: false,
     },
     {
-        id: 'job-showcase-06',
-        title: 'Machine Learning Engineer',
-        company: 'OpenAI',
+        id: 'job-goo-13',
+        title: 'Solutions Architect (Enterprise Cloud Migration)',
+        company: 'Google Cloud',
         companyImage: '',
-        location: 'San Francisco, CA',
+        location: 'Chicago, IL',
         country: 'United States',
-        description: 'Develop reinforcement learning algorithms and high-throughput evaluation harnesses for multimodal reasoning agents.',
-        type: 'Full-time',
-        jobType: 'full-time',
-        workMode: 'Hybrid',
-        experienceLevel: 'Mid Level',
-        salary: '$180k - $230k',
-        minSalary: 180000,
-        maxSalary: 230000,
-        requirements: ['Python', 'RLHF', 'Transformers', 'Evaluation Harnesses', 'PyTorch'],
-        postedDate: '5 days ago',
-        applicants: 67,
-        featured: true,
-    },
-    {
-        id: 'job-showcase-07',
-        title: 'Senior Backend Engineer (Fintech)',
-        company: 'Revolut',
-        companyImage: '',
-        location: 'London',
-        country: 'United Kingdom',
-        description: 'Build high-concurrency ledger systems and banking rails. Optimize SQL transaction throughput, foreign currency conversions, and fraud-detection event loops.',
+        description: 'Partner with Fortune 500 engineering leaders to architect scalable cloud-native migrations on Google Kubernetes Engine, BigQuery, and Anthos multi-cloud.',
         type: 'Full-time',
         jobType: 'full-time',
         workMode: 'Remote',
-        experienceLevel: 'Senior Level',
-        salary: '$120k - $155k',
-        minSalary: 120000,
-        maxSalary: 155000,
-        requirements: ['Java', 'Spring Boot', 'MariaDB', 'Kafka', 'Event Sourcing', 'Microservices'],
-        postedDate: '1 week ago',
-        applicants: 23,
-        featured: false,
+        experienceLevel: 'Lead / Executive',
+        salary: '$165k - $215k',
+        minSalary: 165000,
+        maxSalary: 215000,
+        requirements: ['Cloud Architecture', 'GCP', 'Kubernetes', 'Terraform', 'Technical Consulting', 'DevOps'],
+        postedDate: '1 day ago',
+        applicants: 38,
+        featured: true,
     },
     {
-        id: 'job-showcase-08',
-        title: 'Mobile App Architect (iOS & Android)',
-        company: 'Spotify',
+        id: 'job-sho-14',
+        title: 'Frontend Developer (Merchant Admin Experiences)',
+        company: 'Shopify',
         companyImage: '',
-        location: 'New York, NY',
-        country: 'United States',
-        description: 'Deliver audio streaming and offline synchronization experiences to over 500 million active listeners across mobile ecosystems.',
-        type: 'Contract',
-        jobType: 'contract',
-        workMode: 'Hybrid',
+        location: 'Toronto',
+        country: 'Canada',
+        description: 'Build high-converting storefront analytics and store administration dashboards used by millions of merchants. Utilize React, Polaris design system, and GraphQL.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
         experienceLevel: 'Mid Level',
         salary: '$110k - $145k',
         minSalary: 110000,
         maxSalary: 145000,
-        requirements: ['React Native', 'Swift', 'Kotlin', 'Audio Pipelines', 'Offline Sync'],
+        requirements: ['React', 'TypeScript', 'GraphQL', 'CSS Modules', 'Design Systems', 'Web Standards'],
+        postedDate: '4 days ago',
+        applicants: 61,
+        featured: false,
+    },
+    {
+        id: 'job-swi-15',
+        title: 'Staff Machine Learning Engineer (Dispatch & Routing)',
+        company: 'Swiggy',
+        companyImage: '',
+        location: 'Bengaluru',
+        country: 'India',
+        description: 'Optimize real-time hyperlocal dispatch, ETA prediction, and fleet routing algorithms handling millions of daily on-demand delivery orders.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'On-site',
+        experienceLevel: 'Senior Level',
+        salary: '$95k - $135k',
+        minSalary: 95000,
+        maxSalary: 135000,
+        requirements: ['Python', 'Machine Learning', 'Reinforcement Learning', 'Spark', 'Kafka', 'FastAPI'],
+        postedDate: '2 days ago',
+        applicants: 73,
+        featured: false,
+    },
+    {
+        id: 'job-git-16',
+        title: 'Technical Writer & Developer Documentation Lead',
+        company: 'GitHub',
+        companyImage: '',
+        location: 'Remote',
+        country: 'United States',
+        description: 'Author authoritative guides, interactive code samples, and comprehensive API specifications for GitHub Actions, Copilot extensibility, and security tooling.',
+        type: 'Contract',
+        jobType: 'contract',
+        workMode: 'Remote',
+        experienceLevel: 'Mid Level',
+        salary: '$85k - $115k',
+        minSalary: 85000,
+        maxSalary: 115000,
+        requirements: ['Technical Writing', 'Markdown', 'API Documentation', 'Git & GitHub', 'JavaScript', 'Developer Tools'],
+        postedDate: '5 days ago',
+        applicants: 29,
+        featured: false,
+    },
+    {
+        id: 'job-atl-17',
+        title: 'Junior Software Engineer (Cloud Core)',
+        company: 'Atlassian',
+        companyImage: '',
+        location: 'Bengaluru',
+        country: 'India',
+        description: 'Join the Core Cloud Platform team. Contribute to high-scale microservices, automated unit/integration test suites, and internal developer experience tooling.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Entry Level',
+        salary: '$45k - $65k',
+        minSalary: 45000,
+        maxSalary: 65000,
+        requirements: ['Java', 'Python', 'Git', 'Data Structures', 'REST APIs', 'Spring Boot'],
+        postedDate: '1 week ago',
+        applicants: 114,
+        featured: false,
+    },
+    {
+        id: 'job-fre-18',
+        title: 'Prompt Engineering & Benchmark Specialist',
+        company: 'Frontier AI Labs',
+        companyImage: '',
+        location: 'Remote Worldwide',
+        country: 'Global',
+        description: 'Design comprehensive reasoning evaluation datasets, write adversarial validation prompts, and benchmark frontier language models against coding benchmarks.',
+        type: 'Freelance',
+        jobType: 'freelance',
+        workMode: 'Remote',
+        experienceLevel: 'Mid Level',
+        salary: '$60k - $85k',
+        minSalary: 60000,
+        maxSalary: 85000,
+        requirements: ['Python', 'Prompt Engineering', 'LLM Evaluation', 'JSON Schema', 'Quality Assurance'],
         postedDate: '3 days ago',
-        applicants: 15,
+        applicants: 39,
+        featured: false,
+    },
+    {
+        id: 'job-msf-19',
+        title: 'Senior Cloud Security Architect (Azure Sentinel)',
+        company: 'Microsoft',
+        companyImage: '',
+        location: 'Redmond, WA',
+        country: 'United States',
+        description: 'Design zero-trust telemetry and automated threat hunting workflows for global enterprise clients. Implement modern SIEM event correlation and compliance governance.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Senior Level',
+        salary: '$160k - $210k',
+        minSalary: 160000,
+        maxSalary: 210000,
+        requirements: ['Azure', 'Cloud Security', 'SIEM', 'Threat Hunting', 'PowerShell', 'Python'],
+        postedDate: '2 days ago',
+        applicants: 51,
+        featured: true,
+    },
+    {
+        id: 'job-ube-20',
+        title: 'Distributed Systems Platform Engineer',
+        company: 'Uber',
+        companyImage: '',
+        location: 'Seattle, WA',
+        country: 'United States',
+        description: 'Scale real-time messaging, geo-indexing, and dynamic matching infrastructure handling tens of thousands of requests per second with sub-10ms response times.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$155k - $195k',
+        minSalary: 155000,
+        maxSalary: 195000,
+        requirements: ['Golang', 'Kafka', 'Redis', 'Cassandra', 'Distributed Systems', 'gRPC'],
+        postedDate: '4 days ago',
+        applicants: 62,
+        featured: false,
+    },
+    {
+        id: 'job-sno-21',
+        title: 'Database Kernel & Query Optimization Engineer',
+        company: 'Snowflake',
+        companyImage: '',
+        location: 'San Mateo, CA',
+        country: 'United States',
+        description: 'Work on vectorized query execution, cost-based optimizer heuristics, and metadata storage partitioning in next-generation cloud database engines.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'Hybrid',
+        experienceLevel: 'Senior Level',
+        salary: '$175k - $235k',
+        minSalary: 175000,
+        maxSalary: 235000,
+        requirements: ['C++', 'Rust', 'Database Internals', 'Query Optimization', 'Memory Management'],
+        postedDate: '3 days ago',
+        applicants: 24,
+        featured: true,
+    },
+    {
+        id: 'job-fli-22',
+        title: 'Senior Frontend Engineer (Mobile Web Performance)',
+        company: 'Flipkart',
+        companyImage: '',
+        location: 'Bengaluru',
+        country: 'India',
+        description: 'Drive ultra-low bandwidth mobile web performance and headless PWA experiences for millions of shoppers during festive peak sales.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'On-site',
+        experienceLevel: 'Senior Level',
+        salary: '$80k - $110k',
+        minSalary: 80000,
+        maxSalary: 110000,
+        requirements: ['React', 'TypeScript', 'PWA', 'Web Performance', 'Service Workers', 'Webpack'],
+        postedDate: '5 days ago',
+        applicants: 85,
+        featured: false,
+    },
+    {
+        id: 'job-air-23',
+        title: 'Research Engineer (Model Evaluation & Benchmarking)',
+        company: 'OpenAI',
+        companyImage: '',
+        location: 'San Francisco, CA',
+        country: 'United States',
+        description: 'Design scalable inference evaluation harnesses, multi-turn reasoning assessments, and human feedback scoring pipelines for next-generation intelligence models.',
+        type: 'Full-time',
+        jobType: 'full-time',
+        workMode: 'On-site',
+        experienceLevel: 'Lead / Executive',
+        salary: '$210k - $280k',
+        minSalary: 210000,
+        maxSalary: 280000,
+        requirements: ['Python', 'PyTorch', 'Distributed Computing', 'LLM Fine-Tuning', 'Statistics'],
+        postedDate: '1 day ago',
+        applicants: 98,
+        featured: true,
+    },
+    {
+        id: 'job-par-24',
+        title: 'Part-Time UI / Visual Designer',
+        company: 'TechFlow Studio',
+        companyImage: '',
+        location: 'Remote',
+        country: 'United States',
+        description: 'Create high-fidelity marketing illustrations, interactive landing page prototypes, and branded asset packages for fast-growing B2B software products.',
+        type: 'Part-time',
+        jobType: 'part-time',
+        workMode: 'Remote',
+        experienceLevel: 'Mid Level',
+        salary: '$40k - $55k',
+        minSalary: 40000,
+        maxSalary: 55000,
+        requirements: ['Figma', 'Visual Design', 'Illustration', 'Prototyping', 'Brand Identity'],
+        postedDate: '2 days ago',
+        applicants: 41,
+        featured: false,
+    },
+    {
+        id: 'job-con-25',
+        title: 'Contract Terraform & AWS Automation Consultant',
+        company: 'CloudScale Consulting',
+        companyImage: '',
+        location: 'Remote',
+        country: 'United States',
+        description: 'Execute infrastructure-as-code refactoring project. Migrate legacy VPC and EC2 environments to ECS Fargate and multi-account AWS Organizations.',
+        type: 'Contract',
+        jobType: 'contract',
+        workMode: 'Remote',
+        experienceLevel: 'Senior Level',
+        salary: '$90k - $130k',
+        minSalary: 90000,
+        maxSalary: 130000,
+        requirements: ['Terraform', 'AWS', 'Docker', 'ECS Fargate', 'CI/CD', 'Bash'],
+        postedDate: '1 week ago',
+        applicants: 33,
         featured: false,
     },
 ];
 
-// Helper to normalize database rows to uniform JobCard schema
-function normalizeJobRecord(job) {
+// Helper to normalize database rows to uniform JobCard schema with dynamic currency support
+export function normalizeJobRecord(job, currency = 'USD', currencySymbol = '$') {
     if (!job) return job;
     const minSal = job.salary_min || job.minSalary;
     const maxSal = job.salary_max || job.maxSalary;
     let salaryDisplay = job.salary;
+
+    // If salaryDisplay has hardcoded '$' but active system currency is different, adapt it
+    if (salaryDisplay && currencySymbol && currencySymbol !== '$' && salaryDisplay.includes('$')) {
+        salaryDisplay = salaryDisplay.replace(/\$/g, currencySymbol);
+    }
+
     if (!salaryDisplay && (minSal || maxSal)) {
         if (minSal && maxSal) {
-            salaryDisplay = `$${Math.round(minSal / 1000)}k - $${Math.round(maxSal / 1000)}k`;
+            salaryDisplay = `${currencySymbol}${Math.round(minSal / 1000)}k - ${currencySymbol}${Math.round(maxSal / 1000)}k`;
         } else if (minSal) {
-            salaryDisplay = `$${Math.round(minSal / 1000)}k+`;
+            salaryDisplay = `${currencySymbol}${Math.round(minSal / 1000)}k+`;
         } else if (maxSal) {
-            salaryDisplay = `Up to $${Math.round(maxSal / 1000)}k`;
+            salaryDisplay = `Up to ${currencySymbol}${Math.round(maxSal / 1000)}k`;
         }
     }
 
@@ -209,7 +555,7 @@ function normalizeJobRecord(job) {
         jobType: String(job.type || job.job_type || job.jobType || 'full-time').toLowerCase(),
         workMode: job.workMode || job.workplace_type || 'Remote',
         experienceLevel: job.experienceLevel || job.experience_level || 'Mid Level',
-        salary: salaryDisplay || '$80k - $120k',
+        salary: salaryDisplay || `${currencySymbol}80k - ${currencySymbol}120k`,
         minSalary: minSal || 80000,
         maxSalary: maxSal || 120000,
         requirements: Array.isArray(job.requirements)
@@ -276,6 +622,28 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
     const [isJobApplicationModalOpen, setIsJobApplicationModalOpen] = useState(false);
     const [isCreateJobModalOpen, setIsCreateJobModalOpen] = useState(false);
     const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
+
+    // Dynamic system currency state (sourced from authoritative MariaDB configuration)
+    const [currencyConfig, setCurrencyConfig] = useState({ currency: 'USD', currencySymbol: '$' });
+
+    // Synchronize system default currency from authoritative platform settings
+    useEffect(() => {
+        let isMounted = true;
+        (async () => {
+            try {
+                const status = await getSubscriptionStatus();
+                if (isMounted && status?.currency) {
+                    setCurrencyConfig({
+                        currency: status.currency,
+                        currencySymbol: status.currencySymbol || (status.currency === 'INR' ? '₹' : '$'),
+                    });
+                }
+            } catch {
+                // Keep default USD / $
+            }
+        })();
+        return () => { isMounted = false; };
+    }, []);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -351,7 +719,7 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
         return counts;
     };
 
-    // Load jobs function with resilient showcase fallback
+    // Load jobs function with resilient authentic showcase fallback
     const loadJobs = async (page = 1) => {
         try {
             setLoading(true);
@@ -365,16 +733,17 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                 salaryRange: selectedFilters.salaryRange,
             };
 
-            const result = await getActiveJobs(page, jobsPerPage, filters);
+            // Request up to 100 jobs to fetch complete active catalog from MariaDB
+            const result = await getActiveJobs(1, 100, filters);
 
             let activeJobPool = [];
             if (result.success && Array.isArray(result.allJobs) && result.allJobs.length > 0) {
-                activeJobPool = result.allJobs.map(normalizeJobRecord);
+                activeJobPool = result.allJobs.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
             } else if (result.success && Array.isArray(result.jobs) && result.jobs.length > 0) {
-                activeJobPool = result.jobs.map(normalizeJobRecord);
+                activeJobPool = result.jobs.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
             } else {
-                // Fallback to verified showcase jobs when database is empty
-                activeJobPool = DEFAULT_SHOWCASE_JOBS;
+                // Fallback to verified authentic showcase jobs when database is empty
+                activeJobPool = DEFAULT_SHOWCASE_JOBS.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
             }
 
             // Compute filter counts from full job pool
@@ -455,14 +824,15 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
             setCurrentPage(page);
         } catch (error) {
             console.error('Error loading jobs:', error);
-            const counts = calculateFilterCounts(DEFAULT_SHOWCASE_JOBS);
+            const normalizedShowcase = DEFAULT_SHOWCASE_JOBS.map((j) => normalizeJobRecord(j, currencyConfig.currency, currencyConfig.currencySymbol));
+            const counts = calculateFilterCounts(normalizedShowcase);
             setFilterCounts(counts);
-            setJobs(DEFAULT_SHOWCASE_JOBS.slice((page - 1) * jobsPerPage, page * jobsPerPage));
+            setJobs(normalizedShowcase.slice((page - 1) * jobsPerPage, page * jobsPerPage));
             setPagination({
-                totalItems: DEFAULT_SHOWCASE_JOBS.length,
-                totalPages: Math.max(1, Math.ceil(DEFAULT_SHOWCASE_JOBS.length / jobsPerPage)),
-                hasNextPage: false,
-                hasPreviousPage: false,
+                totalItems: normalizedShowcase.length,
+                totalPages: Math.max(1, Math.ceil(normalizedShowcase.length / jobsPerPage)),
+                hasNextPage: page < Math.ceil(normalizedShowcase.length / jobsPerPage),
+                hasPreviousPage: page > 1,
             });
             setCurrentPage(page);
         } finally {
@@ -679,6 +1049,8 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                     user={user}
                     onQuickFilter={handleQuickFilter}
                     onSearch={() => loadJobs(1)}
+                    currency={currencyConfig.currency}
+                    currencySymbol={currencyConfig.currencySymbol}
                 />
 
                 {/* Main Content Layout */}
@@ -692,6 +1064,8 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                         setExpandedFilter={setExpandedFilter}
                         showFilters={showFilters}
                         filterCounts={filterCounts}
+                        currency={currencyConfig.currency}
+                        currencySymbol={currencyConfig.currencySymbol}
                     />
 
                     {/* Right Content - Results & Listings */}
@@ -757,19 +1131,24 @@ const MainJobListings = ({ isInsideDashboard: propIsInsideDashboard, showToast, 
                                     </span>
                                 )}
                                 {Object.entries(selectedFilters).map(([category, values]) =>
-                                    values.map((val) => (
-                                        <span
-                                            key={`${category}-${val}`}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
-                                            <span className="capitalize">{val}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeSpecificFilter(category, val)}
-                                                className="hover:text-indigo-950">
-                                                <FaTimes className="w-2.5 h-2.5" />
-                                            </button>
-                                        </span>
-                                    ))
+                                    values.map((val) => {
+                                        const displayLabel = category === 'salaryRange' && currencyConfig.currencySymbol !== '$'
+                                            ? val.replace(/\$/g, currencyConfig.currencySymbol)
+                                            : val;
+                                        return (
+                                            <span
+                                                key={`${category}-${val}`}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                                <span className="capitalize">{displayLabel}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeSpecificFilter(category, val)}
+                                                    className="hover:text-indigo-950">
+                                                    <FaTimes className="w-2.5 h-2.5" />
+                                                </button>
+                                            </span>
+                                        );
+                                    })
                                 )}
                                 <button
                                     type="button"

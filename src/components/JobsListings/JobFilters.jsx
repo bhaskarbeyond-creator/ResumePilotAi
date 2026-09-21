@@ -10,6 +10,8 @@ const JobFilters = ({
     setExpandedFilter,
     showFilters,
     filterCounts = {},
+    currency = 'USD',
+    currencySymbol = '$',
     t,
 }) => {
     // Multi-section expanded state - open Job Type and Work Mode by default for immediate discoverability
@@ -41,10 +43,10 @@ const JobFilters = ({
             { value: 'executive', label: t('JobsUpdate.JobFilters.experienceLevel.executive', 'Executive / Director') },
         ],
         salaryRange: [
-            { value: '$40k - $60k', label: t('JobsUpdate.JobFilters.salaryRange.range1', '$40k - $60k') },
-            { value: '$60k - $80k', label: t('JobsUpdate.JobFilters.salaryRange.range2', '$60k - $80k') },
-            { value: '$80k - $120k', label: t('JobsUpdate.JobFilters.salaryRange.range3', '$80k - $120k') },
-            { value: '$120k+', label: t('JobsUpdate.JobFilters.salaryRange.range4', '$120k+') },
+            { value: '$40k - $60k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}40k - ${currencySymbol}60k` : t('JobsUpdate.JobFilters.salaryRange.range1', '$40k - $60k') },
+            { value: '$60k - $80k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}60k - ${currencySymbol}80k` : t('JobsUpdate.JobFilters.salaryRange.range2', '$60k - $80k') },
+            { value: '$80k - $120k', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}80k - ${currencySymbol}120k` : t('JobsUpdate.JobFilters.salaryRange.range3', '$80k - $120k') },
+            { value: '$120k+', label: currencySymbol && currencySymbol !== '$' ? `${currencySymbol}120k+` : t('JobsUpdate.JobFilters.salaryRange.range4', '$120k+') },
         ],
     };
 
@@ -145,9 +147,9 @@ const JobFilters = ({
 
     return (
         <aside className={`lg:w-72 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sticky top-24 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sticky top-24 shadow-sm hover:shadow-md transition-all duration-200 max-h-[calc(100vh-7rem)] flex flex-col">
                 {/* Filter Card Header */}
-                <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div className="flex-shrink-0 flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
                             <FaFilter className="w-3.5 h-3.5" />
@@ -175,8 +177,8 @@ const JobFilters = ({
                     )}
                 </div>
 
-                {/* Filter Sections */}
-                <div className="space-y-4">
+                {/* Filter Sections - Independent Scrollable Container */}
+                <div className="flex-1 overflow-y-auto pr-1 space-y-3.5" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent' }}>
                     {renderFilterSection(t('JobsUpdate.JobFilters.jobTypeTitle', 'Job Type'), 'jobType', filterOptions.jobType)}
                     {renderFilterSection(t('JobsUpdate.JobFilters.workModeTitle', 'Work Mode'), 'workMode', filterOptions.workMode)}
                     {renderFilterSection(t('JobsUpdate.JobFilters.experienceLevelTitle', 'Experience Level'), 'experienceLevel', filterOptions.experienceLevel)}
