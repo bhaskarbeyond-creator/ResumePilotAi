@@ -265,8 +265,8 @@ test('existing generate-interview backend and frontend integration remains prese
 
   // Backend contract
   assert.match(backend, /router\.post\('\/generate-interview'/);
-  assert.match(backend, /generateConfiguredText\(req, res, prompt, 'generate-interview'/);
-  assert.match(backend, /generateDefaultInterview\(/);
+  assert.match(backend, /generateConfiguredText\(req, res, built\.prompt, 'generate-interview'/);
+  assert.doesNotMatch(backend, /generateDefaultInterview|FALLBACK_TECHNICAL|FALLBACK_BEHAVIORAL/);
   assert.match(backend, /allowedInterviewTypes/);
   assert.match(backend, /safeFacts/);
   assert.match(backend, /safeJd/);

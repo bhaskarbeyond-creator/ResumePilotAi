@@ -107,7 +107,7 @@ const BASE_PAYLOAD = {
 
 test('interview generation helper exports exist', () => {
     assert.equal(typeof ai.buildInterviewPrompt, 'function');
-    assert.equal(typeof ai.generateDefaultInterview, 'function');
+    assert.equal(typeof ai.generateDefaultInterview, 'undefined', 'no hardcoded interview-bank fallback is exposed');
     assert.equal(typeof ai.dedupeQuestions, 'function');
     assert.equal(typeof ai.questionKey, 'function');
     assert.equal(typeof ai.interviewDifficultyDistribution, 'function');
@@ -187,7 +187,7 @@ test('AI path is invoked and returns distinct sets across identical-input attemp
     }
 });
 
-test('fallback is used only when the AI path fails and is count/difficulty/role aware', async () => {
+test('provider failure returns a recoverable error instead of predefined interview content', async () => {
     const oldKey = process.env.GEMINI_API_KEY;
     const oldFetch = global.fetch;
     process.env.GEMINI_API_KEY = 'test-key';
@@ -195,46 +195,14 @@ test('fallback is used only when the AI path fails and is count/difficulty/role 
     const app = buildApp();
     const { server, base } = await startServer(app);
     try {
-        const r1 = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, questionCount: 8, difficulty: 'hard' });
-        assert.equal(r1.status, 200);
-        assert.equal(r1.headers['x-ai-source'], 'fallback', 'fallback must be observable');
-        assert.equal(r1.body._source, 'fallback');
-        assert.equal(r1.body.totalQuestions, 8, 'fallback honors the requested question count');
-        assert.equal(r1.body.questions.length, 8);
-
-        const easy = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, questionCount: 8, difficulty: 'easy' });
-        const hard2 = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, questionCount: 8, difficulty: 'hard' });
-        const easyAdv = easy.body.questions.filter(q => q.difficulty === 'Advanced').length;
-        const hardAdv = hard2.body.questions.filter(q => q.difficulty === 'Advanced').length;
-        assert.ok(hardAdv >= easyAdv, 'hard difficulty should yield no fewer Advanced questions than easy');
-
-        // Different role => different grounded question set.
-        const backend = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, occupation: 'Python Backend Engineer' });
-        const reactQ = r1.body.questions.map(q => q.question).join(' ');
-        const backendQ = backend.body.questions.map(q => q.question).join(' ');
-        assert.notEqual(reactQ, backendQ, 'role must shape the fallback questions');
+        const response = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, questionCount: 8, difficulty: 'hard' });
+        assert.ok([502, 503].includes(response.status));
+        assert.ok(response.body.error?.code);
+        assert.equal(Array.isArray(response.body.questions), false, 'a failed provider must not quietly serve a canned question set');
+        assert.notEqual(response.headers['x-ai-source'], 'fallback');
     } finally {
         server.close();
         if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey;
-        global.fetch = oldFetch;
-    }
-});
-
-test('fallback never repeats a question already asked recently', async () => {
-    const oldFetch = global.fetch;
-    mockProviderFailure();
-    const app = buildApp();
-    const { server, base } = await startServer(app);
-    try {
-        const first = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, questionCount: 8 });
-        const previous = first.body.questions.map(q => q.question);
-        const second = await postJSON(base, '/api/generate-interview', { ...BASE_PAYLOAD, questionCount: 8, previousQuestions: previous });
-        const secondTexts = second.body.questions.map(q => q.question);
-        for (const prev of previous) {
-            assert.ok(!secondTexts.includes(prev), `must not repeat previously asked question: ${prev}`);
-        }
-    } finally {
-        server.close();
         global.fetch = oldFetch;
     }
 });

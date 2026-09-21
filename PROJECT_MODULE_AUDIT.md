@@ -93,7 +93,8 @@ The **ResumePilot AI** platform is a comprehensive, production-hardened AI-assis
 | **Zero-Metadata Leakage Filter** | Multi-pass sanitizer stripping UI prompt fragments and robotic preambles. | **IMPLEMENTED** | `backend/routes/ai.js:cleanInterviewMetadataArtifacts` |
 | **Interactive Exam Mode** | Computer-Based Testing (CBT) environment with countdown timer, question palette, flagging, and navigation. | **IMPLEMENTED** | `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx` |
 | **Detailed Performance Scorecard** | Category breakdown, score percentage, passing indicator, detailed answer explanations, and STAR response guides. | **IMPLEMENTED** | `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:report` |
-| **Seeded Offline Fallback** | Deterministic question generation ensuring 100% exam availability even if upstream LLM APIs encounter latency. | **IMPLEMENTED** | `backend/routes/ai.js:generateDefaultInterview` |
+| **Dynamic-only Generation Recovery** | Provider or malformed-output failures return a clear recoverable error rather than fabricated/static questions. | **IMPLEMENTED** | `backend/routes/ai.js:/generate-interview` |
+| **Face-to-Face Live AI Session** | Server-authoritative adaptive interview with optional media preview, voice/STT affordances, recovery, and evidence-grounded feedback. | **IMPLEMENTED** | `backend/services/liveInterviewSession.js`, `src/components/Dashboard/DashboardInterviews/LiveInterviewSession.jsx` |
 
 ---
 

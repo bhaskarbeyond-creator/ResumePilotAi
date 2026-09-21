@@ -1,6 +1,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse } = require('../services/aiRuntime');
+const { getRepository } = require('../repositories');
+const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
 const router = express.Router();
 
 async function generateConfiguredText(req, res, prompt, operation, overrides = {}) {
@@ -20,10 +22,13 @@ async function generateConfiguredText(req, res, prompt, operation, overrides = {
 const AI_ROUTE_PATHS = new Set([
     '/generate-resume', '/generate-summary', '/generate-interview', '/generate-work-description',
     '/generate-education-description', '/generate-skills', '/check-grammar', '/generate-content',
-    '/parse-resume',
+    '/parse-resume', '/live-interview/sessions',
 ]);
+function isAiRoutePath(pathname) {
+    return AI_ROUTE_PATHS.has(pathname) || /^\/live-interview\/sessions\/[A-Za-z0-9_-]{16,128}(?:\/(?:turns|complete))?$/.test(pathname);
+}
 router.use((req, res, next) => {
-    if (!AI_ROUTE_PATHS.has(req.path)) return next();
+    if (!isAiRoutePath(req.path)) return next();
     const requestController = new AbortController();
     req.aiAbortSignal = requestController.signal;
     req.once('aborted', () => requestController.abort());
@@ -413,7 +418,10 @@ Fresh-run directive: produce a distinct set of questions from any prior attempt 
     return { prompt, validQuestionCount, targetLanguage, distribution: blueprint.distribution, sessionNonce: nonce, blueprint };
 }
 
-// Generate interview questions based on occupation and interview type
+// Generate interview questions based on occupation and interview type.
+// Question content is model-generated. A provider failure is surfaced to the
+// candidate with a retryable error rather than silently substituting a static
+// question bank.
 router.post('/generate-interview', async (req, res) => {
     const markSource = (source) => {
         if (res?.setHeader && !res.headersSent) res.setHeader('X-AI-Source', source);
@@ -421,20 +429,18 @@ router.post('/generate-interview', async (req, res) => {
     try {
         const { occupation, interviewType, questionCount = 10, language = 'en', experienceLevel, difficulty, jobDescription, resumeFacts, previousQuestions } = req.body;
         const allowedInterviewTypes = ['technical', 'behavioral', 'mixed', 'hr', 'managerial', 'case'];
-
         if (typeof occupation !== 'string' || !occupation.trim() || occupation.length > 160
             || !allowedInterviewTypes.includes(interviewType)) {
             return res.status(400).json({ error: { code: 'INVALID_AI_INPUT', message: 'Valid occupation and interview type are required', requestId: res.locals.requestId } });
         }
 
-        // Bounded, privacy-preserving history: only the last few question texts are accepted so
-        // prior-attempt repetition can be avoided without shipping unlimited history.
+        // Bounded, privacy-preserving history: only recent question text is
+        // accepted so generation avoids repetition without shipping a transcript.
         const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
             .filter(q => typeof q === 'string')
             .map(q => cleanInterviewMetadataArtifacts(sanitizePromptFragment(q, 240)))
             .filter(q => q.length > 0)
             .slice(0, 12);
-
         const built = buildInterviewPrompt({
             occupation,
             interviewType,
@@ -447,331 +453,140 @@ router.post('/generate-interview', async (req, res) => {
             previousQuestions: priorQuestions,
             sessionNonce: crypto.randomBytes(8).toString('hex'),
         });
-        const prompt = built.prompt;
-
-        const responseText = await generateConfiguredText(req, res, prompt, 'generate-interview', { maxTokens: 4096 });
-
-        try {
-            // Extract the JSON from the response
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            const jsonStr = jsonMatch ? jsonMatch[0] : responseText;
-            const jsonData = extractJson(jsonStr) || extractJson(responseText);
-
-            if (!jsonData || typeof jsonData !== 'object') throw new Error('Invalid interview response');
-
-            // De-duplicate and strip any leaked metadata artifacts from questions and options
-            const questions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
-            if (!questions.length) throw new Error('No usable questions after de-duplication');
-
-            jsonData.questions = questions;
-            jsonData.totalQuestions = questions.length;
-            markSource('ai');
-            res.json(jsonData);
-        } catch (parseError) {
-            console.error('Error parsing AI response:', parseError);
-            // Fall back to generating default interview questions (role/difficulty/count-aware).
-            const fallbackData = generateDefaultInterview({
-                occupation,
-                interviewType,
-                questionCount: built.validQuestionCount,
-                language,
-                difficulty,
-                experienceLevel,
-                previousQuestions: priorQuestions,
-            });
-            markSource('fallback');
-            res.json(fallbackData);
+        const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: 4096 });
+        const jsonData = extractJson(responseText);
+        if (!jsonData || typeof jsonData !== 'object') {
+            throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
         }
+        const questions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
+        if (!questions.length) {
+            throw Object.assign(new Error('The AI response did not contain usable questions.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
+        }
+        markSource('ai');
+        return res.json({ ...jsonData, questions, totalQuestions: questions.length });
     } catch (error) {
-        console.error('Error generating interview questions:', error);
-        // Use fallback if AI generation fails
-        const { occupation, interviewType, questionCount = 10, language = 'en', difficulty, experienceLevel, previousQuestions } = req.body;
-        const priorQuestions = (Array.isArray(previousQuestions) ? previousQuestions : [])
-            .filter(q => typeof q === 'string')
-            .map(q => cleanInterviewMetadataArtifacts(sanitizePromptFragment(q, 240)))
-            .filter(q => q.length > 0)
-            .slice(0, 12);
-        const fallbackData = generateDefaultInterview({
-            occupation,
-            interviewType,
-            questionCount,
-            language,
-            difficulty,
-            experienceLevel,
-            previousQuestions: priorQuestions,
+        const status = Number(error.status) || (error.code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 502);
+        const code = error.code || 'AI_PROVIDER_ERROR';
+        console.error('[Interview generation]', { code, requestId: res.locals.requestId });
+        return res.status(status).json({ error: {
+            code,
+            message: status >= 500
+                ? 'The interview service is temporarily unavailable. Please try again.'
+                : String(error.message || 'Unable to generate interview questions.'),
+            requestId: res.locals.requestId,
+        } });
+    }
+});
+
+let cachedLiveInterviewRepository = null;
+let cachedLiveInterviewService = null;
+function liveInterviewService() {
+    const repository = getRepository();
+    // Keep idempotent in-flight turn requests coalesced within this process;
+    // the durable repository revision remains the cross-process authority.
+    if (cachedLiveInterviewRepository !== repository || !cachedLiveInterviewService) {
+        cachedLiveInterviewRepository = repository;
+        cachedLiveInterviewService = new LiveInterviewService({
+            store: createRepositoryLiveInterviewStore(repository),
         });
-        markSource('fallback');
-        res.json(fallbackData);
+    }
+    return cachedLiveInterviewService;
+}
+
+function sendLiveInterviewError(res, error) {
+    const status = Number(error?.status) || 502;
+    const code = error?.code || 'LIVE_INTERVIEW_UNAVAILABLE';
+    if (status >= 500) {
+        console.error('[Live interview]', { code, requestId: res.locals.requestId });
+    }
+    const payload = {
+        error: {
+            code,
+            message: status >= 500
+                ? 'The live interviewer is temporarily unavailable. Your session is still saved; please retry.'
+                : String(error?.message || 'Unable to process this interview request.'),
+            requestId: res.locals.requestId,
+        },
+    };
+    if (error?.details?.session) payload.session = error.details.session;
+    return res.status(status).json(payload);
+}
+
+// Live sessions have a separate, server-authoritative contract from the
+// legacy timed assessment. The client cannot inject a question, score, state
+// transition, or other candidate's session id.
+router.post('/live-interview/sessions', async (req, res) => {
+    try {
+        const session = await liveInterviewService().start({
+            ownerUid: req.user?.uid,
+            input: req.body || {},
+            signal: req.aiAbortSignal,
+        });
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.status(201).json({ session });
+    } catch (error) {
+        return sendLiveInterviewError(res, error);
     }
 });
 
-// Fallback function to generate interview questions when API fails. Deterministic per input
-// (seeded by role/type/difficulty/count), role- and difficulty-aware, honors the requested
-// question count, never fabricates candidate experience, and never repeats a question that was
-// already asked recently. This is a reliability net — it is never the diversity source.
-function seededRand(seedStr) {
-    let h = 2166136261;
-    for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return () => {
-        h += 0x6D2B79F5;
-        let t = h;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-function seededShuffle(arr, rand) {
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(rand() * (i + 1));
-        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+router.get('/live-interview/sessions/:sessionId', async (req, res) => {
+    try {
+        const session = await liveInterviewService().get({
+            ownerUid: req.user?.uid,
+            id: req.params.sessionId,
+        });
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ session });
+    } catch (error) {
+        return sendLiveInterviewError(res, error);
     }
-    return arr;
-}
-// diff tiers: 0=Easy, 1=Intermediate, 2=Advanced
-const FBQ = (question, options, correctAnswer, category, diff, explanation, estimatedTime) => ({
-    question, options, correctAnswer, category, diff,
-    explanation: explanation || 'The selected option reflects the best-practice approach for a professional in this role.',
-    estimatedTime: estimatedTime || 90,
 });
 
-const FALLBACK_TECHNICAL = (occ) => [
-    FBQ(`When evaluating whether to adopt a specialized framework versus standard built-in capabilities for a ${occ} project, which trade-off is most critical?`,
-        ['Long-term maintainability and team capability versus upfront convenience', 'Whether the tool is trending on developer forums', 'Choosing the tool that has zero learning curve regardless of performance', 'Avoiding all third-party dependencies unconditionally'], 0, 'Technical Architecture', 1,
-        'Evaluating long-term maintainability, ecosystem health, and team ergonomics ensures sustainable architecture.'),
-    FBQ(`You are tasked with introducing a modern architectural pattern to your ${occ} workflow. How do you mitigate migration risks for active production systems?`,
-        ['Implement an end-to-end rewrite in a single deployment', 'Use an incremental rollout with feature flags, baseline benchmarks, and automated rollback triggers', 'Deploy directly to production during off-peak hours without testing', 'Delay the migration indefinitely to avoid risk'], 1, 'Systems Migration', 2,
-        'Phased rollouts with automated verification and fallback boundaries prevent production outages during migrations.'),
-    FBQ(`How do you approach diagnosing an intermittent production failure as a ${occ}?`,
-        ['Restart the service repeatedly until the issue disappears', 'Immediately apply the last fix used on an unrelated bug', 'Isolate telemetry, reproduce failure conditions with synthetic loads, and verify root causes before deploying fixes', 'Assume external network instability without investigation'], 2, 'Problem Solving', 1,
-        'Evidence-driven diagnosis using telemetry correlation and reproducible synthetic loads prevents recurring defects.'),
-    FBQ(`Which performance telemetry metric is most actionable when optimizing throughput in a ${occ} pipeline?`,
-        ['Total lines of configuration written', 'P95/P99 latency distribution and resource saturation bottlenecks', 'Personal estimates of system velocity', 'Gross number of tasks processed without tracking error rates'], 1, 'Performance Engineering', 2,
-        'P95/P99 latency profiles and resource saturation metrics identify true user-impacting bottlenecks.'),
-    FBQ(`How do you decide when to refactor legacy components in your ${occ} codebase or infrastructure?`,
-        ['Refactor only when completely blocked, without documentation', 'Assess defect frequency, maintenance overhead, and test coverage before planning bounded incremental refactors', 'Rewrite everything immediately whenever a new tool is released', 'Never refactor working systems regardless of maintenance costs'], 1, 'Code Quality', 1,
-        'Data-backed refactoring targeting high-churn, defect-prone modules maximizes ROI while protecting stability.'),
-    FBQ(`During a major production incident in your ${occ} domain, what is your immediate priority?`,
-        ['Assign blame and investigate historical commits', 'Triage blast radius, mitigate customer impact via failover, and communicate transparent status updates', 'Silence monitoring alerts to reduce noise', 'Attempt unreviewed speculative patches in production'], 1, 'Incident Response', 2,
-        'Rapid blast-radius containment, failover mitigation, and clear stakeholder updates are the gold standard of incident response.'),
-    FBQ(`How would you estimate the technical effort and risk for a complex ${occ} initiative with significant ambiguity?`,
-        ['Provide a single optimistic deadline based on best-case assumptions', 'Decompose into verifiable milestones, identify integration unknowns, and provide confidence ranges with explicit assumptions', 'Refuse to estimate until all external dependencies are 100% complete', 'Double the first estimate arbitrarily without breakdown'], 1, 'Technical Planning', 1,
-        'Decomposition into measurable milestones with confidence intervals and explicit risk assumptions creates defensible plans.'),
-    FBQ(`When conducting a peer review for a critical ${occ} deliverable, what should you prioritize?`,
-        ['Enforcing personal stylistic preferences over team conventions', 'Approving quickly without deep analysis to unblock velocity', 'Validating system correctness, edge-case failure handling, security posture, and maintainability', 'Rejecting any implementation that differs from your initial mental model'], 2, 'Peer Review', 1,
-        'Rigorous review focuses on correctness, security boundaries, failure recovery, and adherence to shared standards.'),
-    FBQ(`What is the most effective approach to maintain system reliability when upstream APIs or dependencies experience latency spikes?`,
-        ['Retry failed requests infinitely in a tight loop', 'Implement bounded timeouts, exponential backoff with jitter, and circuit breaker fallbacks', 'Fail silently and return empty responses without logging', 'Block incoming requests until upstream services recover completely'], 1, 'Reliability Engineering', 2,
-        'Circuit breakers combined with jittered exponential backoff protect upstream dependencies from cascading failure storms.'),
-    FBQ(`How do you prioritize competing technical debt versus feature delivery as a ${occ}?`,
-        ['Ignore technical debt entirely to maximize immediate feature output', 'Quantify reliability/velocity impact of debt, present business trade-offs, and allocate dedicated capacity alongside roadmap items', 'Halt all product feature development until the system has zero technical debt', 'Fix technical debt secretly without stakeholder visibility'], 1, 'Technical Strategy', 2,
-        'Quantifying the operational cost of technical debt aligns engineering health with sustainable business velocity.'),
-];
-
-const FALLBACK_BEHAVIORAL = (occ) => [
-    FBQ(`How do you handle a conflict within your team as a ${occ}?`,
-        ['Avoid the person', 'Listen to all sides, facilitate discussion, and find common ground', 'Always side with seniority', 'Escalate immediately'], 1, 'Conflict Resolution', 1,
-        'Active listening and collaborative problem-solving resolve conflicts constructively.'),
-    FBQ(`Describe how you prioritize when you face multiple deadlines as a ${occ}.`,
-        ['Work on whatever feels urgent', 'Rank by urgency and importance and communicate a plan', 'Work longer hours on everything', 'Do the easiest first'], 2, 'Time Management', 1,
-        'Urgency/importance ranking with stakeholder communication is effective prioritization.'),
-    FBQ(`How do you respond to constructive feedback on your ${occ} work?`,
-        ['Take it personally', 'Listen, reflect, and act on the feedback', 'Ignore it', 'Agree to everything'], 1, 'Adaptability', 0,
-        'A growth mindset treats feedback as an input for improvement.'),
-    FBQ(`Tell me how you adapt when a major requirement changes mid-project as a ${occ}.`,
-        ['Resist the change', 'Understand the reason, replan, and communicate the impact', 'Quietly keep the old plan', 'Blame the requester'], 2, 'Change Management', 1,
-        'Understanding the why, replanning, and communicating impact is how professionals adapt.'),
-    FBQ(`How do you collaborate with people from other functions as a ${occ}?`,
-        ['Avoid cross-functional work', 'Insist others follow your process', 'Learn their context, align goals, and agree on communication', 'Let management coordinate'], 2, 'Collaboration', 1,
-        'Empathy plus shared goals and clear channels make cross-functional work succeed.'),
-    FBQ(`How do you handle missing information when you need to proceed as a ${occ}?`,
-        ['Block until everything is known', 'State assumptions, proceed, and validate them early', 'Make things up', 'Wait passively'], 1, 'Judgment', 1,
-        'Explicit assumptions validated early keep momentum without guessing.'),
-    FBQ(`How do you deliver good news and bad news to stakeholders as a ${occ}?`,
-        ['Only share good news', 'Be transparent, focus on impact and next steps', 'Let them find out', 'Delay all updates'], 1, 'Communication', 0,
-        'Transparency about impact with clear next steps builds trust.'),
-    FBQ(`What do you do when you realize you were wrong about a technical decision as a ${occ}?`,
-        ['Defend the original choice', 'Acknowledge it, assess impact, and propose a correction', 'Hide the mistake', 'Wait for someone else to notice'], 2, 'Ownership', 1,
-        'Owning mistakes and proposing corrections is a core professional behavior.'),
-];
-
-const FALLBACK_MANAGERIAL = (occ) => [
-    FBQ(`How do you delegate work effectively when leading a ${occ} team?`,
-        ['Do everything yourself', 'Assign by skill and growth goals, set clear outcomes, and stay available', 'Delegate everything without guidance', 'Assign by who asks first'], 1, 'Delegation', 1,
-        'Skill-matched delegation with clear outcomes and support maximizes team output and growth.'),
-    FBQ(`How do you handle an underperforming team member as a ${occ} manager?`,
-        ['Avoid the conversation', 'Understand root cause, set expectations, and create a support plan', 'Put them on a plan immediately', 'Ignore it'], 2, 'Performance Management', 2,
-        'Diagnose, set expectations, and support before escalating is the fair, effective approach.'),
-    FBQ(`How do you decide what your ${occ} team should work on next?`,
-        ['Follow the loudest voice', 'Align priorities with business goals and capacity, then communicate', 'Do the easiest work', 'Always chase the newest idea'], 1, 'Prioritization', 1,
-        'Priorities should map to business impact and be weighed against team capacity.'),
-    FBQ(`How do you build trust with the people you manage as a ${occ}?`,
-        ['Be distant and formal', 'Be consistent, transparent, and follow through on commitments', 'Be a friend first', 'Only meet at annual reviews'], 1, 'Leadership', 1,
-        'Consistency, transparency, and follow-through are the foundations of trust.'),
-    FBQ(`How do you handle a situation where two senior stakeholders disagree on scope as a ${occ}?`,
-        ['Pick a side', 'Facilitate a discussion around goals, data, and trade-offs', 'Escalate and disengage', 'Make the call secretly'], 2, 'Stakeholder Management', 2,
-        'Facilitating around shared goals and trade-offs aligns stakeholders without taking sides.'),
-    FBQ(`How do you grow the skills of your ${occ} team?`,
-        ['Assume people self-improve', 'Create stretch opportunities, coaching, and regular feedback', 'Send everyone to training once', 'Only fix what breaks'], 1, 'Development', 1,
-        'Structured growth through stretch work and coaching is how teams develop.'),
-];
-
-const FALLBACK_CASE = (occ) => [
-    FBQ(`How would you structure an analysis to size a new ${occ} initiative?`,
-        ['Pick a number quickly', 'Clarify scope, identify drivers, build a model, and sanity-check the result', 'Use the last project size', 'Ask for the answer'], 2, 'Case Reasoning', 2,
-        'Structured frameworks (scope, drivers, model, sanity check) produce defensible estimates.'),
-    FBQ(`How do you evaluate two competing approaches for a ${occ} decision?`,
-        ['Go with your favorite', 'Define criteria, weight them, and compare trade-offs against data', 'Ask a friend', 'Do both completely'], 1, 'Decision Making', 1,
-        'Criteria-weighted comparison keeps decisions objective and explainable.'),
-    FBQ(`What do you do when the data you need for a ${occ} decision is incomplete?`,
-        ['Refuse to decide', 'State assumptions, use best estimates, and flag the risk', 'Make up data', 'Decide randomly'], 1, 'Judgment', 1,
-        'Explicit assumptions plus risk flagging lets decisions proceed without fabrication.'),
-    FBQ(`How would you break down a large, ambiguous ${occ} problem?`,
-        ['Tackle it as one big step', 'Decompose into sub-problems, prioritize, and solve iteratively', 'Wait for clarity', 'Do the easiest part only'], 2, 'Problem Structuring', 2,
-        'Decomposition and iterative solving make ambiguous problems tractable.'),
-    FBQ(`How do you present the trade-offs of a ${occ} recommendation to leadership?`,
-        ['Only show the upside', 'Present options, costs, benefits, and risks with a clear recommendation', 'Overwhelm with detail', 'Let them decide blindly'], 1, 'Communication', 1,
-        'Clear options-with-trade-offs and a recommendation let leaders decide well.'),
-    FBQ(`How would you measure whether a new ${occ} change actually worked?`,
-        ['By how it feels', 'Define a baseline and a success metric, then compare before/after', 'Ignore measurement', 'By one anecdote'], 1, 'Measurement', 1,
-        'Baseline-and-metric comparison is how outcomes are objectively evaluated.'),
-];
-
-const FALLBACK_GENERIC = (occ) => [
-    FBQ(`When managing multiple high-priority deliverables under tight deadlines as a ${occ}, what is the most effective approach to maintain delivery quality?`,
-        ['Attempt to complete all tasks simultaneously without triaging', 'Prioritize tasks by business impact and operational risk, establish clear stakeholder expectations, and maintain strict verification standards', 'Bypass all quality checks to meet deadlines faster', 'Work in isolation without providing progress visibility'], 1, 'Delivery Management', 1,
-        'Risk-based prioritization with transparent stakeholder alignment protects product quality under schedule pressure.'),
-    FBQ(`How do you structure an ongoing technical review process to prevent knowledge silos in your ${occ} team?`,
-        ['Keep all architecture context in private notes', 'Establish regular collaborative design reviews, standardized documentation, and pair-programming on complex modules', 'Rely on a single senior contributor to approve everything without explanation', 'Discourage questions during code and design reviews'], 1, 'Knowledge Sharing', 1,
-        'Shared design reviews and transparent documentation distribute domain knowledge and elevate collective team capability.'),
-    FBQ(`How do you ensure requirements and acceptance criteria are testable and unambiguous for a ${occ} initiative?`,
-        ['Begin implementation immediately based on high-level verbal requests', 'Define concrete input/output contracts, measurable success thresholds, edge-case failure expectations, and automated verification tests', 'Assume downstream consumers will clarify requirements post-release', 'Avoid writing acceptance criteria to maintain flexibility'], 1, 'Quality Assurance', 1,
-        'Measurable success thresholds, contract definitions, and automated verification tests eliminate ambiguity before implementation.'),
-    FBQ(`When receiving ambiguous or conflicting feedback from multiple stakeholders on a ${occ} deliverable, how do you proceed?`,
-        ['Implement whichever request was submitted most recently', 'Schedule a focused alignment discussion, present data-backed trade-offs against business objectives, and agree on unified success criteria', 'Ignore the feedback and ship the original draft', 'Escalate immediately to executive leadership without synthesizing the issues'], 1, 'Stakeholder Alignment', 2,
-        'Synthesizing trade-offs against core business goals facilitates productive consensus among conflicting stakeholders.'),
-    FBQ(`How do you measure and demonstrate the business impact of an operational optimization you delivered as a ${occ}?`,
-        ['Rely entirely on subjective team feedback', 'Establish pre-change baseline metrics, track post-release performance/cost/latency deltas, and publish an evidence-backed impact summary', 'Assume any positive business trend was caused by the optimization without validation', 'Avoid measuring performance to prevent scrutiny'], 1, 'Impact Measurement', 2,
-        'Rigorous before-and-after baseline comparisons provide verifiable evidence of business and engineering impact.'),
-    FBQ(`How do you take end-to-end ownership when an unexpected edge case causes a customer-facing degradation in your ${occ} scope?`,
-        ['Attribute the failure to third-party infrastructure without remediation', 'Acknowledge the gap, drive immediate mitigation, conduct a blameless root-cause analysis, and implement preventative regression tests', 'Wait for customer support to report additional incidents before acting', 'Quietly deploy an unmonitored fix without documentation'], 1, 'Ownership & Accountability', 2,
-        'True ownership combines rapid mitigation with transparent root-cause analysis and automated regression prevention.'),
-    FBQ(`How do you balance thoroughness with execution speed when shipping high-velocity ${occ} deliverables?`,
-        ['Always maximize speed by eliminating all testing and code review', 'Calibrate verification depth and review rigor to the blast radius, reversibility, and criticality of the change', 'Treat all changes with identical exhaustive bureaucracy regardless of scope', 'Never ship until theoretical perfection is reached'], 1, 'Engineering Judgment', 1,
-        'Calibrating review and testing depth to change reversibility and blast radius balances speed with safety.'),
-];
-
-const generateDefaultInterview = ({ occupation = 'Professional', interviewType = 'technical', questionCount = 10, language = 'en', difficulty = 'medium', experienceLevel = '', previousQuestions = [] } = {}) => {
-    const requestedCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
-    const type = ['technical', 'behavioral', 'hr', 'managerial', 'case', 'mixed'].includes(interviewType) ? interviewType : 'technical';
-    const formattedOccupation = String(occupation || 'Professional').trim() || 'Professional';
-    const occ = formattedOccupation;
-
-    const pools = {
-        technical: FALLBACK_TECHNICAL(occ),
-        behavioral: FALLBACK_BEHAVIORAL(occ),
-        hr: FALLBACK_MANAGERIAL(occ),
-        managerial: FALLBACK_MANAGERIAL(occ),
-        case: FALLBACK_CASE(occ),
-        generic: FALLBACK_GENERIC(occ),
-    };
-
-    let basePool;
-    if (type === 'mixed') basePool = [...pools.technical, ...pools.behavioral, ...pools.managerial];
-    else if (type === 'hr') basePool = [...pools.behavioral, ...pools.managerial];
-    else if (type === 'technical' || type === 'behavioral' || type === 'managerial' || type === 'case') basePool = pools[type];
-    else basePool = pools.technical;
-
-    const distribution = interviewDifficultyDistribution(requestedCount, difficulty, experienceLevel);
-    const previousKeys = new Set((Array.isArray(previousQuestions) ? previousQuestions : [])
-        .filter(q => typeof q === 'string').map(q => questionKey(q)));
-    const rand = seededRand(`${occ}|${type}|${difficulty}|${requestedCount}|${language}`);
-
-    // Bucket by base difficulty tier, seeded-shuffled within each tier.
-    const tierBuckets = { 0: [], 1: [], 2: [] };
-    for (const q of [...basePool, ...pools.generic]) {
-        if (tierBuckets[q.diff]) tierBuckets[q.diff].push(q);
+router.post('/live-interview/sessions/:sessionId/turns', async (req, res) => {
+    try {
+        const session = await liveInterviewService().answer({
+            ownerUid: req.user?.uid,
+            id: req.params.sessionId,
+            payload: req.body || {},
+            signal: req.aiAbortSignal,
+        });
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ session });
+    } catch (error) {
+        return sendLiveInterviewError(res, error);
     }
-    for (const tier of [0, 1, 2]) seededShuffle(tierBuckets[tier], rand);
+});
 
-    const usedKeys = new Set();
-    const pickFrom = (tier) => {
-        const bucket = tierBuckets[tier] || [];
-        for (let i = 0; i < bucket.length; i++) {
-            const q = bucket[i];
-            const key = questionKey(q.question);
-            if (usedKeys.has(key) || previousKeys.has(key)) continue;
-            usedKeys.add(key);
-            return q;
-        }
-        return null;
-    };
-
-    const selected = [];
-    // Fulfill difficulty quotas (Advanced, Intermediate, Easy), borrowing from other tiers if needed.
-    const want = [
-        { tier: 2, count: distribution.advanced },
-        { tier: 1, count: distribution.intermediate },
-        { tier: 0, count: distribution.easy },
-    ];
-    for (const { tier, count } of want) {
-        for (let i = 0; i < count; i++) {
-            const q = pickFrom(tier) || pickFrom(2) || pickFrom(1) || pickFrom(0);
-            if (q) selected.push(q);
-            else break;
-        }
+router.post('/live-interview/sessions/:sessionId/complete', async (req, res) => {
+    try {
+        const session = await liveInterviewService().complete({
+            ownerUid: req.user?.uid,
+            id: req.params.sessionId,
+            payload: req.body || {},
+            signal: req.aiAbortSignal,
+        });
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ session });
+    } catch (error) {
+        return sendLiveInterviewError(res, error);
     }
-    // Fill any remaining shortfall from the whole pool (dedup + recent-history exclusion).
-    if (selected.length < requestedCount) {
-        const remaining = seededShuffle([...basePool, ...pools.generic]
-            .filter(q => !usedKeys.has(questionKey(q.question))), rand);
-        for (const q of remaining) {
-            if (selected.length >= requestedCount) break;
-            const key = questionKey(q.question);
-            if (usedKeys.has(key) || previousKeys.has(key)) continue;
-            usedKeys.add(key);
-            selected.push(q);
-        }
+});
+
+router.delete('/live-interview/sessions/:sessionId', async (req, res) => {
+    try {
+        const result = await liveInterviewService().abandon({
+            ownerUid: req.user?.uid,
+            id: req.params.sessionId,
+        });
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json(result);
+    } catch (error) {
+        return sendLiveInterviewError(res, error);
     }
+});
 
-    const labelFor = (baseDiff) => {
-        const d = String(difficulty || 'medium').toLowerCase();
-        const senior = ['senior', 'lead', 'executive', 'staff', 'principal', 'expert'].some(t =>
-            String(experienceLevel || '').toLowerCase().includes(t));
-        const eff = senior ? 'hard' : d;
-        if (eff === 'easy') return baseDiff === 2 ? 'Intermediate' : 'Easy';
-        if (eff === 'hard') return baseDiff === 0 ? 'Intermediate' : 'Advanced';
-        if (eff === 'expert') return 'Advanced';
-        return baseDiff === 0 ? 'Easy' : baseDiff === 1 ? 'Intermediate' : 'Advanced';
-    };
-
-    const questions = selected.slice(0, requestedCount).map((q, i) => ({
-        id: i + 1,
-        question: q.question,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        category: q.category,
-        difficulty: labelFor(q.diff),
-        weight: 1,
-        explanation: q.explanation,
-        estimatedTime: q.estimatedTime,
-    }));
-
-    const categories = [...new Set(questions.map(q => q.category))];
-    const dept = type === 'technical' ? 'Technical Department' : type === 'case' ? 'Case Analysis' : 'Human Resources';
-    const title = `${formattedOccupation} Position - ${type.charAt(0).toUpperCase() + type.slice(1)} Assessment`;
-
-    return {
-        title,
-        company: 'Professional Evaluation Services',
-        department: dept,
-        duration: `${Math.max(5, Math.round((questions.length * 3) / 5) * 5)} minutes`,
-        totalQuestions: questions.length,
-        passingScore: 70,
-        categories,
-        questions,
-        _source: 'fallback',
-    };
-};
+// Dynamic interview content intentionally has no deterministic question fallback.
+// Provider failures return a recoverable error so candidates never receive disguised canned content.
 
 // Fallback function to check grammar when AI is not available
 function generateFallbackGrammarCheck(text, _targetLanguage = 'English') {
@@ -984,7 +799,6 @@ module.exports = router;
 // Exported for unit testing of the interview generation pipeline (prompt builder,
 // de-duplication, difficulty distribution, grounded fallback, metadata cleaners, and blueprinting).
 module.exports.buildInterviewPrompt = buildInterviewPrompt;
-module.exports.generateDefaultInterview = generateDefaultInterview;
 module.exports.dedupeQuestions = dedupeQuestions;
 module.exports.questionKey = questionKey;
 module.exports.interviewDifficultyDistribution = interviewDifficultyDistribution;

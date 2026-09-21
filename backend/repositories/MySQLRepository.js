@@ -209,6 +209,127 @@ class MySQLRepository {
         return item;
     }
 
+    // ------------------------------------------------------------------
+    // Live interview sessions: server-authoritative state, owner-scoped,
+    // optimistic-revision guarded. The browser only receives a session id.
+    // ------------------------------------------------------------------
+    _liveInterviewSessionRow(row) {
+        if (!row) return null;
+        let state = null;
+        try {
+            state = typeof row.state_json === 'string' ? JSON.parse(row.state_json) : row.state_json;
+        } catch (_) {
+            // A corrupt state must never be returned as a plausible interview.
+            return null;
+        }
+        if (!state || typeof state !== 'object' || Array.isArray(state)) return null;
+        const toIso = value => {
+            const date = value instanceof Date ? value : new Date(value);
+            return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+        };
+        return {
+            id: String(row.id),
+            ownerUid: String(row.user_id),
+            status: String(row.status),
+            revision: Number(row.revision),
+            state,
+            createdAt: toIso(row.created_at),
+            expiresAt: toIso(row.expires_at),
+            completedAt: toIso(row.completed_at),
+            updatedAt: toIso(row.updated_at),
+        };
+    }
+
+    async createLiveInterviewSession(userId, session = {}) {
+        const id = String(session.id || '').trim();
+        const state = session.state && typeof session.state === 'object' ? session.state : null;
+        const status = String(session.status || 'active');
+        const expiry = new Date(session.expiresAt);
+        if (!/^[A-Za-z0-9_-]{16,128}$/.test(id) || !state || !['active', 'completed'].includes(status)
+            || !Number.isFinite(expiry.getTime())) {
+            throw Object.assign(new Error('Invalid live interview session'), { code: 'INVALID_LIVE_INTERVIEW_SESSION', status: 400 });
+        }
+        const serializedState = JSON.stringify(state);
+        if (serializedState.length > 180_000) {
+            throw Object.assign(new Error('Live interview session exceeds its storage limit'), { code: 'LIVE_INTERVIEW_SESSION_TOO_LARGE', status: 413 });
+        }
+        return this._withTransaction(async connection => {
+            // Existing authenticated users have an authoritative profile row. The
+            // insert keeps the FK safe for an identity that has just signed in.
+            await connection.query('INSERT IGNORE INTO users (id, email, revision) VALUES (?, ?, 1)', [userId, '']);
+            await connection.query(
+                `INSERT INTO live_interview_sessions
+                 (id, user_id, status, revision, state_json, expires_at, completed_at)
+                 VALUES (?, ?, ?, 1, ?, ?, ?)`,
+                [id, userId, status, serializedState, expiry, status === 'completed' ? new Date() : null]
+            );
+            const [rows] = await connection.query(
+                'SELECT * FROM live_interview_sessions WHERE id = ? AND user_id = ? LIMIT 1',
+                [id, userId]
+            );
+            return this._liveInterviewSessionRow(rows[0]);
+        });
+    }
+
+    async getLiveInterviewSession(userId, sessionId) {
+        const pool = this._getPool();
+        const [rows] = await pool.query(
+            'SELECT * FROM live_interview_sessions WHERE id = ? AND user_id = ? LIMIT 1',
+            [sessionId, userId]
+        );
+        return this._liveInterviewSessionRow(rows[0]);
+    }
+
+    async saveLiveInterviewSession(userId, sessionId, session = {}, { expectedRevision } = {}) {
+        const expected = Number(expectedRevision);
+        const state = session.state && typeof session.state === 'object' ? session.state : null;
+        const status = String(session.status || 'active');
+        const expiry = new Date(session.expiresAt);
+        if (!Number.isInteger(expected) || expected < 1 || !state || !['active', 'completed'].includes(status)
+            || !Number.isFinite(expiry.getTime())) {
+            throw Object.assign(new Error('Invalid live interview session update'), { code: 'INVALID_LIVE_INTERVIEW_SESSION', status: 400 });
+        }
+        const serializedState = JSON.stringify(state);
+        if (serializedState.length > 180_000) {
+            throw Object.assign(new Error('Live interview session exceeds its storage limit'), { code: 'LIVE_INTERVIEW_SESSION_TOO_LARGE', status: 413 });
+        }
+        return this._withTransaction(async connection => {
+            const [result] = await connection.query(
+                `UPDATE live_interview_sessions
+                 SET status = ?, state_json = ?, expires_at = ?,
+                     completed_at = CASE WHEN ? = 'completed' THEN COALESCE(completed_at, CURRENT_TIMESTAMP(3)) ELSE completed_at END,
+                     revision = revision + 1, updated_at = CURRENT_TIMESTAMP(3)
+                 WHERE id = ? AND user_id = ? AND revision = ?`,
+                [status, serializedState, expiry, status, sessionId, userId, expected]
+            );
+            if (Number(result.affectedRows || 0) !== 1) return null;
+            const [rows] = await connection.query(
+                'SELECT * FROM live_interview_sessions WHERE id = ? AND user_id = ? LIMIT 1',
+                [sessionId, userId]
+            );
+            return this._liveInterviewSessionRow(rows[0]);
+        });
+    }
+
+    async deleteLiveInterviewSession(userId, sessionId) {
+        const pool = this._getPool();
+        const [result] = await pool.query(
+            'DELETE FROM live_interview_sessions WHERE id = ? AND user_id = ?',
+            [sessionId, userId]
+        );
+        return Number(result.affectedRows || 0) > 0;
+    }
+
+    async deleteExpiredLiveInterviewSessions() {
+        const pool = this._getPool();
+        // Opportunistic bounded cleanup keeps active-session context and
+        // transcripts from becoming an indefinite retention store.
+        const [result] = await pool.query(
+            'DELETE FROM live_interview_sessions WHERE expires_at <= CURRENT_TIMESTAMP(3) LIMIT 500'
+        );
+        return Number(result.affectedRows || 0);
+    }
+
     async saveResume(userId, resumeId, data, { expectedRevision = null } = {}) {
         return this._withTransaction(async (connection) => {
             // Guarantee user row exists to satisfy the user_id foreign-key constraint.

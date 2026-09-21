@@ -28,6 +28,7 @@ class InMemoryRepository {
     constructor() {
         this._users = new Map();
         this._resumes = new Map();
+        this._liveInterviewSessions = new Map();
         this._covers = new Map();
         this._portfolios = new Map();
         this._companies = new Map();
@@ -179,6 +180,7 @@ class InMemoryRepository {
         this._users.delete(userId);
         // Cascade: remove all owned records
         for (const [k, v] of this._resumes) if (v.userId === userId) this._resumes.delete(k);
+        for (const [k, v] of this._liveInterviewSessions) if (v.userId === userId) this._liveInterviewSessions.delete(k);
         for (const [k, v] of this._covers) if (v.userId === userId) this._covers.delete(k);
         for (const [k, v] of this._portfolios) if (v.userId === userId) this._portfolios.delete(k);
         for (const [k, v] of this._trackedJobs) if (v.userId === userId) this._trackedJobs.delete(k);
@@ -230,6 +232,72 @@ class InMemoryRepository {
         if (!r || r.userId !== userId) return 0;
         this._resumes.delete(resumeId);
         return 1;
+    }
+
+    // ---------------------------------------------------------------------
+    // Live interview sessions (non-production repository parity)
+    // ---------------------------------------------------------------------
+    async createLiveInterviewSession(userId, session = {}) {
+        const id = String(session.id || '');
+        if (!/^[A-Za-z0-9_-]{16,128}$/.test(id) || !session.state || typeof session.state !== 'object') {
+            this._reject('Invalid live interview session', 'INVALID_LIVE_INTERVIEW_SESSION', 400);
+        }
+        const stored = {
+            id,
+            userId,
+            ownerUid: userId,
+            status: session.status || 'active',
+            revision: 1,
+            state: JSON.parse(JSON.stringify(session.state)),
+            createdAt: session.createdAt || new Date().toISOString(),
+            expiresAt: session.expiresAt,
+            completedAt: session.status === 'completed' ? new Date().toISOString() : null,
+            updatedAt: new Date().toISOString(),
+        };
+        this._liveInterviewSessions.set(id, stored);
+        return JSON.parse(JSON.stringify(stored));
+    }
+
+    async getLiveInterviewSession(userId, sessionId) {
+        const record = this._liveInterviewSessions.get(sessionId);
+        if (!record || record.userId !== userId) return null;
+        return JSON.parse(JSON.stringify(record));
+    }
+
+    async saveLiveInterviewSession(userId, sessionId, session = {}, { expectedRevision } = {}) {
+        const current = this._liveInterviewSessions.get(sessionId);
+        if (!current || current.userId !== userId || Number(current.revision) !== Number(expectedRevision)) return null;
+        const stored = {
+            ...current,
+            status: session.status || current.status,
+            revision: Number(current.revision) + 1,
+            state: JSON.parse(JSON.stringify(session.state || current.state)),
+            expiresAt: session.expiresAt || current.expiresAt,
+            completedAt: session.status === 'completed' ? (current.completedAt || new Date().toISOString()) : current.completedAt,
+            updatedAt: new Date().toISOString(),
+        };
+        this._liveInterviewSessions.set(sessionId, stored);
+        return JSON.parse(JSON.stringify(stored));
+    }
+
+    async deleteLiveInterviewSession(userId, sessionId) {
+        const record = this._liveInterviewSessions.get(sessionId);
+        if (!record || record.userId !== userId) return false;
+        this._liveInterviewSessions.delete(sessionId);
+        return true;
+    }
+
+    async deleteExpiredLiveInterviewSessions() {
+        const now = Date.now();
+        let deleted = 0;
+        for (const [id, record] of this._liveInterviewSessions.entries()) {
+            if (Number.isFinite(Date.parse(record.expiresAt)) && Date.parse(record.expiresAt) <= now) {
+                this._liveInterviewSessions.delete(id);
+                deleted += 1;
+                if (deleted >= 500) break;
+            }
+        }
+        return deleted;
     }
 
     // ---------------------------------------------------------------------

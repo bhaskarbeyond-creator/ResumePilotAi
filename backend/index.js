@@ -456,6 +456,13 @@ const aiPaths = [
     '/api/generate-content', '/api/parse-resume'
 ];
 app.use(aiPaths, aiAccountLimiter, enforceDailyAiQuota);
+// A live session refresh/discard is a database read/write, not an AI inference.
+// Only POST lifecycle operations consume the AI quota; this avoids charging a
+// candidate merely for recovering after a browser refresh or network reconnect.
+app.use('/api/live-interview', (req, res, next) => {
+    if (req.method !== 'POST') return next();
+    return aiAccountLimiter(req, res, () => enforceDailyAiQuota(req, res, next));
+});
 app.use('/api/ai', aiAccountLimiter, enforceDailyAiQuota);
 // Reject unauthorized operators before touching the durable admission store or
 // disclosing its availability. The route repeats this guard as defense in depth.
@@ -4281,6 +4288,30 @@ if (require.main === module) {
     // Startup schema bootstrap (idempotent, non-fatal). Fresh deployments become
     // operational on first boot; a MySQL outage degrades instead of crash-looping.
     runSchemaBootstrap().catch(() => {});
+
+    // Live sessions contain short-lived candidate context and transcripts. This
+    // bounded worker complements on-access cleanup so abandoned browser tabs do
+    // not leave that data retained indefinitely.
+    if (process.env.LIVE_INTERVIEW_CLEANUP_ENABLED !== 'false') {
+        const intervalMs = Math.max(60_000, Math.min(Number(process.env.LIVE_INTERVIEW_CLEANUP_INTERVAL_MS) || 900_000, 86_400_000));
+        let liveCleanupRunning = false;
+        const pruneExpiredLiveInterviews = async () => {
+            if (liveCleanupRunning) return;
+            liveCleanupRunning = true;
+            try {
+                const count = await getRepository().deleteExpiredLiveInterviewSessions();
+                if (count) console.info(`[Live interview cleanup] Removed ${count} expired session(s).`);
+            } catch (error) {
+                console.error('[Live interview cleanup] Failed:', error?.message || error);
+            } finally {
+                liveCleanupRunning = false;
+            }
+        };
+        const liveCleanupTimer = setInterval(pruneExpiredLiveInterviews, intervalMs);
+        liveCleanupTimer.unref?.();
+        setTimeout(pruneExpiredLiveInterviews, 30_000).unref?.();
+    }
+
     // Publication is executed only by this trusted backend. Production enables the
     // worker explicitly; no browser clock or client write can make a post public.
     // MySQL-backed (repository), independent of any Firestore availability.

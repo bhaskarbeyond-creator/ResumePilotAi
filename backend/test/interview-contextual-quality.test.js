@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildInterviewPrompt, generateDefaultInterview, cleanInterviewMetadataArtifacts, isGenericQuestion, extractCandidateProfile, extractJobRequirements, buildContextualBlueprint } from '../routes/ai.js';
+import fs from 'node:fs';
+import { buildInterviewPrompt, cleanInterviewMetadataArtifacts, isGenericQuestion, extractCandidateProfile, extractJobRequirements, buildContextualBlueprint } from '../routes/ai.js';
 import { cleanInterviewMetadataArtifacts as frontendCleaner, normalizeQuestions } from '../../src/utils/interviewCoach.js';
 
 test('1. cleanInterviewMetadataArtifacts strips all forms of leaked metadata, UI headers, and robotic preambles', () => {
@@ -193,24 +194,13 @@ test('8. normalizeQuestions cleans and validates options, questions, and bounds 
     assert.equal(normalized[1].question, 'Explain how to configure Prometheus scrapers for Kubernetes pods.');
 });
 
-test('9. Fallback pools provide 100% applied scenarios with zero generic items across technical/behavioral/case', () => {
-    const techFallback = generateDefaultInterview({ occupation: 'Senior Data Engineer', interviewType: 'technical', questionCount: 10 });
-    assert.equal(techFallback.questions.length, 10);
-    for (const q of techFallback.questions) {
-        assert.ok(q.question.length > 20);
-        assert.ok(!isGenericQuestion(q.question), `Fallback question should not be generic: ${q.question}`);
-        assert.ok(!q.question.includes('Target Role & Discipline'));
-        assert.ok(!q.question.includes('Target Job Description'));
-        assert.equal(q.options.length, 4);
-        assert.ok(Number.isInteger(q.correctAnswer) && q.correctAnswer >= 0 && q.correctAnswer < 4);
-    }
-
-    const behFallback = generateDefaultInterview({ occupation: 'Product Marketing Manager', interviewType: 'behavioral', questionCount: 8 });
-    assert.equal(behFallback.questions.length, 8);
-    for (const q of behFallback.questions) {
-        assert.ok(!isGenericQuestion(q.question), `Behavioral question should not be generic: ${q.question}`);
-        assert.ok(!q.question.includes('Target Role & Discipline'));
-    }
+test('9. Dynamic generation never exposes a static question-bank fallback', () => {
+    const source = fs.readFileSync(new URL('../routes/ai.js', import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /generateDefaultInterview/);
+    assert.doesNotMatch(source, /FALLBACK_TECHNICAL|FALLBACK_BEHAVIORAL|FALLBACK_MANAGERIAL|FALLBACK_CASE/);
+    const prompt = buildInterviewPrompt({ occupation: 'Senior Data Engineer', interviewType: 'technical', questionCount: 10 }).prompt;
+    assert.match(prompt, /Fresh-run directive/);
+    assert.match(prompt, /unique run token/);
 });
 
 test('10. Multi-Scenario Validation: Ad Operations / Programmatic (DV360 / CM360)', () => {

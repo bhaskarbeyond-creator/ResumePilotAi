@@ -126,6 +126,58 @@ function createAbortController(externalSignal, timeoutMs) {
 }
 
 /**
+ * Shared authenticated JSON boundary for stateful AI features. Credentials stay
+ * server-side; callers only supply same-origin paths and JSON-safe payloads.
+ */
+export async function authenticatedJsonRequest(url, {
+    method = 'GET',
+    body,
+    signal,
+    timeoutMs = 45_000,
+} = {}) {
+    const { controller, dispose } = createAbortController(signal, timeoutMs);
+    const request = async (headers) => {
+        const options = {
+            method,
+            headers,
+            credentials: 'same-origin',
+            signal: controller.signal,
+        };
+        if (body !== undefined && method !== 'GET' && method !== 'HEAD') options.body = JSON.stringify(body);
+        const response = await fetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        return { response, data };
+    };
+    try {
+        let headers = await getAuthHeaders(false);
+        if (controller.signal.aborted) throw (controller.signal.reason || new DOMException('This operation was aborted', 'AbortError'));
+        let { response, data } = await request(headers);
+        if (!response.ok && (data?.error?.code === 'EMAIL_VERIFICATION_REQUIRED' || data?.error?.code === 'AUTH_REQUIRED' || response.status === 401 || response.status === 403)) {
+            try {
+                const fireModule = await import('../conf/fire.js').catch(() => null);
+                const fire = fireModule?.default;
+                if (fire?.auth?.()?.currentUser) {
+                    await fire.auth().currentUser.reload().catch(() => {});
+                    headers = await getAuthHeaders(true);
+                    if (!controller.signal.aborted) ({ response, data } = await request(headers));
+                }
+            } catch (_) { /* return the original auth response below */ }
+        }
+        if (!response.ok) {
+            const error = new Error(data?.error?.message || data?.error || 'Request failed');
+            error.code = data?.error?.code || 'REQUEST_FAILED';
+            error.status = response.status;
+            error.requestId = data?.error?.requestId || response.headers.get('X-Request-Id') || '';
+            error.session = data?.session || null;
+            throw error;
+        }
+        return data;
+    } finally {
+        dispose();
+    }
+}
+
+/**
  * Restores the pre-security product contract while retaining the authenticated,
  * same-origin backend boundary. Prompt construction and provider credentials stay server-side.
  */

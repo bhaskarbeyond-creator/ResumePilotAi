@@ -98,6 +98,23 @@ test('legacy sessions without a schema version remain readable; future schemas a
     assert.equal(readOwnerSession('user-a'), null, 'unknown future schema must not be restored');
 });
 
+test('live session recovery stores only an owner-scoped opaque session pointer', () => {
+    installMockStorage();
+    const sessionId = 'live_session_recovery_abcdef';
+    writeOwnerSession('user-a', { phase: 'live', ownerUid: 'user-a', sessionId, answer: 'must not be read as authority' });
+    const restored = readOwnerSession('user-a');
+    assert.equal(restored?.phase, 'live');
+    assert.equal(restored?.sessionId, sessionId);
+    assert.equal(Object.hasOwn(restored || {}, 'answer'), false, 'answer text is never persisted in a live recovery pointer');
+    assert.equal(readOwnerSession('user-b'), null, 'a different user cannot recover the pointer');
+
+    global.localStorage.setItem(sessionStorageKey('user-a'), JSON.stringify({
+        phase: 'live', lastSaved: Date.now(), ownerUid: 'user-a', sessionId: 'not-valid',
+    }));
+    assert.equal(readOwnerSession('user-a'), null);
+    assert.equal(purgeStaleOwnerSession('user-a'), true);
+});
+
 test('expired and corrupt sessions are rejected and purged without touching other owners', () => {
     installMockStorage();
     // TTL-expired

@@ -58,7 +58,8 @@
 | **Interview** | Zero-Metadata Prompt Leakage Cleaner | **IMPLEMENTED** | `backend/routes/ai.js:cleanInterviewMetadataArtifacts` | Yes | Yes |
 | **Interview** | CBT Exam Interface & Timer Simulation | **IMPLEMENTED** | `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx` | Yes | Yes |
 | **Interview** | Multi-Track Assessment (Tech, STAR, HR, Case) | **IMPLEMENTED** | `backend/routes/ai.js:INTERVIEW_PROMPT_CONTEXT` | Yes | Yes |
-| **Interview** | Seeded Offline Question Fallback | **IMPLEMENTED** | `backend/routes/ai.js:generateDefaultInterview` | Yes | Yes |
+| **Interview** | Dynamic-only AI Generation Failure Recovery | **IMPLEMENTED** | `backend/routes/ai.js:/generate-interview` controlled 502/503 responses; no static question bank | Yes | Yes |
+| **Interview** | Face-to-Face Live AI Session | **IMPLEMENTED** | `backend/services/liveInterviewSession.js`, `DashboardInterviews/LiveInterviewSession.jsx` | Yes | Yes |
 | **Interview** | Comprehensive Performance Scorecard | **IMPLEMENTED** | `src/components/Dashboard/DashboardInterviews/DashboardInterviews.jsx:report` | Yes | Yes |
 | **Portfolio** | WebCV Visual Studio Builder | **IMPLEMENTED** | `src/components/PortfolioBuilder/PortfolioBuilder.jsx` | Yes | Yes |
 | **Portfolio** | 4 Dynamic Portfolio Themes | **IMPLEMENTED** | `src/components/PortfolioTemplates/`, `TemplatePresets.js` | Yes | Yes |

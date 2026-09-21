@@ -1,7 +1,10 @@
 import React, { useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaSave, FaSignOutAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserTie } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaSave, FaSignOutAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserTie, FaVideo } from 'react-icons/fa';
 import { AuthContext } from '../../../context/AuthContext';
 import { generateUserAiContent } from '../../../services/aiService';
+import { getLiveInterviewSession, startLiveInterviewSession } from '../../../services/liveInterviewApi';
+import { useInterviewMedia } from '../../../hooks/useInterviewMedia';
+import LiveInterviewSession, { LiveInterviewReadiness, LiveInterviewReport } from './LiveInterviewSession';
 import { getResumes } from '../../../services/api/platform';
 import { DIFFICULTIES, DURATION_PRESETS, EXPERIENCE_LEVELS, INTERVIEW_MODES, INTERVIEW_TYPES, PALETTE_META, appendHistory, buildInterviewReport, buildStarMarkdown, clearAllHistory, clearOwnerSession, consumesArrowKeys, copyTextToClipboard, downloadTextFile, formatClock, isTextEntryTarget, optionIndexFromKey, paletteStatus, readHistory, readOwnerSession, recentInterviewQuestions, remainingFromDeadline, removeHistoryEntry, resolveDurationSeconds, resolveStorageConflict, sanitizeJobDescription, sanitizeResumeFacts, scoreTrend, purgeStaleOwnerSession, timerAnnouncement, validateInterviewPayload, writeOwnerSession } from '../../../utils/interviewCoach';
 
@@ -587,6 +590,10 @@ const DashboardInterviews = () => {
     const [notice, setNotice] = useState(null);
     const [toast, setToast] = useState(null);
     const [liveMessage, setLiveMessage] = useState('');
+    const [liveSession, setLiveSession] = useState(null);
+    const [liveReport, setLiveReport] = useState(null);
+    const [liveRecoverySessionId, setLiveRecoverySessionId] = useState(null);
+    const media = useInterviewMedia();
 
     const requestControllerRef = useRef(null);
     const finishInFlightRef = useRef(false);
@@ -616,7 +623,11 @@ const DashboardInterviews = () => {
 
     // ── RESTORE / SELF-HEAL ON MOUNT (per owner) ─────────────────────────────
     useEffect(() => {
+        let active = true;
         setHistory(readHistory(ownerUid));
+        setLiveSession(null);
+        setLiveReport(null);
+        setLiveRecoverySessionId(null);
         const saved = readOwnerSession(ownerUid);
         if (saved?.phase === 'exam' && saved.interviewData?.questions?.length) {
             const remaining = saved.deadlineAt ? remainingFromDeadline(saved.deadlineAt) : saved.timeRemaining;
@@ -629,14 +640,36 @@ const DashboardInterviews = () => {
                     clearOwnerSession(ownerUid);
                     dispatch({ type: 'COMPLETE', report: outcome.report, meta: outcome.meta });
                     setNotice('The timer expired while you were away, so the assessment was auto-submitted with your saved answers.');
-                    return;
+                    return () => { active = false; };
                 } catch { clearOwnerSession(ownerUid); }
             }
             dispatch({ type: 'RESTORE', snapshot: { ...saved, timeRemaining: remaining ?? saved.timeRemaining, ownerUid } });
             setLiveMessage('Recovered your in-progress attempt. The timer continued in the background.');
+        } else if (saved?.phase === 'live' && ownerUid) {
+            // Live answers never live in browser storage; this is only a durable,
+            // authenticated server-session recovery pointer.
+            getLiveInterviewSession(saved.sessionId).then(session => {
+                if (!active) return;
+                setLiveRecoverySessionId(null);
+                setLiveSession(session);
+                setLiveMessage('Recovered your live interview securely from the last saved question.');
+            }).catch(error => {
+                if (!active) return;
+                if (error?.status === 404 || error?.status === 410) {
+                    clearOwnerSession(ownerUid);
+                    setLiveRecoverySessionId(null);
+                    setNotice('Your saved live interview is no longer available. Start a new session when you are ready.');
+                    return;
+                }
+                // Keep the opaque pointer for a temporary network/auth outage;
+                // retrying GET never consumes an AI quota.
+                setLiveRecoverySessionId(saved.sessionId);
+                setNotice('We could not recover your live interview right now. Check your connection and try again.');
+            });
         } else {
             purgeStaleOwnerSession(ownerUid);
         }
+        return () => { active = false; };
     }, [ownerUid]);
 
     useEffect(() => {
@@ -670,6 +703,19 @@ const DashboardInterviews = () => {
         return undefined;
     }, [state.phase, state.selectedAnswers, state.marked, state.visited, state.currentQuestion,
         state.isPaused, state.deadlineAt, state.interviewData, ownerUid, persistSession]);
+
+    // A live session is server-authoritative. Persist only an opaque ID so a
+    // refresh can recover the current question without retaining answer text.
+    useEffect(() => {
+        if (!ownerUid || !liveSession?.sessionId || liveSession.status !== 'active') return;
+        writeOwnerSession(ownerUid, {
+            phase: 'live',
+            sessionId: liveSession.sessionId,
+            ownerUid,
+            tabId: tabIdRef.current,
+        });
+        lastWriteAtRef.current = Date.now();
+    }, [liveSession?.sessionId, liveSession?.revision, liveSession?.status, ownerUid]);
 
     useEffect(() => {
         if (state.phase !== 'exam') return undefined;
@@ -854,7 +900,44 @@ const DashboardInterviews = () => {
         dispatch({ type: 'PATCH', patch: { ...patch, timeLimit: seconds, timeRemaining: seconds } });
     }, [state]);
 
+    const startLiveInterview = useCallback(async () => {
+        if (!ownerUid) {
+            dispatch({ type: 'FETCH_ERR', error: 'Sign in with a verified account to start a live interview.' });
+            return;
+        }
+        requestControllerRef.current?.abort();
+        const requestController = new AbortController();
+        requestControllerRef.current = requestController;
+        dispatch({ type: 'START_FETCH' });
+        try {
+            const session = await startLiveInterviewSession({
+                role: state.occupation,
+                interviewType: state.interviewType,
+                experienceLevel: state.experienceLevel,
+                difficulty: state.difficulty,
+                durationMinutes: Math.max(5, Math.round((state.timeLimit || 20 * 60) / 60)),
+                jobDescription: sanitizeJobDescription(state.jobDescription),
+                resumeFacts: state.resumeFacts,
+            }, { signal: requestController.signal });
+            if (requestController.signal.aborted || requestControllerRef.current !== requestController) return;
+            setLiveRecoverySessionId(null);
+            setLiveSession(session);
+            dispatch({ type: 'FETCH_CANCEL' });
+            setLiveMessage('Your live interviewer is ready. Answer naturally; each follow-up adapts to what you share.');
+        } catch (error) {
+            const userCancelled = requestController.signal.aborted || requestControllerRef.current !== requestController;
+            if (userCancelled) dispatch({ type: 'FETCH_CANCEL' });
+            else dispatch({ type: 'FETCH_ERR', error: describeInterviewError(error, error?.status) });
+        } finally {
+            if (requestControllerRef.current === requestController) requestControllerRef.current = null;
+        }
+    }, [ownerUid, state.occupation, state.interviewType, state.experienceLevel, state.difficulty, state.timeLimit, state.jobDescription, state.resumeFacts]);
+
     const fetchInterviewQuestions = useCallback(async () => {
+        if (state.mode === 'live') {
+            await startLiveInterview();
+            return;
+        }
         requestControllerRef.current?.abort();
         const requestController = new AbortController();
         requestControllerRef.current = requestController;
@@ -895,11 +978,31 @@ const DashboardInterviews = () => {
         } finally {
             if (requestControllerRef.current === requestController) requestControllerRef.current = null;
         }
-    }, [state.occupation, state.interviewType, state.questionCount, state.experienceLevel, state.difficulty, state.jobDescription, state.resumeFacts, history]);
+    }, [state.mode, state.occupation, state.interviewType, state.questionCount, state.experienceLevel, state.difficulty, state.jobDescription, state.resumeFacts, history, startLiveInterview]);
 
     const cancelGeneration = useCallback(() => {
         requestControllerRef.current?.abort();
     }, []);
+
+    const retryLiveRecovery = useCallback(async () => {
+        if (!ownerUid || !liveRecoverySessionId) return;
+        setNotice('Reconnecting to your saved live interview…');
+        try {
+            const session = await getLiveInterviewSession(liveRecoverySessionId);
+            setLiveRecoverySessionId(null);
+            setLiveSession(session);
+            setNotice(null);
+            setLiveMessage('Recovered your live interview securely from the last saved question.');
+        } catch (error) {
+            if (error?.status === 404 || error?.status === 410) {
+                clearOwnerSession(ownerUid);
+                setLiveRecoverySessionId(null);
+                setNotice('Your saved live interview is no longer available. Start a new session when you are ready.');
+            } else {
+                setNotice('Recovery is still unavailable. Your session pointer is kept; try again when your connection returns.');
+            }
+        }
+    }, [liveRecoverySessionId, ownerUid]);
 
     // ── SUBMISSION (idempotent; attempt persisted before report) ─────────────
     const finishInterview = useCallback((reason = 'manual') => {
@@ -971,6 +1074,18 @@ const DashboardInterviews = () => {
     };
 
     if (viewingHistory) {
+        if (viewingHistory.isLiveInterview) {
+            return (
+                <div className="min-h-[calc(100vh-2rem)] w-full font-sans">
+                    <SrStatus message={liveMessage} />
+                    <StatusToast message={toast} />
+                    <LiveInterviewReport
+                        session={{ report: viewingHistory.report, configuration: viewingHistory.configuration || {}, transcript: [] }}
+                        onBack={() => setViewingHistory(null)}
+                    />
+                </div>
+            );
+        }
         return (
             <div className="min-h-[calc(100vh-2rem)] w-full font-sans">
                 <SrStatus message={liveMessage} />
@@ -981,6 +1096,58 @@ const DashboardInterviews = () => {
                     onBack={() => setViewingHistory(null)}
                     history={history}
                     onRetake={() => { setViewingHistory(null); dispatch({ type: 'RESET' }); }}
+                />
+            </div>
+        );
+    }
+
+    if (liveReport) {
+        return (
+            <div className="min-h-[calc(100vh-2rem)] w-full font-sans">
+                <SrStatus message={liveMessage} />
+                <StatusToast message={toast} />
+                <LiveInterviewReport session={liveReport} onBack={() => { setLiveReport(null); dispatch({ type: 'RESET' }); }} />
+            </div>
+        );
+    }
+
+    if (liveSession) {
+        return (
+            <div className="min-h-[calc(100vh-2rem)] w-full font-sans bg-slate-50">
+                <SrStatus message={liveMessage} />
+                <StatusToast message={toast} />
+                <LiveInterviewSession
+                    session={liveSession}
+                    media={media}
+                    onSessionChange={setLiveSession}
+                    onCompleted={(completed) => {
+                        const report = completed.report || {};
+                        const entry = {
+                            id: `live-${completed.sessionId}`,
+                            completedAt: new Date().toISOString(),
+                            role: completed.configuration?.role || state.occupation || '',
+                            interviewType: completed.configuration?.interviewType || state.interviewType || 'mixed',
+                            mode: 'live',
+                            score: Number(report.overallScore) || 0,
+                            duration: Math.round((completed.transcript?.length || 0) * 4 * 60),
+                            status: 'completed',
+                            isLiveInterview: true,
+                            configuration: completed.configuration || {},
+                            report,
+                        };
+                        setHistory(appendHistory(ownerUid, entry));
+                        clearOwnerSession(ownerUid);
+                        media.stop();
+                        setLiveSession(null);
+                        setLiveReport(completed);
+                        setLiveMessage('Your live interview feedback is ready.');
+                    }}
+                    onDiscard={() => {
+                        clearOwnerSession(ownerUid);
+                        media.stop();
+                        setLiveSession(null);
+                        setNotice('Live interview discarded. Your completed history was not affected.');
+                    }}
                 />
             </div>
         );
@@ -1368,12 +1535,22 @@ const DashboardInterviews = () => {
                             <FaExclamationTriangle className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" aria-hidden="true" />
                             {notice}
                         </span>
-                        <button
-                            type="button"
-                            className="shrink-0 text-indigo-600 hover:text-indigo-800 font-bold text-xs underline cursor-pointer"
-                            onClick={() => setNotice(null)}>
-                            Dismiss
-                        </button>
+                        <div className="shrink-0 flex items-center gap-3">
+                            {liveRecoverySessionId && (
+                                <button
+                                    type="button"
+                                    className="text-indigo-700 hover:text-indigo-900 font-bold text-xs underline cursor-pointer"
+                                    onClick={retryLiveRecovery}>
+                                    Retry recovery
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                className="text-indigo-600 hover:text-indigo-800 font-bold text-xs underline cursor-pointer"
+                                onClick={() => setNotice(null)}>
+                                Dismiss
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -1386,13 +1563,13 @@ const DashboardInterviews = () => {
                         <div className="max-w-3xl">
                             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 border border-indigo-200 mb-3 shadow-xs">
                                 <FaMagic className="w-3 h-3 text-amber-500 animate-pulse motion-reduce:animate-none" aria-hidden="true" />
-                                <span>AI-Powered CBT Exam Suite</span>
+                                <span>AI Interview Practice Suite</span>
                             </span>
                             <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
                                 AI Interview Coach
                             </h1>
                             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                                Practice real-world technical, behavioral, and architectural interviews with timed CBT examination rules, instant scoring, and actionable STAR coaching.
+                                Practice with an adaptive face-to-face AI conversation or timed CBT drills, with grounded feedback and actionable coaching.
                             </p>
                         </div>
 
@@ -1422,10 +1599,30 @@ const DashboardInterviews = () => {
                                 <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-black" aria-hidden="true">1</span>
                                 <span>Choose Interview Mode</span>
                             </h2>
-                            <span className="text-xs text-slate-500">CBT rules adapt dynamically</span>
+                            <span className="text-xs text-slate-500">Choose live conversation or CBT practice</span>
                         </div>
 
-                        <div className="grid sm:grid-cols-3 gap-3.5">
+                        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+                            {/* Live face-to-face card */}
+                            <button
+                                type="button"
+                                aria-pressed={state.mode === 'live'}
+                                onClick={() => applyDuration({ mode: 'live', timerEnabled: true })}
+                                className={`text-left p-5 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden group motion-reduce:transition-none ${
+                                    state.mode === 'live'
+                                        ? 'bg-indigo-50/70 border-indigo-600 shadow-md ring-2 ring-indigo-600/20 text-indigo-950'
+                                        : 'bg-white hover:bg-slate-50/80 border-slate-200 text-slate-700 hover:border-slate-300'
+                                }`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 border border-violet-100 flex items-center justify-center">
+                                        <FaVideo className="w-5 h-5" aria-hidden="true" />
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-violet-100 text-violet-800 border border-violet-200">Adaptive AI</span>
+                                </div>
+                                <h3 className="font-bold text-base text-slate-900 mb-1">Live Face-to-Face</h3>
+                                <p className="text-xs text-slate-500 leading-relaxed">Dynamic conversation, optional camera and voice, and evidence-grounded feedback.</p>
+                            </button>
+
                             {/* Practice Card */}
                             <button
                                 type="button"
@@ -1576,18 +1773,25 @@ const DashboardInterviews = () => {
                                 </select>
                             </label>
 
-                            {/* Question Count */}
-                            <label className="block">
-                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 block">Question Count</span>
-                                <select
-                                    className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer shadow-xs"
-                                    value={state.questionCount}
-                                    onChange={event => dispatch({ type: 'PATCH', patch: { questionCount: Number(event.target.value) } })}>
-                                    {[5, 8, 10, 12, 15, 20].map(count => (
-                                        <option key={count} value={count}>{count} Questions</option>
-                                    ))}
-                                </select>
-                            </label>
+                            {/* A live interview chooses questions dynamically from progression, not a preset bank. */}
+                            {state.mode === 'live' ? (
+                                <div className="rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2.5">
+                                    <p className="text-xs font-bold text-violet-900">Adaptive turn count</p>
+                                    <p className="mt-1 text-[11px] leading-relaxed text-violet-800">The interviewer adjusts depth and wrap-up from your answers and selected duration.</p>
+                                </div>
+                            ) : (
+                                <label className="block">
+                                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 block">Question Count</span>
+                                    <select
+                                        className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:outline-hidden focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer shadow-xs"
+                                        value={state.questionCount}
+                                        onChange={event => dispatch({ type: 'PATCH', patch: { questionCount: Number(event.target.value) } })}>
+                                        {[5, 8, 10, 12, 15, 20].map(count => (
+                                            <option key={count} value={count}>{count} Questions</option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
                         </div>
                     </div>
 
@@ -1595,7 +1799,7 @@ const DashboardInterviews = () => {
                     <div>
                         <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-black" aria-hidden="true">4</span>
-                            <span>Examination Duration</span>
+                            <span>{state.mode === 'live' ? 'Live Session Duration' : 'Examination Duration'}</span>
                         </h2>
 
                         {state.mode === 'practice' && (
@@ -1653,9 +1857,13 @@ const DashboardInterviews = () => {
                         </div>
                         <p className="text-xs text-slate-500 mt-2 font-medium">
                             Selected duration: <span className="text-indigo-600 font-bold">{state.timeLimit ? formatClock(state.timeLimit) : 'Untimed practice'}</span>
-                            {state.timeLimit > 0 && <span className="text-slate-500"> · Approx {((state.timeLimit / 60) / state.questionCount).toFixed(1)} min per question</span>}
+                            {state.mode === 'live'
+                                ? <span className="text-slate-500"> · The interviewer uses this to pace a natural conversation.</span>
+                                : state.timeLimit > 0 && <span className="text-slate-500"> · Approx {((state.timeLimit / 60) / state.questionCount).toFixed(1)} min per question</span>}
                         </p>
                     </div>
+
+                    {state.mode === 'live' && <LiveInterviewReadiness media={media} />}
 
                     {/* Step 5: Tailoring & Context */}
                     <div className="space-y-6 pt-4 border-t border-slate-100">
@@ -1725,7 +1933,7 @@ const DashboardInterviews = () => {
 
                                 {!resumes.length && (
                                     <div className="col-span-full p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-center">
-                                        <p className="text-xs text-slate-500">No saved resumes found. The assessment will generate standard industry-level questions.</p>
+                                        <p className="text-xs text-slate-500">No saved resumes found. The AI will tailor the session to your selected role and any job description you provide.</p>
                                     </div>
                                 )}
                             </div>
@@ -1758,12 +1966,12 @@ const DashboardInterviews = () => {
                             {state.isLoading ? (
                                 <>
                                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin motion-reduce:animate-none" aria-hidden="true"></span>
-                                    <span>Generating Questions with AI…</span>
+                                    <span>{state.mode === 'live' ? 'Preparing your live interviewer…' : 'Generating Questions with AI…'}</span>
                                 </>
                             ) : (
                                 <>
                                     <FaPlay className="w-4 h-4" aria-hidden="true" />
-                                    <span>Start interview</span>
+                                    <span>{state.mode === 'live' ? 'Start live interview' : 'Start interview'}</span>
                                 </>
                             )}
                         </button>

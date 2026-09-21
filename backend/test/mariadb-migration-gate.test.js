@@ -162,6 +162,46 @@ test('clean MariaDB 11.4 ownership, concurrency, outbox, payment, and deletion i
     assert.deepEqual(status.unknownApplied, []);
   });
 
+  await t.test('persists owner-scoped live interview state with optimistic revision guards', async () => {
+    const liveOwner = `${runId}_live_owner`;
+    const sessionId = `${runId}_live_session`;
+    const expiresAt = new Date(Date.now() + 20 * 60 * 1000).toISOString();
+    const seed = {
+      id: sessionId,
+      status: 'active',
+      expiresAt,
+      state: {
+        config: { role: 'Integration Engineer' },
+        interview: { currentQuestion: { id: 'turn-integration', question: 'What did you ship?' } },
+        turns: [],
+      },
+    };
+    const created = await repo.createLiveInterviewSession(liveOwner, seed);
+    assert.equal(created.ownerUid, liveOwner);
+    assert.equal(created.revision, 1);
+    assert.equal((await repo.getLiveInterviewSession(`${runId}_other_owner`, sessionId)), null, 'a session id must not disclose another owner\'s session');
+
+    const candidates = await Promise.all(Array.from({ length: 6 }, (_, index) => repo.saveLiveInterviewSession(liveOwner, sessionId, {
+      ...seed,
+      state: { ...seed.state, turns: [{ id: `turn-${index}`, answer: `answer ${index}` }] },
+    }, { expectedRevision: 1 })));
+    const winners = candidates.filter(Boolean);
+    assert.equal(winners.length, 1, 'exactly one stale writer may advance the live session');
+    assert.equal(winners[0].revision, 2);
+    assert.equal((await repo.getLiveInterviewSession(liveOwner, sessionId)).state.turns.length, 1);
+    assert.equal(await repo.deleteLiveInterviewSession(`${runId}_other_owner`, sessionId), false);
+    assert.equal(await repo.deleteLiveInterviewSession(liveOwner, sessionId), true);
+
+    const expiredId = `${runId}_expired_live_session`;
+    await repo.createLiveInterviewSession(liveOwner, {
+      ...seed,
+      id: expiredId,
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    });
+    assert.ok(await repo.deleteExpiredLiveInterviewSessions() >= 1, 'expired interview state is eligible for bounded cleanup');
+    assert.equal(await repo.getLiveInterviewSession(liveOwner, expiredId), null);
+  });
+
   await t.test('boots optional modules and discovery publication fail-closed without a fabricated rating', async () => {
     const publicConfig = await repo.getSetting('public_config');
     const optionalFlags = [

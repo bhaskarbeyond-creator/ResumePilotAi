@@ -115,7 +115,7 @@ The AI subsystem (`backend/services/aiRuntime.js`) features an enterprise-grade 
 ### Key AI Safety Invariants:
 1. **Zero Hallucination Grounding:** Prompts enforce strict source-of-truth rules where only candidate-provided facts are summarized or formatted. The model is forbidden from inventing responsibilities, dates, credentials, or metrics.
 2. **Resilient JSON Parser (`extractJson`):** Raw unescaped newlines, tabs, and trailing commas common in open-source LLM outputs are sanitized prior to JSON parsing, preventing runtime `Bad control character` syntax crashes.
-3. **Seeded Offline Fallbacks:** The AI Interview Coach and Grammar checkers possess deterministic offline algorithms ensuring 100% platform availability even during cloud network partitions.
+3. **Dynamic Interview Failure Recovery:** Interview provider or malformed-output failures return a controlled retryable error; no canned questions, answers, or fallback interview bank is served. Grammar checks may retain their separate deterministic recovery behavior.
 
 ---
 

@@ -1,4 +1,5 @@
 export const INTERVIEW_MODES = {
+    live: { id: 'live', label: 'Live AI', timerRequired: false, allowPause: true, freeNav: true },
     practice: { id: 'practice', label: 'Practice', timerRequired: false, allowPause: true, freeNav: true },
     mock: { id: 'mock', label: 'Mock Interview', timerRequired: true, allowPause: true, freeNav: true },
     assessment: { id: 'assessment', label: 'CBT Assessment', timerRequired: true, allowPause: false, freeNav: true },
@@ -265,7 +266,7 @@ export function validateInterviewPayload(data) {
 }
 
 // ── SESSION PERSISTENCE (UID-SCOPED, SCHEMA-VERSIONED) ───────────────────────
-export const SESSION_SCHEMA_VERSION = 2;
+export const SESSION_SCHEMA_VERSION = 3;
 export const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 export const HISTORY_LIMIT = 25;
 
@@ -279,8 +280,19 @@ export function historyStorageKey(userId) {
 
 export function writeOwnerSession(userId, payload) {
     try {
+        // Live state belongs to the authenticated server session. Even if a
+        // future caller accidentally hands us transcript/answer fields, never
+        // put them in local storage alongside the recovery pointer.
+        const safePayload = payload?.phase === 'live'
+            ? {
+                phase: 'live',
+                sessionId: String(payload.sessionId || '').slice(0, 128),
+                ownerUid: payload.ownerUid || userId || null,
+                tabId: typeof payload.tabId === 'string' ? payload.tabId.slice(0, 160) : undefined,
+            }
+            : payload;
         localStorage.setItem(sessionStorageKey(userId), JSON.stringify({
-            ...payload,
+            ...safePayload,
             schemaVersion: SESSION_SCHEMA_VERSION,
             lastSaved: Date.now(),
         }));
@@ -304,12 +316,20 @@ export function readOwnerSession(userId) {
         const questions = normalizeQuestions(parsed.interviewData?.questions);
         if (!questions.length) return null;
         parsed.interviewData = { ...(parsed.interviewData || {}), questions };
+    } else if (parsed.phase === 'live') {
+        // The durable API owns live state; browser storage intentionally retains
+        // only an opaque recovery pointer rather than answers or AI feedback.
+        if (!/^[A-Za-z0-9_-]{16,128}$/.test(String(parsed.sessionId || ''))) return null;
+    } else if (parsed.phase !== 'setup') {
+        return null;
     }
+    // Historical setup snapshots carried no active interview state. Keep them
+    // readable for migration compatibility; the dashboard self-heals them.
     return parsed;
 }
 
 // Self-heals storage: removes sessions that readOwnerSession would reject
-// (corrupt JSON, expired TTL, incompatible future schema, stale non-exam data)
+// (corrupt JSON, expired TTL, incompatible future schema, malformed exam/live pointers)
 // while never deleting another owner's data.
 export function purgeStaleOwnerSession(userId) {
     try {
@@ -323,7 +343,8 @@ export function purgeStaleOwnerSession(userId) {
         const expired = !parsed.lastSaved || Date.now() - parsed.lastSaved > SESSION_TTL_MS;
         const futureSchema = parsed.schemaVersion !== undefined && Number(parsed.schemaVersion) > SESSION_SCHEMA_VERSION;
         const invalidExam = parsed.phase === 'exam' && !normalizeQuestions(parsed.interviewData?.questions).length;
-        if (expired || futureSchema || invalidExam || parsed.phase !== 'exam') {
+        const invalidLive = parsed.phase === 'live' && !/^[A-Za-z0-9_-]{16,128}$/.test(String(parsed.sessionId || ''));
+        if (expired || futureSchema || invalidExam || invalidLive || !['exam', 'live'].includes(parsed.phase)) {
             localStorage.removeItem(key);
             return true;
         }

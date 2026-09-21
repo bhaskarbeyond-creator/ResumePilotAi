@@ -21,6 +21,7 @@ const authority = require('../database/authority');
 const READ_METHODS = new Set([
     'getUser', 'getUserByEmail', 'getUsers', 'getUsersByIds',
     'getResume', 'getResumes', 'getPublicResume', 'getResumePublication',
+    'getLiveInterviewSession',
     'getPortfolio', 'getPortfolios', 'getPublishedPortfolioBySlug', 'getPublishedPortfolios',
     'getCover', 'getCovers',
     'getJob', 'getJobs', 'getApplications',
@@ -40,6 +41,7 @@ const READ_METHODS = new Set([
 const WRITE_METHODS = new Set([
     'saveUser', 'deleteUser',
     'saveResume', 'deleteResume', 'publishResume', 'unpublishResume',
+    'createLiveInterviewSession', 'saveLiveInterviewSession', 'deleteLiveInterviewSession', 'deleteExpiredLiveInterviewSessions',
     'savePortfolio', 'deletePortfolio',
     'saveCover', 'deleteCover',
     'saveJob', 'deleteJob', 'saveApplication',
