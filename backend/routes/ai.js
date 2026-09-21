@@ -520,6 +520,7 @@ router.post('/evaluate-interview-answer', async (req, res) => {
             turnIndex = 1,
             totalTurns = 5,
             candidateResumeFacts = '',
+            persona = 'bar_raiser', // 'bar_raiser' | 'culture_leader' | 'startup_cto'
         } = req.body || {};
 
         if (typeof question !== 'string' || !question.trim()) {
@@ -535,8 +536,18 @@ router.post('/evaluate-interview-answer', async (req, res) => {
         const safeType = sanitizePromptFragment(interviewType, 50);
         const safeLevel = sanitizePromptFragment(experienceLevel, 50);
 
-        const prompt = `You are an elite executive interviewer, talent evaluator, and STAR behavioral interview coach.
+        let personaProfile = 'Sarah Jenkins (FAANG Principal Architect & Bar Raiser): Rigorous, tests scalability, technical trade-offs, quantifiable impact, and failure modes.';
+        if (persona === 'culture_leader') {
+            personaProfile = 'Marcus Vance (VP of Talent & Culture): Focuses on Amazon Leadership Principles, emotional intelligence, handling conflict, cross-functional collaboration, and mentorship.';
+        } else if (persona === 'startup_cto') {
+            personaProfile = 'Alex Chen (Startup Co-Founder & CTO): Evaluates execution speed, scrappiness, pragmatic trade-offs, and end-to-end full-stack ownership.';
+        }
+
+        const prompt = `You are an elite executive interviewer and hiring committee bar raiser.
+Your Interviewer Persona: ${personaProfile}
+
 Evaluate the candidate's spoken or typed answer to the following interview question with rigorous STAR rubric grading.
+Also provide a FAANG-grade "Golden Model Answer" that re-tells the candidate's exact story with maximum executive polish, crisp metrics, and 100/100 STAR structure.
 
 CONTEXT:
 - Target Role: "${safeRole}"
@@ -556,17 +567,21 @@ EVALUATION CRITERIA (STAR Rubric):
 GRADING CRITERIA:
 - Grade range: A+ (94-100), A (90-93), A- (86-89), B+ (82-85), B (78-81), B- (74-77), C+ (70-73), C (65-69), or Needs Work (<65).
 - "starGrade": formatted as "Grade (Score/100)", e.g. "A+ (94/100)" or "B+ (84/100)".
-- "rubricFeedback": 1 to 3 punchy, insightful sentences summarizing the evaluation. Example: "Exemplary STAR structure. Highlights speed of resolution (6 min) and clear technical ownership."
+- "rubricFeedback": 1 to 3 punchy, insightful sentences summarizing the evaluation.
 - "starBreakdown": Brief 1-line assessment for situation, task, action, and result.
 - "strengths": 1 to 2 specific, evidence-grounded strengths in their answer.
 - "coachingTip": 1 actionable recommendation to elevate the answer further.
-- "nextQuestion": Contextual follow-up or next interview question that naturally builds on what the candidate just shared.
+- "goldenAnswer": A 2 to 3 sentence masterclass rewrite of their actual answer showing how a top 1% FAANG candidate would deliver this story using the STAR framework.
+- "probingFollowUp": A sharp, realistic pushback or probing follow-up from ${personaProfile} that challenges the candidate on depth, trade-offs, or edge cases.
+- "hiringVerdict": One of "STRONG_HIRE", "HIRE", "LEAN_HIRE", "NO_HIRE".
+- "nextQuestion": Contextual follow-up or next interview question that naturally builds on the dialogue.
 
 RESPONSE FORMAT: Return ONLY valid JSON in this exact structure:
 {
   "starGrade": "A+ (94/100)",
   "numericScore": 94,
   "letterGrade": "A+",
+  "hiringVerdict": "STRONG_HIRE",
   "rubricFeedback": "Exemplary STAR structure. Highlights speed of resolution (6 min) and clear technical ownership.",
   "starBreakdown": {
     "situation": "Clear peak traffic context identified.",
@@ -579,6 +594,8 @@ RESPONSE FORMAT: Return ONLY valid JSON in this exact structure:
     "High individual technical agency and ownership"
   ],
   "coachingTip": "Mention what preventative guardrail was deployed post-mortem to ensure recurring queries are caught before deployment.",
+  "goldenAnswer": "During our highest-traffic Black Friday surge, an unindexed database query caused p99 latency to spike to 4.2 seconds, threatening checkout availability. As lead on-call, I immediately isolated the blast radius by rerouting traffic to blue-green standby nodes on AWS and deployed an emergency composite index within 6 minutes. This restored 100% platform uptime and prevented an estimated $140,000 in abandoned cart transactions.",
+  "probingFollowUp": "During that blue-green switchover, what was your strategy for preventing inflight checkout transactions from dropping or writing duplicate records?",
   "nextQuestion": "Following that incident, how did your team adjust automated CI/CD database query regression tests?"
 }`;
 
@@ -592,10 +609,13 @@ RESPONSE FORMAT: Return ONLY valid JSON in this exact structure:
                 starGrade: parsed.starGrade,
                 numericScore: Number(parsed.numericScore) || 85,
                 letterGrade: parsed.letterGrade || 'A',
+                hiringVerdict: parsed.hiringVerdict || (Number(parsed.numericScore) >= 90 ? 'STRONG_HIRE' : (Number(parsed.numericScore) >= 80 ? 'HIRE' : 'LEAN_HIRE')),
                 rubricFeedback: parsed.rubricFeedback,
                 starBreakdown: parsed.starBreakdown || {},
                 strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
                 coachingTip: parsed.coachingTip || '',
+                goldenAnswer: parsed.goldenAnswer || '',
+                probingFollowUp: parsed.probingFollowUp || '',
                 nextQuestion: parsed.nextQuestion || '',
             });
         }
@@ -609,7 +629,7 @@ RESPONSE FORMAT: Return ONLY valid JSON in this exact structure:
     }
 });
 
-function generateFallbackStarEvaluation({ question = '', answer = '', occupation = 'Professional', interviewType = 'behavioral', experienceLevel = 'mid', turnIndex = 1 }) {
+function generateFallbackStarEvaluation({ question = '', answer = '', occupation = 'Professional', interviewType = 'behavioral', experienceLevel = 'mid', turnIndex = 1, persona = 'bar_raiser' }) {
     const text = String(answer || '').trim();
     const wordCount = text.split(/\s+/).filter(Boolean).length;
     
@@ -643,6 +663,11 @@ function generateFallbackStarEvaluation({ question = '', answer = '', occupation
 
     const starGrade = `${letterGrade} (${score}/100)`;
     
+    let hiringVerdict = 'LEAN_HIRE';
+    if (score >= 90) hiringVerdict = 'STRONG_HIRE';
+    else if (score >= 80) hiringVerdict = 'HIRE';
+    else if (score < 65) hiringVerdict = 'NO_HIRE';
+
     let rubricFeedback = '';
     if (score >= 90) {
         rubricFeedback = `Exemplary STAR structure. ${hasMetrics ? 'Highlights speed of resolution and clear quantified impact' : 'Articulates clear context and strong personal agency'} with decisive technical ownership.`;
@@ -662,10 +687,19 @@ function generateFallbackStarEvaluation({ question = '', answer = '', occupation
 
     const nextQuestion = nextQuestions[(Number(turnIndex) || 0) % nextQuestions.length];
 
+    const goldenAnswer = `In my previous role as ${occupation}, we encountered an urgent challenge where ${question.toLowerCase().replace(/^(tell me about|describe a time|can you share|how do you)\s+/i, '')}. I took direct ownership by structuring the issue into distinct phases, deploying automated observability, and collaborating with key stakeholders to execute the fix. This initiative completed ahead of schedule, resulting in a 40% improvement in operational throughput and zero client-facing regressions.`;
+
+    const probingFollowUp = persona === 'culture_leader'
+        ? 'When tensions were high during that incident, how did you maintain psychological safety and transparent communication across your team?'
+        : (persona === 'startup_cto'
+            ? 'What was the fastest shortcut you took in that moment, and what technical debt did you have to pay down afterwards?'
+            : 'What specific trade-offs did you evaluate before committing to that solution, and what would have failed if the scale were 10x higher?');
+
     return {
         starGrade,
         numericScore: score,
         letterGrade,
+        hiringVerdict,
         rubricFeedback,
         starBreakdown: {
             situation: 'Context and core challenge established.',
@@ -680,6 +714,8 @@ function generateFallbackStarEvaluation({ question = '', answer = '', occupation
         coachingTip: hasMetrics 
             ? 'Highlight post-mortem prevention or long-term systemic guardrails implemented to prevent recurrence.'
             : 'Add a specific metric or benchmark (e.g. % reduction in latency, turnaround time) to make the impact memorable.',
+        goldenAnswer,
+        probingFollowUp,
         nextQuestion
     };
 }

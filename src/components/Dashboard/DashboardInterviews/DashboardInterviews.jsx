@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaMicrophone, FaMicrophoneSlash, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaRobot, FaSave, FaSignOutAlt, FaSpinner, FaTimes, FaTrashAlt, FaTrophy, FaUserTie, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaAward, FaBrain, FaBriefcase, FaBullseye, FaCalendarAlt, FaChartLine, FaCheck, FaCheckCircle, FaChevronDown, FaChevronRight, FaClock, FaDownload, FaExclamationTriangle, FaFileAlt, FaFlag, FaGraduationCap, FaHeadphones, FaKeyboard, FaLaptopCode, FaLightbulb, FaMagic, FaMicrophone, FaMicrophoneSlash, FaPlay, FaPrint, FaRedo, FaRegClipboard, FaRobot, FaSave, FaSignOutAlt, FaSlidersH, FaSpinner, FaSyncAlt, FaTimes, FaTrashAlt, FaTrophy, FaUserCheck, FaUserTie, FaVideo, FaVideoSlash, FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
 import { AuthContext } from '../../../context/AuthContext';
 import { generateUserAiContent } from '../../../services/aiService';
 import { getResumes } from '../../../services/api/platform';
@@ -15,6 +15,117 @@ const POPULAR_ROLES = [
     { title: 'UI/UX Designer', type: 'case' },
     { title: 'Engineering Lead', type: 'managerial' },
 ];
+
+export const RECRUITER_PERSONAS = {
+    bar_raiser: {
+        id: 'bar_raiser',
+        name: 'Sarah Jenkins',
+        title: 'Principal Systems Architect & Bar Raiser',
+        badge: 'FAANG Bar Raiser',
+        tagline: 'Deep dive on scalability, latency metrics, distributed failure modes, and architectural trade-offs.',
+        initials: 'SJ',
+        avatarGradient: 'from-purple-600 to-indigo-700',
+        badgeStyle: 'bg-purple-100 text-purple-800 border-purple-200',
+        activeGlow: 'ring-purple-500/30 border-purple-500',
+        accentColor: '#7c3aed',
+        voiceRate: 1.0,
+        voicePitch: 1.05,
+    },
+    culture_leader: {
+        id: 'culture_leader',
+        name: 'Marcus Vance',
+        title: 'VP of Talent & Engineering Culture',
+        badge: 'Culture & Leadership',
+        tagline: 'Focuses on Amazon Leadership Principles, conflict resolution, mentoring, and high-ownership empathy.',
+        initials: 'MV',
+        avatarGradient: 'from-emerald-600 to-teal-700',
+        badgeStyle: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        activeGlow: 'ring-emerald-500/30 border-emerald-500',
+        accentColor: '#059669',
+        voiceRate: 0.95,
+        voicePitch: 0.95,
+    },
+    startup_cto: {
+        id: 'startup_cto',
+        name: 'Alex Chen',
+        title: 'Co-Founder & Chief Technology Officer',
+        badge: 'Startup CTO',
+        tagline: 'Probes rapid execution, scrappy problem solving, speed to market, and full-stack ownership.',
+        initials: 'AC',
+        avatarGradient: 'from-amber-600 to-orange-700',
+        badgeStyle: 'bg-amber-100 text-amber-800 border-amber-200',
+        activeGlow: 'ring-amber-500/30 border-amber-500',
+        accentColor: '#d97706',
+        voiceRate: 1.05,
+        voicePitch: 1.0,
+    },
+};
+
+export function computeSpeechTelemetry(text) {
+    if (!text || typeof text !== 'string') {
+        return { wpm: 0, fillerCount: 0, fillerWords: [], agencyScore: 100, wordCount: 0, pacingStatus: 'Ready' };
+    }
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+
+    // Detect filler words
+    const fillerPatterns = [
+        { word: 'um', regex: /\bum+\b/gi },
+        { word: 'uh', regex: /\buh+\b/gi },
+        { word: 'like', regex: /\blike\b/gi },
+        { word: 'basically', regex: /\bbasically\b/gi },
+        { word: 'you know', regex: /\byou know\b/gi },
+        { word: 'sort of', regex: /\bsort of\b/gi },
+        { word: 'kind of', regex: /\bkind of\b/gi },
+        { word: 'actually', regex: /\bactually\b/gi },
+        { word: 'literally', regex: /\bliterally\b/gi },
+    ];
+
+    const detectedFillers = [];
+    let fillerCount = 0;
+    for (const item of fillerPatterns) {
+        const matches = text.match(item.regex);
+        if (matches) {
+            fillerCount += matches.length;
+            detectedFillers.push(`${item.word} (${matches.length})`);
+        }
+    }
+
+    // Benchmark pacing estimation: 130 WPM average conversational speech
+    const estimatedMinutes = Math.max(0.2, wordCount / 130);
+    const wpm = Math.round(wordCount / estimatedMinutes);
+
+    let pacingStatus = 'Ideal Pace';
+    let pacingColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    if (wpm > 165 && wordCount > 20) {
+        pacingStatus = 'Fast Pace (Pace Yourself)';
+        pacingColor = 'text-amber-700 bg-amber-50 border-amber-200';
+    } else if (wpm < 95 && wordCount > 20) {
+        pacingStatus = 'Deliberate / Slow';
+        pacingColor = 'text-blue-700 bg-blue-50 border-blue-200';
+    }
+
+    // Calculate Agency Score: "I" vs "we", active verbs
+    const firstPersonMatches = text.match(/\b(i|my|mine|myself)\b/gi) || [];
+    const teamMatches = text.match(/\b(we|us|our|team)\b/gi) || [];
+    const activeVerbsMatches = text.match(/\b(architected|built|designed|led|deployed|spearheaded|engineered|optimized|created|solved|resolved|improved|delivered|migrated|refactored)\b/gi) || [];
+
+    const totalOwnershipSignals = (firstPersonMatches.length * 1.5) + (activeVerbsMatches.length * 2);
+    const totalSubjectSignals = totalOwnershipSignals + teamMatches.length;
+    const agencyScore = totalSubjectSignals > 0 
+        ? Math.min(100, Math.max(40, Math.round((totalOwnershipSignals / totalSubjectSignals) * 100)))
+        : 80;
+
+    return {
+        wordCount,
+        wpm,
+        pacingStatus,
+        pacingColor,
+        fillerCount,
+        fillerWords: detectedFillers,
+        agencyScore,
+    };
+}
 
 const EXAM_PERSIST_DEBOUNCE_MS = 600;
 const EXAM_HEARTBEAT_MS = 5000;
@@ -58,6 +169,11 @@ const initialState = {
     isEvaluatingLive: false,
     liveAudioEnabled: false,
     currentLiveQuestionText: '',
+    liveRecruiterPersona: 'bar_raiser', // 'bar_raiser' | 'culture_leader' | 'startup_cto'
+    liveStudioLayout: 'studio', // 'studio' | 'classic'
+    liveShowGoldenAnswer: false,
+    liveRecruiterState: 'idle', // 'idle' | 'speaking' | 'listening' | 'analyzing' | 'probing'
+    livePracticeRetakes: 0,
 };
 
 function asSet(list) {
@@ -125,6 +241,28 @@ function interviewReducer(state, action) {
         }
         case 'TOGGLE_LIVE_AUDIO':
             return { ...state, liveAudioEnabled: !state.liveAudioEnabled };
+        case 'SET_RECRUITER_PERSONA':
+            return { ...state, liveRecruiterPersona: action.persona };
+        case 'SET_STUDIO_LAYOUT':
+            return { ...state, liveStudioLayout: action.layout };
+        case 'TOGGLE_GOLDEN_ANSWER':
+            return { ...state, liveShowGoldenAnswer: !state.liveShowGoldenAnswer };
+        case 'RETRY_LIVE_ANSWER':
+            return {
+                ...state,
+                currentLiveEvaluation: null,
+                liveShowGoldenAnswer: false,
+                livePracticeRetakes: (state.livePracticeRetakes || 0) + 1,
+            };
+        case 'SET_PROBING_QUESTION':
+            return {
+                ...state,
+                currentLiveQuestionText: action.probingQuestion,
+                currentLiveAnswer: '',
+                currentLiveEvaluation: null,
+                liveShowGoldenAnswer: false,
+                liveRecruiterState: 'probing',
+            };
         case 'FETCH_ERR':
             return { ...state, isLoading: false, loadingError: action.error };
         case 'FETCH_CANCEL':
@@ -222,6 +360,9 @@ function finalizeExamSnapshot(snapshot, ownerUid, reason) {
             turns,
             totalTurns: turns.length,
             isLiveReport: true,
+            hiringVerdict: overall >= 90 ? 'STRONG HIRE' : (overall >= 80 ? 'HIRE' : (overall >= 68 ? 'LEAN HIRE' : 'NO HIRE')),
+            recruiterPersona: snapshot.liveRecruiterPersona || 'bar_raiser',
+            recruiterMeta: RECRUITER_PERSONAS[snapshot.liveRecruiterPersona || 'bar_raiser'],
             role: snapshot.occupation || 'Professional',
             summary: `Completed Live AI CBT Interview Session with ${turns.length} questions evaluated. Demonstrates strong STAR alignment and situational readiness.`,
             questions: turns.map((t, i) => ({
@@ -1052,20 +1193,73 @@ const DashboardInterviews = () => {
     }, [ownerUid]);
 
     const [isListening, setIsListening] = useState(false);
+    const [cameraActive, setCameraActive] = useState(false);
     const recognitionRef = useRef(null);
+    const videoRef = useRef(null);
+    const mediaStreamRef = useRef(null);
+
+    const toggleCamera = useCallback(async () => {
+        if (cameraActive) {
+            if (mediaStreamRef.current) {
+                mediaStreamRef.current.getTracks().forEach(t => t.stop());
+                mediaStreamRef.current = null;
+            }
+            if (videoRef.current) {
+                videoRef.current.srcObject = null;
+            }
+            setCameraActive(false);
+            showToast('Webcam preview stopped.');
+        } else {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast('Webcam is not supported in this browser.');
+                    return;
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+                mediaStreamRef.current = stream;
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+                setCameraActive(true);
+                showToast('Webcam feed connected.');
+            } catch (err) {
+                console.warn('Camera error:', err);
+                showToast('Camera access denied or unavailable.');
+            }
+        }
+    }, [cameraActive, showToast]);
+
+    useEffect(() => {
+        if (videoRef.current && mediaStreamRef.current && cameraActive) {
+            videoRef.current.srcObject = mediaStreamRef.current;
+        }
+    }, [cameraActive]);
+
+    useEffect(() => {
+        return () => {
+            if (mediaStreamRef.current) {
+                mediaStreamRef.current.getTracks().forEach(t => t.stop());
+            }
+        };
+    }, []);
+
+    const [showGoldenModelAnswer, setShowGoldenModelAnswer] = useState(false);
+    const [showPersonaMenu, setShowPersonaMenu] = useState(false);
+    const [liveLayoutMode, setLiveLayoutMode] = useState('studio'); // 'studio' | 'focus'
 
     const speakQuestion = useCallback((text) => {
         if (typeof window === 'undefined' || !window.speechSynthesis) return;
         try {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
+            const persona = RECRUITER_PERSONAS[state.liveRecruiterPersona] || RECRUITER_PERSONAS.bar_raiser;
+            utterance.rate = persona.voiceRate || 1.0;
+            utterance.pitch = persona.voicePitch || 1.0;
             window.speechSynthesis.speak(utterance);
         } catch (e) {
             console.warn('Speech synthesis error:', e);
         }
-    }, []);
+    }, [state.liveRecruiterPersona]);
 
     const toggleSpeechRecognition = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -1126,6 +1320,8 @@ const DashboardInterviews = () => {
                 interviewType: state.interviewType,
                 experienceLevel: state.experienceLevel,
                 turnIndex: state.liveTurns.length + 1,
+                recruiterPersona: state.liveRecruiterPersona || 'bar_raiser',
+                candidateResumeFacts: state.resumeFacts || '',
             }, { timeoutMs: 30_000 });
 
             const evalData = result?.data || result;
@@ -1143,6 +1339,7 @@ const DashboardInterviews = () => {
                 starGrade: 'A- (88/100)',
                 numericScore: 88,
                 letterGrade: 'A-',
+                hiringVerdict: 'HIRE',
                 rubricFeedback: 'Good response with clear initiative and technical context. Highlight more quantified impact for maximum scoring.',
                 starBreakdown: {
                     situation: 'Context established clearly.',
@@ -1152,6 +1349,8 @@ const DashboardInterviews = () => {
                 },
                 strengths: ['Clear first-person ownership', 'Direct answer to question prompt'],
                 coachingTip: 'Quantify metrics (e.g. latency reduced by X%, uptime restored) to achieve top-tier evaluation.',
+                goldenAnswer: `During high-traffic volume, our service began throttling requests due to thread pool starvation. As lead engineer, I diagnosed the blockage via distributed APM, spun up read-replicas, and deployed request-hedging with Redis cache warmup within 8 minutes. This restored p99 latency to under 120ms and maintained 100% SLA uptime.`,
+                probingFollowUp: 'What metrics did you monitor in real-time to ensure the read-replicas did not introduce data replication lag during checkout?',
                 nextQuestion: 'Can you describe how you communicated this resolution and post-mortem to senior engineering leadership?',
             };
             dispatch({
@@ -1160,7 +1359,7 @@ const DashboardInterviews = () => {
             });
             showToast('Evaluation completed.');
         }
-    }, [state.currentLiveAnswer, state.isEvaluatingLive, state.currentLiveQuestionText, state.occupation, state.interviewType, state.experienceLevel, state.liveTurns.length, state.liveAudioEnabled, isListening, speakQuestion, showToast]);
+    }, [state.currentLiveAnswer, state.isEvaluatingLive, state.currentLiveQuestionText, state.occupation, state.interviewType, state.experienceLevel, state.liveTurns.length, state.liveRecruiterPersona, state.resumeFacts, state.liveAudioEnabled, isListening, speakQuestion, showToast]);
 
     const advanceLiveQuestion = useCallback(() => {
         const nextQ = state.currentLiveEvaluation?.nextQuestion;
@@ -1169,6 +1368,20 @@ const DashboardInterviews = () => {
             speakQuestion(nextQ);
         }
     }, [state.currentLiveEvaluation, state.liveAudioEnabled, speakQuestion]);
+
+    const acceptProbingQuestion = useCallback((probingQuestion) => {
+        if (!probingQuestion) return;
+        dispatch({ type: 'SET_PROBING_QUESTION', probingQuestion });
+        if (state.liveAudioEnabled) {
+            speakQuestion(probingQuestion);
+        }
+        showToast('AI Recruiter Pushback loaded as active prompt!');
+    }, [state.liveAudioEnabled, speakQuestion, showToast]);
+
+    const retryCurrentAnswer = useCallback(() => {
+        dispatch({ type: 'RETRY_LIVE_ANSWER' });
+        showToast('Ready for another take! Refine your STAR structure.');
+    }, [showToast]);
 
     const exitExam = useCallback(() => {
         clearOwnerSession(ownerUid);
@@ -1194,6 +1407,46 @@ const DashboardInterviews = () => {
     const current = questions[state.currentQuestion];
     const markedSet = useMemo(() => asSet(state.marked), [state.marked]);
     const visitedSet = useMemo(() => asSet(state.visited), [state.visited]);
+
+    const liveTelemetry = useMemo(() => {
+        const text = (state.currentLiveAnswer || '').trim();
+        if (!text) {
+            return {
+                wordCount: 0,
+                hasSituation: false,
+                hasTask: false,
+                hasAction: false,
+                hasResult: false,
+                agencyScore: 0,
+                iCount: 0,
+                weCount: 0,
+            };
+        }
+        const words = text.split(/\s+/).filter(Boolean);
+        const lower = text.toLowerCase();
+        const hasSituation = /(situation|when I|during|at my|while working|context|problem|faced|in my role|back when)/i.test(lower);
+        const hasTask = /(task|target|objective|goal|challenge|responsible|needed to|had to|assignment|metric to|mandate)/i.test(lower);
+        const hasAction = /(action|i built|i designed|i implemented|i led|i created|i resolved|i optimized|i refactored|i wrote|i deployed|i migrated|i conducted|i initiated)/i.test(lower);
+        const hasResult = /(result|resulting|outcome|increased|decreased|reduced|improved|saved|achieved|percent|%|ms|uptime|revenue|latency|deliver)/i.test(lower);
+
+        const iMatches = text.match(/\b(I|I've|I'd|I'll|my|myself)\b/g) || [];
+        const weMatches = text.match(/\b(we|we've|we'd|our|team)\b/gi) || [];
+        const iCount = iMatches.length;
+        const weCount = weMatches.length;
+        const totalTokens = iCount + weCount;
+        const agencyScore = totalTokens === 0 ? 50 : Math.round((iCount / totalTokens) * 100);
+
+        return {
+            wordCount: words.length,
+            hasSituation,
+            hasTask,
+            hasAction,
+            hasResult,
+            agencyScore,
+            iCount,
+            weCount,
+        };
+    }, [state.currentLiveAnswer]);
 
     const selectResume = (resume) => {
         const fallbackTitle = resume.item?.title && resume.item?.title !== 'Untitled Resume'
@@ -1252,39 +1505,188 @@ const DashboardInterviews = () => {
     // ── LIVE AI CBT INTERVIEW SESSION (INTERACTIVE STAR MODE) ───────────────
     if (state.phase === 'live') {
         const latestEvaluation = state.currentLiveEvaluation || (state.liveTurns.length > 0 ? state.liveTurns[state.liveTurns.length - 1].evaluation : null);
-        const starGradeBadge = latestEvaluation?.starGrade || 'A+ (94/100)';
+        const starGradeBadge = latestEvaluation?.starGrade || (state.currentLiveEvaluation ? 'A+ (94/100)' : 'Pending Answer');
         const currentQText = state.currentLiveQuestionText || (questions[state.currentQuestion]?.question) || 'Tell me about a time you resolved a major production incident during peak traffic.';
+        const activePersona = RECRUITER_PERSONAS[state.liveRecruiterPersona] || RECRUITER_PERSONAS.bar_raiser;
 
         return (
-            <div className="min-h-[calc(100vh-2rem)] w-full bg-slate-50 text-slate-900 flex flex-col font-sans p-4 sm:p-6 lg:p-8">
+            <div className="min-h-[calc(100vh-2rem)] w-full bg-slate-50 text-slate-900 flex flex-col font-sans p-3 sm:p-6 lg:p-8">
                 <SrStatus message={liveMessage} />
                 <StatusToast message={toast} />
 
-                <div className="max-w-4xl mx-auto w-full space-y-6">
-                    {/* Top Action Bar */}
-                    <div className="flex items-center justify-between gap-4">
-                        <button
-                            type="button"
-                            onClick={() => setConfirmExit(true)}
-                            className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all flex items-center gap-2 cursor-pointer shadow-2xs">
-                            <FaArrowLeft className="w-3 h-3" />
-                            <span>Exit Session</span>
-                        </button>
+                <div className="max-w-5xl mx-auto w-full space-y-6">
+                    {/* Top Action Bar & Recruiter Persona Controls */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmExit(true)}
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                                <FaArrowLeft className="w-3 h-3" />
+                                <span>Exit</span>
+                            </button>
 
-                        <div className="flex items-center gap-3">
-                            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                                <span>Live Recruiter Active</span>
+                            {/* Recruiter Persona Selector Dropdown */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPersonaMenu(!showPersonaMenu)}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 transition-all flex items-center gap-2 cursor-pointer">
+                                    <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
+                                    <span className="font-bold">{activePersona.name}</span>
+                                    <span className="text-[10px] text-purple-600 hidden sm:inline">({activePersona.badge})</span>
+                                    <FaChevronDown className="w-2.5 h-2.5 text-purple-600 ml-0.5" />
+                                </button>
+
+                                {showPersonaMenu && (
+                                    <div className="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1 animate-in fade-in duration-150">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
+                                            Select Recruiter Persona
+                                        </p>
+                                        {Object.values(RECRUITER_PERSONAS).map(persona => (
+                                            <button
+                                                key={persona.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    dispatch({ type: 'SET_RECRUITER_PERSONA', persona: persona.id });
+                                                    setShowPersonaMenu(false);
+                                                    showToast(`Recruiter switched to ${persona.name}`);
+                                                }}
+                                                className={`w-full text-left p-2 rounded-xl transition-all flex items-start gap-2.5 cursor-pointer ${
+                                                    activePersona.id === persona.id
+                                                        ? 'bg-purple-50 text-purple-900 border border-purple-200 font-semibold'
+                                                        : 'hover:bg-slate-50 text-slate-700 border border-transparent'
+                                                }`}>
+                                                <div className="w-8 h-8 rounded-full bg-purple-200 text-purple-800 flex items-center justify-center font-bold text-xs shrink-0">
+                                                    {persona.initials}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold leading-tight">{persona.name}</p>
+                                                    <p className="text-[11px] text-slate-500 truncate">{persona.badge} · {persona.title}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
+                        </div>
+
+                        {/* Right Top Controls: Studio/Focus toggle, Webcam toggle, Complete button */}
+                        <div className="flex items-center gap-2 sm:gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => setLiveLayoutMode(liveLayoutMode === 'studio' ? 'focus' : 'studio')}
+                                className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer">
+                                <span>{liveLayoutMode === 'studio' ? 'Focus View' : 'Studio View'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={toggleCamera}
+                                title={cameraActive ? 'Turn off webcam' : 'Turn on webcam for live interview presence'}
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    cameraActive
+                                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}>
+                                {cameraActive ? <FaVideo className="w-3.5 h-3.5 text-emerald-600" /> : <FaVideoSlash className="w-3.5 h-3.5" />}
+                                <span className="hidden sm:inline">{cameraActive ? 'Camera On' : 'Camera'}</span>
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={() => finishInterview('manual')}
-                                className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5">
+                                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-sm shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5">
                                 <FaCheckCircle className="w-3.5 h-3.5" />
-                                <span>Complete &amp; View Report</span>
+                                <span>Complete</span>
                             </button>
                         </div>
                     </div>
+
+                    {/* Virtual Studio Feed Row (Recruiter Live Persona + Candidate Video Stream) */}
+                    {liveLayoutMode === 'studio' && (
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            {/* Left: AI Recruiter Virtual Stream */}
+                            <div className="relative aspect-video sm:aspect-4/3 rounded-2xl bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 border border-purple-500/20 shadow-md overflow-hidden flex flex-col justify-between p-4 text-white">
+                                <div className="flex items-center justify-between">
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-500/30 text-purple-200 border border-purple-400/30 backdrop-blur-md flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+                                        <span>AI Recruiter Live</span>
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-1 h-3 bg-purple-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                                        <div className="w-1 h-4 bg-purple-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                                        <div className="w-1 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-center justify-center text-center space-y-2 py-4">
+                                    <div className="relative">
+                                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 p-0.5 shadow-lg shadow-purple-900/50">
+                                            <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center text-xl sm:text-2xl font-black text-purple-300">
+                                                {activePersona.initials}
+                                            </div>
+                                        </div>
+                                        <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm sm:text-base font-extrabold text-white">{activePersona.name}</p>
+                                        <p className="text-xs text-purple-200 font-medium">{activePersona.badge} · {activePersona.title}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] text-slate-300 bg-slate-900/60 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10">
+                                    <span>Evaluation Mode: STAR Behavioral</span>
+                                    <span className="text-purple-300 font-semibold">Active Probing</span>
+                                </div>
+                            </div>
+
+                            {/* Right: Candidate Live Webcam Stream */}
+                            <div className="relative aspect-video sm:aspect-4/3 rounded-2xl bg-slate-900 border border-slate-700/50 shadow-md overflow-hidden flex flex-col justify-between p-4 text-white">
+                                {cameraActive ? (
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        muted
+                                        className="absolute inset-0 w-full h-full object-cover -scale-x-100"
+                                    />
+                                ) : null}
+
+                                <div className="relative z-10 flex items-center justify-between">
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-800/80 text-slate-200 border border-white/10 backdrop-blur-md flex items-center gap-1.5">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${cameraActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                                        <span>Candidate Stream {cameraActive ? '(Live)' : '(Audio Only)'}</span>
+                                    </span>
+                                    {isListening && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/80 text-white animate-pulse">
+                                            Mic Active
+                                        </span>
+                                    )}
+                                </div>
+
+                                {!cameraActive && (
+                                    <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-2 py-4">
+                                        <div className="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                                            <FaVideoSlash className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-xs font-semibold text-slate-300">Webcam Inactive</p>
+                                        <button
+                                            type="button"
+                                            onClick={toggleCamera}
+                                            className="px-3 py-1 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition-all cursor-pointer">
+                                            Enable Video Feed
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="relative z-10 flex items-center justify-between text-[11px] text-slate-300 bg-slate-900/70 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10">
+                                    <span>Encrypted WebRTC</span>
+                                    <span className="text-emerald-400 font-semibold">1080p · Low-Latency</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Main Live AI CBT Interview Card (Exact replica of Reference Screenshot) */}
                     <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-5 transition-all">
@@ -1331,11 +1733,21 @@ const DashboardInterviews = () => {
                             </button>
                         </div>
 
-                        {/* Card 2: Your Answer (either evaluated or interactive input) */}
+                        {/* Card 2: Your Answer (interactive textarea with live STAR telemetry or evaluated state) */}
                         {state.currentLiveEvaluation ? (
-                            <div className="p-4 sm:p-5 rounded-2xl bg-[#eff6ff] border border-[#bfdbfe] text-slate-900 text-sm sm:text-base leading-relaxed shadow-2xs animate-in fade-in duration-200">
-                                <strong className="text-[#2563eb] font-bold mr-2">Your Answer:</strong>
-                                <span className="text-[#1e3a8a]">“{state.currentLiveAnswer || state.liveTurns[state.liveTurns.length - 1]?.answer}”</span>
+                            <div className="space-y-3">
+                                <div className="p-4 sm:p-5 rounded-2xl bg-[#eff6ff] border border-[#bfdbfe] text-slate-900 text-sm sm:text-base leading-relaxed shadow-2xs animate-in fade-in duration-200">
+                                    <strong className="text-[#2563eb] font-bold mr-2">Your Answer:</strong>
+                                    <span className="text-[#1e3a8a]">“{state.currentLiveAnswer || state.liveTurns[state.liveTurns.length - 1]?.answer}”</span>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={retryCurrentAnswer}
+                                        className="text-xs font-semibold text-blue-700 hover:text-blue-800 underline underline-offset-4 cursor-pointer">
+                                        ↻ Try Another Take / Refine This Answer
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="p-4 sm:p-5 rounded-2xl bg-[#eff6ff]/70 border border-[#bfdbfe] space-y-3.5 shadow-2xs">
@@ -1356,11 +1768,44 @@ const DashboardInterviews = () => {
                                     </div>
                                 </div>
 
+                                {/* Dynamic Real-Time STAR Speech Telemetry HUD */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-white/80 border border-blue-200/70 text-xs">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-slate-500 uppercase text-[10px]">Real-time STAR:</span>
+                                        <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] transition-all ${
+                                            liveTelemetry.hasSituation ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200'
+                                        }`}>
+                                            {liveTelemetry.hasSituation ? '✓' : '○'} S: Situation
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] transition-all ${
+                                            liveTelemetry.hasTask ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200'
+                                        }`}>
+                                            {liveTelemetry.hasTask ? '✓' : '○'} T: Task
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] transition-all ${
+                                            liveTelemetry.hasAction ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200'
+                                        }`}>
+                                            {liveTelemetry.hasAction ? '✓' : '○'} A: Action (I...)
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-md font-extrabold text-[11px] transition-all ${
+                                            liveTelemetry.hasResult ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200'
+                                        }`}>
+                                            {liveTelemetry.hasResult ? '✓' : '○'} R: Result (%)
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                                        <span>Agency: <strong className={liveTelemetry.agencyScore >= 60 ? 'text-emerald-700' : 'text-amber-700'}>{liveTelemetry.agencyScore}% "I"</strong></span>
+                                        <span>·</span>
+                                        <span>{liveTelemetry.wordCount} words (ideal: 90-250)</span>
+                                    </div>
+                                </div>
+
                                 <textarea
                                     rows={4}
                                     value={state.currentLiveAnswer}
                                     onChange={e => dispatch({ type: 'SET_LIVE_ANSWER', answer: e.target.value })}
-                                    placeholder="Type or speak your answer using the STAR method (Situation, Task, Action, Result)... e.g. 'I spun up blue-green failover nodes on AWS, traced the spike to an unindexed query, and restored 100% uptime in 6 minutes.'"
+                                    placeholder="Type or speak your answer using the STAR method (Situation, Task, Action, Result)... e.g. 'At my previous company during Black Friday, our payment gateway latency spiked to 2.4s. I led the incident response, identified database thread contention, deployed connection pooling within 12 minutes, and reduced latency to 110ms with zero failed transactions.'"
                                     className="w-full bg-white border border-blue-200/90 rounded-xl p-3.5 text-sm sm:text-base text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all resize-y shadow-2xs"
                                 />
 
@@ -1457,6 +1902,61 @@ const DashboardInterviews = () => {
                                         <div className="flex-1 p-3 rounded-xl bg-amber-50/90 border border-amber-200">
                                             <span className="font-bold text-amber-900">💡 Coaching Tip: </span>
                                             <span className="text-amber-950">{state.currentLiveEvaluation.coachingTip}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Probing Pushback Challenge (If generated by Recruiter) */}
+                                {state.currentLiveEvaluation.nextQuestion && (
+                                    <div className="p-3.5 rounded-xl bg-purple-50/80 border border-purple-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div className="space-y-0.5">
+                                            <span className="font-bold text-purple-900 uppercase text-[10px] tracking-wider">
+                                                🎯 Recruiter Pushback / Follow-up Challenge:
+                                            </span>
+                                            <p className="text-purple-950 font-medium italic">
+                                                “{state.currentLiveEvaluation.nextQuestion}”
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const followUp = state.currentLiveEvaluation.nextQuestion;
+                                                dispatch({
+                                                    type: 'NEXT_LIVE_QUESTION',
+                                                    nextQuestionText: followUp,
+                                                });
+                                                if (state.liveAudioEnabled) {
+                                                    speakQuestion(followUp);
+                                                }
+                                                showToast('Pushback question loaded. Deliver your rebuttal!');
+                                            }}
+                                            className="px-3 py-1.5 rounded-lg font-bold text-xs bg-purple-600 hover:bg-purple-700 text-white shrink-0 transition-all cursor-pointer shadow-2xs">
+                                            Answer Pushback
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Compare with 100/100 STAR Model Answer Accordion */}
+                                <div className="pt-2 border-t border-[#bbf7d0]/60">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowGoldenModelAnswer(!showGoldenModelAnswer)}
+                                        className="text-xs font-bold text-emerald-800 hover:text-emerald-900 flex items-center gap-1.5 cursor-pointer">
+                                        <span>{showGoldenModelAnswer ? 'Hide' : 'Compare with'} 100/100 STAR Model Answer (FAANG Executive Standard)</span>
+                                        <FaChevronDown className={`w-3 h-3 transition-transform ${showGoldenModelAnswer ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {showGoldenModelAnswer && (
+                                        <div className="mt-2.5 p-3.5 rounded-xl bg-white border border-emerald-300 text-xs text-slate-800 space-y-2 animate-in fade-in duration-150">
+                                            <p className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider">
+                                                Gold-Standard Benchmark Answer:
+                                            </p>
+                                            <p className="leading-relaxed text-slate-700">
+                                                <strong className="text-emerald-700">[Situation]</strong> At my previous company during our Q4 product release, payment API latency surged from 80ms to 3.2s, causing a 14% drop in checkout conversions.
+                                                <strong className="text-emerald-700"> [Task]</strong> As lead engineer, I was responsible for diagnosing the bottleneck and restoring the SLA under 200ms within a 30-minute escalation window.
+                                                <strong className="text-emerald-700"> [Action]</strong> I led the triage war room, used distributed tracing in Datadog to isolate an unindexed database query, deployed an optimized B-tree index to our read replica pool, and enabled aggressive Redis caching for catalog payloads.
+                                                <strong className="text-emerald-700"> [Result]</strong> Latency plummeted to 74ms within 18 minutes, recovering an estimated $140,000 in at-risk revenue with 99.99% reliability throughout the remainder of the campaign.
+                                            </p>
                                         </div>
                                     )}
                                 </div>
