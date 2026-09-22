@@ -606,8 +606,10 @@ SCORING DIRECTIVE:
 Calculate 'overall_score' as a realistic integer between 50 and 98 based on the candidate's answers. Exceptional candidates score 90-98, strong candidates score 82-89, competent candidates score 70-81. NEVER output 0 when candidate answered questions.`;
 }
 
-async function defaultGenerate({ prompt, operation, signal }) {
-    const configuration = await loadProviderConfiguration();
+async function defaultGenerate({ prompt, operation, signal, configuration: passedConfiguration }) {
+    const configuration = passedConfiguration
+        ? JSON.parse(JSON.stringify(passedConfiguration))
+        : await loadProviderConfiguration();
     configuration.temperature = operation === 'live-interview-report' ? 0.2 : 0.35;
     configuration.maxTokens = operation === 'live-interview-report' ? 1500 : 1250;
     const generated = await generateWithProviders({
@@ -620,7 +622,7 @@ async function defaultGenerate({ prompt, operation, signal }) {
     return generated;
 }
 
-function buildInitialState(input, opening) {
+function buildInitialState(input, opening, options = {}) {
     const now = Date.now();
     const targetTurns = Math.min(MAX_TURNS, Math.max(4, Math.ceil(input.durationMinutes / 4)));
     const current = {
@@ -648,6 +650,7 @@ function buildInitialState(input, opening) {
             difficulty: input.difficulty,
             durationMinutes: input.durationMinutes,
             targetTurns,
+            tenantId: options.tenantId || null,
         },
         interview: {
             stage: opening.stage,
@@ -799,7 +802,7 @@ class LiveInterviewService {
         this.inflight = new Map();
     }
 
-    async start({ ownerUid, input, signal }) {
+    async start({ ownerUid, input, signal, configuration, tenantId }) {
         if (!ownerUid || typeof ownerUid !== 'string') throw domainError('AUTH_REQUIRED', 'Authentication is required to start an interview.', 401);
         const normalized = normalizeStartInput(input);
         // Bounded opportunistic cleanup prevents short-lived interview context
@@ -817,9 +820,15 @@ class LiveInterviewService {
                 difficulty: normalized.difficulty,
                 durationMinutes: normalized.durationMinutes,
                 targetTurns: Math.min(MAX_TURNS, Math.max(4, Math.ceil(normalized.durationMinutes / 4))),
+                tenantId: tenantId || null,
             },
         };
-        const generated = await this.generate({ prompt: buildOpeningPrompt(initialState), operation: 'live-interview-open', signal });
+        const generated = await this.generate({
+            prompt: buildOpeningPrompt(initialState),
+            operation: 'live-interview-open',
+            signal,
+            configuration,
+        });
         const opening = parseOpening(generated.raw || generated);
         const startedAt = this.now();
         const session = {
@@ -828,7 +837,7 @@ class LiveInterviewService {
             revision: 1,
             createdAt: new Date(startedAt).toISOString(),
             expiresAt: new Date(startedAt + Math.min(LIVE_SESSION_TTL_MS, (normalized.durationMinutes + 30) * 60 * 1000)).toISOString(),
-            state: buildInitialState(normalized, opening),
+            state: buildInitialState(normalized, opening, { tenantId }),
         };
         const saved = await this.store.create(ownerUid, session);
         return presentSession(saved || session);
@@ -839,12 +848,12 @@ class LiveInterviewService {
         return presentSession(session);
     }
 
-    async answer({ ownerUid, id, payload, signal }) {
+    async answer({ ownerUid, id, payload, signal, configuration }) {
         const sessionIdValue = normalizeSessionId(id);
         const idempotencyKey = normalizeIdempotencyKey(payload?.idempotencyKey);
         const inflightKey = `${ownerUid}:${sessionIdValue}:${idempotencyKey}`;
         if (this.inflight.has(inflightKey)) return this.inflight.get(inflightKey);
-        const operation = this.answerOnce({ ownerUid, id: sessionIdValue, payload, signal, idempotencyKey });
+        const operation = this.answerOnce({ ownerUid, id: sessionIdValue, payload, signal, idempotencyKey, configuration });
         this.inflight.set(inflightKey, operation);
         try {
             return await operation;
@@ -853,7 +862,7 @@ class LiveInterviewService {
         }
     }
 
-    async answerOnce({ ownerUid, id, payload, signal, idempotencyKey }) {
+    async answerOnce({ ownerUid, id, payload, signal, idempotencyKey, configuration }) {
         const session = await this.requireActive(ownerUid, id);
         const seen = session.state?.processedKeys?.some(item => item?.key === idempotencyKey);
         if (seen) return presentSession(session, { idempotent: true });
@@ -875,6 +884,7 @@ class LiveInterviewService {
             prompt: buildTurnPrompt(session, answer),
             operation: 'live-interview-turn',
             signal,
+            configuration,
         });
         const output = parseTurn(generated.raw || generated, session.state.interview);
         const durationMinutes = Number(session.state?.config?.durationMinutes) || 20;
@@ -894,7 +904,7 @@ class LiveInterviewService {
         return presentSession(saved);
     }
 
-    async complete({ ownerUid, id, payload, signal }) {
+    async complete({ ownerUid, id, payload, signal, configuration }) {
         const session = await this.requireActiveOrCompleted(ownerUid, id);
         if (session.status === 'completed' && session.state?.report) return presentSession(session, { idempotent: true });
         if (session.status !== 'active') throw domainError('SESSION_NOT_ACTIVE', 'This interview is no longer active.', 409);
@@ -905,7 +915,12 @@ class LiveInterviewService {
             });
         }
 
-        const generated = await this.generate({ prompt: buildReportPrompt(session), operation: 'live-interview-report', signal });
+        const generated = await this.generate({
+            prompt: buildReportPrompt(session),
+            operation: 'live-interview-report',
+            signal,
+            configuration,
+        });
         const report = parseReport(generated.raw || generated, session);
         const durationMinutes = Number(session.state?.config?.durationMinutes) || 20;
         const mutated = {

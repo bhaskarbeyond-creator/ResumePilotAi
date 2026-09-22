@@ -143,10 +143,21 @@ function normalizeTenantConfiguration(tenantId, input = {}, existing = defaultTe
   const primaryModel = /^[A-Za-z0-9._/-]{2,120}$/.test(String(aiPolicy.primaryModel || '').trim())
     ? String(aiPolicy.primaryModel || '').trim()
     : String(existing.aiPolicy?.primaryModel || '');
+  const customProviderKeys = (aiPolicy.customProviderKeys && typeof aiPolicy.customProviderKeys === 'object')
+    ? { ...aiPolicy.customProviderKeys }
+    : { ...(existing.aiPolicy?.customProviderKeys || {}) };
+  const profile = aiPolicy.profile || existing.aiPolicy?.profile;
   return {
     tenantId,
     revision: Number(existing.revision || 0) + 1,
-    aiPolicy: { version: Number(existing.aiPolicy?.version || 0) + 1, allowedProviders, allowedModels, primaryModel },
+    aiPolicy: {
+      version: Number(existing.aiPolicy?.version || 0) + 1,
+      allowedProviders,
+      allowedModels,
+      primaryModel,
+      ...(profile ? { profile } : {}),
+      customProviderKeys,
+    },
     quotaPolicy: {
       aiRequestsPerMinute: bounded(quotaPolicy.aiRequestsPerMinute, existing.quotaPolicy?.aiRequestsPerMinute || 12, 1, 10_000),
       aiRequestsPerDay: bounded(quotaPolicy.aiRequestsPerDay, existing.quotaPolicy?.aiRequestsPerDay || 100, 1, 10_000_000),

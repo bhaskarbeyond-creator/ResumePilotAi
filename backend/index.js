@@ -440,7 +440,10 @@ app.use('/api/admin/database-settings', databaseAdminRouter);
 // or the certified UID-scoped legacy behavior, never an ambiguous hybrid request.
 app.use('/api', async (req, res, next) => {
     const asksForTenantContext = Boolean(req.get('x-tenant-id') || req.get('x-workspace-id'));
-    if (!asksForTenantContext || req.path.startsWith('/enterprise/')) return next();
+    const isTenantAwareRoute = req.path.startsWith('/enterprise/')
+        || req.path === '/generate-interview'
+        || req.path.startsWith('/live-interview');
+    if (!asksForTenantContext || isTenantAwareRoute) return next();
     try {
         const { enterpriseFeatureEnabledAsync } = require('./enterprise/featureFlags');
         if (await enterpriseFeatureEnabledAsync()) {

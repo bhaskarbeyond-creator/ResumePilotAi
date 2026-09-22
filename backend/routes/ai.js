@@ -3,16 +3,155 @@ const crypto = require('crypto');
 const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse, providerOrder } = require('../services/aiRuntime');
 const { getRepository } = require('../repositories');
 const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
+const { applyTenantAiPolicy } = require('../enterprise/tenantAi');
 const router = express.Router();
 
+async function resolveEffectiveAiConfiguration(req, res) {
+    const baseConfig = await loadProviderConfiguration();
+    const requestedTenantId = req?.get?.('x-tenant-id') || req?.body?.tenantId || req?.query?.tenantId;
+    if (!requestedTenantId) {
+        return {
+            configuration: baseConfig,
+            tenantContext: null,
+            tenant: null,
+            tenantService: null,
+        };
+    }
+
+    // Opportunistically authenticate if user is not populated yet
+    if (!req.user?.uid && req.get?.('authorization')) {
+        try {
+            const { requireAuth } = require('../security/auth');
+            await new Promise((resolve) => {
+                const dummyRes = {
+                    status: () => dummyRes,
+                    json: () => resolve(),
+                };
+                requireAuth(req, dummyRes, () => resolve());
+            });
+        } catch (_) {}
+    }
+
+    if (!req.user?.uid) {
+        const err = new Error('Authentication is required for tenant-scoped operations');
+        err.code = 'AUTH_REQUIRED';
+        err.status = 401;
+        throw err;
+    }
+
+    const tenantService = req.app?.get?.('tenantService');
+    if (!tenantService || typeof tenantService.resolveContext !== 'function') {
+        const err = new Error('Tenant service is temporarily unavailable');
+        err.code = 'TENANT_SERVICE_UNAVAILABLE';
+        err.status = 503;
+        throw err;
+    }
+
+    const requestedWorkspaceId = req?.get?.('x-workspace-id') || req?.body?.workspaceId || null;
+    let resolved;
+    try {
+        resolved = await tenantService.resolveContext({
+            user: req.user,
+            requestedTenantId: String(requestedTenantId).trim(),
+            requestedWorkspaceId,
+            requestId: res?.locals?.requestId,
+        });
+    } catch (err) {
+        const status = err.status || 403;
+        const error = new Error(err.message || 'Tenant membership required');
+        error.code = err.code || 'TENANT_ACCESS_DENIED';
+        error.status = status;
+        throw error;
+    }
+
+    // Check tenant quota if configured and quota guard is available
+    const quota = resolved.tenant?.configuration?.quotaPolicy || {};
+    if (typeof tenantService.consumeTenantQuota === 'function' && tenantService.quotaGuard) {
+        await tenantService.consumeTenantQuota({
+            context: resolved.context,
+            metric: 'ai-minute',
+            limit: Number(quota.aiRequestsPerMinute || 60),
+            windowMs: 60_000,
+        });
+        await tenantService.consumeTenantQuota({
+            context: resolved.context,
+            metric: 'ai-day',
+            limit: Number(quota.aiRequestsPerDay || 1000),
+            windowMs: 24 * 60 * 60_000,
+        });
+    }
+
+    const effectiveConfig = applyTenantAiPolicy(
+        baseConfig,
+        resolved.context,
+        resolved.tenant?.aiPolicy || {}
+    );
+
+    return {
+        configuration: effectiveConfig,
+        tenantContext: resolved.context,
+        tenant: resolved.tenant,
+        tenantService,
+    };
+}
+
+async function recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated }) {
+    if (!tenantResolution?.tenantContext || !tenantResolution?.tenantService) return;
+    try {
+        if (typeof tenantResolution.tenantService.recordAiUsage === 'function') {
+            await tenantResolution.tenantService.recordAiUsage({
+                context: tenantResolution.tenantContext,
+                input: {
+                    provider: generated.provider,
+                    model: generated.model,
+                    operation,
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    estimatedCostMicros: 0,
+                },
+            });
+        }
+        if (typeof tenantResolution.tenantService.writeAudit === 'function') {
+            await tenantResolution.tenantService.writeAudit(tenantResolution.tenantContext, {
+                action: 'TENANT_AI_GENERATED',
+                category: 'tenant.ai',
+                severity: 'INFO',
+                resource: { type: 'ai_interview_operation', id: tenantResolution.tenantContext.correlationId },
+                metadata: { operation, provider: generated.provider, model: generated.model, actorType: tenantResolution.tenantContext.actorType },
+            }).catch(() => {});
+        }
+    } catch (_) {}
+}
+
 async function generateConfiguredText(req, res, prompt, operation, overrides = {}) {
-    const configuration = await loadProviderConfiguration();
-    if (overrides.temperature !== undefined) configuration.temperature = overrides.temperature;
-    if (overrides.maxTokens !== undefined) configuration.maxTokens = overrides.maxTokens;
-    const generated = await generateWithProviders({ prompt, configuration, operation, signal: overrides.signal || req.aiAbortSignal, timeoutMs: overrides.timeoutMs });
+    let configuration = overrides.configuration;
+    let tenantResolution = overrides.tenantResolution || null;
+    if (!configuration) {
+        tenantResolution = await resolveEffectiveAiConfiguration(req, res);
+        configuration = tenantResolution.configuration;
+    }
+    const activeConfig = {
+        ...configuration,
+        providers: { ...(configuration.providers || {}) },
+    };
+    if (overrides.temperature !== undefined) activeConfig.temperature = overrides.temperature;
+    if (overrides.maxTokens !== undefined) activeConfig.maxTokens = overrides.maxTokens;
+    const generated = await generateWithProviders({
+        prompt,
+        configuration: activeConfig,
+        operation,
+        signal: overrides.signal || req.aiAbortSignal,
+        timeoutMs: overrides.timeoutMs,
+    });
     if (res?.setHeader && !res.headersSent) {
         res.setHeader('X-AI-Provider', generated.provider);
         res.setHeader('X-AI-Model', generated.model);
+        if (tenantResolution?.tenantContext?.tenantId) {
+            res.setHeader('X-Tenant-Id', tenantResolution.tenantContext.tenantId);
+        }
+    }
+    if (tenantResolution) {
+        await recordTenantAiUsageIfApplicable(tenantResolution, { operation, generated });
     }
     return generated.raw;
 }
@@ -449,8 +588,9 @@ router.post('/generate-interview', async (req, res) => {
 
         const requestedCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
 
-        // Determine active provider to choose optimal execution strategy
-        const configuration = await loadProviderConfiguration();
+        // Resolve effective AI configuration (respecting tenant BYOK keys, allowed models, allowed providers, or platform admin config)
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res);
+        const configuration = tenantResolution.configuration;
         const activeOrder = providerOrder(configuration);
         const activeProvider = activeOrder[0] || 'nvidia';
 
@@ -480,7 +620,7 @@ router.post('/generate-interview', async (req, res) => {
                 previousQuestions: priorQuestions,
                 sessionNonce: baseNonce,
             });
-            const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: 3500, timeoutMs: 38_000 });
+            const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { configuration, tenantResolution, maxTokens: 3500, timeoutMs: 38_000 });
             const jsonData = extractJson(responseText);
             if (!jsonData || typeof jsonData !== 'object') {
                 throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
@@ -506,7 +646,7 @@ router.post('/generate-interview', async (req, res) => {
                     sessionNonce: `${baseNonce}-b${batchIndex + 1}`,
                 });
                 const batchTokens = Math.min(1000, Math.max(500, count * 350));
-                const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: batchTokens, timeoutMs: 32_000 });
+                const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { configuration, tenantResolution, maxTokens: batchTokens, timeoutMs: 32_000 });
                 const jsonData = extractJson(responseText);
                 return { jsonData, count };
             });
@@ -593,11 +733,22 @@ function sendLiveInterviewError(res, error) {
 // transition, or other candidate's session id.
 router.post('/live-interview/sessions', async (req, res) => {
     try {
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res);
         const session = await liveInterviewService().start({
             ownerUid: req.user?.uid,
             input: req.body || {},
             signal: req.aiAbortSignal,
+            configuration: tenantResolution.configuration,
+            tenantId: tenantResolution.tenantContext?.tenantId || null,
         });
+        if (tenantResolution?.tenantContext) {
+            const activePrimary = tenantResolution.configuration?.primary || 'nvidia';
+            const activeModel = tenantResolution.configuration?.providers?.[activePrimary]?.model || '';
+            await recordTenantAiUsageIfApplicable(tenantResolution, {
+                operation: 'live-interview-open',
+                generated: { provider: activePrimary, model: activeModel },
+            });
+        }
         res.setHeader('Cache-Control', 'no-store, private');
         return res.status(201).json({ session });
     } catch (error) {
@@ -620,12 +771,22 @@ router.get('/live-interview/sessions/:sessionId', async (req, res) => {
 
 router.post('/live-interview/sessions/:sessionId/turns', async (req, res) => {
     try {
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res);
         const session = await liveInterviewService().answer({
             ownerUid: req.user?.uid,
             id: req.params.sessionId,
             payload: req.body || {},
             signal: req.aiAbortSignal,
+            configuration: tenantResolution.configuration,
         });
+        if (tenantResolution?.tenantContext) {
+            const activePrimary = tenantResolution.configuration?.primary || 'nvidia';
+            const activeModel = tenantResolution.configuration?.providers?.[activePrimary]?.model || '';
+            await recordTenantAiUsageIfApplicable(tenantResolution, {
+                operation: 'live-interview-turn',
+                generated: { provider: activePrimary, model: activeModel },
+            });
+        }
         res.setHeader('Cache-Control', 'no-store, private');
         return res.json({ session });
     } catch (error) {
@@ -635,12 +796,22 @@ router.post('/live-interview/sessions/:sessionId/turns', async (req, res) => {
 
 router.post('/live-interview/sessions/:sessionId/complete', async (req, res) => {
     try {
+        const tenantResolution = await resolveEffectiveAiConfiguration(req, res);
         const session = await liveInterviewService().complete({
             ownerUid: req.user?.uid,
             id: req.params.sessionId,
             payload: req.body || {},
             signal: req.aiAbortSignal,
+            configuration: tenantResolution.configuration,
         });
+        if (tenantResolution?.tenantContext) {
+            const activePrimary = tenantResolution.configuration?.primary || 'nvidia';
+            const activeModel = tenantResolution.configuration?.providers?.[activePrimary]?.model || '';
+            await recordTenantAiUsageIfApplicable(tenantResolution, {
+                operation: 'live-interview-report',
+                generated: { provider: activePrimary, model: activeModel },
+            });
+        }
         res.setHeader('Cache-Control', 'no-store, private');
         return res.json({ session });
     } catch (error) {
@@ -940,4 +1111,6 @@ module.exports.isGenericQuestion = isGenericQuestion;
 module.exports.extractCandidateProfile = extractCandidateProfile;
 module.exports.extractJobRequirements = extractJobRequirements;
 module.exports.buildContextualBlueprint = buildContextualBlueprint;
+module.exports.resolveEffectiveAiConfiguration = resolveEffectiveAiConfiguration;
+module.exports.generateConfiguredText = generateConfiguredText;
 

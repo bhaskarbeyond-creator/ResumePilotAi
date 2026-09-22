@@ -6,7 +6,7 @@ const { normalizeRequestedTenantId, normalizeRequestedWorkspaceId } = require('.
 const { hasTenantPermission, requireAnyTenantPermission, requireTenantPermission } = require('../enterprise/tenantPolicy');
 const { TENANT_ROLES } = require('../enterprise/constants');
 const { applyTenantAiPolicy, assertNoClientAuthority, buildTenantAiOperation } = require('../enterprise/tenantAi');
-const { buildGroundedPrompt, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
+const { buildGroundedPrompt, extractJson, generateWithProviders, loadProviderConfiguration, parseAiResponse } = require('../services/aiRuntime');
 const { enterpriseFeatureEnabled, enterpriseFeatureEnabledAsync } = require('../enterprise/featureFlags');
 const { getPool } = require('../database/mysql');
 const { M2M_ALLOWED_ENDPOINTS, SUPPORT_ALLOWED_ENDPOINTS, endpointAllowed } = require('../enterprise/enterpriseAuth');
@@ -786,6 +786,71 @@ router.post('/ai/generate-content', resolveTenantContext, requireTenantPermissio
     return res.json({ data, context: { tenantId: req.tenantContext.tenantId, workspaceId: req.tenantContext.workspaceId, correlationId: req.tenantContext.correlationId, policyVersion: aiOperation.policyVersion } });
   } catch (error) {
     return res.status(error.status || 502).json({ error: { code: error.code || 'TENANT_AI_GENERATION_FAILED', message: error.status === 400 ? error.message : 'Tenant AI generation is unavailable.', requestId: res.locals?.requestId } });
+  }
+});
+
+router.post('/ai/generate-interview', resolveTenantContext, requireTenantPermission('ai.use'), async (req, res) => {
+  try {
+    if (Object.hasOwn(req.body || {}, 'tenantId') || Object.hasOwn(req.body || {}, 'ownerUid')) {
+      return res.status(400).json({ error: { code: 'CLIENT_AI_CONTEXT_REJECTED', message: 'Tenant AI identity and context is server-controlled', requestId: res.locals?.requestId } });
+    }
+    const { generateConfiguredText, buildInterviewPrompt, dedupeQuestions } = require('./ai');
+    const { occupation = 'Software Engineer', interviewType = 'technical', questionCount = 10, language = 'en', experienceLevel = 'mid', difficulty = 'medium', jobDescription = '', resumeFacts = '', previousQuestions = [] } = req.body || {};
+    const requestedCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
+
+    const configuration = applyTenantAiPolicy(
+      await loadProviderConfiguration(),
+      req.tenantContext,
+      req.tenant.aiPolicy || {}
+    );
+
+    const quota = req.tenant.configuration?.quotaPolicy || {};
+    if (enterpriseService(req).quotaGuard) {
+      await enterpriseService(req).consumeTenantQuota({ context: req.tenantContext, metric: 'ai-minute', limit: Number(quota.aiRequestsPerMinute || 60), windowMs: 60_000 });
+      await enterpriseService(req).consumeTenantQuota({ context: req.tenantContext, metric: 'ai-day', limit: Number(quota.aiRequestsPerDay || 1000), windowMs: 24 * 60 * 60_000 });
+    }
+
+    const built = buildInterviewPrompt({
+      occupation,
+      interviewType,
+      questionCount: requestedCount,
+      language,
+      experienceLevel,
+      difficulty,
+      jobDescription,
+      resumeFacts,
+      previousQuestions,
+    });
+
+    const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { configuration, maxTokens: 3500, timeoutMs: 38_000 });
+    const jsonData = extractJson(responseText);
+    if (!jsonData || typeof jsonData !== 'object') {
+      throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
+    }
+
+    const allQuestions = dedupeQuestions(jsonData.questions, previousQuestions).slice(0, built.validQuestionCount);
+    const renumberedQuestions = allQuestions.map((q, idx) => ({ ...q, id: idx + 1 }));
+
+    await enterpriseService(req).recordAiUsage({
+      context: req.tenantContext,
+      input: { provider: res.getHeader('X-AI-Provider') || configuration.primary, model: res.getHeader('X-AI-Model') || '', operation: 'generate-interview', inputTokens: 0, outputTokens: 0, estimatedCostMicros: 0 },
+    }).catch(() => {});
+
+    await enterpriseService(req).writeAudit(req.tenantContext, {
+      action: 'TENANT_AI_INTERVIEW_GENERATED', category: 'tenant.ai', severity: 'INFO',
+      resource: { type: 'interview_assessment', id: req.tenantContext.correlationId },
+      metadata: { occupation, interviewType, provider: res.getHeader('X-AI-Provider') || configuration.primary, actorType: req.tenantContext.actorType },
+    }).catch(() => {});
+
+    return res.json({
+      ...jsonData,
+      title: jsonData.title || `${occupation} - ${interviewType.charAt(0).toUpperCase() + interviewType.slice(1)} Assessment`,
+      questions: renumberedQuestions,
+      totalQuestions: renumberedQuestions.length,
+      context: { tenantId: req.tenantContext.tenantId, workspaceId: req.tenantContext.workspaceId },
+    });
+  } catch (error) {
+    return res.status(error.status || 502).json({ error: { code: error.code || 'TENANT_AI_GENERATION_FAILED', message: error.status === 400 ? error.message : (error.message || 'Tenant AI generation is unavailable.'), requestId: res.locals?.requestId } });
   }
 });
 

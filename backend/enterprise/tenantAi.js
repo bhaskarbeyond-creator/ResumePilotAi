@@ -44,10 +44,11 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
     : null;
   const providers = Object.fromEntries(Object.entries(configuration.providers || {}).map(([name, provider]) => {
     const effectiveKey = String(customKeys[name] || provider.key || '').trim();
+    const hasCustomKey = Boolean(String(customKeys[name] || '').trim());
     return [name, {
       ...provider,
       key: effectiveKey,
-      enabled: provider.enabled === true && allowedProviders.has(name)
+      enabled: (hasCustomKey || provider.enabled === true) && allowedProviders.has(name)
         && Boolean(effectiveKey)
         && (!allowedModels || allowedModels.size === 0 || allowedModels.has(String(provider.model || ''))),
     }];
