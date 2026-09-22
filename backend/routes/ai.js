@@ -385,6 +385,11 @@ ${exclusionsSection ? '\n' + exclusionsSection : ''}
    - Easy: Foundational execution following established industry best practices.
    - Intermediate: Nuanced trade-offs, debugging multi-step failures, multi-metric optimization.
    - Advanced: Complex systems design, high-stakes ambiguity, scale bottlenecks, crisis recovery, strategic trade-offs.
+7. CRISP AND CONCISE FORMATTING:
+   - Keep scenario questions direct and focused (under 40 words).
+   - Keep each answer option clear and distinct (under 15 words).
+   - Keep each explanation strictly to 1 or 2 concise sentences explaining the optimal choice and key trade-off.
+   - Do NOT include lengthy filler commentary or redundant text.
 
 IMPORTANT: All text including questions, answer options, and explanations must be written in ${targetLanguage}.
 
@@ -406,7 +411,7 @@ Format the response as a JSON object with this exact structure:
             "category": "Category name",
             "difficulty": "Easy/Intermediate/Advanced",
             "weight": 1,
-            "explanation": "Detailed explanation of why the correct answer is optimal and why alternatives are flawed.",
+            "explanation": "Concise 1-2 sentence explanation of why the correct answer is optimal and the key trade-off.",
             "estimatedTime": 120
         }
     ]
@@ -453,7 +458,7 @@ router.post('/generate-interview', async (req, res) => {
             previousQuestions: priorQuestions,
             sessionNonce: crypto.randomBytes(8).toString('hex'),
         });
-        const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: 4096 });
+        const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: 3500, timeoutMs: 110_000 });
         const jsonData = extractJson(responseText);
         if (!jsonData || typeof jsonData !== 'object') {
             throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });

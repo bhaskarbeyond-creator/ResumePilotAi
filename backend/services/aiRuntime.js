@@ -1440,7 +1440,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
     if (!order.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
     const failures = [];
     for (const provider of order) {
-        let attempts = (operation === 'autocomplete') ? 2 : 1;
+        let attempts = (operation === 'autocomplete' || operation === 'generate-interview') ? 2 : 1;
         while (attempts > 0) {
             attempts -= 1;
             try {
@@ -1449,11 +1449,12 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                     maxTokens: operation === 'autocomplete' ? 180 : configuration.maxTokens,
                     temperature: operation === 'autocomplete' ? 0.1 : configuration.temperature,
                 };
-                const raw = await requestProvider(provider, configuration.providers[provider], prompt, generation, { fetchImpl, signal, timeoutMs });
+                const effectiveTimeout = timeoutMs || (operation === 'generate-interview' ? 110000 : 30000);
+                const raw = await requestProvider(provider, configuration.providers[provider], prompt, generation, { fetchImpl, signal, timeoutMs: effectiveTimeout });
                 return { raw, provider, model: configuration.providers[provider].model };
             } catch (error) {
-                if (attempts > 0 && !signal?.aborted && (error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504)) {
-                    await new Promise(r => setTimeout(r, 300));
+                if (attempts > 0 && !signal?.aborted && (error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504 || /ECONNRESET|ETIMEDOUT|fetch failed/i.test(error.message || ''))) {
+                    await new Promise(r => setTimeout(r, 500));
                     continue;
                 }
                 console.error(`[AI Provider Failure] operation=${operation || 'unknown'} provider=${provider} error=${error.message}`);

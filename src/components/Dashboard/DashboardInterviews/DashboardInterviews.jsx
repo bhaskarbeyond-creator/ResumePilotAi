@@ -973,7 +973,7 @@ const DashboardInterviews = () => {
                         limit: 8,
                     }),
                 },
-                { signal: requestController.signal, timeoutMs: 90_000 }
+                { signal: requestController.signal, timeoutMs: 120_000 }
             );
             // Never trust the model structure: validate before rendering.
             const validated = validateInterviewPayload(data);
