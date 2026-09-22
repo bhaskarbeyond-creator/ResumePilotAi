@@ -1383,7 +1383,12 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     }
     const defaults = PROVIDER_DEFAULTS[provider];
     const candidateModels = [providerConfig.model];
-    if (provider === 'nvidia' && providerConfig.model !== defaults.model) {
+    if (provider === 'nvidia') {
+        const activeNvidiaModels = ['meta/llama-3.2-11b-vision-instruct', defaults.model];
+        for (const m of activeNvidiaModels) {
+            if (m && !candidateModels.includes(m)) candidateModels.push(m);
+        }
+    } else if (providerConfig.model !== defaults.model) {
         candidateModels.push(defaults.model);
     }
 
@@ -1391,7 +1396,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     for (let i = 0; i < candidateModels.length; i++) {
         const currentModel = candidateModels[i];
         const isLastCandidate = (i === candidateModels.length - 1);
-        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 6000);
+        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 25000);
         try {
             const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
             if (provider === 'openrouter') {
@@ -1411,9 +1416,9 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
                 const errMsg = extractProviderErrorMessage(body, response.status, provider);
-                const isRetryable = response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504 || response.status === 404 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found/i.test(errMsg);
+                const isRetryable = response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504 || response.status === 404 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found|ECONNRESET|ETIMEDOUT|socket hang up/i.test(errMsg);
                 if (isRetryable && !isLastCandidate) {
-                    console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[candidateModels.length - 1]}`);
+                    console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[i + 1]}`);
                     lastError = Object.assign(new Error(errMsg), { status: response.status });
                     continue;
                 }
@@ -1426,7 +1431,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
             lastError = err;
             if (signal?.aborted) throw err;
             if (!isLastCandidate) {
-                console.warn(`[AI Model Failover] ${provider} model ${currentModel} timed out or failed (${err.message}); retrying with fallback model...`);
+                console.warn(`[AI Model Failover] ${provider} model ${currentModel} timed out or failed (${err.message}); retrying with fallback model ${candidateModels[i + 1]}...`);
                 continue;
             }
             throw err;

@@ -1,6 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
-const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse } = require('../services/aiRuntime');
+const { executeContentOperation, executeResumeParsing, extractJson, loadProviderConfiguration, generateWithProviders, parseAiResponse, providerOrder } = require('../services/aiRuntime');
 const { getRepository } = require('../repositories');
 const { LiveInterviewService, createRepositoryLiveInterviewStore } = require('../services/liveInterviewSession');
 const router = express.Router();
@@ -93,7 +93,7 @@ function interviewDifficultyWeights(difficulty) {
 // Compute an exact Easy/Intermediate/Advanced split (sums to questionCount) from the
 // requested difficulty and seniority so the difficulty control actually shapes the set.
 function interviewDifficultyDistribution(questionCount, difficulty, experienceLevel) {
-    const count = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
+    const count = Math.min(Math.max(parseInt(questionCount) || 10, 1), 20);
     const weights = interviewDifficultyWeights(difficulty);
     let easy = Math.round(count * weights.easy);
     let intermediate = Math.round(count * weights.intermediate);
@@ -305,7 +305,7 @@ function buildInterviewPrompt(input) {
     const occupation = cleanInterviewMetadataArtifacts(rawOccupation) || 'Professional';
     const interviewType = String(input.interviewType || 'technical');
     const targetLanguage = languageNames[input.language] || 'English';
-    const validQuestionCount = Math.min(Math.max(parseInt(input.questionCount) || 10, 5), 20);
+    const validQuestionCount = Math.min(Math.max(parseInt(input.questionCount) || 10, 1), 20);
     const promptContext = INTERVIEW_PROMPT_CONTEXT[interviewType] || INTERVIEW_PROMPT_CONTEXT.mixed;
     
     const safeFacts = typeof input.resumeFacts === 'string' ? input.resumeFacts.slice(0, 2500) : '';
@@ -446,33 +446,104 @@ router.post('/generate-interview', async (req, res) => {
             .map(q => cleanInterviewMetadataArtifacts(sanitizePromptFragment(q, 240)))
             .filter(q => q.length > 0)
             .slice(0, 12);
-        const built = buildInterviewPrompt({
-            occupation,
-            interviewType,
-            questionCount,
-            language,
-            experienceLevel,
-            difficulty,
-            jobDescription,
-            resumeFacts,
-            previousQuestions: priorQuestions,
-            sessionNonce: crypto.randomBytes(8).toString('hex'),
-        });
-        const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: 3500, timeoutMs: 110_000 });
-        const jsonData = extractJson(responseText);
-        if (!jsonData || typeof jsonData !== 'object') {
-            throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
+
+        const requestedCount = Math.min(Math.max(parseInt(questionCount) || 10, 5), 20);
+
+        // Determine active provider to choose optimal execution strategy
+        const configuration = await loadProviderConfiguration();
+        const activeOrder = providerOrder(configuration);
+        const activeProvider = activeOrder[0] || 'nvidia';
+
+        // NVIDIA NIM and public LLM gateways enforce strict ~38s socket drop limits.
+        // Generating >5 complex scenario questions in a single prompt takes 50-80s,
+        // causing gateway socket resets (ECONNRESET) and frontend 502/504 errors.
+        // When activeProvider is nvidia and requestedCount > 2, partition into parallel batches
+        // of <= 2 questions. On NVIDIA NIM, 2 questions complete in 10-14s, well below the 38s
+        // gateway socket reset threshold, whereas 5+ questions take 39-65s and trigger ECONNRESET.
+        const shouldBatch = activeProvider === 'nvidia' && requestedCount > 2;
+        const numBatches = shouldBatch ? Math.ceil(requestedCount / 2) : 1;
+        const baseNonce = crypto.randomBytes(8).toString('hex');
+
+        let allQuestions = [];
+        let metadataPayload = null;
+
+        if (numBatches === 1) {
+            const built = buildInterviewPrompt({
+                occupation,
+                interviewType,
+                questionCount: requestedCount,
+                language,
+                experienceLevel,
+                difficulty,
+                jobDescription,
+                resumeFacts,
+                previousQuestions: priorQuestions,
+                sessionNonce: baseNonce,
+            });
+            const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: 3500, timeoutMs: 38_000 });
+            const jsonData = extractJson(responseText);
+            if (!jsonData || typeof jsonData !== 'object') {
+                throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
+            }
+            metadataPayload = jsonData;
+            allQuestions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
+        } else {
+            const baseBatchSize = Math.floor(requestedCount / numBatches);
+            const remainder = requestedCount % numBatches;
+            const batchSizes = Array.from({ length: numBatches }, (_, i) => baseBatchSize + (i < remainder ? 1 : 0));
+
+            const batchPromises = batchSizes.map(async (count, batchIndex) => {
+                const built = buildInterviewPrompt({
+                    occupation,
+                    interviewType,
+                    questionCount: count,
+                    language,
+                    experienceLevel,
+                    difficulty,
+                    jobDescription,
+                    resumeFacts,
+                    previousQuestions: priorQuestions,
+                    sessionNonce: `${baseNonce}-b${batchIndex + 1}`,
+                });
+                const batchTokens = Math.min(1000, Math.max(500, count * 350));
+                const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { maxTokens: batchTokens, timeoutMs: 32_000 });
+                const jsonData = extractJson(responseText);
+                return { jsonData, count };
+            });
+
+            const batchResults = await Promise.allSettled(batchPromises);
+            const collectedQuestions = [];
+
+            for (const result of batchResults) {
+                if (result.status === 'fulfilled' && result.value?.jsonData?.questions) {
+                    if (!metadataPayload && result.value.jsonData) {
+                        metadataPayload = result.value.jsonData;
+                    }
+                    const batchQuestions = Array.isArray(result.value.jsonData.questions) ? result.value.jsonData.questions : [];
+                    collectedQuestions.push(...batchQuestions);
+                }
+            }
+
+            allQuestions = dedupeQuestions(collectedQuestions, priorQuestions).slice(0, requestedCount);
         }
-        const questions = dedupeQuestions(jsonData.questions, priorQuestions).slice(0, built.validQuestionCount);
-        if (!questions.length) {
+
+        if (!allQuestions.length) {
             throw Object.assign(new Error('The AI response did not contain usable questions.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
         }
+
+        const renumberedQuestions = allQuestions.map((q, idx) => ({ ...q, id: idx + 1 }));
+
         markSource('ai');
-        return res.json({ ...jsonData, questions, totalQuestions: questions.length });
+        return res.json({
+            ...(metadataPayload || {}),
+            title: metadataPayload?.title || `${occupation} - ${interviewType.charAt(0).toUpperCase() + interviewType.slice(1)} Assessment`,
+            questions: renumberedQuestions,
+            totalQuestions: renumberedQuestions.length,
+        });
     } catch (error) {
         const status = Number(error.status) || (error.code === 'AI_PROVIDER_UNAVAILABLE' ? 503 : 502);
         const code = error.code || 'AI_PROVIDER_ERROR';
-        console.error('[Interview generation]', { code, requestId: res.locals.requestId });
+        console.error('[Interview generation error]', { code, status, message: error.message, stack: error.stack, requestId: res.locals.requestId });
         return res.status(status).json({ error: {
             code,
             message: status >= 500
