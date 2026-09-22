@@ -22,7 +22,7 @@ async function generateConfiguredText(req, res, prompt, operation, overrides = {
 const AI_ROUTE_PATHS = new Set([
     '/generate-resume', '/generate-summary', '/generate-interview', '/generate-work-description',
     '/generate-education-description', '/generate-skills', '/check-grammar', '/generate-content',
-    '/parse-resume', '/live-interview/sessions',
+    '/parse-resume', '/live-interview/sessions', '/live-interview/guide',
 ]);
 function isAiRoutePath(pathname) {
     return AI_ROUTE_PATHS.has(pathname) || /^\/live-interview\/sessions\/[A-Za-z0-9_-]{16,128}(?:\/(?:turns|complete))?$/.test(pathname);
@@ -580,6 +580,63 @@ router.delete('/live-interview/sessions/:sessionId', async (req, res) => {
         });
         res.setHeader('Cache-Control', 'no-store, private');
         return res.json(result);
+    } catch (error) {
+        return sendLiveInterviewError(res, error);
+    }
+});
+
+router.post('/live-interview/guide', async (req, res) => {
+    try {
+        if (!req.user?.uid) {
+            return res.status(401).json({ error: { code: 'AUTH_REQUIRED', message: 'Sign in to access the live interview guide.' } });
+        }
+        const question = String(req.body?.question || '').replace(/\s+/g, ' ').trim().slice(0, 600);
+        const role = String(req.body?.role || 'Software Engineer').replace(/\s+/g, ' ').trim().slice(0, 160);
+        const topic = String(req.body?.topic || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+        const resumeFacts = String(req.body?.resumeFacts || '').replace(/\s+/g, ' ').trim().slice(0, 1200);
+        const regenerate = Boolean(req.body?.regenerate);
+
+        if (!question || question.length < 5) {
+            return res.status(400).json({ error: { code: 'INVALID_QUESTION', message: 'A valid question is required.' } });
+        }
+
+        const prompt = `You are an elite executive interview coach and hiring director.
+Craft the ideal 10/10 STAR response guide tailored specifically, naturally, and dynamically to this exact interview question:
+
+TARGET ROLE: ${role}
+TOPIC/DOMAIN: ${topic || 'Professional Competence'}
+QUESTION: "${question}"
+${resumeFacts ? `CANDIDATE CONTEXT:\n${resumeFacts}` : ''}
+${regenerate ? `REGENERATION DIRECTIVE: Formulate an entirely fresh, alternative 10/10 STAR scenario and distinct technical angle for this exact question, choosing different architectural trade-offs or problem-solving approaches.` : ''}
+
+INSTRUCTIONS:
+1. "goal": The exact interviewer's strategic hiring intention and what competencies/signals are being evaluated for this specific question (1-2 sentences).
+2. "modelAnswer": A complete, natural, spoken first-person 10/10 STAR candidate answer (Situation, Task, Action with specific technical decisions & trade-offs, and measurable Result) directly answering THIS question:
+   - Situation & Task: The real-world production or operational context, high stakes, and ownership challenge.
+   - Action: Concrete architectural/engineering decisions made, specific tools or frameworks utilized, trade-offs navigated, and proactive collaboration.
+   - Result: Quantified impact (latency, throughput, cost reduction, error rate, or delivery velocity) and positive organizational value.
+   It must sound like a top 1% candidate speaking confidently and fluently in an executive interview. NEVER use brackets or generic placeholders like [Feature] or [Metric].
+3. "tip": A sharp, tactical coaching tip or critical pitfall to avoid for this specific question.
+
+Return ONLY a valid JSON object with this exact shape:
+{
+  "goal": "the interviewer hiring intent",
+  "modelAnswer": "full cohesive 10/10 STAR candidate answer",
+  "tip": "practical tip or pitfall"
+}`;
+
+        const raw = await generateConfiguredText(req, res, prompt, 'live-interview-guide', {
+            temperature: regenerate ? 0.5 : 0.3,
+            maxTokens: 900,
+            timeoutMs: 30_000,
+        });
+        const parsed = extractJson(raw) || {};
+        const goal = String(parsed.goal || parsed.question_intent || parsed.intent || '').replace(/\s+/g, ' ').trim().slice(0, 250);
+        const modelAnswer = String(parsed.modelAnswer || parsed.model_answer || parsed.answer || '').replace(/\s+/g, ' ').trim().slice(0, 1800);
+        const tip = String(parsed.tip || parsed.answer_tip || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+
+        res.setHeader('Cache-Control', 'no-store, private');
+        return res.json({ goal, modelAnswer, tip });
     } catch (error) {
         return sendLiveInterviewError(res, error);
     }

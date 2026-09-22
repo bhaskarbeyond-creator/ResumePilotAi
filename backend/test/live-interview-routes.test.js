@@ -10,6 +10,20 @@ const InMemoryRepository = require('../repositories/InMemoryRepository');
 const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 
 function modelResponse(prompt) {
+    if (prompt.includes('Craft the ideal 10/10 STAR response guide')) {
+        if (prompt.includes('REGENERATION DIRECTIVE')) {
+            return {
+                goal: 'Regenerated goal evaluating architectural alternatives for the question',
+                modelAnswer: 'Alternative 10/10 STAR: In my role as Senior React Developer, I designed an event-driven architecture that dropped p99 latency by 58%.',
+                tip: 'State why you preferred this alternative architecture.',
+            };
+        }
+        return {
+            goal: 'Evaluating delivery judgment under production pressure',
+            modelAnswer: 'In my role as Senior React Developer, I engineered route-level code splitting that improved performance by 40%.',
+            tip: 'Focus on measurable outcomes and technical trade-offs.',
+        };
+    }
     if (prompt.includes('Create a candid, supportive final mock-interview report')) {
         return {
             overall_score: 84,
@@ -199,6 +213,29 @@ test('live interview routes are authenticated, owner-scoped, revision-safe, and 
             .set('x-test-user', 'candidate-a');
         assert.equal(abandoned.status, 200);
         assert.equal(abandoned.body.deleted, true);
+
+        // Live Interview Guide (Initial & Regenerate)
+        const guideUnauth = await request(app)
+            .post('/api/live-interview/guide')
+            .send({ question: 'How do you optimize React?' });
+        assert.equal(guideUnauth.status, 401);
+
+        const guideAuth = await request(app)
+            .post('/api/live-interview/guide')
+            .set('x-test-user', 'candidate-a')
+            .send({ question: 'How do you optimize React apps for low-bandwidth networks?', role: 'Senior React Developer' });
+        assert.equal(guideAuth.status, 200);
+        assert.match(guideAuth.body.modelAnswer, /code splitting/i);
+        assert.match(guideAuth.body.goal, /delivery judgment/i);
+
+        const guideRegen = await request(app)
+            .post('/api/live-interview/guide')
+            .set('x-test-user', 'candidate-a')
+            .send({ question: 'How do you optimize React apps for low-bandwidth networks?', role: 'Senior React Developer', regenerate: true });
+        assert.equal(guideRegen.status, 200);
+        assert.match(guideRegen.body.modelAnswer, /Alternative 10\/10 STAR/i);
+        assert.match(guideRegen.body.modelAnswer, /dropped p99 latency by 58%/i);
+        assert.match(guideRegen.body.goal, /evaluating architectural alternatives/i);
     } finally {
         restoreFetch();
         if (previousKey === undefined) delete process.env.GEMINI_API_KEY;

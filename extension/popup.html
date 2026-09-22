@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ResumePilot Companion</title>
+  <style>
+    body {
+      width: 280px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #090d16;
+      color: #f8fafc;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .logo-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 13px;
+      color: white;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 13px;
+      color: #ffffff;
+    }
+    .status-card {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .status-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-desc {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .domain-list {
+      font-size: 10px;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 12px;
+    }
+    .domain-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .domain-item:last-child {
+      margin-bottom: 0;
+    }
+    .badge {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    button {
+      width: 100%;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-badge">R</div>
+    <div class="title">ResumePilot Companion</div>
+  </div>
+
+  <div class="status-card">
+    <div class="status-title">✓ Auto-Permissions Active</div>
+    <div class="status-desc">Microphone & Camera permissions are automatically managed without address bar prompt blocks.</div>
+  </div>
+
+  <div class="domain-list">
+    <div class="domain-item">
+      <span>localhost:*</span>
+      <span class="badge">Allowed</span>
+    </div>
+    <div class="domain-item">
+      <span>airesume.projectdemo.guru</span>
+      <span class="badge">Allowed</span>
+    </div>
+  </div>
+
+  <button id="refreshBtn">Re-apply Permissions</button>
+
+  <script>
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'FORCE_REFRESH_PERMISSIONS' }, () => {
+        const btn = document.getElementById('refreshBtn');
+        btn.textContent = 'Permissions Re-applied ✓';
+        setTimeout(() => { btn.textContent = 'Re-apply Permissions'; }, 1800);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -47,3 +47,12 @@ export function abandonLiveInterviewSession(sessionId, options = {}) {
         timeoutMs: options.timeoutMs || 20_000,
     });
 }
+
+export function getLiveAnswerGuide(input, options = {}) {
+    return authenticatedJsonRequest('/api/live-interview/guide', {
+        method: 'POST',
+        body: input,
+        signal: options.signal,
+        timeoutMs: options.timeoutMs || 30_000,
+    });
+}

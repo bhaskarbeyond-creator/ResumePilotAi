@@ -36,6 +36,7 @@ const stubPlugin = {
               export const submitLiveInterviewTurn = (...args) => globalThis.__liveApi.turn(...args);
               export const completeLiveInterviewSession = (...args) => globalThis.__liveApi.complete(...args);
               export const abandonLiveInterviewSession = (...args) => globalThis.__liveApi.abandon(...args);
+              export const getLiveAnswerGuide = (...args) => (globalThis.__liveApi.guide ? globalThis.__liveApi.guide(...args) : Promise.resolve({ goal: 'Goal', modelAnswer: 'Answer', tip: 'Tip' }));
             `;
         }
         if (/\/src\/conf\/fire(\.\w+)?(\?.*)?$/.test(id)) return 'export default { auth: () => ({ currentUser: null }) };';
@@ -175,6 +176,12 @@ test('live face-to-face UI preserves a failed answer, supports text-only fallbac
         click(testMedia);
         await wait();
         assert.ok(text(rootNode).includes('Camera or microphone access was denied'), 'permission denial keeps text-only practice available');
+        const textModeBtn = Array.from(rootNode.querySelectorAll('button')).find(button => text(button).includes('Continue in Text Mode'));
+        assert.ok(textModeBtn, 'Continue in Text Mode button is rendered');
+        const diagBtn = Array.from(rootNode.querySelectorAll('button')).find(button => text(button).includes('Why am I seeing this despite enabling in browser?'));
+        assert.ok(diagBtn, 'Diagnostic guidance button is rendered');
+        click(diagBtn);
+        assert.ok(text(rootNode).includes('Windows 10/11 Privacy Master Switch'), 'explains Windows Settings privacy toggle');
         const role = Array.from(rootNode.querySelectorAll('button')).find(button => text(button).trim() === 'Frontend Developer');
         click(role);
         const start = Array.from(rootNode.querySelectorAll('button')).find(button => text(button).includes('Start live interview'));
@@ -182,6 +189,7 @@ test('live face-to-face UI preserves a failed answer, supports text-only fallbac
         await wait();
 
         assert.ok(text(rootNode).includes('Face-to-face interview'));
+        assert.ok(text(rootNode).includes('Auto voice: ON'), 'Auto voice is ON by default');
         assert.ok(text(rootNode).includes('Speech-to-text is unavailable; typing works normally.'), 'text fallback stays usable without browser STT');
         assert.equal(calls[0][0], 'start');
         assert.equal(calls[0][1].role, 'Frontend Developer');
@@ -217,6 +225,9 @@ test('live face-to-face UI preserves a failed answer, supports text-only fallbac
         const saved = JSON.parse(localStorage.getItem('interviewHistory:live-ui-user') || '[]');
         assert.equal(saved.length, 1);
         assert.equal(saved[0].isLiveInterview, true);
+        assert.ok(Array.isArray(saved[0].transcript), 'saved history preserves turn transcript');
+        assert.ok(text(rootNode).includes('Practice This Role Again'), 'operational retake button is rendered');
+        assert.ok(text(rootNode).includes('Choose Another Role'), 'operational change role button is rendered');
         assert.equal(localStorage.getItem('interviewSession:live-ui-user'), null, 'server-session recovery pointer is cleared after completion');
     } finally {
         if (app) await closeLiveTestApp(app);

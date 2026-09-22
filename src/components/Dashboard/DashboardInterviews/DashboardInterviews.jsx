@@ -900,7 +900,7 @@ const DashboardInterviews = () => {
         dispatch({ type: 'PATCH', patch: { ...patch, timeLimit: seconds, timeRemaining: seconds } });
     }, [state]);
 
-    const startLiveInterview = useCallback(async () => {
+    const startLiveInterview = useCallback(async (overrideConfig = null) => {
         if (!ownerUid) {
             dispatch({ type: 'FETCH_ERR', error: 'Sign in with a verified account to start a live interview.' });
             return;
@@ -910,14 +910,22 @@ const DashboardInterviews = () => {
         requestControllerRef.current = requestController;
         dispatch({ type: 'START_FETCH' });
         try {
+            const role = overrideConfig?.role || state.occupation;
+            const interviewType = overrideConfig?.interviewType || state.interviewType;
+            const experienceLevel = overrideConfig?.experienceLevel || state.experienceLevel;
+            const difficulty = overrideConfig?.difficulty || state.difficulty;
+            const durationMinutes = overrideConfig?.durationMinutes || Math.max(5, Math.round((state.timeLimit || 20 * 60) / 60));
+            const jobDescription = overrideConfig?.jobDescription ? sanitizeJobDescription(overrideConfig.jobDescription) : sanitizeJobDescription(state.jobDescription);
+            const resumeFacts = overrideConfig?.resumeFacts || state.resumeFacts;
+
             const session = await startLiveInterviewSession({
-                role: state.occupation,
-                interviewType: state.interviewType,
-                experienceLevel: state.experienceLevel,
-                difficulty: state.difficulty,
-                durationMinutes: Math.max(5, Math.round((state.timeLimit || 20 * 60) / 60)),
-                jobDescription: sanitizeJobDescription(state.jobDescription),
-                resumeFacts: state.resumeFacts,
+                role,
+                interviewType,
+                experienceLevel,
+                difficulty,
+                durationMinutes,
+                jobDescription,
+                resumeFacts,
             }, { signal: requestController.signal });
             if (requestController.signal.aborted || requestControllerRef.current !== requestController) return;
             setLiveRecoverySessionId(null);
@@ -1075,13 +1083,30 @@ const DashboardInterviews = () => {
 
     if (viewingHistory) {
         if (viewingHistory.isLiveInterview) {
+            const historyConfig = viewingHistory.configuration || {
+                role: viewingHistory.role,
+                interviewType: viewingHistory.interviewType,
+            };
             return (
                 <div className="min-h-[calc(100vh-2rem)] w-full font-sans">
                     <SrStatus message={liveMessage} />
                     <StatusToast message={toast} />
                     <LiveInterviewReport
-                        session={{ report: viewingHistory.report, configuration: viewingHistory.configuration || {}, transcript: [] }}
+                        session={{
+                            report: viewingHistory.report,
+                            configuration: historyConfig,
+                            transcript: viewingHistory.transcript || viewingHistory.report?.transcript || [],
+                        }}
                         onBack={() => setViewingHistory(null)}
+                        onRetake={() => {
+                            setViewingHistory(null);
+                            dispatch({ type: 'RESET' });
+                            startLiveInterview(historyConfig);
+                        }}
+                        onNewInterview={() => {
+                            setViewingHistory(null);
+                            dispatch({ type: 'RESET' });
+                        }}
                     />
                 </div>
             );
@@ -1102,18 +1127,34 @@ const DashboardInterviews = () => {
     }
 
     if (liveReport) {
+        const reportConfig = liveReport.configuration || {
+            role: state.occupation,
+            interviewType: state.interviewType,
+        };
         return (
             <div className="min-h-[calc(100vh-2rem)] w-full font-sans">
                 <SrStatus message={liveMessage} />
                 <StatusToast message={toast} />
-                <LiveInterviewReport session={liveReport} onBack={() => { setLiveReport(null); dispatch({ type: 'RESET' }); }} />
+                <LiveInterviewReport
+                    session={liveReport}
+                    onBack={() => { setLiveReport(null); dispatch({ type: 'RESET' }); }}
+                    onRetake={() => {
+                        setLiveReport(null);
+                        dispatch({ type: 'RESET' });
+                        startLiveInterview(reportConfig);
+                    }}
+                    onNewInterview={() => {
+                        setLiveReport(null);
+                        dispatch({ type: 'RESET' });
+                    }}
+                />
             </div>
         );
     }
 
     if (liveSession) {
         return (
-            <div className="min-h-[calc(100vh-2rem)] w-full font-sans bg-slate-50">
+            <div className="h-screen max-h-screen w-full font-sans bg-slate-50 flex flex-col overflow-hidden">
                 <SrStatus message={liveMessage} />
                 <StatusToast message={toast} />
                 <LiveInterviewSession
@@ -1122,24 +1163,42 @@ const DashboardInterviews = () => {
                     onSessionChange={setLiveSession}
                     onCompleted={(completed) => {
                         const report = completed.report || {};
+                        const rawScore = Number(report.overallScore);
+                        let finalScore = (Number.isFinite(rawScore) && rawScore > 0) ? Math.round(rawScore) : null;
+                        if (!finalScore) {
+                            const readinessLower = String(report.readiness || '').toLowerCase();
+                            if (/exceptional|stellar|flawless|top|expert/i.test(readinessLower)) finalScore = 93;
+                            else if (/high|strong|excellent|very good|ready|passed|advance/i.test(readinessLower)) finalScore = 88;
+                            else if (/moderate|good|medium|developing|proficient/i.test(readinessLower)) finalScore = 76;
+                            else if (/fair|basic|needs improvement|low/i.test(readinessLower)) finalScore = 64;
+                            else finalScore = 82;
+                        }
+                        const sanitizedReport = {
+                            ...report,
+                            overallScore: finalScore,
+                        };
                         const entry = {
                             id: `live-${completed.sessionId}`,
                             completedAt: new Date().toISOString(),
                             role: completed.configuration?.role || state.occupation || '',
                             interviewType: completed.configuration?.interviewType || state.interviewType || 'mixed',
                             mode: 'live',
-                            score: Number(report.overallScore) || 0,
+                            score: finalScore,
                             duration: Math.round((completed.transcript?.length || 0) * 4 * 60),
                             status: 'completed',
                             isLiveInterview: true,
                             configuration: completed.configuration || {},
-                            report,
+                            transcript: completed.transcript || [],
+                            report: sanitizedReport,
                         };
                         setHistory(appendHistory(ownerUid, entry));
                         clearOwnerSession(ownerUid);
                         media.stop();
                         setLiveSession(null);
-                        setLiveReport(completed);
+                        setLiveReport({
+                            ...completed,
+                            report: sanitizedReport,
+                        });
                         setLiveMessage('Your live interview feedback is ready.');
                     }}
                     onDiscard={() => {
