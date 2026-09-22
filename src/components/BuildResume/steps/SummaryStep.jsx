@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaMagic, FaUserCheck, FaBolt, FaCheck, FaTimes, FaLightbulb } from 'react-icons/fa';
+import { FaMagic, FaUserCheck, FaBolt, FaCheck, FaTimes, FaLightbulb, FaCopy, FaTrash } from 'react-icons/fa';
 import RichTextEditor from './components/RichTextEditor';
 import StepShell from '../components/StepShell.jsx';
 import AiPromptCard from '../components/AiPromptCard.jsx';
 import { useAiAssist } from '../ai/useAiAssist.js';
 import { canRunAssistOperation } from '../ai/aiContract.js';
-import { calculateAtsScore } from '../../../utils/atsScore';
+import { calculateAtsScore, stripHtml } from '../../../utils/atsScore';
+import { hasMeaningfulText } from '../../../engine/hybrid/utils/contentSanitizer';
 import { getCandidateContext } from '../../../utils/candidateContext';
 import { getDynamicPlaceholder } from '../../../utils/dynamicPlaceholders';
 import { calculateYearsOfExperience } from '../../../utils/resumeData.js';
 import { getProfileOfUser } from '../../../services/api/platform.js';
+import { saveProfile } from '../../../services/profilePersistence.js';
 import fire from '../../../conf/fire.js';
 
 const TONES = [
@@ -23,7 +25,7 @@ const TONES = [
 /**
  * SummaryStep — Executive Bio & Professional Summary with 10/10 Parity to Master Profile Settings.
  * Synthesizes full career history, education, skills, and projects with tone selection,
- * 1-click Master Profile bio import, and safe AiPromptCard draft review (zero silent overwrites).
+ * bidirectional Master Profile bio import/export, and safe AiPromptCard draft review (zero silent overwrites).
  */
 const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const { t } = useTranslation('common');
@@ -34,38 +36,69 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const targetJd = resumeData.targetJobDescription || '';
 
     const [summary, setSummary] = useState(resumeData.summary || '');
-    const [charCount, setCharCount] = useState(0);
+    const [charCount, setCharCount] = useState(() => hasMeaningfulText(resumeData.summary) ? stripHtml(resumeData.summary).length : 0);
     const [selectedTone, setSelectedTone] = useState('balanced');
     const [masterBio, setMasterBio] = useState('');
     const [showImportConfirm, setShowImportConfirm] = useState(false);
+    const [showSaveProfileConfirm, setShowSaveProfileConfirm] = useState(false);
+    const [isSavingToProfile, setIsSavingToProfile] = useState(false);
+    const [summaryCopied, setSummaryCopied] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const [syncNotice, setSyncNotice] = useState(null);
     const ai = useAiAssist();
 
-    // Load Master Profile Executive Bio for seamless 1-click import
+    // Load Master Profile Executive Bio with async auth-listener and profileUpdated event subscription
     useEffect(() => {
         let isMounted = true;
-        const user = fire.auth().currentUser;
-        if (user?.uid) {
-            getProfileOfUser(user.uid).then((prof) => {
+        const loadMasterBio = async (uid) => {
+            if (!uid) return;
+            try {
+                const prof = await getProfileOfUser(uid);
                 if (isMounted && prof) {
-                    const bioText = String(prof.summary || prof.bio || '').trim();
+                    const bioText = stripHtml(prof.summary || prof.bio || '').trim();
                     if (bioText) setMasterBio(bioText);
                 }
-            }).catch(() => {});
-        }
-        return () => { isMounted = false; };
+            } catch {
+                // Ignore profile load error
+            }
+        };
+
+        const current = fire.auth().currentUser;
+        if (current?.uid) loadMasterBio(current.uid);
+
+        const unsubscribe = fire.auth().onAuthStateChanged((user) => {
+            if (user?.uid) loadMasterBio(user.uid);
+        });
+
+        const handleProfileUpdated = (e) => {
+            if (isMounted && e.detail) {
+                const bioText = stripHtml(e.detail.summary || e.detail.bio || '').trim();
+                if (bioText) setMasterBio(bioText);
+            }
+        };
+        window.addEventListener('profileUpdated', handleProfileUpdated);
+
+        return () => {
+            isMounted = false;
+            unsubscribe();
+            window.removeEventListener('profileUpdated', handleProfileUpdated);
+        };
     }, []);
 
     useEffect(() => {
         if (resumeData.summary !== undefined) {
             setSummary(resumeData.summary || '');
-            setCharCount(String(resumeData.summary || '').replace(/<[^>]*>/g, '').length);
+            const count = hasMeaningfulText(resumeData.summary) ? stripHtml(resumeData.summary).length : 0;
+            setCharCount(count);
         }
     }, [resumeData.summary]);
 
     const handleSummaryChange = (text) => {
+        const meaningful = hasMeaningfulText(text);
+        const count = meaningful ? stripHtml(text).length : 0;
         setSummary(text);
-        setCharCount(text.replace(/<[^>]*>/g, '').length);
-        updateResumeData({ summary: text });
+        setCharCount(count);
+        updateResumeData({ summary: meaningful ? text : '' });
     };
 
     const aiReadiness = canRunAssistOperation('generate-summary', { resumeData, targetJd });
@@ -82,7 +115,7 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const handleUseDraft = (text) => {
         const clean = String(text || '').trim();
         setSummary(clean);
-        setCharCount(clean.replace(/<[^>]*>/g, '').length);
+        setCharCount(clean.length);
         updateResumeData({ summary: clean });
         ai.reset();
     };
@@ -100,12 +133,12 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
     const handleImportMasterBio = () => {
         if (!masterBio) return;
-        const currentPlain = String(summary || '').replace(/<[^>]*>/g, '').trim();
+        const currentPlain = stripHtml(summary).trim();
         if (currentPlain.length > 0 && currentPlain !== masterBio) {
             setShowImportConfirm(true);
         } else {
             setSummary(masterBio);
-            setCharCount(masterBio.replace(/<[^>]*>/g, '').length);
+            setCharCount(masterBio.length);
             updateResumeData({ summary: masterBio });
         }
     };
@@ -113,13 +146,68 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const confirmImportMasterBio = () => {
         if (!masterBio) return;
         setSummary(masterBio);
-        setCharCount(masterBio.replace(/<[^>]*>/g, '').length);
+        setCharCount(masterBio.length);
         updateResumeData({ summary: masterBio });
         setShowImportConfirm(false);
     };
 
+    const handleSaveToMasterProfile = () => {
+        const currentPlain = stripHtml(summary).trim();
+        if (!currentPlain || currentPlain.length < 20) return;
+        if (masterBio && masterBio !== currentPlain) {
+            setShowSaveProfileConfirm(true);
+        } else {
+            executeSaveToMasterProfile(currentPlain);
+        }
+    };
+
+    const executeSaveToMasterProfile = async (bioText) => {
+        const user = fire.auth().currentUser;
+        if (!user?.uid) return;
+        setIsSavingToProfile(true);
+        try {
+            const currentProfile = await getProfileOfUser(user.uid);
+            const baseRevision = Number(currentProfile?.revision) || 0;
+            const updatedProfile = {
+                ...(currentProfile || {}),
+                summary: bioText,
+            };
+            const result = await saveProfile(user.uid, updatedProfile, baseRevision);
+            if (result.success) {
+                setMasterBio(bioText);
+                setShowSaveProfileConfirm(false);
+                setSyncNotice('Saved as Master Profile Executive Bio!');
+                setTimeout(() => setSyncNotice(null), 3000);
+                window.dispatchEvent(new CustomEvent('profileUpdated', {
+                    detail: result.profile || { ...updatedProfile, revision: result.revision }
+                }));
+            }
+        } catch (err) {
+            console.error('Failed to save to Master Profile:', err);
+        } finally {
+            setIsSavingToProfile(false);
+        }
+    };
+
+    const handleCopy = () => {
+        const plain = stripHtml(summary).trim();
+        if (!plain) return;
+        navigator.clipboard.writeText(plain).then(() => {
+            setSummaryCopied(true);
+            setTimeout(() => setSummaryCopied(false), 2000);
+        }).catch(() => {});
+    };
+
+    const handleClear = () => {
+        setSummary('');
+        setCharCount(0);
+        updateResumeData({ summary: '' });
+        setShowClearConfirm(false);
+    };
+
     const handleSave = () => {
-        const plainText = String(summary || '').replace(/<[^>]*>/g, '').trim();
+        const meaningful = hasMeaningfulText(summary);
+        const plainText = meaningful ? stripHtml(summary).trim() : '';
         const completedSteps = [...(resumeData.completedSteps || [])];
         let updatedCompletedSteps = null;
 
@@ -130,7 +218,7 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
         }
 
         updateResumeData({
-            summary,
+            summary: meaningful ? summary : '',
             ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
         });
     };
@@ -152,7 +240,8 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     useEffect(() => { completedStepsRef.current = resumeData?.completedSteps || []; }, [resumeData?.completedSteps]);
     useEffect(() => () => {
         const sum = summaryRef.current;
-        const plainText = String(sum || '').replace(/<[^>]*>/g, '').trim();
+        const meaningful = hasMeaningfulText(sum);
+        const plainText = meaningful ? stripHtml(sum).trim() : '';
         const completedSteps = [...(completedStepsRef.current || [])];
         let updatedCompletedSteps = null;
         if (plainText.length >= 20 && !completedSteps.includes(8)) {
@@ -161,7 +250,7 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
             updatedCompletedSteps = completedSteps.filter((step) => step !== 8);
         }
         updateResumeDataRef.current({
-            summary: sum,
+            summary: meaningful ? sum : '',
             ...(updatedCompletedSteps ? { completedSteps: updatedCompletedSteps } : {}),
         });
     }, []);
@@ -174,7 +263,11 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     };
 
     const progress = getProgressStatus();
-    const hasSummary = charCount >= 80;
+    const currentPlain = stripHtml(summary).trim();
+    const hasSummary = currentPlain.length >= 20;
+    const isSyncedWithMaster = Boolean(masterBio && currentPlain && currentPlain === masterBio);
+    const canSaveToProfile = Boolean(currentPlain.length >= 20 && currentPlain !== masterBio);
+    const canImportFromProfile = Boolean(masterBio && masterBio !== currentPlain);
 
     // Career evidence counts
     const rawRoles = Array.isArray(resumeData.employments) ? resumeData.employments
@@ -197,7 +290,7 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
     const atsResult = calculateAtsScore(resumeData, { jobDescription: targetJd });
     const jdMatch = atsResult?.jdMatch;
 
-    const wordCount = summary.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    const wordCount = currentPlain ? currentPlain.split(/\s+/).filter(Boolean).length : 0;
 
     return (
         <StepShell
@@ -230,7 +323,7 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     </div>
                 </div>
 
-                {/* 10/10 Parity Action Toolbar: Tone Selector + AI Generator + Master Profile Import */}
+                {/* 10/10 Parity Action Toolbar: Tone Selector + AI Generator + Master Profile Bidirectional Sync */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
                     {/* Tone Selection Pills */}
                     <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} role="group" aria-label="Tone preference">
@@ -254,7 +347,36 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
-                        {masterBio && (
+                        {charCount > 0 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={handleCopy}
+                                    title="Copy summary to clipboard"
+                                    className="px-2.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                >
+                                    {summaryCopied ? <FaCheck className="w-3.5 h-3.5 text-emerald-600" /> : <FaCopy className="w-3.5 h-3.5 text-slate-500" />}
+                                    <span>{summaryCopied ? 'Copied!' : 'Copy'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowClearConfirm(true)}
+                                    title="Clear summary"
+                                    className="p-2 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center shrink-0 cursor-pointer"
+                                >
+                                    <FaTrash className="w-3.5 h-3.5" />
+                                </button>
+                            </>
+                        )}
+
+                        {isSyncedWithMaster && (
+                            <span className="px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0">
+                                <FaCheck className="w-3 h-3 text-emerald-600" />
+                                <span>Profile Bio Synced</span>
+                            </span>
+                        )}
+
+                        {canImportFromProfile && (
                             <button
                                 type="button"
                                 onClick={handleImportMasterBio}
@@ -265,6 +387,20 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 <span>Import from Profile</span>
                             </button>
                         )}
+
+                        {canSaveToProfile && (
+                            <button
+                                type="button"
+                                onClick={handleSaveToMasterProfile}
+                                disabled={isSavingToProfile}
+                                title="Save this resume summary as your permanent Master Profile Executive Bio"
+                                className="w-full sm:w-auto px-3 py-2 bg-white hover:bg-emerald-50/70 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                            >
+                                <FaCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>{isSavingToProfile ? 'Saving...' : 'Save to Profile'}</span>
+                            </button>
+                        )}
+
                         <button
                             type="button"
                             onClick={runDraft}
@@ -277,6 +413,14 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         </button>
                     </div>
                 </div>
+
+                {/* Feedback Notices */}
+                {syncNotice && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2 animate-in fade-in duration-200">
+                        <FaCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="font-semibold">{syncNotice}</span>
+                    </div>
+                )}
 
                 {/* Import Confirmation Dialog */}
                 {showImportConfirm && (
@@ -297,6 +441,56 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
                                 type="button"
                                 onClick={() => setShowImportConfirm(false)}
                                 className="px-3 py-1.5 bg-white hover:bg-amber-100/60 border border-amber-300 text-amber-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Save to Profile Confirmation Dialog */}
+                {showSaveProfileConfirm && (
+                    <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                        <div className="flex items-center gap-2">
+                            <FaUserCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                            <span>Replace your saved Master Profile Executive Bio with this resume summary?</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => executeSaveToMasterProfile(currentPlain)}
+                                disabled={isSavingToProfile}
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                                {isSavingToProfile ? 'Saving...' : 'Confirm Save'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowSaveProfileConfirm(false)}
+                                className="px-3 py-1.5 bg-white hover:bg-indigo-100/60 border border-indigo-300 text-indigo-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Clear Confirmation Dialog */}
+                {showClearConfirm && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-in fade-in duration-200">
+                        <span className="font-medium">Clear your executive summary for this resume?</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={handleClear}
+                                className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                            >
+                                Confirm Clear
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowClearConfirm(false)}
+                                className="px-2.5 py-1 bg-white hover:bg-amber-100/60 border border-amber-300 text-amber-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -370,4 +564,3 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
 };
 
 export default SummaryStep;
-

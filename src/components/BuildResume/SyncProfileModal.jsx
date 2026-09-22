@@ -4,6 +4,7 @@ import { getProfileOfUser } from '../../services/api/platform';
 import { saveProfile } from '../../services/profilePersistence';
 import { normalizeProfileData } from '../../utils/profileData';
 import { normalizeResumeData } from '../../utils/resumeData';
+import { stripHtml } from '../../utils/atsScore';
 
 /**
  * SyncProfileModal — Bidirectional synchronization between Master Profile and Resume.
@@ -487,7 +488,7 @@ export default function SyncProfileModal({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                 {[
                                     { key: 'contact', title: 'Contact & Identity', desc: `${profile?.firstname || ''} ${profile?.lastname || ''} (${profile?.email || ''})` },
-                                    { key: 'summary', title: 'Executive Bio / Summary', desc: profile?.summary ? `${profile.summary.slice(0, 60)}...` : 'No summary recorded' },
+                                    { key: 'summary', title: 'Executive Bio / Summary', desc: (profile?.summary && stripHtml(profile.summary).length > 0) ? `${stripHtml(profile.summary).slice(0, 60)}...` : 'No summary recorded' },
                                     { key: 'skills', title: 'Skills Bank', desc: `${(profile?.skills || []).length} skill(s) saved in profile` },
                                     { key: 'certifications', title: 'Certifications', desc: `${(profile?.certifications || []).length} credential(s) in profile` },
                                     { key: 'hobbies', title: 'Hobbies & Interests', desc: `${(profile?.hobbies || []).length} interest(s) in profile` },

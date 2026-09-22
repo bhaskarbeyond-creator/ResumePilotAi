@@ -19,10 +19,30 @@ import SubscriptionModal from './SubscriptionModal';
 import { inferCountryFromCity } from '../../../utils/locationHelper';
 import { normalizeProfileData, normalizeProfileImage } from '../../../utils/profileData';
 import { calculateYearsOfExperience } from '../../../utils/resumeData';
+import { getCandidateContext } from '../../../utils/candidateContext';
+import { stripHtml } from '../../../utils/atsScore';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
 import { PROJECT_TYPES, GET_CURATED_PROJECT_IDEAS } from '../../BuildResume/steps/ProjectsStep';
 import { CERT_TYPES, GET_CURATED_CERTIFICATION_IDEAS } from '../../BuildResume/steps/CertificationsStep';
 import { ACHIEVEMENT_TYPES, SUGGESTION_CHIPS, TYPE_STYLE_MAP } from '../../BuildResume/steps/AchievementsStep';
+
+const htmlToPlainText = (val) => {
+    if (!val) return '';
+    if (!/<[^>]*>/g.test(val)) return String(val).trim();
+    return String(val)
+        .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&#160;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+};
 
 const normalizeProfileForSave = value => {
     const authEmail = fire.auth().currentUser?.email;
@@ -190,11 +210,11 @@ const SUBTAB_CONFIG = {
         name: 'Executive Bio',
         title: 'Executive Bio & Professional Summary',
         subtitle: 'Your synthesized 3-4 sentence elevator pitch, generated from your complete work history, education, skills, and projects above.',
-        statusBadge: (p) => p.summary?.trim()?.length > 20 ? 'Active' : 'Missing',
-        getCount: (p) => (p.summary?.trim()?.length > 20 ? '✓' : undefined),
-        isComplete: (p) => Boolean(p.summary && p.summary.trim().length > 20),
+        statusBadge: (p) => stripHtml(p.summary).length >= 20 ? 'Active' : 'Missing',
+        getCount: (p) => (stripHtml(p.summary).length >= 20 ? '✓' : undefined),
+        isComplete: (p) => Boolean(p.summary && stripHtml(p.summary).length >= 20),
         computeGaps: (p) => {
-            if (!p.summary || p.summary.trim().length <= 20) return ['Write a 2-4 sentence summary of your career focus and unique strengths'];
+            if (!p.summary || stripHtml(p.summary).length < 20) return ['Write a 2-4 sentence summary of your career focus and unique strengths'];
             return [];
         },
         atsTips: [
@@ -375,6 +395,9 @@ function DashboardSettings(_props) {
         }
     }, [location.search]);
     const [summaryTone, setSummaryTone] = useState('balanced');
+    const [summaryAiDraft, setSummaryAiDraft] = useState(null);
+    const [bioCopied, setBioCopied] = useState(false);
+    const [showClearBioConfirm, setShowClearBioConfirm] = useState(false);
     const [_skillFilter] = useState('all');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [profileSaveState, setProfileSaveState] = useState('loading');
@@ -688,7 +711,7 @@ function DashboardSettings(_props) {
                     linkedinUrl: profileData.linkedinUrl || '',
                     githubUrl: profileData.githubUrl || '',
                     websiteUrl: profileData.websiteUrl || '',
-                    summary: profileData.summary || '',
+                    summary: htmlToPlainText(profileData.summary || ''),
                     selectedImage: profileData.selectedImage || profileData.image || null,
                     isLinkedinConnected: !!(profileData.isLinkedinConnected || profileData.linkedinUrl),
                     linkedinConnectedName: profileData.linkedinConnectedName || profileData.name || '',
@@ -1112,12 +1135,10 @@ function DashboardSettings(_props) {
     // Summary rewriting and AI Executive Bio generation
     const handleWriteAiSummary = async () => {
         const cleanText = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const candCtx = getCandidateContext(profile);
         const latestWorkRole = cleanText(profile.workExperiences?.[0]?.jobTitle);
-        const primaryRole = cleanText(profile.occupation) || latestWorkRole;
-        if (!primaryRole) {
-            triggerNotification('Enter your occupation or a work-history role before requesting an AI summary.', 'error');
-            return;
-        }
+        const primaryRole = candCtx.target.role || cleanText(profile.occupation) || latestWorkRole;
+
         const yearsExp = calculateYearsOfExperience(profile.workExperiences || []);
         const expDetails = (profile.workExperiences || []).map(work => {
             const role = cleanText(work?.jobTitle);
@@ -1135,27 +1156,47 @@ function DashboardSettings(_props) {
         const projectsDetails = (profile.projects || []).map(project => [cleanText(project?.title || project?.name), cleanText(project?.description)].filter(Boolean).join(': ')).filter(Boolean).join(' | ');
         const existingText = cleanText(profile.summary);
 
+        const hasAnyEvidence = primaryRole || expDetails || eduDetails || skillsDetails || existingText;
+        if (!hasAnyEvidence) {
+            triggerNotification('Add your target role, work history, or education before generating an AI bio.', 'error');
+            return;
+        }
+
+        const sourceFacts = [
+            primaryRole ? `Target Role: ${primaryRole}` : '',
+            candCtx.facts.experienceYears ? `Tenure: ${candCtx.facts.experienceYears} years` : (yearsExp ? `Tenure: ${yearsExp} years` : ''),
+            expDetails ? `Work History: ${expDetails}` : '',
+            eduDetails ? `Education: ${eduDetails}` : '',
+            skillsDetails ? `Skills: ${skillsDetails}` : '',
+            certsDetails ? `Certifications: ${certsDetails}` : '',
+            projectsDetails ? `Projects: ${projectsDetails}` : '',
+        ].filter(Boolean).join(' | ');
+
         setIsAiGenerating(true);
         try {
             const data = await runProfileAi('generate-summary', {
                 name: [cleanText(profile.firstname), cleanText(profile.lastname)].filter(Boolean).join(' '),
-                jobTitle: primaryRole,
-                occupation: primaryRole,
-                experience: yearsExp,
+                jobTitle: primaryRole || 'Professional',
+                targetRole: primaryRole || 'Professional',
+                occupation: primaryRole || 'Professional',
+                experience: candCtx.facts.experienceYears ? `${candCtx.facts.experienceYears} years` : (yearsExp ? `${yearsExp} years` : ''),
                 workHistory: expDetails,
                 education: eduDetails,
-                skills: skillsDetails,
-                certifications: certsDetails,
-                projects: projectsDetails,
+                skills: (profile.skills || []).map(s => typeof s === 'string' ? s : s?.name || s?.skillName).filter(Boolean).slice(0, 40),
+                certifications: (profile.certifications || []).map(c => typeof c === 'string' ? c : c?.title || c?.name).filter(Boolean).slice(0, 10),
+                projects: (profile.projects || []).map(p => typeof p === 'string' ? p : p?.title || p?.name).filter(Boolean).slice(0, 5),
+                sourceFacts,
                 existingText,
                 tone: summaryTone || 'executive',
+                context: candCtx,
             });
-            const summaryText = data?.summary || data?.description || (typeof data === 'string' ? data : null);
-            if (typeof summaryText !== 'string' || !summaryText.trim()) {
+            const rawSummary = data?.summary || data?.executiveSummary || data?.professionalSummary || data?.bio || data?.description || (typeof data === 'string' ? data : null);
+            const summaryText = typeof rawSummary === 'string' ? stripHtml(rawSummary) : (typeof rawSummary === 'object' && rawSummary ? stripHtml(Object.values(rawSummary).join(' ')) : '');
+            if (!summaryText.trim()) {
                 throw new Error('No summary was returned by AI provider');
             }
-            setProfile(prev => ({ ...prev, summary: summaryText.trim() }));
-            triggerNotification('AI Executive Bio generated successfully!');
+            setSummaryAiDraft(summaryText.trim());
+            triggerNotification('AI Executive Bio draft ready for review!');
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI summary error:', err);
@@ -2148,7 +2189,7 @@ function DashboardSettings(_props) {
                                         if (profile.phone) score += 10;
                                         if (profile.occupation) score += 15;
                                         if (profile.city || profile.country) score += 10;
-                                        if (profile.summary && profile.summary.trim().length > 20) score += 15;
+                                        if (profile.summary && stripHtml(profile.summary).length >= 20) score += 15;
                                         if (profile.workExperiences && profile.workExperiences.length > 0) score += 10;
                                         if (profile.education && profile.education.length > 0) score += 5;
                                         if (profile.skills && profile.skills.length >= 3) score += 10;
@@ -2871,22 +2912,65 @@ function DashboardSettings(_props) {
                         )}
 
                         {/* Sub-Tab 2: Professional Bio / source-grounded summary rewrite */}
-                        {profileSubTab === 'summary' && (
-                            <div className="space-y-4">
-                                <div className="flex flex-col gap-3">
-                                    <div>
-                                        <h3 className="text-sm font-bold text-slate-900 tracking-tight">Executive Bio &amp; Professional Summary</h3>
-                                        <p className="text-xs text-slate-500">Synthesizes your full career history, education, skills, and projects entered above into an authoritative executive overview.</p>
+                        {profileSubTab === 'summary' && (() => {
+                            const plainBio = stripHtml(profile.summary || '').trim();
+                            const bioCharCount = plainBio.length;
+                            const bioWordCount = plainBio ? plainBio.split(/\s+/).filter(Boolean).length : 0;
+                            const getBioProgress = () => {
+                                if (bioCharCount === 0) return { text: 'Empty', color: 'text-slate-400', bar: 'bg-slate-200' };
+                                if (bioCharCount < 100) return { text: 'Getting started', color: 'text-amber-600', bar: 'bg-amber-500' };
+                                if (bioCharCount <= 450) return { text: 'Good length', color: 'text-emerald-600', bar: 'bg-emerald-500' };
+                                return { text: 'Long — consider trimming', color: 'text-amber-600', bar: 'bg-amber-500' };
+                            };
+                            const bioProgress = getBioProgress();
+
+                            const bioRolesCount = (profile.workExperiences || []).length;
+                            const bioSkillsCount = (profile.skills || []).length;
+                            const bioEduCount = (profile.education || []).length;
+                            const bioCertsCount = (profile.certifications || []).length;
+                            const bioYearsExp = calculateYearsOfExperience(profile.workExperiences || []);
+
+                            const handleCopyBio = () => {
+                                if (!plainBio) return;
+                                navigator.clipboard.writeText(plainBio).then(() => {
+                                    setBioCopied(true);
+                                    triggerNotification('Executive Bio copied to clipboard!');
+                                    setTimeout(() => setBioCopied(false), 2000);
+                                }).catch(() => {
+                                    triggerNotification('Failed to copy to clipboard', 'error');
+                                });
+                            };
+
+                            return (
+                                <div className="space-y-5">
+                                    {/* Header & Character Progress Meter */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-base font-bold text-slate-900 tracking-tight">Executive Bio &amp; Professional Summary</h3>
+                                            <p className="text-xs text-slate-500 mt-0.5">Synthesizes your verified career history, education, skills, and projects into an authoritative executive overview for all resumes.</p>
+                                        </div>
+                                        <div className="flex items-center gap-2.5 shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 shadow-2xs">
+                                            <div className="w-24 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className={`h-full ${bioProgress.bar} transition-all duration-300`}
+                                                    style={{ width: `${Math.min(100, (bioCharCount / 400) * 100)}%` }}
+                                                />
+                                            </div>
+                                            <span className={`text-[11px] font-bold ${bioProgress.color}`}>{bioCharCount}/400 · {bioProgress.text}</span>
+                                        </div>
                                     </div>
+
+                                    {/* Action Toolbar: Tone Selector + AI Generator + Copy + Clear */}
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
-                                        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} role="group" aria-label="Tone preference">
                                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0">Tone:</span>
                                             {['balanced', 'concise', 'technical', 'executive'].map((toneKey) => (
                                                 <button
                                                     key={toneKey}
                                                     type="button"
                                                     onClick={() => setSummaryTone(toneKey)}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 ${
+                                                    aria-pressed={summaryTone === toneKey}
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                                                         summaryTone === toneKey
                                                             ? 'bg-indigo-600 text-white shadow-2xs'
                                                             : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -2895,26 +2979,173 @@ function DashboardSettings(_props) {
                                                 </button>
                                             ))}
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleWriteAiSummary}
-                                            disabled={isAiGenerating}
-                                            className="w-full sm:w-auto whitespace-nowrap px-4 py-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2 shrink-0">
-                                            <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
-                                            <span>{isAiGenerating ? 'Generating Bio...' : 'Generate Executive Bio (AI)'}</span>
-                                        </button>
+                                        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                                            {bioCharCount > 0 && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCopyBio}
+                                                        title="Copy Executive Bio to clipboard"
+                                                        className="px-2.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                                    >
+                                                        {bioCopied ? <FaCheck className="w-3.5 h-3.5 text-emerald-600" /> : <FaCopy className="w-3.5 h-3.5 text-slate-500" />}
+                                                        <span>{bioCopied ? 'Copied!' : 'Copy'}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowClearBioConfirm(true)}
+                                                        title="Clear Executive Bio"
+                                                        className="p-2 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 rounded-lg text-xs font-semibold transition-all shadow-2xs flex items-center justify-center shrink-0 cursor-pointer"
+                                                    >
+                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={handleWriteAiSummary}
+                                                disabled={isAiGenerating}
+                                                title="Synthesize profile history into an authoritative Executive Bio"
+                                                className="w-full sm:w-auto whitespace-nowrap px-4 py-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <FaMagic className={`w-3.5 h-3.5 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                                <span>{isAiGenerating ? 'Generating Bio...' : 'Generate Executive Bio (AI)'}</span>
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {/* Career Evidence Digest Badge */}
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                                        <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                            <FaBolt className="w-3 h-3 text-amber-500" />
+                                            <span>Synthesizes:</span>
+                                        </span>
+                                        <span>
+                                            {bioYearsExp ? <strong className="text-slate-700">{bioYearsExp} yrs exp · </strong> : null}
+                                            <strong className="text-slate-700">{bioRolesCount}</strong> {bioRolesCount === 1 ? 'position' : 'positions'} ·{' '}
+                                            <strong className="text-slate-700">{bioSkillsCount}</strong> skills
+                                            {bioEduCount > 0 ? <> · <strong className="text-slate-700">{bioEduCount}</strong> {bioEduCount === 1 ? 'degree' : 'degrees'}</> : null}
+                                            {bioCertsCount > 0 ? <> · <strong className="text-slate-700">{bioCertsCount}</strong> credentials</> : null}
+                                        </span>
+                                    </div>
+
+                                    {/* Clear Confirmation Dialog */}
+                                    {showClearBioConfirm && (
+                                        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                                            <span className="font-semibold">Clear your Executive Bio from Master Profile?</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setProfile(prev => ({ ...prev, summary: '' }));
+                                                        setShowClearBioConfirm(false);
+                                                        triggerNotification('Executive Bio cleared.');
+                                                    }}
+                                                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                                >
+                                                    Confirm Clear
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowClearBioConfirm(false)}
+                                                    className="px-3 py-1.5 bg-white hover:bg-amber-100/60 border border-amber-300 text-amber-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* AI Review / Draft Gate (Invariant 7: Zero Silent Overwrites) */}
+                                    {summaryAiDraft !== null && (
+                                        <div className="p-4 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white shadow-xs space-y-3 animate-in fade-in duration-200">
+                                            <div className="flex items-center justify-between gap-2 border-b border-indigo-100 pb-2.5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
+                                                        <FaMagic className="w-3 h-3" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-bold text-slate-900">AI Executive Bio Draft</h4>
+                                                        <p className="text-[11px] text-slate-500">Synthesized from your verified profile facts · Editable before applying</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSummaryAiDraft(null)}
+                                                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                                    title="Dismiss draft"
+                                                >
+                                                    <FaTimes className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                            <textarea
+                                                value={summaryAiDraft}
+                                                onChange={(e) => setSummaryAiDraft(e.target.value)}
+                                                rows={4}
+                                                className="w-full text-xs p-3 bg-white border border-indigo-200 rounded-lg font-sans leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                                                placeholder="Review and edit the AI draft..."
+                                            />
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                                                <span className="text-[11px] text-slate-500 font-medium">
+                                                    {stripHtml(summaryAiDraft).length} characters · {summaryAiDraft.trim().split(/\s+/).filter(Boolean).length} words
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleWriteAiSummary}
+                                                        disabled={isAiGenerating}
+                                                        className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <FaSyncAlt className={`w-3 h-3 ${isAiGenerating ? 'animate-spin' : ''}`} />
+                                                        <span>Regenerate</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const clean = summaryAiDraft.trim();
+                                                            setProfile(prev => ({ ...prev, summary: clean }));
+                                                            setSummaryAiDraft(null);
+                                                            triggerNotification('Executive Bio applied to Master Profile!');
+                                                        }}
+                                                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <FaCheck className="w-3 h-3" />
+                                                        <span>Apply Bio to Profile</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Editor Textarea Container */}
+                                    <div className="space-y-1.5">
+                                        <textarea
+                                            name="summary"
+                                            value={profile.summary}
+                                            onChange={handleInputChange}
+                                            spellCheck="true"
+                                            rows={7}
+                                            placeholder="Who you are professionally, what you have done, and what you do well — in your own words."
+                                            className="w-full text-sm p-3.5 bg-white border border-slate-200 rounded-lg font-sans leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 focus:outline-none"
+                                        />
+                                        <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-medium">
+                                            <span>{bioWordCount} words</span>
+                                            <span>Recommended: 2–4 sentences (50–90 words)</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Empty State Informational Helper */}
+                                    {bioCharCount === 0 && (
+                                        <div className="p-3.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 text-slate-500 text-xs flex items-start gap-2.5">
+                                            <FaBolt className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                                            <div className="space-y-0.5">
+                                                <p className="font-semibold text-slate-700">Lifelong Master Executive Bio</p>
+                                                <p className="text-[11px] text-slate-500">Your Master Executive Bio automatically pre-populates all new resumes and can be imported with 1-click in the resume builder. Use the AI button above to synthesize your profile history into an authentic overview.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <textarea
-                                    name="summary"
-                                    value={profile.summary}
-                                    onChange={handleInputChange}
-                                    spellCheck="true"
-                                    placeholder="Enter factual profile details, then optionally ask AI to rewrite them without adding claims."
-                                    className="w-full h-52 text-sm p-3.5 bg-white border border-slate-200 rounded-lg font-sans leading-relaxed text-slate-900 shadow-2xs focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/25 focus:outline-none"
-                                />
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {/* Sub-Tab 3: Work History Array */}
                         {profileSubTab === 'experience' && (

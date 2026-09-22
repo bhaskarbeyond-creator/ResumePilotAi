@@ -538,7 +538,7 @@ const BuildResume = () => {
                         typeof l === 'string' ? Boolean(l.trim()) : Boolean(l?.language?.trim() || l?.name?.trim())
                     ));
                 case 'summary':
-                    return Boolean(resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, '').trim().length > 10);
+                    return Boolean(resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim().length >= 20);
                 case 'achievements':
                     return Array.isArray(resumeData.achievements) && resumeData.achievements.some(a => Boolean(
                         a?.title?.trim() || (a?.description && String(a.description).replace(/<[^>]*>/g, '').trim().length > 5)
@@ -631,7 +631,7 @@ const BuildResume = () => {
                 return {
                     title: 'Executive Career Summary',
                     tip: 'Craft a 2–3 sentence high-impact summary capturing your years of domain expertise, core professional strengths, and top delivered impact.',
-                    statusBadge: resumeData.summary?.trim() ? 'Summary drafted ✓' : 'Summary pending',
+                    statusBadge: (resumeData.summary && String(resumeData.summary).replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim().length >= 20) ? 'Summary drafted ✓' : 'Summary pending',
                 };
             case 'achievements':
                 return {

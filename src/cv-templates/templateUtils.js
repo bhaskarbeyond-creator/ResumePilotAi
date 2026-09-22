@@ -121,7 +121,11 @@ export function normalizeTemplateData(input = {}) {
         for (const field of ['firstname', 'lastname', 'name', 'occupation', 'email', 'phone', 'address', 'city', 'country', 'postalcode', 'website', 'linkedin', 'github']) normalized[field] = '';
         normalized.photo = null;
     }
-    if (hidden.has('summary')) normalized.summary = '';
+    const hasMeaningfulSummary = (val) => {
+        if (!val) return false;
+        return String(val).replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' ').trim().length > 0;
+    };
+    if (hidden.has('summary') || !hasMeaningfulSummary(normalized.summary)) normalized.summary = '';
     if (hidden.has('employment') || hidden.has('employments')) normalized.employments = [];
     if (hidden.has('education') || hidden.has('educations')) normalized.educations = [];
     if (hidden.has('skills')) normalized.skills = [];
