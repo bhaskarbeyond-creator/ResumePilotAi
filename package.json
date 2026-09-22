@@ -13,7 +13,7 @@
     "test:security": "npm run test:security:static && npm --prefix backend test",
     "test:security:static": "node --test tests/security-static.test.mjs tests/secret-scanner-efficacy.test.mjs tests/production-delivery-security.test.mjs tests/production-delivery-integration.test.mjs tests/xss.test.mjs tests/mfa-static.test.mjs tests/auth-error-messages.test.mjs",
     "test:ai-settings": "node --test tests/admin-ai-settings.test.mjs backend/test/ai-admin.test.js",
-    "test:interview": "node --test tests/interview-coach.test.mjs tests/interview-coach-hardening.test.mjs tests/interview-coach-lifecycle.test.mjs tests/live-interview-ui.test.mjs",
+    "test:interview": "node --test --test-concurrency=1 tests/interview-coach.test.mjs tests/interview-coach-hardening.test.mjs tests/interview-coach-lifecycle.test.mjs tests/live-interview-ui.test.mjs",
     "test:interview:browser": "node tests/test-interview-coach-browser.mjs",
     "db:verify": "node --test backend/test/database-authority.test.js tests/certification/firestore-zero-static.test.mjs",
     "test:db-parity": "node --test backend/test/database-authority.test.js backend/test/mariadb-migration-gate.test.js tests/certification/firestore-zero-static.test.mjs",

@@ -3,7 +3,7 @@
 // Flow: CREATE -> MariaDB Check -> Hard Reload -> UPDATE -> MariaDB Check -> Hard Reload -> SUSPEND -> MariaDB Check -> Hard Reload -> CLEANUP -> MariaDB Check -> Hard Reload
 
 import { chromium } from 'playwright';
-import admin from 'firebase-admin';
+import admin from '../backend/services/firebaseAdmin.js';
 import { readFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
