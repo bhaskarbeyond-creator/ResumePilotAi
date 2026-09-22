@@ -95,7 +95,7 @@
     "html2pdf.js": "^0.14.0",
     "i18next-http-backend": "^3.0.2",
     "jspdf": "^4.2.1",
-    "lexical": "^0.32.1",
+    "lexical": "^0.49.0",
     "lottie-react": "^2.4.1",
     "mammoth": "^1.12.0",
     "mysql2": "^3.24.2",
