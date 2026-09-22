@@ -7,7 +7,7 @@ export default function HomepageReviews() {
       name: 'Marcus Chen',
       role: 'Staff Engineer at Stripe',
       prev: 'Formerly at Mid-size Fintech',
-      quote: '“The ATS keyword matching is phenomenal. I applied to 12 Staff-level roles with my updated ResumePilot Cv and received 8 direct recruiter callbacks within two weeks.”'
+      quote: '“The ATS keyword matching is phenomenal. I applied to 12 Staff-level roles with my updated IME365 CV and received 8 direct recruiter callbacks within two weeks.”'
     },
     {
       name: 'Sarah Jenkins',
@@ -43,7 +43,7 @@ export default function HomepageReviews() {
             Trusted by 45,000+ Professionals Worldwide
           </h2>
           <p style={{ fontSize: '15px', color: '#64748b', margin: 0 }}>
-            Real stories from candidates who used ResumePilot AI to land roles at top tech companies, startups, and Fortune 500 enterprises.
+            Real stories from candidates who used IME365 to land roles at top tech companies, startups, and Fortune 500 enterprises.
           </p>
         </div>
 

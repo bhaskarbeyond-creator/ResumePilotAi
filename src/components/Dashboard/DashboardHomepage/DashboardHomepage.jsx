@@ -43,7 +43,7 @@ class DashboardHomepage extends Component {
       displayDocuments: [],
       fetchedDocuments: [],
       pageNumber: 1,
-      perPage: 3,
+      perPage: 12,
       favourites: [],
       isfetcing: false,
       isPaginating: false,
@@ -367,6 +367,28 @@ class DashboardHomepage extends Component {
     };
     window.addEventListener('keydown', this.handleGlobalKeyDown);
 
+    this.handleGlobalClick = () => {
+      if (this.state.openDropdownId) {
+        this.setState({ openDropdownId: null });
+      }
+    };
+    window.addEventListener('click', this.handleGlobalClick);
+
+    this.handleWindowFocus = () => {
+      const user = fire.auth().currentUser;
+      if (user && !this.state.isfetcing && !this.state.isPaginating) {
+        this.getAllDocuments();
+        this.getUserStats();
+      }
+    };
+    window.addEventListener('focus', this.handleWindowFocus);
+    this.handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        this.handleWindowFocus();
+      }
+    };
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+
     // Reset pagination state to ensure we start from page 1
     this.setState(
       {
@@ -397,6 +419,15 @@ class DashboardHomepage extends Component {
     }
     if (this.handleGlobalKeyDown) {
       window.removeEventListener('keydown', this.handleGlobalKeyDown);
+    }
+    if (this.handleGlobalClick) {
+      window.removeEventListener('click', this.handleGlobalClick);
+    }
+    if (this.handleWindowFocus) {
+      window.removeEventListener('focus', this.handleWindowFocus);
+    }
+    if (this.handleVisibilityChange) {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
   }
 
@@ -879,7 +910,7 @@ class DashboardHomepage extends Component {
                   onClick={() => {
                     localStorage.removeItem("currentResumeId");
                     localStorage.removeItem("currentResumeItem");
-                    this.props.navigate("/build-resume/heading");
+                    this.props.navigate("/build-resume/heading?new=1");
                   }}
                 >
                   <FaPlus className="w-3.5 h-3.5" />
@@ -954,7 +985,7 @@ class DashboardHomepage extends Component {
                         onClick={() => {
                           localStorage.removeItem("currentResumeId");
                           localStorage.removeItem("currentResumeItem");
-                          this.props.navigate("/build-resume/heading");
+                          this.props.navigate("/build-resume/heading?new=1");
                         }}
                         className="px-4 py-2.5 bg-white hover:bg-indigo-50 text-indigo-900 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                       >
@@ -1057,7 +1088,7 @@ class DashboardHomepage extends Component {
           {/* Real-Time Search & Category Folder Filter Tabs */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-200 gap-3">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              <button onClick={() => this.setState({ activeTab: 'all' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.fetchedDocuments?.length || 0})</button>
+              <button onClick={() => this.setState({ activeTab: 'all' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All Resumes ({this.state.pagination?.totalItems ?? this.state.fetchedDocuments?.length ?? 0})</button>
               {this.state.enableCoverLetterModule && (
               <button onClick={() => this.setState({ activeTab: 'cover-letters' })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${this.state.activeTab === 'cover-letters' ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>Cover Letters ({this.state.savedCoverLetters?.length || 0})</button>
               )}
@@ -1109,7 +1140,7 @@ class DashboardHomepage extends Component {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Resumes</p>
-                      <p className="text-xl font-semibold text-slate-900 mt-1">{this.state.fetchedDocuments.length}</p>
+                      <p className="text-xl font-semibold text-slate-900 mt-1">{this.state.pagination?.totalItems ?? this.state.fetchedDocuments.length}</p>
                     </div>
                     <div className="p-3 bg-slate-100 rounded-md">
                       <FaFileAlt className="w-5 h-5 text-slate-600" />
@@ -1262,9 +1293,9 @@ class DashboardHomepage extends Component {
                 if (document) {
                   const atsScore = calculateAtsScore(document.item)?.qualityScore || 0;
                   return (
-                    <div key={document.id} className="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between">
+                    <div key={document.id} className={`group bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all duration-300 p-5 flex flex-col justify-between relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-0'}`}>
                       {/* Header */}
-                      <div className="flex items-start justify-between mb-3">
+                      <div className={`flex items-start justify-between mb-3 relative ${this.state.openDropdownId === document.id ? 'z-30' : 'z-10'}`}>
                         <div className="flex-1 min-w-0 pr-2">
                           <button
                             type="button"
@@ -1299,7 +1330,7 @@ class DashboardHomepage extends Component {
                         </div>
 
                         {/* Action Menu */}
-                        <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative z-30 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             aria-label={`More actions for ${document.item?.title || document.item?.firstname || 'this resume'}`}
@@ -1319,7 +1350,12 @@ class DashboardHomepage extends Component {
                             <FaEllipsisH className="w-4 h-4" aria-hidden="true" />
                           </button>
                           {this.state.openDropdownId === document.id && (
-                            <div id={`resume-actions-${document.id}`} role="menu" className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-10 border border-slate-200">
+                            <div
+                              id={`resume-actions-${document.id}`}
+                              role="menu"
+                              style={{ backgroundColor: '#ffffff' }}
+                              className="absolute right-0 mt-1 w-52 bg-white rounded-xl shadow-2xl z-50 border border-slate-200/90 py-1.5 divide-y divide-slate-100 ring-1 ring-black/5"
+                            >
                               <div className="py-1">
                                 <button type="button" role="menuitem" className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 w-full text-left" onClick={() => { this.openDocumentPreview(document); this.setState({ openDropdownId: null }); }}>
                                   <FaEye className="w-3.5 h-3.5 mr-3 text-indigo-600" /><span>Live Preview</span>
@@ -1372,7 +1408,7 @@ class DashboardHomepage extends Component {
                       </div>
 
                       {/* Document Preview (Positioned right below Header) */}
-                      <div className="group/preview relative mb-4 h-72 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50 shadow-inner">
+                      <div className="group/preview relative z-0 mb-4 h-72 overflow-hidden rounded-lg border border-slate-200/80 bg-slate-50 shadow-inner">
                         {/* Resume Preview with Dynamic Template Component */}
                         <div className="absolute inset-0 flex items-start justify-center overflow-hidden transform-gpu">
                           <div className="w-[794px] h-[1123px] origin-top scale-[0.45] bg-white">
@@ -1385,9 +1421,13 @@ class DashboardHomepage extends Component {
                           type="button"
                           aria-label={`Open full preview for ${document.item?.title || document.item?.firstname || 'this resume'}`}
                           onClick={() => this.openDocumentPreview(document)}
-                          className="absolute inset-0 z-10 flex items-center justify-center bg-black/0 transition-all duration-300 hover:bg-black/25 focus-visible:bg-black/25"
+                          className={`absolute inset-0 z-10 flex items-center justify-center bg-black/0 transition-all duration-300 ${
+                            this.state.openDropdownId === document.id ? 'pointer-events-none opacity-0' : 'hover:bg-black/25 focus-visible:bg-black/25'
+                          }`}
                         >
-                          <span className="scale-0 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-800 shadow-lg backdrop-blur transition-transform duration-200 group-hover/preview:scale-100 group-focus-within/preview:scale-100">
+                          <span className={`${
+                            this.state.openDropdownId === document.id ? 'hidden pointer-events-none' : 'group-hover/preview:scale-100 group-focus-within/preview:scale-100'
+                          } scale-0 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-800 shadow-lg backdrop-blur transition-transform duration-200`}>
                             <FaEye className="mr-2 inline h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
                             {t("DashboardHomepage.actions.viewFullPreview", "Full Size Preview")}
                           </span>
@@ -1520,7 +1560,7 @@ class DashboardHomepage extends Component {
                 onClick={() => {
                   localStorage.removeItem("currentResumeId");
                   localStorage.removeItem("currentResumeItem");
-                  this.props.navigate("/build-resume/heading");
+                  this.props.navigate("/build-resume/heading?new=1");
                 }}
               >
                 <div className="p-8 text-center h-full flex flex-col items-center justify-center">

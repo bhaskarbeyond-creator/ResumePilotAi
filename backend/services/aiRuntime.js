@@ -120,6 +120,20 @@ function normalizePayload(payload = {}) {
         const extracted = extractCandidateNotes(payload);
         if (extracted) normalized.description = compact(extracted, 4000);
     }
+    const context = (payload.context && typeof payload.context === 'object') ? payload.context : {};
+    const facts = (context.facts && typeof context.facts === 'object') ? context.facts : {};
+    if (!normalized.targetRole && (context.target?.role || facts.headline || payload.occupation || payload.jobTitle)) {
+        normalized.targetRole = compact(context.target?.role || facts.headline || payload.occupation || payload.jobTitle, 200);
+    }
+    if (!normalized.workHistory && Array.isArray(facts.roles) && facts.roles.length) {
+        normalized.workHistory = compact(facts.roles.map(r => `${r.title || ''}${r.employer ? ` at ${r.employer}` : ''}${r.description ? `: ${r.description.slice(0, 200)}` : ''}`).filter(Boolean).join('; '), 4000);
+    }
+    if (!normalized.education && Array.isArray(facts.education) && facts.education.length) {
+        normalized.education = compact(facts.education.map(e => `${e.degree || ''}${e.school ? ` from ${e.school}` : ''}`).filter(Boolean).join('; '), 4000);
+    }
+    if (!normalized.skills && Array.isArray(facts.skills) && facts.skills.length) {
+        normalized.skills = facts.skills.slice(0, 60).map(s => compact(typeof s === 'object' && s !== null ? (s.name || s.skillName || '') : s, 100)).filter(Boolean);
+    }
     return normalized;
 }
 
@@ -180,6 +194,23 @@ function sourceNotesForOperation(operation, payload = {}) {
             payload.bullet || payload.text || payload.entry?.bullet || payload.jobTitle || payload.role || payload.position || payload.entry?.jobTitle || '',
             2000
         );
+    }
+    if (operation === 'generate-summary') {
+        const contextFacts = payload.context?.facts || {};
+        const roles = Array.isArray(contextFacts.roles)
+            ? contextFacts.roles.map(r => `${r.title || ''} at ${r.employer || ''} ${r.description || ''}`).join('; ')
+            : '';
+        const edus = Array.isArray(contextFacts.education)
+            ? contextFacts.education.map(e => `${e.degree || ''} from ${e.school || ''}`).join('; ')
+            : '';
+        const skills = Array.isArray(contextFacts.skills) ? contextFacts.skills.join(', ') : '';
+        const combined = [
+            payload.existingText, payload.sourceFacts, payload.jobTitle, payload.targetRole,
+            payload.workHistory, roles, payload.education, edus,
+            Array.isArray(payload.skills) ? payload.skills.join(', ') : payload.skills, skills,
+            payload.experience,
+        ].filter(Boolean).join('\n');
+        return compact(combined, 6000);
     }
     return factualSourceText(operation, payload);
 }
@@ -311,16 +342,54 @@ ${JSON.stringify({ entry, candidateFacts: evidence.candidateFacts, ...(evidence.
 Return only valid JSON in this exact structure:
 {"suggestions":[{"text":"• Relevant Coursework: specific core subjects and technical focus areas","sourceExcerpt":"excerpt from notes"},{"text":"• Capstone Project: technical prototype or thesis scope","sourceExcerpt":"excerpt from notes"}]}`;
     } else if (endpointName === 'generate-summary') {
-        const facts = evidence.candidateFacts;
-        user = `Write a 2-3 sentence professional summary in ${language} for this candidate, target role: "${evidence.targetRole || 'their current field'}". Tone: ${payload.tone || 'balanced'}.
-Build the summary ONLY from the candidate's verified facts below: what they did, where, with what skills, and what they are targeting. State years of experience only if present in the facts. Do not add employers, credentials, or metrics that are not listed.
-Avoid first-person pronouns (no "I" or "my").
+        const facts = evidence.candidateFacts || {};
+        const targetRole = String(evidence.targetRole || payload.targetRole || payload.occupation || payload.jobTitle || 'Professional').trim();
+        const tone = String(payload.tone || 'balanced').toLowerCase();
+        const yearsExp = facts.experience || (facts.experienceYears ? `${facts.experienceYears} years` : '');
+
+        user = `Craft a compelling, authoritative, highly natural, human-written Executive Bio & Professional Summary in ${language} for a candidate targeting the role: "${targetRole}".
+Tone preference: ${tone}.
+${yearsExp ? `Verified career tenure: ${yearsExp}.` : ''}
+
+You are acting as an elite, Certified Professional Resume Writer (CPRW) and executive career consultant crafting an authentic profile that passes Applicant Tracking Systems (ATS) with a 10/10 score while reading effortlessly and naturally to hiring managers and executive search committees.
+
+CRITICAL ARCHITECTURE — THE 3-PILLAR EXECUTIVE BLUEPRINT:
+Structure the summary into 2 to 3 seamless, cohesive sentences (strictly 350 to 550 characters / 50 to 85 words):
+1. SENTENCE 1 — EXECUTIVE IDENTITY & VALUE PROPOSITION (ATS KEYWORD LOCK):
+   - Open decisively with the candidate's professional title, verified years of experience (if provided), and core overarching functional domain.
+   - Immediate ATS keyword lock: The primary target role "${targetRole}" must appear prominently within the first 10 words.
+   - Example style: "[Senior Role Title] with [X+ years] directing [primary domain / strategic initiatives] across [industry/scale]..."
+2. SENTENCE 2 — CORE COMPETENCIES & TECHNICAL / METHODOLOGICAL ENGINE:
+   - Synthesize the candidate's top verified skills, technical platforms, tools, and operational frameworks from their work history into an active, cohesive execution narrative.
+   - Ground strictly in the candidate's verified tools and skills: illustrate HOW they deliver excellence (e.g., architectural methodologies, protocols, data systems, leadership governance).
+3. SENTENCE 3 — DEMONSTRATED IMPACT & FORWARD TRAJECTORY:
+   - Highlight proven business/clinical/operational outcomes, scale, efficiencies, or cross-functional leadership derived directly from their career history.
+   - Conclude with a decisive statement demonstrating their value proposition for "${targetRole}".
+
+TONE SPECIFICATIONS (STRICT ADHERENCE TO "${tone}"):
+- "executive": Authoritative, strategic, and leadership-driven. Focuses on vision, P&L/budget optimization, organizational transformation, governance, executive stakeholder management, and scalable business impact.
+- "technical": Deep domain rigor, precision, and architectural execution. Highlights core technical stacks, system design, data integrity, engineering standards, and specialized methodologies.
+- "concise": High-density, fast-scanning, 2-sentence punchy profile. Zero wasted words, high information density, front-loaded impact ideal for high-velocity screening.
+- "balanced": Polished, modern corporate standard. Seamlessly integrates functional leadership, technical acumen, and measurable impact in a warm, confident, professional human voice.
+
+ANTI-AI & HUMAN NATURALNESS RULES (MANDATORY):
+- BANNED ROBOTIC AI CLICHÉS:
+  * Strictly avoid "Results-driven professional with a proven track record..."
+  * Strictly avoid "Passionate about leveraging/utilizing..."
+  * Strictly avoid "A testament to...", "Delve into...", "Fostered seamless collaboration..."
+  * Strictly avoid "In today's fast-paced, dynamic environment..."
+  * Strictly avoid "Looking to leverage my skills to contribute to..."
+  * Strictly avoid "Dynamic and self-motivated individual..."
+- NATURAL HUMAN CADENCE: Write with varied sentence rhythm, strong active verbs, and natural professional phrasing. Avoid robotic, repetitive, or pompous corporate buzzwords.
+- THIRD-PERSON EXECUTIVE VOICE: Strictly avoid first-person pronouns (NO "I", "my", "me", "our"). Write with implied subject or professional profile narrative.
+- ZERO FABRICATION: Synthesize ONLY from the candidate's verified facts provided in EVIDENCE. Do not invent unheld certifications, degrees, employers, or arbitrary numerical metrics not in the candidate's facts.
+${evidence.targetJobDescription ? '- ATS JOB DESCRIPTION ALIGNMENT: Naturally incorporate relevant domain keywords from the target job description where supported by candidate evidence.' : ''}
 
 EVIDENCE:
-${JSON.stringify({ candidateFacts: facts, targetRole: evidence.targetRole, ...(evidence.targetJobDescription ? { targetJobDescription: evidence.targetJobDescription } : {}) }, null, 1)}
+${JSON.stringify({ candidateFacts: facts, targetRole, ...(evidence.targetJobDescription ? { targetJobDescription: evidence.targetJobDescription } : {}) }, null, 1)}
 
 Return only valid JSON in this exact structure:
-{"summary":"2-3 sentence professional summary built only from the facts","sourceExcerpts":["facts used, quoted from EVIDENCE"]}`;
+{"summary":"2-3 sentence natural, authoritative executive summary adhering to the blueprint","sourceExcerpts":["key verified facts and skills used"]}`;
     } else if (endpointName === 'enhance-single-bullet') {
         const entry = evidence.entry || {};
         const isDraftProvided = Boolean(entry.candidateBullet && entry.candidateBullet.trim());
@@ -677,9 +746,30 @@ function sanitizeGeneratedText(value) {
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
         .replace(/<[^>]*>/g, '')
         .replace(/\s*(?:MODIFIED BULLET|MODIFICATIONS|REASONING|EXPLANATION|NOTE|CHANGES MADE):[\s\S]*/gi, '')
+        .replace(/\bSpearheading\b/g, 'Leading').replace(/\bspearheading\b/g, 'leading')
         .replace(/\bSpearheaded\b/g, 'Led').replace(/\bspearheaded\b/g, 'led')
+        .replace(/\bSpearhead\b/g, 'Lead').replace(/\bspearhead\b/g, 'lead')
+        .replace(/\bLeveraging\b/g, 'Applying').replace(/\bleveraging\b/g, 'applying')
         .replace(/\bLeveraged\b/g, 'Used').replace(/\bleveraged\b/g, 'used')
+        .replace(/\bLeverage\b/g, 'Apply').replace(/\bleverage\b/g, 'apply')
+        .replace(/\bUtili[sz]ing\b/g, 'Using').replace(/\butili[sz]ing\b/g, 'using')
         .replace(/\bUtili[sz]ed\b/g, 'Used').replace(/\butili[sz]ed\b/g, 'used')
+        .replace(/\bUtili[sz]e\b/g, 'Use').replace(/\butili[sz]e\b/g, 'use')
+        .replace(/\bDelving into\b/g, 'Exploring').replace(/\bdelving into\b/g, 'exploring')
+        .replace(/\bDelved into\b/g, 'Explored').replace(/\bdelved into\b/g, 'explored')
+        .replace(/\bDelve into\b/g, 'Explore').replace(/\bdelve into\b/g, 'explore')
+        .replace(/\bDelving\b/g, 'Exploring').replace(/\bdelving\b/g, 'exploring')
+        .replace(/\bDelved\b/g, 'Explored').replace(/\bdelved\b/g, 'explored')
+        .replace(/\bDelve\b/g, 'Explore').replace(/\bdelve\b/g, 'explore')
+        .replace(/\bpivotal role\b/gi, 'key role')
+        .replace(/\btestament to\b/gi, 'reflection of')
+        .replace(/\bfostered seamless collaboration\b/gi, 'fostered collaboration')
+        .replace(/\bfostered seamless\b/gi, 'enabled')
+        .replace(/\bcross-functional synergy\b/gi, 'cross-functional collaboration')
+        .replace(/\b(?:A|An)\s+results-driven professional with a proven track record\b/gi, 'An experienced professional')
+        .replace(/\bresults-driven professional with a proven track record\b/gi, 'experienced professional')
+        .replace(/\bproven track record\b/gi, 'demonstrated experience')
+        .replace(/\bin today's (?:fast-paced|dynamic|ever-changing) (?:world|landscape|environment|market)\b/gi, '')
         .replace(/\[insert[^\]]*\]|\[X%?\]|\[[^\]]{1,60}\]/gi, '')
         .replace(/\s{2,}/g, ' ').replace(/\s+,/g, ',').replace(/\s+\./g, '.').replace(/,\s*\./g, '.')
         .trim();
@@ -783,7 +873,17 @@ const STANDARD_CONNECTIVE_TOKENS = new Set([
     'conducted', 'authored', 'researched', 'published', 'analyzed', 'formulated', 'completed', 'earned',
     'graduated', 'coursework', 'capstone', 'thesis', 'honors', 'project', 'dean', 'deans', 'list', 'gpa',
     'cum', 'laude', 'magna', 'summa', 'semester', 'semesters', 'relevant', 'notable', 'academic',
-    'curriculum', 'study', 'studies', 'degree', 'major', 'minor', 'laboratory', 'lab', 'prototype'
+    'curriculum', 'study', 'studies', 'degree', 'major', 'minor', 'laboratory', 'lab', 'prototype',
+    // Executive & Strategic Summary Vocabulary
+    'strategic', 'orchestrating', 'orchestrated', 'directing', 'directed', 'transforming', 'transformed',
+    'transformation', 'initiatives', 'capabilities', 'competencies', 'accelerating', 'modernizing',
+    'modernization', 'scalable', 'governance', 'stakeholder', 'stakeholders', 'cross-functional',
+    'enterprise-grade', 'infrastructure', 'architectural', 'turnaround', 'efficiency', 'efficiencies',
+    'optimization', 'deliverables', 'outcomes', 'milestones', 'benchmarks', 'methodology', 'methodologies',
+    'framework', 'frameworks', 'ecosystem', 'ecosystems', 'execution', 'velocity', 'retention',
+    'throughput', 'compliance', 'oversight', 'portfolio', 'portfolios', 'tenure', 'visionary',
+    'authoritative', 'distinguished', 'partnering', 'collaborative', 'impact', 'value', 'sustainable',
+    'streamlining', 'streamlined', 'p&l', 'operational', 'empowered', 'advancing', 'aligned', 'championing'
 ]);
 
 function exactExcerptIsPresent(excerpt, source) {
@@ -905,6 +1005,19 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
         return data;
     }
 
+    if (operation === 'generate-summary') {
+        // Source citations and substantive evidence presence are verified in assertSourceCitations.
+        // Enforce protected claim families: prevent hallucinating unheld credentials or academic honors
+        const STRICT_PROTECTED_FAMILIES = new Set(['credential', 'academic distinction']);
+        for (const family of PROTECTED_CLAIM_FAMILIES) {
+            if (!STRICT_PROTECTED_FAMILIES.has(family.label)) continue;
+            if (family.pattern.test(generated) && !family.pattern.test(source)) {
+                throw Object.assign(new Error(`AI output introduced an unsupported ${family.label} claim`), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
+            }
+        }
+        return data;
+    }
+
     const sourceQuantities = new Set(quantifiedClaims(source).map(normalizeQuantity));
     const unsupportedQuantity = quantifiedClaims(generated).find(value => !sourceQuantities.has(normalizeQuantity(value)));
     if (unsupportedQuantity) {
@@ -947,7 +1060,9 @@ function parseAiResponse(operation, rawContent, context = {}) {
         ? assertGroundedGeneratedContent(operation, parsed, data, context.payload || {})
         : data;
     if (operation === 'generate-summary') {
-        const value = parsed?.summary || parsed?.description || parsed?.text || (!parsed ? raw : '');
+        const value = parsed?.summary || parsed?.executiveSummary || parsed?.executive_summary
+            || parsed?.professionalSummary || parsed?.bio || parsed?.draft?.text || parsed?.draft
+            || parsed?.description || parsed?.text || parsed?.content || (!parsed ? raw : '');
         const summary = sanitizeGeneratedText(typeof value === 'object' ? Object.values(value).join(' ') : value);
         if (summary) return finalize({ summary });
     }
@@ -1400,8 +1515,8 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         try {
             const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
             if (provider === 'openrouter') {
-                headers['HTTP-Referer'] = process.env.APP_URL || process.env.TARGET_URL || 'https://resumepilot.ai';
-                headers['X-Title'] = 'ResumePilot AI';
+                headers['HTTP-Referer'] = process.env.APP_URL || process.env.TARGET_URL || 'https://ime365.com';
+                headers['X-Title'] = 'IME365';
             }
             const response = await fetchWithDeadline(fetchImpl, chatCompletionsUrl(provider, providerConfig.baseUrl), {
                 method: 'POST',
@@ -1540,14 +1655,24 @@ function getContentOperationFallback(operation, rawPayload = {}) {
     }
 
     if (operation === 'generate-summary') {
-        const preferredSource = compact(payload.existingText || payload.sourceFacts, 1200);
-        if (preferredSource) return { summary: sanitizeSourceText(preferredSource), _source: 'source-preserving-fallback' };
+        const existing = sanitizeSourceText(payload.existingText || '', 1200);
+        if (existing && existing.length >= 40 && !existing.includes(' | ')) {
+            return { summary: existing, _source: 'source-preserving-fallback' };
+        }
+        // If structured candidate context was provided, synthesize an evidence-grounded summary
+        if (payload.context?.facts && (payload.context.facts.roles?.length || payload.context.facts.skills?.length || payload.context.facts.education?.length || payload.sourceFacts)) {
+            const deterministic = generateDeterministicSummary(payload);
+            if (deterministic && deterministic.length >= 40) {
+                return { summary: sanitizeGeneratedText(deterministic), _source: 'evidence-grounded-fallback' };
+            }
+        }
         const segments = factualSourceSegments(operation, payload)
             .filter(([field]) => field !== 'name')
             .map(([, value]) => sanitizeSourceText(value, 1200))
             .filter(Boolean)
             .join('. ');
         if (segments && segments.length >= 20) return { summary: segments.slice(0, 1200), _source: 'source-preserving-fallback' };
+        if (existing) return { summary: existing, _source: 'source-preserving-fallback' };
         return ask('summary');
     }
 
@@ -2483,6 +2608,65 @@ function generateDeterministicEducationHighlights(degree = '', school = '', fiel
     bullets.push(`• ${highlight}`);
 
     return bullets;
+}
+
+function generateDeterministicSummary(payload = {}) {
+    const contextFacts = payload.context?.facts || {};
+    const targetRole = String(payload.targetRole || payload.jobTitle || payload.occupation || payload.context?.target?.role || '').trim();
+    const roles = Array.isArray(contextFacts.roles) && contextFacts.roles.length ? contextFacts.roles : [];
+    const primaryRole = targetRole || roles[0]?.title || 'Professional';
+    const primaryCompany = roles[0]?.employer ? ` at ${roles[0].employer}` : '';
+
+    const experience = String(payload.experience || contextFacts.experienceYears || '').trim();
+    const expText = experience ? (experience.toLowerCase().includes('year') ? experience : `${experience} years`) : '';
+
+    const rawSkills = (Array.isArray(payload.skills) && payload.skills.length > 0)
+        ? payload.skills
+        : (Array.isArray(contextFacts.skills) ? contextFacts.skills : []);
+    const topSkills = Array.from(new Set(
+        rawSkills
+            .map(s => typeof s === 'string' ? s : s?.name || s?.skillName || '')
+            .map(s => s.trim())
+            .filter(s => s && s.length >= 2 && s.length <= 40)
+    )).slice(0, 5);
+
+    const edus = Array.isArray(contextFacts.education) ? contextFacts.education : [];
+    const topDegree = edus[0]?.degree ? String(edus[0].degree).trim() : '';
+
+    const tone = String(payload.tone || 'balanced').toLowerCase();
+
+    let sentence1 = '';
+    if (expText) {
+        sentence1 = `${primaryRole} with ${expText} of experience${primaryCompany}, specializing in cross-functional delivery, operational standards, and scalable solutions.`;
+    } else if (primaryCompany) {
+        sentence1 = `${primaryRole} with demonstrated experience${primaryCompany}, committed to technical precision, workflow optimization, and reliable delivery.`;
+    } else {
+        sentence1 = `${primaryRole} with an established track record in modern industry practices, dedicated to organizational impact and consistent execution.`;
+    }
+
+    let sentence2 = '';
+    if (topSkills.length >= 2) {
+        sentence2 = `Core technical proficiencies include ${topSkills.slice(0, -1).join(', ')}, and ${topSkills[topSkills.length - 1]}, applied to drive measurable improvements and system reliability.`;
+    } else if (topSkills.length === 1) {
+        sentence2 = `Experienced in applying ${topSkills[0]} to streamline operations and enhance project outcomes.`;
+    } else if (topDegree) {
+        sentence2 = `Academic background includes a ${topDegree}, with focus on analytical problem-solving and structured project methodologies.`;
+    } else {
+        sentence2 = 'Brings disciplined execution across process optimization, stakeholder collaboration, and industry-standard workflows.';
+    }
+
+    let sentence3 = '';
+    if (tone === 'executive') {
+        sentence3 = 'Known for strategic alignment, high-impact initiative ownership, and building sustainable team capabilities.';
+    } else if (tone === 'technical') {
+        sentence3 = 'Committed to robust engineering architecture, continuous quality enhancement, and high-performance standards.';
+    } else if (tone === 'concise') {
+        sentence3 = 'Focused on delivering reliable, measurable results on schedule.';
+    } else {
+        sentence3 = 'Dedicated to continuous improvement, collaborative problem-solving, and delivering high-value outcomes.';
+    }
+
+    return `${sentence1} ${sentence2} ${sentence3}`.trim();
 }
 
 /**

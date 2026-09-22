@@ -1,5 +1,5 @@
 /**
- * ResumePilot AI — Unified data operations (MySQL authoritative).
+ * IME365 — Unified data operations (MySQL authoritative).
  *
  * ARCHITECTURE (zero-Firestore):
  *  Every function in this module talks to the backend API, which persists to
@@ -968,7 +968,7 @@ export async function getWebsiteData() {
         // Static shell metadata keeps public pages renderable but is explicitly
         // marked non-authoritative; browser storage is never a data owner.
         return {
-            title: 'ResumePilot AI',
+            title: 'IME365',
             description: '',
             keywords: '',
             language: 'English',
@@ -1510,7 +1510,7 @@ export async function getBlogSettings() {
     return {
         blogTitle: 'Insights & Career Resources',
         blogDescription: 'Expert guides, ATS strategies, and actionable advice to accelerate your career.',
-        seoTitle: 'Career Blog & ATS Resume Guides — ResumePilot AI',
+        seoTitle: 'Career Blog & ATS Resume Guides — IME365',
         seoDescription: 'Read the latest guides on resume building, ATS screening optimization, and job search strategies.',
         postsPerPage: 10
     };
@@ -2059,8 +2059,8 @@ export async function getSystemSettings({ admin = false } = {}) {
             encryption: 'tls',
             username: '',
             password: '',
-            senderName: config?.brand?.name || 'AI Resume Builder',
-            adminEmail: config?.adminEmail || 'support@resumepilot.example',
+            senderName: config?.brand?.name || 'IME365',
+            adminEmail: config?.adminEmail || 'support@ime365.com',
         },
         fallbackSmtp: { enabled: false, host: 'smtp.gmail.com', port: 587, encryption: 'tls', username: '', password: '', senderEmail: '' },
         imap: { enabled: true, host: 'imap.hostinger.com', port: 993, encryption: 'ssl', username: '', password: '', autoSync: true },
@@ -2084,7 +2084,7 @@ export async function getSystemSettings({ admin = false } = {}) {
             gaMeasurementId: import.meta.env.VITE_MEASUREMENT_ID || import.meta.env.VITE_GA_MEASUREMENT_ID || '',
             facebookPixelId: '',
         },
-        branding: { brandName: config?.brand?.name || 'ResumePilot', logoUrl: '', darkLogoUrl: '', faviconUrl: '', defaultAvatarUrl: '' },
+        branding: { brandName: config?.brand?.name || 'IME365', logoUrl: '', darkLogoUrl: '', faviconUrl: '', defaultAvatarUrl: '' },
         facebook: { facebookAppId: '', facebookAppSecret: '', facebookClientToken: '', facebookPixelId: '', enableFacebookLogin: false },
         google: { enableGoogleLogin: true },
         socialAuth: { enableGoogleLogin: true, enableFacebookLogin: false, linkedinClientId: '', linkedinClientSecret: '', enableLinkedinLogin: false, githubClientId: '', githubClientSecret: '', enableGithubLogin: false },

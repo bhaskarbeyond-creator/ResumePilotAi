@@ -1,5 +1,5 @@
 /**
- * Dynamic, Open-Ended Role Interview Question & Starter Chips Generator — ResumePilot AI
+ * Dynamic, Open-Ended Role Interview Question & Starter Chips Generator — IME365
  *
  * Contextually detects domain across ALL professional sectors:
  * - Technology & Data (Software, Cloud, DevOps, AI, Systems)

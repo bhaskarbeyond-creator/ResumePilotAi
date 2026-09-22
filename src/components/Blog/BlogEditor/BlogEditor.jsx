@@ -1281,13 +1281,13 @@ export default function BlogEditor({ user: propUser }) {
               {/* SERP Preview Box */}
               <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
                 <div style={{ fontSize: '11px', color: '#475569' }}>
-                  {typeof window !== 'undefined' ? window.location.host : 'airesume.projectdemo.guru'} › blog › {post.slug || 'article'}
+                  {typeof window !== 'undefined' ? window.location.host : 'ime365.com'} › blog › {post.slug || 'article'}
                 </div>
                 <div style={{ fontSize: '15px', color: '#1a0dab', fontWeight: '600', marginTop: '2px', lineHeight: 1.3 }}>
-                  {post.seoTitle || post.title || 'Untitled Post — ResumePilot AI'}
+                  {post.seoTitle || post.title || 'Untitled Post — IME365'}
                 </div>
                 <div style={{ fontSize: '12px', color: '#4d5156', marginTop: '4px', lineHeight: 1.4 }}>
-                  {post.seoDescription || post.excerpt || 'Read this in-depth guide on ResumePilot AI.'}
+                  {post.seoDescription || post.excerpt || 'Read this in-depth guide on IME365.'}
                 </div>
               </div>
 

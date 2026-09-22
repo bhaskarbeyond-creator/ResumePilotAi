@@ -1,5 +1,5 @@
 /**
- * Bullet & Role Quality Engine — ResumePilot AI
+ * Bullet & Role Quality Engine — IME365
  *
  * Provides deterministic, client-side evaluation of Work History bullets and roles.
  * Powers live 🟢/🟡/🔴 bullet scoring, the Role ATS Health Card, and anti-stuffing heuristics.

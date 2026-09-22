@@ -1,5 +1,5 @@
 /**
- * Evidence-Based Candidate Context (backend port, v2) — ResumePilot AI
+ * Evidence-Based Candidate Context (backend port, v2) — IME365
  *
  * Deterministic parity helpers shared with the frontend engine
  * (src/utils/candidateContext.js). There is intentionally NO profession
@@ -385,16 +385,26 @@ function summaryEvidenceLength(rawPayload = {}) {
     const flatSkills = Array.isArray(payload.existingSkills || payload.skills)
         ? (payload.existingSkills || payload.skills).length : 0;
     const flatBodyLen = flatWork.length + flatEdu.length + flatCerts.length + flatProjects.length + flatAchievement.length;
-    const hasRole = Boolean(payload.jobTitle || payload.position || payload.role || payload.occupation || context.target?.role);
-    if (flatBodyLen >= EVIDENCE_THRESHOLD && (hasRole || flatBodyLen >= 40)) return flatBodyLen;
-    // If the candidate has populated at least one structured role or educational
-    // degree PLUS skills/credentials, there is sufficient evidence for a grounded summary.
-    const roleCount = Array.isArray(facts.roles) ? facts.roles.length : 0;
-    const eduCount = Array.isArray(facts.education) ? facts.education.length : 0;
+    const hasRole = Boolean(payload.jobTitle || payload.position || payload.role || payload.occupation || context.target?.role || facts.headline);
+    if (flatBodyLen >= EVIDENCE_THRESHOLD && (hasRole || flatBodyLen >= 20)) return flatBodyLen;
+
+    // Structured evidence from previous steps: roles, education, skills, certifications, projects.
+    const roleCount = Array.isArray(facts.roles) ? facts.roles.length : (flatWork.length >= 5 ? 1 : 0);
+    const eduCount = Array.isArray(facts.education) ? facts.education.length : (flatEdu.length >= 5 ? 1 : 0);
     const skillCount = Array.isArray(facts.skills) ? facts.skills.length : flatSkills;
-    const certCount = Array.isArray(facts.certifications) ? facts.certifications.length : 0;
-    if ((roleCount + eduCount) >= 1 && (skillCount >= 3 || certCount >= 1)) {
-        return Math.max(roleCount * 20 + eduCount * 20 + skillCount * 10 + certCount * 10, EVIDENCE_THRESHOLD);
+    const certCount = Array.isArray(facts.certifications) ? facts.certifications.length : (flatCerts.length >= 3 ? 1 : 0);
+    const projectCount = Array.isArray(facts.projects) ? facts.projects.length : (flatProjects.length >= 3 ? 1 : 0);
+
+    // If candidate has entered any previous step details (roles, degrees, skills, certs, projects, or target role),
+    // there is sufficient grounded evidence to synthesize an executive summary.
+    if ((roleCount + eduCount + projectCount) >= 1 || (skillCount >= 1 && (hasRole || roleCount + eduCount >= 1)) || (hasRole && (roleCount >= 1 || eduCount >= 1 || skillCount >= 1 || certCount >= 1))) {
+        return Math.max(
+            roleCount * 25 + eduCount * 20 + skillCount * 10 + certCount * 15 + projectCount * 15 + (hasRole ? 20 : 0),
+            EVIDENCE_THRESHOLD
+        );
+    }
+    if ((roleCount + eduCount + skillCount + certCount + projectCount) >= 1) {
+        return Math.max(roleCount * 20 + eduCount * 20 + skillCount * 10 + certCount * 10 + projectCount * 10, EVIDENCE_THRESHOLD);
     }
     return 0;
 }

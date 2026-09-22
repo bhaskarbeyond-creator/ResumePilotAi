@@ -59,7 +59,7 @@ const FirebaseSettings = () => {
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl text-amber-500 shadow-sm"><FaFire /></div>
                     <div>
                         <h2 id="firebase-identity-heading" className="font-bold text-slate-900">Firebase Authentication identity plane</h2>
-                        <p className="mt-1 text-sm text-slate-700">Firebase is retained only for authentication, OAuth federation, MFA, reauthentication, token verification, and identity lifecycle operations. All ResumePilot application data is owned by MariaDB APIs.</p>
+                        <p className="mt-1 text-sm text-slate-700">Firebase is retained only for authentication, OAuth federation, MFA, reauthentication, token verification, and identity lifecycle operations. All IME365 application data is owned by MariaDB APIs.</p>
                     </div>
                 </div>
             </section>

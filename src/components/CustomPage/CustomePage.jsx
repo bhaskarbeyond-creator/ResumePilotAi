@@ -11,8 +11,8 @@ import { sanitizePublicHtml } from '../../utils/sanitizeHtml';
 
 const DEFAULT_LEGAL_PAGES = {
     'privacy-policy': {
-        title: 'Privacy Policy — ResumePilot AI',
-        description: 'Comprehensive Privacy Policy detailing data protection, encryption, and GDPR compliance on ResumePilot AI.',
+        title: 'Privacy Policy — IME365',
+        description: 'Comprehensive Privacy Policy detailing data protection, encryption, and GDPR compliance on IME365.',
         pagecontent: `
             <div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;">
                 <div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
@@ -23,7 +23,7 @@ const DEFAULT_LEGAL_PAGES = {
                 
                 <section style="margin-bottom: 32px;">
                     <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">1. Information We Collect</h2>
-                    <p>ResumePilot AI collects account credentials, career experience data, education, skills, and job target details provided directly when crafting resumes, portfolios, and practicing interview simulations.</p>
+                    <p>IME365 collects account credentials, career experience data, education, skills, and job target details provided directly when crafting resumes, portfolios, and practicing interview simulations.</p>
                 </section>
 
                 <section style="margin-bottom: 32px;">
@@ -44,8 +44,8 @@ const DEFAULT_LEGAL_PAGES = {
         `
     },
     'terms-of-service': {
-        title: 'Terms of Service — ResumePilot AI',
-        description: 'Terms of Service and acceptable use policy for ResumePilot AI platform.',
+        title: 'Terms of Service — IME365',
+        description: 'Terms of Service and acceptable use policy for IME365 platform.',
         pagecontent: `
             <div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;">
                 <div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
@@ -56,7 +56,7 @@ const DEFAULT_LEGAL_PAGES = {
 
                 <section style="margin-bottom: 32px;">
                     <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">1. Acceptance of Terms</h2>
-                    <p>By accessing ResumePilot AI, you agree to these Terms of Service, all applicable laws, and regulations. If you do not agree with any of these terms, you are prohibited from using the service.</p>
+                    <p>By accessing IME365, you agree to these Terms of Service, all applicable laws, and regulations. If you do not agree with any of these terms, you are prohibited from using the service.</p>
                 </section>
 
                 <section style="margin-bottom: 32px;">
@@ -66,14 +66,14 @@ const DEFAULT_LEGAL_PAGES = {
 
                 <section style="margin-bottom: 32px;">
                     <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">3. Intellectual Property</h2>
-                    <p>You retain 100% intellectual property ownership of all resumes, cover letters, and portfolio content created using ResumePilot AI.</p>
+                    <p>You retain 100% intellectual property ownership of all resumes, cover letters, and portfolio content created using IME365.</p>
                 </section>
             </div>
         `
     },
     'cookie-policy': {
-        title: 'Cookie Policy — ResumePilot AI',
-        description: 'Cookie Policy and local storage usage on ResumePilot AI.',
+        title: 'Cookie Policy — IME365',
+        description: 'Cookie Policy and local storage usage on IME365.',
         pagecontent: `
             <div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;">
                 <div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
@@ -95,19 +95,19 @@ const DEFAULT_LEGAL_PAGES = {
         `
     },
     'about-us': {
-        title: 'About Us — ResumePilot AI',
-        description: 'About ResumePilot AI: Next-generation career platform empowering professionals with AI-driven resumes, portfolios, and interview practice.',
+        title: 'About Us — IME365',
+        description: 'About IME365: Next-generation career platform empowering professionals with AI-driven resumes, portfolios, and interview practice.',
         pagecontent: `
             <div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;">
                 <div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
-                    <span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">About ResumePilot AI</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">About IME365</span>
                     <h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Empowering Career Excellence</h1>
                     <p style="color: #64748b; font-size: 14px; margin: 0;">Built for modern job seekers, engineers, leaders, and career changers.</p>
                 </div>
 
                 <section style="margin-bottom: 32px;">
                     <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Our Mission</h2>
-                    <p>ResumePilot AI combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide.</p>
+                    <p>IME365 combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide.</p>
                 </section>
 
                 <section style="margin-bottom: 32px;">
@@ -118,19 +118,19 @@ const DEFAULT_LEGAL_PAGES = {
         `
     },
     'about': {
-        title: 'About Us — ResumePilot AI',
-        description: 'About ResumePilot AI: Next-generation career platform empowering professionals with AI-driven resumes, portfolios, and interview practice.',
+        title: 'About Us — IME365',
+        description: 'About IME365: Next-generation career platform empowering professionals with AI-driven resumes, portfolios, and interview practice.',
         pagecontent: `
             <div style="font-family: 'Inter', system-ui, sans-serif; color: #1e293b; line-height: 1.7; max-width: 860px; margin: 0 auto; padding: 40px 20px;">
                 <div style="margin-bottom: 32px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
-                    <span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">About ResumePilot AI</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.06em;">About IME365</span>
                     <h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin: 8px 0 12px 0;">Empowering Career Excellence</h1>
                     <p style="color: #64748b; font-size: 14px; margin: 0;">Built for modern job seekers, engineers, leaders, and career changers.</p>
                 </div>
 
                 <section style="margin-bottom: 32px;">
                     <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Our Mission</h2>
-                    <p>ResumePilot AI combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide.</p>
+                    <p>IME365 combines state-of-the-art LLM intelligence, recruiter-certified typography, and real-time ATS scoring to ensure your talent gets recognized by top employers worldwide.</p>
                 </section>
             </div>
         `
@@ -176,7 +176,7 @@ class CustomePage extends Component {
             const page = fetchedPage || DEFAULT_LEGAL_PAGES[normalizedSlug] || null;
 
             if (!page) {
-                document.title = 'Page not found — ResumePilot AI';
+                document.title = 'Page not found — IME365';
                 document.head.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex,nofollow');
                 this.setState({ loaded: true, pageState: 'not-found', pages: pages || [], websiteName: website?.title || '', socialLinks });
                 return;

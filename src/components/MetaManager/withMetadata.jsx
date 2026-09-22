@@ -14,9 +14,9 @@ const withMetadata = (WrappedComponent, defaultMeta = {}) => {
         constructor(props) {
             super(props);
             this.state = {
-                websiteTitle: defaultMeta.title || 'Resume Builder App',
+                websiteTitle: defaultMeta.title || 'IME365 — Resume Builder & CV Maker',
                 websiteDescription: defaultMeta.description || 'Professional Resume Builder - Create stunning resumes and cover letters',
-                websiteKeywords: defaultMeta.keywords || 'resume, cv, cover letter, job application, professional',
+                websiteKeywords: defaultMeta.keywords || 'IME365, resume, cv, cover letter, job application, professional',
                 websiteLanguage: defaultMeta.language || 'English',
                 metaDataLoaded: false,
             };

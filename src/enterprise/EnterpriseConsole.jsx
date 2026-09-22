@@ -258,7 +258,7 @@ function AppSwitcher({ platformAdmin }) {
             <Link to="/" className="enterprise-app-item" role="menuitem" onClick={() => setOpen(false)}>
               <div className="enterprise-app-item-icon"><FiExternalLink /></div>
               <div>
-                <strong>ResumePilot Home</strong>
+                <strong>IME365 Home</strong>
                 <small>Public homepage & features</small>
               </div>
             </Link>
@@ -583,7 +583,7 @@ function EnterpriseConsoleInner() {
     const currentNav = NAVIGATION.find(item => item.id === activeTab);
     const tabLabel = currentNav ? currentNav.label : 'Console';
     const tenantName = tenant?.displayName ? `${tenant.displayName} — ` : '';
-    document.title = `${tabLabel} — ${tenantName}Enterprise Console — ResumePilot AI`;
+    document.title = `${tabLabel} — ${tenantName}Enterprise Console — IME365`;
   }, [activeTab, tenant?.displayName]);
 
   if (!enabled && !loading) {
@@ -719,8 +719,8 @@ function EnterpriseConsoleInner() {
             <FiMenu />
           </button>
           <Link to="/" className="enterprise-brand-link">
-            <span className="enterprise-brand-logo">R</span>
-            <span className="enterprise-brand-title">ResumePilot Enterprise</span>
+            <span className="enterprise-brand-logo">I</span>
+            <span className="enterprise-brand-title">IME365 Enterprise</span>
           </Link>
           <div className="enterprise-topbar-context-desktop">
             <TenantSwitcher />
@@ -844,8 +844,8 @@ function EnterpriseConsoleInner() {
         <aside className={`enterprise-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`} role="navigation" aria-label="Enterprise Navigation">
           <div className="enterprise-mobile-sidebar-header">
             <div className="enterprise-brand-link">
-              <span className="enterprise-brand-logo">R</span>
-              <span className="enterprise-brand-title">ResumePilot Enterprise</span>
+              <span className="enterprise-brand-logo">I</span>
+              <span className="enterprise-brand-title">IME365 Enterprise</span>
             </div>
             <button
               type="button"

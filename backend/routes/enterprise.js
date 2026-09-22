@@ -1100,7 +1100,7 @@ router.post('/test-email', resolveTenantContext, requireTenantPermission('tenant
       const { getPool } = require('../database/mysql');
       const vars = {
         ...(req.body?.vars && typeof req.body.vars === 'object' && !Array.isArray(req.body.vars) ? req.body.vars : {}),
-        organization_name: req.tenant?.displayName || 'ResumePilot Enterprise',
+        organization_name: req.tenant?.displayName || 'IME365 Enterprise',
         inviter_name: req.user?.displayName || 'Enterprise Administrator',
         candidate_name: req.user?.displayName || 'Enterprise User',
         user_name: req.user?.displayName || 'Enterprise User',

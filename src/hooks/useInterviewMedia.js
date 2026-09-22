@@ -54,17 +54,21 @@ export function useInterviewMedia() {
     const [activeMode, setActiveMode] = useState('none'); // 'both' | 'audio-only' | 'video-only' | 'text-mode' | 'none'
     const [hasCompanionExtension, setHasCompanionExtension] = useState(() => {
         if (typeof window === 'undefined') return false;
-        return Boolean(window.__RESUMEPILOT_COMPANION__);
+        return Boolean(window.__IME365_COMPANION__ || window.__RESUMEPILOT_COMPANION__);
     });
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const check = () => {
-            if (window.__RESUMEPILOT_COMPANION__) setHasCompanionExtension(true);
+            if (window.__IME365_COMPANION__ || window.__RESUMEPILOT_COMPANION__) setHasCompanionExtension(true);
         };
         check();
+        window.addEventListener('ime365_companion_ready', check);
         window.addEventListener('resumepilot_companion_ready', check);
-        return () => window.removeEventListener('resumepilot_companion_ready', check);
+        return () => {
+            window.removeEventListener('ime365_companion_ready', check);
+            window.removeEventListener('resumepilot_companion_ready', check);
+        };
     }, []);
 
     const attachVideo = useCallback((element) => {

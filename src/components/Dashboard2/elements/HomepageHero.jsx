@@ -161,7 +161,7 @@ export default function HomepageHero({ onOpenAuthModal }) {
 
         {/* Supporting Statement */}
         <p className="rp-hero-subtext">
-          ResumePilot AI turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews.
+          IME365 turns your real experience into metric-driven achievements, optimizes for 51 ATS layouts, and simulates real-world CBT behavioral interviews.
         </p>
 
         {/* Context-Aware Primary CTAs */}
@@ -217,7 +217,7 @@ export default function HomepageHero({ onOpenAuthModal }) {
                 <span className="rp-stage-dot" style={{ background: '#f59e0b' }}></span>
                 <span className="rp-stage-dot" style={{ background: '#10b981' }}></span>
                 <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569', marginLeft: '8px' }}>
-                  ResumePilot AI Studio Canvas
+                  IME365 Studio Canvas
                 </span>
               </div>
 
@@ -298,7 +298,7 @@ export default function HomepageHero({ onOpenAuthModal }) {
                     <div style={{ marginBottom: '18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                         <label style={{ fontSize: '12px', fontWeight: '800', color: '#1a73e8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <FaMagic /> ResumePilot AI Optimized:
+                          <FaMagic /> IME365 Optimized:
                         </label>
                         <span style={{ fontSize: '11px', fontWeight: '800', background: '#e8f0fe', color: '#1a73e8', padding: '2px 8px', borderRadius: '9999px' }}>
                           Google XYZ Formula

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getWebsiteData } from '../../../services/api/platform';
+import logo from '../../../assets/logo/logo.png';
 import '../public-site.css';
 import { FaMagic, FaCheckCircle, FaCcVisa, FaCcMastercard, FaCcPaypal, FaCcAmex, FaCcJcb } from 'react-icons/fa';
 
 export default function HomepageFooter() {
-  const [brandTitle, setBrandTitle] = useState('ResumePilot AI');
+  const [brandTitle, setBrandTitle] = useState('IME365');
   const [portfolioEnabled, setPortfolioEnabled] = useState(false);
   const [blogEnabled, setBlogEnabled] = useState(true);
 
@@ -35,15 +36,8 @@ export default function HomepageFooter() {
           
           {/* Col 1: Brand & Live Status */}
           <div style={{ maxWidth: '320px' }}>
-            <Link to="/" className="rp-nav-brand" style={{ marginBottom: '16px' }}>
-              <div className="rp-nav-logo-icon">
-                <FaMagic />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span className="rp-nav-title">
-                  {brandTitle.replace(' AI', '')} <span>AI</span>
-                </span>
-              </div>
+            <Link to="/" className="rp-nav-brand" style={{ marginBottom: '16px' }} aria-label="IME365.com Home">
+              <img src={logo} alt="IME365.com — Interview Made Easy" style={{ height: '48px', width: 'auto', objectFit: 'contain', display: 'block' }} />
             </Link>
             <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: '0 0 18px 0' }}>
               The modern AI career platform. Build recruiter-ready resumes across 51 certified ATS layouts, master interviews with CBT simulations, and land your next role.
@@ -100,7 +94,7 @@ export default function HomepageFooter() {
         {/* Bottom Bar */}
         <div style={{ paddingTop: '28px', borderTop: '1px solid #f1f5f9', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', fontSize: '13px' }}>
           <div>
-            © {new Date().getFullYear()} {brandTitle}. All rights reserved. Google-Inspired Material Edition.
+            © {new Date().getFullYear()} {brandTitle}. All rights reserved.
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '20px', color: '#94a3b8' }}>
             <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SECURED BY</span>

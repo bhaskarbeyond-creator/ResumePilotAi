@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import fire from '../../../conf/fire';
 import { getWebsiteData } from '../../../services/api/platform';
+import logo from '../../../assets/logo/logo.png';
 import '../public-site.css';
 import { 
   FaMagic, FaFileAlt, FaRobot, FaSearch, FaBars, FaTimes, 
@@ -18,7 +19,7 @@ export default function HomepageNavbar({ onOpenAuthModal }) {
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   const [resourcesDropdownOpen, setResourcesDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [brandTitle, setBrandTitle] = useState('ResumePilot AI');
+  const [brandTitle, setBrandTitle] = useState('IME365');
   const [portfolioEnabled, setPortfolioEnabled] = useState(false);
   const [blogEnabled, setBlogEnabled] = useState(true);
 
@@ -134,15 +135,8 @@ export default function HomepageNavbar({ onOpenAuthModal }) {
         <div className="rp-nav-glass">
           
           {/* Brand Logo with Dynamic Backend Title */}
-          <Link to="/" className="rp-nav-brand" aria-label="ResumePilot Home">
-            <div className="rp-nav-logo-icon">
-              <FaMagic />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-              <span className="rp-nav-title">
-                {brandTitle.replace(' AI', '')} <span>AI</span>
-              </span>
-            </div>
+          <Link to="/" className="rp-nav-brand" aria-label="IME365.com Home">
+            <img src={logo} alt="IME365.com — Interview Made Easy" style={{ height: '52px', width: 'auto', objectFit: 'contain', display: 'block' }} />
           </Link>
 
           {/* Center Navigation Menu — Clear Information Architecture */}

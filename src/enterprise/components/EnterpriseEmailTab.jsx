@@ -11,10 +11,10 @@ const DEFAULT_TEMPLATES = [
     name: 'Member Invitation & Onboarding',
     category: 'Access & IAM',
     icon: FiUserPlus,
-    subject: 'You\'re invited to join {{organization_name}} on ResumePilot Enterprise',
+    subject: 'You\'re invited to join {{organization_name}} on IME365 Enterprise',
     description: 'Sent when an administrator invites a new teammate or provisions access to the enterprise workspace.',
     variables: ['{{organization_name}}', '{{inviter_name}}', '{{user_name}}', '{{role_title}}', '{{action_url}}', '{{expires_in}}'],
-    body: `Hi {{user_name}},\n\n{{inviter_name}} has invited you to join the **{{organization_name}}** team workspace on ResumePilot AI.\n\n**Your Assigned Role:** {{role_title}}\n\nAs part of this workspace, you'll have full access to our collaborative resume builders, AI-assisted content tools, team templates, and candidate evaluation pipelines.\n\nTo activate your workspace access and get started, click the link below:\n\n{{action_url}}\n\n*Note: For your security, this invitation remains active for {{expires_in}}. If you weren't expecting this invitation, feel free to ignore this email or reach out to {{inviter_name}}.*\n\nWarm regards,\nThe {{organization_name}} Team`
+    body: `Hi {{user_name}},\n\n{{inviter_name}} has invited you to join the **{{organization_name}}** team workspace on IME365.\n\n**Your Assigned Role:** {{role_title}}\n\nAs part of this workspace, you'll have full access to our collaborative resume builders, AI-assisted content tools, team templates, and candidate evaluation pipelines.\n\nTo activate your workspace access and get started, click the link below:\n\n{{action_url}}\n\n*Note: For your security, this invitation remains active for {{expires_in}}. If you weren't expecting this invitation, feel free to ignore this email or reach out to {{inviter_name}}.*\n\nWarm regards,\nThe {{organization_name}} Team`
   },
   {
     id: 'role_change',
@@ -44,7 +44,7 @@ const DEFAULT_TEMPLATES = [
     subject: '🚨 Security Notice: Emergency Diagnostic Support Access for {{organization_name}}',
     description: 'High-priority notification sent to all Tenant Administrators whenever time-bound emergency support access is activated.',
     variables: ['{{organization_name}}', '{{granted_by}}', '{{support_agent}}', '{{reason}}', '{{expires_at}}', '{{action_url}}'],
-    body: `Hello Enterprise Administrator,\n\nThis is an automated security notice informing you that time-bound emergency diagnostic support was authorized for **{{organization_name}}**.\n\n• **Authorized By:** {{granted_by}}\n• **Support Engineer:** {{support_agent}}\n• **Purpose:** {{reason}}\n• **Valid Until:** {{expires_at}}\n\nEvery diagnostic interaction is cryptographically signed and recorded to your organization's tamper-evident audit ledger.\n\nYou can inspect live diagnostic activity or revoke this grant at any time in your Security Center:\n{{action_url}}\n\nResumePilot Enterprise Security Team`
+    body: `Hello Enterprise Administrator,\n\nThis is an automated security notice informing you that time-bound emergency diagnostic support was authorized for **{{organization_name}}**.\n\n• **Authorized By:** {{granted_by}}\n• **Support Engineer:** {{support_agent}}\n• **Purpose:** {{reason}}\n• **Valid Until:** {{expires_at}}\n\nEvery diagnostic interaction is cryptographically signed and recorded to your organization's tamper-evident audit ledger.\n\nYou can inspect live diagnostic activity or revoke this grant at any time in your Security Center:\n{{action_url}}\n\nIME365 Enterprise Security Team`
   },
   {
     id: 'quota_warning',
@@ -54,7 +54,7 @@ const DEFAULT_TEMPLATES = [
     subject: '⚠️ AI Quota Notice: {{organization_name}} has reached {{usage_percent}}% of monthly allocation',
     description: 'Proactive alert sent to Billing Administrators and Owners when token consumption approaches plan limits.',
     variables: ['{{organization_name}}', '{{usage_percent}}', '{{consumed_tokens}}', '{{quota_limit}}', '{{reset_date}}', '{{action_url}}'],
-    body: `Hi Billing Administrator,\n\nWe wanted to give you a quick heads-up: **{{organization_name}}** has consumed **{{consumed_tokens}}** of its **{{quota_limit}}** monthly AI token allocation (**{{usage_percent}}%** of total capacity).\n\nYour organization's usage counter will reset on **{{reset_date}}**.\n\nTo ensure uninterrupted access to AI resume drafting, interview simulations, and ATS optimization for your teammates, you can review consumption trends or upgrade compute capacity here:\n\n{{action_url}}\n\nWarm regards,\nResumePilot Enterprise Billing Team`
+    body: `Hi Billing Administrator,\n\nWe wanted to give you a quick heads-up: **{{organization_name}}** has consumed **{{consumed_tokens}}** of its **{{quota_limit}}** monthly AI token allocation (**{{usage_percent}}%** of total capacity).\n\nYour organization's usage counter will reset on **{{reset_date}}**.\n\nTo ensure uninterrupted access to AI resume drafting, interview simulations, and ATS optimization for your teammates, you can review consumption trends or upgrade compute capacity here:\n\n{{action_url}}\n\nWarm regards,\nIME365 Enterprise Billing Team`
   }
 ];
 
@@ -277,7 +277,7 @@ export default function EnterpriseEmailTab() {
       .replace(/{{workspace_name}}/g, 'North America Hub')
       .replace(/{{updater_name}}/g, 'Security Operations')
       .replace(/{{granted_by}}/g, 'Babu M (Tenant Owner)')
-      .replace(/{{support_agent}}/g, 'support-tier3@resumepilot.ai')
+      .replace(/{{support_agent}}/g, 'support-tier3@ime365.com')
       .replace(/{{reason}}/g, 'Investigating isolated outbox webhook latency')
       .replace(/{{expires_at}}/g, new Date(Date.now() + 4 * 3600 * 1000).toLocaleString())
       .replace(/{{usage_percent}}/g, '85')
@@ -416,7 +416,7 @@ export default function EnterpriseEmailTab() {
               <div className="enterprise-email-preview-box" style={{ background: '#f8fafc', border: '1px solid var(--ep-slate-200)', borderRadius: '10px', padding: '20px', marginTop: '12px' }}>
                 <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
                   <div style={{ fontSize: '0.76rem', color: '#64748b', marginBottom: '4px' }}>
-                    <strong>From:</strong> ResumePilot Enterprise &lt;no-reply@projectdemo.guru&gt;
+                    <strong>From:</strong> IME365 Enterprise &lt;no-reply@projectdemo.guru&gt;
                   </div>
                   <div style={{ fontSize: '0.76rem', color: '#64748b', marginBottom: '4px' }}>
                     <strong>To:</strong> {testEmail || 'member@organization.com'}
@@ -428,11 +428,11 @@ export default function EnterpriseEmailTab() {
 
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '20px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem' }}>
-                      R
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #0078d4, #005a9e)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem' }}>
+                      I
                     </div>
                     <div>
-                      <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{tenant?.displayName || 'ResumePilot Enterprise'}</strong>
+                      <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{tenant?.displayName || 'IME365 Enterprise'}</strong>
                       <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b' }}>Verified Organization Communications</span>
                     </div>
                   </div>
@@ -444,7 +444,7 @@ export default function EnterpriseEmailTab() {
                   />
 
                   <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
-                    This is an automated notification from {tenant?.displayName || 'ResumePilot Enterprise'}. Security keys and data planes are isolated per tenant policy.
+                    This is an automated notification from {tenant?.displayName || 'IME365 Enterprise'}. Security keys and data planes are isolated per tenant policy.
                   </div>
                 </div>
 

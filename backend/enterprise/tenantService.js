@@ -45,11 +45,11 @@ function buildInvitationNotification({ recipientEmail, organizationName, inviter
     },
     metadata: {
       source: 'enterprise_membership_transaction',
-      customSubject: `You're invited to join ${organization} on ResumePilot Enterprise`,
+      customSubject: `You're invited to join ${organization} on IME365 Enterprise`,
       customBody: [
         `Hi ${recipientName},`,
         '',
-        `${inviter} invited you to join ${organization} on ResumePilot Enterprise.`,
+        `${inviter} invited you to join ${organization} on IME365 Enterprise.`,
         `Assigned role: ${roleTitle}.`,
         '',
         'Sign in with this email address to review and accept the invitation:',

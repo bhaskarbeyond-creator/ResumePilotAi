@@ -24,7 +24,7 @@ function defaultEmailConfig() {
     return {
         smtp: {
             host: 'smtp.hostinger.com', port: 465, encryption: 'ssl', username: '', password: '',
-            senderName: 'ResumePilot AI', replyTo: '', adminEmail: '', authStrategy: 'PLAIN',
+            senderName: 'IME365', replyTo: '', adminEmail: '', authStrategy: 'PLAIN',
         },
         fallbackSmtp: {
             enabled: false, host: 'smtp.gmail.com', port: 587, encryption: 'tls', username: '', password: '',
@@ -442,7 +442,7 @@ function htmlToPlainText(html, actionUrl = '') {
 }
 
 // Shared Header/Footer Layout Wrapper for 10/10 Aesthetic Consistency & Anti-Spam
-function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePilot AI', siteUrl = '', supportEmail = '') {
+function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'IME365', siteUrl = '', supportEmail = '') {
     const preheader = (contentHtml || '')
         .replace(/<[^>]+>/g, ' ')
         .replace(/\s+/g, ' ')
@@ -487,7 +487,7 @@ function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePil
             <div style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #64748b;">
                 <p style="margin: 0 0 8px 0; font-weight: 600; color: #475569;">© ${new Date().getFullYear()} ${escapeEmailHtml(brandName)}. All rights reserved.</p>
                 <p style="margin: 0;">Need assistance? Contact our team at <a href="mailto:${escapeEmailHtml(supportEmail)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(supportEmail)}</a> or visit <a href="${hrefAttr(siteUrl)}" style="color: #4f46e5; text-decoration: none; font-weight: 600;">${escapeEmailHtml(siteUrl)}</a></p>
-                <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">This is an authentic operational communication sent securely from ResumePilot AI.</p>
+                <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">This is an authentic operational communication sent securely from IME365.</p>
             </div>
         </div>
     </div>
@@ -498,7 +498,7 @@ function buildEmailWrapper(title, badgeText, contentHtml, brandName = 'ResumePil
 /**
  * Converts custom text / shortcode bodies into high-fidelity HTML email blocks.
  */
-function formatCustomEmailBody(customBody, vars = {}, brandName = 'ResumePilot AI', siteUrl = '', supportEmail = '') {
+function formatCustomEmailBody(customBody, vars = {}, brandName = 'IME365', siteUrl = '', supportEmail = '') {
     const rawReplaced = replaceEmailVariables(customBody, vars);
     
     // Split into paragraphs / lines
@@ -581,7 +581,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
             ? hrefAttr(value)
             : escapeEmailHtml(value)
     ]));
-    const brandName = vars.brand_name || escapeEmailHtml(process.env.SMTP_SENDER_NAME || 'ResumePilot AI');
+    const brandName = vars.brand_name || escapeEmailHtml(process.env.SMTP_SENDER_NAME || 'IME365');
     const siteUrl = origin;
     const supportEmail = rawVars.support_email || process.env.SMTP_REPLY_TO || `support@${new URL(origin).hostname}`;
     vars.action_url = hrefAttr(rawActionUrl);
@@ -1059,13 +1059,13 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
         case 'enterprise-invitation':
         case 'enterprise_invitation':
         case 'invitation':
-            subject = vars.subject || `You're invited to join ${vars.organization_name || 'your enterprise workspace'} on ResumePilot Enterprise`;
+            subject = vars.subject || `You're invited to join ${vars.organization_name || 'your enterprise workspace'} on IME365 Enterprise`;
             bodyHtml = buildEmailWrapper(
                 'Enterprise Workspace Invitation',
                 'ENTERPRISE INVITATION',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.inviter_name || 'Your team administrator'} has invited you to join the <strong>${vars.organization_name || 'enterprise'}</strong> workspace on ResumePilot AI.</p>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">${vars.inviter_name || 'Your team administrator'} has invited you to join the <strong>${vars.organization_name || 'enterprise'}</strong> workspace on IME365.</p>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 18px 20px; margin: 20px 0;">
                     <p style="margin: 0 0 6px; font-size: 14px; color: #1e293b; font-weight: 700;">Assigned Role: ${vars.role_title || 'Enterprise Team Member'}</p>
                     <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">You'll have access to collaborative resume builders, AI content optimization, team templates, and candidate evaluation tools.</p>
@@ -1105,7 +1105,7 @@ function renderEmailTemplate(templateType, vars = {}, customHtmlMap = {}) {
                 'COLLABORATION UPDATE',
                 `
                 <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0;">Hi ${candidateName},</h2>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6;">You've been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'ResumePilot Enterprise'}.</p>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">You've been assigned to workspace <strong>${vars.workspace_name || 'Workspace'}</strong> ${vars.team_name ? `and team <strong>${vars.team_name}</strong>` : ''} in ${vars.organization_name || 'IME365 Enterprise'}.</p>
                 <div style="text-align: center; margin: 26px 0;">
                     <a href="${vars.action_url}" target="_blank" rel="noopener noreferrer" style="background-color: #4f46e5; color: #ffffff; padding: 13px 30px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-block; box-shadow: 0 10px 20px -5px rgba(79,70,229,0.4);">Open Team Workspace &rarr;</a>
                 </div>
@@ -1247,7 +1247,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
     if (!mailOptions.headers) {
         mailOptions.headers = {};
     }
-    mailOptions.headers['X-Mailer'] = mailOptions.headers['X-Mailer'] || 'ResumePilot Enterprise Mail Gateway/2.0';
+    mailOptions.headers['X-Mailer'] = mailOptions.headers['X-Mailer'] || 'IME365 Enterprise Mail Gateway/2.0';
     mailOptions.headers['X-Auto-Response-Suppress'] = 'OOF, AutoReply';
     mailOptions.headers['MIME-Version'] = '1.0';
     if (!mailOptions.headers['Date'] && !mailOptions.date) {
@@ -1266,7 +1266,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
 
     // Standardize sender and reply-to addresses
     if (!mailOptions.from) {
-        const senderName = config.smtp?.senderName || 'ResumePilot AI';
+        const senderName = config.smtp?.senderName || 'IME365';
         const senderUser = config.smtp?.senderEmail || (config.smtp?.username?.includes('@') ? config.smtp.username : `no-reply@${new URL(publicSiteOrigin()).hostname}`);
         mailOptions.from = `"${senderName}" <${senderUser}>`;
     }
@@ -1350,7 +1350,7 @@ async function dispatchMailWithFallback(config, mailOptions) {
                     fallbackUser = `no-reply@${domain}`;
                 }
             }
-            const senderName = config.smtp?.senderName || 'ResumePilot AI';
+            const senderName = config.smtp?.senderName || 'IME365';
             const fallbackMailOptions = {
                 ...mailOptions,
                 from: `"${senderName}" <${fallbackUser}>`,
@@ -1533,7 +1533,7 @@ router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) =
                 encryption: req.body.encryption || stored.encryption || 'tls',
                 username: req.body.username || stored.username || '',
                 password: req.body.password || stored.password || '',
-                senderName: req.body.senderName || stored.senderName || 'ResumePilot AI Failover',
+                senderName: req.body.senderName || stored.senderName || 'IME365 Failover',
                 adminEmail: req.body.adminEmail || stored.adminEmail || req.body.username || stored.username || 'bhaskar.beyond@gmail.com',
             };
 
@@ -1599,7 +1599,7 @@ router.post('/admin/test-connection', recentAuthForEmailTest, async (req, res) =
             encryption: req.body.encryption || stored.encryption || 'ssl',
             username: req.body.username || stored.username || '',
             password: req.body.password || stored.password || '',
-            senderName: req.body.senderName || stored.senderName || 'ResumePilot AI',
+            senderName: req.body.senderName || stored.senderName || 'IME365',
             adminEmail: req.body.adminEmail || stored.adminEmail || 'bhaskar.beyond@gmail.com',
         };
 
@@ -2109,7 +2109,7 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
             return { success: true, skipped: true };
         }
 
-        const brandName = config.smtp?.senderName || 'ResumePilot AI';
+        const brandName = config.smtp?.senderName || 'IME365';
         const siteUrl = publicSiteOrigin();
         const supportEmail = config.smtp?.replyTo || `support@${new URL(siteUrl).hostname}`;
 
@@ -2161,7 +2161,7 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
             team_name: vars.team_name || 'Core Team',
             updater_name: updaterName,
             granted_by: grantedBy,
-            support_agent: vars.support_agent || 'support-tier3@resumepilot.ai',
+            support_agent: vars.support_agent || 'support-tier3@ime365.com',
             reason: vars.reason || 'Technical operational review',
             expires_at: vars.expires_at || new Date(Date.now() + 4 * 3600 * 1000).toLocaleString(),
             usage_percent: vars.usage_percent || '85',
@@ -2195,7 +2195,7 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
         const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 11)}@${senderDomain}>`;
 
         const mailOptions = {
-            from: `"${config.smtp?.senderName || 'ResumePilot Enterprise'}" <${config.smtp?.senderEmail || config.smtp?.username}>`,
+            from: `"${config.smtp?.senderName || 'IME365 Enterprise'}" <${config.smtp?.senderEmail || config.smtp?.username}>`,
             replyTo: config.smtp?.replyTo || config.smtp?.username,
             to,
             subject: String(resolvedSubject || '').replace(/[\r\n\p{Cc}]/gu, ' ').trim().slice(0, 255),
@@ -2203,7 +2203,7 @@ async function dispatchNotification({ to, templateType, vars = {}, customSubject
             text: textFallback,
             messageId,
             headers: {
-                'X-Mailer': 'ResumePilot Enterprise Mail Gateway/2.0',
+                'X-Mailer': 'IME365 Enterprise Mail Gateway/2.0',
                 'X-Entity-Ref-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                 'X-Auto-Response-Suppress': 'OOF, AutoReply',
                 'MIME-Version': '1.0',

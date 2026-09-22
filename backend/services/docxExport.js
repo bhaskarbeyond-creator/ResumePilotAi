@@ -1448,7 +1448,7 @@ function resumeDocument(input = {}) {
   }
 
   return new Document({
-    creator: 'ResumePilot AI',
+    creator: 'IME365',
     title: fullName,
     description: 'Editable professional resume document export',
     numbering: numberingConfig(),

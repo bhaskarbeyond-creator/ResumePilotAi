@@ -79,7 +79,7 @@ const PublicPortfolio = () => {
 
     useEffect(() => {
         if (!error || portfolio) return undefined;
-        document.title = 'Portfolio unavailable — ResumePilot AI';
+        document.title = 'Portfolio unavailable — IME365';
         document.head.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex,nofollow');
         document.head.querySelector('meta[name="description"]')?.setAttribute('content', 'The requested Portfolio is unavailable or not published.');
         document.head.querySelector('link[rel="canonical"]')?.setAttribute('href', `${window.location.origin}/portfolio/${encodeURIComponent(slug || '')}`);

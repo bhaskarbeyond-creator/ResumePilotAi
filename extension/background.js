@@ -1,11 +1,13 @@
 /**
- * ResumePilot AI Media Companion - Background Service Worker
+ * IME365 Media Companion - Background Service Worker
  * Automatically configures browser contentSettings for microphone & camera
  */
 
 const TARGET_ORIGIN_PATTERNS = [
     'http://localhost:*/*',
     'http://127.0.0.1:*/*',
+    'https://ime365.com/*',
+    'https://*.ime365.com/*',
     'https://airesume.projectdemo.guru/*'
 ];
 
@@ -27,7 +29,7 @@ async function autoAllowMediaPermissions() {
                 });
             }
         } catch (error) {
-            console.error('[ResumePilot Extension] Failed setting permission for pattern:', pattern, error);
+            console.error('[IME365 Extension] Failed setting permission for pattern:', pattern, error);
         }
     }
 }

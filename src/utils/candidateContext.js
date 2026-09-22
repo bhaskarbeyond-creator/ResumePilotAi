@@ -1,5 +1,5 @@
 /**
- * Evidence-Based Candidate Context Engine (v2) — ResumePilot AI
+ * Evidence-Based Candidate Context Engine (v2) — IME365
  *
  * Replaces the previous profession taxonomy with a single principle:
  * every piece of context shown to the candidate, used in an AI prompt, or
@@ -37,11 +37,15 @@ function cleanText(val) {
  */
 export function extractCandidateActionVerbs(resumeData = {}, targetJd = '') {
     const data = (resumeData && typeof resumeData === 'object') ? resumeData : {};
+    const rawEmployments = Array.isArray(data.employments) ? data.employments
+        : (Array.isArray(data.workExperiences) ? data.workExperiences
+        : (Array.isArray(data.workExperience) ? data.workExperience
+        : (Array.isArray(data.experience) ? data.experience : [])));
     const raw = [
         data.summary,
         data.occupation,
         targetJd,
-        ...(Array.isArray(data.employments) ? data.employments.map(e => `${e?.jobTitle || ''} ${e?.description || ''}`) : []),
+        ...rawEmployments.map(e => `${e?.jobTitle || e?.title || e?.role || ''} ${e?.description || e?.summary || ''}`),
         ...(Array.isArray(data.projects) ? data.projects.map(p => `${p?.title || ''} ${p?.description || ''}`) : []),
     ].join(' ').toLowerCase();
 
@@ -167,15 +171,21 @@ function textFromValue(value) {
  */
 export function mineCandidateVocabulary(resumeData = {}) {
     const data = (resumeData && typeof resumeData === 'object') ? resumeData : {};
+    const rawEmployments = Array.isArray(data.employments) ? data.employments
+        : (Array.isArray(data.workExperiences) ? data.workExperiences
+        : (Array.isArray(data.workExperience) ? data.workExperience
+        : (Array.isArray(data.experience) ? data.experience : [])));
+    const rawEducations = Array.isArray(data.educations) ? data.educations
+        : (Array.isArray(data.education) ? data.education : []);
     const raw = [
         data.summary,
         data.occupation,
-        ...(Array.isArray(data.employments) ? data.employments : []),
-        ...(Array.isArray(data.educations) ? data.educations : []),
+        ...rawEmployments,
+        ...rawEducations,
         ...(Array.isArray(data.projects) ? data.projects : []),
         ...(Array.isArray(data.achievements) ? data.achievements : []),
-        ...(Array.isArray(data.skills) ? data.skills : []),
-        ...(Array.isArray(data.certifications) ? data.certifications : []),
+        ...(Array.isArray(data.skills) ? data.skills : (Array.isArray(data.existingSkills) ? data.existingSkills : [])),
+        ...(Array.isArray(data.certifications) ? data.certifications : (Array.isArray(data.certificates) ? data.certificates : [])),
         ...(Array.isArray(data.customSections) ? data.customSections : []),
     ].map(textFromValue).join(' ');
 
@@ -226,16 +236,19 @@ function describeGaps(data = {}) {
 
     // Work history
     const workHistory = [];
-    const employments = Array.isArray(data.employments) ? data.employments : [];
+    const employments = Array.isArray(data.employments) ? data.employments
+        : (Array.isArray(data.workExperiences) ? data.workExperiences
+        : (Array.isArray(data.workExperience) ? data.workExperience
+        : (Array.isArray(data.experience) ? data.experience : [])));
     if (employments.length === 0) {
         workHistory.push('Add your most recent position');
     } else {
         for (let i = 0; i < employments.length; i += 1) {
             const emp = employments[i] || {};
-            const label = String(emp.jobTitle || emp.employer || '').trim() || `position ${i + 1}`;
-            if (!String(emp.jobTitle || '').trim() && !String(emp.employer || '').trim()) {
+            const label = String(emp.jobTitle || emp.title || emp.position || emp.employer || emp.company || '').trim() || `position ${i + 1}`;
+            if (!String(emp.jobTitle || emp.title || emp.position || '').trim() && !String(emp.employer || emp.company || '').trim()) {
                 workHistory.push(`Complete position ${i + 1} (title and organization)`);
-            } else if (!String(emp.description || '').replace(/<[^>]*>/g, ' ').trim()) {
+            } else if (!String(emp.description || emp.summary || '').replace(/<[^>]*>/g, ' ').trim()) {
                 workHistory.push(`Add what you did in “${label}”`);
             } else if (!String(emp.begin || emp.startDate || '').trim()) {
                 workHistory.push(`Add start date for “${label}”`);
@@ -247,18 +260,19 @@ function describeGaps(data = {}) {
 
     // Education
     const education = [];
-    const educations = Array.isArray(data.educations) ? data.educations : [];
+    const educations = Array.isArray(data.educations) ? data.educations
+        : (Array.isArray(data.education) ? data.education : []);
     if (educations.length === 0) {
         education.push('Add your highest completed qualification');
     } else {
         const incomplete = educations.find(edu =>
-            !String(edu.degree || '').trim() || !String(edu.school || '').trim());
+            !String(edu?.degree || edu?.qualification || '').trim() || !String(edu?.school || edu?.institution || '').trim());
         if (incomplete) education.push('Complete the qualification and institution names');
     }
     gaps.education = education;
 
     // Skills
-    const skills = Array.isArray(data.skills) ? data.skills : [];
+    const skills = Array.isArray(data.skills) ? data.skills : (Array.isArray(data.existingSkills) ? data.existingSkills : []);
     gaps.skills = skills.length === 0
         ? ['Add the skills you actually used in your work']
         : (skills.length < 4 ? ['Consider adding a few more core skills'] : []);
@@ -310,10 +324,24 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     const data = (resumeData && typeof resumeData === 'object') ? resumeData : {};
     const region = detectGeographicRegion(data);
 
-    const employments = (Array.isArray(data.employments) ? data.employments : []).filter(e => e && typeof e === 'object');
-    const educations = (Array.isArray(data.educations) ? data.educations : []).filter(e => e && typeof e === 'object');
-    const skills = (Array.isArray(data.skills) ? data.skills : []).filter(s => s && (typeof s === 'string' || typeof s === 'object'));
-    const certifications = (Array.isArray(data.certifications) ? data.certifications : []).filter(c => c && typeof c === 'object');
+    const rawEmployments = Array.isArray(data.employments) ? data.employments
+        : (Array.isArray(data.workExperiences) ? data.workExperiences
+        : (Array.isArray(data.workExperience) ? data.workExperience
+        : (Array.isArray(data.experience) ? data.experience : [])));
+    const employments = rawEmployments.filter(e => e && typeof e === 'object');
+
+    const rawEducations = Array.isArray(data.educations) ? data.educations
+        : (Array.isArray(data.education) ? data.education : []);
+    const educations = rawEducations.filter(e => e && typeof e === 'object');
+
+    const rawSkills = Array.isArray(data.skills) ? data.skills
+        : (Array.isArray(data.existingSkills) ? data.existingSkills : []);
+    const skills = rawSkills.filter(s => s && (typeof s === 'string' || typeof s === 'object'));
+
+    const rawCertifications = Array.isArray(data.certifications) ? data.certifications
+        : (Array.isArray(data.certificates) ? data.certificates : []);
+    const certifications = rawCertifications.filter(c => c && typeof c === 'object');
+
     const projects = (Array.isArray(data.projects) ? data.projects : []).filter(p => p && typeof p === 'object');
     const achievements = (Array.isArray(data.achievements) ? data.achievements : []).filter(a => a && typeof a === 'object');
     const languages = (Array.isArray(data.languages) ? data.languages : []).filter(l => l && (typeof l === 'string' || typeof l === 'object'));
@@ -329,7 +357,8 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     const jdRole = extractTargetRoleFromJd(targetJd);
     const isGenericDeclared = /^(consultant|manager|director|specialist|professional|coordinator|associate|analyst|officer)$/i.test(declaredTitle);
     const targetRole = explicitTargetRole || ((!declaredTitle || isGenericDeclared) ? (jdRole || declaredTitle) : declaredTitle);
-    const currentRole = String(employments[0]?.jobTitle || '').trim();
+    const firstEmp = employments[0] || {};
+    const currentRole = String(firstEmp.jobTitle || firstEmp.title || firstEmp.position || firstEmp.role || '').trim();
     const jd = String(targetJd || '').trim();
     const experienceYears = estimateExperienceYears(employments);
     const summary = String(data.summary || '').replace(/<[^>]*>/g, ' ').trim();
@@ -340,8 +369,8 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     const profileHash = djb2Hash(JSON.stringify({
         role: targetRole,
         jd: jd ? jd.slice(0, 800) : '',
-        roles: employments.map(e => `${e?.jobTitle || ''}|${e?.employer || ''}|${e?.begin || e?.startDate || ''}|${e?.end || e?.endDate || ''}`),
-        edu: educations.map(e => `${e?.degree || ''}|${e?.school || ''}`),
+        roles: employments.map(e => `${e?.jobTitle || e?.title || ''}|${e?.employer || e?.company || ''}|${e?.begin || e?.startDate || ''}|${e?.end || e?.endDate || ''}`),
+        edu: educations.map(e => `${e?.degree || e?.qualification || ''}|${e?.school || e?.institution || ''}`),
         skills: skills.map(s => (typeof s === 'string' ? s : s?.skillName || s?.name || '')).sort(),
         certs: certifications.map(c => c?.title || c?.name || '').sort(),
         projects: projects.map(p => p?.title || p?.name || '').sort(),
@@ -355,27 +384,27 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
             headline: targetRole || currentRole || declaredTitle,
             location: [data.city, data.country].filter(Boolean).join(', '),
             roles: employments.map((e) => ({
-                title: String(e.jobTitle || '').trim(),
-                employer: String(e.employer || '').trim(),
-                city: String(e.city || '').trim(),
-                begin: String(e.begin || e.startDate || '').trim(),
-                end: String(e.end || e.endDate || '').trim(),
-                current: Boolean(e.current),
-                description: String(e.description || '').replace(/<[^>]*>/g, ' ').trim(),
+                title: String(e.jobTitle || e.title || e.position || e.role || '').trim(),
+                employer: String(e.employer || e.company || e.organization || e.companyName || '').trim(),
+                city: String(e.city || e.location || '').trim(),
+                begin: String(e.begin || e.startDate || e.from || '').trim(),
+                end: String(e.end || e.endDate || e.to || '').trim(),
+                current: Boolean(e.current || e.isCurrent),
+                description: String(e.description || e.summary || e.notes || '').replace(/<[^>]*>/g, ' ').trim(),
             })),
             education: educations.map((e) => ({
-                degree: String(e.degree || '').trim(),
-                school: String(e.school || '').trim(),
-                city: String(e.city || '').trim(),
-                started: String(e.started || e.startDate || '').trim(),
-                finished: String(e.finished || e.endDate || '').trim(),
-                description: String(e.description || '').replace(/<[^>]*>/g, ' ').trim(),
+                degree: String(e.degree || e.qualification || e.degreeType || e.fieldOfStudy || '').trim(),
+                school: String(e.school || e.institution || e.university || e.college || '').trim(),
+                city: String(e.city || e.location || '').trim(),
+                started: String(e.started || e.startDate || e.begin || '').trim(),
+                finished: String(e.finished || e.endDate || e.end || '').trim(),
+                description: String(e.description || e.notes || '').replace(/<[^>]*>/g, ' ').trim(),
             })),
             skills: skills.map((s) => (typeof s === 'string' ? s.trim() : String(s.skillName || s.name || '').trim())).filter(Boolean),
             certifications: certifications.map((c) => ({
                 title: String(c.title || c.name || '').trim(),
-                issuer: String(c.issuer || c.organization || '').trim(),
-                date: String(c.date || '').trim(),
+                issuer: String(c.issuer || c.organization || c.authority || '').trim(),
+                date: String(c.date || c.issueDate || '').trim(),
                 category: String(c.category || '').trim(),
             })),
             projects: projects.map((p) => ({

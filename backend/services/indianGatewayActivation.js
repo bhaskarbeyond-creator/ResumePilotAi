@@ -11,7 +11,7 @@ function webhookEventId(provider, orderId, paymentId) {
 }
 
 function paytmCallbackHtml() {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Payment update received</title></head><body><p>We received the Paytm payment update. If your payment succeeded, access will activate shortly. You can close this window and return to ResumePilot AI.</p></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Payment update received</title></head><body><p>We received the Paytm payment update. If your payment succeeded, access will activate shortly. You can close this window and return to IME365.</p></body></html>`;
 }
 
 function phonePeCallbackChecksum(base64Response, saltKey, saltIndex) {

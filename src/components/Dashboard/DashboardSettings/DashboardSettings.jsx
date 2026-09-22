@@ -5903,7 +5903,7 @@ function DashboardSettings(_props) {
                     {totpSetupStep === 3 && (
                         <div className="space-y-4">
                             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 leading-relaxed">
-                                <strong>Two-factor authentication is active.</strong> Firebase Identity Platform will require your authenticator code during sign-in. ResumePilot does not store or display reusable recovery codes.
+                                <strong>Two-factor authentication is active.</strong> Firebase Identity Platform will require your authenticator code during sign-in. IME365 does not store or display reusable recovery codes.
                             </div>
                             <div className="flex justify-end pt-2 border-t border-slate-100">
                                 <button type="button" onClick={() => setTotpSetupModalOpen(false)} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs">

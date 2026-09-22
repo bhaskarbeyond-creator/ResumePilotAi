@@ -1706,7 +1706,7 @@ class SubscriptionSetting extends Component {
                                             type="text"
                                             value={this.state.supplierLegalName}
                                             onChange={(e) => this.setState({ supplierLegalName: e.target.value })}
-                                            placeholder="ResumePilot Technologies Pvt Ltd"
+                                            placeholder="IME365 Technologies Pvt Ltd"
                                             className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
                                         />
                                     </div>
@@ -1719,7 +1719,7 @@ class SubscriptionSetting extends Component {
                                             type="text"
                                             value={this.state.supplierTradeName}
                                             onChange={(e) => this.setState({ supplierTradeName: e.target.value })}
-                                            placeholder="ResumePilot AI"
+                                            placeholder="IME365"
                                             className="w-full text-xs p-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-semibold focus:border-indigo-500 outline-none"
                                         />
                                     </div>

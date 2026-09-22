@@ -36,6 +36,7 @@ const initialState = {
     jobDescription: '',
     resumeLabel: '',
     resumeFacts: '',
+    selectedResumeId: null,
     currentQuestion: 0,
     selectedAnswers: {},
     marked: [],
@@ -675,10 +676,38 @@ const DashboardInterviews = () => {
     useEffect(() => {
         if (!ownerUid) return undefined;
         let active = true;
-        getResumes(ownerUid, 1, 20).then(result => {
-            if (active) setResumes(result?.resumes || []);
-        }).catch(() => {});
-        return () => { active = false; };
+
+        const loadResumes = () => {
+            getResumes(ownerUid, 1, 30).then(result => {
+                if (active) {
+                    const list = result?.resumes || [];
+                    const seen = new Set();
+                    const deduped = list.filter(r => {
+                        if (!r.id || seen.has(r.id)) return false;
+                        seen.add(r.id);
+                        return true;
+                    });
+                    setResumes(deduped);
+                }
+            }).catch(() => {});
+        };
+
+        loadResumes();
+
+        const handleRefresh = () => {
+            if (stateRef.current.phase === 'setup' && document.visibilityState !== 'hidden') {
+                loadResumes();
+            }
+        };
+
+        window.addEventListener('focus', handleRefresh);
+        document.addEventListener('visibilitychange', handleRefresh);
+
+        return () => {
+            active = false;
+            window.removeEventListener('focus', handleRefresh);
+            document.removeEventListener('visibilitychange', handleRefresh);
+        };
     }, [ownerUid]);
 
     // ── SESSION PERSISTENCE (debounced + heartbeat + flush) ──────────────────
@@ -1064,15 +1093,18 @@ const DashboardInterviews = () => {
             ? resume.item.title
             : (resume.item?.occupation || (resume.item?.firstname ? `${resume.item.firstname}'s Resume` : `Resume #${resume.id?.slice(0, 6)}`));
 
-        if (state.resumeLabel === fallbackTitle) {
+        const isCurrentlySelected = state.selectedResumeId === resume.id || (!state.selectedResumeId && state.resumeLabel === fallbackTitle);
+
+        if (isCurrentlySelected) {
             dispatch({
                 type: 'PATCH',
-                patch: { resumeLabel: '', resumeFacts: '' },
+                patch: { selectedResumeId: null, resumeLabel: '', resumeFacts: '' },
             });
         } else {
             dispatch({
                 type: 'PATCH',
                 patch: {
+                    selectedResumeId: resume.id,
                     resumeLabel: fallbackTitle,
                     resumeFacts: sanitizeResumeFacts(resume),
                     occupation: state.occupation || resume.item?.occupation || '',
@@ -1951,10 +1983,10 @@ const DashboardInterviews = () => {
                                     <FaFileAlt className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
                                     <span>Resume Personalization (Optional — Uses Candidate History)</span>
                                 </h3>
-                                {state.resumeLabel && (
+                                {(state.selectedResumeId || state.resumeLabel) && (
                                     <button
                                         type="button"
-                                        onClick={() => dispatch({ type: 'PATCH', patch: { resumeLabel: '', resumeFacts: '' } })}
+                                        onClick={() => dispatch({ type: 'PATCH', patch: { selectedResumeId: null, resumeLabel: '', resumeFacts: '' } })}
                                         className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 underline cursor-pointer">
                                         Clear Selected Resume
                                     </button>
@@ -1963,10 +1995,22 @@ const DashboardInterviews = () => {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" role="group" aria-label="Select a resume for personalization">
                                 {resumes.map(resume => {
-                                    const title = resume.item?.title && resume.item?.title !== 'Untitled Resume'
+                                    const hasCustomTitle = resume.item?.title && resume.item?.title !== 'Untitled Resume';
+                                    const title = hasCustomTitle
                                         ? resume.item.title
                                         : (resume.item?.occupation || (resume.item?.firstname ? `${resume.item.firstname}'s Resume` : `Resume #${resume.id?.slice(0, 6)}`));
-                                    const isSelected = state.resumeLabel === title;
+                                    const isSelected = state.selectedResumeId === resume.id || (!state.selectedResumeId && state.resumeLabel === title);
+
+                                    const rawDate = resume.item?.updated_at || resume.item?.updatedAt || resume.updated_at;
+                                    let formattedDate = '';
+                                    if (rawDate) {
+                                        try {
+                                            const d = new Date(rawDate);
+                                            if (!isNaN(d.getTime())) {
+                                                formattedDate = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                                            }
+                                        } catch (_) {}
+                                    }
 
                                     return (
                                         <button
@@ -1983,8 +2027,18 @@ const DashboardInterviews = () => {
                                                 {isSelected ? <FaCheck className="w-3.5 h-3.5 text-white" /> : <FaFileAlt className="w-3.5 h-3.5" />}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-bold text-slate-900 truncate">{title}</p>
-                                                <p className="text-[10px] text-slate-500 truncate">{resume.item?.occupation || 'Candidate Profile'}</p>
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="text-xs font-bold text-slate-900 truncate">{title}</p>
+                                                    {!hasCustomTitle && (
+                                                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Draft</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center justify-between gap-1 mt-0.5">
+                                                    <p className="text-[10px] text-slate-500 truncate">{resume.item?.occupation || 'Candidate Profile'}</p>
+                                                    {formattedDate && (
+                                                        <span className="text-[9px] text-slate-400 shrink-0">{formattedDate}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </button>
                                     );

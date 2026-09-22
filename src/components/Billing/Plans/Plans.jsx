@@ -1050,7 +1050,7 @@ const PlansPage = (props) => {
                         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
                             <div className="border-b border-slate-100 pb-4">
                                 <h3 className="text-lg font-bold text-slate-900">Plan Term &amp; Renewal</h3>
-                                <p className="text-xs text-slate-500">ResumePilot purchases are fixed-term, one-time payments. No payment method is stored or charged automatically.</p>
+                                <p className="text-xs text-slate-500">IME365 purchases are fixed-term, one-time payments. No payment method is stored or charged automatically.</p>
                             </div>
 
                             <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-purple-950 rounded-2xl p-5 border border-indigo-500/30 text-white flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-md">

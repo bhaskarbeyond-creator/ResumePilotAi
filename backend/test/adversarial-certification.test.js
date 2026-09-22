@@ -151,7 +151,7 @@ class MockAdversarialPool {
         subscriptions: { enabled: true, state: true },
         watermark: {
           enableFreeWatermark: true,
-          watermarkText: 'Created with ResumePilot AI (Free Plan)',
+          watermarkText: 'Created with IME365 (Free Plan)',
           opacity: 0.18,
           position: 'diagonal',
           allowFreePdfDownload: false,

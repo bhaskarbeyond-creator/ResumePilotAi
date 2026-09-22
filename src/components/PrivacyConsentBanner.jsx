@@ -4,12 +4,14 @@ import { getSystemSettings } from '../services/api/platform';
 import { sanitizeUrl } from '../utils/sanitizeHtml';
 import { getAnalyticsConsent, setAnalyticsConsent } from '../utils/privacyConsent';
 
-export const OPEN_PRIVACY_CHOICES_EVENT = 'resumepilot:open-privacy-choices';
+export const OPEN_PRIVACY_CHOICES_EVENT = 'ime365:open-privacy-choices';
+export const LEGACY_OPEN_PRIVACY_CHOICES_EVENT = 'resumepilot:open-privacy-choices';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function openPrivacyChoicesModal() {
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(OPEN_PRIVACY_CHOICES_EVENT));
+        window.dispatchEvent(new CustomEvent(LEGACY_OPEN_PRIVACY_CHOICES_EVENT));
     }
 }
 
@@ -38,7 +40,11 @@ export default function PrivacyConsentBanner() {
     useEffect(() => {
         const handleOpen = () => setShowChoices(true);
         window.addEventListener(OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
-        return () => window.removeEventListener(OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
+        window.addEventListener(LEGACY_OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
+        return () => {
+            window.removeEventListener(OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
+            window.removeEventListener(LEGACY_OPEN_PRIVACY_CHOICES_EVENT, handleOpen);
+        };
     }, []);
 
     const choose = (value) => {

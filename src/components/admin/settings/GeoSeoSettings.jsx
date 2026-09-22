@@ -9,7 +9,7 @@ const GeoSeoSettings = () => {
         targetCity: 'Bengaluru',
         targetCountry: 'India',
         metaKeywords: 'AI Resume Builder India, Free CV Maker, Biodata Format, Naukri Resume, Professional CV Bengaluru',
-        canonicalUrl: import.meta.env.VITE_WEBSITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://resumepilot.ai'),
+        canonicalUrl: import.meta.env.VITE_WEBSITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://ime365.com'),
         enableJobPostingSchema: true,
         enableOrganizationSchema: true,
     });

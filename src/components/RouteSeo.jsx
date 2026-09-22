@@ -1,21 +1,21 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const SITE_NAME = 'ResumePilot AI';
+const SITE_NAME = 'IME365';
 
 const PUBLIC_PAGES = {
   '/': [`${SITE_NAME} — ATS Resume Builder & CV Maker`, 'Create ATS-friendly resumes, cover letters, and professional portfolios with AI-assisted tools.'],
-  '/login': [`Sign In — ${SITE_NAME}`, 'Sign in or create your free ResumePilot AI account.'],
+  '/login': [`Sign In — ${SITE_NAME}`, 'Sign in or create your free IME365 account.'],
   '/features': [`${SITE_NAME} Features`, 'Explore resume, cover-letter, Portfolio, job-tracking, and AI-assisted career tools.'],
-  '/pricing': [`${SITE_NAME} Plans & Pricing`, 'Compare ResumePilot AI plans and server-verified premium features.'],
-  '/billing/plans': [`${SITE_NAME} Plans & Pricing`, 'Compare ResumePilot AI plans and server-verified premium features.'],
-  '/jobs': ['Jobs and Career Opportunities', 'Browse job opportunities and career resources powered by ResumePilot AI.'],
-  '/jobs/portal': ['Job Portal — Browse Open Positions', 'Find and apply for the latest job openings on ResumePilot AI job portal.'],
-  '/jobs/browse': ['Browse Jobs — ResumePilot AI', 'Search and filter job listings matched to your career profile.'],
-  '/jobs/categories': ['Job Categories — ResumePilot AI', 'Explore job opportunities organized by industry and category.'],
+  '/pricing': [`${SITE_NAME} Plans & Pricing`, 'Compare IME365 plans and server-verified premium features.'],
+  '/billing/plans': [`${SITE_NAME} Plans & Pricing`, 'Compare IME365 plans and server-verified premium features.'],
+  '/jobs': ['Jobs and Career Opportunities', 'Browse job opportunities and career resources powered by IME365.'],
+  '/jobs/portal': ['Job Portal — Browse Open Positions', 'Find and apply for the latest job openings on IME365 job portal.'],
+  '/jobs/browse': ['Browse Jobs — IME365', 'Search and filter job listings matched to your career profile.'],
+  '/jobs/categories': ['Job Categories — IME365', 'Explore job opportunities organized by industry and category.'],
   '/blog': [`${SITE_NAME} Career Blog`, 'Read public career, resume, interview, and job-search articles.'],
   '/portfolios': ['Professional Portfolio Gallery', 'Browse explicitly published professional portfolios.'],
-  '/contact': [`Contact ${SITE_NAME}`, 'Contact ResumePilot AI support and product teams.'],
+  '/contact': [`Contact ${SITE_NAME}`, 'Contact IME365 support and product teams.'],
 };
 
 // All route prefixes that are private (authenticated or sensitive) — must not be indexed.
@@ -61,13 +61,13 @@ export default function RouteSeo() {
     if (isJobCategory) {
       const cat = decodeURIComponent(path.split('/').pop() || '').replace(/-/g, ' ');
       title = `${cat ? cat.charAt(0).toUpperCase() + cat.slice(1) + ' Jobs' : 'Job Category'} — ${SITE_NAME}`;
-      description = `Browse ${cat || 'job'} opportunities on ResumePilot AI.`;
+      description = `Browse ${cat || 'job'} opportunities on IME365.`;
     } else if (isJobDetail) {
       title = `Job Listing — ${SITE_NAME}`;
-      description = 'View full job details and apply on ResumePilot AI.';
+      description = 'View full job details and apply on IME365.';
     } else if (isCustomPage) {
       title = `${SITE_NAME}`;
-      description = 'Public information from ResumePilot AI.';
+      description = 'Public information from IME365.';
     } else if (PUBLIC_PAGES[path]) {
       [title, description] = PUBLIC_PAGES[path];
     } else if (isPrivatePrefix || isLogin) {

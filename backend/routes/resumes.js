@@ -43,7 +43,7 @@ router.get('/public/:id', async (req, res) => {
                     if (watermarkConfig && watermarkConfig.enableFreeWatermark !== false) {
                         watermark = {
                             enableFreeWatermark: true,
-                            watermarkText: watermarkConfig.watermarkText || 'Created with ResumePilot AI (Free Plan)',
+                            watermarkText: watermarkConfig.watermarkText || 'Created with IME365 (Free Plan)',
                             opacity: Number(watermarkConfig.opacity) || 0.18,
                             position: watermarkConfig.position || 'diagonal'
                         };

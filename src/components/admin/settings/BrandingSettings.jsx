@@ -4,7 +4,7 @@ import { FaPaintBrush, FaCheck, FaTimes, FaSpinner, FaImage, FaUserCircle, FaMoo
 
 const BrandingSettings = () => {
     const [brandingConfig, setBrandingConfig] = useState({
-        brandName: 'ResumePilot AI',
+        brandName: 'IME365',
         logoUrl: '/src/assets/logo/logo.png',
         darkLogoUrl: '/src/assets/logo/logo.png',
         faviconUrl: '/favicon-32x32.png',
@@ -37,7 +37,7 @@ const BrandingSettings = () => {
 
     const resetHighStandardAssets = () => {
         setBrandingConfig({
-            brandName: 'ResumePilot AI',
+            brandName: 'IME365',
             logoUrl: '/src/assets/logo/logo.png',
             darkLogoUrl: '/src/assets/logo/logo.png',
             faviconUrl: '/favicon-32x32.png',
@@ -112,7 +112,7 @@ const BrandingSettings = () => {
                         name="brandName"
                         value={brandingConfig.brandName}
                         onChange={handleChange}
-                        placeholder="ResumePilot AI"
+                        placeholder="IME365"
                         className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-800 focus:outline-none bg-white font-semibold text-slate-900"
                     />
                 </div>

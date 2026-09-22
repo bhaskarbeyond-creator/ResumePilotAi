@@ -505,7 +505,7 @@ const Features = ({ _t }) => {
                     </p>
                     
                     <div className="border-t border-gray-100 pt-3 text-xs font-medium text-slate-500">
-                      Included in the ResumePilot workspace
+                      Included in the IME365 workspace
                     </div>
                   </div>
                 </div>

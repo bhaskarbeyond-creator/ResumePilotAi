@@ -1,5 +1,5 @@
 /**
- * AI Interaction Contract (frontend) — ResumePilot AI
+ * AI Interaction Contract (frontend) — IME365
  *
  * The single shape every builder step uses to talk to AI. It defines:
  *   1. buildAssistPayload — what evidence a request carries (candidate facts,
@@ -46,8 +46,9 @@ export function canRunAssistOperation(operation, { resumeData = {}, targetJd = '
         case 'generate-summary': {
             const facts = context.facts;
             const hasSomething = (facts.roles.length > 0) || (facts.education.length > 0)
-                || (facts.skills.length >= 3) || (facts.certifications.length > 0)
-                || plainLength(facts.summary) >= 60 || targetRole;
+                || (facts.skills.length > 0) || (facts.certifications.length > 0)
+                || (facts.projects.length > 0) || Boolean(targetRole)
+                || plainLength(facts.summary) >= 15;
             if (!hasSomething) return { ok: false, reason: 'Add some profile content first — the summary is built only from what you provide.' };
             return { ok: true, hasEvidence: true };
         }
@@ -117,18 +118,58 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
                 },
                 profileHash: context.profileHash,
             };
-        case 'generate-summary':
+        case 'generate-summary': {
+            const roles = (Array.isArray(context.facts.roles) && context.facts.roles.length)
+                ? context.facts.roles
+                : (Array.isArray(resumeData.employments) ? resumeData.employments : (resumeData.workExperiences || []));
+            const edus = (Array.isArray(context.facts.education) && context.facts.education.length)
+                ? context.facts.education
+                : (Array.isArray(resumeData.educations) ? resumeData.educations : (resumeData.education || []));
+            const skillsList = Array.isArray(context.facts.skills) && context.facts.skills.length
+                ? context.facts.skills
+                : (Array.isArray(resumeData.skills) ? resumeData.skills.map(s => typeof s === 'string' ? s : s?.skillName || s?.name || '').filter(Boolean) : []);
+            const certsList = (Array.isArray(context.facts.certifications) ? context.facts.certifications : (resumeData.certifications || []))
+                .slice(0, 10).map(c => typeof c === 'string' ? c : c?.title || c?.name || '').filter(Boolean);
+            const projectsList = (Array.isArray(context.facts.projects) ? context.facts.projects : (resumeData.projects || []))
+                .slice(0, 5).map(p => typeof p === 'string' ? p : p?.title || p?.name || '').filter(Boolean);
+
+            const workHistory = roles
+                .map(r => `${r.title || r.jobTitle || ''}${r.employer || r.company ? ` at ${r.employer || r.company}` : ''}${r.description ? `: ${String(r.description).replace(/<[^>]*>/g, ' ').slice(0, 200)}` : ''}`)
+                .filter(Boolean).join('; ');
+            const education = edus
+                .map(e => `${e.degree || e.qualification || ''}${e.school || e.institution ? ` from ${e.school || e.institution}` : ''}`)
+                .filter(Boolean).join('; ');
+            const targetRole = context.target.role || resumeData.targetRole || resumeData.targetTitle || resumeData.occupation || '';
+
+            // Construct synthetic sourceFacts so grounding and evidence checks are guaranteed to see full facts
+            const sourceFacts = [
+                targetRole ? `Target Role: ${targetRole}` : '',
+                context.facts.experienceYears ? `Tenure: ${context.facts.experienceYears} years` : '',
+                workHistory ? `Work History: ${workHistory}` : '',
+                education ? `Education: ${education}` : '',
+                skillsList.length ? `Skills: ${skillsList.join(', ')}` : '',
+                certsList.length ? `Certifications: ${certsList.join(', ')}` : '',
+                projectsList.length ? `Projects: ${projectsList.join(', ')}` : '',
+            ].filter(Boolean).join(' | ');
+
             return {
                 payload: {
                     ...base,
-                    name: context.facts.name || '',
-                    targetRole: context.target.role || resumeData.targetRole || resumeData.occupation || '',
-                    jobTitle: context.target.role || resumeData.targetRole || resumeData.occupation || '',
+                    name: context.facts.name || `${resumeData.firstname || ''} ${resumeData.lastname || ''}`.trim(),
+                    targetRole,
+                    jobTitle: targetRole,
                     experience: context.facts.experienceYears ? `${context.facts.experienceYears} years` : '',
+                    workHistory,
+                    education,
+                    skills: skillsList.slice(0, 40),
+                    certifications: certsList,
+                    projects: projectsList,
+                    sourceFacts,
                     existingText: resumeData.summary || '',
                 },
                 profileHash: context.profileHash,
             };
+        }
         case 'generate-skills':
             return {
                 payload: {
@@ -183,8 +224,28 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
  *   { kind: 'questions' | 'suggestions' | 'draft' | 'empty',
  *     questions?, suggestions?, draft?, requiresConfirmation, source, note }
  */
-export function normalizeAssistResult(operation, data = {}) {
-    const source = data._source || 'ai';
+export function normalizeAssistResult(operation, rawData = {}) {
+    const data = (rawData && rawData.data && typeof rawData.data === 'object' && !Array.isArray(rawData.data))
+        ? rawData.data
+        : (rawData && typeof rawData === 'object' ? rawData : {});
+    const source = data._source || rawData._source || 'ai';
+
+    // Summary extraction: support standard and polymorphic response shapes
+    const rawSummary = data.summary || data.executiveSummary || data.executive_summary
+        || data.professionalSummary || data.bio || data.draft?.text || data.draft
+        || (operation === 'generate-summary' ? (data.text || data.description || data.content) : null);
+    const summaryText = typeof rawSummary === 'string' ? stripHtml(rawSummary)
+        : (typeof rawSummary === 'object' && rawSummary ? stripHtml(Object.values(rawSummary).join(' ')) : '');
+
+    if (summaryText && (operation === 'generate-summary' || data.summary || data.executiveSummary || data.professionalSummary)) {
+        return {
+            kind: 'draft',
+            draft: { text: summaryText },
+            requiresConfirmation: true,
+            source,
+            note: data.note || rawData.note || '',
+        };
+    }
 
     if (Array.isArray(data.questions) && data.questions.length) {
         return {
@@ -197,12 +258,8 @@ export function normalizeAssistResult(operation, data = {}) {
             requiresAnswer: Boolean(data.requiresAnswer),
             requiresConfirmation: false,
             source,
-            note: data.note || '',
+            note: data.note || rawData.note || '',
         };
-    }
-
-    if (typeof data.summary === 'string' && stripHtml(data.summary)) {
-        return { kind: 'draft', draft: { text: stripHtml(data.summary) }, requiresConfirmation: true, source, note: data.note || '' };
     }
     if (typeof data.jobDescription === 'string' && stripHtml(data.jobDescription)) {
         return {

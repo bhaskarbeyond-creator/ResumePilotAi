@@ -2,7 +2,7 @@ var config = {
     adminEmail: 'bhaskar.beyond@gmail.com', // Operational/billing contact only; never an authorization signal
     brand: {
         useImg: true, // 320X70 Preferable Size , replace with true if you want to use image logo. and keep false if you want to keep the logo as text
-        name: 'ResumePilot AI', // This will be shown in the absence of the logo
+        name: 'IME365', // This will be shown in the absence of the logo
     },
     // PayPal Configuration
     paypalClientID: '', // Replace with your actual PayPal Client ID

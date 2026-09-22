@@ -72,7 +72,7 @@ export default function BlogList() {
   }, [selectedCategory, currentPage]);
 
   useEffect(() => {
-    document.title = blogSettings?.seoTitle || 'Career Resources & Guides — ResumePilot AI';
+    document.title = blogSettings?.seoTitle || 'Career Resources & Guides — IME365';
   }, [blogSettings]);
 
   const fetchPosts = async () => {

@@ -591,7 +591,7 @@ class Checkout extends Component {
                 key: orderData.key,
                 amount: orderData.amount,
                 currency: orderData.currency || 'INR',
-                name: conf.brand?.name || 'ResumePilot AI',
+                name: conf.brand?.name || 'IME365',
                 description: `${this.getPlanLabel()} Subscription`,
                 order_id: orderData.id,
                 handler: async (response) => {

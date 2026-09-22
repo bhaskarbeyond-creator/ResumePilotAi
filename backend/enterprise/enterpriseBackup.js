@@ -101,7 +101,8 @@ async function exportTenantSnapshot({ pool, tenantId, now = new Date() }) {
 
 function verifySnapshot(snapshot) {
   const problems = [];
-  if (!snapshot || snapshot.format !== 'resumepilot-enterprise-mariadb-tenant-snapshot' || snapshot.version !== 3) {
+  const validFormats = ['ime365-enterprise-mariadb-tenant-snapshot', 'resumepilot-enterprise-mariadb-tenant-snapshot'];
+  if (!snapshot || !validFormats.includes(snapshot.format) || snapshot.version !== 3) {
     return { ok: false, problems: ['snapshot format/version is invalid'] };
   }
   try { assertUuid(snapshot.tenantId, 'Tenant identifier'); } catch { problems.push('snapshot tenantId is invalid'); }

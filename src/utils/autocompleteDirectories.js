@@ -1,5 +1,5 @@
 /**
- * Autocomplete Universal Directories — ResumePilot AI
+ * Autocomplete Universal Directories — IME365
  *
  * Instant (0ms) keystroke filtering across all resume-builder steps.
  *

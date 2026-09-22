@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ResumePilot AI - Interview Media Companion",
+  "name": "IME365 - Interview Media Companion",
   "version": "1.0.0",
-  "description": "Auto-manages microphone & camera permissions and optimizes speech streaming for ResumePilot AI live interviews.",
+  "description": "Auto-manages microphone & camera permissions and optimizes speech streaming for IME365 live interviews.",
   "permissions": [
     "contentSettings",
     "storage",
@@ -11,6 +11,8 @@
   "host_permissions": [
     "http://localhost:*/*",
     "http://127.0.0.1:*/*",
+    "https://ime365.com/*",
+    "https://*.ime365.com/*",
     "https://airesume.projectdemo.guru/*"
   ],
   "background": {
@@ -21,6 +23,8 @@
       "matches": [
         "http://localhost:*/*",
         "http://127.0.0.1:*/*",
+        "https://ime365.com/*",
+        "https://*.ime365.com/*",
         "https://airesume.projectdemo.guru/*"
       ],
       "js": ["contentScript.js"],
@@ -29,6 +33,6 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ResumePilot AI Media Companion"
+    "default_title": "IME365 Media Companion"
   }
 }

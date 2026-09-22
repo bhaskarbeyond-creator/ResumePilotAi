@@ -12,7 +12,7 @@ export default function ResumeWatermarkOverlay({ watermark }) {
         return null;
     }
 
-    const text = watermark.watermarkText || 'Created with ResumePilot AI (Free Plan)';
+    const text = watermark.watermarkText || 'Created with IME365 (Free Plan)';
     const opacity = typeof watermark.opacity === 'number'
         ? Math.max(0.04, Math.min(watermark.opacity, 0.6))
         : 0.18;

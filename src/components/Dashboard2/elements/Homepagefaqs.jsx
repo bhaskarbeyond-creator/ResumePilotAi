@@ -11,7 +11,7 @@ export default function Homepagefaqs() {
       a: 'You can freely browse, inspect, and preview all 51 templates on the marketing website without creating an account. When you select "Use This Template" to start editing in the Studio, a free registration is required so your drafts can be safely saved in our encrypted MariaDB database. Free accounts include access to templates and basic AI features without entering a credit card.'
     },
     {
-      q: 'How does ResumePilot AI ensure my resume passes ATS screening?',
+      q: 'How does IME365 ensure my resume passes ATS screening?',
       a: 'Our templates are built with strict single-flow semantic markup tested against Workday, Greenhouse, Taleo, and Lever parsing engines. Our AI analyzes your experience against target job descriptions, ensuring key competencies and XYZ impact metrics are recognized with 98%+ parsing accuracy.'
     },
     {

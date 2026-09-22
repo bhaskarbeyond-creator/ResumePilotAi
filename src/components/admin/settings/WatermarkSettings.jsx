@@ -8,7 +8,7 @@ const WatermarkSettings = () => {
         allowFreeDocxDownload: false,
         allowFreeShareLink: false,
         enableFreeWatermark: true,
-        watermarkText: 'Created with ResumePilot AI (Free Student Plan)',
+        watermarkText: 'Created with IME365 (Free Plan)',
         opacity: 0.15,
         position: 'bottom-center', // diagonal, bottom-center, header
     });
@@ -179,7 +179,7 @@ const WatermarkSettings = () => {
                             name="watermarkText"
                             value={watermarkConfig.watermarkText}
                             onChange={handleChange}
-                            placeholder="Created with ResumePilot (Free Student Plan)"
+                            placeholder="Created with IME365 (Free Plan)"
                             className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         />
                     </div>

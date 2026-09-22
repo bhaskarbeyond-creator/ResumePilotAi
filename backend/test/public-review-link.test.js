@@ -87,7 +87,7 @@ test('Public Review Link & Published Resume Architecture', async (t) => {
         return {
           watermark: {
             enableFreeWatermark: true,
-            watermarkText: 'Created with ResumePilot AI (Free Plan)',
+            watermarkText: 'Created with IME365 (Free Plan)',
             opacity: 0.18,
             position: 'diagonal',
           }
@@ -198,7 +198,7 @@ test('Public Review Link & Published Resume Architecture', async (t) => {
     assert.equal(res.body.success, true);
     assert.ok(res.body.watermark, 'Expected watermark metadata for free user');
     assert.equal(res.body.watermark.enableFreeWatermark, true);
-    assert.equal(res.body.watermark.watermarkText, 'Created with ResumePilot AI (Free Plan)');
+    assert.equal(res.body.watermark.watermarkText, 'Created with IME365 (Free Plan)');
     assert.ok(res.body.resume._watermark, 'Expected _watermark on resume data');
     assert.equal(res.body.resume._watermark.position, 'diagonal');
   });

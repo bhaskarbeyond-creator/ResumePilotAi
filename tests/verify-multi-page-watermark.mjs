@@ -44,7 +44,7 @@ async function testMultiPageWatermark() {
     ],
     _watermark: {
       enableFreeWatermark: true,
-      watermarkText: 'Created with ResumePilot AI (Free Plan)',
+      watermarkText: 'Created with IME365 (Free Plan)',
       opacity: 0.2,
       position: 'diagonal'
     }

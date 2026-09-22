@@ -76,7 +76,7 @@ export default function HomepageTrustedBy() {
         {/* Marquee Hiring Companies */}
         <div style={{ padding: '16px 0', overflow: 'hidden', position: 'relative' }}>
           <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '16px' }}>
-            ResumePilot AI Alumni Land Interviews at Top Global Employers
+            IME365 Alumni Land Interviews at Top Global Employers
           </p>
           
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '32px', opacity: 0.75 }}>

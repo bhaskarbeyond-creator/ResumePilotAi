@@ -131,9 +131,9 @@ class Welcome extends Component {
         return {
             // Meta data
             metaDataFetched: false,
-            websiteTitle: '',
-            websiteDescription: '',
-            websiteKeywords: '',
+            websiteTitle: 'IME365 — Resume Builder & CV Maker',
+            websiteDescription: 'Create ATS-friendly resumes, cover letters, and professional portfolios with AI-assisted tools.',
+            websiteKeywords: 'IME365, ATS Resume Builder, CV Maker, Resume Templates',
             websiteLanguage: 'English', // Language from database for SEO
 
             // Subscriptions
@@ -1329,9 +1329,9 @@ class Welcome extends Component {
             <div className={`wrapper ${this.state.currentStep === 'Introduction' ? 'introduction-mode' : ''}`}>
                 {/* Dynamic SEO Meta Management */}
                 <MetaManager 
-                    title={this.state.websiteTitle || 'Resume Builder App'}
-                    description={this.state.websiteDescription || 'Professional Resume Builder - Create stunning resumes and cover letters'}
-                    keywords={this.state.websiteKeywords || 'resume, cv, cover letter, job application, professional'}
+                    title={this.state.websiteTitle || 'IME365 — Resume Builder & CV Maker'}
+                    description={this.state.websiteDescription || 'Create ATS-friendly resumes, cover letters, and professional portfolios with AI-assisted tools.'}
+                    keywords={this.state.websiteKeywords || 'IME365, ATS Resume Builder, CV Maker, Resume Templates'}
                     language={this.state.websiteLanguage || 'English'}
                 />
                 {this.state.loaded && (

@@ -150,7 +150,7 @@ export default function HomepagePricing({ onOpenAuthModal, nextStep }) {
     },
     {
       q: 'How does the 14-day money-back guarantee work?',
-      a: 'If you are not 100% satisfied with ResumePilot AI within your first 14 days, simply reach out to our Help Desk for an immediate, no-questions-asked full refund.'
+      a: 'If you are not 100% satisfied with IME365 within your first 14 days, simply reach out to our Help Desk for an immediate, no-questions-asked full refund.'
     },
     {
       q: 'Which payment methods are accepted?',

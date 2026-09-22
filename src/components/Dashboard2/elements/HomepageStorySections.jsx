@@ -35,7 +35,7 @@ export default function HomepageStorySections({ onOpenAuthModal }) {
               </h2>
 
               <p className="rp-story-desc">
-                Stop struggling with blank pages and awkward phrasing. ResumePilot AI turns your experience into compelling, metric-driven achievements structured according to executive hiring standards.
+                Stop struggling with blank pages and awkward phrasing. IME365 turns your experience into compelling, metric-driven achievements structured according to executive hiring standards.
               </p>
 
               <div className="rp-story-points">
@@ -102,7 +102,7 @@ export default function HomepageStorySections({ onOpenAuthModal }) {
                   <div style={{ background: '#e8f0fe', padding: '16px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', color: '#1a73e8', textTransform: 'uppercase', marginBottom: '6px' }}>
                       <FaMagic />
-                      <span>ResumePilot AI Optimized:</span>
+                      <span>IME365 Optimized:</span>
                     </div>
                     <div style={{ fontSize: '14px', color: '#1e3a8a', fontWeight: '600', lineHeight: 1.5 }}>
                       “Architected 12 high-throughput REST APIs in Node.js, optimizing MariaDB composite indexes to reduce p99 query latency from 450ms to 28ms across 2.5M daily requests.”
@@ -191,7 +191,7 @@ export default function HomepageStorySections({ onOpenAuthModal }) {
               </h2>
 
               <p className="rp-story-desc">
-                Over 75% of resumes are automatically rejected before a human ever reads them due to complex layouts, unparsed text boxes, and missing keywords. ResumePilot guarantees 100% extraction accuracy.
+                Over 75% of resumes are automatically rejected before a human ever reads them due to complex layouts, unparsed text boxes, and missing keywords. IME365 guarantees 100% extraction accuracy.
               </p>
 
               <div className="rp-story-points">
@@ -248,7 +248,7 @@ export default function HomepageStorySections({ onOpenAuthModal }) {
               </h2>
 
               <p className="rp-story-desc">
-                Paste any target job description from LinkedIn, Indeed, or Greenhouse. ResumePilot extracts key qualifications, aligns your experience, and generates customized summaries that match the employer&apos;s exact criteria.
+                Paste any target job description from LinkedIn, Indeed, or Greenhouse. IME365 extracts key qualifications, aligns your experience, and generates customized summaries that match the employer&apos;s exact criteria.
               </p>
 
               <div className="rp-story-points">

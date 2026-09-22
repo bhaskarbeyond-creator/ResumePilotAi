@@ -68,7 +68,7 @@ const KNOWLEDGE_BASE_ITEMS = [
             },
             {
                 q: 'Is my personal career information used to train AI models?',
-                a: 'No. ResumePilot AI strictly enforces a zero-retention pledge. All data processed by enterprise AI generation services is ephemeral and never used to train public foundation models.'
+                a: 'No. IME365 strictly enforces a zero-retention pledge. All data processed by enterprise AI generation services is ephemeral and never used to train public foundation models.'
             }
         ]
     },
@@ -91,7 +91,7 @@ const KNOWLEDGE_BASE_ITEMS = [
         icon: 'FiCreditCard',
         items: [
             {
-                q: 'Which payment methods are supported on ResumePilot AI?',
+                q: 'Which payment methods are supported on IME365?',
                 a: 'We support Stripe (Credit/Debit cards), PayPal, Razorpay (UPI, Netbanking, Cards), PhonePe, and Paytm. All transactions are securely processed with 256-bit SSL encryption.'
             },
             {

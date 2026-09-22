@@ -1,15 +1,15 @@
-# ResumePilot AI - Interview Media Companion Extension
+# IME365 - Interview Media Companion Extension
 
-This is an optional Google Chrome / Microsoft Edge extension (Manifest V3) designed to streamline microphone and camera permissions for ResumePilot AI live interview sessions.
+This is an optional Google Chrome / Microsoft Edge extension (Manifest V3) designed to streamline microphone and camera permissions for IME365 live interview sessions.
 
 ---
 
 ## 🌟 What This Extension Does
 1. **Automated Site Permission Management**:
-   - Uses Chrome's `contentSettings` API to automatically set `microphone` and `camera` permissions to `"allow"` for `localhost:*` and `airesume.projectdemo.guru`.
+   - Uses Chrome's `contentSettings` API to automatically set `microphone` and `camera` permissions to `"allow"` for `localhost:*`, `ime365.com`, and `airesume.projectdemo.guru`.
    - Eliminates the need to manually click the browser address bar padlock or allow prompts.
 2. **Page Bridge**:
-   - Injects `window.__RESUMEPILOT_COMPANION__` so the web application knows the companion is active and can optimize audio streaming.
+   - Injects `window.__IME365_COMPANION__` so the web application knows the companion is active and can optimize audio streaming.
 
 ---
 
@@ -30,4 +30,4 @@ This is an optional Google Chrome / Microsoft Edge extension (Manifest V3) desig
 3. Click the **"Load unpacked"** button in the top left.
 4. Select the `extension` folder inside this repository:
    `d:\xampp\htdocs\ai-resume-builder\extension`
-5. Done! The extension icon will appear in your browser toolbar, and permissions will be automatically managed for ResumePilot AI.
+5. Done! The extension icon will appear in your browser toolbar, and permissions will be automatically managed for IME365.

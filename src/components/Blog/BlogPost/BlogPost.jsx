@@ -61,7 +61,7 @@ export default function BlogPost() {
         }
 
         setPost(postData);
-        document.title = `${postData.title} — ResumePilot AI`;
+        document.title = `${postData.title} — IME365`;
 
         // Update robots meta tag
         const robotsMeta = document.querySelector('meta[name="robots"]') || document.createElement('meta');
@@ -210,12 +210,12 @@ export default function BlogPost() {
             dateModified: post.updatedAt || post.publishedAt || post.createdAt,
             author: {
               '@type': 'Person',
-              name: post.authorName || 'ResumePilot AI Editorial Team'
+              name: post.authorName || 'IME365 Editorial Team'
             },
             publisher: {
               '@type': 'Organization',
-              name: 'ResumePilot AI',
-              url: 'https://airesume.projectdemo.guru'
+              name: 'IME365',
+              url: 'https://ime365.com'
             }
           })
         }}
@@ -252,7 +252,7 @@ export default function BlogPost() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                   <FaUser style={{ color: 'var(--rp-blue)', fontSize: '12px' }} />
-                  {post.author || 'ResumePilot Editorial'}
+                  {post.author || 'IME365 Editorial'}
                 </span>
                 <span>•</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>

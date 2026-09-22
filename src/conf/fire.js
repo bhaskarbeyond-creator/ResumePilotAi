@@ -71,7 +71,8 @@ const notConfigured = (operation) => {
 // Production builds (Firebase configured, or no local flag) never reach this
 // code path; without the flag the null-auth stub below still fails closed.
 // ───────────────────────────────────────────────────────────────────────────
-const LOCAL_SESSION_KEY = 'resumepilot_local_session_v1';
+const LOCAL_SESSION_KEY = 'ime365_local_session_v1';
+const LEGACY_LOCAL_SESSION_KEY = 'resumepilot_local_session_v1';
 
 function decodeTokenPayload(token) {
     try {
@@ -82,7 +83,7 @@ function decodeTokenPayload(token) {
 function createLocalAuth(bootstrapToken) {
     let session = null;
     try {
-        const raw = localStorage.getItem(LOCAL_SESSION_KEY);
+        const raw = localStorage.getItem(LOCAL_SESSION_KEY) || localStorage.getItem(LEGACY_LOCAL_SESSION_KEY);
         if (raw) session = JSON.parse(raw);
     } catch (_e) { /* corrupted session storage must not break boot */ }
     if (!session && bootstrapToken) {
@@ -166,7 +167,10 @@ function createLocalAuth(bootstrapToken) {
         signOut: () => {
             signedOut = true;
             session = null;
-            try { localStorage.removeItem(LOCAL_SESSION_KEY); } catch (_e) { /* noop */ }
+            try { 
+                localStorage.removeItem(LOCAL_SESSION_KEY);
+                localStorage.removeItem(LEGACY_LOCAL_SESSION_KEY);
+            } catch (_e) { /* noop */ }
             notify();
             return Promise.resolve();
         },

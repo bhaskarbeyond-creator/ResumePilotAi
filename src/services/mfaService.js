@@ -25,7 +25,7 @@ export async function beginTotpEnrollment() {
     }
     const session = await multiFactor(user).getSession();
     const secret = await TotpMultiFactorGenerator.generateSecret(session);
-    const otpauthUrl = secret.generateQrCodeUrl(user.email || user.uid, 'ResumePilot AI');
+    const otpauthUrl = secret.generateQrCodeUrl(user.email || user.uid, 'IME365');
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, { width: 200, margin: 1, errorCorrectionLevel: 'M' });
     return { secret, secretKey: secret.secretKey, qrCodeDataUrl };
 }

@@ -25,9 +25,9 @@ class WebsiteSettings extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            websiteTitle: 'ResumePilot AI — Resume Builder & CV Maker',
+            websiteTitle: 'IME365 — Resume Builder & CV Maker',
             websiteDescription: 'Create and edit resumes, cover letters, and professional portfolios with guided tools, configurable layouts, previews, and export options.',
-            websiteKeywords: 'ResumePilot AI, resume builder, CV maker, cover letter builder, portfolio builder, resume templates',
+            websiteKeywords: 'IME365, resume builder, CV maker, cover letter builder, portfolio builder, resume templates',
             defaultLan: 'English',
             disabledLanguages: [],
             isSuccesShowed: false, saving: false, error: '', authoritativeLoaded: false,
@@ -66,9 +66,9 @@ class WebsiteSettings extends Component {
 
     applyStudentPreset() {
         this.setState({
-            websiteTitle: 'ResumePilot AI — Resume Builder & CV Maker',
+            websiteTitle: 'IME365 — Resume Builder & CV Maker',
             websiteDescription: 'Create and edit resumes, cover letters, and professional portfolios with guided tools, configurable layouts, previews, and export options.',
-            websiteKeywords: 'ResumePilot AI, resume builder, CV maker, cover letter builder, portfolio builder, resume templates',
+            websiteKeywords: 'IME365, resume builder, CV maker, cover letter builder, portfolio builder, resume templates',
             defaultLan: 'English',
             disabledLanguages: [],
         });
@@ -141,7 +141,7 @@ class WebsiteSettings extends Component {
                                 <FaCheck className="w-4 h-4 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-emerald-800">ResumePilot AI Metadata Saved!</p>
+                                <p className="text-sm font-medium text-emerald-800">IME365 Metadata Saved!</p>
                                 <p className="text-xs text-emerald-600 mt-1">Language access controls and SEO metadata updated successfully.</p>
                             </div>
                         </div>
@@ -161,7 +161,7 @@ class WebsiteSettings extends Component {
                         </div>
                         <div>
                             <h4 className="text-base font-bold flex items-center gap-2">
-                                ResumePilot AI — ATS Resume Builder & CV Maker
+                                IME365 — ATS Resume Builder & CV Maker
                             </h4>
                             <p className="text-xs text-blue-100">
                                 Pre-populated for college freshers, university graduates, and Indian job market ATS standards.
@@ -173,7 +173,7 @@ class WebsiteSettings extends Component {
                         onClick={this.applyStudentPreset}
                         className="px-4 py-2 text-xs font-bold text-slate-900 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm shrink-0"
                     >
-                        Load ResumePilot AI Preset
+                        Load IME365 Preset
                     </button>
                 </div>
 
@@ -192,7 +192,7 @@ class WebsiteSettings extends Component {
                         </div>
                         <input
                             type="text"
-                            placeholder="ResumePilot AI — Resume Builder & CV Maker"
+                            placeholder="IME365 — Resume Builder & CV Maker"
                             value={this.state.websiteTitle}
                             onChange={(event) => this.handleChange(event, 'websiteTitle')}
                             className="w-full px-4 py-2.5 text-sm font-semibold border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white text-slate-900"
@@ -211,7 +211,7 @@ class WebsiteSettings extends Component {
                             </div>
                         </div>
                         <textarea
-                            placeholder="Create ATS-friendly resumes for students with ResumePilot AI..."
+                            placeholder="Create ATS-friendly resumes for students with IME365..."
                             value={this.state.websiteDescription}
                             onChange={(event) => this.handleChange(event, 'websiteDescription')}
                             rows="3"
@@ -232,7 +232,7 @@ class WebsiteSettings extends Component {
                         </div>
                         <input
                             type="text"
-                            placeholder="ResumePilot AI, ATS Resume Builder..."
+                            placeholder="IME365, ATS Resume Builder..."
                             value={this.state.websiteKeywords}
                             onChange={(event) => this.handleChange(event, 'websiteKeywords')}
                             className="w-full px-4 py-2.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white text-slate-900"

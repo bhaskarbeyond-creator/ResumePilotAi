@@ -396,7 +396,7 @@ class Login extends Component {
         return (
             <div className="auth">
                 <div className="head">
-                    <div className="brandBadge">ResumePilot AI 🚀</div>
+                    <div className="brandBadge">IME365 🚀</div>
                     <span>{t("login.login")}</span>
                     <p>Enter your credentials to access your dashboard</p>
                 </div>

@@ -309,7 +309,7 @@ export function LiveInterviewReadiness({ media }) {
                         )}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                        Optional camera and mic preview. Video and audio are not recorded or sent to ResumePilot.
+                        Optional camera and mic preview. Video and audio are not recorded or sent to IME365.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -401,14 +401,14 @@ export function LiveInterviewReadiness({ media }) {
                             <div className="flex items-start gap-2">
                                 <span className="font-bold text-indigo-800 bg-indigo-100 rounded px-1.5 py-0.5 text-[10px]">5</span>
                                 <div>
-                                    <p className="font-bold text-slate-900">Optional: ResumePilot Companion Extension</p>
+                                    <p className="font-bold text-slate-900">Optional: IME365 Companion Extension</p>
                                     <p className="text-[11px] text-slate-600 leading-snug">
                                         Want zero browser permission prompts? You can install our companion Chrome extension to automatically manage site permissions.
                                     </p>
                                     <div className="mt-1 flex items-center gap-2">
                                         <a
-                                            href="/resumepilot-media-companion.zip"
-                                            download="resumepilot-media-companion.zip"
+                                            href="/ime365-media-companion.zip"
+                                            download="ime365-media-companion.zip"
                                             className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
                                         >
                                             📥 Download Companion Extension (.zip)

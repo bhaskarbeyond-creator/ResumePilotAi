@@ -954,7 +954,7 @@ class CoverLetter extends Component {
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
-                                <img className="h-9 w-auto" src={logo} alt="Logo" />
+                                <img className="h-12 w-auto" src={logo} alt="IME365.com" />
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Cover Letter Builder & AI Generator</h1>
                                     <p className="text-xs text-slate-500 mt-1">

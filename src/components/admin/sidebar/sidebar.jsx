@@ -310,8 +310,8 @@ const Sidebar = ({ sidebarCollapsed: initialSidebarCollapsed, onSidebarToggle: n
                             <div className="flex items-center justify-between">
                                 {/* Brand Name aligned with Enterprise Console */}
                                 <Link to="/adm/dashboard" className="flex items-center gap-2.5 group">
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-600/20">R</span>
-                                    <span className="font-bold text-[0.95rem] text-slate-900 group-hover:text-indigo-700 transition-colors tracking-tight">ResumePilot <span className="font-normal opacity-75">Admin</span></span>
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm shadow-indigo-600/20">I</span>
+                                    <span className="font-bold text-[0.95rem] text-slate-900 group-hover:text-indigo-700 transition-colors tracking-tight">IME365 <span className="font-normal opacity-75">Admin</span></span>
                                 </Link>
 
                                 <button

@@ -131,6 +131,7 @@
     "playwright": "^1.62.1",
     "sass": "^1.89.2",
     "sass-embedded": "^1.89.2",
+    "sharp": "^0.35.4",
     "vite": "8.2.1"
   },
   "overrides": {

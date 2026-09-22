@@ -14,7 +14,7 @@ export default function HomepageComparison({ onOpenAuthModal }) {
         '“Helped team members when requested and attended daily standups.”'
       ],
       badCritique: 'Problem: Zero quantifiable metrics. Passive language. Triggers automated ATS rejection rules within seconds.',
-      goodTitle: 'ResumePilot AI Engineered Resume',
+      goodTitle: 'IME365 AI Engineered Resume',
       goodScore: '98% ATS Pass Rate',
       goodItems: [
         '“Architected responsive checkout workflow in React 19, increasing mobile conversion rate by 34% across 450K monthly users.”',
@@ -32,7 +32,7 @@ export default function HomepageComparison({ onOpenAuthModal }) {
         'Tables and floating text boxes stripped out by Workday/Taleo engines.'
       ],
       badCritique: 'Problem: Candidate skills and dates get scrambled or deleted during ATS ingestion.',
-      goodTitle: 'ResumePilot 51 ATS Standard Templates',
+      goodTitle: 'IME365 51 ATS Standard Templates',
       goodScore: '100% Parsing Standard',
       goodItems: [
         'Strict single-flow semantic markup recognized by all 8 major ATS engines.',
@@ -94,7 +94,7 @@ export default function HomepageComparison({ onOpenAuthModal }) {
             <span>Before & After Transformation</span>
           </div>
           <h2 style={{ fontSize: '32px', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em', margin: '0 0 12px 0' }}>
-            Why 75% of Resumes Are Rejected by ATS — And How ResumePilot Fixes It
+            Why 75% of Resumes Are Rejected by ATS — And How IME365 Fixes It
           </h2>
           <p style={{ fontSize: '15px', color: '#64748b', margin: 0, lineHeight: 1.6 }}>
             Compare a standard resume against our AI-engineered format. See how metric-driven phrasing and ATS compliance transform your application.
@@ -160,7 +160,7 @@ export default function HomepageComparison({ onOpenAuthModal }) {
             </div>
           </div>
 
-          {/* Good / ResumePilot AI Side */}
+          {/* Good / IME365 Side */}
           <div className="rp-comparison-card good">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px solid #bbf7d0', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

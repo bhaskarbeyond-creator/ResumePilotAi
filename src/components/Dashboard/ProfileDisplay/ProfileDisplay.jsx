@@ -381,7 +381,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
 
                 {/* Logo centred */}
                 <Link to="/dashboard" className="absolute left-1/2 -translate-x-1/2">
-                    <img src={logo} alt="Logo" className="h-7 w-auto" />
+                    <img src={logo} alt="IME365.com" className="h-12 w-auto object-contain" />
                 </Link>
 
                 {/* Right actions: Bell */}
@@ -448,7 +448,7 @@ const ProfileDisplay = ({ profile, image, user, onSidebarToggle, sidebarCollapse
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Link to="/">
-                                        <img src={logo} alt="Logo" className="w-[120px]" />
+                                        <img src={logo} alt="IME365.com" className="h-14 w-auto max-w-[220px] object-contain" />
                                     </Link>
                                 </div>
                                 <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 /**
- * Safe Field Placeholder Engine (v2) — ResumePilot AI
+ * Safe Field Placeholder Engine (v2) — IME365
  *
  * Placeholders are neutral, instructional, and field-contextual only.
  *

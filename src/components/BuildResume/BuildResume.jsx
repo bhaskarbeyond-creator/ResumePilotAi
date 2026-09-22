@@ -1387,7 +1387,32 @@ const BuildResume = () => {
                 return;
             }
 
-            let selectedId = localStorage.getItem('currentResumeId');
+            // Support URL-based resume selection (?id=... or ?resumeId=...)
+            const urlParams = new URLSearchParams(location.search || '');
+            const urlResumeId = urlParams.get('id') || urlParams.get('resumeId');
+            const forceNew = urlParams.get('new') === '1' || urlParams.get('new') === 'true';
+
+            let selectedId = (!forceNew && urlResumeId) || localStorage.getItem('currentResumeId');
+
+            // If selectedId is not set and user did not explicitly request a fresh draft (?new=1),
+            // look for an existing untitled draft to avoid creating duplicate clone rows.
+            if (!selectedId && !forceNew) {
+                try {
+                    const { getResumes } = await import('../../services/api/platform');
+                    const existing = await getResumes(userId, 1, 5);
+                    const recentDraft = (existing?.resumes || []).find(r => {
+                        const title = (r.item?.title || '').trim();
+                        return !title || title === 'Untitled Resume';
+                    });
+                    if (recentDraft?.id) {
+                        selectedId = recentDraft.id;
+                        localStorage.setItem('currentResumeId', selectedId);
+                    }
+                } catch (findErr) {
+                    console.warn('[BuildResume] Existing draft reuse lookup skipped:', findErr.message);
+                }
+            }
+
             if (selectedId) {
                 try {
                     let loaded = await loadResumeDraft(userId, selectedId);
@@ -2126,7 +2151,7 @@ const BuildResume = () => {
                             {/* Mobile Navigation Header */}
                             <div className="px-4 py-4 border-b border-slate-100 flex justify-between items-center">
                                 <button type="button" onClick={async () => { setIsMobileMenuOpen(false); await handleExitBuilder(); }} aria-label="Save and exit to dashboard">
-                                    <img src={logo} alt="Logo" className="h-7 w-auto object-contain" />
+                                    <img src={logo} alt="IME365.com" className="h-11 w-auto object-contain" />
                                 </button>
                                 <button type="button" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close navigation menu" className="p-2 text-slate-400 hover:text-slate-600 rounded-lg">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

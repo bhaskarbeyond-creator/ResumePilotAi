@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { getAdminSystemSettings, saveSystemSettings } from '../../../services/api/platform';
 import { FaCheck, FaTimes, FaSpinner, FaFileAlt, FaCheckCircle, FaRocket } from 'react-icons/fa';
 
-const getActiveDomainUrl = () => import.meta.env.VITE_WEBSITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://resumepilot.ai');
+const getActiveDomainUrl = () => import.meta.env.VITE_WEBSITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://ime365.com');
 
 
-const buildFactualLlmsDocument = (domain) => `# ResumePilot AI
+const buildFactualLlmsDocument = (domain) => `# IME365
 > Browser-based resume and career-document application.
 
 Website: ${domain}
@@ -176,7 +176,7 @@ const LlmGeoSettings = () => {
                         value={llmGeoConfig.llmsTxtContent}
                         onChange={handleChange}
                         disabled={!authoritativeLoaded}
-                        placeholder="# ResumePilot AI..."
+                        placeholder="# IME365..."
                         className="w-full px-4 py-3 text-xs font-mono border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-950 text-purple-300 leading-relaxed"
                     ></textarea>
                 </div>

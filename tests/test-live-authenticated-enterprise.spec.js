@@ -91,7 +91,7 @@ test.describe('Live Authenticated Enterprise E2E Audit', () => {
     await page.locator('.enterprise-shell').waitFor({ timeout: 20_000 });
 
     // Assert Topbar & Context Switchers
-    await expect(page.locator('.enterprise-brand-title')).toHaveText('ResumePilot Enterprise');
+    await expect(page.locator('.enterprise-brand-title')).toHaveText('IME365 Enterprise');
     await expect(page.locator('.enterprise-topbar')).toBeVisible();
     await expect(page.locator('.enterprise-sidebar')).toBeVisible();
 

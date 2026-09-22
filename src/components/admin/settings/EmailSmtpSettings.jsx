@@ -35,8 +35,8 @@ const EmailSmtpSettings = () => {
         encryption: 'ssl',
         username: '',
         password: '',
-        senderName: 'ResumePilot AI',
-        replyTo: `support@${typeof window !== 'undefined' ? window.location.hostname : 'resumepilot.local'}`,
+        senderName: 'IME365',
+        replyTo: `support@${typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'ime365.com'}`,
         adminEmail: '',
     });
 
@@ -134,11 +134,11 @@ const EmailSmtpSettings = () => {
             category: 'billing',
             icon: FaFileInvoice,
             badge: 'Automated Billing',
-            subjectDefault: 'Tax Invoice & Receipt #RPAI-INV-1001 — ResumePilot AI',
+            subjectDefault: 'Tax Invoice & Receipt #IME-INV-1001 — IME365',
             vars: ['{{candidate_name}}', '{{invoice_number}}', '{{amount}}', '{{plan_name}}', '{{date}}', '{{gstin}}'],
             sampleVars: {
                 candidate_name: 'Rajesh Sharma',
-                invoice_number: 'RPAI/26-27/0084',
+                invoice_number: 'IME/26-27/0084',
                 amount: '₹234.82',
                 plan_name: 'Pro Resume Plan',
                 date: new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' }),
@@ -150,7 +150,7 @@ const EmailSmtpSettings = () => {
             category: 'auth',
             icon: FaUserPlus,
             badge: 'User Onboarding',
-            subjectDefault: 'Welcome to ResumePilot AI! Build your ATS Resume Today 🚀',
+            subjectDefault: 'Welcome to IME365! Build your ATS Resume Today 🚀',
             vars: ['{{candidate_name}}', '{{site_url}}'],
             sampleVars: {
                 candidate_name: 'Ananya Verma',
@@ -162,7 +162,7 @@ const EmailSmtpSettings = () => {
             category: 'auth',
             icon: FaKey,
             badge: 'Security',
-            subjectDefault: 'Security Alert: Reset Your Password — ResumePilot AI',
+            subjectDefault: 'Security Alert: Reset Your Password — IME365',
             vars: ['{{candidate_name}}', '{{reset_link}}'],
             sampleVars: {
                 candidate_name: 'Suresh Kumar',
@@ -174,7 +174,7 @@ const EmailSmtpSettings = () => {
             category: 'auth',
             icon: FaShieldAlt,
             badge: 'Security OTP',
-            subjectDefault: '849204 is your ResumePilot AI Verification Code 🔑',
+            subjectDefault: '849204 is your IME365 Verification Code 🔑',
             vars: ['{{candidate_name}}', '{{otp_code}}'],
             sampleVars: {
                 candidate_name: 'Vikram Mehta',
@@ -186,7 +186,7 @@ const EmailSmtpSettings = () => {
             category: 'billing',
             icon: FaExclamationTriangle,
             badge: 'Billing Alert',
-            subjectDefault: 'Action Required: Payment Attempt Failed — ResumePilot AI',
+            subjectDefault: 'Action Required: Payment Attempt Failed — IME365',
             vars: ['{{candidate_name}}', '{{amount}}', '{{retry_url}}'],
             sampleVars: {
                 candidate_name: 'Priya Singh',
@@ -199,7 +199,7 @@ const EmailSmtpSettings = () => {
             category: 'billing',
             icon: FaRedo,
             badge: 'Billing Cycle',
-            subjectDefault: 'Upcoming Subscription Renewal Notice — ResumePilot AI',
+            subjectDefault: 'Upcoming Subscription Renewal Notice — IME365',
             vars: ['{{candidate_name}}', '{{plan_name}}', '{{amount}}', '{{date}}'],
             sampleVars: {
                 candidate_name: 'Rohan Gupta',
@@ -226,7 +226,7 @@ const EmailSmtpSettings = () => {
             category: 'jobs',
             icon: FaInbox,
             badge: 'Recruiter Alert',
-            subjectDefault: '📩 New Applicant for Senior Software Engineer — ResumePilot AI',
+            subjectDefault: '📩 New Applicant for Senior Software Engineer — IME365',
             vars: ['{{candidate_name}}', '{{job_title}}', '{{company_name}}', '{{date}}'],
             sampleVars: {
                 candidate_name: 'Amit Patel',
@@ -254,7 +254,7 @@ const EmailSmtpSettings = () => {
             category: 'auth',
             icon: FaExclamationCircle,
             badge: 'Account Security',
-            subjectDefault: '🛡️ Security Alert: New Login from Chrome on macOS — ResumePilot AI',
+            subjectDefault: '🛡️ Security Alert: New Login from Chrome on macOS — IME365',
             vars: ['{{device_info}}', '{{ip_address}}', '{{login_time}}'],
             sampleVars: {
                 device_info: 'Chrome 122 on macOS Sonoma (Mumbai, IN)',
@@ -267,7 +267,7 @@ const EmailSmtpSettings = () => {
             category: 'auth',
             icon: FaUserPlus,
             badge: 'Admin Alert',
-            subjectDefault: '🔔 New User Registration: Alexander Wright — ResumePilot AI',
+            subjectDefault: '🔔 New User Registration: Alexander Wright — IME365',
             vars: ['{{candidate_name}}', '{{date}}'],
             sampleVars: {
                 candidate_name: 'Alexander Wright',
@@ -279,7 +279,7 @@ const EmailSmtpSettings = () => {
             category: 'auth',
             icon: FaKey,
             badge: 'Security',
-            subjectDefault: '🔒 Security Confirmation: Password Updated — ResumePilot AI',
+            subjectDefault: '🔒 Security Confirmation: Password Updated — IME365',
             vars: ['{{candidate_name}}', '{{date}}'],
             sampleVars: {
                 candidate_name: 'Vikram Mehta',
@@ -291,10 +291,10 @@ const EmailSmtpSettings = () => {
             category: 'billing',
             icon: FaFileInvoice,
             badge: 'Billing Refund',
-            subjectDefault: '💸 Refund Processed: #RPAI-INV-1001 — ResumePilot AI',
+            subjectDefault: '💸 Refund Processed: #IME-INV-1001 — IME365',
             vars: ['{{invoice_number}}', '{{amount}}'],
             sampleVars: {
-                invoice_number: 'RPAI-INV-1001',
+                invoice_number: 'IME-INV-1001',
                 amount: '₹199.00'
             }
         },
@@ -303,7 +303,7 @@ const EmailSmtpSettings = () => {
             category: 'billing',
             icon: FaTimes,
             badge: 'Subscription',
-            subjectDefault: 'Subscription Cancelled — ResumePilot AI',
+            subjectDefault: 'Subscription Cancelled — IME365',
             vars: ['{{candidate_name}}', '{{plan_name}}'],
             sampleVars: {
                 candidate_name: 'Priya Singh',
@@ -315,7 +315,7 @@ const EmailSmtpSettings = () => {
             category: 'ai',
             icon: FaCheckCircle,
             badge: 'AI Output',
-            subjectDefault: '📝 Your AI Cover Letter is Ready! — ResumePilot AI',
+            subjectDefault: '📝 Your AI Cover Letter is Ready! — IME365',
             vars: ['{{candidate_name}}', '{{job_title}}'],
             sampleVars: {
                 candidate_name: 'Neha Kapoor',
@@ -327,7 +327,7 @@ const EmailSmtpSettings = () => {
             category: 'ai',
             icon: FaServer,
             badge: 'Portfolio Live',
-            subjectDefault: '🌐 Your Live Website Portfolio is Online! — ResumePilot AI',
+            subjectDefault: '🌐 Your Live Website Portfolio is Online! — IME365',
             vars: ['{{candidate_name}}', '{{portfolio_slug}}'],
             sampleVars: {
                 candidate_name: 'Ananya Verma',
@@ -339,7 +339,7 @@ const EmailSmtpSettings = () => {
             category: 'jobs',
             icon: FaBriefcase,
             badge: 'Employer Alert',
-            subjectDefault: '✅ Job Listing Published: Senior Full Stack Engineer — ResumePilot AI',
+            subjectDefault: '✅ Job Listing Published: Senior Full Stack Engineer — IME365',
             vars: ['{{job_title}}', '{{company_name}}'],
             sampleVars: {
                 job_title: 'Senior Full Stack Engineer',
@@ -351,7 +351,7 @@ const EmailSmtpSettings = () => {
             category: 'system',
             icon: FaExclamationTriangle,
             badge: 'System Alert',
-            subjectDefault: '🚨 System Alert: Payment Gateway Timeout — ResumePilot AI',
+            subjectDefault: '🚨 System Alert: Payment Gateway Timeout — IME365',
             vars: ['{{alert_title}}', '{{alert_message}}'],
             sampleVars: {
                 alert_title: 'Payment Gateway Timeout Warning',
@@ -363,7 +363,7 @@ const EmailSmtpSettings = () => {
             category: 'system',
             icon: FaPaperPlane,
             badge: 'Broadcast',
-            subjectDefault: '📢 New Feature Release: AI Mock Interview Simulator — ResumePilot AI',
+            subjectDefault: '📢 New Feature Release: AI Mock Interview Simulator — IME365',
             vars: ['{{title}}', '{{body}}'],
             sampleVars: {
                 title: 'Introducing AI Mock Interview Simulator 🚀',
@@ -421,7 +421,7 @@ const EmailSmtpSettings = () => {
                 encryption: sm.encryption || 'ssl',
                 username: sm.username || '',
                 password: sm.password || '',
-                senderName: sm.senderName || config?.brand?.name || 'ResumePilot AI',
+                senderName: sm.senderName || config?.brand?.name || 'IME365',
                 replyTo: sm.replyTo || 'support@ai-resume-builder.local',
                 adminEmail: sm.adminEmail || config?.adminEmail || 'bhaskar.beyond@gmail.com',
             };
@@ -907,7 +907,7 @@ const EmailSmtpSettings = () => {
                                     name="senderName"
                                     value={smtpConfig.senderName}
                                     onChange={handleSmtpChange}
-                                    placeholder="ResumePilot AI Team"
+                                    placeholder="IME365 Team"
                                     className="w-full px-3.5 py-2 text-xs font-semibold border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
                                 />
                             </div>
@@ -1443,7 +1443,7 @@ const EmailSmtpSettings = () => {
                             <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 max-h-[360px] overflow-y-auto">
                                 <div className="max-w-[520px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden text-slate-900 text-xs">
                                     <div className="bg-slate-900 text-white p-4 text-center font-bold">
-                                        ResumePilot AI
+                                        IME365
                                     </div>
                                     <div className="p-5 space-y-3">
                                         <p className="font-bold text-sm">Hello {currentSpec.sampleVars.candidate_name || 'Candidate'},</p>
@@ -1469,7 +1469,7 @@ const EmailSmtpSettings = () => {
                                         </div>
                                     </div>
                                     <div className="bg-slate-50 p-2.5 text-center text-[10px] text-slate-400 border-t border-slate-100">
-                                        © {new Date().getFullYear()} ResumePilot AI. Tax Invoice &amp; GST Compliance.
+                                        © {new Date().getFullYear()} IME365. Tax Invoice &amp; GST Compliance.
                                     </div>
                                 </div>
                             </div>
@@ -1737,7 +1737,7 @@ const EmailSmtpSettings = () => {
                                             <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase bg-indigo-950/60 px-2.5 py-1 rounded-full border border-indigo-800/50 inline-block mb-2">
                                                 {targetSpec.badge}
                                             </span>
-                                            <h2 className="text-xl font-extrabold text-white">ResumePilot AI</h2>
+                                            <h2 className="text-xl font-extrabold text-white">IME365</h2>
                                         </div>
 
                                         {/* Card Body */}
@@ -1786,7 +1786,7 @@ const EmailSmtpSettings = () => {
 
                                         {/* Footer */}
                                         <div className="bg-slate-50 p-4 text-center border-t border-slate-100 text-[11px] text-slate-500">
-                                            © {new Date().getFullYear()} ResumePilot AI. Need help? support@ai-resume-builder.local
+                                            © {new Date().getFullYear()} IME365. Need help? support@ime365.com
                                         </div>
                                     </div>
                                 </div>

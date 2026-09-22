@@ -130,7 +130,7 @@ async function queueInvoiceEmail(connection, invoice) {
       candidate_name: invoice.customerSnapshot.name,
       invoice_number: invoice.invoiceNumber,
       amount: `${invoice.currency} ${Number(invoice.grandTotal).toFixed(2)}`,
-      plan_name: invoice.lineItems?.[0]?.description || 'ResumePilot AI Subscription',
+      plan_name: invoice.lineItems?.[0]?.description || 'IME365 Subscription',
       date: invoice.formattedDate,
       gstin: invoice.customerSnapshot.gstin || '',
     },
@@ -665,9 +665,9 @@ async function issueInvoiceInTransaction(connection, {
   const issuedAtDate = new Date();
   const issuedAt = issuedAtDate.toISOString();
   const planTitles = {
-    monthly: 'Monthly ResumePilot AI fixed-term access',
-    halfYear: 'Six-month ResumePilot AI fixed-term access',
-    yearly: 'Annual ResumePilot AI fixed-term access',
+    monthly: 'Monthly IME365 fixed-term access',
+    halfYear: 'Six-month IME365 fixed-term access',
+    yearly: 'Annual IME365 fixed-term access',
   };
   const planTitle = planTitles[String(order.plan_id || order.planId || '')];
   if (!planTitle) {

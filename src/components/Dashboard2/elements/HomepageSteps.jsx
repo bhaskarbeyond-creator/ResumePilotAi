@@ -107,7 +107,7 @@ export default function HomepageSteps({ onOpenAuthModal }) {
               Turn Modest Tasks Into Executive Accomplishments
             </h3>
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              Never stare at an empty bullet point again. ResumePilot analyzes your target job title and generates metric-driven bullet suggestions that prove your tangible business impact.
+              Never stare at an empty bullet point again. IME365 analyzes your target job title and generates metric-driven bullet suggestions that prove your tangible business impact.
             </p>
             <div className="space-y-3 text-xs sm:text-sm text-slate-700 font-medium">
               <div className="flex items-center gap-2.5">
@@ -187,7 +187,7 @@ export default function HomepageSteps({ onOpenAuthModal }) {
               Master Tough Questions Before You Walk Into the Room
             </h3>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              ResumePilot doesn&apos;t stop at resumes. Our interactive CBT simulator acts as a seasoned hiring manager, grilling you with tailored behavioral, situational, and technical questions — with instant rubric feedback.
+              IME365 doesn&apos;t stop at resumes. Our interactive CBT simulator acts as a seasoned hiring manager, grilling you with tailored behavioral, situational, and technical questions — with instant rubric feedback.
             </p>
             <div className="space-y-3 text-xs sm:text-sm text-slate-300 font-medium">
               <div className="flex items-center gap-2.5">
