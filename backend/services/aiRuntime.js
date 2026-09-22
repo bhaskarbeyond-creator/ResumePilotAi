@@ -353,23 +353,40 @@ ${yearsExp ? `Verified career tenure: ${yearsExp}.` : ''}
 
 You are acting as an elite, Certified Professional Resume Writer (CPRW) and executive career consultant crafting an authentic profile that passes Applicant Tracking Systems (ATS) with a 10/10 score while reading effortlessly and naturally to hiring managers and executive search committees.
 
+CRITICAL LENGTH BOUND (STRICT ATS 10/10 COMPLIANCE):
+- TARGET LENGTH: Strictly 300 to 440 characters (hard ceiling: NEVER exceed 460 characters) / 45 to 70 words across 2 to 3 sentences.
+- Recruiter ATS algorithms penalize summaries exceeding 480 characters as unreadable keyword dumps. Aim strictly for the 340 to 420 character sweet spot.
+
 CRITICAL ARCHITECTURE — THE 3-PILLAR EXECUTIVE BLUEPRINT:
-Structure the summary into 2 to 3 seamless, cohesive sentences (strictly 350 to 550 characters / 50 to 85 words):
-1. SENTENCE 1 — EXECUTIVE IDENTITY & VALUE PROPOSITION (ATS KEYWORD LOCK):
-   - Open decisively with the candidate's professional title, verified years of experience (if provided), and core overarching functional domain.
-   - Immediate ATS keyword lock: The primary target role "${targetRole}" must appear prominently within the first 10 words.
-   - Example style: "[Senior Role Title] with [X+ years] directing [primary domain / strategic initiatives] across [industry/scale]..."
-2. SENTENCE 2 — CORE COMPETENCIES & TECHNICAL / METHODOLOGICAL ENGINE:
-   - Synthesize the candidate's top verified skills, technical platforms, tools, and operational frameworks from their work history into an active, cohesive execution narrative.
-   - Ground strictly in the candidate's verified tools and skills: illustrate HOW they deliver excellence (e.g., architectural methodologies, protocols, data systems, leadership governance).
-3. SENTENCE 3 — DEMONSTRATED IMPACT & FORWARD TRAJECTORY:
-   - Highlight proven business/clinical/operational outcomes, scale, efficiencies, or cross-functional leadership derived directly from their career history.
-   - Conclude with a decisive statement demonstrating their value proposition for "${targetRole}".
+1. SENTENCE 1 — EXECUTIVE IDENTITY & DOMAIN ENGINE (ATS KEYWORD LOCK):
+   - Open decisively in executive resume voice with the candidate's professional title, verified career tenure, and overarching domain.
+   - Immediate ATS keyword lock: The primary target role "${targetRole}" must appear prominently within the first 8 words.
+   - Standard executive phrasing: "[Senior Role Title] with [X+ years] of experience architecting/engineering/leading [primary domain / strategic initiatives] across [industry/scale]..."
+   - DO NOT prefix with conversational fluff (NO "As a seasoned...", NO "A results-driven...").
+2. SENTENCE 2 — TECHNICAL / METHODOLOGICAL APPLICATION:
+   - Synthesize the candidate's verified skills, platforms, tools, or frameworks into an active, high-density execution sentence.
+   - Illustrate synergistic application: show HOW core tools solve critical challenges using natural domain phrasing (e.g. for software: "applying React and TypeScript to build reactive interfaces" or "deploying Docker microservices on AWS"; for clinical/operations: "utilizing EHR systems and adhering to clinical triage protocols"; for business/finance: "applying financial modeling and variance analysis to guide capital allocation").
+   - Every skill mentioned MUST be derived strictly from EVIDENCE.
+3. SENTENCE 3 (OPTIONAL IF LENGTH PERMITS, MAX 1 SHORT CLAUSE):
+   - Highlight demonstrated operational reliability, organizational velocity, or business outcomes.
+   - If Sentence 1 and 2 already reach ~350-420 characters, STOP THERE! Two dense, high-caliber sentences score higher than an overly verbose three-sentence paragraph.
+
+STYLE & ADVANCED VOCABULARY STANDARDS (10/10 ATS EXCELLENCE):
+- IMPERIAL VOICE (NO PERSONAL PRONOUNS, NO CANDIDATE FIRST-NAME MONOLOGUE):
+  * Strictly NO first-person pronouns ("I", "me", "my", "our").
+  * Do NOT repeatedly narrate the candidate's first name as if telling a third-party story (NO "John does X. John also does Y. His skills include Z.").
+- ZERO VOCABULARY REPETITION (STRICT LEXICAL DIVERSITY):
+  * Never repeat the same key noun, verb, or adjective in the summary.
+  * Strictly avoid repeating words such as "delivering", "development", "solutions", "expertise", "scale", or "management". Use precise alternatives.
+- HIGH-DENSITY DOMAIN VERBS:
+  * Employ advanced, active verbs: Architected, Orchestrated, Engineered, Deployed, Streamlined, Spearheaded, Operationalized, Benchmarked, Formulated.
+- BANNED ROBOTIC AI CLICHÉS:
+  * Strictly avoid "seasoned professional", "results-driven", "proven track record", "passionate about", "leveraging", "utilizing", "pivotal role", "testament to", "fast-paced environment".
 
 TONE SPECIFICATIONS (STRICT ADHERENCE TO "${tone}"):
 - "executive": Authoritative, strategic, and leadership-driven. Focuses on vision, P&L/budget optimization, organizational transformation, governance, executive stakeholder management, and scalable business impact.
 - "technical": Deep domain rigor, precision, and architectural execution. Highlights core technical stacks, system design, data integrity, engineering standards, and specialized methodologies.
-- "concise": High-density, fast-scanning, 2-sentence punchy profile. Zero wasted words, high information density, front-loaded impact ideal for high-velocity screening.
+- "concise": High-density, fast-scanning, 2-sentence punchy profile (~320-380 characters). Zero wasted words, high information density, front-loaded impact ideal for high-velocity screening.
 - "balanced": Polished, modern corporate standard. Seamlessly integrates functional leadership, technical acumen, and measurable impact in a warm, confident, professional human voice.
 
 ANTI-AI & HUMAN NATURALNESS RULES (MANDATORY):
@@ -775,6 +792,36 @@ function sanitizeGeneratedText(value) {
         .trim();
 }
 
+function enforceAtsSummaryBounds(value) {
+    if (!value || typeof value !== 'string') return value;
+    let summary = value.trim();
+
+    // 1. Strip introductory conversational fluff or robotic openings
+    summary = summary
+        .replace(/^(?:As\s+an?\s+(?:seasoned|experienced|accomplished|dedicated|passionate)\s+)/i, '')
+        .replace(/^(?:A\s+(?:seasoned|experienced|accomplished|dedicated|passionate)\s+)/i, '')
+        .replace(/^(?:An\s+(?:experienced|accomplished)\s+)/i, '');
+
+    if (summary.length > 0) {
+        summary = summary.charAt(0).toUpperCase() + summary.slice(1);
+    }
+
+    // 2. Bound length strictly to <= 465 characters (under recruiter ATS 480 hard limit)
+    if (summary.length > 465) {
+        // Attempt to cut at the last complete sentence ending before 465 chars
+        const sentenceMatch = summary.slice(0, 465).match(/^([\s\S]*[.!?])(?:\s+|$)/);
+        if (sentenceMatch && sentenceMatch[1].trim().length >= 120) {
+            summary = sentenceMatch[1].trim();
+        } else {
+            // Cut at last clause or word boundary before 455 chars and append period
+            const truncated = summary.slice(0, 455).replace(/[,;:\s]+\S*$/, '').trim();
+            summary = truncated.endsWith('.') ? truncated : `${truncated}.`;
+        }
+    }
+
+    return summary;
+}
+
 // Sanitization for candidate-authored fallback text must not substitute words or
 // otherwise alter the factual record. It only removes executable markup/control
 // characters and normalizes whitespace.
@@ -1063,7 +1110,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
         const value = parsed?.summary || parsed?.executiveSummary || parsed?.executive_summary
             || parsed?.professionalSummary || parsed?.bio || parsed?.draft?.text || parsed?.draft
             || parsed?.description || parsed?.text || parsed?.content || (!parsed ? raw : '');
-        const summary = sanitizeGeneratedText(typeof value === 'object' ? Object.values(value).join(' ') : value);
+        const summary = enforceAtsSummaryBounds(sanitizeGeneratedText(typeof value === 'object' ? Object.values(value).join(' ') : value));
         if (summary) return finalize({ summary });
     }
     if (operation === 'generate-skills') {
@@ -1657,13 +1704,13 @@ function getContentOperationFallback(operation, rawPayload = {}) {
     if (operation === 'generate-summary') {
         const existing = sanitizeSourceText(payload.existingText || '', 1200);
         if (existing && existing.length >= 40 && !existing.includes(' | ')) {
-            return { summary: existing, _source: 'source-preserving-fallback' };
+            return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
         }
         // If structured candidate context was provided, synthesize an evidence-grounded summary
         if (payload.context?.facts && (payload.context.facts.roles?.length || payload.context.facts.skills?.length || payload.context.facts.education?.length || payload.sourceFacts)) {
             const deterministic = generateDeterministicSummary(payload);
             if (deterministic && deterministic.length >= 40) {
-                return { summary: sanitizeGeneratedText(deterministic), _source: 'evidence-grounded-fallback' };
+                return { summary: enforceAtsSummaryBounds(sanitizeGeneratedText(deterministic)), _source: 'evidence-grounded-fallback' };
             }
         }
         const segments = factualSourceSegments(operation, payload)
@@ -1671,8 +1718,8 @@ function getContentOperationFallback(operation, rawPayload = {}) {
             .map(([, value]) => sanitizeSourceText(value, 1200))
             .filter(Boolean)
             .join('. ');
-        if (segments && segments.length >= 20) return { summary: segments.slice(0, 1200), _source: 'source-preserving-fallback' };
-        if (existing) return { summary: existing, _source: 'source-preserving-fallback' };
+        if (segments && segments.length >= 20) return { summary: enforceAtsSummaryBounds(segments.slice(0, 460)), _source: 'source-preserving-fallback' };
+        if (existing) return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
         return ask('summary');
     }
 

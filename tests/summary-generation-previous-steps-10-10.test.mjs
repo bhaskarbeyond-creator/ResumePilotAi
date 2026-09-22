@@ -198,3 +198,101 @@ test('9. parseAiResponse: strips gerund and phrase forms of banned clichés', as
     assert.match(parsed.summary, /key role/i);
 });
 
+test('10. parseAiResponse: bounds overly long outputs to <= 465 chars and guarantees 10/10 ATS score', async () => {
+    const { parseAiResponse } = await import('../backend/services/aiRuntime.js');
+    const { calculateAtsScore } = await import('../src/utils/atsScore.js');
+
+    // Simulated 576-character uncalibrated LLM output
+    const rawAiOutput = JSON.stringify({
+        summary: 'Senior Software Engineer with 5 years of experience directing software development across scalable technology landscapes, applying expertise in JavaScript, React, Node.js, and Python to architect and deliver high-performance APIs and microservices. With a strong foundation in computer science from IIT Delhi, excels in deploying Dockerized applications on AWS and driving efficient software engineering standards. Her technical prowess and software development expertise yield high-quality solutions that drive business impact and scalability.',
+        sourceExcerpts: ['5 years', 'React', 'Node.js'],
+    });
+
+    const parsed = parseAiResponse('generate-summary', rawAiOutput, {
+        requireGrounding: false,
+        payload: { targetRole: 'Senior Software Engineer' },
+    });
+
+    assert.ok(parsed.summary);
+    assert.ok(parsed.summary.length <= 465, `Summary length must be <= 465, got ${parsed.summary.length}`);
+    assert.ok(parsed.summary.length >= 100, `Summary length must be >= 100, got ${parsed.summary.length}`);
+
+    // Verify 10/10 score on ATS engine
+    const ats = calculateAtsScore({
+        summary: parsed.summary,
+        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'Docker', 'AWS'],
+    });
+    const summarySection = ats.sections.find(s => s.id === 'summary');
+    assert.equal(summarySection.score, 10, `Expected 10/10 ATS summary score, got ${summarySection.score}/10`);
+    assert.equal(summarySection.findings.every(f => f.ok), true, 'All ATS findings must be positive');
+});
+
+test('11. parseAiResponse: strips conversational "As a seasoned..." opener and preserves 10/10 ATS score', async () => {
+    const { parseAiResponse } = await import('../backend/services/aiRuntime.js');
+    const { calculateAtsScore } = await import('../src/utils/atsScore.js');
+
+    const rawAiOutput = JSON.stringify({
+        summary: 'As a seasoned Senior Cloud Architect with 8 years of experience architecting multi-region Kubernetes platforms across enterprise systems, specializing in Go, AWS, and Terraform. Deploys resilient infrastructure pipelines ensuring continuous delivery and high availability.',
+        sourceExcerpts: ['8 years', 'Kubernetes', 'AWS'],
+    });
+
+    const parsed = parseAiResponse('generate-summary', rawAiOutput, {
+        requireGrounding: false,
+        payload: { targetRole: 'Senior Cloud Architect' },
+    });
+
+    assert.ok(!parsed.summary.startsWith('As a seasoned'));
+    assert.ok(parsed.summary.startsWith('Senior Cloud Architect'));
+
+    const ats = calculateAtsScore({
+        summary: parsed.summary,
+        skills: ['Kubernetes', 'AWS', 'Terraform', 'Go'],
+    });
+    const summarySection = ats.sections.find(s => s.id === 'summary');
+    assert.equal(summarySection.score, 10);
+});
+
+test('12. multi-domain ATS matrix: verifies 10/10 ATS summary scores across diverse industries and tones', async () => {
+    const { getContentOperationFallback } = await import('../backend/services/aiRuntime.js');
+    const { calculateAtsScore } = await import('../src/utils/atsScore.js');
+
+    const domainProfiles = [
+        { role: 'Frontend Engineer', skills: ['React', 'TypeScript', 'CSS', 'Redux', 'Next.js'], years: 4, company: 'Stripe' },
+        { role: 'Senior Data Scientist', skills: ['Python', 'PyTorch', 'SQL', 'Scikit-Learn', 'Pandas'], years: 7, company: 'Meta' },
+        { role: 'ICU Clinical Nurse Specialist', skills: ['Critical Care', 'Patient Advocacy', 'Ventilator Management', 'EHR', 'ACLS'], years: 6, company: 'Mayo Clinic' },
+        { role: 'VP of Product Management', skills: ['Product Roadmapping', 'GTM', 'P&L Management', 'Cross-Functional Leadership'], years: 11, company: 'Salesforce' },
+        { role: 'Senior Financial Analyst', skills: ['Financial Modeling', 'DCF Valuation', 'Advanced Excel', 'SQL', 'Variance Analysis'], years: 5, company: 'JPMorgan' },
+    ];
+
+    const tones = ['balanced', 'executive', 'technical', 'concise'];
+
+    for (const domain of domainProfiles) {
+        for (const tone of tones) {
+            const payload = {
+                context: {
+                    facts: {
+                        roles: [{ title: domain.role, employer: domain.company }],
+                        skills: domain.skills,
+                        experienceYears: domain.years,
+                    },
+                    target: { role: domain.role },
+                },
+                targetRole: domain.role,
+                skills: domain.skills,
+                tone,
+            };
+
+            const fallback = getContentOperationFallback('generate-summary', payload);
+            assert.ok(fallback.summary, `Must generate summary for ${domain.role} (${tone})`);
+            assert.ok(fallback.summary.length >= 100 && fallback.summary.length <= 465,
+                `Length must be 100-465 for ${domain.role} (${tone}), got ${fallback.summary.length}`);
+
+            const ats = calculateAtsScore({ summary: fallback.summary, skills: domain.skills });
+            const s = ats.sections.find(sec => sec.id === 'summary');
+            assert.equal(s.score, 10, `Expected 10/10 for ${domain.role} (${tone}), got ${s.score}. Summary: "${fallback.summary}"`);
+            assert.equal(s.findings.every(f => f.ok), true, `All findings must be ok for ${domain.role} (${tone})`);
+        }
+    }
+});
+
+
