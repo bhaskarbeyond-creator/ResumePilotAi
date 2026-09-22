@@ -85,7 +85,7 @@
     "@tiptap/pm": "^3.4.4",
     "@tiptap/react": "^3.4.4",
     "@tiptap/starter-kit": "^3.4.4",
-    "@types/dompurify": "^3.0.5",
+    "@types/dompurify": "^3.2.0",
     "axios": "1.19.0",
     "dompurify": "^3.2.7",
     "downloadjs": "^1.4.7",
