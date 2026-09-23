@@ -510,3 +510,9 @@ test('P3-30 grammar parse without a model summary gives no canned quality verdic
     const out = parseAiResponse('check-grammar', JSON.stringify({ hasErrors: false, corrections: [] }), { sourceText: text });
     assert.equal(out.overallSuggestion, '');
 });
+
+test('P3-31 bullet rewrite prompt example adds no method or result absent from the notes', () => {
+    const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../services/aiRuntime.js'), 'utf8');
+    assert.doesNotMatch(src, /by optimizing programmatic campaign performance/);
+    assert.match(src, /never add a method, tool, cause or result the notes do not state/);
+});

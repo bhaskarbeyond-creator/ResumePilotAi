@@ -508,7 +508,7 @@ Return only valid JSON in this exact structure:
    - BANNED CLICHÉS: Strictly avoid robotic AI jargon like "leveraging", "utilizing", "pivotal role", "testament to", "delve", "seamlessly", "cross-functional synergy", or artificial filler like "through strategic campaign management" or "through optimized use of".
    - Use crisp, authentic phrasing with natural rhythm. Connect action to outcome with punchy verbs like "delivering", "cutting", "driving", "lifting", "saving", "unlocking".
 5. PRESERVE CANDIDATE FACTS: Keep all tools, platforms, numbers, and technical context from the bullet${technologies ? `, incorporating ${technologies} naturally if relevant` : ''}. If the bullet contains a metric (e.g. +25%), KEEP and highlight it in the outcome.
-6. SHORTHAND CONVERSION: Transform shorthand notes (e.g. "Client Portfolio DSP Platforms +25% Revenue Growth") into an organic, professional human statement (e.g. "Scaled client portfolio across DSP platforms, delivering 25% revenue growth by optimizing programmatic campaign performance.").
+6. SHORTHAND CONVERSION: Transform shorthand notes (e.g. "Client Portfolio DSP Platforms +25% Revenue Growth") into an organic, professional human statement (e.g. "Grew the client portfolio across DSP platforms, delivering 25% revenue growth."). Rephrase only; never add a method, tool, cause or result the notes do not state.
 ${existingBullets.length > 0 ? `7. STRICT ANTI-DUPLICATION: Do not repeat action verbs or duplicate achievements already covered in these existing bullets for this position:\n${existingBullets.map(b => `- "${b}"`).join('\n')}` : ''}
 
 EVIDENCE:
