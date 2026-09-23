@@ -38,10 +38,16 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
   const customKeys = policy.customProviderKeys || {};
   // Model governance is enforced server-side: when the tenant declares a model
   // allowlist, providers whose effective model is not allowlisted are disabled
-  // even if the provider itself is approved.
+  // even if the provider itself is approved. `restrictedModels` is the symmetric
+  // denylist (e.g. a permanently retired model for this tenant).
   const allowedModels = Array.isArray(policy.allowedModels)
-    ? new Set(policy.allowedModels.map(value => String(value).trim()))
+    ? new Set(policy.allowedModels.map(value => String(value).trim()).filter(Boolean))
     : null;
+  const restrictedModels = new Set(
+    Array.isArray(policy.restrictedModels)
+      ? policy.restrictedModels.map(value => String(value).trim()).filter(Boolean)
+      : []
+  );
   const providers = Object.fromEntries(Object.entries(configuration.providers || {}).map(([name, provider]) => {
     const effectiveKey = String(customKeys[name] || provider.key || '').trim();
     const hasCustomKey = Boolean(String(customKeys[name] || '').trim());
@@ -50,6 +56,7 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
       key: effectiveKey,
       enabled: (hasCustomKey || provider.enabled === true) && allowedProviders.has(name)
         && Boolean(effectiveKey)
+        && !restrictedModels.has(String(provider.model || ''))
         && (!allowedModels || allowedModels.size === 0 || allowedModels.has(String(provider.model || ''))),
     }];
   }));
@@ -72,6 +79,23 @@ function applyTenantAiPolicy(configuration, context, policy = {}) {
     ...configuration,
     primary,
     providers,
+    // Tenant identity for routing-state isolation (health, model access,
+    // telemetry are all keyed by this). Null only on the platform scope.
+    tenantId: context && context.tenantId ? String(context.tenantId) : null,
+    principalId: context && context.principalId ? String(context.principalId) : null,
+    // Tenant AI governance data (no credentials) for the dynamic model
+    // selector: allowlist/denylist apply to discovered models as well as the
+    // configured model; primaryModel is a preference signal.
+    tenantPolicy: Object.freeze({
+      allowedProviders: Array.isArray(policy.allowedProviders) ? policy.allowedProviders.map(value => String(value)) : null,
+      allowedModels: Array.isArray(policy.allowedModels)
+        ? policy.allowedModels.map(value => String(value).trim()).filter(Boolean)
+        : null,
+      restrictedModels: Array.isArray(policy.restrictedModels)
+        ? policy.restrictedModels.map(value => String(value).trim()).filter(Boolean)
+        : null,
+      primaryModel: policy.primaryModel ? String(policy.primaryModel).trim() : null,
+    }),
     tenantPolicyVersion: Number(policy.version || context.policyVersion),
     tenantAiProfile: String(policy.profile || context.dataPlane.aiProfile || 'platform-default'),
   });

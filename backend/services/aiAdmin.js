@@ -229,57 +229,39 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
 }
 
 async function fetchProviderModels({ environment = process.env, provider, apiKey, fetchImpl = global.fetch, timeoutMs = 15000 }) {
-  if (!PROVIDERS.includes(provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
-  const configuration = await loadProviderConfiguration(environment);
-  const base = configuration.providers[provider];
-  const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
-  const key = String((!isMasked && apiKey) || base?.key || '').trim();
-  if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${provider} has no server-side credential configured.`, 400);
+    if (!PROVIDERS.includes(provider)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', 'Unsupported AI provider.', 400);
+    const configuration = await loadProviderConfiguration(environment);
+    const base = configuration.providers[provider];
+    const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
+    const key = String((!isMasked && apiKey) || base?.key || '').trim();
+    if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${provider} has no server-side credential configured.`, 400);
 
-  if (provider === 'nvidia') {
-    const response = await fetchImpl('https://integrate.api.nvidia.com/v1/models', {
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
-    });
-    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `NVIDIA API returned HTTP ${response.status}`, response.status);
+    // Discovery is delegated to the shared provider adapter (the same
+    // mechanism the dynamic router uses) so the admin panel and the runtime
+    // never diverge on endpoints or parsing.
+    const { getAdapter, fetchWithDeadline } = require('./aiRouting');
+    const adapter = getAdapter(provider);
+    if (!adapter || !adapter.discovery?.supported) return { provider, count: 0, models: [] };
+    const request = adapter.buildDiscoveryRequest({ providerConfig: { ...base, key, baseUrl: base?.baseUrl } });
+    const response = await fetchWithDeadline(fetchImpl, request.url, { method: request.method, headers: request.headers }, timeoutMs);
+    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `${adapter.name} API returned HTTP ${response.status}`, response.status);
     const data = await response.json();
-    const models = (data.data || []).map(m => ({ id: m.id, name: m.id, owned_by: m.owned_by || 'nvidia' })).sort((a, b) => a.id.localeCompare(b.id));
-    return { provider: 'nvidia', count: models.length, models };
-  }
-
-  if (provider === 'openai' || provider === 'groq' || provider === 'openrouter' || provider === 'deepseek') {
-    const urls = {
-      openai: 'https://api.openai.com/v1/models',
-      groq: 'https://api.groq.com/openai/v1/models',
-      openrouter: 'https://openrouter.ai/api/v1/models',
-      deepseek: 'https://api.deepseek.com/models'
-    };
-    const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
-    if (provider === 'openrouter') {
-      headers['HTTP-Referer'] = process.env.APP_URL || process.env.TARGET_URL || 'https://ime365.com';
-      headers['X-Title'] = 'IME365';
+    let entries;
+    try {
+      entries = adapter.normalizeDiscoveryResponse(data);
+    } catch {
+      // Admin panel parity with legacy behavior: an unparseable shape yields
+      // an empty list (the runtime discovery path is stricter and keeps its
+      // last-known-good state instead).
+      return { provider, count: 0, models: [] };
     }
-    const response = await fetchImpl(urls[provider], {
-      headers,
-      signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
-    });
-    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `${provider} API returned HTTP ${response.status}`, response.status);
-    const data = await response.json();
-    const models = (data.data || []).map(m => ({ id: m.id, name: m.id })).sort((a, b) => a.id.localeCompare(b.id));
+    const models = entries.map(entry => {
+        const raw = entry.raw || {};
+        if (provider === 'nvidia') return { id: entry.modelId, name: entry.modelId, owned_by: raw.owned_by || 'nvidia' };
+        if (provider === 'gemini') return { id: entry.modelId, name: raw.displayName || entry.modelId };
+        return { id: entry.modelId, name: entry.modelId };
+    }).sort((a, b) => a.id.localeCompare(b.id));
     return { provider, count: models.length, models };
-  }
-
-  if (provider === 'gemini') {
-    const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`, {
-      signal: AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined
-    });
-    if (!response.ok) throw errorWith('AI_MODELS_FETCH_FAILED', `Gemini API returned HTTP ${response.status}`, response.status);
-    const data = await response.json();
-    const models = (data.models || []).map(m => ({ id: m.name.replace(/^models\//, ''), name: m.displayName || m.name })).sort((a, b) => a.id.localeCompare(b.id));
-    return { provider: 'gemini', count: models.length, models };
-  }
-
-  return { provider, count: 0, models: [] };
 }
 
 module.exports = {

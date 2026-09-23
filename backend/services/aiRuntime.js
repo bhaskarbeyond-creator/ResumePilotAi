@@ -6,15 +6,33 @@ const {
     summaryEvidenceLength,
 } = require('./candidateContext');
 
+// Provider/model orchestration lives in ./aiRouting. This module keeps the
+// legacy runtime API (prompts, parsing, safe fallbacks) and delegates model
+// selection + execution to the dynamic router.
+const {
+    getAdapter,
+    listAdapterIds,
+    computeProviderOrder,
+    createAiModelRouter,
+    fetchWithDeadline,
+    extractProviderErrorMessage,
+    deriveRequirementProfile,
+    selectModels,
+    classifyProviderError,
+} = require('./aiRouting');
+
 const PROVIDERS = Object.freeze(['nvidia', 'gemini', 'openai', 'groq', 'openrouter', 'deepseek']);
-const PROVIDER_DEFAULTS = Object.freeze({
-    nvidia: { model: 'meta/llama-3.2-11b-vision-instruct', url: 'https://integrate.api.nvidia.com/v1/chat/completions' },
-    gemini: { model: 'gemini-2.0-flash' },
-    openai: { model: 'gpt-4o-mini', url: 'https://api.openai.com/v1/chat/completions' },
-    groq: { model: 'llama-3.3-70b-versatile', url: 'https://api.groq.com/openai/v1/chat/completions' },
-    openrouter: { model: 'meta-llama/llama-3.3-70b-instruct:free', url: 'https://openrouter.ai/api/v1/chat/completions' },
-    deepseek: { model: 'deepseek-chat', url: 'https://api.deepseek.com/chat/completions' },
-});
+// Configuration SEEDS only: used when the operator/tenant has not configured a
+// model explicitly. These are NOT routing rankings — the dynamic router (./aiRouting)
+// overrides them with provider-discovered models and runtime health evidence.
+const PROVIDER_DEFAULTS = Object.freeze(
+    Object.fromEntries(listAdapterIds().map((id) => {
+        const adapter = getAdapter(id);
+        const entry = { model: adapter.defaultModel };
+        if (adapter.defaultChatUrl) entry.url = adapter.defaultChatUrl;
+        return [id, Object.freeze(entry)];
+    }))
+);
 const ENV_KEYS = Object.freeze({
     nvidia: 'NVIDIA_API_KEY', gemini: 'GEMINI_API_KEY', openai: 'OPENAI_API_KEY',
     groq: 'GROQ_API_KEY', openrouter: 'OPENROUTER_API_KEY', deepseek: 'DEEPSEEK_API_KEY',
@@ -69,17 +87,13 @@ function clampNumber(value, min, max, fallback) {
     return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
 }
 
-const RETIRED_MODELS = new Set([
-    'nvidia/nemotron-mini-4b-instruct',
-    'meta/llama-3.1-8b-instruct',
-    'meta/llama-3.2-3b-instruct',
-    'meta/llama-3.2-1b-instruct',
-    'poolside/laguna-xs-2.1',
-]);
-
+// NOTE: there is intentionally NO hardcoded model allowlist/denylist here.
+// Model retirement is handled dynamically: discovery catalogs drop the model,
+// and runtime model_not_found responses put the model into a tenant-scoped
+// cooldown so selection fails over to remaining eligible models. Operators
+// that want a permanent ban can use the tenant policy `restrictedModels`.
 function safeModel(value, fallback) {
     const model = String(value || '').trim();
-    if (RETIRED_MODELS.has(model)) return fallback;
     return MODEL_PATTERN.test(model) ? model : fallback;
 }
 
@@ -1571,6 +1585,19 @@ function clearProviderConfigurationCache() {
     configurationCache = null;
 }
 
+/**
+ * Dynamic model discovery is ON by default in production and OFF by default in
+ * test environments (deterministic unit tests); either can be overridden with
+ * AI_ROUTING_DISCOVERY=true|false. Discovery only feeds the routing state —
+ * requests are never blocked on it.
+ */
+function resolveDiscoveryEnabled(environment = {}) {
+    const explicit = String(environment.AI_ROUTING_DISCOVERY ?? process.env.AI_ROUTING_DISCOVERY ?? '').toLowerCase();
+    if (explicit === 'true') return true;
+    if (explicit === 'false') return false;
+    return process.env.NODE_ENV !== 'test';
+}
+
 async function loadProviderConfiguration(environment = process.env) {
     if (configurationCache && configurationCache.expiresAt > Date.now()) {
         return cloneConfiguration(configurationCache.configuration);
@@ -1608,185 +1635,83 @@ async function loadProviderConfiguration(environment = process.env) {
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
         maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, 2048)),
         providers,
+        // Platform scope; applyTenantAiPolicy stamps the tenant context for
+        // tenant-scoped routing state (health, telemetry, model access).
+        tenantId: null,
+        discoveryEnabled: resolveDiscoveryEnabled(environment),
     };
     configurationCache = { configuration, expiresAt: Date.now() + CONFIGURATION_CACHE_MS };
     return cloneConfiguration(configuration);
 }
 
 function providerOrder(configuration) {
-    const enabled = PROVIDERS.filter(provider => configuration.providers[provider]?.enabled);
-    if (!enabled.length) return [];
-    const primary = enabled.includes(configuration.primary) ? configuration.primary : enabled[0];
-    return configuration.enableFallback ? [primary, ...enabled.filter(provider => provider !== primary)] : [primary];
+    return computeProviderOrder(configuration);
 }
 
-async function fetchWithDeadline(fetchImpl, url, options, timeoutMs, externalSignal) {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timeout = setTimeout(() => {
-        timedOut = true;
-        controller.abort(Object.assign(new Error(`AI provider timeout (${timeoutMs}ms)`), { name: 'TimeoutError', code: 'AI_PROVIDER_TIMEOUT' }));
-    }, timeoutMs);
-    const abort = () => controller.abort(externalSignal.reason);
-    if (externalSignal) {
-        if (externalSignal.aborted) abort();
-        else externalSignal.addEventListener('abort', abort, { once: true });
+// fetchWithDeadline + extractProviderErrorMessage are imported from ./aiRouting
+// (shared with discovery and the provider adapters).
+
+/**
+ * Executes ONE (provider, model) request through the provider adapter.
+ * Model-level failover is NOT done here — the dynamic router (generateWithProviders)
+ * ranks candidate models and moves to the next eligible candidate on failure,
+ * using capability + health evidence instead of a hardcoded model list.
+ */
+async function requestProvider(provider, providerConfig, prompt, generation, { fetchImpl = global.fetch, signal, timeoutMs = 30000 } = {}) {
+    const adapter = getAdapter(provider);
+    if (!adapter) {
+        throw Object.assign(new Error(`No AI provider adapter registered for ${provider}`), { status: 502, code: 'NO_PROVIDER_ADAPTER' });
     }
-    try {
-        return await fetchImpl(url, { ...options, signal: controller.signal });
-    } catch (err) {
-        if (timedOut && !externalSignal?.aborted) {
-            throw Object.assign(new Error(`AI provider timed out (${timeoutMs}ms)`), { status: 504, code: 'AI_PROVIDER_TIMEOUT' });
-        }
-        throw err;
-    } finally {
-        clearTimeout(timeout);
-        externalSignal?.removeEventListener('abort', abort);
+    const request = adapter.buildChatRequest({
+        providerConfig,
+        model: safeModel(providerConfig?.model, adapter.defaultModel),
+        prompt,
+        temperature: generation?.temperature ?? 0.7,
+        maxTokens: generation?.maxTokens ?? 2048,
+    });
+    const response = await fetchWithDeadline(fetchImpl, request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+    }, timeoutMs, signal);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, adapter.name)), { status: response.status });
     }
+    const result = adapter.extractChatResponse(body, response.status);
+    return { content: result.content, usage: result.usage };
 }
 
-function extractProviderErrorMessage(body, status, provider) {
-    if (!body) return `${provider} HTTP ${status}`;
-    if (typeof body.error === 'string' && body.error.trim()) return body.error.trim();
-    if (typeof body.error?.message === 'string' && body.error.message.trim()) return body.error.message.trim();
-    if (typeof body.message === 'string' && body.message.trim()) return body.message.trim();
-    if (typeof body.detail === 'string' && body.detail.trim()) return body.detail.trim();
-    return `${provider} HTTP ${status}`;
+// Shared dynamic router (discovery state + tenant-scoped health + telemetry).
+// State is process-local and bounded; reset between tests.
+let sharedAiRouter = null;
+function getSharedAiRouter() {
+    if (!sharedAiRouter) {
+        sharedAiRouter = createAiModelRouter({
+            autoDiscovery: true,
+            log: message => console.warn(message),
+        });
+    }
+    return sharedAiRouter;
+}
+function resetSharedAiRouterForTests() {
+    if (sharedAiRouter) sharedAiRouter.reset();
 }
 
 /**
- * Resolves the OpenAI-compatible chat completions URL for a provider. An
- * operator-configured baseUrl (deployment env or Super Admin AI settings)
- * takes precedence; `/chat/completions` is appended unless the override
- * already points at a completions path.
+ * Dynamic model selection + execution with same-tenant compatible fallback.
+ *
+ * Behavior contract (preserved from the legacy runtime):
+ *  - no enabled providers      -> AI_PROVIDER_UNAVAILABLE (503)
+ *  - every candidate failed    -> AI_PROVIDER_ERROR (502) with `failures`
+ *  - client aborted            -> the abort error is re-thrown as-is
+ *  - the result carries { raw, provider, model, usage } plus a `routing`
+ *    explainability summary (selection latency, fallbacks, rationale).
  */
-function chatCompletionsUrl(provider, baseUrl) {
-    const configured = String(baseUrl || '').trim().replace(/\/+$/, '');
-    if (!configured) return PROVIDER_DEFAULTS[provider].url;
-    if (/\/chat\/completions$/.test(configured)) return configured;
-    return `${configured}/chat/completions`;
-}
-
-async function requestProvider(provider, providerConfig, prompt, generation, { fetchImpl = global.fetch, signal, timeoutMs = 30000 } = {}) {
-    if (provider === 'gemini') {
-        const model = providerConfig.model.startsWith('models/') ? providerConfig.model : `models/${providerConfig.model}`;
-        const geminiBase = String(providerConfig.baseUrl || '').trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com';
-        const url = `${geminiBase}/v1beta/${model}:generateContent?key=${encodeURIComponent(providerConfig.key)}`;
-        const response = await fetchWithDeadline(fetchImpl, url, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: generation.temperature, maxOutputTokens: generation.maxTokens },
-            }),
-        }, timeoutMs, signal);
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw Object.assign(new Error(extractProviderErrorMessage(body, response.status, 'Gemini')), { status: response.status });
-        const content = body.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
-        if (!content.trim()) throw Object.assign(new Error('Empty content received from Gemini provider'), { status: 502, code: 'EMPTY_PROVIDER_RESPONSE' });
-        const meta = body.usageMetadata || null;
-        const usage = meta ? { promptTokens: Number(meta.promptTokenCount) || 0, completionTokens: Number(meta.candidatesTokenCount) || 0, totalTokens: Number(meta.totalTokenCount) || 0 } : null;
-        return { content, usage };
-    }
-    const defaults = PROVIDER_DEFAULTS[provider];
-    const initialModel = safeModel(providerConfig.model, defaults.model);
-    const candidateModels = [initialModel];
-    if (provider === 'nvidia') {
-        const activeNvidiaModels = ['meta/llama-3.2-11b-vision-instruct', 'nvidia/nemotron-mini-4b-instruct', defaults.model];
-        for (const m of activeNvidiaModels) {
-            if (m && !candidateModels.includes(m) && !RETIRED_MODELS.has(m)) candidateModels.push(m);
-        }
-    } else if (initialModel !== defaults.model) {
-        candidateModels.push(defaults.model);
-    }
-
-    let lastError = null;
-    for (let i = 0; i < candidateModels.length; i++) {
-        const currentModel = candidateModels[i];
-        const isLastCandidate = (i === candidateModels.length - 1);
-        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 75000);
-        try {
-            const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
-            if (provider === 'openrouter') {
-                headers['HTTP-Referer'] = process.env.APP_URL || process.env.TARGET_URL || 'https://ime365.com';
-                headers['X-Title'] = 'IME365';
-            }
-            const response = await fetchWithDeadline(fetchImpl, chatCompletionsUrl(provider, providerConfig.baseUrl), {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    model: currentModel,
-                    messages: [{ role: 'user', content: prompt }],
-                    temperature: generation.temperature,
-                    max_tokens: generation.maxTokens,
-                }),
-            }, candidateTimeoutMs, signal);
-            const body = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const errMsg = extractProviderErrorMessage(body, response.status, provider);
-                const isRetryable = response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504 || response.status === 404 || response.status === 410 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found|end of life|no longer available|ECONNRESET|ETIMEDOUT|socket hang up/i.test(errMsg);
-                if (isRetryable && !isLastCandidate) {
-                    console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[i + 1]}`);
-                    lastError = Object.assign(new Error(errMsg), { status: response.status });
-                    continue;
-                }
-                throw Object.assign(new Error(errMsg), { status: response.status });
-            }
-            const content = body.choices?.[0]?.message?.content || '';
-            if (!content.trim()) throw Object.assign(new Error(`Empty content received from ${provider} provider`), { status: 502, code: 'EMPTY_PROVIDER_RESPONSE' });
-            const meta = body.usage || null;
-            const usage = meta ? { promptTokens: Number(meta.prompt_tokens) || 0, completionTokens: Number(meta.completion_tokens) || 0, totalTokens: Number(meta.total_tokens) || 0 } : null;
-            return { content, usage };
-        } catch (err) {
-            lastError = err;
-            if (signal?.aborted) throw err;
-            if (!isLastCandidate) {
-                console.warn(`[AI Model Failover] ${provider} model ${currentModel} timed out or failed (${err.message}); retrying with fallback model ${candidateModels[i + 1]}...`);
-                continue;
-            }
-            throw err;
-        }
-    }
-    throw lastError;
-}
-
 async function generateWithProviders({ prompt, configuration, operation, fetchImpl, signal, timeoutMs }) {
     const order = providerOrder(configuration);
     if (!order.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
-    const failures = [];
-    for (const provider of order) {
-        let attempts = (operation === 'autocomplete' || operation === 'generate-interview' || operation === 'live-interview-turn' || operation === 'live-interview-open' || operation === 'live-interview-report') ? 3 : 1;
-        while (attempts > 0) {
-            attempts -= 1;
-            try {
-                const generation = {
-                    ...configuration,
-                    maxTokens: operation === 'autocomplete' ? 180 : configuration.maxTokens,
-                    temperature: operation === 'autocomplete' ? 0.1 : configuration.temperature,
-                };
-                const effectiveTimeout = timeoutMs || (operation === 'live-interview-report' ? 120000 : (/^live-interview|generate-interview/.test(operation) ? 75000 : 45000));
-                const providerResult = await requestProvider(provider, configuration.providers[provider], prompt, generation, { fetchImpl, signal, timeoutMs: effectiveTimeout });
-                const raw = typeof providerResult === 'string' ? providerResult : providerResult?.content;
-                return { raw, provider, model: configuration.providers[provider].model, usage: (providerResult && typeof providerResult === 'object' && providerResult.usage) || null };
-            } catch (error) {
-                const isTransientError = error.status === 500 || error.status === 502 || error.status === 503 || error.status === 429
-                    || /ECONNRESET|ETIMEDOUT|fetch failed|Inference connection error|connection error|socket hang up/i.test(error.message || '');
-                if (attempts > 0 && !signal?.aborted && error.code !== 'AI_PROVIDER_TIMEOUT' && error.status !== 504 && isTransientError) {
-                    const backoffMs = Math.min(5000, (4 - attempts) * 1500);
-                    console.warn(`[AI Retry] Retrying ${operation} with ${provider} after transient error (${error.message}) in ${backoffMs}ms...`);
-                    await new Promise(r => setTimeout(r, backoffMs));
-                    continue;
-                }
-                console.error(`[AI Provider Failure] operation=${operation || 'unknown'} provider=${provider} error=${error.message}`);
-                if (signal?.aborted) throw error;
-                failures.push({ provider, status: Number(error.status) || 0, code: error.code || 'PROVIDER_ERROR', message: error.message });
-                break;
-            }
-        }
-    }
-    const error = Object.assign(new Error('All configured AI providers failed'), { code: 'AI_PROVIDER_ERROR', status: 502 });
-    error.failures = failures;
-    error.operation = operation;
-    throw error;
+    return getSharedAiRouter().route({ prompt, configuration, operation, fetchImpl, signal, timeoutMs });
 }
 
 /**
@@ -2164,9 +2089,9 @@ function groundResumeExtraction(rawData, rawText) {
 
 async function executeResumeParsing({ rawText, environment, fetchImpl, signal, configuration: providedConfiguration }) {
     const prompt = buildResumeParsingPrompt(rawText);
-    const configuration = providedConfiguration || await loadProviderConfiguration(environment);
-    configuration.temperature = 0.15;
-    configuration.maxTokens = 4096;
+    // Clone: tenant-applied configurations are frozen; generation overrides
+    // must not mutate (or fail on) the shared object.
+    const configuration = { ...(providedConfiguration || await loadProviderConfiguration(environment)), temperature: 0.15, maxTokens: 4096 };
     const generated = await generateWithProviders({ prompt, configuration, operation: 'parse-resume', fetchImpl, signal, timeoutMs: 45000 });
     const extracted = extractJson(generated.raw);
     if (!extracted || typeof extracted !== 'object' || Array.isArray(extracted)) {
@@ -2180,23 +2105,31 @@ module.exports = {
     AUTOCOMPLETE_TYPES,
     CONTENT_OPERATIONS,
     PROVIDERS,
+    PROVIDER_DEFAULTS,
     assertGroundedGeneratedContent,
+    classifyProviderError,
+    computeProviderOrder,
     containsInstructionOverride,
     buildClarificationPrompt,
     buildGroundedPrompt,
     buildLegacyPrompt,
     buildResumeParsingPrompt,
     clearProviderConfigurationCache,
+    deriveRequirementProfile,
     executeContentOperation,
     executeResumeParsing,
     extractJson,
+    fetchWithDeadline,
     generateWithProviders,
     getContentOperationFallback,
+    getSharedAiRouter,
     groundResumeExtraction,
     loadProviderConfiguration,
     needsClarification,
     parseAiResponse,
     providerOrder,
     requestProvider,
+    resetSharedAiRouterForTests,
+    selectModels,
     validateOperation,
 };

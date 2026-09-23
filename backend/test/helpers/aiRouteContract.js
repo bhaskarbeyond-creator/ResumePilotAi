@@ -24,6 +24,18 @@ class AiRouteMariaDbContract {
     configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
   }
 
+  /**
+   * Re-assert the repository override after resetRepositoryCacheForTests()
+   * (which clears the test override along with the repository cache). The
+   * pool override lives in database/mysql and is not affected by that reset.
+   */
+  reinstallOverrides() {
+    const contract = this;
+    setRepositoryForTests({
+      async getSetting(category) { return contract.settings[category] || null; },
+    });
+  }
+
   async query(sql, params = []) {
     const normalized = String(sql).replace(/\s+/g, ' ').trim();
     if (/^INSERT INTO notification_outbox /i.test(normalized)) {

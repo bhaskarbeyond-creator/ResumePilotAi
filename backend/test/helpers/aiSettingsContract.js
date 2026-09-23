@@ -2,7 +2,7 @@
 
 const { setPoolForTests } = require('../../database/mysql');
 const { setRepositoryForTests } = require('../../repositories');
-const { clearProviderConfigurationCache } = require('../../services/aiRuntime');
+const { clearProviderConfigurationCache, resetSharedAiRouterForTests } = require('../../services/aiRuntime');
 
 class AiSettingsMariaDbContract {
   constructor() {
@@ -17,6 +17,10 @@ class AiSettingsMariaDbContract {
     }]));
     this.auditEvents = [];
     clearProviderConfigurationCache();
+    // Routing state (tenant-scoped health/cooldowns, discovery cache, telemetry)
+    // is per-process runtime state; reseeded settings imply a fresh routing
+    // baseline so acceptance gates are deterministic.
+    resetSharedAiRouterForTests();
   }
 
   async query(sql) {

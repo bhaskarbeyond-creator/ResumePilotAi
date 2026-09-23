@@ -11,6 +11,7 @@ const {
   buildLegacyPrompt,
   loadProviderConfiguration,
   generateWithProviders,
+  resetSharedAiRouterForTests,
   PROVIDERS
 } = require('../services/aiRuntime');
 const {
@@ -205,6 +206,11 @@ test('JSON Stress: extractJson handles unescaped newlines, prose wrapping, and m
 // 3. FULL 7-TIER MULTI-PROVIDER FALLBACK CASCADE
 // -------------------------------------------------------------
 test('Fallback Cascade: Step-by-step failover through all providers with deterministic recovery', async () => {
+  // Each scenario below must be independent: the shared router carries runtime
+  // health state (e.g. a 429 marks the model rate-limited and it is excluded
+  // from the candidate set until the window elapses). Reset between scenarios
+  // so every cascade step evaluates the full provider set.
+  resetSharedAiRouterForTests();
   const configuration = {
     primary: 'nvidia',
     enableFallback: true,
@@ -232,6 +238,7 @@ test('Fallback Cascade: Step-by-step failover through all providers with determi
   assert.match(resultA.raw, /NVIDIA Output/);
 
   // Test Case B: Primary (NVIDIA) fails 503 -> Fallback to Gemini succeeds
+  resetSharedAiRouterForTests();
   const mockFetchB = async (url) => {
     if (url.includes('nvidia')) {
       return { ok: false, status: 503, json: async () => ({ error: 'Service Unavailable' }) };
@@ -246,6 +253,7 @@ test('Fallback Cascade: Step-by-step failover through all providers with determi
   assert.match(resultB.raw, /Gemini Output/);
 
   // Test Case C: NVIDIA (401), Gemini (429), OpenAI (500) -> Groq succeeds
+  resetSharedAiRouterForTests();
   const mockFetchC = async (url) => {
     if (url.includes('nvidia')) return { ok: false, status: 401, json: async () => ({ error: 'Unauthorized' }) };
     if (url.includes('generativelanguage')) return { ok: false, status: 429, json: async () => ({ error: 'Rate limit' }) };
@@ -260,6 +268,7 @@ test('Fallback Cascade: Step-by-step failover through all providers with determi
   assert.match(resultC.raw, /Groq Output/);
 
   // Test Case D: All providers fail -> throws structured AI_PROVIDER_ERROR containing failure telemetry
+  resetSharedAiRouterForTests();
   const mockFetchD = async () => ({ ok: false, status: 500, json: async () => ({ error: 'Outage' }) });
   await assert.rejects(
     () => generateWithProviders({ prompt: 'test', configuration, operation: 'generate-summary', fetchImpl: mockFetchD }),
@@ -272,6 +281,7 @@ test('Fallback Cascade: Step-by-step failover through all providers with determi
   );
 
   // Test Case E: Fallback disabled (`enableFallback: false`) -> strictly stops after 1 provider
+  resetSharedAiRouterForTests();
   const configNoFallback = { ...configuration, enableFallback: false };
   let fetchCallCount = 0;
   const mockFetchE = async () => {

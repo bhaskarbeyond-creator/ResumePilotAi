@@ -113,12 +113,33 @@ async function recordTenantAiUsageIfApplicable(tenantResolution, { operation, ge
             });
         }
         if (typeof tenantResolution.tenantService.writeAudit === 'function') {
+            // Safe routing telemetry (no secrets, no prompts, no PII): explains
+            // which model was selected, whether a fallback occurred, and how
+            // long selection/execution took. Tenant-scoped by writeAudit.
+            const routing = generated?.routing;
             await tenantResolution.tenantService.writeAudit(tenantResolution.tenantContext, {
                 action: 'TENANT_AI_GENERATED',
                 category: 'tenant.ai',
                 severity: 'INFO',
                 resource: { type: 'ai_interview_operation', id: tenantResolution.tenantContext.correlationId },
-                metadata: { operation, provider: generated.provider, model: generated.model, actorType: tenantResolution.tenantContext.actorType },
+                metadata: {
+                    operation,
+                    provider: generated.provider,
+                    model: generated.model,
+                    actorType: tenantResolution.tenantContext.actorType,
+                    ...(routing ? {
+                        aiRouting: {
+                            decisionId: routing.decisionId,
+                            executedModel: routing.executedModel || null,
+                            selectionLatencyMs: routing.selectionLatencyMs,
+                            fallbackCount: routing.fallbackCount,
+                            attempts: routing.attempts,
+                            candidatesConsidered: routing.candidatesConsidered,
+                            candidatesRejected: routing.candidatesRejected,
+                            lastResort: routing.lastResort,
+                        },
+                    } : {}),
+                },
             }).catch(() => {});
         }
     } catch (_) {}
