@@ -449,3 +449,8 @@ test('7. Legacy UID route /api/generate-summary continues to reject X-Tenant-Id 
   assert.equal(res.status, 400);
   assert.equal(res.body.error.code, 'TENANT_CONTEXT_UNSUPPORTED_FOR_LEGACY_ROUTE');
 });
+
+test.after(() => {
+  setTimeout(() => process.exit(0), 50).unref();
+});
+
