@@ -397,8 +397,10 @@ test('executeContentOperation gracefully falls back on provider failure without 
     requestId: 'test-fallback-summary',
   });
   assert.equal(summaryResult.provider, 'fallback');
-  assert.equal(summaryResult.grounding, 'source-preserving-fallback');
-  assert.equal(summaryResult.data.summary, 'DevOps Engineer. Maintained deployment pipelines and incident runbooks');
+  // Phase 3: no templated summary; the candidate is asked and the state is explicit.
+  assert.equal(summaryResult.data.summary, undefined);
+  assert.equal(summaryResult.data.requiresAnswer, true);
+  assert.equal(summaryResult.data.aiUnavailable, true);
 
   // Enhance single bullet returns original bullet on provider failure
   const bulletResult = await executeContentOperation({

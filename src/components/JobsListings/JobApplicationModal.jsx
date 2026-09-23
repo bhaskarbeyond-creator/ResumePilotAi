@@ -72,6 +72,7 @@ function CoverLetterToolbar({ job, applicantName, selectedResume }) {
     const [isUnderline, setIsUnderline] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [pitchSuccess, setPitchSuccess] = useState(false);
+    const [pitchNotice, setPitchNotice] = useState('');
 
     const updateToolbar = useCallback(() => {
         const selection = $getSelection();
@@ -94,20 +95,19 @@ function CoverLetterToolbar({ job, applicantName, selectedResume }) {
         if (isAiGenerating) return;
         setIsAiGenerating(true);
         setPitchSuccess(false);
+        setPitchNotice('');
 
-        const company = job?.company || 'your team';
-        const role = job?.title || 'this role';
-        const candidate = applicantName || 'Candidate';
+        // Only real values are sent; missing ones stay empty (no invented defaults).
+        const company = job?.company || '';
+        const role = job?.title || '';
+        const candidate = applicantName || '';
 
         // Extract candidate skill context from selected resume if available
         const resumeDoc = selectedResume?.data || selectedResume || {};
         const rawSkills = Array.isArray(resumeDoc.skills)
             ? resumeDoc.skills.map((s) => (typeof s === 'object' ? s.name || s.skillName || s.skill || '' : String(s))).filter(Boolean).slice(0, 10).join(', ')
             : '';
-        const userSkills = rawSkills || 'modern full-stack architecture, high-performance web systems, and technical execution';
-
-        const employments = Array.isArray(resumeDoc.employments) ? resumeDoc.employments : [];
-        const yearsExp = employments.length > 0 ? `${Math.min(20, Math.max(1, employments.length * 2))}+` : '3+';
+        const userSkills = rawSkills;
         const jobDesc = job?.description || (Array.isArray(job?.requirements) ? job.requirements.join(', ') : job?.requirements) || '';
 
         let pitchText = '';
@@ -118,7 +118,6 @@ function CoverLetterToolbar({ job, applicantName, selectedResume }) {
                 recipientName: 'Hiring Team',
                 userSkills,
                 candidateName: candidate,
-                yearsExperience: yearsExp,
                 jobDescription: jobDesc.slice(0, 3000),
                 tone: 'impact',
             }, { timeoutMs: 25000 });
@@ -127,12 +126,15 @@ function CoverLetterToolbar({ job, applicantName, selectedResume }) {
                 pitchText = String(aiResponse.coverLetter).trim();
             }
         } catch (err) {
-            console.warn('[QuickPitch AI] Fallback to synthesized ATS template:', err?.message);
+            console.warn('[QuickPitch AI] unavailable:', err?.message);
         }
 
-        // Robust offline/fallback synthesized ATS pitch if AI is unavailable or unauthenticated
+        // No AI draft: leave the candidate's editor content untouched and say so.
+        // A template pitch would put invented experience and claims in their name.
         if (!pitchText) {
-            pitchText = `Dear Hiring Team at ${company},\n\nI am excited to submit my application for the ${role} position. With ${yearsExp} years of specialized experience in ${userSkills}, I have consistently delivered measurable outcomes and driven scalable, resilient solutions.\n\nHaving followed ${company}'s industry presence, I am eager to bring my technical rigor, execution speed, and collaborative mindset to your team. Thank you for your time and consideration, and I look forward to speaking with you.\n\nSincerely,\n${candidate}`;
+            setIsAiGenerating(false);
+            setPitchNotice('AI pitch is unavailable right now. Your cover letter was left unchanged — please try again or write it yourself.');
+            return;
         }
 
         editor.update(() => {
@@ -212,6 +214,9 @@ function CoverLetterToolbar({ job, applicantName, selectedResume }) {
                     <span>⚡ 1-Click Quick Pitch</span>
                 )}
             </button>
+            {pitchNotice && (
+                <p role="status" className="w-full text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">{pitchNotice}</p>
+            )}
         </div>
     );
 }

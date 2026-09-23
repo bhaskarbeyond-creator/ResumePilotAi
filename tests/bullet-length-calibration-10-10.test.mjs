@@ -61,6 +61,12 @@ test('BulletPointsEditor: Default maxLength is 260 and domain-aware metrics are 
     const editorSrc = fs.readFileSync('src/components/Form/BulletPointsEditor.jsx', 'utf-8');
     assert.match(editorSrc, /maxLength = 260/, 'Default maxLength must be 260');
     assert.match(editorSrc, /getDomainAtsMetrics/, 'Must define getDomainAtsMetrics');
-    assert.match(editorSrc, /30\+ Patients\/Day/, 'Must include healthcare metrics for medical roles');
+    // Metric helpers are domain-aware prompts that ASK for the candidate's number;
+    // they must never append an invented figure to a bullet.
+    assert.match(editorSrc, /How many patients did you typically handle/, 'Healthcare roles get a patient-volume question');
+    const helper = editorSrc.slice(editorSrc.indexOf('function getDomainAtsMetrics('), editorSrc.indexOf('\n}\n', editorSrc.indexOf('function getDomainAtsMetrics(')));
+    assert.doesNotMatch(helper, /text:\s*'/, 'no canned text is inserted');
+    assert.doesNotMatch(helper, /label: '[^']*\d/, 'no numeric metric labels');
+    assert.match(editorSrc, /handleInjectQuickMetric\(index, metricDraft\.value\)/, 'only candidate-typed metric text is appended');
     assert.match(editorSrc, /charCount > 220\s*\?\s*'text-amber-600/, 'Must style counter as amber between 220 and 260');
 });

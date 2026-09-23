@@ -47,6 +47,6 @@ test('CertificationsStep Modern Card-Style UX Verification Suite', () => {
     assert.match(fileContent, /setAiModalState/, 'Must manage aiModalState for recommendation popup');
     assert.match(fileContent, /generateUserAiContent\('generate-certifications'/, 'Must query AI backend for certifications');
 
-    // 8. Domain-Aware Curated Archetypes
-    assert.match(fileContent, /GET_CURATED_CERTIFICATION_IDEAS/, 'Must export GET_CURATED_CERTIFICATION_IDEAS');
+    // 8. No role-template credential fallback (Phase 3: recommendations are AI-only)
+    assert.doesNotMatch(fileContent, /GET_CURATED_CERTIFICATION_IDEAS/, 'No curated template credentials');
 });

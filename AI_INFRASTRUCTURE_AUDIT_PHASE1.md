@@ -448,3 +448,100 @@ Every finding was fixed in a way that keeps the original grounding-first design.
 | 24 | **OVERALL** | 7 | **8** |
 
 **Remaining gaps (not changed):** no streaming or latency/cost telemetry beyond tokens (cost micros still 0 because there is no pricing table); summary "{Role} with N years…" opening pattern; no seeded determinism for content ops; long-horizon memory (F13). Out-of-scope items from Phase 1 (missing backend deps in package.json, lockfile desync, `useAiAssist` cache key without uid) remain recorded, not fixed.
+
+---
+
+# PHASE 3 — Zero-fabrication, multi-tenant, long-interview remediation
+
+Scope: AI execution path only (frontend + backend). Unrelated issues remain in Out of Scope.
+
+## A. Issue → Root cause → Implementation → Test → Result
+
+| # | Issue | Root cause | Implementation | Regression test | Result |
+|---|---|---|---|---|---|
+| P3-1 | Outage returned role-template projects / JD | `getContentOperationFallback` synthesized content | Returns `projects: []` / `jobDescription: ''` + `aiUnavailable` | phase3 P3-1, P3-2; projects-step-10-10 | PASS |
+| P3-2 | Summary fallback concatenated role + history into a "summary" | `factualSourceSegments` join | Candidate text preserved (sanitised, no new words) else `ask('summary')` | P3-3; ai-runtime #20; ai-routes.integration #6; summary-generation 8/12/13 | PASS |
+| P3-3 | Bullet fallback generated role bullets (`generateClientRoleBullet`) | client + server template generators | Deleted; draft returned unchanged or ask | P3-4; bullet-generation-10-10; projects-step-10-10 | PASS |
+| P3-4 | Outage fallbacks indistinguishable from AI output (and cacheable) | no state flag | `executeContentOperation` marks `aiUnavailable`; client caches refuse them | P3-5 | PASS |
+| P3-5 | Canned outcome metric chips ("+25% Efficiency", "99.9% Uptime", "Semifinalist") | static chip arrays | Q3 chips `[]`, Q3 arrays deleted; `topicChipsOnly` filters claim-like chips | P3-6, P3-28; smart-questions; dynamic-dropdowns | PASS |
+| P3-6 | 1-click metric buttons appended invented figures to bullets | static metric strings | Helper now asks for the candidate's number; only typed text is appended; Copilot modal injector removed | P3-29; bullet-length-calibration | PASS |
+| P3-7 | Curated project/certification idea lists (incl. "Accredited Organization") | `GET_CURATED_*` | Deleted; explicit "AI … unavailable" notice | dashboard-settings-*, certifications-step-card-ux | PASS |
+| P3-8 | Cover letter / Quick Pitch templates with invented years & "proven track record" | template fallbacks | `coverLetterAi.js`: fenced prompt, numeric-only years, validator (fabricated metric / placeholder / truncation / injection echo) → 502 `aiUnavailable`; Quick Pitch shows status, never a template | P3-7..9; job-application-ai-pitch 2 | PASS |
+| P3-9 | Answer guide could show invented figures | no grounding | `answerGuideAi.js` validator: `FABRICATED_FIGURE`, malformed, truncated, injection echo → unavailable | P3-10, P3-11 | PASS |
+| P3-10 | Grammar outage said "Text appears to be well-written" | canned verdict | Fallback = exact mechanical findings + `aiUnavailable`; parse no longer invents a verdict; prompt fences `<text_to_check>` as untrusted, strips tag spoofing | P3-25, P3-26, P3-30 | PASS |
+| P3-11 | Summary/bullet/education could add numbers (years, %, covers) | only credential families checked | `assertNoInventedNumbers` against source + submitted payload | P3-27 | PASS |
+| P3-12 | Live turn missing score → invented 74/78/84 | baseline estimator | Score stays `null` ("Not scored"); report derives only from real scores else rejects | P3-12, P3-13 | PASS |
+| P3-13 | Report competencies without evidence | no filter | Kept only with evidence + valid score | P3-14 | PASS |
+| P3-14 | Assistant filler / canned acknowledgements | no post-processing | `stripAssistantFiller`; empty message instead of "Thank you for sharing" | P3-15 | PASS |
+| P3-15 (F13) | Memory = rolling summary + last 2 turns | by design, untested | Claims ledger (verbatim concrete facts, bounded 14, earliest+latest kept, injection-filtered), neutral conflict detection, asked-question list, one side-effect-free regeneration on repeat | P3-16..20 | PASS |
+| P3-16 | model_answer could invent figures | none | `groundedModelAnswer` drops answers with ungrounded figures | P3-21 | PASS |
+| P3-17 | Live session could continue under another tenant's config | tenant not bound | `assertSessionTenant` → 403 `TENANT_MISMATCH` before any provider call | P3-22 | PASS |
+| P3-18 | Frontend AI caches keyed without tenant/user | key omitted scope | `aiService`, `useAiAssist`, LiveAnswerGuide, Autocomplete, HeadingStep caches keyed by tenant+uid, unavailable results not cached | P3-5 + source tests | PASS |
+| P3-19 | Undefined `targetRole` in bullet payload builder | bug in aiContract.js | uses `context.target.role` | eslint 0 errors | PASS |
+
+## C. Multi-tenant isolation
+
+| Layer | Evidence | Status |
+|---|---|---|
+| Propagation | live routes pass `tenantId`; session bound at start | PASS (P3-22) |
+| Context / prompt | concurrent A/B sessions: no prompt contains both candidates' markers | PASS (P3-23) |
+| Response | cross-owner `get` → `SESSION_NOT_FOUND` | PASS (P3-23) |
+| Cache | frontend caches scoped by tenant+uid; unavailable never cached | PASS (static + unit) |
+| Persistence | memory store verified; MariaDB store | **UNVERIFIED — infrastructure unavailable** |
+| Retry | repeat regeneration = exactly one revision, no duplicate transcript | PASS (P3-20) |
+| Queue / background | no AI queue/background jobs exist in the AI path | N/A |
+| Streaming | not implemented | N/A |
+| Concurrent | Promise.all A/B start + answer, ledgers disjoint | PASS (P3-23) |
+| Provider/key selection | wrong-tenant call refused before provider; config marker A preserved | PASS (P3-22) |
+
+## D. Hardcoded AI content audit
+
+**NONE** on the AI output path after Phase 3. Remaining static strings are UI/status text
+("AI … unavailable right now", clarifying questions produced by `ask()`, topic-only starter chips,
+metric *questions*). The prompt-level banned-phrase lists and the `proven track record` scrubber
+in `aiRuntime.js` are output filters, not substituted content.
+
+## E. Verification (this environment, 2026-09-24)
+
+| Suite | Result |
+|---|---|
+| backend/test/ai-remediation-phase3.test.js (new) | 30/30 PASS |
+| backend/test/*.test.js (all) | 637 pass / 12 fail / 24 skipped of 673. The 12 failures are identical to HEAD (MariaDB/RBAC DB, `interview-multitenant-ai` 4 via DB quota pool) → environmental, 0 new |
+| Root AI tests/*.mjs (52 files) | 2435/2455 pass; 20 fail, all present at HEAD (HEAD: 23 fail) — 11 are `ECONNREFUSED 127.0.0.1:3306`; 0 new, 3 fixed |
+| test:security:static | 44/44 PASS |
+| test:interview | 31/31 PASS |
+| test:ai-settings | 13/13 PASS |
+| eslint src backend (errors) | 0 (HEAD: 3) |
+| vite build | PASS |
+| Live NVIDIA / Gemini E2E | **BLOCKED** — sandbox egress resets TLS to provider hosts |
+| MariaDB persistence / multitenant DB tests | **UNVERIFIED — infrastructure unavailable** (no docker, apt mirror and DB binaries blocked) |
+| Browser E2E (Playwright) | NOT EXECUTED — no browser/server with DB in sandbox |
+
+## F. Ratings after Phase 3 (evidence-based)
+
+| # | Dimension | P2 | P3 | Evidence / cap |
+|---|---|---|---|---|
+| 1 | Architecture | 8 | 9 | dedicated validators per surface, explicit unavailable contract |
+| 2 | Runtime | 8 | 8 | unchanged; no live provider verification |
+| 3 | Provider | 8 | 8 | live NVIDIA/Gemini BLOCKED |
+| 4 | Prompt Arch | 9 | 9 | all prompts fence untrusted data (grammar added) |
+| 5 | Prompt Quality | 8 | 9 | role-adaptive voice, conflict/continuity rules |
+| 6 | Response Quality | 7 | 8 | capped: no live output sampled |
+| 7 | Human-Likeness | 7 | 8 | filler stripping + voice rules; not live-evaluated |
+| 8 | Context | 8 | 9 | claims ledger, asked list, tenant-bound |
+| 9 | Continuity | 8 | 9 | P3-19 long-interview test |
+| 10 | Follow-up | 8 | 9 | repeat regeneration, conflict clarification |
+| 11 | Scoring | 7 | 9 | no invented scores, evidence-bound competencies |
+| 12 | Structured Output | 8 | 9 | new validators reject malformed/truncated |
+| 13 | Resilience | 8 | 9 | explicit unavailable states, no side-effect retries |
+| 14 | Token/Latency | 7 | 8 | bounded ledger; late prompt < 12k chars |
+| 15 | Consistency | 7 | 8 | no seeded determinism |
+| 16 | Hallucination | 9 | 10 | numeric grounding on all free-text surfaces, zero canned content |
+| 17 | Injection | 8 | 9 | fences + echo rejection + ledger filtering; no live red-team |
+| 18 | Security | 9 | 9 | |
+| 19 | Observability | 7 | 7 | cost micros still 0 |
+| 20 | MT Isolation | 9 | 9 | DB layer UNVERIFIED caps at 9 |
+| 21 | Cross-Tenant Leakage | 9 | 9 | same cap |
+| 22 | Concurrent MT | 9 | 9 | same cap |
+| 23 | ATS | 8 | 9 | no invented numbers/metrics, keyword alignment only where evidenced |
+| 24 | OVERALL | 8 | **9** | 10 withheld: live provider E2E BLOCKED, MariaDB UNVERIFIED, no streaming, cost telemetry 0 |

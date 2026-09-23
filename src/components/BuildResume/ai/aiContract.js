@@ -207,7 +207,7 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
                 payload: {
                     ...base,
                     bullet: extra?.bullet || '',
-                    jobTitle: extra?.jobTitle || extra?.role || extra?.position || targetRole || '',
+                    jobTitle: extra?.jobTitle || extra?.role || extra?.position || context.target.role || resumeData.targetRole || '',
                     company: extra?.company || extra?.employer || '',
                     location: extra?.location || extra?.city || '',
                     existingBullets: Array.isArray(extra?.existingBullets) ? extra.existingBullets : [],

@@ -244,56 +244,47 @@ function generateRoleInterviewQuestions(role = '', employer = '', targetJd = '')
     let metricExamples = 'metrics, numbers, efficiency gains, or outcomes';
     let defaultChipsQ1 = ['Daily Operations', 'Project Leadership', 'Client Collaboration', 'Process Improvement'];
     let defaultChipsQ2 = ['Key Software', 'Internal Workflows', 'Automation Tools', 'Technical Platforms'];
-    let defaultChipsQ3 = ['Exceeded KPIs', '+20% Efficiency', 'Cost Reduction', 'On-time Delivery'];
 
     if (/(developer|engineer|software|devops|backend|frontend|fullstack|data|cloud|architect|qa|programmer|coder)/i.test(lowerRole)) {
         toolExamples = 'languages, frameworks, cloud services, or databases';
         metricExamples = 'latency, uptime, scalability, or test coverage';
         defaultChipsQ1 = ['System Architecture', 'API Development', 'Code Reviews', 'Microservices'];
         defaultChipsQ2 = ['Node.js & React', 'PostgreSQL / SQL', 'Docker & CI/CD', 'AWS / Cloud'];
-        defaultChipsQ3 = ['Reduced Latency', '99.9% Uptime', 'Scaled to 100K+ Users', 'Automated Testing'];
     } else if (/(account manager|display|ad tech|advertising|media buyer|ppc|seo|marketing|campaign|growth)/i.test(lowerRole)) {
         toolExamples = 'ad platforms (DSPs, GA4, Meta, Google Ads), or CRM';
         metricExamples = 'ROAS, CPA, revenue growth, or conversion rate';
         defaultChipsQ1 = ['Client Portfolio', 'Campaign Execution', 'Media Planning', 'Cross-functional Teams'];
         defaultChipsQ2 = ['Google Ad Manager', 'DSP Platforms', 'Salesforce CRM', 'BI Dashboards'];
-        defaultChipsQ3 = ['+25% Revenue Growth', '3.5x Average ROAS', 'Cut CPA by 15%', 'Exceeded KPIs'];
     } else if (/(sales|business development|bdr|sdr|account executive|commercial|realtor)/i.test(lowerRole)) {
         toolExamples = 'CRM systems, pipeline tools, or client presentation decks';
         metricExamples = 'quota attainment, deal size, ARR, or pipeline volume';
         defaultChipsQ1 = ['Enterprise Sales', 'Pipeline Generation', 'Contract Negotiations', 'Client Relationships'];
         defaultChipsQ2 = ['Salesforce / HubSpot', 'LinkedIn Sales Nav', 'Executive Pitches', 'Cold Outreach'];
-        defaultChipsQ3 = ['120% Quota Attainment', 'Closed $1M+ ARR', '30-day Cycle Time', 'High Win Rate'];
     } else if (/(nurse|doctor|clinical|physician|dental|medical|therapist|healthcare|pharm|surgeon)/i.test(lowerRole)) {
         toolExamples = 'EMR/EHR systems, clinical equipment, or care protocols';
         metricExamples = 'patient volume, care quality, triage speed, or compliance';
         defaultChipsQ1 = ['Direct Patient Care', 'Triage & Assessment', 'Treatment Plans', 'Family Counseling'];
         defaultChipsQ2 = ['Epic / Cerner EHR', 'Medication Admin', 'Patient Monitoring', 'HIPAA Compliance'];
-        defaultChipsQ3 = ['Managed 20+ Patients/Shift', 'Zero Safety Incidents', 'High Patient Satisfaction', 'Fast Triage'];
     } else if (/(finance|accounting|accountant|auditor|controller|analyst|tax|banking|treasury)/i.test(lowerRole)) {
         toolExamples = 'ERP, Excel financial modeling, GAAP/IFRS, or BI software';
         metricExamples = 'budget managed, audit accuracy, reporting turnaround, or cost savings';
         defaultChipsQ1 = ['Financial Reporting', 'Month-end Close', 'Budget Forecasting', 'Audit Compliance'];
         defaultChipsQ2 = ['Advanced Excel / VBA', 'SAP / NetSuite', 'GAAP & IFRS', 'Tableau / PowerBI'];
-        defaultChipsQ3 = ['Managed $10M+ Budget', 'Clean Audit Record', 'Reduced Close by 3 Days', 'Variance Analysis'];
     } else if (/(product manager|product owner|scrum master|project manager|program manager|agile)/i.test(lowerRole)) {
         toolExamples = 'Jira, product discovery tools, roadmap software, or analytics';
         metricExamples = 'user adoption, release velocity, churn reduction, or feature NPS';
         defaultChipsQ1 = ['Roadmap Ownership', 'Sprint Planning', 'Stakeholder Alignment', 'User Research'];
         defaultChipsQ2 = ['Jira & Confluence', 'Mixpanel / Amplitude', 'PRDs & User Stories', 'A/B Testing'];
-        defaultChipsQ3 = ['+35% User Adoption', 'On-time Delivery', 'Reduced Churn by 12%', 'High Feature NPS'];
     } else if (/(designer|ui|ux|graphic|creative|art director|copywriter|animator)/i.test(lowerRole)) {
         toolExamples = 'Figma, Adobe Creative Suite, prototyping tools, or design systems';
         metricExamples = 'engagement lift, usability test completion, or delivery speed';
         defaultChipsQ1 = ['Wireframing & Prototyping', 'Design Systems', 'User Journey Mapping', 'Usability Testing'];
         defaultChipsQ2 = ['Figma & FigJam', 'Adobe CC Suite', 'Responsive Design', 'Interactive Prototypes'];
-        defaultChipsQ3 = ['+40% Task Completion', 'Unified 50+ Components', 'High User Delight', 'Brand Elevation'];
     } else if (/(chef|cook|hospitality|restaurant|hotel|food|beverage|catering|culinary)/i.test(lowerRole)) {
         toolExamples = 'kitchen stations, inventory/POS systems, or food safety guidelines';
         metricExamples = 'covers per night, food cost percentage, or health inspection rating';
         defaultChipsQ1 = ['Station Management', 'Menu Development', 'Inventory & Prep', 'Kitchen Leadership'];
         defaultChipsQ2 = ['HACCP / Food Safety', 'POS Systems', 'Vendor Management', 'Cost Control'];
-        defaultChipsQ3 = ['200+ Covers/Night', 'Kept Food Cost < 28%', '100% Health Inspection', 'Zero Waste'];
     }
 
     return [
@@ -313,7 +304,9 @@ function generateRoleInterviewQuestions(role = '', employer = '', targetJd = '')
             id: 'q3',
             question: `What measurable results, ${metricExamples}, or key achievements did you deliver?`,
             answerField: 'answer3',
-            starterChips: defaultChipsQ3,
+            // Outcome chips would put invented metrics into the candidate's answer;
+            // results must come from the candidate, so no canned outcome chips.
+            starterChips: [],
         },
     ];
 }

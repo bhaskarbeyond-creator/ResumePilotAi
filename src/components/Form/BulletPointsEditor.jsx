@@ -10,14 +10,12 @@ import {
     ensureAtsOptimizedBullet,
     getRolePlaceholder,
     getRolePillars,
-    generateClientRoleBullet,
 } from '../../utils/bulletQuality.js';
 
 export {
     ensureAtsOptimizedBullet,
     getRolePlaceholder,
     getRolePillars,
-    generateClientRoleBullet,
 };
 
 /**
@@ -76,73 +74,54 @@ function serializeBullets(bullets) {
     return cleaned.join('\n');
 }
 
+// Metric helpers ask the candidate for THEIR number; they never insert a
+// figure. Each entry is a domain-relevant measurement type plus a question.
+// (Previously these chips appended invented metrics such as "99.9% uptime" or
+// "$20,000 saved" to the bullet — fabricated claims on a resume.)
 function getDomainAtsMetrics(role = '', context = null, projectName = '', tech = '') {
     const combined = `${role} ${projectName} ${tech} ${context?.target?.role || ''} ${context?.profession || ''}`.toLowerCase();
-
-    // Healthcare, Medical, Clinical, Nursing, Dental
     if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical|clinician|nurse|nursing|rn|clinical|hospital|patient|triage|health|pharma)\b/.test(combined)) {
         return [
-            { label: '+25% Accuracy', text: ', improving diagnostic accuracy and protocol adherence by 25%' },
-            { label: '30+ Patients/Day', text: ' while managing a high-volume caseload of 30+ patients daily' },
-            { label: '98% Quality', text: ', achieving a 98% clinical quality and patient satisfaction rating' },
-            { label: '-35% Wait Time', text: ', reducing patient wait and triage turnaround times by 35%' },
-            { label: 'Zero Deficiencies', text: ' with zero compliance deficiencies across clinical audits' },
-            { label: 'Team of 8+', text: ' coordinating care across an interdisciplinary team of 8' },
+            { label: 'Patient volume', prompt: 'How many patients did you typically handle (per shift or day)?' },
+            { label: 'Wait/turnaround', prompt: 'Did wait or turnaround times change? From what to what?' },
+            { label: 'Quality/audit', prompt: 'Any audit, quality or satisfaction result you can cite?' },
+            { label: 'Team size', prompt: 'How many people were on the care team you worked with?' },
         ];
     }
-
-    // Legal, Compliance, Regulatory
-    if (/\b(?:lawyer|attorney|counsel|legal|paralegal|compliance|solicitor|advocate|contract|litigation|audit)\b/.test(combined)) {
+    if (/\b(?:lawyer|attorney|counsel|legal|paralegal|compliance|solicitor|advocate|contract|litigation)\b/.test(combined)) {
         return [
-            { label: '100% Compliance', text: ', achieving 100% compliance across all statutory filings' },
-            { label: '50+ Contracts', text: ' overseeing review and negotiation for 50+ commercial contracts' },
-            { label: '-30% Cycle Time', text: ', reducing contract review cycle time by 30%' },
-            { label: '+$250k Saved', text: ', mitigating legal risks and generating $250,000 in cost avoidance' },
-            { label: 'Zero Deficiencies', text: ' with zero regulatory deficiencies on compliance audits' },
+            { label: 'Matters/contracts', prompt: 'How many matters or contracts did you handle?' },
+            { label: 'Cycle time', prompt: 'Did review or cycle time change? From what to what?' },
+            { label: 'Outcome', prompt: 'What outcome can you state (filings, rulings, cost avoided)?' },
         ];
     }
-
-    // Finance, Accounting, Banking, Audit
     if (/\b(?:finance|financial|accountant|accounting|auditor|audit|tax|controller|treasurer|banker|banking|cpa)\b/.test(combined)) {
         return [
-            { label: '+$150k Saved', text: ', identifying and recovering $150,000+ in operational savings' },
-            { label: '100% Audit Pass', text: ', completing statutory audit with zero discrepancies' },
-            { label: '+24% Accuracy', text: ', improving financial forecasting precision by 24%' },
-            { label: '-40% Cycle Time', text: ', accelerating monthly financial close cycles by 40%' },
-            { label: '$2M+ Portfolio', text: ' overseeing asset allocations across a $2M+ portfolio' },
+            { label: 'Amount', prompt: 'What budget, portfolio or amount were you responsible for?' },
+            { label: 'Close/cycle time', prompt: 'Did close or reporting time change? From what to what?' },
+            { label: 'Savings/accuracy', prompt: 'Any savings, recovery or accuracy figure you can verify?' },
         ];
     }
-
-    // Marketing, Growth, Sales
     if (/\b(?:marketing|growth|seo|brand|content|campaign|sales|revenue|account executive|bdr|sdr)\b/.test(combined)) {
         return [
-            { label: '+35% Leads', text: ', driving a 35% increase in qualified inbound pipeline' },
-            { label: '-28% CAC', text: ', reducing customer acquisition cost by 28%' },
-            { label: '+24% Conversion', text: ', boosting landing page conversion rates by 24%' },
-            { label: '+140% Traffic', text: ', scaling organic web traffic by 140% year-over-year' },
-            { label: '+$500k Pipeline', text: ', generating $500,000 in attributed pipeline revenue' },
+            { label: 'Pipeline/revenue', prompt: 'What pipeline, revenue or quota figure can you state?' },
+            { label: 'Conversion', prompt: 'Did conversion, traffic or CAC change? By how much?' },
+            { label: 'Accounts/campaigns', prompt: 'How many accounts or campaigns did you run?' },
         ];
     }
-
-    // Tech, Software, Cloud, DevOps, Engineering
     if (/\b(?:software|developer|engineer|frontend|backend|full\s*stack|devops|cloud|aws|python|react|node|api|database|system|architect)\b/.test(combined)) {
         return [
-            { label: '+25% Speed', text: ', improving delivery turnaround and build times by 25%' },
-            { label: '-40% Latency', text: ', reducing API response latency by 40%' },
-            { label: 'Team of 5+', text: ' across a cross-functional engineering team of 5' },
-            { label: '+$20k Saved', text: ', generating $20,000 in cloud infrastructure cost savings' },
-            { label: '99.9% Uptime', text: ', maintaining 99.9% service SLA availability' },
-            { label: '10k+ Users', text: ' scaling to support 10,000+ daily active users' },
+            { label: 'Performance', prompt: 'Did latency, build time or throughput change? From what to what?' },
+            { label: 'Scale', prompt: 'How many users, requests or services did this support?' },
+            { label: 'Reliability', prompt: 'Any uptime, incident or error-rate figure you can verify?' },
+            { label: 'Team size', prompt: 'How many engineers did you work with or lead?' },
         ];
     }
-
-    // Default / Operations / Management
     return [
-        { label: '+25% Efficiency', text: ', improving operational throughput by 25%' },
-        { label: '-30% Turnaround', text: ', reducing process turnaround time by 30%' },
-        { label: 'Team of 6+', text: ' collaborating across an agile team of 6+' },
-        { label: '+$20k Saved', text: ', delivering $20,000 in direct cost reductions' },
-        { label: '98% Satisfaction', text: ', maintaining a 98% stakeholder satisfaction score' },
+        { label: 'Volume', prompt: 'How much did you handle (orders, clients, cases, items)?' },
+        { label: 'Time', prompt: 'Did a turnaround time change? From what to what?' },
+        { label: 'Team size', prompt: 'How many people did you work with or lead?' },
+        { label: 'Result', prompt: 'What result can you state with a real number?' },
     ];
 }
 
@@ -196,6 +175,8 @@ const BulletPointsEditor = ({
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
     // Shown when AI cannot draft a bullet; we never substitute invented metrics.
     const [aiNotice, setAiNotice] = useState('');
+    // Candidate-supplied metric being typed for a bullet: { index, label, prompt, value }.
+    const [metricDraft, setMetricDraft] = useState(null);
     const aiRequestControllerRef = useRef(null);
 
     // Sync from external value changes (e.g. AI suggestion modal, reset, switching entries)
@@ -477,7 +458,10 @@ const BulletPointsEditor = ({
 
     const handleInjectQuickMetric = (index, metricText) => {
         const currentText = localBullets[index] || '';
-        if (!currentText.trim()) return;
+        const userMetric = String(metricText || '').trim().replace(/^[,;\s]+/, '').replace(/[.\s]+$/, '');
+        if (!currentText.trim() || !userMetric) return;
+        metricText = `, ${userMetric}`;
+        setMetricDraft(null);
 
         setHistoryMap((prev) => ({ ...prev, [index]: currentText }));
         const clean = currentText.trim().replace(/[.,;:]+$/, '');
@@ -799,20 +783,40 @@ const BulletPointsEditor = ({
                                     {!quality.hasMetric && (
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                             <span className="text-[10px] font-bold text-amber-800 flex items-center gap-1">
-                                                ⚡ 1-Click ATS Metric:
+                                                ⚡ Add your number:
                                             </span>
                                             {dynamicAtsMetrics.map((m, mIdx) => (
                                                 <button
                                                     key={mIdx}
                                                     type="button"
-                                                    onClick={() => handleInjectQuickMetric(index, m.text)}
+                                                    onClick={() => setMetricDraft({ index, label: m.label, prompt: m.prompt, value: '' })}
                                                     className="text-[10px] font-semibold text-amber-900 bg-white hover:bg-amber-100/90 border border-amber-200/90 px-2 py-0.5 rounded-md transition-all active:scale-95 cursor-pointer shadow-2xs hover:border-amber-300"
-                                                    title={`Click to add: "${m.text}"`}
+                                                    title={m.prompt}
                                                 >
                                                     {m.label}
                                                 </button>
                                             ))}
                                         </div>
+                                    )}
+                                    {!quality.hasMetric && metricDraft?.index === index && (
+                                        <form
+                                            className="flex items-center gap-1.5"
+                                            onSubmit={(e) => { e.preventDefault(); handleInjectQuickMetric(index, metricDraft.value); }}
+                                        >
+                                            <label className="sr-only" htmlFor={`metric-draft-${index}`}>{metricDraft.prompt}</label>
+                                            <input
+                                                id={`metric-draft-${index}`}
+                                                autoFocus
+                                                type="text"
+                                                maxLength={120}
+                                                value={metricDraft.value}
+                                                onChange={(e) => setMetricDraft((prev) => ({ ...prev, value: e.target.value }))}
+                                                placeholder={metricDraft.prompt}
+                                                className="flex-1 min-w-0 text-[11px] px-2 py-1 border border-amber-200 rounded-md bg-white"
+                                            />
+                                            <button type="submit" disabled={!metricDraft.value.trim()} className="text-[10px] font-bold text-white bg-amber-600 disabled:opacity-50 px-2 py-1 rounded-md">Add</button>
+                                            <button type="button" onClick={() => setMetricDraft(null)} className="text-[10px] font-semibold text-slate-500 px-1">Cancel</button>
+                                        </form>
                                     )}
                                 </div>
                             )}

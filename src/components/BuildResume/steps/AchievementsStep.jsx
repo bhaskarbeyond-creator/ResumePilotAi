@@ -256,7 +256,7 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         const awarder = achievement.awarder || achievement.issuer || '';
 
         try {
-            const prompt = `Enhance this resume achievement into 1-2 impactful, quantified bullet points. Achievement: "${title}". Awarding Organization: "${awarder}". Draft: "${currentDesc}". Use strong action verbs, describe scope or competition size, and format cleanly for ATS screening.`;
+            const prompt = `Rewrite this resume achievement as 1-2 concise, ATS-readable sentences using ONLY the facts given below. Do not add numbers, percentages, rankings, dates, scope or impact that are not stated. If the draft is empty, describe only what the title and awarding organization state. Achievement: "${title}". Awarding Organization: "${awarder}". Draft: "${currentDesc}".`;
             const res = await generateUserAiContent('generate-summary', {
                 prompt,
                 targetRole: candidateContext?.target?.role || resumeData?.targetRole || 'Professional',
@@ -271,21 +271,19 @@ const AchievementsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 return;
             }
         } catch {
-            // Heuristic enhancement fallback
+            // AI unavailable: handled below without generating any text.
         } finally {
             setIsPolishingId(null);
         }
 
-        if (currentDesc) {
-            const polished = currentDesc.replace(/^[-•*]\s*/, '').trim();
-            const enhanced = polished.endsWith('.') ? polished : `${polished}.`;
-            updateAchievement(achievement.id, 'description', enhanced);
-            triggerToast('Polished description!');
-        } else {
-            const fallback = `Recognized for outstanding technical excellence, cross-functional execution, and quantifiable impact in ${title}.`;
-            updateAchievement(achievement.id, 'description', fallback);
-            triggerToast('Generated starter description!');
-        }
+        // No AI result: never synthesize a description. Keep the candidate's own
+        // text exactly as written and tell them AI is unavailable.
+        triggerToast(
+            currentDesc
+                ? 'AI polishing is unavailable right now. Your description was left unchanged.'
+                : 'AI polishing is unavailable right now. Add a sentence describing what you were recognized for, then try again.',
+            'info'
+        );
     };
 
 

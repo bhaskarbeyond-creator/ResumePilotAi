@@ -241,6 +241,7 @@ function sourceNotesForOperation(operation, payload = {}) {
             certs, rootCerts,
             projs, rootProjs,
             payload.experience, payload.experienceTenure,
+            contextFacts.experience, contextFacts.experienceYears ? `${contextFacts.experienceYears} years` : '',
         ].filter(Boolean).join('\n');
         return compact(combined, 10000);
     }
@@ -1119,6 +1120,25 @@ function assertSourceCitations(operation, parsed, payload) {
     }
 }
 
+// Numbers are the most damaging fabrication on a resume (years, %, money, team
+// sizes). Operations that allow free phrasing (summary, bullet, education) still
+// may not introduce a numeric value that is absent from the candidate's source.
+function numericValues(value) {
+    return (String(value || '').match(/\d+(?:[.,]\d+)*/g) || []).map(n => n.replace(/,/g, ''));
+}
+
+function safeJson(value) {
+    try { return JSON.stringify(value); } catch { return ''; }
+}
+
+function assertNoInventedNumbers(generated, source) {
+    const known = new Set(numericValues(source));
+    const invented = numericValues(generated).find(n => !known.has(n));
+    if (invented) {
+        throw Object.assign(new Error('AI output introduced a number absent from the source'), { code: 'UNGROUNDED_AI_RESPONSE', status: 502 });
+    }
+}
+
 function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     if (!FACTUAL_CONTENT_OPERATIONS.has(operation)) return data;
     assertSourceCitations(operation, parsed, payload);
@@ -1128,6 +1148,7 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     if (operation === 'enhance-single-bullet') {
         // For bullet enhancement, source citations are already verified.
         // Enforce protected claim families: prevent hallucinating unheld credentials or academic honors
+        assertNoInventedNumbers(generated, `${source}\n${safeJson(payload)}`);
         const STRICT_PROTECTED_FAMILIES = new Set(['credential', 'academic distinction']);
         for (const family of PROTECTED_CLAIM_FAMILIES) {
             if (!STRICT_PROTECTED_FAMILIES.has(family.label)) continue;
@@ -1141,6 +1162,7 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     if (operation === 'generate-education-description') {
         // Source excerpts and numbers/GPAs are strictly verified.
         // Enforce protected claim families: prevent hallucinating unheld credentials or academic honors
+        assertNoInventedNumbers(generated, `${source}\n${safeJson(payload)}`);
         const STRICT_PROTECTED_FAMILIES = new Set(['credential', 'academic distinction']);
         for (const family of PROTECTED_CLAIM_FAMILIES) {
             if (!STRICT_PROTECTED_FAMILIES.has(family.label)) continue;
@@ -1154,6 +1176,7 @@ function assertGroundedGeneratedContent(operation, parsed, data, payload = {}) {
     if (operation === 'generate-summary') {
         // Source citations and substantive evidence presence are verified in assertSourceCitations.
         // Enforce protected claim families: prevent hallucinating unheld credentials or academic honors
+        assertNoInventedNumbers(generated, `${source}\n${safeJson(payload)}`);
         const STRICT_PROTECTED_FAMILIES = new Set(['credential', 'academic distinction']);
         for (const family of PROTECTED_CLAIM_FAMILIES) {
             if (!STRICT_PROTECTED_FAMILIES.has(family.label)) continue;
@@ -1273,7 +1296,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
             let match;
             while ((match = certPattern.exec(raw)) !== null) {
                 if (match[1] && match[1].trim()) {
-                    regexMatches.push({ title: match[1].trim(), issuer: match[2]?.trim() || 'Accredited Body' });
+                    regexMatches.push({ title: match[1].trim(), issuer: match[2]?.trim() || '' });
                 }
             }
             if (regexMatches.length) values = regexMatches;
@@ -1283,7 +1306,7 @@ function parseAiResponse(operation, rawContent, context = {}) {
             const category = ['mandatory', 'recommended'].includes(rawCategory) ? rawCategory : 'recommended';
             return {
                 title: sanitizeGeneratedText(typeof item === 'string' ? item : item?.title || item?.name || item?.certification),
-                issuer: sanitizeGeneratedText(typeof item === 'object' ? item?.issuer || item?.organization || item?.issuingBody || item?.authority : '') || 'Accredited body',
+                issuer: sanitizeGeneratedText(typeof item === 'object' ? item?.issuer || item?.organization || item?.issuingBody || item?.authority : '') || '',
                 basis: compact(typeof item === 'object' && item !== null ? (item.basis || item.evidence || '') : '', 300) || 'target role',
                 category,
             };
@@ -1528,7 +1551,8 @@ function parseAiResponse(operation, rawContent, context = {}) {
         return {
             hasErrors: typeof parsed?.hasErrors === 'boolean' ? parsed.hasErrors : validCorrections.length > 0,
             corrections: validCorrections,
-            overallSuggestion: overallSuggestionSafe || (validCorrections.length ? `Found ${validCorrections.length} issues to review.` : 'Text appears to be well-written.'),
+            // No canned quality verdict: if the model gave no summary, report only the count.
+            overallSuggestion: overallSuggestionSafe || (validCorrections.length ? `${validCorrections.length} suggested correction${validCorrections.length === 1 ? '' : 's'}.` : ''),
         };
     }
     throw Object.assign(new Error('AI provider response did not match the product contract'), { code: 'INVALID_AI_RESPONSE' });
@@ -1817,10 +1841,6 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         if (!payload.isAiEnhance && !userNotes && !payload.existingText) {
             return ask('education');
         }
-        const deg = payload.degree || payload.entry?.degree || '';
-        const sch = payload.school || payload.entry?.school || '';
-        const fld = payload.fieldOfStudy || payload.entry?.fieldOfStudy || '';
-        const grd = payload.grade || payload.entry?.grade || '';
         return ask('education');
     }
 
@@ -1829,20 +1849,10 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         if (existing && existing.length >= 40 && !existing.includes(' | ') && !existing.includes('Target Role:')) {
             return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
         }
-        // If structured candidate context was provided, synthesize an evidence-grounded summary
-        if (payload.context?.facts && (payload.context.facts.roles?.length || payload.context.facts.skills?.length || payload.context.facts.education?.length || payload.context.facts.experienceYears || payload.sourceFacts)) {
-            const deterministic = generateDeterministicSummary(payload);
-            if (deterministic && deterministic.length >= 40) {
-                return { summary: enforceAtsSummaryBounds(sanitizeGeneratedText(deterministic)), _source: 'evidence-grounded-fallback' };
-            }
-        }
-        const segments = factualSourceSegments(operation, payload)
-            .filter(([field, value]) => field !== 'name' && field !== 'sourceFacts' && !String(value).includes(' | ') && !String(value).startsWith('Target Role:'))
-            .map(([, value]) => sanitizeSourceText(value, 1200))
-            .filter(Boolean)
-            .join('. ');
-        if (segments && segments.length >= 20) return { summary: enforceAtsSummaryBounds(segments), _source: 'source-preserving-fallback' };
-        if (existing && !existing.includes(' | ') && !existing.includes('Target Role:')) return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
+        // Short candidate-written text is still theirs: keep it unchanged.
+        if (existing && !existing.includes(' | ') && !existing.includes('Target Role:')) return { summary: existing, _source: 'source-preserving-fallback' };
+        // Without candidate-written summary text there is nothing to preserve:
+        // joining raw profile fields would read as a fabricated summary, so ask.
         return ask('summary');
     }
 
@@ -1851,14 +1861,6 @@ function getContentOperationFallback(operation, rawPayload = {}) {
         if (original) {
             return { enhancedBullet: original, _source: 'source-preserving-fallback' };
         }
-        const role = String(payload.jobTitle || payload.role || payload.position || payload.entry?.jobTitle || payload.context?.target?.role || 'Professional').trim();
-        const company = String(payload.company || payload.employer || payload.entry?.company || '').trim();
-        const existing = Array.isArray(payload.existingBullets) ? payload.existingBullets : [];
-        const pillar = String(payload.pillar || payload.focusArea || '').trim();
-        const projectName = String(payload.projectName || payload.projectTitle || payload.entry?.projectName || payload.entry?.title || '').trim();
-        const technologies = Array.isArray(payload.technologies || payload.entry?.technologies)
-            ? (payload.technologies || payload.entry?.technologies).filter(Boolean).join(', ')
-            : String(payload.technologies || payload.entry?.technologies || '').trim();
         return ask('work-history');
     }
 
@@ -1886,400 +1888,15 @@ function getContentOperationFallback(operation, rawPayload = {}) {
             _source: 'empty-fallback',
         };
     }
+    // Recommendation-style operations have no verified source to preserve, so
+    // an outage returns an explicit empty/unavailable state — never role templates.
     if (operation === 'generate-job-description') {
-        const role = String(payload.targetRole || payload.jobTitle || payload.occupation || 'Professional').trim();
-        return generateDeterministicJobDescription(role, payload);
+        return { jobDescription: '', keyRequirements: [], aiUnavailable: true, _source: 'unavailable' };
     }
     if (operation === 'generate-projects') {
-        const role = String(payload.targetRole || payload.jobTitle || payload.occupation || payload.context?.target?.role || 'Professional').trim();
-        return {
-            projects: generateDeterministicProjects(role, payload),
-            requiresUserConfirmation: true,
-            _source: 'tailored-role-fallback',
-        };
+        return { projects: [], requiresUserConfirmation: true, aiUnavailable: true, _source: 'unavailable' };
     }
     return null;
-}
-
-function generateDeterministicProjects(roleTitle = '', payload = {}) {
-    const role = String(roleTitle || payload.targetRole || payload.occupation || 'Professional').trim();
-    const roleLower = role.toLowerCase();
-
-    // 1. Healthcare, Medical, Clinical, Nursing, Dental
-    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician|nurse|rn|lpn|charge nurse|dentist|prosthodontist|orthodontist)\b/.test(roleLower)) {
-        return [
-            { name: 'Clinical Quality & Patient Safety Protocol Audit', role: 'Clinical Lead', technologies: 'EHR, Clinical Audit, JCAHO/NABH Guidelines', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Emergency Triage & Inpatient Flow Optimization', role: 'Care Coordinator', technologies: 'Triage Rubrics, Epic Systems, Patient Census', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Infection Control & Post-Operative Safety Review', role: 'Quality Officer', technologies: 'CDC Guidelines, Sterile Protocols, Surveillance', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Multidisciplinary Telehealth Transition Initiative', role: 'Medical Investigator', technologies: 'Telemedicine, HIPAA/GDPR, Remote Monitoring', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Clinical Pathway & Length-of-Stay (LOS) Reduction', role: 'Department Contributor', technologies: 'Clinical Pathways, Outcome Metrics, Cerner', category: 'recommended', projectType: 'academic' },
-        ];
-    }
-
-    // 2. Legal, Law, Attorneys, Judges, Paralegals, Compliance
-    if (/\b(?:lawyer|attorney|counsel|solicitor|barrister|paralegal|litigation|judge|magistrate|compliance officer)\b/.test(roleLower)) {
-        return [
-            { name: 'Contract Lifecycle Management & Risk Assessment Overhaul', role: 'Lead Counsel', technologies: 'CLM Systems, Due Diligence, Risk Matrix', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Corporate Regulatory Compliance & Data Privacy Audit', role: 'Compliance Lead', technologies: 'GDPR, CCPA, ISO 27001, Audit Trail', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Complex Commercial Litigation Evidence & Discovery Index', role: 'Trial Attorney', technologies: 'eDiscovery, Case Law Research, LexisNexis', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Cross-Border M&A Due Diligence & Transactional Review', role: 'Corporate Counsel', technologies: 'Virtual Data Rooms, Disclosure Schedules', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Enterprise Intellectual Property & Trademark Protection Review', role: 'IP Specialist', technologies: 'USPTO Database, Trademark Filings', category: 'recommended', projectType: 'academic' },
-        ];
-    }
-
-    // 3. Accounting, Audit, Finance, Banking, Investment
-    if (/\b(?:accountant|auditor|chartered accountant|cpa|finance|financial analyst|controller|bookkeeper|tax|banking|investment)\b/.test(roleLower)) {
-        return [
-            { name: 'Annual Statutory Audit Readiness & Financial Close Optimization', role: 'Lead Auditor', technologies: 'GAAP, IFRS, ERP Reconciliation, NetSuite', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Multi-Year DCF Valuation & Financial Forecasting Model', role: 'Financial Analyst', technologies: 'Advanced Excel, DCF Modeling, Bloomberg Terminal', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Operational Expenditure (OpEx) Variance & Cost Reduction Audit', role: 'Financial Controller', technologies: 'Variance Analysis, SAP ERP, Power BI', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Enterprise Treasury & Working Capital Liquidity Model', role: 'Treasury Analyst', technologies: 'Cash Flow Forecasting, Liquidity Ratios', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Corporate Tax Compliance & Transfer Pricing Review', role: 'Tax Specialist', technologies: 'Tax Provisioning, Statutory Filings', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 4. Human Resources, Talent Acquisition, Recruiting
-    if (/\b(?:hr|human resources|recruiter|talent acquisition|people operations|headhunter)\b/.test(roleLower)) {
-        return [
-            { name: 'Structured Behavioral Interviewing & Rubric Standardization', role: 'Talent Acquisition Director', technologies: 'Greenhouse ATS, Structured Rubrics, KPI Tracking', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Employee Onboarding & 90-Day Retention Acceleration Program', role: 'People Operations Lead', technologies: 'LMS, Culture Surveys, Workday HRIS', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Global HRIS Migration & Employee Self-Service Rollout', role: 'HR Project Manager', technologies: 'Workday, BambooHR, Data Mapping, Change Management', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Total Rewards & Compensation Band Benchmarking Review', role: 'Compensation Analyst', technologies: 'Radford Surveys, Mercer Data, Pay Equity', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Hybrid Workforce Engagement & Pulse Survey Framework', role: 'HR Generalist', technologies: 'Culture Amp, Qualtrics, Action Planning', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 5. Sales, Business Development, Account Executives
-    if (/\b(?:sales|account executive|business development|bdr|sdr|account manager|territory manager)\b/.test(roleLower)) {
-        return [
-            { name: 'Enterprise Outbound Account Penetration & Territory Expansion', role: 'Enterprise AE', technologies: 'Salesforce, ZoomInfo, Outreach, MEDDPICC', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'CRM Pipeline Velocity & Lead Scoring Model Optimization', role: 'Sales Operations Lead', technologies: 'HubSpot CRM, Lead Scoring, Conversion Analytics', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Strategic Channel Partner & Reseller Distribution Program', role: 'Business Development Manager', technologies: 'Partner Agreements, Co-Selling Playbooks', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Key Account Retention & Expansion Cross-Sell Campaign', role: 'Senior Account Manager', technologies: 'Account Plans, Executive QBRs, Gainsight', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Sales Enablement Playbook & Objections Handling Overhaul', role: 'Sales Enablement Lead', technologies: 'Gong.io, Playbook Development, Pitch Decks', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 6. Marketing, Brand, Content, Growth
-    if (/\b(?:marketing|brand|growth|seo|content writer|copywriter|social media|digital marketing)\b/.test(roleLower)) {
-        return [
-            { name: 'Omnichannel Brand Repositioning & Go-To-Market Campaign', role: 'Brand Strategist', technologies: 'Brand Identity, Customer Research, Multi-Channel GTM', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Inbound Customer Acquisition & Conversion Funnel Optimization', role: 'Growth Marketer', technologies: 'Google Analytics 4, Unbounce, Optimizely, SEMrush', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'High-Intent SEO Content Architecture & Organic Traffic Growth', role: 'Content Marketing Lead', technologies: 'Ahrefs, Clearscope, Technical SEO, WordPress', category: 'mandatory', projectType: 'personal' },
-            { name: 'Multi-Touch Attribution Model & Paid Performance Audit', role: 'Marketing Operations', technologies: 'Attribution Modeling, Looker, Meta & Google Ads', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Customer Lifecycle Email Nurture & Retention Automation', role: 'Lifecycle Marketer', technologies: 'Klaviyo, Segment, A/B Testing, Lifecycle Cohorts', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 7. Product, Program, Project Management, Scrum, Agile
-    if (/\b(?:product manager|product owner|project manager|program manager|scrum master|agile coach)\b/.test(roleLower)) {
-        return [
-            { name: 'Omnichannel Customer Onboarding & User Activation Redesign', role: 'Lead Product Manager', technologies: 'Figma, Mixpanel, User Interviews, Amplitude', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Cross-Functional Agile Release Cadence & Velocity Transformation', role: 'Scrum Master / Agile Coach', technologies: 'Jira, Confluence, Kanban, Miro, OKRs', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'B2B Self-Serve Subscription Billing & Tier Upgrade Engine', role: 'Technical PM', technologies: 'Stripe Billing, Customer Journey Mapping, SQL', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Enterprise Product Roadmap Prioritization & Feature Matrix', role: 'Principal Product Manager', technologies: 'RICE Scoring, Aha!, Stakeholder Trade-offs', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Voice-of-Customer Multi-Channel Feedback Portal', role: 'Product Operations Lead', technologies: 'Qualtrics, Productboard, Customer Advisory Boards', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 8. Civil, Mechanical, Electrical, Structural Engineering, Architecture
-    if (/\b(?:civil engineer|mechanical engineer|electrical engineer|structural engineer|architect|urban designer|hvac)\b/.test(roleLower)) {
-        return [
-            { name: 'Structural Load Rating & Seismic Resilience Assessment', role: 'Lead Structural Engineer', technologies: 'AutoCAD, SAP2000, ETABS, Building Codes', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Commercial Facility HVAC & Thermal Efficiency Modernization', role: 'Mechanical Systems Lead', technologies: 'Revit MEP, CFD Airflow Modeling, Psychrometric Charts', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Medium-Voltage Substation Protection & Relay Coordination', role: 'Electrical Engineer', technologies: 'ETAP, Short-Circuit Analysis, Single-Line Diagrams', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Urban Master Plan Schematic & Sustainable Site Development', role: 'Project Architect', technologies: 'BIM, Rhino, GIS Mapping, Zoning Compliance', category: 'recommended', projectType: 'academic' },
-            { name: 'Municipal Water Distribution & Drainage Network Analysis', role: 'Civil Infrastructure Engineer', technologies: 'EPANET, Stormwater Modeling, GIS', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 9. Education, Teaching, Academia, Professors, Researchers
-    if (/\b(?:teacher|professor|educator|instructor|lecturer|pedagogy|principal|tutor)\b/.test(roleLower)) {
-        return [
-            { name: 'Differentiated Active-Learning Curriculum Redesign', role: 'Curriculum Developer', technologies: 'Standards-Based Grading, Bloom\'s Taxonomy, Canvas LMS', category: 'mandatory', projectType: 'academic' },
-            { name: 'Student Competency & Formative Assessment Tracking Suite', role: 'Lead Educator', technologies: 'Google Classroom, Formative Rubrics, Performance Data', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Interactive STEM Laboratory & Experimental Learning Program', role: 'Science Instructor', technologies: 'Inquiry-Based Learning, Lab Safety, Vernier Sensors', category: 'mandatory', projectType: 'academic' },
-            { name: 'Peer-Reviewed Empirical Research Study & Manuscript Publication', role: 'Principal Investigator', technologies: 'Statistical Analysis, SPSS/R, Peer Review Guidelines', category: 'recommended', projectType: 'academic' },
-            { name: 'Hybrid Course Delivery & Digital Learning Integration Initiative', role: 'Instructional Designer', technologies: 'LMS Integration, EdTech Tools, Asynchronous Content', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 10. Data, Data Science, Analytics, BI, Machine Learning
-    if (/\b(?:data scientist|data analyst|data engineer|machine learning|ml engineer|analytics|bi developer|statistician)\b/.test(roleLower)) {
-        return [
-            { name: 'Customer Churn Prediction & ML Feature Pipeline', role: 'Lead Data Scientist', technologies: 'Python, Scikit-learn, XGBoost, Streamlit, Docker', category: 'mandatory', projectType: 'personal' },
-            { name: 'Real-Time Streaming Telemetry & Anomaly Detection Pipeline', role: 'Data / ML Engineer', technologies: 'Apache Kafka, Spark Streaming, Redis, FastAPI', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Automated Cloud Data Lakehouse & ETL Orchestration', role: 'Data Engineer', technologies: 'Snowflake, dbt, Apache Airflow, AWS S3, SQL', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Executive Financial & Operational BI Intelligence Dashboard', role: 'BI Developer', technologies: 'Power BI, SQL, BigQuery, Tableau', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Retrieval-Augmented Semantic Search & Document Intelligence', role: 'AI Developer', technologies: 'LangChain, Vector Databases, Python, FastAPI', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 11. Software, Web, Mobile, Cloud, DevOps
-    if (/\b(?:software|developer|frontend|backend|full stack|web|devops|cloud|mobile|ios|android|qa|sre)\b/.test(roleLower)) {
-        return [
-            { name: 'Scalable Microservices Cloud Architecture & API Gateway', role: 'Backend Engineer', technologies: 'Go / Node.js, Docker, Kubernetes, PostgreSQL, Redis', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Accessible Design System & High-Performance Web Application', role: 'Frontend Lead', technologies: 'React, TypeScript, Tailwind CSS, Vite, Storybook', category: 'mandatory', projectType: 'opensource' },
-            { name: 'Automated CI/CD Observability & Zero-Downtime Deployment Pipeline', role: 'DevOps / SRE', technologies: 'GitHub Actions, Terraform, Prometheus, Grafana, AWS', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Cross-Platform Mobile Application (iOS & Android)', role: 'Mobile Developer', technologies: 'React Native / Flutter, SQLite, WebSockets', category: 'recommended', projectType: 'personal' },
-            { name: 'Zero-Trust Authentication & Distributed Session Engine', role: 'Systems Engineer', technologies: 'OAuth2, JWT, Redis, Rate Limiting, Node.js', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 12. Universal Professional Operations / Business Management Fallback
-    return [
-        { name: 'Cross-Functional Operational Workflow & Process Optimization', role: 'Operations Lead', technologies: 'Standard Operating Procedures (SOP), Lean Workflow, Asana', category: 'mandatory', projectType: 'enterprise' },
-        { name: 'Client Service Delivery & Response Turnaround Acceleration', role: 'Service Delivery Manager', technologies: 'CRM Ticketing, SLA Tracking, Quality Standards', category: 'mandatory', projectType: 'enterprise' },
-        { name: 'Strategic Vendor Evaluation & Contract Renegotiation Initiative', role: 'Project Coordinator', technologies: 'Vendor Scorecards, RFP Process, Cost Optimization', category: 'mandatory', projectType: 'enterprise' },
-        { name: 'Departmental Resource Planning & Capacity Utilization Review', role: 'Business Operations Specialist', technologies: 'Resource Scheduling, KPI Dashboards, MS Excel', category: 'recommended', projectType: 'enterprise' },
-        { name: 'Cross-Department Communication & Team Knowledge Base System', role: 'Program Lead', technologies: 'Notion / Confluence, Documentation Standards', category: 'recommended', projectType: 'personal' },
-    ];
-}
-
-function generateDeterministicJobDescription(roleTitle, payload = {}) {
-    const role = String(roleTitle || 'Professional').trim();
-    const roleLower = role.toLowerCase();
-    const cleanRole = role.replace(/^(?:Senior|Lead|Principal|Junior|Staff|Chief|Head of|Associate|Executive)\s+/i, '').trim();
-
-    // Extract seniority scope
-    const isExecutive = /\b(?:director|head of|vp|vice president|chief|executive|c-level|partner)\b/i.test(role);
-    const isLeadership = isExecutive || /\b(?:lead|senior|principal|manager|supervisor|team lead)\b/i.test(role);
-    const isJunior = /\b(?:junior|entry|associate|intern|trainee|assistant)\b/i.test(role);
-
-    // Extract title keywords for semantic synthesis
-    const titleKeywords = role
-        .split(/[\s/&,–-]+/)
-        .map(w => w.trim())
-        .filter(w => w.length > 2 && !/^(?:and|the|for|with|senior|junior|lead|principal|staff|head|chief|associate|role|job|title)$/i.test(w))
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-
-    // Extract candidate context skills if available
-    const contextSkills = (Array.isArray(payload.skills) && payload.skills.length > 0)
-        ? payload.skills
-        : (Array.isArray(payload.context?.facts?.skills) && payload.context.facts.skills.length > 0)
-            ? payload.context.facts.skills
-            : [];
-
-    let overview = '';
-    let responsibilities = [];
-    let keyRequirements = [];
-
-    // Industry domain matchers
-    if (/\b(?:data|analyst|analytics|bi|intelligence|statistician)\b/.test(roleLower)) {
-        overview = `We are seeking a talented ${role} to extract actionable insights from complex datasets, develop executive dashboards, and partner with business leaders to drive data-informed decision-making.`;
-        responsibilities = [
-            'Design, develop, and maintain automated dashboards and interactive business reporting in Power BI or Tableau.',
-            'Author and optimize complex SQL queries across relational and cloud data warehouses (PostgreSQL, BigQuery, Snowflake).',
-            'Perform exploratory data analysis and statistical modeling using Python or R to uncover key operational trends.',
-            'Collaborate with data engineering and business stakeholders to maintain data integrity and robust ETL pipelines.'
-        ];
-        keyRequirements = ['SQL', 'Python', 'Power BI', 'Tableau', 'Data Modeling', 'ETL Pipelines', 'Statistical Analysis'];
-    } else if (/\b(?:software|developer|frontend|backend|full\s*stack|engineer|web|coder|programmer)\b/.test(roleLower)) {
-        overview = `We are looking for an experienced ${role} to design, build, and deploy reliable, scalable software applications and modern digital solutions that elevate our product capabilities.`;
-        responsibilities = [
-            'Architect, develop, test, and maintain robust frontend and backend services using modern programming frameworks.',
-            'Design and integrate RESTful APIs, microservices, and database schemas with optimal latency and security.',
-            'Participate in code reviews, enforce engineering standards, and contribute to automated CI/CD deployment pipelines.',
-            'Troubleshoot production issues, optimize application performance, and implement rigorous unit/integration testing.'
-        ];
-        keyRequirements = ['JavaScript', 'TypeScript', 'React', 'Node.js', 'REST APIs', 'SQL', 'Git', 'CI/CD'];
-    } else if (/\b(?:devops|cloud|sre|infrastructure|sysadmin|network\s*engineer|systems\s*administrator)\b/.test(roleLower)) {
-        overview = `We are seeking a skilled ${role} to architect, automate, and maintain resilient cloud infrastructure, continuous deployment pipelines, and high-availability systems.`;
-        responsibilities = [
-            'Design, deploy, and administer scalable infrastructure on cloud platforms (AWS, Azure, or GCP) using Terraform/IaC.',
-            'Build, manage, and optimize automated CI/CD pipelines for seamless containerized software releases.',
-            'Implement centralized telemetry, log aggregation, and real-time incident alerting to ensure 99.9%+ system uptime.',
-            'Enforce enterprise security best practices, vulnerability scanning, and role-based access controls across all environments.'
-        ];
-        keyRequirements = ['Docker', 'Kubernetes', 'AWS', 'Terraform', 'CI/CD Pipelines', 'Linux Administration', 'Python', 'Bash Scripting'];
-    } else if (/\b(?:product\s*manager|product\s*owner|scrum\s*master|program\s*manager|agile\s*coach)\b/.test(roleLower)) {
-        overview = `We are looking for a strategic ${role} to define product roadmaps, lead agile sprint planning, and translate user feedback into high-impact feature releases.`;
-        responsibilities = [
-            'Define, prioritize, and manage the product backlog and sprint execution in close partnership with engineering and design.',
-            'Translate customer feedback, user research, and market analytics into detailed user stories and technical requirements.',
-            'Track product KPI metrics, conversion funnels, and feature adoption to iterate on user experience and business value.',
-            'Facilitate cross-functional alignment between engineering, marketing, sales, and executive leadership.'
-        ];
-        keyRequirements = ['Product Roadmap', 'Agile/Scrum', 'User Stories', 'Product Analytics', 'Jira', 'Stakeholder Management', 'A/B Testing'];
-    } else if (/\b(?:marketing|seo|growth|content|social\s*media|copywriter|brand|pr|public\s*relations)\b/.test(roleLower)) {
-        overview = `We are seeking a results-driven ${role} to lead multi-channel growth campaigns, optimize customer acquisition funnels, and strengthen brand visibility.`;
-        responsibilities = [
-            'Plan, execute, and monitor paid, organic, and email marketing campaigns across digital growth channels.',
-            'Analyze web traffic, conversion funnels, and campaign attribution using Google Analytics 4 and marketing dashboards.',
-            'Conduct continuous A/B testing on landing pages, ad creatives, and messaging to maximize ROI and lower CPA.',
-            'Collaborate with creative teams to produce compelling content aligned with target audience personas.'
-        ];
-        keyRequirements = ['Google Ads', 'GA4', 'SEO Strategy', 'Content Marketing', 'Conversion Optimization', 'Email Campaigns', 'Social Media Strategy'];
-    } else if (/\b(?:accountant|accounting|finance|financial|audit|controller|bookkeeper|tax|actuary)\b/.test(roleLower)) {
-        overview = `We are seeking a meticulous ${role} to oversee financial reporting, maintain general ledger integrity, and ensure strict compliance with GAAP/IFRS standards.`;
-        responsibilities = [
-            'Prepare monthly, quarterly, and year-end financial statements, variance reports, and account reconciliations.',
-            'Manage general ledger entries, accounts payable/receivable workflows, and intercompany transactions.',
-            'Coordinate with internal and external auditors to support statutory audit procedures and ensure tax compliance.',
-            'Develop financial forecasting models and collaborate with department heads on annual budgeting.'
-        ];
-        keyRequirements = ['Financial Reporting', 'GAAP/IFRS', 'General Ledger', 'Account Reconciliation', 'Financial Modeling', 'Excel Advanced', 'Audit Procedures'];
-    } else if (/\b(?:nurse|nursing|clinical|health|medical|doctor|physician|therapist|pharmacist|paramedic|dental|hygienist)\b/.test(roleLower)) {
-        overview = `We are seeking a compassionate and dedicated ${role} to deliver exceptional patient care, coordinate clinical treatments, and uphold rigorous safety protocols.`;
-        responsibilities = [
-            'Conduct comprehensive patient assessments, monitor vital signs, and administer prescribed treatments and care plans.',
-            'Maintain accurate and confidential electronic health records (EHR/EMR) in compliance with HIPAA and clinical standards.',
-            'Collaborate with physicians and interdisciplinary healthcare teams to develop and execute personalized care plans.',
-            'Educate patients and families on treatment protocols, disease management, and preventative wellness strategies.'
-        ];
-        keyRequirements = ['Patient Care', 'Clinical Assessment', 'EHR/EMR Documentation', 'BLS/ACLS Certification', 'HIPAA Compliance', 'Medication Administration'];
-    } else if (/\b(?:teacher|professor|instructor|educator|tutor|faculty|lecturer|academic|curriculum)\b/.test(roleLower)) {
-        overview = `We are seeking an inspiring and dedicated ${role} to create engaging learning experiences, develop standards-aligned curricula, and foster academic growth.`;
-        responsibilities = [
-            'Design and deliver innovative lesson plans, course materials, and interactive classroom learning activities.',
-            'Evaluate student progress through formative and summative assessments, providing constructive and timely feedback.',
-            'Integrate modern educational technology and multimodal instruction to accommodate diverse learning styles.',
-            'Partner with parents, administrators, and educational specialists to support student development and well-being.'
-        ];
-        keyRequirements = ['Curriculum Development', 'Classroom Management', 'Instructional Design', 'Student Assessment', 'Educational Technology', 'Pedagogy'];
-    } else if (/\b(?:attorney|lawyer|paralegal|legal|counsel|solicitor|barrister|compliance\s*officer)\b/.test(roleLower)) {
-        overview = `We are seeking a highly analytical and thorough ${role} to conduct comprehensive legal research, draft authoritative documents, and protect organizational interests.`;
-        responsibilities = [
-            'Draft, review, and negotiate commercial agreements, contracts, and specialized legal filings with precision.',
-            'Conduct exhaustive legal research, statutory interpretation, and case law analysis to advise stakeholders.',
-            'Ensure full organizational compliance with governing federal, state, and industry regulatory frameworks.',
-            'Manage litigation preparation, discovery requests, and dispute resolution proceedings in coordination with counsel.'
-        ];
-        keyRequirements = ['Contract Drafting', 'Legal Research', 'Regulatory Compliance', 'Case Law Analysis', 'Due Diligence', 'Statutory Interpretation'];
-    } else if (/\b(?:architect|civil|structural|construction|builder|surveyor|estimator|site\s*manager)\b/.test(roleLower)) {
-        overview = `We are seeking a qualified and technically proficient ${role} to plan, design, and supervise architectural and engineering projects from schematic design through completion.`;
-        responsibilities = [
-            'Develop detailed architectural plans, structural drawings, and engineering specifications adhering to building codes.',
-            'Coordinate with clients, contractors, and municipal authorities to ensure permit approvals and zoning compliance.',
-            'Conduct regular on-site inspections to verify construction quality, structural integrity, and project schedule adherence.',
-            'Review submittals, RFIs, and material specifications while managing project budget and timeline constraints.'
-        ];
-        keyRequirements = ['CAD/BIM Software (AutoCAD/Revit)', 'Building Codes & Standards', 'Structural Analysis', 'Project Estimation', 'Site Inspections', 'Safety Regulations'];
-    } else if (/\b(?:chef|cook|culinary|hotel|restaurant|hospitality|sommelier|barista|pastry)\b/.test(roleLower)) {
-        overview = `We are seeking an enthusiastic and skilled ${role} to deliver outstanding guest experiences, maintain impeccable food and hospitality standards, and drive operational excellence.`;
-        responsibilities = [
-            'Oversee daily culinary or hospitality operations, maintaining the highest quality, presentation, and service benchmarks.',
-            'Manage inventory, ingredient sourcing, vendor relationships, and cost control to achieve target margins.',
-            'Enforce rigorous food safety, sanitation, and hygiene standards in strict accordance with health department regulations.',
-            'Train, mentor, and inspire team members in customer service, kitchen techniques, and operational efficiency.'
-        ];
-        keyRequirements = ['Culinary Excellence', 'Food Safety & Sanitation (ServSafe)', 'Inventory Management', 'Menu Development', 'Guest Hospitality', 'Team Leadership'];
-    } else if (/\b(?:designer|ui|ux|graphic|creative|art\s*director|animator|illustrator|visual)\b/.test(roleLower)) {
-        overview = `We are seeking an imaginative and strategic ${role} to conceptualize, design, and deliver compelling visual and interactive experiences that elevate our brand identity.`;
-        responsibilities = [
-            'Create high-fidelity designs, interactive wireframes, and design systems for web, mobile, and digital brand touchpoints.',
-            'Conduct user research, usability testing, and persona analysis to translate insights into intuitive user journeys.',
-            'Collaborate closely with product managers and developers to ensure design fidelity during implementation.',
-            'Maintain and expand brand style guides, asset libraries, and visual guidelines across all marketing and product channels.'
-        ];
-        keyRequirements = ['Figma', 'Adobe Creative Cloud', 'UI/UX Design', 'Design Systems', 'User Research', 'Wireframing & Prototyping', 'Typography'];
-    } else if (/\b(?:sales|account\s*executive|business\s*development|bdr|sdr|account\s*manager|customer\s*success)\b/.test(roleLower)) {
-        overview = `We are seeking an ambitious and relationship-driven ${role} to accelerate revenue growth, prospect high-value opportunities, and build enduring client partnerships.`;
-        responsibilities = [
-            'Execute targeted outbound prospecting, discovery calls, and consultative product demonstrations to prospective clients.',
-            'Manage the complete sales pipeline in CRM (Salesforce/HubSpot), forecasting deal closure timelines with high accuracy.',
-            'Negotiate enterprise contract terms, pricing proposals, and scope of work agreements to exceed quarterly quotas.',
-            'Partner with customer success and delivery teams to ensure seamless client onboarding and long-term retention.'
-        ];
-        keyRequirements = ['Pipeline Management', 'Consultative Selling', 'CRM (Salesforce/HubSpot)', 'Client Relationship Management', 'Contract Negotiation', 'Quota Attainment'];
-    } else {
-        // Universal semantic synthesizer for ANY role across the global economy
-        overview = isExecutive
-            ? `We are seeking an executive and visionary ${role} to direct strategic priorities, champion operational excellence, and drive sustainable organizational growth.`
-            : isLeadership
-            ? `We are seeking an experienced and collaborative ${role} to lead critical project workflows, mentor team members, and uphold the highest professional standards in ${cleanRole}.`
-            : isJunior
-            ? `We are seeking an enthusiastic and motivated ${role} to support core departmental initiatives, master specialized methodologies, and contribute to team milestones.`
-            : `We are seeking a dedicated and qualified ${role} to execute specialized deliverables, implement industry best practices, and deliver high-quality outcomes in our growing team.`;
-
-        responsibilities = [
-            isLeadership
-                ? `Lead and direct end-to-end ${cleanRole} initiatives, aligning project deliverables with strategic organizational benchmarks.`
-                : `Execute core ${cleanRole} operations and technical deliverables with precision, consistency, and high quality.`,
-            `Analyze specialized domain challenges in ${cleanRole} workflows, formulate evidence-based solutions, and drive continuous optimization.`,
-            `Collaborate with cross-functional team members, clients, and leadership to maintain clear communication and meet project milestones.`,
-            `Ensure full compliance with industry standards, regulatory guidelines, and quality assurance protocols governing ${cleanRole}.`
-        ];
-
-        // Synthesize dynamic key requirements derived directly from the title terms and candidate skills
-        const synthesizedSkills = [
-            ...titleKeywords,
-            ...contextSkills.slice(0, 3)
-        ].filter(Boolean);
-
-        const coreSkills = synthesizedSkills.length >= 3 ? synthesizedSkills : [
-            `${cleanRole} Expertise`,
-            'Process Optimization',
-            'Technical Documentation',
-            'Problem Solving',
-            'Stakeholder Communication'
-        ];
-
-        if (isLeadership && !coreSkills.some(s => /lead|manage|strateg/i.test(s))) {
-            coreSkills.unshift('Strategic Planning & Leadership');
-        }
-
-        keyRequirements = Array.from(new Set(coreSkills)).slice(0, 7);
-    }
-
-    const jobDescription = `${overview}\n\nKey Responsibilities:\n${responsibilities.map(r => `• ${r}`).join('\n')}\n\nCore Requirements & Technical Skills:\n${keyRequirements.map(k => `• Proficiency in ${k} or equivalent industry methodology.`).join('\n')}`;
-
-    return {
-        role,
-        jobDescription,
-        keyRequirements,
-        _source: 'role-adaptive-generator',
-    };
-}
-
-function generateDeterministicSummary(payload = {}) {
-    const contextFacts = payload.context?.facts || {};
-    const targetRole = String(payload.targetRole || payload.jobTitle || payload.occupation || payload.context?.target?.role || '').trim();
-    const roles = Array.isArray(contextFacts.roles) && contextFacts.roles.length ? contextFacts.roles : [];
-    const primaryRole = targetRole || roles[0]?.title || '';
-    let primaryCompany = roles[0]?.employer ? ` at ${roles[0].employer}` : '';
-    if (!primaryCompany && typeof payload.workHistory === 'string') {
-        const atMatch = payload.workHistory.match(/(?:at|@)\s+([A-Za-z0-9&.,\s]+?)(?::|\.|;|$)/i);
-        if (atMatch && atMatch[1]) primaryCompany = ` at ${atMatch[1].trim()}`;
-    }
-    if (!primaryCompany && typeof payload.sourceFacts === 'string') {
-        const atMatch = payload.sourceFacts.match(/Work History:[^:]*?(?:at|@)\s+([A-Za-z0-9&.,\s]+?)(?::|\.|;|$|\|)/i);
-        if (atMatch && atMatch[1]) primaryCompany = ` at ${atMatch[1].trim()}`;
-    }
-    const experience = String(payload.experience || contextFacts.experienceYears || '').trim();
-    let expText = experience ? (experience.toLowerCase().includes('year') ? experience : `${experience} years`) : '';
-    if (!expText && typeof payload.sourceFacts === 'string') {
-        const tenureMatch = payload.sourceFacts.match(/Tenure:\s*([0-9]+\+?\s*(?:years?|yrs?))/i);
-        if (tenureMatch) expText = tenureMatch[1];
-    }
-    const rawSkills = (Array.isArray(payload.skills) && payload.skills.length > 0)
-        ? payload.skills
-        : (Array.isArray(contextFacts.skills) && contextFacts.skills.length > 0
-            ? contextFacts.skills
-            : (typeof payload.skills === 'string' ? payload.skills.split(',') : []));
-    const topSkills = Array.from(new Set(
-        rawSkills
-            .map(s => typeof s === 'string' ? s : s?.name || s?.skillName || '')
-            .map(s => s.trim())
-            .filter(s => s && s.length >= 2 && s.length <= 40)
-    )).slice(0, 5);
-    const edus = Array.isArray(contextFacts.education) ? contextFacts.education : [];
-    let topDegree = edus[0]?.degree ? String(edus[0].degree).trim() : '';
-    if (!topDegree && typeof payload.education === 'string') {
-        topDegree = payload.education.split(';')[0]?.split('from')[0]?.trim() || '';
-    }
-    const sentences = [];
-    if (primaryRole) {
-        sentences.push(`${primaryRole}${primaryCompany}${expText ? ` with ${expText} of experience` : ''}.`);
-    }
-    if (topSkills.length) {
-        sentences.push(`Key strengths include ${topSkills.slice(0, 4).join(', ')}.`);
-    }
-    if (topDegree) {
-        sentences.push(`Educational background: ${topDegree}.`);
-    }
-    const summary = sentences.join(' ').trim();
-    return summary.length >= 40 ? summary : '';
 }
 
 function deterministicAsk(operation, payload) {
@@ -2395,7 +2012,9 @@ async function executeContentOperation({ operation, payload, environment, fetchI
             code: providerError.code || providerError.message,
         });
         return {
-            data: fallback,
+            // Flag the degraded state explicitly so clients show "AI unavailable"
+            // and never cache or present this as an AI result.
+            data: { ...fallback, aiUnavailable: true },
             provider: 'fallback',
             model: 'fallback',
             grounding: FACTUAL_CONTENT_OPERATIONS.has(operation) ? 'source-preserving-fallback' : 'empty-fallback',

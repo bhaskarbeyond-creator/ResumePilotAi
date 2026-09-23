@@ -204,13 +204,15 @@ async function runWorkHistoryPlaywrightE2E() {
             console.log(`✓ 1-Click Action Verb applied: "${updatedText.slice(0, 45)}..."`);
         }
 
-        // 5c. Test 1-Click Metric Injector: click "+25% Speed" or "-40% Latency"
-        const metricChip = page.locator('button').filter({ hasText: /\+25% Speed|-40% Latency|\+20k|Team of 5\+/i }).first();
+        // 5c. Metric helper asks for the candidate's own number (never injects a canned figure)
+        const metricChip = page.locator('button').filter({ hasText: /^(?:Performance|Scale|Reliability|Team size)$/ }).first();
         if (await metricChip.isVisible()) {
             await metricChip.click();
+            await page.locator('input[id^="metric-draft-"]').first().fill('cut build time from 20 to 12 minutes');
+            await page.getByRole('button', { name: 'Add', exact: true }).first().click();
             await page.waitForTimeout(300);
             const textWithMetric = await bulletTextarea.inputValue();
-            assert.match(textWithMetric, /25%|40%|\$20,000|5\+|99\.9%|10,000\+/, 'Bullet must contain injected metric');
+            assert.match(textWithMetric, /from 20 to 12 minutes/, 'Bullet must contain exactly the candidate-typed metric');
             console.log(`✓ 1-Click Metric injected: "${textWithMetric.slice(0, 65)}..."`);
 
             // Verify badge transitions to 🟢 Strong (Action + Metrics)

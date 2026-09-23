@@ -105,15 +105,16 @@ test('F4: provider-outage fallbacks ask questions instead of fabricating metrics
     assert.doesNotMatch(JSON.stringify(edu), /Relevant Coursework|Capstone/);
 });
 
-test('F4: evidence summary fallback uses only supplied facts with no invented numbers', () => {
+test('F4 (Phase 3): summary fallback never assembles template sentences from structured facts', () => {
+    // Phase 3 removed the "{Role} at {Employer} ... Key strengths include ..." template.
+    // With only structured facts (no candidate-written text) the fallback asks.
     const result = getContentOperationFallback('generate-summary', {
         targetRole: 'Registered Nurse',
         context: { facts: { roles: [{ title: 'Registered Nurse', employer: 'City Hospital' }], skills: ['Triage', 'Wound care'], education: [{ degree: 'BSc Nursing' }] } },
     });
-    assert.equal(result._source, 'evidence-grounded-fallback');
-    assert.match(result.summary, /Registered Nurse at City Hospital/);
-    assert.match(result.summary, /Triage/);
-    assert.doesNotMatch(result.summary, /\d+%|\$\d|\d+\+/, 'no fabricated quantities');
+    assert.notEqual(result._source, 'evidence-grounded-fallback');
+    assert.doesNotMatch(JSON.stringify(result), /Key strengths include|Educational background:/);
+    assert.doesNotMatch(JSON.stringify(result), /\d+%|\$\d/, 'no fabricated quantities');
 });
 
 test('F6: out-of-band turn scores are clamped to the 50-98 rubric', async () => {

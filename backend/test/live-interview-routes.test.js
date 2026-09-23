@@ -10,18 +10,20 @@ const InMemoryRepository = require('../repositories/InMemoryRepository');
 const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 
 function modelResponse(prompt) {
-    if (prompt.includes('Craft the ideal 10/10 STAR response guide')) {
-        if (prompt.includes('REGENERATION DIRECTIVE')) {
+    if (prompt.includes('interview coach helping one candidate prepare an answer')) {
+        if (prompt.includes('clearly different angle')) {
             return {
-                goal: 'Regenerated goal evaluating architectural alternatives for the question',
-                modelAnswer: 'Alternative 10/10 STAR: In my role as Senior React Developer, I designed an event-driven architecture that dropped p99 latency by 58%.',
+                goal: 'Evaluating architectural alternatives for the question',
+                // Invented figure (58%) that is not in the candidate context: must be rejected.
+                modelAnswer: 'Alternative answer: in my role as a Senior React Developer I designed an event-driven architecture for our dashboard, worked through the caching trade-offs with the backend team, rolled it out behind a flag, and it dropped p99 latency by 58% for users on slow networks.',
                 tip: 'State why you preferred this alternative architecture.',
             };
         }
         return {
             goal: 'Evaluating delivery judgment under production pressure',
-            modelAnswer: 'In my role as Senior React Developer, I engineered route-level code splitting that improved performance by 40%.',
-            tip: 'Focus on measurable outcomes and technical trade-offs.',
+            // 40% is present in resumeFacts, so it is grounded.
+            modelAnswer: 'On the checkout app I noticed the bundle was hurting users on slow mobile connections, so I introduced route-level code splitting, deferred the heavy charting library, and measured with Lighthouse on throttled profiles. That brought initial load down by 40%, and I kept a bundle budget in CI so it stayed there.',
+            tip: 'Name the real measurement you used and the budget that kept it from regressing.',
         };
     }
     if (prompt.includes('Create a candid, supportive final mock-interview report')) {
@@ -223,7 +225,7 @@ test('live interview routes are authenticated, owner-scoped, revision-safe, and 
         const guideAuth = await request(app)
             .post('/api/live-interview/guide')
             .set('x-test-user', 'candidate-a')
-            .send({ question: 'How do you optimize React apps for low-bandwidth networks?', role: 'Senior React Developer' });
+            .send({ question: 'How do you optimize React apps for low-bandwidth networks?', role: 'Senior React Developer', resumeFacts: 'Cut checkout initial load by 40% with code splitting.' });
         assert.equal(guideAuth.status, 200);
         assert.match(guideAuth.body.modelAnswer, /code splitting/i);
         assert.match(guideAuth.body.goal, /delivery judgment/i);
@@ -231,11 +233,14 @@ test('live interview routes are authenticated, owner-scoped, revision-safe, and 
         const guideRegen = await request(app)
             .post('/api/live-interview/guide')
             .set('x-test-user', 'candidate-a')
-            .send({ question: 'How do you optimize React apps for low-bandwidth networks?', role: 'Senior React Developer', regenerate: true });
-        assert.equal(guideRegen.status, 200);
-        assert.match(guideRegen.body.modelAnswer, /Alternative 10\/10 STAR/i);
-        assert.match(guideRegen.body.modelAnswer, /dropped p99 latency by 58%/i);
-        assert.match(guideRegen.body.goal, /evaluating architectural alternatives/i);
+            .send({ question: 'How do you optimize React apps for low-bandwidth networks?', role: 'Senior React Developer', resumeFacts: 'Cut checkout initial load by 40% with code splitting.', regenerate: true });
+        // The regenerated answer invents "58%" (absent from the candidate's facts):
+        // the route must return an explicit unavailable state, not the fabricated
+        // answer and not a canned substitute.
+        assert.equal(guideRegen.status, 502);
+        assert.equal(guideRegen.body.aiUnavailable, true);
+        assert.equal(guideRegen.body.error.reason, 'FABRICATED_FIGURE');
+        assert.equal(guideRegen.body.modelAnswer, undefined);
     } finally {
         restoreFetch();
         if (previousKey === undefined) delete process.env.GEMINI_API_KEY;

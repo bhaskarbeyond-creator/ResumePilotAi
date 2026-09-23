@@ -75,6 +75,33 @@ export function buildAiRequest(endpointName, payload = {}) {
     return { url: `/api/${operation}`, body: finalPayload };
 }
 
+function resolveActiveTenantId() {
+    try {
+        return (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('activeTenantId') || sessionStorage.getItem('selectedTenantId')) : null)
+            || (typeof localStorage !== 'undefined' ? (localStorage.getItem('activeTenantId') || localStorage.getItem('selectedTenantId')) : null)
+            || null;
+    } catch (_) {
+        return null;
+    }
+}
+
+/**
+ * Identity scope for client-side AI caches: the signed-in uid plus the tenant the
+ * request will be sent under (same resolution as the X-Tenant-Id header). Caches
+ * must include this in their keys so a cached AI result can never be served to a
+ * different user or tenant in the same tab (account switch, tenant switch).
+ */
+export async function getAiCacheScope() {
+    let uid = 'anon';
+    try {
+        const fireModule = await import('../conf/fire.js').catch(() => null);
+        const current = fireModule?.default?.auth?.().currentUser;
+        if (current?.uid) uid = current.uid;
+    } catch (_) { /* unauthenticated */ }
+    const tenant = resolveActiveTenantId();
+    return `${uid}|${tenant ? String(tenant).trim() : 'personal'}`;
+}
+
 async function getAuthHeaders(forceRefresh = false, tenantId = null) {
     const headers = { 'Content-Type': 'application/json' };
     try {
@@ -100,7 +127,7 @@ async function getAuthHeaders(forceRefresh = false, tenantId = null) {
     } catch (_) {}
 
     // Inject active tenant ID header for BYOK & Enterprise quota routing
-    const activeTenant = tenantId || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('activeTenantId') || sessionStorage.getItem('selectedTenantId')) : null) || (typeof localStorage !== 'undefined' ? (localStorage.getItem('activeTenantId') || localStorage.getItem('selectedTenantId')) : null);
+    const activeTenant = tenantId || resolveActiveTenantId();
     if (activeTenant && typeof activeTenant === 'string') {
         headers['X-Tenant-Id'] = activeTenant.trim();
     }
