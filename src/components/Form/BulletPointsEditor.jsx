@@ -194,6 +194,8 @@ const BulletPointsEditor = ({
     const [isEnhancingAll, setIsEnhancingAll] = useState(false);
     const [draggedIdx, setDraggedIdx] = useState(null);
     const [historyMap, setHistoryMap] = useState({}); // Stores previous text for undo
+    // Shown when AI cannot draft a bullet; we never substitute invented metrics.
+    const [aiNotice, setAiNotice] = useState('');
     const aiRequestControllerRef = useRef(null);
 
     // Sync from external value changes (e.g. AI suggestion modal, reset, switching entries)
@@ -376,18 +378,23 @@ const BulletPointsEditor = ({
             };
             const res = await generateUserAiContent('enhance-single-bullet', payload, { signal: requestController.signal });
             const candidateEnhanced = res?.enhancedBullet || res?.data?.enhancedBullet;
-            const finalBullet = ensureAtsOptimizedBullet(
-                candidateEnhanced || (isFreshGeneration ? generateClientRoleBullet(resolvedRole, company, otherBullets, specificPillar, resolvedProjectName, resolvedTechnologies) : currentText),
-                isFreshGeneration ? '' : currentText
-            );
-            handleBulletChange(index, finalBullet, false);
+            if (!candidateEnhanced && isFreshGeneration) {
+                // Backend asked questions or had no evidence: keep the bullet empty
+                // rather than inserting a role template with fabricated numbers.
+                setAiNotice('Add a few words about what you did in this role, then try AI again.');
+            } else {
+                setAiNotice('');
+                const finalBullet = ensureAtsOptimizedBullet(candidateEnhanced || currentText, isFreshGeneration ? '' : currentText);
+                handleBulletChange(index, finalBullet, false);
+            }
         } catch (err) {
             if (err?.name !== 'AbortError') {
                 console.error('Failed to enhance/generate bullet point:', err);
-                const fallbackBullet = isFreshGeneration
-                    ? generateClientRoleBullet(resolvedRole, company, otherBullets, specificPillar, resolvedProjectName, resolvedTechnologies)
-                    : ensureAtsOptimizedBullet(currentText, currentText);
-                handleBulletChange(index, fallbackBullet, false);
+                if (isFreshGeneration) {
+                    setAiNotice('AI is unavailable right now. Write the bullet in your own words — your facts stay exactly as entered.');
+                } else {
+                    handleBulletChange(index, ensureAtsOptimizedBullet(currentText, currentText), false);
+                }
             }
         } finally {
             if (aiRequestControllerRef.current === requestController) {
@@ -548,6 +555,9 @@ const BulletPointsEditor = ({
 
     return (
         <div className="space-y-2.5">
+            {aiNotice && (
+                <p role="status" className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">{aiNotice}</p>
+            )}
             {/* Top Quality Summary Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/80 border border-slate-200/80 px-3 py-2 rounded-xl text-xs">
                 {/* Left: Quality Counters (Green / Amber / Red) */}

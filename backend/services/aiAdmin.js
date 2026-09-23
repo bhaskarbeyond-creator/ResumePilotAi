@@ -215,7 +215,8 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
   if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${provider} has no server-side credential configured.`, 400);
   if (!modelPattern.test(selectedModel)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} model.`, 400);
   try {
-    const output = await requestProvider(provider, { ...base, key, model: selectedModel }, 'Reply with exactly OK.', { temperature: 0, maxTokens: 10 }, { fetchImpl, timeoutMs });
+    const outputResult = await requestProvider(provider, { ...base, key, model: selectedModel }, 'Reply with exactly OK.', { temperature: 0, maxTokens: 10 }, { fetchImpl, timeoutMs });
+    const output = typeof outputResult === 'string' ? outputResult : outputResult?.content;
     if (!String(output || '').trim()) throw errorWith('AI_PROVIDER_UNAVAILABLE', `${provider} returned an empty response.`, 503);
     return { provider, model: selectedModel, message: `${provider} provider connection verified.` };
   } catch (error) {
