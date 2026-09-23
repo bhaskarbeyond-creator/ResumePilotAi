@@ -822,7 +822,7 @@ router.post('/ai/generate-interview', resolveTenantContext, requireTenantPermiss
       previousQuestions,
     });
 
-    const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { configuration, maxTokens: 3500, timeoutMs: 38_000 });
+    const responseText = await generateConfiguredText(req, res, built.prompt, 'generate-interview', { configuration, maxTokens: 3500, timeoutMs: 160_000 });
     const jsonData = extractJson(responseText);
     if (!jsonData || typeof jsonData !== 'object') {
       throw Object.assign(new Error('The AI response did not contain valid interview content.'), { code: 'INVALID_AI_OUTPUT', status: 502 });

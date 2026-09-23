@@ -29,7 +29,7 @@ const initialState = {
     interviewType: 'technical',
     experienceLevel: 'mid',
     difficulty: 'medium',
-    questionCount: 10,
+    questionCount: 5,
     durationPreset: 30,
     customMinutes: 25,
     timerEnabled: true,
@@ -188,9 +188,11 @@ function finalizeExamSnapshot(snapshot, ownerUid, reason) {
 
 // Deterministic, user-safe messages — raw status codes and stack traces never
 // reach the candidate.
-function describeInterviewError(error, status) {
+function describeInterviewError(error, status, isLive = false) {
     if (error?.name === 'TimeoutError' || error?.code === 'AI_TIMEOUT') {
-        return 'Question generation timed out. Your settings are saved — please try again.';
+        return isLive
+            ? 'Starting the live interview took longer than expected. Your settings are saved — please try again.'
+            : 'Question generation timed out. Your settings are saved — please try again.';
     }
     if (status === 401) return 'Your sign-in session expired. Please sign in again, then retry.';
     if (status === 403) return 'Daily AI question quota reached. Try again tomorrow or upgrade your plan.';
@@ -955,7 +957,7 @@ const DashboardInterviews = () => {
                 durationMinutes,
                 jobDescription,
                 resumeFacts,
-            }, { signal: requestController.signal });
+            }, { signal: requestController.signal, timeoutMs: 120_000 });
             if (requestController.signal.aborted || requestControllerRef.current !== requestController) return;
             setLiveRecoverySessionId(null);
             setLiveSession(session);
@@ -964,7 +966,7 @@ const DashboardInterviews = () => {
         } catch (error) {
             const userCancelled = requestController.signal.aborted || requestControllerRef.current !== requestController;
             if (userCancelled) dispatch({ type: 'FETCH_CANCEL' });
-            else dispatch({ type: 'FETCH_ERR', error: describeInterviewError(error, error?.status) });
+            else dispatch({ type: 'FETCH_ERR', error: describeInterviewError(error, error?.status, true) });
         } finally {
             if (requestControllerRef.current === requestController) requestControllerRef.current = null;
         }
@@ -1002,7 +1004,7 @@ const DashboardInterviews = () => {
                         limit: 8,
                     }),
                 },
-                { signal: requestController.signal, timeoutMs: 120_000 }
+                { signal: requestController.signal, timeoutMs: 180_000 }
             );
             // Never trust the model structure: validate before rendering.
             const validated = validateInterviewPayload(data);

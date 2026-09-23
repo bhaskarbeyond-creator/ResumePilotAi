@@ -69,8 +69,17 @@ function clampNumber(value, min, max, fallback) {
     return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
 }
 
+const RETIRED_MODELS = new Set([
+    'nvidia/nemotron-mini-4b-instruct',
+    'meta/llama-3.1-8b-instruct',
+    'meta/llama-3.2-3b-instruct',
+    'meta/llama-3.2-1b-instruct',
+    'poolside/laguna-xs-2.1',
+]);
+
 function safeModel(value, fallback) {
     const model = String(value || '').trim();
+    if (RETIRED_MODELS.has(model)) return fallback;
     return MODEL_PATTERN.test(model) ? model : fallback;
 }
 
@@ -1551,7 +1560,7 @@ async function loadProviderConfiguration(environment = process.env) {
         };
     }
     const configuration = {
-        primary: PROVIDERS.includes(effectiveAi.provider) ? effectiveAi.provider : 'gemini',
+        primary: PROVIDERS.includes(effectiveAi.provider) ? effectiveAi.provider : (providers.nvidia?.enabled ? 'nvidia' : 'gemini'),
         enableFallback: effectiveAi.enableFallback !== false,
         temperature: clampNumber(effectiveAi.temperature, 0, 1, 0.7),
         maxTokens: Math.floor(clampNumber(effectiveAi.maxTokens, 256, 4096, 2048)),
@@ -1634,13 +1643,14 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
         return content;
     }
     const defaults = PROVIDER_DEFAULTS[provider];
-    const candidateModels = [providerConfig.model];
+    const initialModel = safeModel(providerConfig.model, defaults.model);
+    const candidateModels = [initialModel];
     if (provider === 'nvidia') {
-        const activeNvidiaModels = ['meta/llama-3.2-11b-vision-instruct', defaults.model];
+        const activeNvidiaModels = ['meta/llama-3.2-11b-vision-instruct', 'nvidia/nemotron-mini-4b-instruct', defaults.model];
         for (const m of activeNvidiaModels) {
-            if (m && !candidateModels.includes(m)) candidateModels.push(m);
+            if (m && !candidateModels.includes(m) && !RETIRED_MODELS.has(m)) candidateModels.push(m);
         }
-    } else if (providerConfig.model !== defaults.model) {
+    } else if (initialModel !== defaults.model) {
         candidateModels.push(defaults.model);
     }
 
@@ -1648,7 +1658,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     for (let i = 0; i < candidateModels.length; i++) {
         const currentModel = candidateModels[i];
         const isLastCandidate = (i === candidateModels.length - 1);
-        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 40000);
+        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 75000);
         try {
             const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
             if (provider === 'openrouter') {
@@ -1668,7 +1678,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
             const body = await response.json().catch(() => ({}));
             if (!response.ok) {
                 const errMsg = extractProviderErrorMessage(body, response.status, provider);
-                const isRetryable = response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504 || response.status === 404 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found|ECONNRESET|ETIMEDOUT|socket hang up/i.test(errMsg);
+                const isRetryable = response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504 || response.status === 404 || response.status === 410 || response.status === 400 || /ResourceExhausted|Worker local total request limit|Not found for account|invalid_model|model_not_found|function.*not found|end of life|no longer available|ECONNRESET|ETIMEDOUT|socket hang up/i.test(errMsg);
                 if (isRetryable && !isLastCandidate) {
                     console.warn(`[AI Model Failover] ${provider} model ${currentModel} error (${errMsg}); retrying with ${candidateModels[i + 1]}`);
                     lastError = Object.assign(new Error(errMsg), { status: response.status });
@@ -1697,7 +1707,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
     if (!order.length) throw Object.assign(new Error('No AI provider is configured'), { code: 'AI_PROVIDER_UNAVAILABLE', status: 503 });
     const failures = [];
     for (const provider of order) {
-        let attempts = (operation === 'autocomplete' || operation === 'generate-interview') ? 2 : 1;
+        let attempts = (operation === 'autocomplete' || operation === 'generate-interview' || operation === 'live-interview-turn' || operation === 'live-interview-open' || operation === 'live-interview-report') ? 3 : 1;
         while (attempts > 0) {
             attempts -= 1;
             try {
@@ -1706,12 +1716,16 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                     maxTokens: operation === 'autocomplete' ? 180 : configuration.maxTokens,
                     temperature: operation === 'autocomplete' ? 0.1 : configuration.temperature,
                 };
-                const effectiveTimeout = timeoutMs || (operation === 'generate-interview' ? 110000 : 45000);
+                const effectiveTimeout = timeoutMs || (operation === 'live-interview-report' ? 120000 : (/^live-interview|generate-interview/.test(operation) ? 75000 : 45000));
                 const raw = await requestProvider(provider, configuration.providers[provider], prompt, generation, { fetchImpl, signal, timeoutMs: effectiveTimeout });
                 return { raw, provider, model: configuration.providers[provider].model };
             } catch (error) {
-                if (attempts > 0 && !signal?.aborted && (error.status === 500 || error.status === 502 || error.status === 503 || error.status === 504 || /ECONNRESET|ETIMEDOUT|fetch failed/i.test(error.message || ''))) {
-                    await new Promise(r => setTimeout(r, 500));
+                const isTransientError = error.status === 500 || error.status === 502 || error.status === 503 || error.status === 429
+                    || /ECONNRESET|ETIMEDOUT|fetch failed|Inference connection error|connection error|socket hang up/i.test(error.message || '');
+                if (attempts > 0 && !signal?.aborted && error.code !== 'AI_PROVIDER_TIMEOUT' && error.status !== 504 && isTransientError) {
+                    const backoffMs = Math.min(5000, (4 - attempts) * 1500);
+                    console.warn(`[AI Retry] Retrying ${operation} with ${provider} after transient error (${error.message}) in ${backoffMs}ms...`);
+                    await new Promise(r => setTimeout(r, backoffMs));
                     continue;
                 }
                 console.error(`[AI Provider Failure] operation=${operation || 'unknown'} provider=${provider} error=${error.message}`);

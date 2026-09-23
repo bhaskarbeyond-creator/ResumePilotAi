@@ -472,6 +472,7 @@ function buildEvidencePayload(operation, rawPayload = {}) {
             summary: (operation === 'generate-summary' || String(facts.summary || payload.existingText || payload.summary || '').includes(' | ') || String(facts.summary || payload.existingText || payload.summary || '').startsWith('Target Role:'))
                 ? ''
                 : sectionText(facts.summary || payload.existingText || payload.summary, 2000),
+            sourceFacts: clamp(payload.sourceFacts || facts.sourceFacts, 4000),
         },
         targetRole: clamp(
             payload.targetRole

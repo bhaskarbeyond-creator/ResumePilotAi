@@ -4,8 +4,8 @@
  * Handles all /api/* requests including long-running Playwright PDF export
  */
 
-// Allow large timeouts for PDF generation (Playwright takes ~30-40s)
-set_time_limit(120);
+// Allow large timeouts for PDF generation and comprehensive AI assessments
+set_time_limit(180);
 
 // Same-origin proxy: CORS is enforced by the application gateway; never reflect arbitrary origins.
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE');
@@ -54,7 +54,7 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 if (!empty($body)) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 }
-curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+curl_setopt($ch, CURLOPT_TIMEOUT, 180);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
 curl_setopt($ch, CURLOPT_HEADER, true); // Get response headers too
 

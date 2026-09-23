@@ -11,14 +11,14 @@ export function startLiveInterviewSession(input, options = {}) {
         method: 'POST',
         body: input,
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 55_000,
+        timeoutMs: options.timeoutMs || 120_000,
     }).then(data => data.session);
 }
 
 export function getLiveInterviewSession(sessionId, options = {}) {
     return authenticatedJsonRequest(sessionPath(sessionId), {
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 20_000,
+        timeoutMs: options.timeoutMs || 30_000,
     }).then(data => data.session);
 }
 
@@ -27,7 +27,7 @@ export function submitLiveInterviewTurn(sessionId, input, options = {}) {
         method: 'POST',
         body: input,
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 55_000,
+        timeoutMs: options.timeoutMs || 120_000,
     }).then(data => data.session);
 }
 
@@ -36,7 +36,7 @@ export function completeLiveInterviewSession(sessionId, input, options = {}) {
         method: 'POST',
         body: input,
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 60_000,
+        timeoutMs: options.timeoutMs || 150_000,
     }).then(data => data.session);
 }
 
@@ -44,7 +44,7 @@ export function abandonLiveInterviewSession(sessionId, options = {}) {
     return authenticatedJsonRequest(sessionPath(sessionId), {
         method: 'DELETE',
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 20_000,
+        timeoutMs: options.timeoutMs || 30_000,
     });
 }
 
@@ -53,6 +53,6 @@ export function getLiveAnswerGuide(input, options = {}) {
         method: 'POST',
         body: input,
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 30_000,
+        timeoutMs: options.timeoutMs || 45_000,
     });
 }
