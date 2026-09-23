@@ -865,7 +865,7 @@ function enforceAtsSummaryBounds(value, candidateName = '') {
         const nameParts = trimmedName.split(/\s+/).filter(p => p.length >= 3);
         if (nameParts.length > 1) {
             const lastName = nameParts[nameParts.length - 1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            summary = summary.replace(new RegExp(`([,;.]\\s*)${lastName}\\s+(?:leads|spearheads|directs|architects|engineers|brings|delivers|specializes|applies)\\b`, 'gi'), '$1spearheading');
+            summary = summary.replace(new RegExp(`([,;.]\\s*)${lastName}\\s+(?:leads|spearheads|directs|architects|engineers|brings|delivers|specializes|applies)\\b`, 'gi'), '$1leading');
             summary = summary.replace(new RegExp(`\\b${lastName}\\s+`, 'gi'), '');
         }
     }
@@ -886,12 +886,14 @@ function enforceAtsSummaryBounds(value, candidateName = '') {
     // Clean any accidental first-person pronouns into implied-first-person executive voice
     summary = summary
         .replace(/,\s*I\s+(?:architect|engineer|lead|build|optimize|develop|deliver|scale|manage|design|create|spearhead)\b/gi, (match) => {
-            const verb = match.replace(/,\s*I\s+/i, '').toLowerCase();
+            const rawVerb = match.replace(/,\s*I\s+/i, '').toLowerCase();
+            const verb = rawVerb === 'spearhead' ? 'lead' : rawVerb;
             const participle = verb.endsWith('e') ? verb.slice(0, -1) + 'ing' : verb + 'ing';
             return `, ${participle}`;
         })
         .replace(/(?:^|[.!?]\s+)I\s+(?:architect|engineer|lead|build|optimize|develop|deliver|scale|manage|design|create|spearhead)\b/gi, (match) => {
-            const verb = match.replace(/^(?:[.!?]\s+)?I\s+/i, '').toLowerCase();
+            const rawVerb = match.replace(/^(?:[.!?]\s+)?I\s+/i, '').toLowerCase();
+            const verb = rawVerb === 'spearhead' ? 'lead' : rawVerb;
             const thirdPerson = verb.endsWith('s') || verb.endsWith('sh') || verb.endsWith('ch') ? verb + 'es' : verb + 's';
             const cap = thirdPerson.charAt(0).toUpperCase() + thirdPerson.slice(1);
             return match.startsWith('.') || match.startsWith('!') || match.startsWith('?') ? `${match[0]} ${cap}` : cap;
