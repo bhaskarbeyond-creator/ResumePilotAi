@@ -1456,7 +1456,7 @@ app.post('/api/jobs/:jobId/applications', async (req, res) => {
     const githubUrl = safePublicUrl(req.body?.githubUrl);
     const coverLetter = String(req.body?.coverLetter || '').slice(0, 20_000);
     const coverText = coverLetter.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const resumeId = String(req.body?.resumeId || '').trim();
+    const resumeId = String(req.body?.resumeId || req.body?.selectedResume?.id || '').trim();
     if (!/^[A-Za-z0-9_-]{1,128}$/.test(jobId)) return res.status(400).json({ success: false, error: 'A valid job is required.' });
     if (!String(req.user.email || '').trim()) return res.status(403).json({ success: false, error: 'A verified account email is required.' });
     if (!fullName || !/^\+?[0-9 ()-]{7,30}$/.test(phone) || coverText.length < 50 || coverText.length > 1000) {

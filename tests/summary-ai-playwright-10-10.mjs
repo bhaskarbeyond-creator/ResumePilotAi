@@ -6,7 +6,7 @@ import { executeContentOperation } from '../backend/services/aiRuntime.js';
 import { issueLocalTestToken } from '../backend/security/auth.js';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
-const API_KEY = process.env.VITE_FIREBASE_KEY || 'AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc';
+const API_KEY = process.env.VITE_FIREBASE_KEY || 'test-mock-firebase-key';
 
 const now = Math.floor(Date.now() / 1000);
 const rptestToken = issueLocalTestToken({

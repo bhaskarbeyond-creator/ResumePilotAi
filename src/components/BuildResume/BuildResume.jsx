@@ -1464,19 +1464,29 @@ const BuildResume = () => {
             let initial = normalizeResumeData(EMPTY_RESUME);
             try {
                 const profile = await getProfileOfUser(userId);
-                if (profile) initial = normalizeResumeData({
-                    ...initial,
-                    firstname: profile.firstname || profile.name?.split(' ')[0] || '',
-                    lastname: profile.lastname || profile.name?.split(' ').slice(1).join(' ') || '',
-                    email: profile.email || '', phone: profile.phone || '', occupation: profile.occupation || '',
-                    city: profile.city || '', country: profile.country || '', address: profile.address || '',
-                    postalcode: profile.postalCode || profile.postalcode || '', photo: profile.selectedImage || profile.photo || null,
-                    employments: profile.employments || profile.workExperiences || [], educations: profile.educations || profile.education || [],
-                    skills: profile.skills || [], languages: profile.languages || [], projects: profile.projects || [],
-                    certifications: profile.certifications || [], achievements: profile.achievements || profile.awards || [],
-                    references: profile.references || [], customSections: profile.customSections || [],
-                    hobbies: profile.hobbies || [], summary: profile.summary || '',
-                });
+                if (profile) {
+                    const candidateName = [profile.firstname || profile.name?.split(' ')[0], profile.lastname || profile.name?.split(' ').slice(1).join(' ')].filter(Boolean).join(' ').trim();
+                    const initialTitle = (profile.occupation && profile.occupation.trim())
+                        ? `${profile.occupation.trim()} Resume`
+                        : candidateName
+                        ? `${candidateName}'s Resume`
+                        : 'Untitled Resume';
+
+                    initial = normalizeResumeData({
+                        ...initial,
+                        title: initialTitle,
+                        firstname: profile.firstname || profile.name?.split(' ')[0] || '',
+                        lastname: profile.lastname || profile.name?.split(' ').slice(1).join(' ') || '',
+                        email: profile.email || '', phone: profile.phone || '', occupation: profile.occupation || '',
+                        city: profile.city || '', country: profile.country || '', address: profile.address || '',
+                        postalcode: profile.postalCode || profile.postalcode || '', photo: profile.selectedImage || profile.photo || null,
+                        employments: profile.employments || profile.workExperiences || [], educations: profile.educations || profile.education || [],
+                        skills: profile.skills || [], languages: profile.languages || [], projects: profile.projects || [],
+                        certifications: profile.certifications || [], achievements: profile.achievements || profile.awards || [],
+                        references: profile.references || [], customSections: profile.customSections || [],
+                        hobbies: profile.hobbies || [], summary: profile.summary || '',
+                    });
+                }
             } catch (error) {
                 console.warn('[BuildResume] Profile prefill unavailable:', error.message);
             }

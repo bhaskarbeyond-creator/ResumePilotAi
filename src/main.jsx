@@ -170,6 +170,27 @@ function PlatformAliasRedirect() {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
+function JobsPortalRoute({ user }) {
+    const location = useLocation();
+    if (user) {
+        const subpath = location.pathname.replace(/^\/jobs\/portal\/?/, '');
+        const target = subpath ? `/dashboard/jobs/portal/${subpath}` : '/dashboard/jobs';
+        return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+    }
+    return <MainJobListings key="guest" />;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+function JobsBrowseRoute({ user }) {
+    const location = useLocation();
+    if (user) {
+        const target = location.pathname.replace(/^\/jobs/, '/dashboard/jobs');
+        return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
+    }
+    return <MainJobListings key="guest" />;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
 function PostLoginRedirect({ user }) {
     const location = useLocation();
     const navigate = useNavigate();
@@ -516,11 +537,11 @@ const AuthWrapper = () => {
                             <Route path="/about" element={<Navigate to="/p/about-us" replace />} />
                             <Route path="/about-us" element={<Navigate to="/p/about-us" replace />} />
                             <Route path="/jobs" element={<JobsLanding />} />
-                            <Route path="/jobs/portal" element={<MainJobListings key={user?.uid || 'guest'} />} />
-                            <Route path="/jobs/portal/:jobId" element={<MainJobListings key={user?.uid || 'guest'} />} />
-                            <Route path="/jobs/browse" element={<MainJobListings key={user?.uid || 'guest'} />} />
+                            <Route path="/jobs/portal" element={<JobsPortalRoute user={user} />} />
+                            <Route path="/jobs/portal/:jobId" element={<JobsPortalRoute user={user} />} />
+                            <Route path="/jobs/browse" element={<JobsBrowseRoute user={user} />} />
                             <Route path="/jobs/categories" element={<JobsLanding />} />
-                            <Route path="/jobs/category/:catName" element={<MainJobListings key={user?.uid || 'guest'} />} />
+                            <Route path="/jobs/category/:catName" element={<JobsBrowseRoute user={user} />} />
                             <Route path="/blog" element={<BlogList />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
                             <Route path="/blog-editor" element={<RequireAuthenticated user={user}><BlogEditor key={user?.uid || 'unauthenticated'} user={user} /></RequireAuthenticated>} />

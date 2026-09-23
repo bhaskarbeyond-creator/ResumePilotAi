@@ -79,11 +79,12 @@ export function formatTimeAgo(date) {
     return `${Math.floor(diffInDays / 365)} year${Math.floor(diffInDays / 365) > 1 ? 's' : ''} ago`;
 }
 
-export function formatSalaryRange(minSalary, maxSalary) {
+export function formatSalaryRange(minSalary, maxSalary, currencySymbol = '₹') {
     if (!minSalary && !maxSalary) return 'Salary not specified';
-    if (minSalary && maxSalary) return `$${minSalary.toLocaleString()} - $${maxSalary.toLocaleString()}`;
-    if (minSalary) return `From $${minSalary.toLocaleString()}`;
-    if (maxSalary) return `Up to $${maxSalary.toLocaleString()}`;
+    const sym = currencySymbol || '₹';
+    if (minSalary && maxSalary) return `${sym}${minSalary.toLocaleString()} - ${sym}${maxSalary.toLocaleString()}`;
+    if (minSalary) return `From ${sym}${minSalary.toLocaleString()}`;
+    if (maxSalary) return `Up to ${sym}${maxSalary.toLocaleString()}`;
     return 'Salary not specified';
 }
 
@@ -572,7 +573,9 @@ export async function getUserData(userId) {
 }
 
 export async function checkIsEmployer(userId) {
-    const user = await getUserData(userId);
+    const uid = typeof userId === 'string' ? userId : (userId?.uid || userId?.id || '');
+    if (!uid) return false;
+    const user = await getUserData(uid);
     return user?.isEmployer === true || String(user?.role || '').toUpperCase() === 'EMPLOYER' || user?.employerApproved === true;
 }
 
@@ -724,8 +727,10 @@ export async function createJobPosting(employerId, jobData) {
 export async function getActiveJobs(page = 1, itemsPerPage = 10, filters = {}) {
     try {
         const params = new URLSearchParams({ page: String(page), limit: String(itemsPerPage), status: 'active' });
-        if (filters.keyword) params.set('q', String(filters.keyword));
-        if (filters.location) params.set('location', String(filters.location));
+        const keyword = filters.keyword || filters.searchTerm || filters.q;
+        const location = filters.location || filters.locationFilter;
+        if (keyword) params.set('q', String(keyword));
+        if (location) params.set('location', String(location));
         if (filters.category) params.set('category', String(filters.category));
         const data = await apiJson(`/api/jobs-data?${params.toString()}`);
         const jobs = Array.isArray(data.jobs) ? data.jobs : [];
@@ -853,9 +858,11 @@ export async function getUserJobApplications(userId) {
 }
 
 export async function updateApplicationStatus(applicationId, status, notes = '', expected = {}) {
+    const expectedStatus = expected.expectedStatus || expected.status || '';
+    const expectedRevision = Number(expected.expectedRevision ?? expected.revision ?? 0);
     const { response, data } = await fetchAdminWithReauth(`/api/job-applications/${encodeURIComponent(applicationId)}/status`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, notes, expectedStatus: expected.expectedStatus }),
+        body: JSON.stringify({ status, notes, expectedStatus, expectedRevision }),
     });
     if (!response.ok || !data?.success) {
         if (response.status === 409) { const err = new Error('Application changed; refresh and retry.'); err.code = 'ADMIN_TARGET_CHANGED'; throw err; }

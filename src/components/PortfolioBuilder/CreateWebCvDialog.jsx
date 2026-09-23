@@ -46,7 +46,7 @@ export default function CreateWebCvDialog({ open, resumes, loading, onUseResume,
                                     <label key={resume.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${selectedId === resume.id ? 'border-slate-900 bg-slate-50' : 'border-slate-200'}`}>
                                         <input type="radio" name="webcv-resume" className="mt-1" checked={selectedId === resume.id} onChange={() => setSelectedId(resume.id)} />
                                         <div className="min-w-0">
-                                            <p className="truncate font-medium text-slate-900">{data.title || [data.firstname, data.lastname].filter(Boolean).join(' ') || 'Untitled resume'}</p>
+                                            <p className="truncate font-medium text-slate-900">{data.title && data.title.trim().toLowerCase() !== 'untitled resume' ? data.title : data.occupation ? `${data.occupation} Resume` : [data.firstname, data.lastname].filter(Boolean).join(' ') || 'Resume'}</p>
                                             <p className="text-xs text-slate-500">Updated {updated} · {completeness.score}% complete · {data.occupation || 'No title'}</p>
                                         </div>
                                     </label>
