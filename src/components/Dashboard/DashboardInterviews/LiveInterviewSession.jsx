@@ -1286,59 +1286,33 @@ export function LiveInterviewReport({ session, onBack, onRetake, onNewInterview 
     const [expandedTurn, setExpandedTurn] = useState(null);
     const [showAllTurns, setShowAllTurns] = useState(false);
 
-    // Resolve overall score - eliminate 0/100 bug permanently
+    // Overall score: the server's validated score, else the mean of real turn
+    // scores. Never guessed from readiness wording.
     const rawScore = Number(report.overallScore ?? report.score);
     let overallScore = Number.isFinite(rawScore) && rawScore > 0 ? Math.round(rawScore) : null;
     if (!overallScore) {
         const turnScores = transcript.map(t => Number(t.evaluation?.score)).filter(s => Number.isFinite(s) && s > 0);
-        if (turnScores.length > 0) {
-            overallScore = Math.round(turnScores.reduce((a, b) => a + b, 0) / turnScores.length);
-        } else {
-            const r = String(report.readiness || '').toLowerCase();
-            if (/exceptional|stellar|flawless|expert/i.test(r)) overallScore = 94;
-            else if (/high|strong|excellent|very good|ready|passed/i.test(r)) overallScore = 88;
-            else if (/moderate|good|medium|developing/i.test(r)) overallScore = 76;
-            else if (/fair|basic|needs improvement/i.test(r)) overallScore = 65;
-            else overallScore = 85;
-        }
+        overallScore = turnScores.length
+            ? Math.round(turnScores.reduce((a, b) => a + b, 0) / turnScores.length)
+            : null;
     }
+    const hasScore = Number.isFinite(overallScore);
 
-    const readinessLabel = report.readiness || (
+    const readinessLabel = report.readiness || (!hasScore ? 'Not scored' :
         overallScore >= 90 ? 'Exceptional Readiness' :
         overallScore >= 80 ? 'High Readiness' :
         overallScore >= 70 ? 'Moderate Readiness' : 'Developing Readiness'
     );
 
-    const scoreTier = overallScore >= 90 ? 'Top 5% Candidate Benchmark' :
+    const scoreTier = !hasScore ? 'Score unavailable' : overallScore >= 90 ? 'Top 5% Candidate Benchmark' :
         overallScore >= 82 ? 'Strong Hire Recommendation' :
         overallScore >= 72 ? 'Competitive with Focused Polish' : 'Foundational Readiness';
 
-    // 4 Key Competency Dimensions grounded in performance
-    const competencies = useMemo(() => {
-        const base = overallScore;
-        return [
-            {
-                name: 'Technical Depth & Operational Trade-offs',
-                score: Math.min(98, Math.max(62, Math.round(base * 1.02))),
-                tip: 'Validated technical choices with clear rationale and edge-case handling.',
-            },
-            {
-                name: 'STAR Structure & Concise Delivery',
-                score: Math.min(98, Math.max(60, Math.round(base * 0.98))),
-                tip: 'Direct answers structuring Situation, Task, Action, and Result without drifting.',
-            },
-            {
-                name: 'Leadership & Cross-Functional Influence',
-                score: Math.min(98, Math.max(65, Math.round(base * 1.03))),
-                tip: 'High personal ownership, empathy for stakeholders, and collaborative problem-solving.',
-            },
-            {
-                name: 'Measurable Outcomes & Business Impact',
-                score: Math.min(98, Math.max(58, Math.round(base * 0.97))),
-                tip: 'Quantified metrics, efficiency gains, and verifiable performance indicators.',
-            },
-        ];
-    }, [overallScore]);
+    // Competencies come only from the AI report, each with cited interview evidence.
+    const competencies = Array.isArray(report.competencies)
+        ? report.competencies.filter(c => c && c.name && Number.isFinite(Number(c.score)))
+            .map(c => ({ name: c.name, score: Math.round(Number(c.score)), tip: c.evidence || '' }))
+        : [];
 
     const handleRetake = () => {
         if (typeof onRetake === 'function') {
@@ -1363,7 +1337,7 @@ export function LiveInterviewReport({ session, onBack, onRetake, onNewInterview 
     // Gauge circle calculation (radius 44, circumference 276.46)
     const radius = 44;
     const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference - (overallScore / 100) * circumference;
+    const strokeDashoffset = circumference - ((hasScore ? overallScore : 0) / 100) * circumference;
 
     return (
         <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-20 font-sans print:p-0 print:max-w-none">
@@ -1462,7 +1436,7 @@ export function LiveInterviewReport({ session, onBack, onRetake, onNewInterview 
                                 />
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-3xl font-black tracking-tight text-white">{overallScore}</span>
+                                <span className="text-3xl font-black tracking-tight text-white">{hasScore ? overallScore : '—'}</span>
                                 <span className="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">/ 100 Score</span>
                             </div>
                         </div>
@@ -1475,7 +1449,8 @@ export function LiveInterviewReport({ session, onBack, onRetake, onNewInterview 
                 </div>
             </section>
 
-            {/* Core Competencies Dimensions Grid */}
+            {/* Core Competencies Dimensions Grid (only AI-evidenced competencies) */}
+            {competencies.length > 0 && (
             <section className="mt-6 rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm">
                 <div className="flex items-center justify-between mb-5">
                     <div>
@@ -1507,6 +1482,7 @@ export function LiveInterviewReport({ session, onBack, onRetake, onNewInterview 
                     ))}
                 </div>
             </section>
+            )}
 
             {/* 4 Core Insights Cards */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">

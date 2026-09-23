@@ -183,14 +183,9 @@ class CoverLetter extends Component {
         }
     };
 
-    getDefaultLetterBody = () => {
-        `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim() || 'Applicant';
-        const role = this.state.jobTitle || 'the open position';
-        const company = this.state.companyName || 'your organization';
-        const skills = this.state.userSkills || 'relevant professional experience and technical leadership';
-
-        return `I am writing to express my enthusiastic interest in the ${role} position at ${company}. With a strong foundation in ${skills}, I am confident in my ability to deliver immediate value and contribute effectively to your team's strategic goals.\n\nThroughout my career, I have dedicated myself to high-quality execution, systematic problem-solving, and cross-functional collaboration. My hands-on experience enables me to adapt rapidly, streamline complex workflows, and deliver measurable outcomes that align with organizational objectives.\n\nI admire ${company}'s work and industry impact, and I would welcome the opportunity to discuss how my qualifications can support your team. Thank you for your time and consideration.`;
-    };
+    // The letter body only ever contains the candidate's own text or an AI draft
+    // they asked for. There is no canned template letter: an empty body stays empty.
+    getDefaultLetterBody = () => '';
 
     loadUserProfileData = async () => {
         try {
@@ -473,7 +468,8 @@ class CoverLetter extends Component {
                 recipientName: this.state.recipientName,
                 userSkills: this.state.userSkills,
                 candidateName: `${this.state.candidateFirstname} ${this.state.candidateLastname}`.trim(),
-                yearsExperience: this.state.yearsExperience || (this.state.userSkills ? `${Math.max(2, this.state.userSkills.split(',').length * 2)}+` : '3+'),
+                // Only a value the candidate supplied — never inferred from skill count.
+                yearsExperience: this.state.yearsExperience || '',
                 tone: effectiveTone,
                 aiTone: effectiveTone,
                 jobDescription: this.state.jobDescription,
@@ -489,9 +485,16 @@ class CoverLetter extends Component {
         } catch (err) {
             if (err?.name === 'AbortError') return;
             console.error('AI Cover Letter Error:', err);
-            const fallback = this.getDefaultLetterBody();
-            this.setState({ letterBody: fallback, isAiGenerating: false, step: 2 });
-            await this.handleSaveCoverLetter();
+            // No canned letter: keep whatever the candidate already wrote, save nothing
+            // new, and tell them AI is unavailable so they can retry or write it.
+            this.setState({
+                isAiGenerating: false,
+                step: 2,
+                notificationMessage: this.state.letterBody
+                    ? 'AI cover letter generation is unavailable right now. Your existing letter was left unchanged.'
+                    : 'AI cover letter generation is unavailable right now. Please try again, or write your letter in the editor.',
+            });
+            setTimeout(() => this.setState({ notificationMessage: null }), 6000);
         } finally {
             if (this.aiRequestController === requestController) {
                 this.aiRequestController = null;

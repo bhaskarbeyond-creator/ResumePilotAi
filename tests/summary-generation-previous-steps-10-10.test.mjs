@@ -151,7 +151,7 @@ test('7. normalizeAssistResult: correctly parses all executive summary response 
     assert.equal(res5.draft.text, 'Product designer crafting high-converting mobile interfaces.');
 });
 
-test('8. getContentOperationFallback: synthesizes evidence-grounded 3-pillar summary rather than raw dump', async () => {
+test('8. getContentOperationFallback: asks instead of synthesizing a template summary or dumping raw facts', async () => {
     const { getContentOperationFallback } = await import('../backend/services/aiRuntime.js');
     const testPayload = {
         context: {
@@ -170,12 +170,12 @@ test('8. getContentOperationFallback: synthesizes evidence-grounded 3-pillar sum
     };
 
     const fallback = getContentOperationFallback('generate-summary', testPayload);
-    assert.equal(fallback._source, 'evidence-grounded-fallback');
-    assert.ok(fallback.summary.length >= 100);
-    assert.match(fallback.summary, /Lead Cloud Architect with 6 years of experience at Nordic Cloud/);
-    assert.match(fallback.summary, /Kubernetes, Go, Terraform/);
-    assert.ok(!fallback.summary.includes(' | '));
-    assert.ok(!fallback.summary.includes('Target Role:'));
+    // Phase 3: no template summary ("{Role} with N years…") is assembled on outage;
+    // without candidate-written text the candidate is asked, and nothing raw is dumped.
+    assert.equal(fallback.requiresAnswer, true);
+    assert.equal(fallback.summary, undefined);
+    assert.ok(!JSON.stringify(fallback).includes(' | '));
+    assert.ok(!JSON.stringify(fallback).includes('Target Role:'));
 });
 
 test('9. parseAiResponse: strips gerund and phrase forms of banned clichés', async () => {
@@ -252,81 +252,48 @@ test('11. parseAiResponse: strips conversational "As a seasoned..." opener and p
     assert.equal(summarySection.score, 10);
 });
 
-test('12. multi-domain ATS matrix: verifies 10/10 ATS summary scores across diverse industries and tones', async () => {
+test('12. summary fallback never assembles a template summary from structured facts (Phase 3: no canned AI text)', async () => {
     const { getContentOperationFallback } = await import('../backend/services/aiRuntime.js');
-    const { calculateAtsScore } = await import('../src/utils/atsScore.js');
-
     const domainProfiles = [
-        { role: 'Frontend Engineer', skills: ['React', 'TypeScript', 'CSS', 'Redux', 'Next.js'], years: 4, company: 'Stripe' },
-        { role: 'Senior Data Scientist', skills: ['Python', 'PyTorch', 'SQL', 'Scikit-Learn', 'Pandas'], years: 7, company: 'Meta' },
-        { role: 'ICU Clinical Nurse Specialist', skills: ['Critical Care', 'Patient Advocacy', 'Ventilator Management', 'EHR', 'ACLS'], years: 6, company: 'Mayo Clinic' },
-        { role: 'VP of Product Management', skills: ['Product Roadmapping', 'GTM', 'P&L Management', 'Cross-Functional Leadership'], years: 11, company: 'Salesforce' },
-        { role: 'Senior Financial Analyst', skills: ['Financial Modeling', 'DCF Valuation', 'Advanced Excel', 'SQL', 'Variance Analysis'], years: 5, company: 'JPMorgan' },
+        { role: 'Frontend Engineer', skills: ['React', 'TypeScript'], years: 4, company: 'Stripe' },
+        { role: 'ICU Clinical Nurse Specialist', skills: ['Critical Care', 'EHR'], years: 6, company: 'Mayo Clinic' },
     ];
-
-    const tones = ['balanced', 'executive', 'technical', 'concise'];
-
     for (const domain of domainProfiles) {
-        for (const tone of tones) {
-            const payload = {
-                context: {
-                    facts: {
-                        roles: [{ title: domain.role, employer: domain.company }],
-                        skills: domain.skills,
-                        experienceYears: domain.years,
-                    },
-                    target: { role: domain.role },
-                },
-                targetRole: domain.role,
-                skills: domain.skills,
-                tone,
-            };
-
-            const fallback = getContentOperationFallback('generate-summary', payload);
-            assert.ok(fallback.summary, `Must generate summary for ${domain.role} (${tone})`);
-            assert.ok(fallback.summary.length >= 100 && fallback.summary.length <= 465,
-                `Length must be 100-465 for ${domain.role} (${tone}), got ${fallback.summary.length}`);
-
-            const ats = calculateAtsScore({ summary: fallback.summary, skills: domain.skills });
-            const s = ats.sections.find(sec => sec.id === 'summary');
-            assert.equal(s.score, 10, `Expected 10/10 for ${domain.role} (${tone}), got ${s.score}. Summary: "${fallback.summary}"`);
-            assert.equal(s.findings.every(f => f.ok), true, `All findings must be ok for ${domain.role} (${tone})`);
-        }
+        const fallback = getContentOperationFallback('generate-summary', {
+            context: { facts: { roles: [{ title: domain.role, employer: domain.company }], skills: domain.skills, experienceYears: domain.years }, target: { role: domain.role } },
+            targetRole: domain.role,
+            skills: domain.skills,
+        });
+        // No candidate-written summary exists, so the safe state is to ask the candidate.
+        assert.equal(fallback.requiresAnswer, true, `must ask for ${domain.role}`);
+        assert.ok(Array.isArray(fallback.questions) && fallback.questions.length > 0);
+        assert.equal(fallback.summary, undefined, 'no synthesized summary text');
     }
+    // Candidate-written text is preserved verbatim (no additions).
+    const own = 'Frontend engineer who rebuilt the Stripe dashboard component library in React and TypeScript.';
+    const kept = getContentOperationFallback('generate-summary', { existingText: own, targetRole: 'Frontend Engineer' });
+    assert.equal(kept._source, 'source-preserving-fallback');
+    assert.ok(kept.summary.startsWith(own.slice(0, 60)));
 });
 
-test('13. getContentOperationFallback: doctor profile from buildAssistPayload generates 10/10 summary and blocks raw sourceFacts dump', async () => {
+test('13. getContentOperationFallback: doctor profile without written summary asks instead of generating or dumping sourceFacts', async () => {
     const { getContentOperationFallback } = await import('../backend/services/aiRuntime.js');
-    const { calculateAtsScore } = await import('../src/utils/atsScore.js');
-
     const resumeData = {
         targetRole: 'Doctor of Medicine',
         occupation: 'Doctor of Medicine',
-        workExperiences: [
-            { jobTitle: 'Doctor of Medicine', company: 'Apollo Hospitals', description: 'Diagnosed and treated 25+ daily acute and complex patient cases' },
-        ],
-        education: [
-            { degree: 'AIIMS MBBS', school: 'AIIMS New Delhi' },
-        ],
-        skills: ['Clinical Protocols Development', 'Emergency Assessment and Triage', 'Patient Care Coordination', 'Medical Leadership'],
-        certifications: [{ title: 'Board Certification in Internal Medicine' }, { title: 'Certification in Clinical Research' }],
+        workExperiences: [{ jobTitle: 'Doctor of Medicine', company: 'Apollo Hospitals', description: 'Diagnosed and treated 25+ daily acute and complex patient cases' }],
+        education: [{ degree: 'AIIMS MBBS', school: 'AIIMS New Delhi' }],
+        skills: ['Clinical Protocols Development', 'Emergency Assessment and Triage'],
     };
-
     const assist = buildAssistPayload('generate-summary', { resumeData });
     const fallback = getContentOperationFallback('generate-summary', assist.payload);
-
-    assert.equal(fallback._source, 'evidence-grounded-fallback');
-    assert.ok(fallback.summary.length >= 100 && fallback.summary.length <= 465, `Length ${fallback.summary.length} should be in [100, 465]`);
-    assert.ok(!fallback.summary.includes(' | '), 'Must not contain pipe delimiter');
-    assert.ok(!fallback.summary.includes('Target Role:'), 'Must not contain Target Role: label');
-    assert.ok(!fallback.summary.includes('Work History:'), 'Must not contain Work History: label');
-    assert.match(fallback.summary, /Doctor of Medicine/);
-    assert.match(fallback.summary, /Apollo Hospitals/);
-
-    const ats = calculateAtsScore({ summary: fallback.summary, skills: resumeData.skills });
-    const s = ats.sections.find(sec => sec.id === 'summary');
-    assert.equal(s.score, 10, `Expected 10/10 ATS score, got ${s.score}. Summary: "${fallback.summary}"`);
+    assert.equal(fallback.requiresAnswer, true);
+    const serialized = JSON.stringify(fallback);
+    assert.ok(!serialized.includes(' | '), 'Must not dump pipe-delimited sourceFacts');
+    assert.ok(!serialized.includes('Work History:'), 'Must not dump raw labels');
+    assert.equal(fallback.summary, undefined);
 });
+
 
 
 

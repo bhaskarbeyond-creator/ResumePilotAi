@@ -74,11 +74,15 @@ test('3. backend profileSanitizer.js preserves project role, technologies, and p
     assert.equal(sanitized.projects[0].url, 'https://github.com/example/scheduler');
 });
 
-test('4. ProjectsStep and DashboardSettings share the canonical PROJECT_TYPES and GET_CURATED_PROJECT_IDEAS', () => {
+test('4. ProjectsStep and DashboardSettings share PROJECT_TYPES; no role-template project fallback remains', () => {
     const stepContent = fs.readFileSync('src/components/BuildResume/steps/ProjectsStep.jsx', 'utf8');
     const settingsContent = fs.readFileSync('src/components/Dashboard/DashboardSettings/DashboardSettings.jsx', 'utf8');
 
     assert.match(stepContent, /export const PROJECT_TYPES =/, 'ProjectsStep must export PROJECT_TYPES');
-    assert.match(stepContent, /export const GET_CURATED_PROJECT_IDEAS =/, 'ProjectsStep must export GET_CURATED_PROJECT_IDEAS');
-    assert.match(settingsContent, /import \{ PROJECT_TYPES, GET_CURATED_PROJECT_IDEAS \} from '\.\.\/\.\.\/BuildResume\/steps\/ProjectsStep'/, 'DashboardSettings must import canonical constants from ProjectsStep');
+    assert.doesNotMatch(stepContent, /GET_CURATED_PROJECT_IDEAS/, 'no template project list');
+    assert.doesNotMatch(settingsContent, /GET_CURATED_PROJECT_IDEAS/, 'no template project list');
+    assert.match(settingsContent, /import \{ PROJECT_TYPES \} from '\.\.\/\.\.\/BuildResume\/steps\/ProjectsStep'/, 'DashboardSettings imports canonical PROJECT_TYPES');
+    for (const content of [stepContent, settingsContent]) {
+        assert.match(content, /AI project recommendations are unavailable right now/, 'explicit unavailable state');
+    }
 });

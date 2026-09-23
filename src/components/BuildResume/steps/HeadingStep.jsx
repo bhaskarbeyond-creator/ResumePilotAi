@@ -8,7 +8,7 @@ import PhotoUpload from './components/PhotoUpload';
 import ConfirmRegenerateModal from './components/ConfirmRegenerateModal';
 import { getCandidateContext, extractTargetRoleFromJd } from '../../../utils/candidateContext';
 import { extractJdKeywords } from '../../../utils/atsScore';
-import { generateUserAiContent } from '../../../services/aiService';
+import { generateUserAiContent, getAiCacheScope } from '../../../services/aiService';
 import { matchUniversalDirectory } from '../../../utils/autocompleteDirectories.js';
 
 const aiRoleCache = {};
@@ -200,13 +200,15 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
         const query = String(targetRole || '').trim();
         if (!query || query.length < 2) return;
 
-        const cacheKey = `role_${query.toLowerCase()}`;
-        if (aiRoleCache[cacheKey]) {
-            setAiRoleSuggestions(aiRoleCache[cacheKey]);
-            return;
-        }
-
+        let cancelled = false;
         const timer = setTimeout(async () => {
+            // Suggestions are personalised by candidate facts: scope the cache to uid|tenant.
+            const cacheKey = `${await getAiCacheScope()}_role_${query.toLowerCase()}`;
+            if (cancelled) return;
+            if (aiRoleCache[cacheKey]) {
+                setAiRoleSuggestions(aiRoleCache[cacheKey]);
+                return;
+            }
             setIsFetchingAiRoles(true);
             try {
                 const res = await generateUserAiContent('autocomplete', {
@@ -228,7 +230,7 @@ const HeadingStep = ({ resumeData, updateResumeData, onNavigate }) => {
             }
         }, 150);
 
-        return () => clearTimeout(timer);
+        return () => { cancelled = true; clearTimeout(timer); };
     }, [roleDropdownOpen, targetRole]);
 
     const suggestedRoles = useMemo(() => {

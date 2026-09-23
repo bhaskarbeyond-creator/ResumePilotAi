@@ -33,146 +33,8 @@ export const PROJECT_TYPES = [
     { id: 'academic', label: 'Academic / Research', icon: FaGraduationCap, badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' },
 ];
 
-/**
- * Curated Archetype Project Starters by Role Domain (Profile-Aware Instant Fallbacks)
- * Strictly decoupled across 12 distinct industries to guarantee ZERO unwanted IT leakage.
- */
-export const GET_CURATED_PROJECT_IDEAS = (role = '', resumeData = {}, candidateContext = {}) => {
-    const target = String(role || candidateContext?.target?.role || resumeData?.targetRole || resumeData?.occupation || '').toLowerCase();
-    const workTitles = (resumeData?.employments || resumeData?.workExperience || resumeData?.workExperiences || []).map(e => String(e?.jobTitle || '').toLowerCase()).join(' ');
-    const skills = (resumeData?.skills || []).map(s => String(typeof s === 'object' ? (s?.skillName || s?.name) : s).toLowerCase()).join(' ');
-    const combinedSignals = `${target} ${workTitles} ${skills}`;
-
-    // 1. Healthcare, Medical, Clinical, Nursing, Dental
-    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician|nurse|rn|lpn|charge nurse|dentist|prosthodontist|orthodontist|hospital|clinic|patient care)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Clinical Quality & Patient Safety Protocol Audit', role: 'Clinical Lead', issuer: 'Tools: EHR, Clinical Audit, JCAHO/NABH Guidelines', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Emergency Triage & Inpatient Flow Optimization', role: 'Care Coordinator', issuer: 'Tools: Triage Rubrics, Epic Systems, Patient Census', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Infection Control & Post-Operative Safety Review', role: 'Quality Officer', issuer: 'Tools: CDC Guidelines, Sterile Protocols, Surveillance', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Multidisciplinary Telehealth Transition Initiative', role: 'Medical Investigator', issuer: 'Tools: Telemedicine, HIPAA/GDPR, Remote Monitoring', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Clinical Pathway & Length-of-Stay (LOS) Reduction', role: 'Department Contributor', issuer: 'Tools: Clinical Pathways, Outcome Metrics, Cerner', category: 'recommended', projectType: 'academic' },
-        ];
-    }
-
-    // 2. Legal, Law, Attorneys, Judges, Paralegals, Compliance
-    if (/\b(?:lawyer|attorney|counsel|solicitor|barrister|paralegal|litigation|judge|magistrate|compliance officer|legal)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Contract Lifecycle Management & Risk Assessment Overhaul', role: 'Lead Counsel', issuer: 'Tools: CLM Systems, Due Diligence, Risk Matrix', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Corporate Regulatory Compliance & Data Privacy Audit', role: 'Compliance Lead', issuer: 'Tools: GDPR, CCPA, ISO 27001, Audit Trail', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Complex Commercial Litigation Evidence & Discovery Index', role: 'Trial Attorney', issuer: 'Tools: eDiscovery, Case Law Research, LexisNexis', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Cross-Border M&A Due Diligence & Transactional Review', role: 'Corporate Counsel', issuer: 'Tools: Virtual Data Rooms, Disclosure Schedules', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Enterprise Intellectual Property & Trademark Protection Review', role: 'IP Specialist', issuer: 'Tools: USPTO Database, Trademark Filings', category: 'recommended', projectType: 'academic' },
-        ];
-    }
-
-    // 3. Accounting, Audit, Finance, Banking, Investment
-    if (/\b(?:accountant|auditor|chartered accountant|cpa|finance|financial analyst|controller|bookkeeper|tax|banking|investment|equity)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Annual Statutory Audit Readiness & Financial Close Optimization', role: 'Lead Auditor', issuer: 'Tools: GAAP, IFRS, ERP Reconciliation, NetSuite', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Multi-Year DCF Valuation & Financial Forecasting Model', role: 'Financial Analyst', issuer: 'Tools: Advanced Excel, DCF Modeling, Bloomberg Terminal', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Operational Expenditure (OpEx) Variance & Cost Reduction Audit', role: 'Financial Controller', issuer: 'Tools: Variance Analysis, SAP ERP, Power BI', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Enterprise Treasury & Working Capital Liquidity Model', role: 'Treasury Analyst', issuer: 'Tools: Cash Flow Forecasting, Liquidity Ratios', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Corporate Tax Compliance & Transfer Pricing Review', role: 'Tax Specialist', issuer: 'Tools: Tax Provisioning, Statutory Filings', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 4. Human Resources, Talent Acquisition, Recruiting
-    if (/\b(?:hr|human resources|recruiter|talent acquisition|people operations|headhunter|recruiting)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Structured Behavioral Interviewing & Rubric Standardization', role: 'Talent Acquisition Director', issuer: 'Tools: Greenhouse ATS, Structured Rubrics, KPI Tracking', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Employee Onboarding & 90-Day Retention Acceleration Program', role: 'People Operations Lead', issuer: 'Tools: LMS, Culture Surveys, Workday HRIS', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Global HRIS Migration & Employee Self-Service Rollout', role: 'HR Project Manager', issuer: 'Tools: Workday, BambooHR, Data Mapping, Change Management', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Total Rewards & Compensation Band Benchmarking Review', role: 'Compensation Analyst', issuer: 'Tools: Radford Surveys, Mercer Data, Pay Equity', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Hybrid Workforce Engagement & Pulse Survey Framework', role: 'HR Generalist', issuer: 'Tools: Culture Amp, Qualtrics, Action Planning', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 5. Sales, Business Development, Account Executives
-    if (/\b(?:sales|account executive|business development|bdr|sdr|account manager|territory manager|quota)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Enterprise Outbound Account Penetration & Territory Expansion', role: 'Enterprise AE', issuer: 'Tools: Salesforce, ZoomInfo, Outreach, MEDDPICC', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'CRM Pipeline Velocity & Lead Scoring Model Optimization', role: 'Sales Operations Lead', issuer: 'Tools: HubSpot CRM, Lead Scoring, Conversion Analytics', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Strategic Channel Partner & Reseller Distribution Program', role: 'Business Development Manager', issuer: 'Tools: Partner Agreements, Co-Selling Playbooks', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Key Account Retention & Expansion Cross-Sell Campaign', role: 'Senior Account Manager', issuer: 'Tools: Account Plans, Executive QBRs, Gainsight', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Sales Enablement Playbook & Objections Handling Overhaul', role: 'Sales Enablement Lead', issuer: 'Tools: Gong.io, Playbook Development, Pitch Decks', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 6. Marketing, Brand, Content, Growth
-    if (/\b(?:marketing|brand|growth|seo|content writer|copywriter|social media|digital marketing|campaign)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Omnichannel Brand Repositioning & Go-To-Market Campaign', role: 'Brand Strategist', issuer: 'Tools: Brand Identity, Customer Research, Multi-Channel GTM', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Inbound Customer Acquisition & Conversion Funnel Optimization', role: 'Growth Marketer', issuer: 'Tools: Google Analytics 4, Unbounce, Optimizely, SEMrush', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'High-Intent SEO Content Architecture & Organic Traffic Growth', role: 'Content Marketing Lead', issuer: 'Tools: Ahrefs, Clearscope, Technical SEO, WordPress', category: 'mandatory', projectType: 'personal' },
-            { name: 'Multi-Touch Attribution Model & Paid Performance Audit', role: 'Marketing Operations', issuer: 'Tools: Attribution Modeling, Looker, Meta & Google Ads', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Customer Lifecycle Email Nurture & Retention Automation', role: 'Lifecycle Marketer', issuer: 'Tools: Klaviyo, Segment, A/B Testing, Lifecycle Cohorts', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 7. Product, Program, Project Management, Scrum, Agile
-    if (/\b(?:product manager|product owner|project manager|program manager|scrum master|agile coach)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Omnichannel Customer Onboarding & User Activation Redesign', role: 'Lead Product Manager', issuer: 'Tools: Figma, Mixpanel, User Interviews, Amplitude', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Cross-Functional Agile Release Cadence & Velocity Transformation', role: 'Scrum Master / Agile Coach', issuer: 'Tools: Jira, Confluence, Kanban, Miro, OKRs', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'B2B Self-Serve Subscription Billing & Tier Upgrade Engine', role: 'Technical PM', issuer: 'Tools: Stripe Billing, Customer Journey Mapping, SQL', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Enterprise Product Roadmap Prioritization & Feature Matrix', role: 'Principal Product Manager', issuer: 'Tools: RICE Scoring, Aha!, Stakeholder Trade-offs', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Voice-of-Customer Multi-Channel Feedback Portal', role: 'Product Operations Lead', issuer: 'Tools: Qualtrics, Productboard, Customer Advisory Boards', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 8. Civil, Mechanical, Electrical, Structural Engineering, Architecture
-    if (/\b(?:civil engineer|mechanical engineer|electrical engineer|structural engineer|architect|urban designer|hvac)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Structural Load Rating & Seismic Resilience Assessment', role: 'Lead Structural Engineer', issuer: 'Tools: AutoCAD, SAP2000, ETABS, Building Codes', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Commercial Facility HVAC & Thermal Efficiency Modernization', role: 'Mechanical Systems Lead', issuer: 'Tools: Revit MEP, CFD Airflow Modeling, Psychrometric Charts', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Medium-Voltage Substation Protection & Relay Coordination', role: 'Electrical Engineer', issuer: 'Tools: ETAP, Short-Circuit Analysis, Single-Line Diagrams', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Urban Master Plan Schematic & Sustainable Site Development', role: 'Project Architect', issuer: 'Tools: BIM, Rhino, GIS Mapping, Zoning Compliance', category: 'recommended', projectType: 'academic' },
-            { name: 'Municipal Water Distribution & Drainage Network Analysis', role: 'Civil Infrastructure Engineer', issuer: 'Tools: EPANET, Stormwater Modeling, GIS', category: 'recommended', projectType: 'enterprise' },
-        ];
-    }
-
-    // 9. Education, Teaching, Academia, Professors, Researchers
-    if (/\b(?:teacher|professor|educator|instructor|lecturer|pedagogy|principal|tutor)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Differentiated Active-Learning Curriculum Redesign', role: 'Curriculum Developer', issuer: 'Tools: Standards-Based Grading, Bloom\'s Taxonomy, Canvas LMS', category: 'mandatory', projectType: 'academic' },
-            { name: 'Student Competency & Formative Assessment Tracking Suite', role: 'Lead Educator', issuer: 'Tools: Google Classroom, Formative Rubrics, Performance Data', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Interactive STEM Laboratory & Experimental Learning Program', role: 'Science Instructor', issuer: 'Tools: Inquiry-Based Learning, Lab Safety, Vernier Sensors', category: 'mandatory', projectType: 'academic' },
-            { name: 'Peer-Reviewed Empirical Research Study & Manuscript Publication', role: 'Principal Investigator', issuer: 'Tools: Statistical Analysis, SPSS/R, Peer Review Guidelines', category: 'recommended', projectType: 'academic' },
-            { name: 'Hybrid Course Delivery & Digital Learning Integration Initiative', role: 'Instructional Designer', issuer: 'Tools: LMS Integration, EdTech Tools, Asynchronous Content', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 10. Data, Data Science, Analytics, BI, Machine Learning
-    if (/\b(?:data scientist|data analyst|data engineer|machine learning|ml engineer|analytics|bi developer|statistician)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Customer Churn Prediction & ML Feature Pipeline', role: 'Lead Data Scientist', issuer: 'Stack: Python, Scikit-learn, XGBoost, Streamlit, Docker', category: 'mandatory', projectType: 'personal' },
-            { name: 'Real-Time Streaming Telemetry & Anomaly Detection Pipeline', role: 'Data / ML Engineer', issuer: 'Stack: Apache Kafka, Spark Streaming, Redis, FastAPI', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Automated Cloud Data Lakehouse & ETL Orchestration', role: 'Data Engineer', issuer: 'Stack: Snowflake, dbt, Apache Airflow, AWS S3, SQL', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Executive Financial & Operational BI Intelligence Dashboard', role: 'BI Developer', issuer: 'Stack: Power BI, SQL, BigQuery, Tableau', category: 'recommended', projectType: 'enterprise' },
-            { name: 'Retrieval-Augmented Semantic Search & Document Intelligence', role: 'AI Developer', issuer: 'Stack: LangChain, Vector Databases, Python, FastAPI', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 11. Software, Web, Mobile, Cloud, DevOps
-    if (/\b(?:software|developer|frontend|backend|full stack|web|devops|cloud|mobile|ios|android|qa|sre)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Scalable Microservices Cloud Architecture & API Gateway', role: 'Backend Engineer', issuer: 'Stack: Go / Node.js, Docker, Kubernetes, PostgreSQL, Redis', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Accessible Design System & High-Performance Web Application', role: 'Frontend Lead', issuer: 'Stack: React, TypeScript, Tailwind CSS, Vite, Storybook', category: 'mandatory', projectType: 'opensource' },
-            { name: 'Automated CI/CD Observability & Zero-Downtime Deployment Pipeline', role: 'DevOps / SRE', issuer: 'Stack: GitHub Actions, Terraform, Prometheus, Grafana, AWS', category: 'mandatory', projectType: 'enterprise' },
-            { name: 'Cross-Platform Mobile Application (iOS & Android)', role: 'Mobile Developer', issuer: 'Stack: React Native / Flutter, SQLite, WebSockets', category: 'recommended', projectType: 'personal' },
-            { name: 'Zero-Trust Authentication & Distributed Session Engine', role: 'Systems Engineer', issuer: 'Stack: OAuth2, JWT, Redis, Rate Limiting, Node.js', category: 'recommended', projectType: 'personal' },
-        ];
-    }
-
-    // 12. Universal Professional Operations / Business Management Fallback
-    return [
-        { name: 'Cross-Functional Operational Workflow & Process Optimization', role: 'Operations Lead', issuer: 'Tools: Standard Operating Procedures (SOP), Lean Workflow, Asana', category: 'mandatory', projectType: 'enterprise' },
-        { name: 'Client Service Delivery & Response Turnaround Acceleration', role: 'Service Delivery Manager', issuer: 'Tools: CRM Ticketing, SLA Tracking, Quality Standards', category: 'mandatory', projectType: 'enterprise' },
-        { name: 'Strategic Vendor Evaluation & Contract Renegotiation Initiative', role: 'Project Coordinator', issuer: 'Tools: Vendor Scorecards, RFP Process, Cost Optimization', category: 'mandatory', projectType: 'enterprise' },
-        { name: 'Departmental Resource Planning & Capacity Utilization Review', role: 'Business Operations Specialist', issuer: 'Tools: Resource Scheduling, KPI Dashboards, MS Excel', category: 'recommended', projectType: 'enterprise' },
-        { name: 'Cross-Department Communication & Team Knowledge Base System', role: 'Program Lead', issuer: 'Tools: Notion / Confluence, Documentation Standards', category: 'recommended', projectType: 'personal' },
-    ];
-};
+// Role-template project ideas were removed in Phase 3:
+// recommendations come only from AI for this candidate; on outage the UI says so.
 
 /**
  * 10/10 Projects Step — World-Class Resume Builder Experience:
@@ -332,7 +194,9 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         setIsAiGenerating(true);
         try {
             const existingTitles = new Set(projects.map(p => String(p.title || '').trim().toLowerCase()).filter(Boolean));
-            let curatedList = GET_CURATED_PROJECT_IDEAS(effectiveRole, resumeData, candidateContext);
+            // Only AI results for this request are offered; no role-template ideas.
+            let curatedList = [];
+            let aiUnavailable = false;
 
             // Attempt AI enhancement using the registered 'generate-projects' operation
             try {
@@ -351,6 +215,7 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     targetJobDescription: resumeData.targetJobDescription || '',
                 });
 
+                if (aiResult?.aiUnavailable) aiUnavailable = true;
                 const candidateProjects = Array.isArray(aiResult?.projects)
                     ? aiResult.projects
                     : (Array.isArray(aiResult?.items) ? aiResult.items : (Array.isArray(aiResult) ? aiResult : null));
@@ -358,14 +223,21 @@ const ProjectsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 if (candidateProjects && candidateProjects.length > 0) {
                     curatedList = candidateProjects.map(cp => ({
                         name: cp.name || cp.title,
-                        role: cp.role || 'Project Lead',
+                        role: cp.role || '',
                         issuer: cp.technologies ? (cp.technologies.startsWith('Stack: ') || cp.technologies.startsWith('Tools: ') ? cp.technologies : `Tools: ${cp.technologies}`) : (cp.issuer || ''),
                         category: cp.category === 'mandatory' ? 'mandatory' : 'recommended',
                         projectType: cp.projectType || 'enterprise',
                     })).filter(p => Boolean(p.name));
                 }
             } catch {
-                // Seamlessly fall back to profile-matched curated list
+                aiUnavailable = true;
+            }
+
+            if (!curatedList.length) {
+                triggerToast(aiUnavailable
+                    ? 'AI project recommendations are unavailable right now. Please try again in a moment.'
+                    : 'AI could not suggest projects from your current details. Add more about your work or skills, then try again.', 'info');
+                return;
             }
 
             // Exclude already added projects

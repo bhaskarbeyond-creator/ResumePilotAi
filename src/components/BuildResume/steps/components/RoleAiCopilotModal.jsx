@@ -244,18 +244,6 @@ export default function RoleAiCopilotModal({
         setSelectedBullets(next);
     };
 
-    const handleInjectModalMetric = (idx, metricText) => {
-        const currentBullet = generatedBullets[idx] || '';
-        if (!currentBullet.trim()) return;
-
-        const clean = currentBullet.trim().replace(/[.,;:]+$/, '');
-        const updated = `${clean}${metricText}.`;
-        const next = [...generatedBullets];
-        next[idx] = updated;
-        setGeneratedBullets(next);
-        setSelectedBullets((prev) => ({ ...prev, [idx]: true }));
-    };
-
     if (!isOpen) return null;
 
     // Target JD keywords analysis
@@ -533,25 +521,8 @@ export default function RoleAiCopilotModal({
                                                     {/* Quick Metric Injector if missing metric */}
                                                     {!analysis.hasMetric && (
                                                         <div className="pt-1.5 border-t border-dashed border-slate-200/80 flex items-center gap-1.5 flex-wrap pl-7">
-                                                            <span className="text-[10px] font-bold text-amber-800">⚡ 1-Click Metric:</span>
-                                                            {[
-                                                                { label: '+25% Speed', text: ', improving turnaround speed by 25%' },
-                                                                { label: '-40% Latency', text: ', cutting query latency by 40%' },
-                                                                { label: 'Team of 5+', text: ' across a team of 5 engineers' },
-                                                                { label: '+$20k Saved', text: ', saving $20,000 in annual costs' },
-                                                                { label: '99.9% Uptime', text: ', maintaining 99.9% SLA uptime' },
-                                                                { label: '10k+ Users', text: ' supporting 10,000+ active users' },
-                                                            ].map((m, mIdx) => (
-                                                                <button
-                                                                    key={mIdx}
-                                                                    type="button"
-                                                                    onClick={() => handleInjectModalMetric(idx, m.text)}
-                                                                    className="text-[10px] font-semibold text-amber-900 bg-white hover:bg-amber-100/90 border border-amber-200/90 px-2 py-0.5 rounded-md transition-all active:scale-95 cursor-pointer shadow-2xs hover:border-amber-300"
-                                                                    title={`Click to add: "${m.text}"`}
-                                                                >
-                                                                    {m.label}
-                                                                </button>
-                                                            ))}
+                                                            <span className="text-[10px] font-bold text-amber-800">⚡ No metric yet:</span>
+                                                            <span className="text-[10px] text-amber-900">Add a number you can verify once it is in your resume, or use Quantify to add one now.</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -730,8 +701,10 @@ export default function RoleAiCopilotModal({
                                 <div className="space-y-3">
                                     {interviewQuestions.map((q, idx) => {
                                         const qKey = q.id || `q${idx + 1}`;
-                                        const starters = Array.isArray(q.starterChips) && q.starterChips.length > 0
-                                            ? q.starterChips
+                                        // Chips are one-click inserts into the candidate's own answer: drop any
+                                        // chip carrying a number/metric so no invented quantity can be inserted.
+                                        const starters = Array.isArray(q.starterChips)
+                                            ? q.starterChips.filter(chip => typeof chip === 'string' && !/[0-9%$]/.test(chip))
                                             : [];
                                         return (
                                             <div key={qKey} className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2 transition-all focus-within:bg-indigo-50/20 focus-within:border-indigo-200">
@@ -867,25 +840,8 @@ export default function RoleAiCopilotModal({
                                                     {/* Quick Metric Injector if missing metric */}
                                                     {!analysis.hasMetric && (
                                                         <div className="pt-1.5 border-t border-dashed border-slate-200/80 flex items-center gap-1.5 flex-wrap pl-7">
-                                                            <span className="text-[10px] font-bold text-amber-800">⚡ 1-Click Metric:</span>
-                                                            {[
-                                                                { label: '+25% Speed', text: ', improving turnaround speed by 25%' },
-                                                                { label: '-40% Latency', text: ', cutting query latency by 40%' },
-                                                                { label: 'Team of 5+', text: ' across a team of 5 engineers' },
-                                                                { label: '+$20k Saved', text: ', saving $20,000 in annual costs' },
-                                                                { label: '99.9% Uptime', text: ', maintaining 99.9% SLA uptime' },
-                                                                { label: '10k+ Users', text: ' supporting 10,000+ active users' },
-                                                            ].map((m, mIdx) => (
-                                                                <button
-                                                                    key={mIdx}
-                                                                    type="button"
-                                                                    onClick={() => handleInjectModalMetric(idx, m.text)}
-                                                                    className="text-[10px] font-semibold text-amber-900 bg-white hover:bg-amber-100/90 border border-amber-200/90 px-2 py-0.5 rounded-md transition-all active:scale-95 cursor-pointer shadow-2xs hover:border-amber-300"
-                                                                    title={`Click to add: "${m.text}"`}
-                                                                >
-                                                                    {m.label}
-                                                                </button>
-                                                            ))}
+                                                            <span className="text-[10px] font-bold text-amber-800">⚡ No metric yet:</span>
+                                                            <span className="text-[10px] text-amber-900">Add a number you can verify once it is in your resume, or use Quantify to add one now.</span>
                                                         </div>
                                                     )}
                                                 </div>

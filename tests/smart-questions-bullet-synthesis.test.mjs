@@ -31,7 +31,7 @@ test('1.1 Generates role-specific questions and starter chips dynamically for Ac
 
     // Q3 should ask about measurable metrics like ROAS/revenue
     assert.match(qSet[2].question, /measurable results|roas|revenue/i);
-    assert.ok(qSet[2].starterChips.some(c => /roas|revenue|kpi/i.test(c)), 'Should contain metrics chips');
+    assert.deepEqual(qSet[2].starterChips, [], 'Outcome question offers no canned metric chips (they would insert invented results)');
 });
 
 test('1.2 Generates completely different questions and starter chips dynamically for Software Engineer (Tech)', () => {
@@ -41,7 +41,7 @@ test('1.2 Generates completely different questions and starter chips dynamically
     assert.match(qSet[0].question, /Google/i);
     assert.ok(qSet[0].starterChips.some(c => /architecture|api|microservices/i.test(c)), 'Tech Q1 chips');
     assert.ok(qSet[1].starterChips.some(c => /node|sql|docker|aws/i.test(c)), 'Tech Q2 chips');
-    assert.ok(qSet[2].starterChips.some(c => /latency|uptime|scale/i.test(c)), 'Tech Q3 chips');
+    assert.deepEqual(qSet[2].starterChips, [], 'No canned outcome chips');
 
     // Must NOT contain marketing chips!
     assert.ok(!qSet[0].starterChips.some(c => /ad tech|dsp|roas/i.test(c)), 'Must not leak advertising chips into engineering');
@@ -54,7 +54,7 @@ test('1.3 Generates completely different questions and starter chips dynamically
     assert.match(qSet[0].question, /Mayo Clinic/i);
     assert.ok(qSet[0].starterChips.some(c => /patient care|triage/i.test(c)), 'Clinical Q1 chips');
     assert.ok(qSet[1].starterChips.some(c => /ehr|medication|monitoring/i.test(c)), 'Clinical Q2 chips');
-    assert.ok(qSet[2].starterChips.some(c => /patients\/shift|safety/i.test(c)), 'Clinical Q3 chips');
+    assert.deepEqual(qSet[2].starterChips, [], 'No canned outcome chips');
 });
 
 // =========================================================================

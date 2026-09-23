@@ -22,8 +22,8 @@ import { calculateYearsOfExperience } from '../../../utils/resumeData';
 import { getCandidateContext } from '../../../utils/candidateContext';
 import { stripHtml } from '../../../utils/atsScore';
 import { openPrivacyChoicesModal } from '../../PrivacyConsentBanner';
-import { PROJECT_TYPES, GET_CURATED_PROJECT_IDEAS } from '../../BuildResume/steps/ProjectsStep';
-import { CERT_TYPES, GET_CURATED_CERTIFICATION_IDEAS } from '../../BuildResume/steps/CertificationsStep';
+import { PROJECT_TYPES } from '../../BuildResume/steps/ProjectsStep';
+import { CERT_TYPES } from '../../BuildResume/steps/CertificationsStep';
 import { ACHIEVEMENT_TYPES, SUGGESTION_CHIPS, TYPE_STYLE_MAP } from '../../BuildResume/steps/AchievementsStep';
 
 const htmlToPlainText = (val) => {
@@ -1421,18 +1421,6 @@ function DashboardSettings(_props) {
                             : (Array.isArray(data) ? data : []))));
 
             if (!certsList.length) {
-                const fallbackIdeas = GET_CURATED_CERTIFICATION_IDEAS(effectiveRole, {
-                    occupation: profile.occupation,
-                    targetRole: effectiveRole,
-                    employments: profile.workExperiences,
-                    skills: profile.skills,
-                });
-                if (fallbackIdeas && fallbackIdeas.length > 0) {
-                    certsList = fallbackIdeas;
-                }
-            }
-
-            if (!certsList.length) {
                 const note = data?.note || 'AI credential suggestions are currently unavailable. Please verify your role and try again.';
                 triggerNotification(note, 'info');
                 return;
@@ -1445,7 +1433,7 @@ function DashboardSettings(_props) {
 
             const itemsToReview = unadded.map((c, idx) => {
                 const title = typeof c === 'string' ? c : (c?.title || c?.name || '');
-                const issuer = typeof c === 'object' ? (c?.issuer || 'Accredited Organization') : 'Accredited Organization';
+                const issuer = typeof c === 'object' ? (c?.issuer || '') : '';
                 const category = (typeof c === 'object' && c?.category && ['mandatory', 'recommended'].includes(c.category)) ? c.category : (idx < 3 ? 'mandatory' : 'recommended');
                 const certType = typeof c === 'object' ? (c?.certType || (c?.isLicense ? 'License' : 'Certification')) : 'Certification';
                 const isLicense = typeof c === 'object' ? Boolean(c?.isLicense || c?.certType === 'License') : false;
@@ -1466,7 +1454,7 @@ function DashboardSettings(_props) {
                     const newCerts = approvedItems.map((c, i) => ({
                         id: `cert_ai_${Date.now()}_${i}`,
                         title: c.title || c.name,
-                        issuer: c.issuer || 'Accredited Organization',
+                        issuer: c.issuer || '',
                         date: '',
                         endDate: '',
                         credentialId: '',
@@ -1485,57 +1473,10 @@ function DashboardSettings(_props) {
             if (err?.name === 'AbortError') return;
             console.error('AI Certifications Recommendation Error:', err);
 
-            // Gracefully fall back to curated ideas if offline or API error
-            const fallbackIdeas = GET_CURATED_CERTIFICATION_IDEAS(effectiveRole, {
-                occupation: profile.occupation,
-                targetRole: effectiveRole,
-                employments: profile.workExperiences,
-                skills: profile.skills,
-            });
-            const unadded = (fallbackIdeas || []).filter(c => {
-                const title = c.name || c.title;
-                return title && !existingCerts.some(e => e.toLowerCase() === title.toLowerCase());
-            });
-
-            if (unadded.length > 0) {
-                const itemsToReview = unadded.map((c, idx) => ({
-                    title: c.name || c.title,
-                    name: c.name || c.title,
-                    issuer: c.issuer || 'Accredited Organization',
-                    category: c.category || (idx < 3 ? 'mandatory' : 'recommended'),
-                    certType: c.certType || (c.isLicense ? 'License' : 'Certification'),
-                    isLicense: Boolean(c.isLicense),
-                }));
-                setAiModalState({
-                    isOpen: true,
-                    title: `Review Industry Certifications for ${effectiveRole}`,
-                    type: 'certifications',
-                    items: itemsToReview,
-                    onApply: (approvedItems) => {
-                        const newCerts = approvedItems.map((c, i) => ({
-                            id: `cert_ai_${Date.now()}_${i}`,
-                            title: c.title || c.name,
-                            issuer: c.issuer || 'Accredited Organization',
-                            date: '',
-                            endDate: '',
-                            credentialId: '',
-                            url: '',
-                            certType: c.certType || (c.isLicense ? 'License' : 'Certification'),
-                            isLicense: Boolean(c.isLicense || c.certType === 'License'),
-                        }));
-                        setProfile(prev => ({
-                            ...prev,
-                            certifications: [...(prev.certifications || []), ...newCerts]
-                        }));
-                        triggerNotification(`Added ${approvedItems.length} credentials to your Master Profile!`);
-                    }
-                });
-                return;
-            }
-
+            // No curated/template credentials on failure — report the unavailable state.
             const msg = (err?.code === 'AI_DAILY_QUOTA_EXCEEDED' || err?.status === 429)
                 ? 'Daily AI limit reached. Please upgrade your plan or try again later.'
-                : (err?.message || 'Unable to generate certification recommendations.');
+                : 'AI credential recommendations are unavailable right now. Please try again in a moment.';
             triggerNotification(msg, 'error');
         } finally {
             setIsAiGenerating(false);
@@ -1702,12 +1643,9 @@ function DashboardSettings(_props) {
         setIsAiGenerating(true);
         try {
             const existingTitles = new Set((profile.projects || []).map(p => String(p.title || p.name || '').trim().toLowerCase()).filter(Boolean));
-            let curatedList = GET_CURATED_PROJECT_IDEAS(effectiveRole, {
-                occupation: effectiveRole,
-                workExperiences: profile.workExperiences || [],
-                skills: profile.skills || [],
-                education: profile.education || [],
-            });
+            // Only AI results for this request are offered; no role-template ideas.
+            let curatedList = [];
+            let aiUnavailable = false;
 
             try {
                 const aiResult = await runProfileAi('generate-projects', {
@@ -1730,6 +1668,7 @@ function DashboardSettings(_props) {
                     language: 'en',
                 });
 
+                if (aiResult?.aiUnavailable) aiUnavailable = true;
                 const candidateProjects = Array.isArray(aiResult?.projects)
                     ? aiResult.projects
                     : (Array.isArray(aiResult?.items) ? aiResult.items : (Array.isArray(aiResult) ? aiResult : null));
@@ -1737,14 +1676,21 @@ function DashboardSettings(_props) {
                 if (candidateProjects && candidateProjects.length > 0) {
                     curatedList = candidateProjects.map(cp => ({
                         name: cp.name || cp.title,
-                        role: cp.role || 'Project Lead',
+                        role: cp.role || '',
                         issuer: cp.technologies ? (cp.technologies.startsWith('Stack: ') || cp.technologies.startsWith('Tools: ') ? cp.technologies : `Tools: ${cp.technologies}`) : (cp.issuer || ''),
                         category: cp.category === 'mandatory' ? 'mandatory' : 'recommended',
                         projectType: cp.projectType || 'enterprise',
                     })).filter(p => Boolean(p.name));
                 }
             } catch {
-                // Seamlessly fallback to profile-matched curated list
+                aiUnavailable = true;
+            }
+
+            if (!curatedList.length) {
+                triggerNotification(aiUnavailable
+                    ? 'AI project recommendations are unavailable right now. Please try again in a moment.'
+                    : 'AI could not suggest projects from your current details. Add more about your work or skills, then try again.', 'info');
+                return;
             }
 
             const unadded = curatedList.filter(item => !existingTitles.has(String(item.name || item.title || '').trim().toLowerCase()));
@@ -1980,7 +1926,7 @@ function DashboardSettings(_props) {
         const awarder = ach.awarder || ach.issuer || '';
 
         try {
-            const prompt = `Enhance this resume achievement into 1-2 impactful, quantified bullet points. Achievement: "${title}". Awarding Organization: "${awarder}". Draft: "${currentDesc}". Use strong action verbs, describe scope or competition size, and format cleanly for ATS screening.`;
+            const prompt = `Rewrite this resume achievement as 1-2 concise, ATS-readable sentences using ONLY the facts given below. Do not add numbers, percentages, rankings, dates, scope or impact that are not stated. If the draft is empty, describe only what the title and awarding organization state. Achievement: "${title}". Awarding Organization: "${awarder}". Draft: "${currentDesc}".`;
             const res = await runProfileAi('generate-summary', {
                 prompt,
                 targetRole: profile.occupation || 'Professional',
@@ -1995,21 +1941,18 @@ function DashboardSettings(_props) {
                 return;
             }
         } catch {
-            // Heuristic fallback
+            // AI unavailable: handled below without generating any text.
         } finally {
             setIsPolishingAchIndex(null);
         }
 
-        if (currentDesc) {
-            const polished = currentDesc.replace(/^[-•*]\s*/, '').trim();
-            const enhanced = polished.endsWith('.') ? polished : `${polished}.`;
-            updateAchievement(index, 'description', enhanced);
-            triggerNotification('Polished description!');
-        } else {
-            const fallback = `Recognized for outstanding technical excellence, cross-functional execution, and quantifiable impact in ${title}.`;
-            updateAchievement(index, 'description', fallback);
-            triggerNotification('Generated starter description!');
-        }
+        // Never synthesize a description; keep the candidate's text unchanged.
+        triggerNotification(
+            currentDesc
+                ? 'AI polishing is unavailable right now. Your description was left unchanged.'
+                : 'AI polishing is unavailable right now. Add a sentence describing what you were recognized for, then try again.',
+            'info'
+        );
     };
 
     // References Handlers

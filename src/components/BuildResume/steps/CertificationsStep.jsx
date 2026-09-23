@@ -38,124 +38,8 @@ export const CERT_TYPES = [
     { id: 'Course', label: 'Course', icon: FaBookOpen, badgeClass: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
 ];
 
-/**
- * Curated Archetype Certification Starters by Role Domain
- * Guarantees instantaneous, domain-relevant recommendations even offline.
- */
-export const GET_CURATED_CERTIFICATION_IDEAS = (role = '', resumeData = {}, candidateContext = {}) => {
-    const target = String(role || candidateContext?.target?.role || resumeData?.targetRole || resumeData?.occupation || '').toLowerCase();
-    const workTitles = (resumeData?.employments || resumeData?.workExperience || resumeData?.workExperiences || []).map(e => String(e?.jobTitle || '').toLowerCase()).join(' ');
-    const skills = (resumeData?.skills || []).map(s => String(typeof s === 'object' ? (s?.skillName || s?.name) : s).toLowerCase()).join(' ');
-    const combinedSignals = `${target} ${workTitles} ${skills}`;
-
-    // 1. Healthcare, Medical, Clinical, Nursing, Dental
-    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician|nurse|rn|lpn|charge nurse|dentist|prosthodontist|orthodontist|hospital|clinic|patient care)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Basic Life Support (BLS)', issuer: 'American Heart Association (AHA)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Advanced Cardiovascular Life Support (ACLS)', issuer: 'American Heart Association (AHA)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Registered Nurse (RN) License / Medical License', issuer: 'State Board of Nursing / Medical Board', category: 'mandatory', certType: 'License', isLicense: true },
-            { name: 'Pediatric Advanced Life Support (PALS)', issuer: 'American Heart Association (AHA)', category: 'recommended', certType: 'Certification' },
-            { name: 'Certified Critical Care Registered Nurse (CCRN)', issuer: 'American Association of Critical-Care Nurses', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 2. Legal, Law, Attorneys, Judges, Paralegals, Compliance
-    if (/\b(?:lawyer|attorney|counsel|solicitor|barrister|paralegal|litigation|judge|magistrate|compliance officer|legal)\b/.test(combinedSignals)) {
-        return [
-            { name: 'State Bar Admission & License to Practice Law', issuer: 'State Supreme Court / State Bar Association', category: 'mandatory', certType: 'License', isLicense: true },
-            { name: 'Certified Information Privacy Professional (CIPP/US)', issuer: 'International Association of Privacy Professionals (IAPP)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Certified Compliance & Ethics Professional (CCEP)', issuer: 'Society of Corporate Compliance and Ethics (SCCE)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Certified Paralegal (CP)', issuer: 'National Association of Legal Assistants (NALA)', category: 'recommended', certType: 'Certification' },
-            { name: 'Certified Anti-Money Laundering Specialist (CAMS)', issuer: 'ACAMS', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 3. Accounting, Audit, Finance, Banking, Investment
-    if (/\b(?:accountant|auditor|chartered accountant|cpa|finance|financial analyst|controller|bookkeeper|tax|banking|investment|equity)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Certified Public Accountant (CPA)', issuer: 'AICPA / State Board of Accountancy', category: 'mandatory', certType: 'License', isLicense: true },
-            { name: 'Chartered Financial Analyst (CFA)', issuer: 'CFA Institute', category: 'mandatory', certType: 'Certification' },
-            { name: 'Certified Internal Auditor (CIA)', issuer: 'The Institute of Internal Auditors (IIA)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Financial Risk Manager (FRM)', issuer: 'Global Association of Risk Professionals (GARP)', category: 'recommended', certType: 'Certification' },
-            { name: 'Certified Management Accountant (CMA)', issuer: 'Institute of Management Accountants (IMA)', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 4. Human Resources, Talent Acquisition, People Operations
-    if (/\b(?:hr|human resources|recruiter|talent acquisition|people operations|headhunter|recruiting)\b/.test(combinedSignals)) {
-        return [
-            { name: 'SHRM Certified Professional (SHRM-CP)', issuer: 'Society for Human Resource Management (SHRM)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Professional in Human Resources (PHR)', issuer: 'HR Certification Institute (HRCI)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Talent Acquisition Strategist (TAS)', issuer: 'Human Capital Institute (HCI)', category: 'recommended', certType: 'Certification' },
-            { name: 'Senior Professional in Human Resources (SPHR)', issuer: 'HR Certification Institute (HRCI)', category: 'recommended', certType: 'Certification' },
-            { name: 'Certified Diversity Recruiter (CDR)', issuer: 'AIRS', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 5. Sales, Business Development, Account Management
-    if (/\b(?:sales|account executive|business development|bdr|sdr|account manager|territory manager|quota)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Salesforce Certified Administrator', issuer: 'Salesforce', category: 'mandatory', certType: 'Certification' },
-            { name: 'HubSpot Inbound Sales & Frictionless Sales Certification', issuer: 'HubSpot Academy', category: 'mandatory', certType: 'Certification' },
-            { name: 'Certified Professional Sales Person (CPSP)', issuer: 'National Association of Sales Professionals (NASP)', category: 'mandatory', certType: 'Certification' },
-            { name: 'MEDDPICC Enterprise Sales Certified', issuer: 'MEDDIC Academy', category: 'recommended', certType: 'Certification' },
-            { name: 'Gong Certified Professional', issuer: 'Gong.io', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 6. Marketing, Brand, Content, Growth, Digital Marketing
-    if (/\b(?:marketing|brand|growth|seo|content writer|copywriter|social media|digital marketing|campaign)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Google Analytics 4 (GA4) Certification', issuer: 'Google Skillshop', category: 'mandatory', certType: 'Certification' },
-            { name: 'Google Ads Search & Measurement Certified', issuer: 'Google Skillshop', category: 'mandatory', certType: 'Certification' },
-            { name: 'HubSpot Content & Inbound Marketing Specialist', issuer: 'HubSpot Academy', category: 'mandatory', certType: 'Certification' },
-            { name: 'Meta Certified Digital Marketing Associate', issuer: 'Meta Blueprint', category: 'recommended', certType: 'Certification' },
-            { name: 'Semrush Technical SEO & Keyword Research Certification', issuer: 'Semrush Academy', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 7. Product, Program, Project Management, Scrum, Agile
-    if (/\b(?:product manager|product owner|project manager|program manager|scrum master|agile coach)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Project Management Professional (PMP)®', issuer: 'Project Management Institute (PMI)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Certified ScrumMaster (CSM)® / PSM I', issuer: 'Scrum Alliance / Scrum.org', category: 'mandatory', certType: 'Certification' },
-            { name: 'PMI Agile Certified Practitioner (PMI-ACP)®', issuer: 'Project Management Institute (PMI)', category: 'mandatory', certType: 'Certification' },
-            { name: 'Certified Product Manager (CPM)', issuer: 'AIPMM', category: 'recommended', certType: 'Certification' },
-            { name: 'Lean Six Sigma Green Belt (LSSGB)', issuer: 'IASSC / ASQ', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 8. Civil, Mechanical, Electrical Engineering, Architecture, Construction
-    if (/\b(?:civil engineer|mechanical engineer|electrical engineer|structural engineer|architect|urban designer|hvac|construction)\b/.test(combinedSignals)) {
-        return [
-            { name: 'Professional Engineer (PE) License', issuer: 'State Licensing Board / NCEES', category: 'mandatory', certType: 'License', isLicense: true },
-            { name: 'Engineer in Training (EIT) / Fundamentals of Engineering (FE)', issuer: 'NCEES', category: 'mandatory', certType: 'Certification' },
-            { name: 'LEED Green Associate / LEED AP BD+C', issuer: 'U.S. Green Building Council (USGBC)', category: 'mandatory', certType: 'Certification' },
-            { name: 'OSHA 30-Hour Construction Safety & Health', issuer: 'Occupational Safety and Health Administration (OSHA)', category: 'recommended', certType: 'Training' },
-            { name: 'Autodesk Certified Professional: Revit / AutoCAD', issuer: 'Autodesk', category: 'recommended', certType: 'Certification' },
-        ];
-    }
-
-    // 9. Education, Teaching, Academia
-    if (/\b(?:teacher|professor|educator|instructor|lecturer|pedagogy|principal|tutor)\b/.test(combinedSignals)) {
-        return [
-            { name: 'State Professional Educator / Teaching License', issuer: 'State Department of Education', category: 'mandatory', certType: 'License', isLicense: true },
-            { name: 'Google Certified Educator Level 1 & 2', issuer: 'Google for Education', category: 'mandatory', certType: 'Certification' },
-            { name: 'National Board Certification (NBCT)', issuer: 'National Board for Professional Teaching Standards', category: 'recommended', certType: 'Certification' },
-            { name: 'TESOL / TEFL Certification (120+ Hours)', issuer: 'Accredited International TESOL Institute', category: 'recommended', certType: 'Certification' },
-            { name: 'Certified Online Instructor (COI)', issuer: 'Online Learning Consortium (OLC)', category: 'recommended', certType: 'Training' },
-        ];
-    }
-
-    // 10. Software Engineering, Cloud, DevOps, Cybersecurity, Data Science (Default Tech)
-    return [
-        { name: 'AWS Certified Solutions Architect – Associate', issuer: 'Amazon Web Services (AWS)', category: 'mandatory', certType: 'Certification' },
-        { name: 'Certified Kubernetes Administrator (CKA)', issuer: 'Cloud Native Computing Foundation (CNCF)', category: 'mandatory', certType: 'Certification' },
-        { name: 'Certified Information Systems Security Professional (CISSP)', issuer: 'ISC2', category: 'mandatory', certType: 'Certification' },
-        { name: 'HashiCorp Certified: Terraform Associate', issuer: 'HashiCorp', category: 'recommended', certType: 'Certification' },
-        { name: 'Microsoft Certified: Azure Solutions Architect Expert', issuer: 'Microsoft', category: 'recommended', certType: 'Certification' },
-    ];
-};
+// Role-template credential ideas were removed in Phase 3:
+// recommendations come only from AI for this candidate; on outage the UI says so.
 
 /**
  * CertificationsStep — Modern Dedicated Elevated Cards Architecture
@@ -330,7 +214,9 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
         setIsAiGenerating(true);
         try {
             const existingTitles = new Set(certifications.map(c => String(c.title || c.name || '').trim().toLowerCase()));
-            let curatedList = GET_CURATED_CERTIFICATION_IDEAS(effectiveRole, resumeData, candidateContext);
+            // Only AI results for this request are offered; no role-template credentials.
+            let curatedList = [];
+            let aiUnavailable = false;
 
             try {
                 const expDetails = (resumeData.workExperience || resumeData.employments || [])
@@ -358,6 +244,7 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                     targetJobDescription: resumeData.targetJobDescription || '',
                 });
 
+                if (data?.aiUnavailable) aiUnavailable = true;
                 const candidateCerts = Array.isArray(data?.certifications)
                     ? data.certifications
                     : (Array.isArray(data?.data?.certifications)
@@ -371,14 +258,21 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 if (candidateCerts && candidateCerts.length > 0) {
                     curatedList = candidateCerts.map((c, idx) => ({
                         name: typeof c === 'string' ? c : c?.title || c?.name,
-                        issuer: typeof c === 'object' ? (c?.issuer || 'Accredited Organization') : 'Accredited Organization',
+                        issuer: typeof c === 'object' ? (c?.issuer || '') : '',
                         category: (typeof c === 'object' && c?.category && ['mandatory', 'recommended'].includes(c.category)) ? c.category : (idx < 3 ? 'mandatory' : 'recommended'),
                         certType: typeof c === 'object' ? (c?.certType || (c?.isLicense ? 'License' : 'Certification')) : 'Certification',
                         isLicense: typeof c === 'object' ? Boolean(c?.isLicense) : false,
                     })).filter(c => Boolean(c.name));
                 }
             } catch {
-                // Seamlessly fall back to profile-matched curated list
+                aiUnavailable = true;
+            }
+
+            if (!curatedList.length) {
+                triggerToast(aiUnavailable
+                    ? 'AI credential recommendations are unavailable right now. Please try again in a moment.'
+                    : 'AI could not suggest credentials from your current details. Add your role or skills, then try again.', 'info');
+                return;
             }
 
             const unadded = curatedList.filter(item => !existingTitles.has(String(item.name || item.title || '').trim().toLowerCase()));
@@ -391,7 +285,7 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
             const itemsToReview = unadded.map((c, idx) => ({
                 title: c.name || c.title,
                 name: c.name || c.title,
-                issuer: c.issuer || 'Accredited Organization',
+                issuer: c.issuer || '',
                 category: c.category || (idx < 3 ? 'mandatory' : 'recommended'),
                 certType: c.certType || (c.isLicense ? 'License' : 'Certification'),
                 isLicense: Boolean(c.isLicense),
@@ -405,7 +299,7 @@ const CertificationsStep = ({ resumeData, updateResumeData, onNavigate }) => {
                 onApply: (approvedItems) => {
                     const toAdd = approvedItems.map(item => createNewCertification({
                         title: item.title || item.name,
-                        issuer: item.issuer || 'Accredited Organization',
+                        issuer: item.issuer || '',
                         date: '', // blank by default — never fabricate year
                         certType: item.certType || (item.isLicense ? 'License' : 'Certification'),
                         isLicense: Boolean(item.isLicense),

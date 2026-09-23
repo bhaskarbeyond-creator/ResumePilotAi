@@ -4,8 +4,8 @@ import {
     ensureAtsOptimizedBullet,
     getRolePlaceholder,
     getRolePillars,
-    generateClientRoleBullet,
 } from '../src/utils/bulletQuality.js';
+import * as bulletQuality from '../src/utils/bulletQuality.js';
 import {
     getContentOperationFallback,
     validateOperation,
@@ -44,50 +44,8 @@ test('2. getRolePillars returns authentic functional pillars tailored to the can
     assert.ok(techLabels.includes('Performance Optimization'));
 });
 
-test('3. generateClientRoleBullet produces authentic Google X-Y-Z ATS bullets tailored to the role', () => {
-    const doctorBullet = generateClientRoleBullet('Doctor of Medicine', 'Apollo Hospitals');
-    assert.match(doctorBullet, /at Apollo Hospitals/);
-    assert.match(doctorBullet, /Diagnosed and treated/i);
-    assert.match(doctorBullet, /98%/);
-    assert.doesNotMatch(doctorBullet, /downtime|cloud|microservice/i);
-
-    // Verifies strong action verb and terminal punctuation
-    assert.ok(/^[A-Z][a-z]+/.test(doctorBullet));
-    assert.ok(doctorBullet.endsWith('.'));
-});
-
-test('4. Anti-Duplication Engine guarantees distinct opening action verbs and topics across successive bullets', () => {
-    const existing = [];
-
-    // First bullet for Doctor
-    const bullet1 = generateClientRoleBullet('Doctor of Medicine', 'Apollo Hospitals', existing);
-    existing.push(bullet1);
-    assert.match(bullet1, /Diagnosed/);
-
-    // Second bullet must not reuse opening verb of bullet1
-    const bullet2 = generateClientRoleBullet('Doctor of Medicine', 'Apollo Hospitals', existing);
-    existing.push(bullet2);
-    assert.notEqual(bullet1, bullet2);
-    assert.notEqual(bullet2.split(' ')[0], bullet1.split(' ')[0]);
-
-    // Third bullet must not duplicate bullet 1 or bullet 2
-    const bullet3 = generateClientRoleBullet('Doctor of Medicine', 'Apollo Hospitals', existing);
-    existing.push(bullet3);
-    assert.notEqual(bullet2, bullet3);
-    assert.notEqual(bullet1, bullet3);
-
-    // Fourth bullet
-    const bullet4 = generateClientRoleBullet('Doctor of Medicine', 'Apollo Hospitals', existing);
-    existing.push(bullet4);
-
-    // All 4 bullets are 100% unique
-    const uniqueBullets = new Set(existing);
-    assert.equal(uniqueBullets.size, 4);
-
-    // All 4 opening verbs are unique
-    const openingVerbs = existing.map(b => b.split(' ')[0]);
-    const uniqueVerbs = new Set(openingVerbs);
-    assert.equal(uniqueVerbs.size, 4);
+test('3. client role-template bullet generator (invented metrics) no longer exists (Phase 3)', () => {
+    assert.equal(bulletQuality.generateClientRoleBullet, undefined);
 });
 
 test('5. Backend candidateContext attaches role, company, and existingBullets in enhance-single-bullet evidence', () => {
@@ -111,17 +69,15 @@ test('5. Backend candidateContext attaches role, company, and existingBullets in
     assert.ok(length >= 10);
 });
 
-test('6. Backend getContentOperationFallback returns tailored role bullet when draft is empty and jobTitle is present', () => {
+test('6. Backend getContentOperationFallback asks (no template bullet) when draft is empty and only jobTitle is present', () => {
     const result = getContentOperationFallback('enhance-single-bullet', {
         jobTitle: 'Doctor of Medicine',
         company: 'Apollo Hospitals',
     });
-
     assert.ok(result);
-    assert.equal(result._source, 'tailored-role-fallback');
-    assert.match(result.enhancedBullet, /at Apollo Hospitals/);
-    assert.match(result.enhancedBullet, /Diagnosed and treated/);
-    assert.doesNotMatch(result.enhancedBullet, /downtime|microservice/i);
+    assert.equal(result.requiresAnswer, true);
+    assert.equal(result.enhancedBullet, undefined);
+    assert.doesNotMatch(JSON.stringify(result), /98%|Diagnosed and treated/);
 });
 
 test('7. Backend getContentOperationFallback preserves original draft when bullet text is provided', () => {
@@ -142,15 +98,12 @@ test('8. Backend validateOperation rejects empty payload without bullet or role'
     );
 });
 
-test('9. ensureAtsOptimizedBullet elevates passive or metric-lacking text into high-impact ATS bullet', () => {
+test('9. ensureAtsOptimizedBullet only formats text — it never adds metrics, outcomes or inflated verbs', () => {
     const clinicalRaw = 'responsible for patient care and daily rounds';
     const clinicalOptimized = ensureAtsOptimizedBullet(clinicalRaw);
-    assert.doesNotMatch(clinicalOptimized, /^responsible for/i);
-    assert.match(clinicalOptimized, /Spearheaded/);
-    assert.match(clinicalOptimized, /improving patient care turnaround by 20%/);
-    assert.ok(clinicalOptimized.endsWith('.'));
+    assert.equal(clinicalOptimized, 'Responsible for patient care and daily rounds.');
+    assert.doesNotMatch(clinicalOptimized, /\d|%|Spearheaded|improving/);
 
-    const generalRaw = 'responsible for process workflows';
-    const generalOptimized = ensureAtsOptimizedBullet(generalRaw);
-    assert.match(generalOptimized, /improving operational turnaround by 25%/);
+    const withMetric = ensureAtsOptimizedBullet('Cut claim processing time by 30% using Python automation');
+    assert.equal(withMetric, 'Cut claim processing time by 30% using Python automation.');
 });

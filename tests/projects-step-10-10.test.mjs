@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import { generateClientRoleBullet } from '../src/utils/bulletQuality.js';
+import * as bulletQuality from '../src/utils/bulletQuality.js';
 
 const require = createRequire(import.meta.url);
 const { buildGroundedPrompt, getContentOperationFallback, parseAiResponse } = require('../backend/services/aiRuntime.js');
@@ -81,28 +81,13 @@ test('Backend AI Runtime: generate-projects Operation & Zero IT Leakage on Non-I
     assert.ok(doctorPrompt.user.includes('CRITICAL PROFILE & INDUSTRY ALIGNMENT'), 'Prompt must enforce industry alignment');
     assert.ok(doctorPrompt.user.includes('DO NOT recommend software apps'), 'Prompt must forbid software recommendations for non-IT');
 
-    // 2. Doctor Fallback Test (Deterministic Profile Matching)
-    const doctorFallback = getContentOperationFallback('generate-projects', {
-        targetRole: 'Cardiologist',
-        occupation: 'Cardiologist',
-    });
-
-    assert.ok(Array.isArray(doctorFallback.projects), 'Must return projects array');
-    assert.ok(doctorFallback.projects.length >= 3, 'Must have at least 3 clinical projects');
-    const doctorText = JSON.stringify(doctorFallback.projects).toLowerCase();
-    assert.ok(doctorText.includes('clinical') || doctorText.includes('patient') || doctorText.includes('triage'), 'Must contain clinical initiatives');
-    assert.equal(doctorText.includes('react'), false, 'Zero IT React leakage for Cardiologist');
-    assert.equal(doctorText.includes('saas'), false, 'Zero SaaS leakage for Cardiologist');
-    assert.equal(doctorText.includes('docker'), false, 'Zero Docker leakage for Cardiologist');
-
-    // 3. Legal / Attorney Persona
-    const lawyerFallback = getContentOperationFallback('generate-projects', {
-        targetRole: 'Trial Attorney',
-        occupation: 'Trial Attorney',
-    });
-    const lawyerText = JSON.stringify(lawyerFallback.projects).toLowerCase();
-    assert.ok(lawyerText.includes('contract') || lawyerText.includes('litigation') || lawyerText.includes('compliance'), 'Must contain legal initiatives');
-    assert.equal(lawyerText.includes('full-stack'), false, 'Zero full-stack leakage for Attorney');
+    // 2. Provider outage: explicit unavailable state, no role-template project ideas (Phase 3)
+    for (const role of ['Cardiologist', 'Trial Attorney']) {
+        const outage = getContentOperationFallback('generate-projects', { targetRole: role, occupation: role });
+        assert.deepEqual(outage.projects, [], `no template projects for ${role}`);
+        assert.equal(outage.aiUnavailable, true);
+        assert.equal(outage.requiresUserConfirmation, true);
+    }
 
     // 4. Response Parser Test
     const parsed = parseAiResponse('generate-projects', JSON.stringify({
@@ -117,24 +102,8 @@ test('Backend AI Runtime: generate-projects Operation & Zero IT Leakage on Non-I
     assert.equal(parsed.projects[0].name, 'Patient Triage Optimization');
 });
 
-test('Client Fallback Bullet Generator: Project-Specific Output', () => {
-    const bullet = generateClientRoleBullet(
-        'Lead Engineer',
-        'Acme Corp',
-        [],
-        '',
-        'Real-Time Chat Application',
-        'React, Node.js, WebSockets, Redis'
-    );
-
-    assert.ok(
-        bullet.includes('Real-Time Chat Application'),
-        `Fallback bullet must mention project name. Generated: "${bullet}"`
-    );
-    assert.ok(
-        bullet.includes('React, Node.js, WebSockets, Redis'),
-        `Fallback bullet must mention technologies. Generated: "${bullet}"`
-    );
+test('Client fallback bullet generator removed: no template project bullets on AI outage (Phase 3)', () => {
+    assert.equal(bulletQuality.generateClientRoleBullet, undefined);
 });
 
 test('BulletPointsEditor: otherBullets is declared and empty bullet generates safely without ReferenceError', () => {
@@ -151,31 +120,14 @@ test('ProjectsStep: Clean Architecture with Project Tips and zero Key Achievemen
     assert.match(fileContent, /Project Tips & Best Practices/, 'Sidebar guide must display Project Tips');
 });
 
-test('Doctor/Medical Project: generateClientRoleBullet produces clinical project achievement with zero tech leakage', () => {
-    const doctorProjectBullet = generateClientRoleBullet(
-        'Cardiologist',
-        'Mount Sinai Hospital',
-        [],
-        '',
-        'Pediatric Cardiac Surgery Outcomes Registry',
-        'Clinical Protocols, JCAHO'
-    );
-
-    assert.ok(doctorProjectBullet.includes('Pediatric Cardiac Surgery Outcomes Registry'), 'Must include project name');
-    assert.match(doctorProjectBullet, /clinical|diagnostic|patient/i, 'Must contain authentic clinical terminology');
-    assert.equal(/react|node\.js|api|backend|microservices|cloud|ci\/cd|pipeline/i.test(doctorProjectBullet), false, 'Zero IT leakage in medical project bullet');
-});
-
-test('Backend Fallback: enhance-single-bullet produces project-tailored bullet with zero tech leakage for non-tech roles', () => {
+test('Backend Fallback: enhance-single-bullet without a draft asks the candidate instead of writing a template bullet', () => {
     const lawyerFallback = getContentOperationFallback('enhance-single-bullet', {
         jobTitle: 'Trial Attorney',
         company: 'Baker & McKenzie',
         projectName: 'Commercial Antitrust Litigation Defense',
         technologies: 'Case Management, Statutory Compliance',
     });
-
-    assert.ok(lawyerFallback.enhancedBullet, 'Must return enhancedBullet');
-    assert.ok(lawyerFallback.enhancedBullet.includes('Commercial Antitrust Litigation Defense'), 'Must mention project title');
-    assert.match(lawyerFallback.enhancedBullet, /case|litigat|compliance|statutory/i, 'Must contain legal vocabulary');
-    assert.equal(/react|node\.js|full-stack|docker|cloud|aws/i.test(lawyerFallback.enhancedBullet), false, 'Zero IT leakage in legal project fallback');
+    assert.equal(lawyerFallback.enhancedBullet, undefined, 'no synthesized bullet');
+    assert.equal(lawyerFallback.requiresAnswer, true);
+    assert.ok(lawyerFallback.questions.length > 0);
 });

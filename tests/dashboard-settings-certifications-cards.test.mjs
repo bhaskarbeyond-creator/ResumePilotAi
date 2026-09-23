@@ -115,11 +115,15 @@ test('3. backend profileSanitizer.js preserves certification fields (endDate, cr
     assert.equal(sanitized.certifications[0].certType, 'Certification');
 });
 
-test('4. CertificationsStep and DashboardSettings share the canonical CERT_TYPES and GET_CURATED_CERTIFICATION_IDEAS', () => {
+test('4. CertificationsStep and DashboardSettings share CERT_TYPES; no role-template credential fallback remains', () => {
     const stepContent = fs.readFileSync('src/components/BuildResume/steps/CertificationsStep.jsx', 'utf8');
     const settingsContent = fs.readFileSync('src/components/Dashboard/DashboardSettings/DashboardSettings.jsx', 'utf8');
 
     assert.match(stepContent, /export const CERT_TYPES =/, 'CertificationsStep must export CERT_TYPES');
-    assert.match(stepContent, /export const GET_CURATED_CERTIFICATION_IDEAS =/, 'CertificationsStep must export GET_CURATED_CERTIFICATION_IDEAS');
-    assert.match(settingsContent, /import \{ CERT_TYPES, GET_CURATED_CERTIFICATION_IDEAS \} from '\.\.\/\.\.\/BuildResume\/steps\/CertificationsStep'/, 'DashboardSettings must import canonical constants from CertificationsStep');
+    assert.doesNotMatch(stepContent, /GET_CURATED_CERTIFICATION_IDEAS|Accredited Organization/, 'no template credential list or invented issuer');
+    assert.doesNotMatch(settingsContent, /GET_CURATED_CERTIFICATION_IDEAS|Accredited Organization/, 'no template credential list or invented issuer');
+    assert.match(settingsContent, /import \{ CERT_TYPES \} from '\.\.\/\.\.\/BuildResume\/steps\/CertificationsStep'/);
+    for (const content of [stepContent, settingsContent]) {
+        assert.match(content, /AI credential recommendations are unavailable right now/, 'explicit unavailable state');
+    }
 });

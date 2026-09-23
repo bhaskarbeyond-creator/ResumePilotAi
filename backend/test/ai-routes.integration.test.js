@@ -121,10 +121,14 @@ test('provider failures return source-preserving content without leaking provide
       payload: { jobTitle: 'Engineer', workHistory: 'Maintained payment APIs and deployment runbooks' },
     });
     assert.equal(response.status, 200);
-    assert.equal(response.body.summary, 'Engineer. Maintained payment APIs and deployment runbooks');
-    assert.equal(response.body._source, 'source-preserving-fallback');
+    // Phase 3: no summary is assembled from the job title + history; the
+    // candidate is asked instead and the response is marked AI-unavailable.
+    assert.equal(response.body.summary, undefined);
+    assert.equal(response.body.requiresAnswer, true);
+    assert.ok(Array.isArray(response.body.questions) && response.body.questions.length > 0);
+    assert.equal(response.body.aiUnavailable, true);
+    assert.doesNotMatch(JSON.stringify(response.body), /Engineer\. Maintained/);
     assert.equal(response.headers['x-ai-provider'], 'fallback');
-    assert.equal(response.headers['x-ai-grounding'], 'source-preserving-fallback');
     assert.doesNotMatch(JSON.stringify(response.body), /secret provider diagnostic|server-only-gemini-key/);
   } finally {
     global.fetch = originalFetch;

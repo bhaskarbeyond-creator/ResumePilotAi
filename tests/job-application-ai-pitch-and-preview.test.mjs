@@ -27,10 +27,11 @@ test.describe('Job Application Modal: AI 1-Click Quick Pitch & In-Modal Preview 
         assert.match(modalSource, /tone:\s*['"]impact['"]/, 'Passes ATS-optimized impact tone');
     });
 
-    test('2. ⚡ 1-Click Quick Pitch has robust offline/unauthenticated fallback', () => {
-        // Fallback synthesized pitch must be present
-        assert.match(modalSource, /Fallback to synthesized ATS template/, 'Logs fallback warning gracefully');
-        assert.match(modalSource, /if\s*\(!pitchText\)\s*\{[\s\S]*?Dear Hiring Team at/, 'Contains fallback ATS elevator pitch template');
+    test('2. ⚡ 1-Click Quick Pitch shows an unavailable state and never inserts a template pitch', () => {
+        assert.doesNotMatch(modalSource, /Dear Hiring Team at/, 'No template pitch letter');
+        assert.doesNotMatch(modalSource, /yearsExp|modern full-stack architecture/, 'No invented years of experience or default skills');
+        assert.match(modalSource, /if\s*\(!pitchText\)\s*\{[\s\S]*?setPitchNotice\([\s\S]*?return;/, 'Unavailable notice; editor left untouched');
+        assert.match(modalSource, /role="status"/, 'Notice is announced to assistive tech');
         assert.match(modalSource, /isAiGenerating/, 'Has isAiGenerating state guard against double-clicks');
         assert.match(modalSource, /FaSpinner/, 'Displays loading spinner while generating');
     });

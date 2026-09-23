@@ -1,39 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaBullseye, FaLightbulb, FaPlus, FaRedo, FaRobot, FaSpinner } from 'react-icons/fa';
 import { getLiveAnswerGuide } from '../../../services/liveInterviewApi';
+import { getAiCacheScope } from '../../../services/aiService';
 
-// In-memory cache to avoid duplicate AI requests for the same question within a session
+// In-memory cache to avoid duplicate AI requests for the same question within a
+// session. Keys include the uid|tenant scope so one identity's guide is never
+// served to another after an account or tenant switch in the same tab.
 const guideCache = new Map();
+const GUIDE_CACHE_LIMIT = 100;
 
-/**
- * Intelligent client-side fallback that dynamically deconstructs the actual question
- * to formulate a genuine 10/10 STAR answer without any static canned scripts.
- */
-function synthesizeDynamicQuestionAnswer(question = '', role = 'Software Engineer', topic = '') {
-    const cleanQuestion = question.trim().replace(/[?.]+$/, '');
-    const cleanRole = role.trim() || 'Software Engineer';
-
-    // Extract core subject or action clause from the question
-    let subject = cleanQuestion
-        .replace(/^(can you |could you |please |tell me about |walk me through |describe |how do you |how did you |what is your approach to |what would you do if )/i, '')
-        .trim();
-    if (subject.length > 0) {
-        subject = subject.charAt(0).toLowerCase() + subject.slice(1);
-    } else {
-        subject = topic ? topic.toLowerCase() : 'this technical challenge';
-    }
-
-    const situation = `In my recent role as a ${cleanRole}, I led the technical strategy for ${subject} under demanding production requirements.`;
-    const action = `I defined clear architectural boundaries, evaluated trade-offs between speed and resilience, and implemented a modular solution backed by automated testing and phased rollout.`;
-    const result = `This resolved the challenge cleanly, reducing operational bottlenecks by 35% and delivering zero-defect stability across critical services.`;
-
-    return {
-        goal: `Evaluating structured reasoning, technical ownership, and evidence-grounded competence regarding ${subject}.`,
-        modelAnswer: `${situation} ${action} ${result}`,
-        tip: `Structure your response with clear Situation, Task, Action, and measurable Result. Explicitly cite the engineering trade-offs you navigated.`,
-    };
+export function guideCacheKey(scope, role, question) {
+    return `${scope}::${String(role || '').trim().toLowerCase()}::${String(question || '').trim().toLowerCase()}`;
 }
 
+function guideCacheSet(key, value) {
+    guideCache.delete(key);
+    guideCache.set(key, value);
+    if (guideCache.size > GUIDE_CACHE_LIMIT) guideCache.delete(guideCache.keys().next().value);
+}
+
+// When no AI answer is available the guide shows an explicit unavailable state.
+// It never synthesizes a model answer: a canned STAR story would put invented
+// experience and metrics into the candidate's mouth.
 function isTemplatePlaceholder(text = '') {
     if (!text || typeof text !== 'string') return true;
     return /opening situation sentence|specific technical decision|quantified metric or outcome|\[(Feature|Option|Metric|Role|X)\]/i.test(text);
@@ -82,77 +70,65 @@ export default function LiveAnswerGuide({
         // 1. If backend already delivered the AI model answer with the turn, use it directly!
         if (hasPropModelAnswer) {
             setAiGuide({
-                goal: intent || `Evaluating structured decision-making and practical execution for this ${role || 'engineering'} question.`,
+                goal: intent || '',
                 modelAnswer: propModelAnswer.trim(),
-                tip: propTip || 'Anchor your response in measurable production metrics and state the trade-offs you accepted.',
+                tip: propTip || '',
             });
             return;
         }
 
-        // 2. Check client-side cache
-        const cacheKey = `${role}:${question.trim().toLowerCase()}`;
-        if (guideCache.has(cacheKey)) {
+        let isCurrent = true;
+        const controller = new AbortController();
+
+        (async () => {
+            const scope = await getAiCacheScope();
+            if (!isCurrent) return;
+            // 2. Check client-side cache (scoped to uid|tenant)
+            const cacheKey = guideCacheKey(scope, role, question);
             const cached = guideCache.get(cacheKey);
             if (cached && !isTemplatePlaceholder(cached.modelAnswer)) {
                 setAiGuide(cached);
                 return;
             }
             guideCache.delete(cacheKey);
-        }
 
-        // 3. If talkingPoints are valid array, combine into dynamic model answer ONLY if non-placeholder
-        if (
-            Array.isArray(talkingPoints) &&
-            talkingPoints.length >= 2 &&
-            talkingPoints.every(p => typeof p === 'string' && p.length > 10 && !isTemplatePlaceholder(p))
-        ) {
-            const combined = talkingPoints.join(' ');
-            if (!isTemplatePlaceholder(combined)) {
-                const synthesized = {
-                    goal: intent || `Evaluating core engineering judgment and practical outcomes for this question.`,
-                    modelAnswer: combined,
-                    tip: propTip || 'Keep your response under 90 seconds and highlight your specific architectural decisions.',
-                };
-                guideCache.set(cacheKey, synthesized);
-                setAiGuide(synthesized);
-                return;
+            // 3. Talking points delivered by the AI turn, combined verbatim
+            if (
+                Array.isArray(talkingPoints) &&
+                talkingPoints.length >= 2 &&
+                talkingPoints.every(p => typeof p === 'string' && p.length > 10 && !isTemplatePlaceholder(p))
+            ) {
+                const combined = talkingPoints.join(' ');
+                if (!isTemplatePlaceholder(combined)) {
+                    const synthesized = { goal: intent || '', modelAnswer: combined, tip: propTip || '' };
+                    guideCacheSet(cacheKey, synthesized);
+                    setAiGuide(synthesized);
+                    return;
+                }
             }
-        }
 
-        // 4. Request dynamic AI 10/10 STAR answer for this specific question from server
-        let isCurrent = true;
-        const controller = new AbortController();
-        setLoading(true);
-
-        getLiveAnswerGuide(
-            { question, role, topic, resumeFacts },
-            { signal: controller.signal, timeoutMs: 25_000 }
-        )
-            .then(res => {
+            // 4. Request an AI answer for this specific question from the server
+            setLoading(true);
+            try {
+                const res = await getLiveAnswerGuide(
+                    { question, role, topic, resumeFacts },
+                    { signal: controller.signal, timeoutMs: 25_000 }
+                );
                 if (!isCurrent) return;
                 if (res && res.modelAnswer && res.modelAnswer.length > 20 && !isTemplatePlaceholder(res.modelAnswer)) {
-                    const guideData = {
-                        goal: res.goal || intent || `Evaluating technical mastery and problem-solving methodology for this question.`,
-                        modelAnswer: res.modelAnswer,
-                        tip: res.tip || propTip || 'State the direct trade-off you accepted and conclude with quantified impact.',
-                    };
-                    guideCache.set(cacheKey, guideData);
+                    const guideData = { goal: res.goal || intent || '', modelAnswer: res.modelAnswer, tip: res.tip || propTip || '' };
+                    guideCacheSet(cacheKey, guideData);
                     setAiGuide(guideData);
                 } else {
-                    // Fallback to dynamic question deconstruction
-                    const dynamicFallback = synthesizeDynamicQuestionAnswer(question, role, topic);
-                    setAiGuide(dynamicFallback);
+                    setAiGuide({ unavailable: true, goal: intent || '', modelAnswer: '', tip: propTip || '' });
                 }
-            })
-            .catch(() => {
+            } catch {
                 if (!isCurrent) return;
-                // If offline or network timeout, dynamically formulate from question
-                const dynamicFallback = synthesizeDynamicQuestionAnswer(question, role, topic);
-                setAiGuide(dynamicFallback);
-            })
-            .finally(() => {
+                setAiGuide({ unavailable: true, goal: intent || '', modelAnswer: '', tip: propTip || '' });
+            } finally {
                 if (isCurrent) setLoading(false);
-            });
+            }
+        })();
 
         return () => {
             isCurrent = false;
@@ -160,16 +136,14 @@ export default function LiveAnswerGuide({
         };
     }, [question, role, topic, intent, propModelAnswer, propTip, hasPropModelAnswer, resumeFacts, talkingPoints, regeneratedMap]);
 
-    // Active guide data (prefer AI-generated, fallback to question deconstruction)
-    const activeGuide = useMemo(() => {
-        if (aiGuide) return aiGuide;
-        return synthesizeDynamicQuestionAnswer(question, role, topic);
-    }, [aiGuide, question, role, topic]);
+    // Active guide data: AI-generated only. Empty while loading or unavailable.
+    const activeGuide = useMemo(() => aiGuide || { goal: intent || '', modelAnswer: '', tip: propTip || '' }, [aiGuide, intent, propTip]);
+    const guideUnavailable = !loading && !activeGuide.modelAnswer;
 
     // Regenerate an alternative 10/10 STAR answer on-demand for the current question
     const handleRegenerate = useCallback(async () => {
         if (!question || question.trim().length < 5 || loading || regenerating) return;
-        const cacheKey = `${role}:${question.trim().toLowerCase()}`;
+        const cacheKey = guideCacheKey(await getAiCacheScope(), role, question);
         guideCache.delete(cacheKey);
         setRegenerating(true);
         setLoading(true);
@@ -180,12 +154,8 @@ export default function LiveAnswerGuide({
                 { timeoutMs: 30_000 }
             );
             if (res && res.modelAnswer && res.modelAnswer.length > 20 && !isTemplatePlaceholder(res.modelAnswer)) {
-                const guideData = {
-                    goal: res.goal || intent || `Evaluating technical mastery and problem-solving methodology for this question.`,
-                    modelAnswer: res.modelAnswer,
-                    tip: res.tip || propTip || 'State the direct trade-off you accepted and conclude with quantified impact.',
-                };
-                guideCache.set(cacheKey, guideData);
+                const guideData = { goal: res.goal || intent || '', modelAnswer: res.modelAnswer, tip: res.tip || propTip || '' };
+                guideCacheSet(cacheKey, guideData);
                 setAiGuide(guideData);
                 setRegeneratedMap(prev => ({ ...prev, [question]: guideData }));
             }
@@ -214,7 +184,7 @@ export default function LiveAnswerGuide({
                         Interviewer's Goal:
                     </span>
                     <span className="text-slate-700 font-medium text-xs">
-                        {loading && !activeGuide.goal ? 'Analyzing interviewer intent for this question…' : activeGuide.goal}
+                        {activeGuide.goal || (loading ? 'Analyzing interviewer intent for this question…' : 'Not available for this question.')}
                     </span>
                 </div>
             </div>
@@ -249,7 +219,7 @@ export default function LiveAnswerGuide({
                             <FaRedo className={`w-2 h-2 text-indigo-600 ${regenerating ? 'animate-spin' : ''}`} />
                             <span>{regenerating ? 'Regenerating…' : 'Regenerate'}</span>
                         </button>
-                        {onInsertSnippet && !loading && !regenerating && (
+                        {onInsertSnippet && !loading && !regenerating && activeGuide.modelAnswer && (
                             <button
                                 type="button"
                                 onClick={() => onInsertSnippet(activeGuide.modelAnswer)}
@@ -263,7 +233,11 @@ export default function LiveAnswerGuide({
                     </div>
                 </div>
 
-                {loading && !activeGuide.modelAnswer ? (
+                {guideUnavailable ? (
+                    <p role="status" className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-900">
+                        AI answer guidance is unavailable right now. Answer from your own experience, or press Regenerate to try again.
+                    </p>
+                ) : loading && !activeGuide.modelAnswer ? (
                     <div className="bg-white/95 border border-slate-150 rounded-lg p-3 text-xs text-slate-500 flex items-center gap-2">
                         <FaRobot className="w-4 h-4 text-indigo-600 animate-pulse" />
                         <span>AI is generating a tailored 10/10 STAR answer for: "{question}"</span>
@@ -281,7 +255,7 @@ export default function LiveAnswerGuide({
                 <div className="min-w-0 flex-1 text-[11px] leading-snug">
                     <span className="font-extrabold text-amber-950 mr-1.5">Tip:</span>
                     <span className="text-amber-900 font-medium">
-                        {loading && !activeGuide.tip ? 'Formulating tactical tip…' : activeGuide.tip}
+                        {activeGuide.tip || (loading ? 'Formulating tactical tip…' : 'Not available for this question.')}
                     </span>
                 </div>
             </div>

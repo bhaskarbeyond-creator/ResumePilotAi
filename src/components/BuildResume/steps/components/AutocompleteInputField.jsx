@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { generateUserAiContent } from '../../../../services/aiService';
+import { generateUserAiContent, getAiCacheScope } from '../../../../services/aiService';
 import { matchUniversalDirectory, isTypoMatch, autocorrectQuery, isDomainCompatible } from '../../../../utils/autocompleteDirectories.js';
 
 /**
@@ -191,7 +191,10 @@ const AutocompleteInputField = ({
             return;
         }
 
-        const cacheKey = `${suggestionType}_${context?.profileHash || ''}_${cleanQ}`;
+        // Scope AI suggestions to uid|tenant so a same-tab account/tenant switch
+        // never reuses another identity's personalised suggestions.
+        const scope = await getAiCacheScope();
+        const cacheKey = `${scope}_${suggestionType}_${context?.profileHash || ''}_${cleanQ}`;
         if (suggestionCache[cacheKey]) {
             const cached = suggestionCache[cacheKey];
             setSuggestions(cached);

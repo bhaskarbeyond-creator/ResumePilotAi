@@ -150,21 +150,21 @@ test('3.1 Generates domain-tailored questions and starter chips for Aviation (Co
     assert.ok(q[0].question.includes('Commercial Pilot'), 'Q1 mentions Commercial Pilot');
     assert.ok(q[0].starterChips.some(c => /flight operations|pre-flight/i.test(c)), 'Q1 chips tailored to flight');
     assert.ok(q[1].starterChips.some(c => /garmin|fmc|autopilot|faa/i.test(c)), 'Q2 chips tailored to avionics');
-    assert.ok(q[2].starterChips.some(c => /flight hours|checkride/i.test(c)), 'Q3 chips tailored to flight metrics');
+    assert.deepEqual(q[2].starterChips, [], 'No canned outcome chips (would insert invented metrics into the answer)');
 });
 
 test('3.2 Generates domain-tailored questions and starter chips for Skilled Trades (Master Electrician)', () => {
     const q = generateRoleInterviewQuestions('Master Electrician', 'Volt Contracting');
     assert.ok(q[0].starterChips.some(c => /troubleshooting|installation|code compliance/i.test(c)), 'Q1 chips tailored to electrical trades');
     assert.ok(q[1].starterChips.some(c => /multimeter|osha|schematic/i.test(c)), 'Q2 chips tailored to trade tools');
-    assert.ok(q[2].starterChips.some(c => /fix|recordables/i.test(c)), 'Q3 chips tailored to trade safety & completions');
+    assert.deepEqual(q[2].starterChips, [], 'No canned outcome chips (would insert invented metrics into the answer)');
 });
 
 test('3.3 Generates domain-tailored questions and starter chips for Education (High School Teacher)', () => {
     const q = generateRoleInterviewQuestions('High School Teacher', 'Lincoln High School');
     assert.ok(q[0].starterChips.some(c => /lesson planning|instruction|curriculum/i.test(c)), 'Q1 chips tailored to education');
     assert.ok(q[1].starterChips.some(c => /canvas|blackboard|classroom/i.test(c)), 'Q2 chips tailored to LMS & ed-tech');
-    assert.ok(q[2].starterChips.some(c => /pass rate|retention|students/i.test(c)), 'Q3 chips tailored to academic outcomes');
+    assert.deepEqual(q[2].starterChips, [], 'No canned outcome chips (would insert invented metrics into the answer)');
 });
 
 test('3.4 Generates domain-tailored questions and starter chips for Legal (Litigation Paralegal)', () => {
@@ -177,7 +177,7 @@ test('3.5 Generates domain-tailored questions and starter chips for Supply Chain
     const q = generateRoleInterviewQuestions('Supply Chain Manager', 'Global Logistics Co');
     assert.ok(q[0].starterChips.some(c => /inventory|freight|procurement/i.test(c)), 'Q1 chips tailored to supply chain');
     assert.ok(q[1].starterChips.some(c => /sap|wms|six sigma/i.test(c)), 'Q2 chips tailored to ERP & WMS');
-    assert.ok(q[2].starterChips.some(c => /otif|lead time|accuracy/i.test(c)), 'Q3 chips tailored to logistics metrics');
+    assert.deepEqual(q[2].starterChips, [], 'No canned outcome chips (would insert invented metrics into the answer)');
 });
 
 test('3.6 Education interview questions adapt to Humanities, Science, and Social Work', () => {

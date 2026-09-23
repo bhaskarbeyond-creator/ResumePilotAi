@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { generateUserAiContent } from '../../../services/aiService.js';
+import { generateUserAiContent, getAiCacheScope } from '../../../services/aiService.js';
 import { buildAssistPayload, describeAiError, normalizeAssistResult } from './aiContract.js';
 
 /**
@@ -22,7 +22,9 @@ import { buildAssistPayload, describeAiError, normalizeAssistResult } from './ai
  *   // ai.result: normalized { kind: questions | suggestions | draft | empty }
  */
 
-// Module-level cache shared across hook instances (same tab, same user).
+// Module-level cache shared across hook instances in one tab. Keys are scoped
+// to uid + tenant (getAiCacheScope) so an account or tenant switch in the same
+// tab can never be served another identity's AI output.
 const RESPONSE_CACHE = new Map();
 const CACHE_LIMIT = 64;
 
@@ -33,6 +35,25 @@ function cacheSet(key, value) {
         const first = RESPONSE_CACHE.keys().next().value;
         if (first !== undefined) RESPONSE_CACHE.delete(first);
     }
+}
+
+export function aiAssistCacheKey(scope, operation, payload) {
+    return JSON.stringify({ scope, operation, payload });
+}
+
+// Outage/clarification states are transient: caching them would pin the
+// "AI unavailable" state even after the provider recovers.
+export function isCacheableAssistResponse(data, result) {
+    if (!result || result.kind === 'empty') return false;
+    if (data && typeof data === 'object') {
+        if (data.aiUnavailable || data.requiresAnswer) return false;
+        if (typeof data._source === 'string' && data._source !== 'ai') return false;
+    }
+    return true;
+}
+
+export function clearAiAssistCache() {
+    RESPONSE_CACHE.clear();
 }
 
 export function useAiAssist() {
@@ -74,7 +95,9 @@ export function useAiAssist() {
             return null;
         }
 
-        const cacheKey = JSON.stringify({ operation: request.operation, payload: prepared.payload });
+        const scope = await getAiCacheScope();
+        if (seqRef.current !== seq) return null;
+        const cacheKey = aiAssistCacheKey(scope, request.operation, prepared.payload);
         const cached = RESPONSE_CACHE.get(cacheKey);
         if (cached) {
             if (seqRef.current === seq) setState({ status: 'idle', result: cached, error: null });
@@ -84,7 +107,7 @@ export function useAiAssist() {
         try {
             const data = await generateUserAiContent(request.operation, prepared.payload, { signal: controller.signal });
             const result = normalizeAssistResult(request.operation, data);
-            if (result.kind !== 'empty') cacheSet(cacheKey, result);
+            if (isCacheableAssistResponse(data, result)) cacheSet(cacheKey, result);
             if (seqRef.current === seq) setState({ status: 'idle', result, error: null });
             return result;
         } catch (error) {
