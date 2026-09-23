@@ -144,7 +144,7 @@ const FACTUAL_CONTENT_OPERATIONS = new Set([
 const SAFE_TONES = new Set(['balanced', 'concise', 'technical', 'executive', 'metrics', 'leadership', 'efficiency']);
 const FACTUAL_SOURCE_FIELDS = Object.freeze({
     'generate-summary': [
-        'sourceFacts', 'existingText', 'name', 'jobTitle', 'occupation', 'experience',
+        'existingText', 'name', 'jobTitle', 'occupation', 'experience',
         'workHistory', 'education', 'skills', 'certifications', 'projects', 'achievement',
     ],
     'generate-work-description': [
@@ -204,13 +204,36 @@ function sourceNotesForOperation(operation, payload = {}) {
             ? contextFacts.education.map(e => `${e.degree || ''} from ${e.school || ''}`).join('; ')
             : '';
         const skills = Array.isArray(contextFacts.skills) ? contextFacts.skills.join(', ') : '';
+        const certs = Array.isArray(contextFacts.certifications) ? contextFacts.certifications.join(', ') : '';
+        const projs = Array.isArray(contextFacts.projects) ? contextFacts.projects.map(p => typeof p === 'string' ? p : (p.title || '')).join('; ') : '';
+
+        const rootRoles = Array.isArray(payload.employments)
+            ? payload.employments.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
+            : (Array.isArray(payload.workExperiences)
+                ? payload.workExperiences.map(e => `${e.jobTitle || e.title || ''} at ${e.employer || ''} ${e.description || ''}`).join('; ')
+                : '');
+        const rootEdus = Array.isArray(payload.educations)
+            ? payload.educations.map(e => `${e.degree || ''} from ${e.school || ''}`).join('; ')
+            : '';
+        const rootCerts = Array.isArray(payload.certifications)
+            ? payload.certifications.map(c => typeof c === 'string' ? c : (c.title || c.name || '')).join(', ')
+            : '';
+        const rootProjs = Array.isArray(payload.projects)
+            ? payload.projects.map(p => typeof p === 'string' ? p : (p.title || p.description || '')).join('; ')
+            : '';
+
         const combined = [
             payload.existingText, payload.sourceFacts, payload.jobTitle, payload.targetRole,
-            payload.workHistory, roles, payload.education, edus,
-            Array.isArray(payload.skills) ? payload.skills.join(', ') : payload.skills, skills,
-            payload.experience,
+            payload.workHistory, roles, rootRoles,
+            payload.education, edus, rootEdus,
+            Array.isArray(payload.skills) ? payload.skills.join(', ') : payload.skills,
+            Array.isArray(payload.existingSkills) ? payload.existingSkills.join(', ') : '',
+            skills,
+            certs, rootCerts,
+            projs, rootProjs,
+            payload.experience, payload.experienceTenure,
         ].filter(Boolean).join('\n');
-        return compact(combined, 6000);
+        return compact(combined, 10000);
     }
     return factualSourceText(operation, payload);
 }
@@ -346,61 +369,76 @@ Return only valid JSON in this exact structure:
         const targetRole = String(evidence.targetRole || payload.targetRole || payload.occupation || payload.jobTitle || 'Professional').trim();
         const tone = String(payload.tone || 'balanced').toLowerCase();
         const yearsExp = facts.experience || (facts.experienceYears ? `${facts.experienceYears} years` : '');
+        const seniority = facts.seniorityLevel || (facts.experienceYears >= 10 ? 'Executive / Principal Leader' : (facts.experienceYears >= 5 ? 'Senior Specialist / Lead' : 'Professional'));
+        const rolesList = (facts.workRoles || []).map(r => {
+            const heading = `${r.title || ''}${r.employer ? ` at ${r.employer}` : ''}${r.begin || r.end ? ` (${r.begin || ''} - ${r.end || ''})` : ''}`.trim();
+            const desc = r.description ? r.description.slice(0, 250) : '';
+            if (heading && desc) return `${heading}: ${desc}`;
+            return heading || desc;
+        }).filter(Boolean);
+        const edusList = (facts.education || []).map(e => {
+            const heading = `${e.degree || ''}${e.school ? ` from ${e.school}` : ''}${e.finished ? ` (${e.finished})` : ''}`.trim();
+            const desc = e.description ? e.description.slice(0, 250) : '';
+            if (heading && desc) return `${heading}: ${desc}`;
+            return heading || desc;
+        }).filter(Boolean);
+        const skillsList = Array.isArray(facts.skills) ? facts.skills.slice(0, 35) : [];
+        const certsList = Array.isArray(facts.certifications) ? facts.certifications.slice(0, 10) : [];
+        const projectsList = Array.isArray(facts.projects) ? facts.projects.slice(0, 5).map(p => typeof p === 'string' ? p : (p.title || p.description || '')).filter(Boolean) : [];
 
         user = `Craft a compelling, authoritative, highly natural, human-written Executive Bio & Professional Summary in ${language} for a candidate targeting the role: "${targetRole}".
 Tone preference: ${tone}.
-${yearsExp ? `Verified career tenure: ${yearsExp}.` : ''}
+${yearsExp ? `Verified Career Tenure: ${yearsExp} (${seniority}).` : ''}
 
 You are acting as an elite, Certified Professional Resume Writer (CPRW) and executive career consultant crafting an authentic profile that passes Applicant Tracking Systems (ATS) with a 10/10 score while reading effortlessly and naturally to hiring managers and executive search committees.
 
 CRITICAL LENGTH BOUND (STRICT ATS 10/10 COMPLIANCE):
-- TARGET LENGTH: Strictly 300 to 440 characters (hard ceiling: NEVER exceed 460 characters) / 45 to 70 words across 2 to 3 sentences.
-- Recruiter ATS algorithms penalize summaries exceeding 480 characters as unreadable keyword dumps. Aim strictly for the 340 to 420 character sweet spot.
+- TARGET LENGTH: Strictly 320 to 440 characters (hard ceiling: NEVER exceed 460 characters) / 45 to 70 words across 2 to 3 sentences.
+- Recruiter ATS algorithms penalize summaries exceeding 460 characters as unreadable keyword dumps. Aim strictly for the 350 to 420 character sweet spot.
 
 CRITICAL ARCHITECTURE — THE 3-PILLAR EXECUTIVE BLUEPRINT:
 1. SENTENCE 1 — EXECUTIVE IDENTITY & DOMAIN ENGINE (ATS KEYWORD LOCK):
-   - Open decisively in executive resume voice with the candidate's professional title, verified career tenure, and overarching domain.
-   - Immediate ATS keyword lock: The primary target role "${targetRole}" must appear prominently within the first 8 words.
-   - Standard executive phrasing: "[Senior Role Title] with [X+ years] of experience architecting/engineering/leading [primary domain / strategic initiatives] across [industry/scale]..."
-   - DO NOT prefix with conversational fluff (NO "As a seasoned...", NO "A results-driven...").
+   - Open decisively in executive resume voice with the candidate's professional target role title: "${targetRole}", verified career tenure (${yearsExp || 'experienced'}), and overarching domain.
+   - IMMEDIATE ATS KEYWORD LOCK: The sentence MUST begin with "${targetRole} with [X+ years] of experience..." or "[Target Role Title] with [X+ years] of experience in [domain]...". Do NOT substitute with generic words like "Leader" or "Professional" when a target role is provided.
+   - Standard executive phrasing: "${targetRole} with [X+ years] of experience architecting/engineering/leading/directing [primary domain / strategic initiatives]..."
+   - NEVER prefix with conversational fluff (NO "As a seasoned...", NO "A results-driven...").
 2. SENTENCE 2 — TECHNICAL / METHODOLOGICAL APPLICATION:
    - Synthesize the candidate's verified skills, platforms, tools, or frameworks into an active, high-density execution sentence.
-   - Illustrate synergistic application: show HOW core tools solve critical challenges using natural domain phrasing (e.g. for software: "applying React and TypeScript to build reactive interfaces" or "deploying Docker microservices on AWS"; for clinical/operations: "utilizing EHR systems and adhering to clinical triage protocols"; for business/finance: "applying financial modeling and variance analysis to guide capital allocation").
+   - Illustrate synergistic application: show HOW core tools solve critical challenges using natural domain phrasing (e.g. for software: "Specializes in building reactive interfaces with React and TypeScript, deploying containerized microservices on AWS, and scaling distributed Node.js backends"; for healthcare: "Administers clinical protocols, manages emergency triage assessments, and coordinates patient-centered multidisciplinary care"; for finance: "Applies financial modeling and variance analysis to forecast capital allocation").
    - Every skill mentioned MUST be derived strictly from EVIDENCE.
 3. SENTENCE 3 (OPTIONAL IF LENGTH PERMITS, MAX 1 SHORT CLAUSE):
-   - Highlight demonstrated operational reliability, organizational velocity, or business outcomes.
+   - Highlight demonstrated operational reliability, organizational velocity, or business outcomes from their verified work history.
    - If Sentence 1 and 2 already reach ~350-420 characters, STOP THERE! Two dense, high-caliber sentences score higher than an overly verbose three-sentence paragraph.
 
 STYLE & ADVANCED VOCABULARY STANDARDS (10/10 ATS EXCELLENCE):
-- IMPERIAL VOICE (NO PERSONAL PRONOUNS, NO CANDIDATE FIRST-NAME MONOLOGUE):
+- IMPERIAL EXECUTIVE VOICE (ZERO PRONOUNS, ZERO NAME MONOLOGUE):
   * Strictly NO first-person pronouns ("I", "me", "my", "our").
-  * Do NOT repeatedly narrate the candidate's first name as if telling a third-party story (NO "John does X. John also does Y. His skills include Z.").
+  * Strictly NO third-person pronouns ("He", "She", "His", "Her", "They", "Their"). Never write "He specializes in..." or "Her background includes...".
+  * Strictly NO candidate name narration (NO "${facts.name || 'Candidate'} has architected...", NO "Doe specializes in..."). Write from implied-first-person professional resume voice.
+  * ZERO CANDIDATE NAME MENTIONS: DO NOT include the candidate's name or surname ("${facts.name || 'Candidate'}") anywhere in the summary text. The resume header already displays the candidate's name; repeating it inside the executive bio is a major resume flaw.
 - ZERO VOCABULARY REPETITION (STRICT LEXICAL DIVERSITY):
   * Never repeat the same key noun, verb, or adjective in the summary.
-  * Strictly avoid repeating words such as "delivering", "development", "solutions", "expertise", "scale", or "management". Use precise alternatives.
+  * Avoid repeating words such as "delivering", "development", "solutions", "expertise", "scale", or "management". Use precise alternatives.
 - HIGH-DENSITY DOMAIN VERBS:
-  * Employ advanced, active verbs: Architected, Orchestrated, Engineered, Deployed, Streamlined, Spearheaded, Operationalized, Benchmarked, Formulated.
-- BANNED ROBOTIC AI CLICHÉS:
-  * Strictly avoid "seasoned professional", "results-driven", "proven track record", "passionate about", "leveraging", "utilizing", "pivotal role", "testament to", "fast-paced environment".
-
-TONE SPECIFICATIONS (STRICT ADHERENCE TO "${tone}"):
-- "executive": Authoritative, strategic, and leadership-driven. Focuses on vision, P&L/budget optimization, organizational transformation, governance, executive stakeholder management, and scalable business impact.
-- "technical": Deep domain rigor, precision, and architectural execution. Highlights core technical stacks, system design, data integrity, engineering standards, and specialized methodologies.
-- "concise": High-density, fast-scanning, 2-sentence punchy profile (~320-380 characters). Zero wasted words, high information density, front-loaded impact ideal for high-velocity screening.
-- "balanced": Polished, modern corporate standard. Seamlessly integrates functional leadership, technical acumen, and measurable impact in a warm, confident, professional human voice.
-
-ANTI-AI & HUMAN NATURALNESS RULES (MANDATORY):
-- BANNED ROBOTIC AI CLICHÉS:
-  * Strictly avoid "Results-driven professional with a proven track record..."
-  * Strictly avoid "Passionate about leveraging/utilizing..."
-  * Strictly avoid "A testament to...", "Delve into...", "Fostered seamless collaboration..."
-  * Strictly avoid "In today's fast-paced, dynamic environment..."
-  * Strictly avoid "Looking to leverage my skills to contribute to..."
-  * Strictly avoid "Dynamic and self-motivated individual..."
-- NATURAL HUMAN CADENCE: Write with varied sentence rhythm, strong active verbs, and natural professional phrasing. Avoid robotic, repetitive, or pompous corporate buzzwords.
-- THIRD-PERSON EXECUTIVE VOICE: Strictly avoid first-person pronouns (NO "I", "my", "me", "our"). Write with implied subject or professional profile narrative.
-- ZERO FABRICATION: Synthesize ONLY from the candidate's verified facts provided in EVIDENCE. Do not invent unheld certifications, degrees, employers, or arbitrary numerical metrics not in the candidate's facts.
+  * Employ advanced, role-appropriate active verbs.
+  * For software & engineering: Architected, Engineered, Deployed, Optimized, Scaled, Automated.
+  * For clinical & healthcare: Administered, Diagnosed, Standardized, Formulated, Coordinated, Spearheaded.
+  * For finance & business: Modeled, Forecasted, Benchmarked, Streamlined, Optimized, Directed.
+  * STRICT DOMAIN REALISM: NEVER use software/cloud jargon (e.g. "containerized", "microservices", "Docker", "CI/CD") for non-technical fields like healthcare, clinical nursing, legal, finance, or executive roles unless explicitly present in the candidate's verified evidence!
+- BANNED ROBOTIC AI CLICHÉS (STRICT):
+  * Strictly avoid "Results-driven professional with a proven track record", "seasoned professional", "passionate about", "leveraging", "utilizing", "pivotal role", "testament to", "delve", "fast-paced environment", "dynamic individual", "fostered seamless collaboration".
+- NATURAL HUMAN CADENCE: Write with varied sentence rhythm, strong active verbs, and natural professional phrasing. Avoid pompous buzzwords.
+- ZERO FABRICATION: Synthesize ONLY from the candidate's verified facts provided in EVIDENCE. Do not invent unheld certifications, degrees, employers, or arbitrary numerical metrics.
 ${evidence.targetJobDescription ? '- ATS JOB DESCRIPTION ALIGNMENT: Naturally incorporate relevant domain keywords from the target job description where supported by candidate evidence.' : ''}
+
+CANDIDATE DETAILS FROM PREVIOUS STEPS:
+- Target Role: ${targetRole}
+- Verified Tenure: ${yearsExp || 'Experienced'} (${seniority})
+${rolesList.length ? `- Work History Highlights: ${rolesList.join(' | ')}` : ''}
+${edusList.length ? `- Academic Background: ${edusList.join(' | ')}` : ''}
+${skillsList.length ? `- Core Skills & Competencies: ${skillsList.join(', ')}` : ''}
+${certsList.length ? `- Certifications: ${certsList.join(', ')}` : ''}
+${projectsList.length ? `- Projects: ${projectsList.join(', ')}` : ''}
 
 EVIDENCE:
 ${JSON.stringify({ candidateFacts: facts, targetRole, ...(evidence.targetJobDescription ? { targetJobDescription: evidence.targetJobDescription } : {}) }, null, 1)}
@@ -792,7 +830,7 @@ function sanitizeGeneratedText(value) {
         .trim();
 }
 
-function enforceAtsSummaryBounds(value) {
+function enforceAtsSummaryBounds(value, candidateName = '') {
     if (!value || typeof value !== 'string') return value;
     let summary = value.trim();
 
@@ -800,26 +838,77 @@ function enforceAtsSummaryBounds(value) {
     summary = summary
         .replace(/^(?:As\s+an?\s+(?:seasoned|experienced|accomplished|dedicated|passionate)\s+)/i, '')
         .replace(/^(?:A\s+(?:seasoned|experienced|accomplished|dedicated|passionate)\s+)/i, '')
-        .replace(/^(?:An\s+(?:experienced|accomplished)\s+)/i, '');
+        .replace(/^(?:An\s+(?:experienced|accomplished)\s+)/i, '')
+        .replace(/^(?:(?:I\s+am\s+an?|I'm\s+an?)\s+)/i, '');
 
+    // Strip third-person introductory name narrative: e.g. "Alex Morgan is a..." -> "..."
+    if (candidateName && typeof candidateName === 'string') {
+        const trimmedName = candidateName.trim();
+        const cleanName = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (cleanName.length >= 3) {
+            summary = summary.replace(new RegExp(`^${cleanName}\\s+(?:is\\s+an?|is\\s+the|has\\s+been\\s+an?|leads|spearheads|directs|architects|engineers|serves\\s+as)\\s+`, 'i'), '');
+            summary = summary.replace(new RegExp(`^${cleanName},\\s+`, 'i'), '');
+            summary = summary.replace(new RegExp(`([,;.]\\s*)${cleanName}\\s+(?:leads|spearheads|directs|architects|engineers|brings|delivers|specializes|applies)\\b`, 'gi'), '$1leads');
+            summary = summary.replace(new RegExp(`\\b${cleanName}\\s+`, 'gi'), '');
+        }
+        const nameParts = trimmedName.split(/\s+/).filter(p => p.length >= 3);
+        if (nameParts.length > 1) {
+            const lastName = nameParts[nameParts.length - 1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            summary = summary.replace(new RegExp(`([,;.]\\s*)${lastName}\\s+(?:leads|spearheads|directs|architects|engineers|brings|delivers|specializes|applies)\\b`, 'gi'), '$1spearheading');
+            summary = summary.replace(new RegExp(`\\b${lastName}\\s+`, 'gi'), '');
+        }
+    }
+
+    // Clean any awkward third-person pronoun patterns
+    summary = summary
+        .replace(/\b(?:He|She)\s+(?:leverages|utilizes)\b/g, 'Applies')
+        .replace(/\b(?:he|she)\s+(?:leverages|utilizes)\b/g, 'applies')
+        .replace(/\b(?:He|She)\s+brings\b/g, 'Delivers')
+        .replace(/\b(?:he|she)\s+brings\b/g, 'delivers')
+        .replace(/\b(?:He|She)\s+specializes\b/g, 'Specializes')
+        .replace(/\b(?:he|she)\s+specializes\b/g, 'specializes')
+        .replace(/\b(?:He|She)\s+has\s+demonstrated\b/g, 'Demonstrated')
+        .replace(/\b(?:he|she)\s+has\s+demonstrated\b/g, 'demonstrated')
+        .replace(/\b(?:His|Her)\s+background\b/g, 'Professional background')
+        .replace(/\b(?:his|her)\s+background\b/g, 'professional background');
+
+    // Clean any accidental first-person pronouns into implied-first-person executive voice
+    summary = summary
+        .replace(/,\s*I\s+(?:architect|engineer|lead|build|optimize|develop|deliver|scale|manage|design|create|spearhead)\b/gi, (match) => {
+            const verb = match.replace(/,\s*I\s+/i, '').toLowerCase();
+            const participle = verb.endsWith('e') ? verb.slice(0, -1) + 'ing' : verb + 'ing';
+            return `, ${participle}`;
+        })
+        .replace(/(?:^|[.!?]\s+)I\s+(?:architect|engineer|lead|build|optimize|develop|deliver|scale|manage|design|create|spearhead)\b/gi, (match) => {
+            const verb = match.replace(/^(?:[.!?]\s+)?I\s+/i, '').toLowerCase();
+            const thirdPerson = verb.endsWith('s') || verb.endsWith('sh') || verb.endsWith('ch') ? verb + 'es' : verb + 's';
+            const cap = thirdPerson.charAt(0).toUpperCase() + thirdPerson.slice(1);
+            return match.startsWith('.') || match.startsWith('!') || match.startsWith('?') ? `${match[0]} ${cap}` : cap;
+        })
+        .replace(/\b(?:I\s+am|I\s+have|I\s+bring|I\s+possess)\b/gi, 'Brings')
+        .replace(/\bI\s+(?:have\s+)?/gi, '')
+        .replace(/\bmy\s+/gi, '')
+        .replace(/\bme\s+/gi, '');
+
+    summary = summary.trim();
     if (summary.length > 0) {
         summary = summary.charAt(0).toUpperCase() + summary.slice(1);
     }
 
-    // 2. Bound length strictly to <= 465 characters (under recruiter ATS 480 hard limit)
-    if (summary.length > 465) {
-        // Attempt to cut at the last complete sentence ending before 465 chars
-        const sentenceMatch = summary.slice(0, 465).match(/^([\s\S]*[.!?])(?:\s+|$)/);
-        if (sentenceMatch && sentenceMatch[1].trim().length >= 120) {
+    // 2. Bound length strictly to <= 460 characters (under recruiter ATS limit)
+    if (summary.length > 460) {
+        // Attempt to cut at the last complete sentence ending before 460 chars
+        const sentenceMatch = summary.slice(0, 460).match(/^([\s\S]*[.!?])(?:\s+|$)/);
+        if (sentenceMatch && sentenceMatch[1].trim().length >= 140) {
             summary = sentenceMatch[1].trim();
         } else {
-            // Cut at last clause or word boundary before 455 chars and append period
-            const truncated = summary.slice(0, 455).replace(/[,;:\s]+\S*$/, '').trim();
+            // Cut at last clause or word boundary before 450 chars and append period
+            const truncated = summary.slice(0, 450).replace(/[,;:\s]+\S*$/, '').trim();
             summary = truncated.endsWith('.') ? truncated : `${truncated}.`;
         }
     }
 
-    return summary;
+    return summary.trim();
 }
 
 // Sanitization for candidate-authored fallback text must not substitute words or
@@ -1110,7 +1199,8 @@ function parseAiResponse(operation, rawContent, context = {}) {
         const value = parsed?.summary || parsed?.executiveSummary || parsed?.executive_summary
             || parsed?.professionalSummary || parsed?.bio || parsed?.draft?.text || parsed?.draft
             || parsed?.description || parsed?.text || parsed?.content || (!parsed ? raw : '');
-        const summary = enforceAtsSummaryBounds(sanitizeGeneratedText(typeof value === 'object' ? Object.values(value).join(' ') : value));
+        const candName = context.payload?.name || context.payload?.context?.facts?.name || '';
+        const summary = enforceAtsSummaryBounds(sanitizeGeneratedText(typeof value === 'object' ? Object.values(value).join(' ') : value), candName);
         if (summary) return finalize({ summary });
     }
     if (operation === 'generate-skills') {
@@ -1558,7 +1648,7 @@ async function requestProvider(provider, providerConfig, prompt, generation, { f
     for (let i = 0; i < candidateModels.length; i++) {
         const currentModel = candidateModels[i];
         const isLastCandidate = (i === candidateModels.length - 1);
-        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 25000);
+        const candidateTimeoutMs = isLastCandidate ? timeoutMs : Math.min(timeoutMs, 40000);
         try {
             const headers = { Authorization: `Bearer ${providerConfig.key}`, 'Content-Type': 'application/json' };
             if (provider === 'openrouter') {
@@ -1616,7 +1706,7 @@ async function generateWithProviders({ prompt, configuration, operation, fetchIm
                     maxTokens: operation === 'autocomplete' ? 180 : configuration.maxTokens,
                     temperature: operation === 'autocomplete' ? 0.1 : configuration.temperature,
                 };
-                const effectiveTimeout = timeoutMs || (operation === 'generate-interview' ? 110000 : 30000);
+                const effectiveTimeout = timeoutMs || (operation === 'generate-interview' ? 110000 : 45000);
                 const raw = await requestProvider(provider, configuration.providers[provider], prompt, generation, { fetchImpl, signal, timeoutMs: effectiveTimeout });
                 return { raw, provider, model: configuration.providers[provider].model };
             } catch (error) {
@@ -1703,23 +1793,23 @@ function getContentOperationFallback(operation, rawPayload = {}) {
 
     if (operation === 'generate-summary') {
         const existing = sanitizeSourceText(payload.existingText || '', 1200);
-        if (existing && existing.length >= 40 && !existing.includes(' | ')) {
+        if (existing && existing.length >= 40 && !existing.includes(' | ') && !existing.includes('Target Role:')) {
             return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
         }
         // If structured candidate context was provided, synthesize an evidence-grounded summary
-        if (payload.context?.facts && (payload.context.facts.roles?.length || payload.context.facts.skills?.length || payload.context.facts.education?.length || payload.sourceFacts)) {
+        if (payload.context?.facts && (payload.context.facts.roles?.length || payload.context.facts.skills?.length || payload.context.facts.education?.length || payload.context.facts.experienceYears || payload.sourceFacts)) {
             const deterministic = generateDeterministicSummary(payload);
             if (deterministic && deterministic.length >= 40) {
                 return { summary: enforceAtsSummaryBounds(sanitizeGeneratedText(deterministic)), _source: 'evidence-grounded-fallback' };
             }
         }
         const segments = factualSourceSegments(operation, payload)
-            .filter(([field]) => field !== 'name')
+            .filter(([field, value]) => field !== 'name' && field !== 'sourceFacts' && !String(value).includes(' | ') && !String(value).startsWith('Target Role:'))
             .map(([, value]) => sanitizeSourceText(value, 1200))
             .filter(Boolean)
             .join('. ');
-        if (segments && segments.length >= 20) return { summary: enforceAtsSummaryBounds(segments.slice(0, 460)), _source: 'source-preserving-fallback' };
-        if (existing) return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
+        if (segments && segments.length >= 20) return { summary: enforceAtsSummaryBounds(segments), _source: 'source-preserving-fallback' };
+        if (existing && !existing.includes(' | ') && !existing.includes('Target Role:')) return { summary: enforceAtsSummaryBounds(existing), _source: 'source-preserving-fallback' };
         return ask('summary');
     }
 
@@ -2661,15 +2751,34 @@ function generateDeterministicSummary(payload = {}) {
     const contextFacts = payload.context?.facts || {};
     const targetRole = String(payload.targetRole || payload.jobTitle || payload.occupation || payload.context?.target?.role || '').trim();
     const roles = Array.isArray(contextFacts.roles) && contextFacts.roles.length ? contextFacts.roles : [];
-    const primaryRole = targetRole || roles[0]?.title || 'Professional';
-    const primaryCompany = roles[0]?.employer ? ` at ${roles[0].employer}` : '';
+    let primaryRole = targetRole || roles[0]?.title || 'Professional';
+    let primaryCompany = roles[0]?.employer ? ` at ${roles[0].employer}` : '';
+
+    if (!primaryCompany && typeof payload.workHistory === 'string') {
+        const atMatch = payload.workHistory.match(/(?:at|@)\s+([A-Za-z0-9&.,\s]+?)(?::|\.|;|$)/i);
+        if (atMatch && atMatch[1]) {
+            primaryCompany = ` at ${atMatch[1].trim()}`;
+        }
+    }
+    if (!primaryCompany && typeof payload.sourceFacts === 'string') {
+        const atMatch = payload.sourceFacts.match(/Work History:[^:]*?(?:at|@)\s+([A-Za-z0-9&.,\s]+?)(?::|\.|;|$|\|)/i);
+        if (atMatch && atMatch[1]) {
+            primaryCompany = ` at ${atMatch[1].trim()}`;
+        }
+    }
 
     const experience = String(payload.experience || contextFacts.experienceYears || '').trim();
-    const expText = experience ? (experience.toLowerCase().includes('year') ? experience : `${experience} years`) : '';
+    let expText = experience ? (experience.toLowerCase().includes('year') ? experience : `${experience} years`) : '';
+    if (!expText && typeof payload.sourceFacts === 'string') {
+        const tenureMatch = payload.sourceFacts.match(/Tenure:\s*([0-9]+\+?\s*(?:years?|yrs?))/i);
+        if (tenureMatch) expText = tenureMatch[1];
+    }
 
     const rawSkills = (Array.isArray(payload.skills) && payload.skills.length > 0)
         ? payload.skills
-        : (Array.isArray(contextFacts.skills) ? contextFacts.skills : []);
+        : (Array.isArray(contextFacts.skills) && contextFacts.skills.length > 0
+            ? contextFacts.skills
+            : (typeof payload.skills === 'string' ? payload.skills.split(',') : []));
     const topSkills = Array.from(new Set(
         rawSkills
             .map(s => typeof s === 'string' ? s : s?.name || s?.skillName || '')
@@ -2678,28 +2787,148 @@ function generateDeterministicSummary(payload = {}) {
     )).slice(0, 5);
 
     const edus = Array.isArray(contextFacts.education) ? contextFacts.education : [];
-    const topDegree = edus[0]?.degree ? String(edus[0].degree).trim() : '';
+    let topDegree = edus[0]?.degree ? String(edus[0].degree).trim() : '';
+    if (!topDegree && typeof payload.education === 'string') {
+        topDegree = payload.education.split(';')[0]?.split('from')[0]?.trim() || '';
+    }
 
     const tone = String(payload.tone || 'balanced').toLowerCase();
+    const roleLower = primaryRole.toLowerCase();
+
+    // Domain-specific specialization phrases — avoids generic corporate buzzwords
+    // for roles where the vocabulary should be profession-authentic.
+    let domainSpecialization = 'cross-functional delivery, operational standards, and scalable solutions';
+    let domainCommitment = 'technical precision, workflow optimization, and reliable delivery';
+    let domainTrack = 'modern industry practices, dedicated to organizational impact and consistent execution';
+    let domainSkillVerb = 'applied to drive measurable improvements and system reliability';
+    let domainSingleSkillVerb = 'to streamline operations and enhance project outcomes';
+    let domainFallbackSentence2 = 'Brings disciplined execution across process optimization, stakeholder collaboration, and industry-standard workflows.';
+
+    if (/\b(?:doctor|physician|surgeon|cardiologist|pediatrician|resident|medical officer|general practitioner|gp|md|clinician|nurse|rn|lpn|charge nurse|dentist|prosthodontist|orthodontist|pharmacist|therapist|paramedic|healthcare|clinical|health)\b/.test(roleLower)) {
+        domainSpecialization = 'clinical diagnostics, patient care coordination, and evidence-based treatment protocols';
+        domainCommitment = 'clinical excellence, patient safety, and multidisciplinary care delivery';
+        domainTrack = 'clinical practice, dedicated to patient outcomes and healthcare quality standards';
+        domainSkillVerb = 'applied to optimize patient care pathways and clinical decision-making';
+        domainSingleSkillVerb = 'to enhance patient outcomes and clinical workflow efficiency';
+        domainFallbackSentence2 = 'Brings rigorous clinical assessment, interdisciplinary collaboration, and adherence to medical safety protocols.';
+    } else if (/\b(?:civil|structural|construction|builder|surveyor|estimator|mechanical|electrical|plumbing|hvac)\b/.test(roleLower)) {
+        domainSpecialization = 'structural analysis, project engineering, and regulatory code compliance';
+        domainCommitment = 'design integrity, site inspection rigor, and on-schedule project delivery';
+        domainTrack = 'engineering and construction, dedicated to structural safety and project excellence';
+        domainSkillVerb = 'applied to ensure structural integrity and regulatory adherence';
+        domainSingleSkillVerb = 'to deliver technically sound and code-compliant engineering outcomes';
+        domainFallbackSentence2 = 'Brings technical drawing precision, site management experience, and building code expertise.';
+    } else if (/\b(?:software|developer|frontend|backend|full\s*stack|engineer|devops|sre|cloud|architect|programmer|coder|web)\b/.test(roleLower)) {
+        domainSpecialization = 'scalable system architecture, modern development frameworks, and production-grade reliability';
+        domainCommitment = 'engineering excellence, automated deployment pipelines, and high-performance code delivery';
+        domainTrack = 'software engineering, dedicated to robust system design and continuous deployment';
+        domainSkillVerb = 'applied to build performant, maintainable, and scalable applications';
+        domainSingleSkillVerb = 'to architect resilient systems and accelerate delivery cycles';
+        domainFallbackSentence2 = 'Brings strong engineering fundamentals across API design, testing automation, and production systems.';
+    } else if (/\b(?:accountant|accounting|finance|financial|audit|controller|bookkeeper|tax|actuary|banking|investment|treasurer)\b/.test(roleLower)) {
+        domainSpecialization = 'financial reporting, regulatory compliance, and strategic budget management';
+        domainCommitment = 'fiscal accuracy, audit readiness, and transparent financial stewardship';
+        domainTrack = 'financial management, dedicated to fiduciary integrity and compliance excellence';
+        domainSkillVerb = 'applied to ensure reporting accuracy, cost control, and fiscal governance';
+        domainSingleSkillVerb = 'to strengthen financial controls and reporting precision';
+        domainFallbackSentence2 = 'Brings disciplined financial analysis, reconciliation rigor, and adherence to GAAP/IFRS standards.';
+    } else if (/\b(?:lawyer|attorney|counsel|solicitor|barrister|paralegal|litigation|judge|magistrate|compliance officer|legal)\b/.test(roleLower)) {
+        domainSpecialization = 'regulatory compliance, contract governance, and statutory research';
+        domainCommitment = 'legal precision, risk mitigation, and meticulous case preparation';
+        domainTrack = 'legal practice, dedicated to client advocacy and regulatory adherence';
+        domainSkillVerb = 'applied to safeguard organizational interests and ensure regulatory compliance';
+        domainSingleSkillVerb = 'to manage legal risk and uphold regulatory standards';
+        domainFallbackSentence2 = 'Brings rigorous legal analysis, contract drafting expertise, and compliance enforcement.';
+    } else if (/\b(?:teacher|professor|instructor|educator|tutor|faculty|lecturer|academic|curriculum)\b/.test(roleLower)) {
+        domainSpecialization = 'curriculum design, student engagement, and academic program development';
+        domainCommitment = 'instructional excellence, student-centered learning, and measurable academic outcomes';
+        domainTrack = 'education, dedicated to fostering student growth and academic achievement';
+        domainSkillVerb = 'applied to elevate learning outcomes and instructional effectiveness';
+        domainSingleSkillVerb = 'to enrich classroom instruction and drive student success';
+        domainFallbackSentence2 = 'Brings innovative pedagogy, formative assessment strategies, and commitment to learner development.';
+    } else if (/\b(?:sales|account executive|ae|bdr|sdr|business development|revenue|commercial)\b/.test(roleLower)) {
+        domainSpecialization = 'revenue generation, consultative selling, and strategic account management';
+        domainCommitment = 'pipeline growth, client acquisition, and quota-exceeding sales execution';
+        domainTrack = 'sales and business development, dedicated to building high-value client partnerships';
+        domainSkillVerb = 'applied to accelerate pipeline velocity and maximize deal conversion';
+        domainSingleSkillVerb = 'to drive revenue growth and strengthen client relationships';
+        domainFallbackSentence2 = 'Brings strategic prospecting, negotiation acumen, and consistent quota attainment.';
+    } else if (/\b(?:marketing|seo|growth|brand|content|campaign|copywriter|pr|public relations)\b/.test(roleLower)) {
+        domainSpecialization = 'multi-channel growth campaigns, brand strategy, and conversion optimization';
+        domainCommitment = 'audience engagement, data-driven marketing, and creative brand positioning';
+        domainTrack = 'marketing and growth, dedicated to measurable customer acquisition and brand visibility';
+        domainSkillVerb = 'applied to amplify brand reach and optimize acquisition funnels';
+        domainSingleSkillVerb = 'to drive customer engagement and campaign performance';
+        domainFallbackSentence2 = 'Brings creative campaign execution, analytics-driven optimization, and compelling brand storytelling.';
+    } else if (/\b(?:product manager|product owner|scrum master|program manager|agile|project manager)\b/.test(roleLower)) {
+        domainSpecialization = 'product roadmap ownership, agile delivery, and user-centered feature development';
+        domainCommitment = 'stakeholder alignment, sprint velocity, and data-informed product decisions';
+        domainTrack = 'product management, dedicated to shipping high-impact features and user satisfaction';
+        domainSkillVerb = 'applied to prioritize high-value initiatives and accelerate release cadence';
+        domainSingleSkillVerb = 'to drive product adoption and cross-functional execution';
+        domainFallbackSentence2 = 'Brings structured backlog management, user discovery rigor, and measurable product impact.';
+    } else if (/\b(?:chef|cook|culinary|hotel|restaurant|hospitality|sommelier|barista|pastry|catering|food|beverage)\b/.test(roleLower)) {
+        domainSpecialization = 'culinary operations, menu development, and guest experience excellence';
+        domainCommitment = 'kitchen leadership, food safety compliance, and high-volume service delivery';
+        domainTrack = 'culinary and hospitality, dedicated to exceptional guest satisfaction and operational excellence';
+        domainSkillVerb = 'applied to maintain quality benchmarks and optimize kitchen workflow';
+        domainSingleSkillVerb = 'to elevate dining standards and operational efficiency';
+        domainFallbackSentence2 = 'Brings meticulous food safety adherence, team mentorship, and consistently outstanding guest reviews.';
+    } else if (/\b(?:data|analyst|analytics|machine learning|ml|ai|scientist|bi|statistician)\b/.test(roleLower)) {
+        domainSpecialization = 'data-driven insights, predictive modeling, and business intelligence reporting';
+        domainCommitment = 'analytical rigor, data pipeline reliability, and actionable executive reporting';
+        domainTrack = 'data analytics and modeling, dedicated to evidence-based decision-making';
+        domainSkillVerb = 'applied to uncover actionable insights and optimize data-informed decisions';
+        domainSingleSkillVerb = 'to transform raw data into strategic business intelligence';
+        domainFallbackSentence2 = 'Brings statistical modeling expertise, dashboard development, and data integrity governance.';
+    } else if (/\b(?:operations|supply chain|logistics|procurement|warehouse|inventory)\b/.test(roleLower)) {
+        domainSpecialization = 'supply chain optimization, logistics coordination, and operational efficiency';
+        domainCommitment = 'vendor management, fulfillment accuracy, and lean process implementation';
+        domainTrack = 'operations and logistics, dedicated to cost-effective delivery and process excellence';
+        domainSkillVerb = 'applied to reduce lead times and strengthen supply chain resilience';
+        domainSingleSkillVerb = 'to optimize procurement cycles and operational throughput';
+        domainFallbackSentence2 = 'Brings vendor negotiation strength, inventory accuracy, and lean operational methodologies.';
+    } else if (/\b(?:hr|human resources|recruiter|recruiting|talent|people operations)\b/.test(roleLower)) {
+        domainSpecialization = 'talent acquisition, employee engagement, and workforce development';
+        domainCommitment = 'organizational culture building, retention strategies, and HR compliance';
+        domainTrack = 'human resources, dedicated to talent strategy and employee lifecycle excellence';
+        domainSkillVerb = 'applied to attract top talent and build high-performing teams';
+        domainSingleSkillVerb = 'to strengthen hiring pipelines and organizational capability';
+        domainFallbackSentence2 = 'Brings structured interviewing methodologies, onboarding excellence, and compliance-first HR operations.';
+    } else if (/\b(?:designer|ui|ux|graphic|creative|art director|animator|illustrator|visual)\b/.test(roleLower)) {
+        domainSpecialization = 'user experience design, visual communication, and interactive prototyping';
+        domainCommitment = 'design system governance, usability testing, and brand-aligned creative execution';
+        domainTrack = 'design and user experience, dedicated to intuitive interfaces and visual excellence';
+        domainSkillVerb = 'applied to create intuitive user journeys and elevate brand experiences';
+        domainSingleSkillVerb = 'to craft compelling visual narratives and user-centered interfaces';
+        domainFallbackSentence2 = 'Brings design thinking methodology, rapid prototyping skills, and pixel-perfect creative execution.';
+    } else if (/\b(?:customer success|customer service|support|csm|client success|help desk)\b/.test(roleLower)) {
+        domainSpecialization = 'client relationship management, onboarding excellence, and retention strategy';
+        domainCommitment = 'customer satisfaction, proactive health monitoring, and issue resolution';
+        domainTrack = 'customer success, dedicated to client advocacy and long-term account health';
+        domainSkillVerb = 'applied to maximize customer lifetime value and reduce churn';
+        domainSingleSkillVerb = 'to strengthen client partnerships and accelerate time-to-value';
+        domainFallbackSentence2 = 'Brings empathetic client communication, escalation management, and data-driven retention tactics.';
+    }
 
     let sentence1 = '';
     if (expText) {
-        sentence1 = `${primaryRole} with ${expText} of experience${primaryCompany}, specializing in cross-functional delivery, operational standards, and scalable solutions.`;
+        sentence1 = `${primaryRole} with ${expText} of experience${primaryCompany}, specializing in ${domainSpecialization}.`;
     } else if (primaryCompany) {
-        sentence1 = `${primaryRole} with demonstrated experience${primaryCompany}, committed to technical precision, workflow optimization, and reliable delivery.`;
+        sentence1 = `${primaryRole} with demonstrated experience${primaryCompany}, committed to ${domainCommitment}.`;
     } else {
-        sentence1 = `${primaryRole} with an established track record in modern industry practices, dedicated to organizational impact and consistent execution.`;
+        sentence1 = `${primaryRole} with an established track record in ${domainTrack}.`;
     }
 
     let sentence2 = '';
     if (topSkills.length >= 2) {
-        sentence2 = `Core technical proficiencies include ${topSkills.slice(0, -1).join(', ')}, and ${topSkills[topSkills.length - 1]}, applied to drive measurable improvements and system reliability.`;
+        sentence2 = `Core proficiencies include ${topSkills.slice(0, -1).join(', ')}, and ${topSkills[topSkills.length - 1]}, ${domainSkillVerb}.`;
     } else if (topSkills.length === 1) {
-        sentence2 = `Experienced in applying ${topSkills[0]} to streamline operations and enhance project outcomes.`;
+        sentence2 = `Experienced in applying ${topSkills[0]} ${domainSingleSkillVerb}.`;
     } else if (topDegree) {
-        sentence2 = `Academic background includes a ${topDegree}, with focus on analytical problem-solving and structured project methodologies.`;
+        sentence2 = `Academic background includes a ${topDegree}, with focus on analytical problem-solving and structured methodologies.`;
     } else {
-        sentence2 = 'Brings disciplined execution across process optimization, stakeholder collaboration, and industry-standard workflows.';
+        sentence2 = domainFallbackSentence2;
     }
 
     let sentence3 = '';
@@ -2713,7 +2942,12 @@ function generateDeterministicSummary(payload = {}) {
         sentence3 = 'Dedicated to continuous improvement, collaborative problem-solving, and delivering high-value outcomes.';
     }
 
-    return `${sentence1} ${sentence2} ${sentence3}`.trim();
+    // Enforce ATS character bounds — trim sentence3 if combined output exceeds 460 chars
+    let combined = `${sentence1} ${sentence2} ${sentence3}`.trim();
+    if (combined.length > 460) {
+        combined = `${sentence1} ${sentence2}`.trim();
+    }
+    return combined;
 }
 
 /**
@@ -2752,6 +2986,7 @@ function deterministicAsk(operation, payload) {
 }
 
 function needsClarification(operation, payload) {
+    if (payload?.noFallback) return false;
     if (operation === 'generate-work-description') {
         return entryNoteLength(operation, payload) < 10;
     }
@@ -2819,6 +3054,12 @@ async function executeContentOperation({ operation, payload, environment, fetchI
         };
     } catch (providerError) {
         if (providerError.status === 400 || signal?.aborted) throw providerError;
+        if (validatedPayload.noFallback) {
+            throw Object.assign(
+                new Error(`AI generation failed (${providerError.message || providerError.code || 'provider unavailable'}). Fallback is disabled.`),
+                { status: providerError.status || 502, code: providerError.code || 'AI_GENERATION_FAILED', original: providerError }
+            );
+        }
         const fallback = getContentOperationFallback(operation, validatedPayload);
         if (fallback === null) throw providerError;
         console.warn('[generate-content] Provider failed grounding or availability checks; returning safe fallback', {

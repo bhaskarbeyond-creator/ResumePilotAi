@@ -58,21 +58,154 @@ function extractTargetRoleFromJd(jdText) {
     return '';
 }
 
-function estimateExperienceYears(employments = []) {
-    if (!Array.isArray(employments) || employments.length === 0) return 0;
-    let totalMonths = 0;
-    for (const emp of employments) {
-        if (!emp) continue;
-        const begin = emp.begin ? new Date(emp.begin) : (emp.startDate ? new Date(emp.startDate) : null);
-        const end = emp.current ? new Date() : (emp.end ? new Date(emp.end) : (emp.endDate ? new Date(emp.endDate) : null));
-        if (begin && !isNaN(begin.getTime()) && end && !isNaN(end.getTime())) {
-            const months = (end.getFullYear() - begin.getFullYear()) * 12 + (end.getMonth() - begin.getMonth());
-            if (months > 0) totalMonths += months;
-        } else {
-            totalMonths += 24;
+function parseDateToMonths(str, isEnd = false, isCurrent = false) {
+    if (!str && !isCurrent) return null;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const raw = String(str || '').trim().toLowerCase();
+    if (isCurrent || /\b(present|current|now|ongoing)\b/.test(raw)) {
+        return currentYear * 12 + currentMonth;
+    }
+
+    const yearMatch = raw.match(/\b(19\d\d|20\d\d)\b/);
+    if (!yearMatch) return null;
+    const year = parseInt(yearMatch[1], 10);
+
+    const monthMap = {
+        jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+        may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+    };
+
+    let month = isEnd ? 12 : 1;
+    const isoMatch = raw.match(/\b(?:19\d\d|20\d\d)[-/](0?[1-9]|1[0-2])\b/);
+    const slashMatch = raw.match(/\b(0?[1-9]|1[0-2])[-/](?:19\d\d|20\d\d)\b/);
+
+    if (isoMatch) {
+        month = parseInt(isoMatch[1], 10);
+    } else if (slashMatch) {
+        month = parseInt(slashMatch[1], 10);
+    } else {
+        for (const [key, val] of Object.entries(monthMap)) {
+            if (raw.includes(key)) {
+                month = val;
+                break;
+            }
         }
     }
-    return Math.min(40, Math.round((totalMonths / 12) * 10) / 10);
+
+    return year * 12 + month;
+}
+
+function calculateDetailedExperience(employments = []) {
+    if (!Array.isArray(employments) || employments.length === 0) {
+        return {
+            totalMonths: 0,
+            years: 0,
+            remainingMonths: 0,
+            numericYears: 0,
+            formattedTenure: '',
+            exactText: '',
+            careerStage: 'early_career',
+            seniorityLevel: 'Emerging Professional'
+        };
+    }
+
+    const intervals = [];
+    let undatedRolesCount = 0;
+
+    for (const emp of employments) {
+        if (!emp || typeof emp !== 'object') continue;
+        const startStr = emp.begin || emp.startDate || emp.start || emp.started || emp.startYear || '';
+        const endStr = emp.end || emp.endDate || emp.finished || emp.endYear || '';
+        const isCurrent = Boolean(emp.current || emp.isCurrent);
+
+        const startMonths = parseDateToMonths(startStr, false, false);
+        const endMonths = parseDateToMonths(endStr, true, isCurrent);
+
+        if (startMonths !== null && endMonths !== null && endMonths >= startMonths) {
+            intervals.push([startMonths, endMonths]);
+        } else if (startMonths !== null) {
+            intervals.push([startMonths, isCurrent ? (new Date().getFullYear() * 12 + new Date().getMonth() + 1) : (startMonths + 12)]);
+        } else {
+            undatedRolesCount++;
+        }
+    }
+
+    let totalMonths = 0;
+    if (intervals.length > 0) {
+        intervals.sort((a, b) => a[0] - b[0]);
+        const merged = [intervals[0]];
+        for (let i = 1; i < intervals.length; i++) {
+            const last = merged[merged.length - 1];
+            const curr = intervals[i];
+            if (curr[0] <= last[1]) {
+                last[1] = Math.max(last[1], curr[1]);
+            } else {
+                merged.push(curr);
+            }
+        }
+        for (const [start, end] of merged) {
+            totalMonths += Math.max(1, end - start + 1);
+        }
+    } else if (undatedRolesCount > 0) {
+        totalMonths = Math.min(240, undatedRolesCount * 24);
+    }
+
+    const numericYears = Math.min(40, Math.round((totalMonths / 12) * 10) / 10);
+    const years = Math.floor(totalMonths / 12);
+    const remainingMonths = totalMonths % 12;
+
+    let formattedTenure = '';
+    if (totalMonths === 0) {
+        formattedTenure = '';
+    } else if (totalMonths < 12) {
+        formattedTenure = `${totalMonths} month${totalMonths === 1 ? '' : 's'}`;
+    } else if (years >= 1 && remainingMonths === 0) {
+        formattedTenure = `${years}+ years`;
+    } else if (years >= 1) {
+        formattedTenure = `${years}+ years`;
+    }
+
+    let exactText = '';
+    if (totalMonths > 0) {
+        if (totalMonths < 12) exactText = `${totalMonths} month${totalMonths === 1 ? '' : 's'}`;
+        else if (remainingMonths === 0) exactText = `${years} year${years === 1 ? '' : 's'}`;
+        else exactText = `${years} year${years === 1 ? '' : 's'} ${remainingMonths} month${remainingMonths === 1 ? '' : 's'}`;
+    }
+
+    let careerStage = 'mid_career';
+    let seniorityLevel = 'Mid-Level Professional';
+    if (numericYears < 1.5) {
+        careerStage = 'early_career';
+        seniorityLevel = 'Emerging Professional';
+    } else if (numericYears < 5) {
+        careerStage = 'mid_career';
+        seniorityLevel = 'Mid-Level Professional';
+    } else if (numericYears < 10) {
+        careerStage = 'senior';
+        seniorityLevel = 'Senior Professional / Lead';
+    } else {
+        careerStage = 'executive';
+        seniorityLevel = 'Executive / Principal Leader';
+    }
+
+    return {
+        totalMonths,
+        years,
+        remainingMonths,
+        numericYears,
+        formattedTenure,
+        exactText,
+        careerStage,
+        seniorityLevel
+    };
+}
+
+function estimateExperienceYears(employments = []) {
+    return calculateDetailedExperience(employments).numericYears;
 }
 
 /**
@@ -253,47 +386,92 @@ function buildEvidencePayload(operation, rawPayload = {}) {
         if (Array.isArray(value)) return clamp(value.map(v => (typeof v === 'object' && v !== null ? (v.title || v.name || v.skillName || v.degree || JSON.stringify(v)) : v)).join('; '), max);
         return sectionText(value, max);
     };
+
+    // Extract roles polymorphically from context.facts or root payload
+    const candidateRoles = (Array.isArray(facts.roles) && facts.roles.length)
+        ? facts.roles
+        : (Array.isArray(payload.employments) && payload.employments.length
+            ? payload.employments
+            : (Array.isArray(payload.workExperiences) && payload.workExperiences.length
+                ? payload.workExperiences
+                : (Array.isArray(payload.workExperience) && payload.workExperience.length
+                    ? payload.workExperience
+                    : (payload.workHistory ? [{ title: '', employer: '', begin: '', end: '', description: sectionText(payload.workHistory, 3000) }] : []))));
+
+    // Extract education polymorphically
+    const candidateEdus = (Array.isArray(facts.education) && facts.education.length)
+        ? facts.education
+        : (Array.isArray(payload.educations) && payload.educations.length
+            ? payload.educations
+            : (Array.isArray(payload.education) && payload.education.length
+                ? payload.education
+                : (payload.education ? [{ degree: typeof payload.education === 'string' ? payload.education : '', school: '', started: '', finished: '', description: sectionText(payload.education, 2000) }] : [])));
+
+    // Calculate accurate, non-overlapping calendar experience
+    const detailedTenure = calculateDetailedExperience(candidateRoles);
+    const expText = detailedTenure.formattedTenure
+        || (facts.experienceYears ? `${facts.experienceYears} years` : '')
+        || payload.experience
+        || '';
+    const expYears = detailedTenure.numericYears || facts.experienceYears || 0;
+
     const flatSkills = Array.isArray(facts.skills) && facts.skills.length
         ? facts.skills
         : (Array.isArray(payload.existingSkills) ? payload.existingSkills
             : (Array.isArray(payload.skills) ? payload.skills : []));
 
+    const candidateCerts = (Array.isArray(facts.certifications) && facts.certifications.length)
+        ? facts.certifications
+        : (Array.isArray(payload.certifications) ? payload.certifications
+            : (Array.isArray(payload.certificates) ? payload.certificates
+                : (payload.certifications ? [payload.certifications] : [])));
+
+    const candidateProjects = (Array.isArray(facts.projects) && facts.projects.length)
+        ? facts.projects
+        : (Array.isArray(payload.projects) && payload.projects.length
+            ? payload.projects
+            : (payload.projects ? [{ title: typeof payload.projects === 'string' ? payload.projects : '', description: sectionText(payload.projects, 2000) }] : []));
+
     const evidence = {
         candidateFacts: {
             name: clamp(facts.name || payload.name, 120),
             headline: clamp(facts.headline, 200),
-            location: clamp(facts.location, 120),
-            experience: clamp(facts.experienceYears ? `${facts.experienceYears} years` : '', 60),
+            location: clamp(facts.location || (payload.city ? `${payload.city}${payload.country ? `, ${payload.country}` : ''}` : ''), 120),
+            experience: clamp(expText, 60),
+            experienceYears: expYears,
+            careerStage: detailedTenure.careerStage || 'mid_career',
+            seniorityLevel: detailedTenure.seniorityLevel || 'Professional',
             experienceClaim: clamp(payload.experience, 120),
-            workRoles: (Array.isArray(facts.roles) && facts.roles.length)
-                ? facts.roles.slice(0, 12).map(r => ({
-                    title: clamp(r?.title, 200),
-                    employer: clamp(r?.employer, 200),
-                    begin: clamp(r?.begin, 60),
-                    end: clamp(r?.end, 60),
-                    description: sectionText(r?.description, 3000),
-                }))
-                : (payload.workHistory ? [{ title: '', employer: '', begin: '', end: '', description: sectionText(payload.workHistory, 3000) }] : []),
-            education: (Array.isArray(facts.education) && facts.education.length)
-                ? facts.education.slice(0, 8).map(e => ({
-                    degree: clamp(e?.degree, 200),
-                    school: clamp(e?.school, 200),
-                    started: clamp(e?.started, 40),
-                    finished: clamp(e?.finished, 40),
-                    description: sectionText(e?.description, 2000),
-                }))
-                : (payload.education ? [{ degree: '', school: '', started: '', finished: '', description: sectionText(payload.education, 2000) }] : []),
+            workRoles: candidateRoles.slice(0, 12).map(r => ({
+                title: clamp(r?.title || r?.jobTitle || r?.position || r?.role, 200),
+                employer: clamp(r?.employer || r?.company || r?.organization, 200),
+                begin: clamp(r?.begin || r?.startDate || r?.from || r?.startYear, 60),
+                end: clamp(r?.end || r?.endDate || r?.to || (r?.current ? 'Present' : '') || r?.endYear, 60),
+                current: Boolean(r?.current || r?.isCurrent),
+                description: sectionText(r?.description || r?.summary || r?.notes, 3000),
+            })),
+            education: candidateEdus.slice(0, 8).map(e => ({
+                degree: clamp(e?.degree || e?.qualification || e?.fieldOfStudy, 200),
+                school: clamp(e?.school || e?.institution || e?.university, 200),
+                started: clamp(e?.started || e?.startDate || e?.begin, 40),
+                finished: clamp(e?.finished || e?.endDate || e?.end, 40),
+                description: sectionText(e?.description || e?.notes, 2000),
+            })),
             skills: (Array.isArray(flatSkills) ? flatSkills : []).slice(0, 60).map(s => clamp(typeof s === 'object' && s !== null ? (s.skillName || s.name || '') : s, 120)).filter(Boolean),
-            certifications: (Array.isArray(facts.certifications) && facts.certifications.length)
-                ? facts.certifications.slice(0, 20).map(c => `${clamp(c?.title, 160)}${c?.issuer ? ` (${clamp(c.issuer, 120)})` : ''}`)
-                : flatText(payload.certifications, 1200) ? [flatText(payload.certifications, 1200)] : [],
-            projects: (Array.isArray(facts.projects) && facts.projects.length)
-                ? facts.projects.slice(0, 10).map(p => ({ title: clamp(p?.title, 200), description: sectionText(p?.description, 2000) }))
-                : (payload.projects ? [{ title: '', description: sectionText(payload.projects, 2000) }] : []),
+            certifications: candidateCerts.slice(0, 20).map(c => {
+                if (typeof c === 'string') return clamp(c, 160);
+                return `${clamp(c?.title || c?.name, 160)}${c?.issuer || c?.authority ? ` (${clamp(c.issuer || c.authority, 120)})` : ''}`;
+            }),
+            projects: candidateProjects.slice(0, 10).map(p => ({
+                title: clamp(p?.title || p?.name, 200),
+                description: sectionText(p?.description, 2000)
+            })),
             achievements: (Array.isArray(facts.achievements) && facts.achievements.length)
                 ? facts.achievements.slice(0, 10).map(a => `${clamp(a?.title, 160)}${a?.description ? ` — ${sectionText(a.description, 500)}` : ''}`)
                 : (payload.achievement || payload.achievements ? [sectionText(payload.achievement || payload.achievements, 1000)] : []),
-            summary: sectionText(facts.summary || payload.existingText || payload.sourceFacts || payload.summary, 2000),
+            summary: (operation === 'generate-summary' || String(facts.summary || payload.existingText || payload.summary || '').includes(' | ') || String(facts.summary || payload.existingText || payload.summary || '').startsWith('Target Role:'))
+                ? ''
+                : sectionText(facts.summary || payload.existingText || payload.summary, 2000),
         },
         targetRole: clamp(
             payload.targetRole
@@ -415,6 +593,7 @@ module.exports = {
     detectGeographicRegion,
     extractTargetRoleFromJd,
     estimateExperienceYears,
+    calculateDetailedExperience,
     generateRoleInterviewQuestions,
     extractCandidateNotes,
     buildEvidencePayload,

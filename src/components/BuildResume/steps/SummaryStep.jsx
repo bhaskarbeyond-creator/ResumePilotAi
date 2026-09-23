@@ -505,7 +505,7 @@ const SummaryStep = ({ resumeData, updateResumeData, onNavigate }) => {
                         <span>Synthesizes:</span>
                     </span>
                     <span>
-                        {yearsExp ? <strong className="text-slate-700">{yearsExp} yrs exp · </strong> : null}
+                        {yearsExp ? <strong className="text-slate-700">{yearsExp.replace(/\s*years?/, ' yrs').replace(/\s*months?/, ' mos')}{yearsExp.includes('exp') ? ' · ' : ' exp · '}</strong> : null}
                         <strong className="text-slate-700">{rolesCount}</strong> {rolesCount === 1 ? 'position' : 'positions'} ·{' '}
                         <strong className="text-slate-700">{skillsCount}</strong> skills
                         {eduCount > 0 ? <> · <strong className="text-slate-700">{eduCount}</strong> {eduCount === 1 ? 'degree' : 'degrees'}</> : null}

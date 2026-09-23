@@ -116,24 +116,154 @@ export function extractTargetRoleFromJd(jdText) {
     return '';
 }
 
-export function estimateExperienceYears(employments = []) {
-    if (!Array.isArray(employments) || employments.length === 0) return 0;
-    let totalMonths = 0;
+export function parseDateToMonths(str, isEnd = false, isCurrent = false) {
+    if (!str && !isCurrent) return null;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
 
-    for (const emp of employments) {
-        if (!emp) continue;
-        const begin = emp.begin ? new Date(emp.begin) : (emp.startDate ? new Date(emp.startDate) : null);
-        const end = emp.current ? new Date() : (emp.end ? new Date(emp.end) : (emp.endDate ? new Date(emp.endDate) : null));
+    const raw = String(str || '').trim().toLowerCase();
+    if (isCurrent || /\b(present|current|now|ongoing)\b/.test(raw)) {
+        return currentYear * 12 + currentMonth;
+    }
 
-        if (begin && !isNaN(begin.getTime()) && end && !isNaN(end.getTime())) {
-            const months = (end.getFullYear() - begin.getFullYear()) * 12 + (end.getMonth() - begin.getMonth());
-            if (months > 0) totalMonths += months;
-        } else {
-            totalMonths += 24;
+    const yearMatch = raw.match(/\b(19\d\d|20\d\d)\b/);
+    if (!yearMatch) return null;
+    const year = parseInt(yearMatch[1], 10);
+
+    const monthMap = {
+        jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+        may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+        oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+    };
+
+    let month = isEnd ? 12 : 1;
+    const isoMatch = raw.match(/\b(?:19\d\d|20\d\d)[-/](0?[1-9]|1[0-2])\b/);
+    const slashMatch = raw.match(/\b(0?[1-9]|1[0-2])[-/](?:19\d\d|20\d\d)\b/);
+
+    if (isoMatch) {
+        month = parseInt(isoMatch[1], 10);
+    } else if (slashMatch) {
+        month = parseInt(slashMatch[1], 10);
+    } else {
+        for (const [key, val] of Object.entries(monthMap)) {
+            if (raw.includes(key)) {
+                month = val;
+                break;
+            }
         }
     }
 
-    return Math.min(40, Math.round((totalMonths / 12) * 10) / 10);
+    return year * 12 + month;
+}
+
+export function calculateDetailedExperience(employments = []) {
+    if (!Array.isArray(employments) || employments.length === 0) {
+        return {
+            totalMonths: 0,
+            years: 0,
+            remainingMonths: 0,
+            numericYears: 0,
+            formattedTenure: '',
+            exactText: '',
+            careerStage: 'early_career',
+            seniorityLevel: 'Emerging Professional'
+        };
+    }
+
+    const intervals = [];
+    let undatedRolesCount = 0;
+
+    for (const emp of employments) {
+        if (!emp || typeof emp !== 'object') continue;
+        const startStr = emp.begin || emp.startDate || emp.start || emp.started || emp.startYear || '';
+        const endStr = emp.end || emp.endDate || emp.finished || emp.endYear || '';
+        const isCurrent = Boolean(emp.current || emp.isCurrent);
+
+        const startMonths = parseDateToMonths(startStr, false, false);
+        const endMonths = parseDateToMonths(endStr, true, isCurrent);
+
+        if (startMonths !== null && endMonths !== null && endMonths >= startMonths) {
+            intervals.push([startMonths, endMonths]);
+        } else if (startMonths !== null) {
+            intervals.push([startMonths, isCurrent ? (new Date().getFullYear() * 12 + new Date().getMonth() + 1) : (startMonths + 12)]);
+        } else {
+            undatedRolesCount++;
+        }
+    }
+
+    let totalMonths = 0;
+    if (intervals.length > 0) {
+        intervals.sort((a, b) => a[0] - b[0]);
+        const merged = [intervals[0]];
+        for (let i = 1; i < intervals.length; i++) {
+            const last = merged[merged.length - 1];
+            const curr = intervals[i];
+            if (curr[0] <= last[1]) {
+                last[1] = Math.max(last[1], curr[1]);
+            } else {
+                merged.push(curr);
+            }
+        }
+        for (const [start, end] of merged) {
+            totalMonths += Math.max(1, end - start + 1);
+        }
+    } else if (undatedRolesCount > 0) {
+        totalMonths = Math.min(240, undatedRolesCount * 24);
+    }
+
+    const numericYears = Math.min(40, Math.round((totalMonths / 12) * 10) / 10);
+    const years = Math.floor(totalMonths / 12);
+    const remainingMonths = totalMonths % 12;
+
+    let formattedTenure = '';
+    if (totalMonths === 0) {
+        formattedTenure = '';
+    } else if (totalMonths < 12) {
+        formattedTenure = `${totalMonths} month${totalMonths === 1 ? '' : 's'}`;
+    } else if (years >= 1 && remainingMonths === 0) {
+        formattedTenure = `${years}+ years`;
+    } else if (years >= 1) {
+        formattedTenure = `${years}+ years`;
+    }
+
+    let exactText = '';
+    if (totalMonths > 0) {
+        if (totalMonths < 12) exactText = `${totalMonths} month${totalMonths === 1 ? '' : 's'}`;
+        else if (remainingMonths === 0) exactText = `${years} year${years === 1 ? '' : 's'}`;
+        else exactText = `${years} year${years === 1 ? '' : 's'} ${remainingMonths} month${remainingMonths === 1 ? '' : 's'}`;
+    }
+
+    let careerStage = 'mid_career';
+    let seniorityLevel = 'Mid-Level Professional';
+    if (numericYears < 1.5) {
+        careerStage = 'early_career';
+        seniorityLevel = 'Emerging Professional';
+    } else if (numericYears < 5) {
+        careerStage = 'mid_career';
+        seniorityLevel = 'Mid-Level Professional';
+    } else if (numericYears < 10) {
+        careerStage = 'senior';
+        seniorityLevel = 'Senior Professional / Lead';
+    } else {
+        careerStage = 'executive';
+        seniorityLevel = 'Executive / Principal Leader';
+    }
+
+    return {
+        totalMonths,
+        years,
+        remainingMonths,
+        numericYears,
+        formattedTenure,
+        exactText,
+        careerStage,
+        seniorityLevel
+    };
+}
+
+export function estimateExperienceYears(employments = []) {
+    return calculateDetailedExperience(employments).numericYears;
 }
 
 const VOCABULARY_STOPWORDS = new Set([
@@ -360,7 +490,9 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
     const firstEmp = employments[0] || {};
     const currentRole = String(firstEmp.jobTitle || firstEmp.title || firstEmp.position || firstEmp.role || '').trim();
     const jd = String(targetJd || '').trim();
-    const experienceYears = estimateExperienceYears(employments);
+    const detailedTenure = calculateDetailedExperience(employments);
+    const experienceYears = detailedTenure.numericYears;
+    const formattedTenure = detailedTenure.formattedTenure;
     const summary = String(data.summary || '').replace(/<[^>]*>/g, ' ').trim();
 
     const gaps = describeGaps(data);
@@ -424,6 +556,9 @@ export function getCandidateContext(resumeData = {}, targetJd = '') {
             customSections: (Array.isArray(data.customSections) ? data.customSections : []).map(s => s.title || '').filter(Boolean),
             summary,
             experienceYears,
+            experience: formattedTenure,
+            careerStage: detailedTenure.careerStage,
+            seniorityLevel: detailedTenure.seniorityLevel,
             hasTargetJd: jd.length > 20,
         },
 

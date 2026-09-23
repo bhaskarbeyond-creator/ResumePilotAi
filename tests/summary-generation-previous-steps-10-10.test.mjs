@@ -295,4 +295,38 @@ test('12. multi-domain ATS matrix: verifies 10/10 ATS summary scores across dive
     }
 });
 
+test('13. getContentOperationFallback: doctor profile from buildAssistPayload generates 10/10 summary and blocks raw sourceFacts dump', async () => {
+    const { getContentOperationFallback } = await import('../backend/services/aiRuntime.js');
+    const { calculateAtsScore } = await import('../src/utils/atsScore.js');
+
+    const resumeData = {
+        targetRole: 'Doctor of Medicine',
+        occupation: 'Doctor of Medicine',
+        workExperiences: [
+            { jobTitle: 'Doctor of Medicine', company: 'Apollo Hospitals', description: 'Diagnosed and treated 25+ daily acute and complex patient cases' },
+        ],
+        education: [
+            { degree: 'AIIMS MBBS', school: 'AIIMS New Delhi' },
+        ],
+        skills: ['Clinical Protocols Development', 'Emergency Assessment and Triage', 'Patient Care Coordination', 'Medical Leadership'],
+        certifications: [{ title: 'Board Certification in Internal Medicine' }, { title: 'Certification in Clinical Research' }],
+    };
+
+    const assist = buildAssistPayload('generate-summary', { resumeData });
+    const fallback = getContentOperationFallback('generate-summary', assist.payload);
+
+    assert.equal(fallback._source, 'evidence-grounded-fallback');
+    assert.ok(fallback.summary.length >= 100 && fallback.summary.length <= 465, `Length ${fallback.summary.length} should be in [100, 465]`);
+    assert.ok(!fallback.summary.includes(' | '), 'Must not contain pipe delimiter');
+    assert.ok(!fallback.summary.includes('Target Role:'), 'Must not contain Target Role: label');
+    assert.ok(!fallback.summary.includes('Work History:'), 'Must not contain Work History: label');
+    assert.match(fallback.summary, /Doctor of Medicine/);
+    assert.match(fallback.summary, /Apollo Hospitals/);
+
+    const ats = calculateAtsScore({ summary: fallback.summary, skills: resumeData.skills });
+    const s = ats.sections.find(sec => sec.id === 'summary');
+    assert.equal(s.score, 10, `Expected 10/10 ATS score, got ${s.score}. Summary: "${fallback.summary}"`);
+});
+
+
 

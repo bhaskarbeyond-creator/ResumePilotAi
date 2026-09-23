@@ -141,10 +141,12 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
                 .filter(Boolean).join('; ');
             const targetRole = context.target.role || resumeData.targetRole || resumeData.targetTitle || resumeData.occupation || '';
 
+            const experienceTenure = context.facts.experience || (context.facts.experienceYears ? `${context.facts.experienceYears} years` : '');
+
             // Construct synthetic sourceFacts so grounding and evidence checks are guaranteed to see full facts
             const sourceFacts = [
                 targetRole ? `Target Role: ${targetRole}` : '',
-                context.facts.experienceYears ? `Tenure: ${context.facts.experienceYears} years` : '',
+                experienceTenure ? `Tenure: ${experienceTenure}` : '',
                 workHistory ? `Work History: ${workHistory}` : '',
                 education ? `Education: ${education}` : '',
                 skillsList.length ? `Skills: ${skillsList.join(', ')}` : '',
@@ -158,14 +160,25 @@ export function buildAssistPayload(operation, { resumeData = {}, targetJd = '', 
                     name: context.facts.name || `${resumeData.firstname || ''} ${resumeData.lastname || ''}`.trim(),
                     targetRole,
                     jobTitle: targetRole,
-                    experience: context.facts.experienceYears ? `${context.facts.experienceYears} years` : '',
+                    experience: experienceTenure,
+                    experienceTenure,
+                    experienceYears: context.facts.experienceYears || 0,
+                    careerStage: context.facts.careerStage || 'mid_career',
+                    seniorityLevel: context.facts.seniorityLevel || 'Professional',
+                    noFallback: true,
                     workHistory,
                     education,
                     skills: skillsList.slice(0, 40),
                     certifications: certsList,
                     projects: projectsList,
+                    employments: roles,
+                    educations: edus,
                     sourceFacts,
                     existingText: resumeData.summary || '',
+                    context: {
+                        facts: context.facts,
+                        target: context.target,
+                    },
                 },
                 profileHash: context.profileHash,
             };
