@@ -8,7 +8,7 @@ Scope: interview AI prompt/context/question-generation accuracy (role, seniority
 
 ```text
 Starting commit: dc069f03ffbc13f3da8d896c9e09325c69fc25fe (main = origin/main)
-Final commit:    (see git log on arena/01a0d2cd-resumepilotai)
+Final commit:    19325d9 fix(interview-ai): make seniority/difficulty/track authoritative for question generation
 Branch:          arena/01a0d2cd-resumepilotai
 Working tree:    clean after commit
 ```
