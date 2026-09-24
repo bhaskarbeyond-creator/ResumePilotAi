@@ -35,8 +35,8 @@ function buildAnswerGuidePrompt({ question, role, topic, resumeFacts, regenerate
         'Rules:',
         '- "goal": 1-2 sentences on what the interviewer is really trying to learn.',
         '- "modelAnswer": a spoken, first-person answer of 90-160 words that directly answers the question, with a clear situation, what the candidate did and why, and the outcome.',
-        '- Build the answer ONLY from <candidate_context>. Never invent employers, projects, tools, team sizes, dates, percentages, money or other numbers. If the context has no figure for the outcome, describe the outcome in words.',
-        '- If <candidate_context> is empty, write the answer around the approach and reasoning a strong candidate would explain, without claiming specific past employers or figures.',
+        '- Build the answer ONLY from <candidate_context>. Never invent employers, projects, tools, team sizes, dates, percentages, money or other numbers. If the context has no figure for the outcome, describe the outcome in qualitative words (e.g. "reduced latency", "scaled microservices", "improved system reliability") rather than inventing numbers or percentages.',
+        '- If <candidate_context> is empty or has no numbers, write the answer around the technical approach, engineering trade-offs, and architectural reasoning a strong candidate would explain, without claiming specific past employers, figures, or metrics.',
         '- Calibrate the answer to the seniority level of <question>: a question aimed at an early-career candidate gets an early-career answer (fundamentals, projects, learning). Never import senior-scope ownership, org-wide leadership, or enterprise-scale experience the question did not ask for.',
         '- Sound like a thoughtful person talking, not a template: no headings, no bullet points, no brackets or placeholders, no "Great question", no buzzword chains.',
         '- "tip": one practical, specific tip for this question (for example, which real figure or detail from their own experience to add).',
@@ -53,6 +53,13 @@ function buildAnswerGuidePrompt({ question, role, topic, resumeFacts, regenerate
 }
 
 const FIGURE_PATTERN = /[$€£₹]\s?\d[\d,.]*\s?[kKmMbB]?|\d[\d,.]*\s?%|\b\d[\d,.]*\s?(?:x|ms|seconds?|minutes?|hours?|days?|weeks?|months?|years?|users?|customers?|people|engineers?|members?|k|K|M)\b/g;
+const HIGH_RISK_FIGURE = /[$€£₹]|%|[kKmMbB]$/;
+
+function figureIsHighRisk(fig) {
+    if (HIGH_RISK_FIGURE.test(fig)) return true;
+    const num = parseFloat(fig.replace(/[$€£₹,]/g, ''));
+    return Number.isFinite(num) && num > 20;
+}
 
 function normalizeFigure(fig) {
     return fig.replace(/\s+/g, '').toLowerCase().replace(/s$/, '');
@@ -60,22 +67,46 @@ function normalizeFigure(fig) {
 
 /**
  * Returns { ok: true, guide } or { ok: false, reason }.
+ *
+ * Graduated grounding:
+ *   - High-risk ungrounded figures (currency, %, count >20) reject the response (FABRICATED_FIGURE).
+ *   - Low-risk ungrounded conversational figures (<=20 time units, engineers) are stripped,
+ *     preserving the valuable STAR narrative.
  */
 function validateAnswerGuide(parsed, input) {
     if (!parsed || typeof parsed !== 'object') return { ok: false, reason: 'MALFORMED_OUTPUT' };
     const goal = clean(parsed.goal || parsed.question_intent || parsed.intent, 250);
-    const modelAnswer = clean(parsed.modelAnswer || parsed.model_answer || parsed.answer, 1800);
+    const rawAnswer = clean(parsed.modelAnswer || parsed.model_answer || parsed.answer, 1800);
     const tip = clean(parsed.tip || parsed.answer_tip, 300);
-    if (modelAnswer.split(/\s+/).filter(Boolean).length < 25) return { ok: false, reason: 'MISSING_OR_TRUNCATED_ANSWER' };
-    const all = `${goal} ${modelAnswer} ${tip}`;
+    if (rawAnswer.split(/\s+/).filter(Boolean).length < 25) return { ok: false, reason: 'MISSING_OR_TRUNCATED_ANSWER' };
+    const all = `${goal} ${rawAnswer} ${tip}`;
     if (containsInstructionOverride(all) || /<\/?(?:candidate_context|question|role|topic)>|untrusted user data/i.test(all)) {
         return { ok: false, reason: 'INJECTION_ECHO' };
     }
-    if (/\[[^\]]{1,40}\]/.test(modelAnswer)) return { ok: false, reason: 'PLACEHOLDER_OUTPUT' };
+    if (/\[[^\]]{1,40}\]/.test(rawAnswer)) return { ok: false, reason: 'PLACEHOLDER_OUTPUT' };
+
     const sourceFigures = new Set(((`${input.resumeFacts} ${input.question}`).match(FIGURE_PATTERN) || []).map(normalizeFigure));
-    const invented = (modelAnswer.match(FIGURE_PATTERN) || []).find(fig => !sourceFigures.has(normalizeFigure(fig)));
-    if (invented) return { ok: false, reason: 'FABRICATED_FIGURE' };
-    return { ok: true, guide: { goal, modelAnswer, tip } };
+    const allFigures = rawAnswer.match(FIGURE_PATTERN) || [];
+    const ungrounded = allFigures.filter(fig => !sourceFigures.has(normalizeFigure(fig)));
+
+    // Any high-risk metric fabrication (money, %, large scale) is blocked strictly
+    if (ungrounded.some(figureIsHighRisk)) return { ok: false, reason: 'FABRICATED_FIGURE' };
+
+    // Low-risk figures (small counts <=20, durations) are stripped to keep narrative grounded
+    let cleanedAnswer = rawAnswer;
+    if (ungrounded.length > 0) {
+        for (const fig of ungrounded) {
+            cleanedAnswer = cleanedAnswer.replace(new RegExp(`\\b(?:about|around|approximately|nearly|over|under|of|with)?\\s*${fig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '');
+        }
+        cleanedAnswer = cleanedAnswer.replace(/\s{2,}/g, ' ').replace(/\s+([,.])/g, '$1').trim();
+    }
+
+    if (cleanedAnswer.split(/\s+/).filter(Boolean).length < 20) {
+        return { ok: false, reason: 'MISSING_OR_TRUNCATED_ANSWER' };
+    }
+
+    return { ok: true, guide: { goal, modelAnswer: cleanedAnswer, tip } };
 }
 
 module.exports = { answerGuideInput, buildAnswerGuidePrompt, validateAnswerGuide };
+

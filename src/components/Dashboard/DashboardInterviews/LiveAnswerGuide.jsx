@@ -234,9 +234,17 @@ export default function LiveAnswerGuide({
                 </div>
 
                 {guideUnavailable ? (
-                    <p role="status" className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-900">
-                        AI answer guidance is unavailable right now. Answer from your own experience, or press Regenerate to try again.
-                    </p>
+                    <div role="status" className="bg-amber-50/80 border border-amber-200/90 rounded-lg p-2.5 flex flex-col gap-2">
+                        <div className="flex items-center justify-between text-xs text-amber-900 font-medium">
+                            <span>AI model answer is unavailable right now. Structure your response using this 10/10 framework:</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-700 bg-white/90 rounded-md p-2 border border-amber-200/60 shadow-2xs">
+                            <div><strong className="text-indigo-950 font-bold">1. Situation:</strong> State context and problem clearly.</div>
+                            <div><strong className="text-indigo-950 font-bold">2. Task:</strong> Define your direct responsibility.</div>
+                            <div><strong className="text-indigo-950 font-bold">3. Action:</strong> Explain your technical choices &amp; trade-offs.</div>
+                            <div><strong className="text-indigo-950 font-bold">4. Result:</strong> Highlight system impact or lessons learned.</div>
+                        </div>
+                    </div>
                 ) : loading && !activeGuide.modelAnswer ? (
                     <div className="bg-white/95 border border-slate-150 rounded-lg p-3 text-xs text-slate-500 flex items-center gap-2">
                         <FaRobot className="w-4 h-4 text-indigo-600 animate-pulse" />

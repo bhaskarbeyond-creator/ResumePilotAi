@@ -231,7 +231,7 @@ const PROVIDER_ADAPTERS = new Map([
     })],
     ['openrouter', openAiCompatibleAdapter({
         id: 'openrouter', name: 'OpenRouter',
-        defaultModel: 'meta-llama/llama-3.3-70b-instruct:free',
+        defaultModel: 'openrouter/auto',
         baseUrl: 'https://openrouter.ai/api/v1',
         extraHeaders: appIdentityHeaders,
     })],

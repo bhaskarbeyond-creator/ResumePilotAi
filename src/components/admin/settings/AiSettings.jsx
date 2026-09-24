@@ -38,7 +38,7 @@ const AiSettings = () => {
         groqModel: 'llama-3.3-70b-versatile',
         enableOpenrouter: false,
         openrouterApiKey: '',
-        openrouterModel: 'meta-llama/llama-3.3-70b-instruct:free',
+        openrouterModel: 'auto',
         enableDeepseek: false,
         deepseekApiKey: '',
         deepseekModel: 'deepseek-chat',
@@ -129,7 +129,7 @@ const AiSettings = () => {
                 groqModel: ai.groqModel || 'llama-3.3-70b-versatile',
                 enableOpenrouter: ai.enableOpenrouter !== undefined ? ai.enableOpenrouter : hasOpenrouterKey,
                 openrouterApiKey: ai.openrouterApiKey || masked.openrouter || '',
-                openrouterModel: ai.openrouterModel || 'meta-llama/llama-3.3-70b-instruct:free',
+                openrouterModel: ai.openrouterModel || 'auto',
                 enableDeepseek: ai.enableDeepseek !== undefined ? ai.enableDeepseek : hasDeepseekKey,
                 deepseekApiKey: ai.deepseekApiKey || masked.deepseek || '',
                 deepseekModel: ai.deepseekModel || 'deepseek-chat',
@@ -1167,7 +1167,7 @@ const AiSettings = () => {
                                 <div className="space-y-1.5">
                                     <select
                                         name="openrouterModel"
-                                        value={aiConfig.openrouterModel === 'auto' || !aiConfig.openrouterModel ? 'auto' : (['meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-r1:free'].includes(aiConfig.openrouterModel) ? aiConfig.openrouterModel : 'custom')}
+                                        value={aiConfig.openrouterModel === 'auto' || !aiConfig.openrouterModel ? 'auto' : (['openrouter/auto', 'google/gemini-2.0-flash-exp:free', 'liquid/lfm-2.5-2.6b:free', 'meta-llama/llama-3.3-70b-instruct'].includes(aiConfig.openrouterModel) ? aiConfig.openrouterModel : 'custom')}
                                         onChange={(e) => {
                                             if (e.target.value !== 'custom') {
                                                 handleChange({ target: { name: 'openrouterModel', value: e.target.value } });
@@ -1176,9 +1176,10 @@ const AiSettings = () => {
                                         className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white font-medium"
                                     >
                                         <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection)</option>
-                                        <option value="meta-llama/llama-3.3-70b-instruct:free">Meta Llama 3.3 70B Free (Default)</option>
+                                        <option value="openrouter/auto">OpenRouter Auto (Router Gateway)</option>
                                         <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash Free</option>
-                                        <option value="deepseek/deepseek-r1:free">DeepSeek R1 Free</option>
+                                        <option value="liquid/lfm-2.5-2.6b:free">Liquid LFM 2.5 2.6B Free</option>
+                                        <option value="meta-llama/llama-3.3-70b-instruct">Meta Llama 3.3 70B (Paid / Fast)</option>
                                         <option value="custom">✏️ Enter Custom Model ID...</option>
                                     </select>
                                     <input
@@ -1186,7 +1187,7 @@ const AiSettings = () => {
                                         name="openrouterModel"
                                         value={aiConfig.openrouterModel}
                                         onChange={handleChange}
-                                        placeholder="e.g. auto, meta-llama/llama-3.3-70b-instruct:free"
+                                        placeholder="e.g. auto, openrouter/auto, liquid/lfm-2.5-2.6b:free"
                                         className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none font-mono bg-slate-50"
                                     />
                                 </div>
