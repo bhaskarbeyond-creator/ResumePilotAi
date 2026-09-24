@@ -56,6 +56,8 @@ function normalizeOpenAiUsage(meta) {
     return { promptTokens, completionTokens, totalTokens };
 }
 
+const NON_CHAT_MODEL_PATTERN = /\b(?:embed|embedding|embeddings|rerank|reranker|detector|diffusion|flux|clip|whisper|tts|asr|ocr|stt|upscaler|vae|deplot)\b|-(?:embed|rerank|detector|diffusion)$/i;
+
 /**
  * OpenAI-compatible chat-completions adapter factory. One instance per
  * OpenAI-compatible gateway (openai, groq, deepseek, openrouter, nvidia, ...).
@@ -126,6 +128,7 @@ function openAiCompatibleAdapter({ id, name, defaultModel, baseUrl, discoveryPat
                 if (!item || typeof item !== 'object') continue;
                 const modelId = String(item.id || item.name || '').trim();
                 if (!isValidModelId(modelId) || seen.has(modelId)) continue;
+                if (NON_CHAT_MODEL_PATTERN.test(modelId)) continue;
                 seen.add(modelId);
                 out.push({ modelId, raw: item });
             }
