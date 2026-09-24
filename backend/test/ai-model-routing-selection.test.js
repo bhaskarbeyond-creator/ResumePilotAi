@@ -420,3 +420,33 @@ test('11. Verified capability evidence and tenant health refine ranking without 
   assert.ok(winner.reasons.some(r => r.startsWith('rank:health-success-')));
   assert.ok(winner.reasons.includes('rank:verified-structured-output'));
 });
+
+// ---------------------------------------------------------------------------
+test('12. Auto option (model: "auto" / "dynamic") unpins candidate selection so discovered models compete dynamically', () => {
+  const d = selectModels({
+    configuration: {
+      primary: 'prov-a',
+      enableFallback: false,
+      tenantId: 't',
+      temperature: 0.7,
+      maxTokens: 100,
+      providers: { 'prov-a': { enabled: true, key: 'k', model: 'auto' } },
+    },
+    requirement: shortRequirement(),
+    catalog: catalogMap({
+      'prov-a': {
+        'fast-model': caps({ structuredOutput: CAP.YES }),
+        'slow-model': caps({ structuredOutput: CAP.NO }),
+      },
+    }),
+    tenantAccess: new Map([['prov-a', { modelIds: new Set(['fast-model', 'slow-model']), credentialOk: 'verified' }]]),
+    now: NOW,
+  });
+
+  // Must NOT create a candidate named 'auto'
+  assert.equal(d.candidates.some(c => c.model === 'auto'), false, 'never registers "auto" as a literal model ID');
+  // Discovered models compete: fast-model with verified structured output wins
+  assert.deepEqual(d.selection, { provider: 'prov-a', model: 'fast-model' }, 'fast-model wins dynamically on capability fit');
+  const winner = d.candidates.find(c => c.model === 'fast-model');
+  assert.equal(winner.origin, 'discovered', 'model is treated as discovered, not pinned configured');
+});

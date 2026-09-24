@@ -125,7 +125,9 @@ function selectModels({
 
         // Enumerate candidate models for this provider.
         const enumerated = new Map(); // modelId -> { origin, caps }
-        const configuredModel = String(providerConfig.model || '').trim();
+        const rawModel = String(providerConfig.model || '').trim();
+        const isAuto = rawModel.toLowerCase() === 'auto' || rawModel.toLowerCase() === 'dynamic';
+        const configuredModel = isAuto ? '' : rawModel;
         if (configuredModel) enumerated.set(configuredModel, { origin: 'configured', caps: null });
 
         if (catalogModels) {
@@ -296,7 +298,8 @@ function selectModels({
             c.reasons.push(costScore > 0 ? 'rank:cost-efficient' : 'rank:cost-premium');
         }
 
-        if (primaryModelPolicy && c.model === String(primaryModelPolicy).trim()) {
+        const cleanPolicy = String(primaryModelPolicy || '').trim().toLowerCase();
+        if (primaryModelPolicy && !['auto', 'dynamic'].includes(cleanPolicy) && c.model === String(primaryModelPolicy).trim()) {
             score += WEIGHTS.tenantPrimaryModel;
             c.reasons.push('rank:tenant-primary-model');
         }

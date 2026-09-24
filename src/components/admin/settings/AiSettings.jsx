@@ -529,15 +529,22 @@ const AiSettings = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-emerald-200 uppercase tracking-wider mb-1.5">
-                            Active Model Target
-                        </label>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-semibold text-emerald-200 uppercase tracking-wider">
+                                Active Model Target
+                            </label>
+                            {activeModel.value === 'auto' && (
+                                <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full">
+                                    ✨ AUTO DYNAMIC
+                                </span>
+                            )}
+                        </div>
                         <input
                             type="text"
                             name={activeModel.name}
                             value={activeModel.value}
                             onChange={handleChange}
-                            placeholder="e.g. meta/llama-3.3-70b-instruct, gemini-2.0-flash"
+                            placeholder="e.g. auto, meta/llama-3.2-11b-vision-instruct, gemini-2.0-flash"
                             className="w-full px-3 py-2 text-sm bg-slate-800 border border-emerald-500/40 text-white rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none"
                         />
                     </div>
@@ -683,14 +690,15 @@ const AiSettings = () => {
                             <div className="space-y-1.5">
                                 <select
                                     name="nvidiaModel"
-                                    value={nvidiaModels.some(m => m.id === aiConfig.nvidiaModel) ? aiConfig.nvidiaModel : 'custom'}
+                                    value={aiConfig.nvidiaModel === 'auto' || !aiConfig.nvidiaModel ? 'auto' : (nvidiaModels.some(m => m.id === aiConfig.nvidiaModel) ? aiConfig.nvidiaModel : 'custom')}
                                     onChange={(e) => {
                                         if (e.target.value !== 'custom') {
                                             handleChange({ target: { name: 'nvidiaModel', value: e.target.value } });
                                         }
                                     }}
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
+                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white font-medium"
                                 >
+                                    <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection &amp; Health Routing)</option>
                                     {nvidiaModels.map((m) => (
                                         <option key={m.id} value={m.id}>
                                             {m.name}
@@ -703,9 +711,15 @@ const AiSettings = () => {
                                     name="nvidiaModel"
                                     value={aiConfig.nvidiaModel}
                                     onChange={handleChange}
-                                    placeholder="e.g. meta/llama-3.2-11b-vision-instruct or custom model ID"
+                                    placeholder="e.g. auto, meta/llama-3.2-11b-vision-instruct, or custom model ID"
                                     className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono bg-slate-50"
                                 />
+                                {aiConfig.nvidiaModel === 'auto' && (
+                                    <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1 mt-1">
+                                        <FaBolt className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                                        <span>Dynamic Selection Active: All discovered NVIDIA models compete on capability, context capacity, and live latency health.</span>
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -798,14 +812,15 @@ const AiSettings = () => {
                             <div className="space-y-1.5">
                                 <select
                                     name="model"
-                                    value={['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'].includes(aiConfig.model) ? aiConfig.model : 'custom'}
+                                    value={aiConfig.model === 'auto' || !aiConfig.model ? 'auto' : (['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'].includes(aiConfig.model) ? aiConfig.model : 'custom')}
                                     onChange={(e) => {
                                         if (e.target.value !== 'custom') {
                                             handleChange({ target: { name: 'model', value: e.target.value } });
                                         }
                                     }}
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium"
                                 >
+                                    <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection &amp; Health Routing)</option>
                                     <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fastest)</option>
                                     <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Reasoning)</option>
                                     <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
@@ -816,9 +831,15 @@ const AiSettings = () => {
                                     name="model"
                                     value={aiConfig.model}
                                     onChange={handleChange}
-                                    placeholder="e.g. gemini-2.0-flash or custom model ID"
+                                    placeholder="e.g. auto, gemini-2.0-flash, or custom model ID"
                                     className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono bg-slate-50"
                                 />
+                                {aiConfig.model === 'auto' && (
+                                    <p className="text-[11px] text-blue-700 font-medium flex items-center gap-1 mt-1">
+                                        <FaBolt className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                                        <span>Dynamic Selection Active: Evaluates Gemini models dynamically for speed, capability, and health.</span>
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -907,15 +928,33 @@ const AiSettings = () => {
                             )}
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">Model Name</label>
-                            <input
-                                type="text"
-                                name="openaiModel"
-                                value={aiConfig.openaiModel}
-                                onChange={handleChange}
-                                placeholder="gpt-4o-mini, gpt-4o, etc."
-                                className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                            />
+                            <label className="block text-xs font-semibold text-slate-600 mb-1">OpenAI Target Model</label>
+                            <div className="space-y-1.5">
+                                <select
+                                    name="openaiModel"
+                                    value={aiConfig.openaiModel === 'auto' || !aiConfig.openaiModel ? 'auto' : (['gpt-4o-mini', 'gpt-4o', 'o3-mini'].includes(aiConfig.openaiModel) ? aiConfig.openaiModel : 'custom')}
+                                    onChange={(e) => {
+                                        if (e.target.value !== 'custom') {
+                                            handleChange({ target: { name: 'openaiModel', value: e.target.value } });
+                                        }
+                                    }}
+                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white font-medium"
+                                >
+                                    <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection)</option>
+                                    <option value="gpt-4o-mini">GPT-4o Mini (Fast &amp; Cost-Effective)</option>
+                                    <option value="gpt-4o">GPT-4o (High Intelligence)</option>
+                                    <option value="o3-mini">o3-mini (High Reasoning)</option>
+                                    <option value="custom">✏️ Enter Custom Model ID...</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    name="openaiModel"
+                                    value={aiConfig.openaiModel}
+                                    onChange={handleChange}
+                                    placeholder="e.g. auto, gpt-4o-mini, or custom model ID"
+                                    className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono bg-slate-50"
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs font-semibold text-slate-600 mb-1">Custom Base URL (Optional)</label>
@@ -1013,15 +1052,33 @@ const AiSettings = () => {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Groq Model</label>
-                                <input
-                                    type="text"
-                                    name="groqModel"
-                                    value={aiConfig.groqModel}
-                                    onChange={handleChange}
-                                    placeholder="llama-3.3-70b-versatile"
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                                />
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Groq Target Model</label>
+                                <div className="space-y-1.5">
+                                    <select
+                                        name="groqModel"
+                                        value={aiConfig.groqModel === 'auto' || !aiConfig.groqModel ? 'auto' : (['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'].includes(aiConfig.groqModel) ? aiConfig.groqModel : 'custom')}
+                                        onChange={(e) => {
+                                            if (e.target.value !== 'custom') {
+                                                handleChange({ target: { name: 'groqModel', value: e.target.value } });
+                                            }
+                                        }}
+                                        className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white font-medium"
+                                    >
+                                        <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection)</option>
+                                        <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile (Default)</option>
+                                        <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant (Ultra Fast)</option>
+                                        <option value="mixtral-8x7b-32768">Mixtral 8x7B (32k Context)</option>
+                                        <option value="custom">✏️ Enter Custom Model ID...</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        name="groqModel"
+                                        value={aiConfig.groqModel}
+                                        onChange={handleChange}
+                                        placeholder="e.g. auto, llama-3.3-70b-versatile, or custom model ID"
+                                        className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono bg-slate-50"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -1106,15 +1163,33 @@ const AiSettings = () => {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">OpenRouter Model</label>
-                                <input
-                                    type="text"
-                                    name="openrouterModel"
-                                    value={aiConfig.openrouterModel}
-                                    onChange={handleChange}
-                                    placeholder="meta-llama/llama-3.3-70b-instruct:free"
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                                />
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">OpenRouter Target Model</label>
+                                <div className="space-y-1.5">
+                                    <select
+                                        name="openrouterModel"
+                                        value={aiConfig.openrouterModel === 'auto' || !aiConfig.openrouterModel ? 'auto' : (['meta-llama/llama-3.3-70b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-r1:free'].includes(aiConfig.openrouterModel) ? aiConfig.openrouterModel : 'custom')}
+                                        onChange={(e) => {
+                                            if (e.target.value !== 'custom') {
+                                                handleChange({ target: { name: 'openrouterModel', value: e.target.value } });
+                                            }
+                                        }}
+                                        className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white font-medium"
+                                    >
+                                        <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection)</option>
+                                        <option value="meta-llama/llama-3.3-70b-instruct:free">Meta Llama 3.3 70B Free (Default)</option>
+                                        <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash Free</option>
+                                        <option value="deepseek/deepseek-r1:free">DeepSeek R1 Free</option>
+                                        <option value="custom">✏️ Enter Custom Model ID...</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        name="openrouterModel"
+                                        value={aiConfig.openrouterModel}
+                                        onChange={handleChange}
+                                        placeholder="e.g. auto, meta-llama/llama-3.3-70b-instruct:free"
+                                        className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:outline-none font-mono bg-slate-50"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -1201,15 +1276,32 @@ const AiSettings = () => {
                                 )}
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">DeepSeek Model</label>
-                                <input
-                                    type="text"
-                                    name="deepseekModel"
-                                    value={aiConfig.deepseekModel}
-                                    onChange={handleChange}
-                                    placeholder="deepseek-chat"
-                                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">DeepSeek Target Model</label>
+                                <div className="space-y-1.5">
+                                    <select
+                                        name="deepseekModel"
+                                        value={aiConfig.deepseekModel === 'auto' || !aiConfig.deepseekModel ? 'auto' : (['deepseek-chat', 'deepseek-reasoner'].includes(aiConfig.deepseekModel) ? aiConfig.deepseekModel : 'custom')}
+                                        onChange={(e) => {
+                                            if (e.target.value !== 'custom') {
+                                                handleChange({ target: { name: 'deepseekModel', value: e.target.value } });
+                                            }
+                                        }}
+                                        className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white font-medium"
+                                    >
+                                        <option value="auto">✨ Auto / Best &amp; Fastest (Dynamic Selection)</option>
+                                        <option value="deepseek-chat">DeepSeek Chat (V3 Default)</option>
+                                        <option value="deepseek-reasoner">DeepSeek Reasoner (R1)</option>
+                                        <option value="custom">✏️ Enter Custom Model ID...</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        name="deepseekModel"
+                                        value={aiConfig.deepseekModel}
+                                        onChange={handleChange}
+                                        placeholder="e.g. auto, deepseek-chat, or deepseek-reasoner"
+                                        className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono bg-slate-50"
+                                    />
+                                </div>
                             </div>
                         </div>
 

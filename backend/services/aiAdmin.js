@@ -1,6 +1,6 @@
 'use strict';
 
-const { PROVIDERS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider } = require('./aiRuntime');
+const { PROVIDERS, PROVIDER_DEFAULTS, clearProviderConfigurationCache, loadProviderConfiguration, requestProvider } = require('./aiRuntime');
 
 const SECRET_FIELDS = Object.freeze({
   gemini: 'geminiApiKey', nvidia: 'nvidiaApiKey', openai: 'openaiApiKey',
@@ -211,7 +211,9 @@ async function testAiProvider({ environment = process.env, provider, model, apiK
   const base = configuration.providers[provider];
   const isMasked = MASKED_PATTERN.test(String(apiKey || ''));
   const key = String((!isMasked && apiKey) || base?.key || '').trim();
-  const selectedModel = String(model || base?.model || '').trim();
+  const rawModel = String(model || base?.model || '').trim();
+  const isAuto = !rawModel || rawModel.toLowerCase() === 'auto' || rawModel.toLowerCase() === 'dynamic';
+  const selectedModel = isAuto ? (PROVIDER_DEFAULTS[provider]?.model || 'default') : rawModel;
   if (!key) throw errorWith('AI_PROVIDER_NOT_CONFIGURED', `${provider} has no server-side credential configured.`, 400);
   if (!modelPattern.test(selectedModel)) throw errorWith('AI_SETTINGS_VALIDATION_ERROR', `Invalid ${provider} model.`, 400);
   try {

@@ -10,7 +10,7 @@ const { InMemoryTenantRegistry } = require('./helpers/inMemoryTenantRegistry');
 const { InMemoryEnterpriseRepository } = require('./helpers/inMemoryEnterpriseRepository');
 const { TenantService } = require('../enterprise/tenantService');
 const { setTokenVerifierForTests } = require('../security/auth');
-const { clearProviderConfigurationCache } = require('../services/aiRuntime');
+const { clearProviderConfigurationCache, resetSharedAiRouterForTests } = require('../services/aiRuntime');
 const { setRepositoryForTests, resetRepositoryCacheForTests } = require('../repositories');
 const { tenantCacheKey } = require('../enterprise/tenantCache');
 const { buildTenantAiOperation, applyTenantAiPolicy } = require('../enterprise/tenantAi');
@@ -81,6 +81,7 @@ class TestAiAuditRepository extends InMemoryRepository {
 test.beforeEach(() => {
   setRepositoryForTests(new TestAiAuditRepository());
   clearProviderConfigurationCache();
+  resetSharedAiRouterForTests();
   setTokenVerifierForTests(async token => {
     if (!tokens[token]) throw new Error('bad token');
     return tokens[token];
@@ -91,6 +92,7 @@ test.beforeEach(() => {
 test.afterEach(() => {
   resetRepositoryCacheForTests();
   clearProviderConfigurationCache();
+  resetSharedAiRouterForTests();
 });
 
 // ===========================================================================

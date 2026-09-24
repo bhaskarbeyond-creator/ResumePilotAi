@@ -94,6 +94,7 @@ function clampNumber(value, min, max, fallback) {
 // that want a permanent ban can use the tenant policy `restrictedModels`.
 function safeModel(value, fallback) {
     const model = String(value || '').trim();
+    if (!model || model.toLowerCase() === 'auto' || model.toLowerCase() === 'dynamic') return fallback;
     return MODEL_PATTERN.test(model) ? model : fallback;
 }
 
@@ -1620,11 +1621,12 @@ async function loadProviderConfiguration(environment = process.env) {
     const providers = {};
     for (const provider of PROVIDERS) {
         const key = String(environment[ENV_KEYS[provider]] || providerSecrets[provider]?.apiKey || legacyAi[legacySecretFields[provider]] || '').trim();
-        const configuredModel = environment[ENV_MODELS[provider]] || providerSecrets[provider]?.model || effectiveAi[MODEL_FIELDS[provider]];
+        const rawConfiguredModel = String(environment[ENV_MODELS[provider]] || providerSecrets[provider]?.model || effectiveAi[MODEL_FIELDS[provider]] || '').trim();
+        const isAuto = rawConfiguredModel.toLowerCase() === 'auto' || rawConfiguredModel.toLowerCase() === 'dynamic';
         const baseUrl = String(environment[ENV_BASE_URLS[provider]] || providerSecrets[provider]?.baseUrl || '').trim();
         providers[provider] = {
             key,
-            model: safeModel(configuredModel, PROVIDER_DEFAULTS[provider].model),
+            model: isAuto ? 'auto' : safeModel(rawConfiguredModel, PROVIDER_DEFAULTS[provider].model),
             baseUrl: /^https?:\/\/[A-Za-z0-9._:/-]{1,300}$/.test(baseUrl) ? baseUrl : '',
             enabled: effectiveAi[ENABLE_FIELDS[provider]] !== false && Boolean(key),
         };
