@@ -24,6 +24,7 @@ const {
     mergeClaims,
     repeatsEarlierQuestion,
     stripAssistantFiller,
+    figureIsHighRisk,
     groundedModelAnswer,
 } = require('../services/liveInterviewSession');
 const {
@@ -364,10 +365,39 @@ test('P3-20 a repeated question triggers one side-effect-free regeneration', asy
     assert.equal(repeatsEarlierQuestion('Tell me about a system you owned end to end?', [{ question: opening.question }]), true);
 });
 
-test('P3-21 model answers with figures absent from the candidate material are dropped', () => {
+test('P3-21 model answers with figures absent from the candidate material: graduated grounding', () => {
+    // HIGH-RISK fabricated figures → full drop (unchanged strict behavior)
     assert.equal(groundedModelAnswer('I cut latency by 38% with caching.', 'Built payment APIs in Go.'), '');
+    assert.equal(groundedModelAnswer('I saved $200K by migrating to serverless.', ''), '');
+    assert.equal(groundedModelAnswer('I managed a budget of ₹50M for the project.', 'Led cloud migration.'), '');
+
+    // Fully grounded figures → pass through (unchanged)
     assert.equal(groundedModelAnswer('I ran Kafka with 40 partitions.', 'We used Kafka with 40 partitions.'), 'I ran Kafka with 40 partitions.');
+
+    // No figures at all → pass through (unchanged)
     assert.equal(groundedModelAnswer('I would explain the trade-off first.', ''), 'I would explain the trade-off first.');
+
+    // LOW-RISK ungrounded figures (small counts ≤20) → stripped, narrative preserved
+    const stripped1 = groundedModelAnswer('I led a team of 5 engineers and we delivered the project on time, improving the overall architecture.', 'Built payment APIs in Go.');
+    assert.ok(stripped1.length >= 40, 'narrative preserved after stripping low-risk figure');
+    assert.ok(!stripped1.includes('5 engineer'), 'low-risk figure removed');
+    assert.ok(stripped1.includes('delivered the project'), 'narrative text intact');
+
+    // Mixed: one high-risk + one low-risk → full drop (high-risk gates)
+    assert.equal(groundedModelAnswer('I led 3 engineers and reduced latency by 45%.', 'Led team.'), '');
+
+    // Large ungrounded number (>20) → high-risk → full drop
+    assert.equal(groundedModelAnswer('I managed 200 users in the system.', 'Led cloud migration.'), '');
+
+    // figureIsHighRisk classification
+    assert.equal(figureIsHighRisk('38%'), true);
+    assert.equal(figureIsHighRisk('$200K'), true);
+    assert.equal(figureIsHighRisk('₹50M'), true);
+    assert.equal(figureIsHighRisk('200 users'), true);
+    assert.equal(figureIsHighRisk('5 engineers'), false);
+    assert.equal(figureIsHighRisk('3 years'), false);
+    assert.equal(figureIsHighRisk('2 months'), false);
+    assert.equal(figureIsHighRisk('15 members'), false);
 });
 
 test('P3-22 a live session is bound to its starting tenant; switching tenant mid-interview is refused before any AI call', async () => {

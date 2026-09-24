@@ -112,7 +112,7 @@ export default function LiveAnswerGuide({
             try {
                 const res = await getLiveAnswerGuide(
                     { question, role, topic, resumeFacts },
-                    { signal: controller.signal, timeoutMs: 25_000 }
+                    { signal: controller.signal, timeoutMs: 16_000 }
                 );
                 if (!isCurrent) return;
                 if (res && res.modelAnswer && res.modelAnswer.length > 20 && !isTemplatePlaceholder(res.modelAnswer)) {
@@ -151,7 +151,7 @@ export default function LiveAnswerGuide({
         try {
             const res = await getLiveAnswerGuide(
                 { question, role, topic, resumeFacts, regenerate: true },
-                { timeoutMs: 30_000 }
+                { timeoutMs: 16_000 }
             );
             if (res && res.modelAnswer && res.modelAnswer.length > 20 && !isTemplatePlaceholder(res.modelAnswer)) {
                 const guideData = { goal: res.goal || intent || '', modelAnswer: res.modelAnswer, tip: res.tip || propTip || '' };

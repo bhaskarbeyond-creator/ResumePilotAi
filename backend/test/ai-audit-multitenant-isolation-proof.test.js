@@ -22,6 +22,8 @@ const {
   parseOpening,
   repeatsEarlierQuestion,
 } = require('../services/liveInterviewSession');
+const { configureAbuseCounterStoreForTests } = require('../security/abuse');
+const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 const app = require('../index');
 
 const PLATFORM_AI_PUBLIC = {
@@ -79,6 +81,7 @@ class TestAiAuditRepository extends InMemoryRepository {
 }
 
 test.beforeEach(() => {
+  configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
   setRepositoryForTests(new TestAiAuditRepository());
   clearProviderConfigurationCache();
   resetSharedAiRouterForTests();
@@ -90,6 +93,7 @@ test.beforeEach(() => {
 });
 
 test.afterEach(() => {
+  configureAbuseCounterStoreForTests(null);
   resetRepositoryCacheForTests();
   clearProviderConfigurationCache();
   resetSharedAiRouterForTests();
@@ -173,15 +177,15 @@ test('1. Concurrent execution of Tenant A vs Tenant B strictly isolates context,
     const isContoso = bodyStr.includes('Contoso') || bodyStr.includes('Kubernetes');
     const mockPayload = {
       title: isContoso ? 'Contoso Distributed Systems Interview' : 'Mayo Clinical Nursing Interview',
-      questions: [{
-        id: 1,
-        question: isContoso ? 'How do you handle Kubernetes etcd quorum loss?' : 'Explain pediatric cardiac triage protocols.',
+      questions: Array.from({ length: 6 }, (_, i) => ({
+        id: i + 1,
+        question: isContoso ? `Contoso Distributed Systems Question ${i + 1} regarding cluster topology` : `Mayo Clinical Nursing Question ${i + 1} regarding triage protocols`,
         options: ['Opt1', 'Opt2', 'Opt3', 'Opt4'],
         correctAnswer: 0,
         category: isContoso ? 'Infrastructure' : 'Clinical',
         difficulty: 'Hard',
         explanation: 'Detailed technical rationale.',
-      }],
+      })),
     };
 
     return {

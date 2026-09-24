@@ -385,18 +385,53 @@ function stripAssistantFiller(text) {
 
 const FIGURE_PATTERN = /[$€£₹]\s?\d[\d,.]*\s?[kKmMbB]?|\d[\d,.]*\s?%|\b\d[\d,.]*\s?(?:x|ms|seconds?|minutes?|hours?|days?|weeks?|months?|years?|users?|customers?|people|engineers?|members?|k|K|M)\b/g;
 
+// Figures that represent specific quantitative achievements (currency, percentages,
+// large counts >20) are HIGH-RISK fabrications that must block the entire answer.
+// Small structural numbers (≤20 with time/team units) are LOW-RISK: they appear in
+// natural speech ("a team of 3", "over 2 years") and can safely be stripped without
+// losing the STAR narrative. The candidate never sees an invented metric this way,
+// and the secondary /api/live-interview/guide call is avoided.
+const HIGH_RISK_FIGURE = /[$€£₹]|%|[kKmMbB]$/;
+
+function figureIsHighRisk(fig) {
+    if (HIGH_RISK_FIGURE.test(fig)) return true;
+    // Extract the leading number: "5 engineers" → 5, "200 users" → 200
+    const num = parseFloat(fig.replace(/[$€£₹,]/g, ''));
+    return Number.isFinite(num) && num > 20;
+}
+
 /**
  * The example answer can be inserted into the candidate's reply, so it may only
- * contain figures that appear in the candidate's own material. Otherwise it is
- * dropped (empty) and the client requests a validated guide instead.
+ * contain figures that appear in the candidate's own material.
+ *
+ * Graduated response:
+ *   - If ANY high-risk figure (currency, %, large number >20) is ungrounded → drop
+ *     the entire answer (existing strict behavior for dangerous fabrications).
+ *   - If only low-risk structural figures (small counts ≤20, durations) are
+ *     ungrounded → strip those figures in-place and return the cleaned narrative.
+ *   - If all figures are grounded → pass through unchanged.
  */
 function groundedModelAnswer(modelAnswer, sourceText) {
     const text = String(modelAnswer || '');
     if (!text) return '';
     const normalize = fig => fig.replace(/\s+/g, '').toLowerCase().replace(/s$/, '');
     const source = new Set((String(sourceText || '').match(FIGURE_PATTERN) || []).map(normalize));
-    const invented = (text.match(FIGURE_PATTERN) || []).some(fig => !source.has(normalize(fig)));
-    return invented ? '' : text;
+    const figures = text.match(FIGURE_PATTERN) || [];
+    if (!figures.length) return text;
+    const ungrounded = figures.filter(fig => !source.has(normalize(fig)));
+    if (!ungrounded.length) return text;
+
+    // Any high-risk fabrication (currency, %, large number) → full drop
+    if (ungrounded.some(figureIsHighRisk)) return '';
+
+    // Only low-risk structural numbers — strip them and keep the narrative
+    let cleaned = text;
+    for (const fig of ungrounded) {
+        // Remove the figure and any dangling preposition/article before it
+        cleaned = cleaned.replace(new RegExp(`\\b(?:about|around|approximately|nearly|over|under|of|with)?\\s*${fig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '');
+    }
+    cleaned = cleaned.replace(/\s{2,}/g, ' ').replace(/\s+([,.])/g, '$1').trim();
+    return cleaned.length >= 40 ? cleaned : '';
 }
 
 function candidateSourceText(state, extraAnswer = '') {
@@ -1372,6 +1407,7 @@ function createMemoryLiveInterviewStore() {
 module.exports = {
     detectClaimConflicts,
     extractCandidateClaims,
+    figureIsHighRisk,
     groundedModelAnswer,
     mergeClaims,
     repeatsEarlierQuestion,

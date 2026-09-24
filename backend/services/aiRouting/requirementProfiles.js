@@ -55,8 +55,8 @@ const PROFILES = Object.freeze({
     }),
     'live-interview-guide': Object.freeze({
         structuredOutput: false, streaming: false, reasoningRequired: false,
-        latencySensitivity: 'medium', qualityTier: 'enhanced', determinism: 'normal',
-        maxOutputTokens: 900, modalities: [],
+        latencySensitivity: 'high', qualityTier: 'enhanced', determinism: 'normal',
+        maxOutputTokens: 400, modalities: [],
     }),
     // Verbatim extraction: strict JSON, low temperature, source-sized context.
     'parse-resume': Object.freeze({

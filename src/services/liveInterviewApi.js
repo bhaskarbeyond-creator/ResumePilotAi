@@ -53,6 +53,6 @@ export function getLiveAnswerGuide(input, options = {}) {
         method: 'POST',
         body: input,
         signal: options.signal,
-        timeoutMs: options.timeoutMs || 45_000,
+        timeoutMs: options.timeoutMs || 18_000,
     });
 }

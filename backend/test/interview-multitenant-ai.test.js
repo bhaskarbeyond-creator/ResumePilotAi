@@ -305,8 +305,10 @@ test('5. Live Interview Session propagates Tenant BYOK configuration across open
     observedKeys.push(auth);
     const mockOutput = {
       interviewer_message: 'Welcome to your Apex technical interview.',
-      question: 'Explain your strategy for multi-region active-active database failover.',
-      response_type: 'opening_question',
+      question: observedKeys.length === 1
+        ? 'Explain your strategy for multi-region active-active database failover.'
+        : 'Describe how you handle distributed locks and idempotency during network partitions.',
+      response_type: observedKeys.length === 1 ? 'opening_question' : 'follow_up',
       interview_stage: 'opening',
       topic: 'Database Resilience',
       difficulty: 'hard',
@@ -338,7 +340,7 @@ test('5. Live Interview Session propagates Tenant BYOK configuration across open
       .post('/api/live-interview/sessions')
       .set('Authorization', bearer('alice'))
       .set('X-Tenant-Id', tenantId)
-      .send({ role: 'Cloud Architect', interviewType: 'technical', difficulty: 'hard' });
+      .send({ role: 'Cloud Architect', interviewType: 'technical', difficulty: 'hard', experienceLevel: 'senior' });
 
     assert.equal(startRes.status, 201);
     const session = startRes.body.session;

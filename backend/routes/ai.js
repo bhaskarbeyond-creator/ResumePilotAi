@@ -957,8 +957,8 @@ router.post('/live-interview/guide', async (req, res) => {
         }
         const raw = await generateConfiguredText(req, res, buildAnswerGuidePrompt(input), 'live-interview-guide', {
             temperature: input.regenerate ? 0.5 : 0.3,
-            maxTokens: 900,
-            timeoutMs: 30_000,
+            maxTokens: 400,
+            timeoutMs: 15_000,
         });
         const checked = validateAnswerGuide(extractJson(raw), input);
         res.setHeader('Cache-Control', 'no-store, private');

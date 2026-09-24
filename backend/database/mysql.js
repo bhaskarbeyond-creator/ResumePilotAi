@@ -136,6 +136,10 @@ function setPoolForTests(testPool) {
   if (process.env.NODE_ENV !== 'test') {
     throw Object.assign(new Error('MariaDB pool injection is restricted to tests'), { code: 'DATABASE_TEST_OVERRIDE_FORBIDDEN' });
   }
+  if (testPool === null) {
+    pool = null;
+    return null;
+  }
   if (!testPool || typeof testPool.query !== 'function') {
     throw Object.assign(new Error('A query-capable MariaDB test pool is required'), { code: 'DATABASE_TEST_POOL_INVALID' });
   }

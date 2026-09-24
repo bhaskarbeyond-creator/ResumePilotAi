@@ -88,7 +88,11 @@ test.beforeEach(() => {
   configureAbuseCounterStoreForTests(null);
 });
 
-test.after(() => configureAbuseCounterStoreForTests(null));
+test.after(() => {
+  pool.reset();
+  setPoolForTests(null);
+  configureAbuseCounterStoreForTests(null);
+});
 
 test('daily AI quota is account-bound, durable, and fails closed after the basic limit', async () => {
   for (let count = 1; count <= 10; count += 1) {
