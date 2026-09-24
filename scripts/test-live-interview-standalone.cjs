@@ -4,6 +4,7 @@ const SSH_KEY = path.join(__dirname, '..', 'dev_key');
 
 function runSsh(cmd) {
   return execFileSync('ssh', [
+    '-n',
     '-i', SSH_KEY,
     '-p', '65002',
     '-o', 'StrictHostKeyChecking=yes',
