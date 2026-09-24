@@ -239,13 +239,18 @@ const OVER_BAND_PATTERNS = Object.freeze([
     {
         // Role-premise above the band ("As a principal architect ...", "for a staff engineer").
         type: 'role-premise-above-band',
-        pattern: /\b(?:as|for|being|assuming you(?:'re| are)?)\s+(?:a|an|the)\s+(?:staff|principal|senior|chief|head of|director|vice president|vp|cto|ceo|cio|cfo|distinguished|fellow)\b/i,
+        pattern: /\b(?:as|for|being|assuming you(?:'re| are)?)\s+(?:a|an|the)?\s*(?:staff|principal|senior|chief|head of|director|vice president|vp|cto|ceo|cio|cfo|distinguished|fellow|architect)\b/i,
         minOrder: 3, // flags fresher/junior/mid; legitimate at senior+
     },
     {
         type: 'role-premise-above-band',
-        pattern: /\b(?:as|for|being|assuming you(?:'re| are)?)\s+(?:a|an|the)\s+(?:tech lead|team lead|engineering lead|lead engineer)\b/i,
+        pattern: /\b(?:as|for|being|assuming you(?:'re| are)?)\s+(?:a|an|the)?\s*(?:tech lead|team lead|engineering lead|lead engineer|engineering manager)\b/i,
         minOrder: 4, // flags below lead
+    },
+    {
+        type: 'team-leadership-above-band',
+        pattern: /\b(?:leading|managing|governing)\s+(?:a|an|the|our)?\s*(?:team|squad|group|department)\s+of\s+\d+\s+(?:engineers|developers|people)\b/i,
+        minOrder: 4,
     },
     {
         // Explicit multi-year experience REQUIREMENT (not a resume-cited detail).
@@ -260,14 +265,24 @@ const OVER_BAND_PATTERNS = Object.freeze([
     },
     {
         type: 'experience-requirement-above-band',
-        pattern: /\b(?:\d{1,2}\+?|ten|nine|eight|seven)\s*(?:\+\s*)?years?\s+(?:of\s+)?(?:hands[\s-]?on\s+)?(?:industry|professional|production|real[\s-]?world|work)\s+experience\b/i,
+        pattern: /\b(?:\d{1,2}\+?|ten|nine|eight|seven|six|five)\s*(?:\+\s*)?years?\s+(?:of\s+)?(?:hands[\s-]?on\s+)?(?:industry|professional|production|real[\s-]?world|work)\s+experience\b/i,
         minOrder: 3,
     },
     {
         // Org-scale leadership or executive ownership as the ask itself.
         type: 'scope-above-band',
-        pattern: /\b(?:led|leading|lead|managed|running|built|scaled)\s+(?:a|an|the|my|our)?\s*(?:entire|whole|company[\s-]?wide|org(?:anization)?[\s-]?wide|global|multi[\s-]?year|50\+|100\+|200\+)\s+(?:org(?:anization)?|engineering|team|program|transformation|reorg|roadmap|department)\b/i,
+        pattern: /\b(?:led|leading|lead|managed|running|built|scaled|govern(?:ing)?|defin(?:e|ing))\s+(?:a|an|the|my|our)?\s*(?:entire|whole|company[\s-]?wide|org(?:anization)?[\s-]?wide|global|multi[\s-]?year|50\+|100\+|200\+)\s+(?:org(?:anization)?|engineering|team|program|transformation|reorg|roadmap|department|standards?)\b/i,
+        minOrder: 4,
+    },
+    {
+        type: 'roadmap-strategy-above-band',
+        pattern: /\b(?:defin(?:e|ing)|own(?:ing)?|driv(?:e|ing)|establish(?:ing)?)\b.{0,50}\b(?:multi-quarter|multi-year)\s+(?:technology\s+)?(?:roadmap|strategy)\b/i,
         minOrder: 3,
+    },
+    {
+        type: 'architecture-governance-above-band',
+        pattern: /\b(?:architectur(?:e|al)\s+review\s+board|arb\b|architecture\s+governance|govern(?:ing)?\s+technical\s+debt|across\s+\d+\s+(?:engineering\s+)?(?:squads|teams)|engineering\s+hiring\s+bars?)\b/i,
+        minOrder: 4,
     },
     {
         type: 'executive-scope-above-band',
@@ -277,7 +292,7 @@ const OVER_BAND_PATTERNS = Object.freeze([
     {
         // Planet-scale design asks are senior+ content, not fresher content.
         type: 'scale-above-band',
-        pattern: /\b(?:design|architect|architecting|scale|scaling)\b.{0,80}\b(?:planet[\s-]?scale|global[\s-]?scale|hyperscale|hyper[\s-]?scale|enterprise[\s-]?scale|10\s*m|100\s*m|10m|100m|billion|billions of)\b/i,
+        pattern: /\b(?:design|architect|architecting|scale|scaling|redesign|re-architect)\b.{0,80}\b(?:planet[\s-]?scale|global[\s-]?scale|hyperscale|hyper[\s-]?scale|enterprise[\s-]?scale|10\s*m|100\s*m|10m|100m|billion|billions of)\b/i,
         minOrder: 3,
     },
     {
@@ -288,6 +303,59 @@ const OVER_BAND_PATTERNS = Object.freeze([
     {
         type: 'scale-above-band',
         pattern: /\b\d{2,4}\s?[mM]\s+(?:concurrent\s+)?(?:users|requests|customers|devices|events)\b/i,
+        minOrder: 3,
+    },
+    {
+        type: 'throughput-above-band',
+        pattern: /\b(?:\d{2,6}\s*(?:k|K)?|\d+\s*[mM])\s*(?:qps|tps|rps|requests?\s+per\s+second|transactions?\s+per\s+second)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Distributed consensus, split-brain, and transaction coordinator design
+        type: 'distributed-consensus-above-band',
+        pattern: /\b(?:design|architect|redesign|re-architect|implement|coordinate)\b.{0,80}\b(?:distributed\s+consensus|raft|paxos|two-phase\s+commit|2pc|saga\s+pattern|split-brain|byzantine\s+fault)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Multi-region distributed topology, active-active consensus, and cross-region replication
+        type: 'distributed-topology-above-band',
+        pattern: /\b(?:multi[\s-]?region|globally\s+distributed|across\s+(?:multiple|several|\d+)\s+(?:cloud\s+)?regions|geo[\s-]?distributed)\b.{0,80}\b(?:database|platform|cluster|infrastructure|consistency|replication\s+topology|active-active)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Cache stampede, thundering herd, and distributed locking
+        type: 'high-scale-caching-above-band',
+        pattern: /\b(?:cache\s+stampede|thundering\s+herd|probabilistic\s+early\s+expiration|distributed\s+locking)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Database sharding and multi-replica replication lag mitigation
+        type: 'database-sharding-above-band',
+        pattern: /\b(?:database\s+sharding|sharded\s+(?:cluster|database)|read-replica\s+replication\s+lag)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Distributed streaming cluster architecture and strict ordering guarantees
+        type: 'distributed-streaming-architecture-above-band',
+        pattern: /\b(?:high-throughput\s+distributed\s+event\s+streaming|kafka\s+vs\s+(?:apache\s+)?pulsar|geo-replication\s+and\s+strict\s+ordering)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Zero-downtime database or architectural monolith migrations
+        type: 'migration-architecture-above-band',
+        pattern: /\b(?:zero-downtime\s+(?:database\s+)?migration|monolith(?:ic)?\s+(?:to|into)\s+microservices|decompos(?:ing|e)\s+(?:the\s+)?monolith)\b/i,
+        minOrder: 3,
+    },
+    {
+        // Multi-region disaster recovery failover and RTO/RPO design
+        type: 'disaster-recovery-above-band',
+        pattern: /\b(?:disaster\s+recovery|failover\s+strategy|rto|rpo)\b.{0,60}\b(?:across\s+(?:cloud\s+)?regions|aws\s+regions|multi-region)\b/i,
+        minOrder: 3,
+    },
+    {
+        // High-stakes production incident command, Tier-1 outages, and executive post-mortems
+        type: 'incident-command-above-band',
+        pattern: /\b(?:incident\s+command(?:er)?|tier[\s-]?[01]\s+(?:outage|incident)|sev[\s-]?[01]\s+(?:outage|incident)|major\s+production\s+outage|conduct\s+(?:an?\s+)?(?:executive\s+)?post[\s-]?mortem|on[\s-]?call\s+escalation|chaos\s+engineering)\b/i,
         minOrder: 3,
     },
 ]);

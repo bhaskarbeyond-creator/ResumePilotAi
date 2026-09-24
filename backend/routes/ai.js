@@ -733,22 +733,54 @@ router.post('/generate-interview', async (req, res) => {
         };
         consume(jsonData, { enforceFit: true });
 
-        if (accepted.length < built.validQuestionCount && rejected.length) {
-            const retryPrompt = `${built.prompt}\n\nCORRECTION PASS (unique retry token: ${crypto.randomBytes(8).toString('hex')}): A previous draft included questions that demand experience above the configured seniority band (for example: ${rejected.slice(0, 3).map(r => r.violations.map(v => v.type).join('/')).join(', ')}). Regenerate ONLY ${built.validQuestionCount - accepted.length} replacement question(s) that fully respect the SENIORITY CEILING. Return the same JSON shape; the "questions" array must contain only the replacement question(s).`;
+        // Bounded replacement loop: up to 2 targeted correction passes to fill any
+        // slots lost to over-band, malformed, or duplicate questions.
+        let retryAttempts = 0;
+        const maxRetries = 2;
+        while (accepted.length < built.validQuestionCount && retryAttempts < maxRetries) {
+            retryAttempts++;
+            const needed = built.validQuestionCount - accepted.length;
+            const reasons = rejected.slice(-3).map(r => (r.violations || []).map(v => v.type).join('/')).filter(Boolean);
+            const reasonClause = reasons.length
+                ? `A previous draft included questions that demand experience above the configured seniority band (for example: ${reasons.join(', ')}).`
+                : 'A previous draft was missing questions or included duplicates.';
+            const retryPrompt = `${built.prompt}\n\nCORRECTION PASS (unique retry token: ${crypto.randomBytes(8).toString('hex')}): ${reasonClause} Regenerate ONLY ${needed} replacement question(s) that strictly respect the "${(SENIORITY_BANDS[seniorityId] || {}).label}" ceiling. Return the exact same JSON shape with the "questions" array containing only the ${needed} replacement question(s).`;
             try {
-                const retryText = await generateSet(retryPrompt);
+                const retryTokens = Math.min(2500, Math.max(900, needed * 420));
+                const retryText = await generateConfiguredText(req, res, retryPrompt, 'generate-interview', {
+                    configuration,
+                    tenantResolution,
+                    maxTokens: retryTokens,
+                    timeoutMs: 120_000,
+                });
                 const retryJson = extractJson(retryText);
                 if (retryJson && typeof retryJson === 'object') {
                     consume(retryJson, { enforceFit: true });
                     jsonData = { ...retryJson, ...jsonData };
                 }
-            } catch { /* keep the accepted set from the first pass */ }
+            } catch {
+                // If a retry pass encounters an error, the loop continues to either the next attempt or safe failure
+            }
+        }
+
+        if (accepted.length < built.validQuestionCount) {
+            // Strict question count guarantee: never silently lower the count,
+            // never fabricate questions, never insert canned questions.
+            // If exact N cannot be safely achieved within bounded retries,
+            // return a clear, retryable degraded failure state.
+            throw Object.assign(new Error(`The AI service could not generate the full set of ${built.validQuestionCount} calibrated questions for this seniority and difficulty. Please try again.`), {
+                code: 'INSUFFICIENT_CALIBRATED_QUESTIONS',
+                status: 502,
+                details: {
+                    requested: built.validQuestionCount,
+                    calibratedCount: accepted.length,
+                    seniority: seniorityId,
+                    difficulty: difficultyId,
+                },
+            });
         }
 
         const allQuestions = accepted.slice(0, built.validQuestionCount);
-        if (!allQuestions.length) {
-            throw Object.assign(new Error('The AI response did not contain usable questions.'), { code: 'INVALID_AI_OUTPUT', status: 502 });
-        }
 
         const renumberedQuestions = allQuestions.map((q, idx) => ({ ...q, id: idx + 1 }));
         const metadataPayload = jsonData;

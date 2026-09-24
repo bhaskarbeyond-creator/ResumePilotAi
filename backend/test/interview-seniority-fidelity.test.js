@@ -580,3 +580,157 @@ test('difficulty distribution monotonicity is preserved (regression of the contr
     const midHard = ai.interviewDifficultyDistribution(10, 'hard', 'mid');
     assert.ok(seniorHard.advanced >= midHard.advanced, 'senior keeps the senior bump');
 });
+
+test('semantic rubric catches indirect/subtle over-band architectural and operational questions', () => {
+    const subtleOverBandForFresher = [
+        'You inherit a legacy distributed platform across three cloud regions. How would you redesign its database replication topology to achieve zero-downtime multi-region active-active consensus?',
+        'How would you design a distributed consensus protocol using Raft or Paxos to handle network partitions and split-brain scenarios in a production cluster?',
+        'During a major Tier-1 production outage, how would you coordinate cross-team incident command, conduct an executive post-mortem, and establish root-cause mitigation?',
+        'How would you establish engineering hiring bars, conduct architectural review boards, and govern technical debt across 5 engineering squads?',
+        'You are responsible for defining the multi-quarter technology roadmap and architectural standards for the company\'s core microservices.',
+        'Your distributed cache is experiencing a cache stampede and thundering herd problem under 500,000 QPS. How do you re-architect the caching tier with probabilistic early expiration and distributed locking?',
+        'How would you design a distributed transaction coordinator using two-phase commit (2PC) or Sagas across independent microservice databases with eventual consistency?',
+        'How do you evaluate and decide between Apache Kafka vs Apache Pulsar for high-throughput distributed event streaming with geo-replication and strict ordering guarantees across data centers?',
+        'Describe your experience leading a zero-downtime database migration of a monolithic database to sharded microservices.',
+        'How would you design a global disaster recovery failover strategy with an RTO of 5 minutes and RPO of zero across AWS regions?',
+    ];
+    for (const q of subtleOverBandForFresher) {
+        const fit = assessQuestionFit(q, { seniority: 'fresher' });
+        assert.equal(fit.ok, false, `Must reject subtle over-band question for fresher: ${q}`);
+        assert.ok(fit.violations.length > 0, `Must record specific violations: ${q}`);
+    }
+});
+
+test('semantic rubric avoids over-rejection for valid questions with advanced vocabulary', () => {
+    const validWithAdvancedVocabulary = [
+        'Explain what Kubernetes is and why a development team might use container orchestration.',
+        'What is the purpose of Apache Kafka in modern software development and how does a message queue decouple services?',
+        'In your university or personal project, how did you handle database connections and prevent SQL injection?',
+        'Explain the difference between synchronous and asynchronous operations in JavaScript with an example of Promise handling.',
+        'What is Docker and how does creating a Dockerfile help ensure consistent environments across machines?',
+        'Given an array of integers, how would you find two numbers that sum up to a target value in O(n) time?',
+    ];
+    for (const q of validWithAdvancedVocabulary) {
+        const fit = assessQuestionFit(q, { seniority: 'fresher' });
+        assert.equal(fit.ok, true, `Must NOT reject valid in-band question with tech vocabulary: ${q}`);
+    }
+});
+
+test('live session: opening question is fit-gated with corrective retry and safe failure', async () => {
+    let callCount = 0;
+    const mockGenerate = async ({ prompt }) => {
+        callCount++;
+        const isRetry = prompt.includes('demands experience above the configured seniority band');
+        return {
+            raw: JSON.stringify({
+                interviewer_message: 'Welcome to your interview.',
+                question: isRetry
+                    ? 'Can you tell me about a project you worked on recently?'
+                    : 'As a principal architect, how would you redesign our globally distributed transaction engine?',
+                response_type: 'opening_question',
+                interview_stage: 'opening',
+                topic: 'Introduction',
+                difficulty: 'medium',
+                question_intent: 'Understand background',
+                model_answer: '',
+                answer_tip: 'Be concise',
+                suggested_talking_points: ['Overview', 'Tech stack'],
+                suggested_starters: ['In my recent project...'],
+                state_update: { topics_covered: [], topics_to_probe: [], strengths: [], growth_areas: [], rolling_summary: '' },
+            }),
+        };
+    };
+
+    const store = createMemoryLiveInterviewStore();
+    const service = new LiveInterviewService({ store, generate: mockGenerate, now: () => 1700000000000 });
+    const session = await service.start({
+        ownerUid: 'user-opening-fit',
+        input: {
+            role: 'Software Engineer',
+            interviewType: 'technical',
+            experienceLevel: 'fresher',
+            difficulty: 'medium',
+            durationMinutes: 20,
+        },
+    });
+
+    assert.equal(callCount, 2, 'Opening question triggered a corrective retry pass');
+    assert.equal(session.interviewer.question, 'Can you tell me about a project you worked on recently?');
+    assert.equal(assessQuestionFit(session.interviewer.question, { seniority: 'fresher' }).ok, true);
+
+    // If opening question stubbornly fails retry, must safely fail with 502 (no canned question)
+    const stubbornGenerate = async () => ({
+        raw: JSON.stringify({
+            interviewer_message: 'Welcome.',
+            question: 'As a principal architect, how would you design a global consensus engine?',
+            response_type: 'opening_question',
+            interview_stage: 'opening',
+            topic: 'Intro',
+            difficulty: 'medium',
+            question_intent: 'test',
+        }),
+    });
+    const stubbornService = new LiveInterviewService({ store, generate: stubbornGenerate, now: () => 1700000000000 });
+    await assert.rejects(
+        () => stubbornService.start({
+            ownerUid: 'user-stubborn-opening',
+            input: { role: 'Software Engineer', interviewType: 'technical', experienceLevel: 'fresher', difficulty: 'medium' },
+        }),
+        err => err.code === 'INVALID_AI_OUTPUT' && err.status === 502
+    );
+});
+
+test('route /generate-interview fails safely when persistent over-band model cannot reach exact count', async () => {
+    const express = require('express');
+    const http = require('node:http');
+    const { once } = require('node:events');
+    require('../repositories').setRepositoryForTests({ async getSetting() { return null; } });
+    require('../services/aiRuntime').clearProviderConfigurationCache();
+    const oldKey = process.env.GEMINI_API_KEY;
+    const oldFetch = global.fetch;
+    process.env.GEMINI_API_KEY = 'test-key';
+
+    global.fetch = async () => {
+        // Model persistently returns over-band questions
+        const questions = [
+            { id: 1, question: 'As a principal architect, how would you redesign the system?', options: ['A', 'B'], correctAnswer: 0, difficulty: 'Advanced' },
+            { id: 2, question: 'This role requires 10 years of platform SRE experience.', options: ['A', 'B'], correctAnswer: 0, difficulty: 'Advanced' },
+        ];
+        const text = JSON.stringify({ title: 't', totalQuestions: 2, questions });
+        return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }) };
+    };
+
+    const app = express();
+    app.use(express.json());
+    app.use('/api', ai);
+    const server = http.createServer(app);
+    server.listen(0);
+    await once(server, 'listening');
+    const base = `http://127.0.0.1:${server.address().port}`;
+    try {
+        const payload = baseInput({ experienceLevel: 'fresher', difficulty: 'medium', questionCount: 5 });
+        delete payload.sessionNonce;
+        const response = await new Promise((resolve, reject) => {
+            const data = JSON.stringify(payload);
+            const req = http.request(`${base}/api/generate-interview`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+            }, (res) => {
+                let buf = '';
+                res.on('data', c => { buf += c; });
+                res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(buf) }));
+            });
+            req.on('error', reject);
+            req.write(data);
+            req.end();
+        });
+        assert.equal(response.status, 502);
+        assert.equal(response.body.error.code, 'INSUFFICIENT_CALIBRATED_QUESTIONS');
+        assert.ok(!response.body.questions, 'Never silently return fewer or canned questions');
+    } finally {
+        server.close();
+        if (oldKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = oldKey;
+        global.fetch = oldFetch;
+    }
+});
+

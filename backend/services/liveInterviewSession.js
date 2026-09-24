@@ -1104,13 +1104,35 @@ class LiveInterviewService {
                 tenantId: tenantId || null,
             },
         };
+        const openingPrompt = buildOpeningPrompt(initialState);
         const generated = await this.generate({
-            prompt: buildOpeningPrompt(initialState),
+            prompt: openingPrompt,
             operation: 'live-interview-open',
             signal,
             configuration,
         });
-        const opening = parseOpening(generated.raw || generated, initialState.config);
+        let opening = parseOpening(generated.raw || generated, initialState.config);
+        let fit = assessQuestionFit(opening.question, {
+            seniority: normalized.experienceLevel,
+            track: normalized.interviewType,
+        });
+        if (!fit.ok) {
+            const reason = `Your previous opening asked a question that demands experience above the configured seniority band (${fit.violations.map(v => v.type).join(', ')}). Ask an opening question a candidate at the configured seniority could honestly answer.`;
+            const retry = await this.generate({
+                prompt: `${openingPrompt}\n\n${reason}`,
+                operation: 'live-interview-open',
+                signal,
+                configuration,
+            });
+            opening = parseOpening(retry.raw || retry, initialState.config);
+            fit = assessQuestionFit(opening.question, {
+                seniority: normalized.experienceLevel,
+                track: normalized.interviewType,
+            });
+            if (!fit.ok) {
+                throw domainError('INVALID_AI_OUTPUT', 'The interviewer returned an invalid opening. Please retry starting the interview.', 502);
+            }
+        }
         const startedAt = this.now();
         const session = {
             id: sessionId(),
