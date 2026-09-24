@@ -12,6 +12,8 @@ const { TenantService } = require('../enterprise/tenantService');
 const { setTokenVerifierForTests } = require('../security/auth');
 const { clearProviderConfigurationCache } = require('../services/aiRuntime');
 const { setRepositoryForTests, resetRepositoryCacheForTests } = require('../repositories');
+const { configureAbuseCounterStoreForTests } = require('../security/abuse');
+const { InMemoryAtomicCounterStore } = require('./helpers/inMemoryAtomicCounterStore');
 const app = require('../index');
 
 const PLATFORM_AI_PUBLIC = {
@@ -75,6 +77,7 @@ class TestAiRepository extends InMemoryRepository {
 }
 
 test.beforeEach(() => {
+  configureAbuseCounterStoreForTests(new InMemoryAtomicCounterStore());
   setRepositoryForTests(new TestAiRepository());
   clearProviderConfigurationCache();
   generatedWithProvidersCalls = [];
@@ -86,6 +89,7 @@ test.beforeEach(() => {
 });
 
 test.afterEach(() => {
+  configureAbuseCounterStoreForTests(null);
   resetRepositoryCacheForTests();
   clearProviderConfigurationCache();
 });
