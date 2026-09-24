@@ -35,7 +35,7 @@ async function main() {
   const auth = admin.auth();
   const superAdmin = await auth.getUserByEmail("bhaskar.beyond@gmail.com");
   const customToken = await auth.createCustomToken(superAdmin.uid, { role: "SUPER_ADMIN" });
-  const webApiKey = process.env.VITE_FIREBASE_API_KEY || "";
+  const webApiKey = process.env.VITE_FIREBASE_API_KEY || "AIzaSyDigXT7n4Pyf-8WHQtvjHa0wGvJ86nmrwc";
   const tokenRes = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=" + webApiKey, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

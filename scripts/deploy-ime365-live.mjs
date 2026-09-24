@@ -47,27 +47,30 @@ async function main() {
   console.log('\nCreating server-side staging directories...');
   runSsh('rm -rf /home/u727965524/staging_ime365_webroot && mkdir -p /home/u727965524/staging_ime365_webroot');
 
-  // 5. Package and stream frontend to staging
+  // 5. Package and upload frontend to staging
   console.log('\nPackaging and uploading frontend to staging...');
-  const frontendTarArgs = [
-    '-czf', '-',
-    '-C', path.join(root, 'dist'),
-    '.'
-  ];
-  const frontendTar = spawnSync('tar', frontendTarArgs, { cwd: root, maxBuffer: 100 * 1024 * 1024 });
+  const tarFile = path.join(root, 'dist.tar.gz');
+  const frontendTar = spawnSync('tar', ['-czf', tarFile, '-C', path.join(root, 'dist'), '.'], { cwd: root });
   if (frontendTar.status !== 0) {
     throw new Error(`Failed to create frontend archive: ${frontendTar.stderr?.toString()}`);
   }
 
-  execFileSync('ssh', [
-    '-i', SSH_KEY,
-    '-p', SSH_PORT,
-    '-o', 'StrictHostKeyChecking=yes',
-    '-o', 'PasswordAuthentication=no',
-    `${SSH_USER}@${SSH_HOST}`,
-    'tar -xzf - -C /home/u727965524/staging_ime365_webroot'
-  ], { input: frontendTar.stdout });
-  console.log('Frontend extracted to staging_ime365_webroot.');
+  try {
+    execFileSync('scp', [
+      '-i', SSH_KEY,
+      '-P', SSH_PORT,
+      '-o', 'StrictHostKeyChecking=yes',
+      '-o', 'PasswordAuthentication=no',
+      tarFile,
+      `${SSH_USER}@${SSH_HOST}:/home/u727965524/dist.tar.gz`
+    ]);
+    runSsh('tar -xzf /home/u727965524/dist.tar.gz -C /home/u727965524/staging_ime365_webroot && rm -f /home/u727965524/dist.tar.gz');
+    console.log('Frontend extracted to staging_ime365_webroot.');
+  } finally {
+    if (fs.existsSync(tarFile)) {
+      try { fs.unlinkSync(tarFile); } catch {}
+    }
+  }
 
   // 6. Ensure .htaccess and api/index.php are prepared
   console.log('\nDeploying .htaccess and api proxy to ime365.com public_html...');
