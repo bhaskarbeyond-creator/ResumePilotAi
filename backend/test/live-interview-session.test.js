@@ -28,12 +28,12 @@ function validOpening() {
     };
 }
 
-function validTurn({ complete = false } = {}) {
+function validTurn({ complete = false, question } = {}) {
     return {
         interviewer_message: complete
             ? 'Thank you. That gives me a clear picture of your approach and how you reflected on the trade-offs.'
             : 'That is helpful context. I would like to understand the decision behind it a little more deeply.',
-        question: complete ? '' : 'What trade-off did you evaluate before choosing that mitigation, and how did you validate it?',
+        question: complete ? '' : (question || 'What trade-off did you evaluate before choosing that mitigation, and how did you validate it?'),
         response_type: complete ? 'closing' : 'follow_up',
         interview_stage: complete ? 'closing' : 'deep_dive',
         topic: complete ? 'wrap-up' : 'decision quality',
@@ -71,6 +71,12 @@ function validReport() {
 function buildGenerator() {
     const calls = [];
     let turns = 0;
+    // Each turn asks a distinct follow-up: the interview service correctly
+    // retries a draft that repeats the question currently being answered.
+    const followUps = [
+        'What trade-off did you evaluate before choosing that mitigation, and how did you validate it?',
+        'Which part of that mitigation carried the most risk, and how did you reduce it?',
+    ];
     return {
         calls,
         generate: async ({ prompt, operation }) => {
@@ -78,7 +84,7 @@ function buildGenerator() {
             if (operation === 'live-interview-open') return { raw: JSON.stringify(validOpening()) };
             if (operation === 'live-interview-turn') {
                 turns += 1;
-                return { raw: JSON.stringify(validTurn({ complete: turns >= 3 })) };
+                return { raw: JSON.stringify(validTurn({ complete: turns >= 3, question: followUps[(turns - 1) % followUps.length] })) };
             }
             if (operation === 'live-interview-report') return { raw: JSON.stringify(validReport()) };
             throw new Error(`Unexpected operation: ${operation}`);

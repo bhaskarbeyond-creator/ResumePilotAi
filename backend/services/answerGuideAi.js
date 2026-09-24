@@ -37,6 +37,7 @@ function buildAnswerGuidePrompt({ question, role, topic, resumeFacts, regenerate
         '- "modelAnswer": a spoken, first-person answer of 90-160 words that directly answers the question, with a clear situation, what the candidate did and why, and the outcome.',
         '- Build the answer ONLY from <candidate_context>. Never invent employers, projects, tools, team sizes, dates, percentages, money or other numbers. If the context has no figure for the outcome, describe the outcome in words.',
         '- If <candidate_context> is empty, write the answer around the approach and reasoning a strong candidate would explain, without claiming specific past employers or figures.',
+        '- Calibrate the answer to the seniority level of <question>: a question aimed at an early-career candidate gets an early-career answer (fundamentals, projects, learning). Never import senior-scope ownership, org-wide leadership, or enterprise-scale experience the question did not ask for.',
         '- Sound like a thoughtful person talking, not a template: no headings, no bullet points, no brackets or placeholders, no "Great question", no buzzword chains.',
         '- "tip": one practical, specific tip for this question (for example, which real figure or detail from their own experience to add).',
         regenerate ? '- Take a clearly different angle from the obvious answer (a different example or trade-off) while following every rule above.' : '',
